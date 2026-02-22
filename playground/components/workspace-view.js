@@ -51,8 +51,8 @@ export class WorkspaceView extends HTMLElement {
     if (this._routeUnsubscribe) {
       this._routeUnsubscribe();
     }
-    // Stop autosave when leaving
-    autosave.stop();
+    // Flush pending saves before leaving
+    autosave.flush();
     // Clean up event listeners
     this.cleanupEventListeners();
     // Terminate compiler worker
@@ -74,9 +74,9 @@ export class WorkspaceView extends HTMLElement {
         this.waitForLibrary();
       }
     } else {
-      // Stop autosave when leaving workspace view
+      // Flush pending saves when leaving workspace view
       if (this._initialized) {
-        autosave.stop();
+        autosave.flush();
 
         // Generate thumbnail if content changed since last thumbnail
         thumbnailService.generateIfDirty(
@@ -463,9 +463,10 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
 
-    // beforeunload: fire-and-forget thumbnail generation
+    // beforeunload: fire-and-forget save + thumbnail generation
     this._handleBeforeUnload = () => {
       if (store.get('currentView') === 'workspace' && this._currentWorkspaceId) {
+        autosave.saveNow();
         thumbnailService.generateIfDirty(
           this._currentWorkspaceId,
           () => this.previewPane?.shadowRoot?.querySelector('#preview'),

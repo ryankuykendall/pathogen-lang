@@ -165,6 +165,29 @@ class AutosaveManager {
     }
   }
 
+  // Flush any pending changes and stop autosave (call before navigation)
+  async flush() {
+    if (!this._isEnabled || !this._workspaceId) {
+      this.stop();
+      return;
+    }
+
+    // Save pending code (saveNow checks hash, skips if unchanged)
+    await this.saveNow();
+
+    // Save pending preferences if timer was active
+    if (this._preferencesTimer) {
+      clearTimeout(this._preferencesTimer);
+      this._preferencesTimer = null;
+      const prefs = store.get('preferences');
+      if (prefs) {
+        await this._savePreferences(prefs);
+      }
+    }
+
+    this.stop();
+  }
+
   // Force immediate save (e.g., before navigation)
   async saveNow() {
     if (!this._isEnabled || !this._workspaceId) {
