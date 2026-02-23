@@ -408,6 +408,11 @@ class AppHeader extends HTMLElement {
         this.showFeedback('SVG copied!');
         break;
 
+      case 'copy-debug-info':
+        this.dispatchEvent(new CustomEvent('copy-debug-info', { bubbles: true, composed: true }));
+        this.showFeedback('Debug info copied!');
+        break;
+
       case 'export-legend':
         this.dispatchEvent(new CustomEvent('export-legend', { bubbles: true, composed: true }));
         break;
@@ -528,6 +533,13 @@ class AppHeader extends HTMLElement {
                   </svg>
                   Copy SVG
                 </button>
+                <button data-action="copy-debug-info">
+                  <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M4.5 0A2.5 2.5 0 002 2.5V3H1.5a.5.5 0 000 1H2v1H1a.5.5 0 000 1h1v1H.5a.5.5 0 000 1H2v1H1.5a.5.5 0 000 1H2v.5A2.5 2.5 0 004.5 12h7A2.5 2.5 0 0014 9.5V9h.5a.5.5 0 000-1H14V7h1a.5.5 0 000-1h-1V5h.5a.5.5 0 000-1H14V3h.5a.5.5 0 000-1H14v-.5A2.5 2.5 0 0011.5 0h-7zM13 2.5v7a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 013 9.5v-7A1.5 1.5 0 014.5 1h7A1.5 1.5 0 0113 2.5z"/>
+                    <path d="M6 4.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5zM5.5 6a.5.5 0 000 1h5a.5.5 0 000-1h-5zM5 8.5a.5.5 0 01.5-.5h5a.5.5 0 010 1h-5a.5.5 0 01-.5-.5z"/>
+                  </svg>
+                  Copy Debug Info
+                </button>
                 <div class="menu-divider"></div>
                 <button data-action="export-legend">
                   <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
@@ -601,6 +613,13 @@ class AppHeader extends HTMLElement {
                 <path d="M6.5 5a.5.5 0 00-.5.5v5a.5.5 0 001 0V8h1.5a.5.5 0 000-1H7V6h2a.5.5 0 000-1H6.5z"/>
               </svg>
               Copy SVG
+            </button>
+            <button data-action="copy-debug-info">
+              <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4.5 0A2.5 2.5 0 002 2.5V3H1.5a.5.5 0 000 1H2v1H1a.5.5 0 000 1h1v1H.5a.5.5 0 000 1H2v1H1.5a.5.5 0 000 1H2v.5A2.5 2.5 0 004.5 12h7A2.5 2.5 0 0014 9.5V9h.5a.5.5 0 000-1H14V7h1a.5.5 0 000-1h-1V5h.5a.5.5 0 000-1H14V3h.5a.5.5 0 000-1H14v-.5A2.5 2.5 0 0011.5 0h-7zM13 2.5v7a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 013 9.5v-7A1.5 1.5 0 014.5 1h7A1.5 1.5 0 0113 2.5z"/>
+                <path d="M6 4.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5zM5.5 6a.5.5 0 000 1h5a.5.5 0 000-1h-5zM5 8.5a.5.5 0 01.5-.5h5a.5.5 0 010 1h-5a.5.5 0 01-.5-.5z"/>
+              </svg>
+              Copy Debug Info
             </button>
             <div class="menu-divider"></div>
             <button data-action="export-legend">

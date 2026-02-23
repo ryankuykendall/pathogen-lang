@@ -450,6 +450,24 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('set-thumbnail', this._handleSetThumbnail);
 
+    // Copy debug info
+    this._handleCopyDebugInfo = async () => {
+      if (store.get('currentView') === 'workspace') {
+        try {
+          const { buildDebugCapture } = await import('../utils/debug-capture.js');
+          const markdown = buildDebugCapture();
+          await navigator.clipboard.writeText(markdown);
+          // Show feedback on error panel if visible, otherwise on header
+          if (this.errorPanel.classList.contains('visible')) {
+            this.errorPanel.showFeedback('Copied!');
+          }
+        } catch (err) {
+          console.error('Failed to copy debug info:', err);
+        }
+      }
+    };
+    document.addEventListener('copy-debug-info', this._handleCopyDebugInfo);
+
     // Auto-generate thumbnail (fired by thumbnail service idle timer)
     this._handleThumbnailAutoGenerate = (e) => {
       if (store.get('currentView') !== 'workspace') return;
@@ -486,6 +504,7 @@ export class WorkspaceView extends HTMLElement {
     document.removeEventListener('keydown', this._handleKeydown);
     document.removeEventListener('export-legend', this._handleExportLegend);
     document.removeEventListener('refresh-preview', this._handleRefreshPreview);
+    document.removeEventListener('copy-debug-info', this._handleCopyDebugInfo);
     document.removeEventListener('set-thumbnail', this._handleSetThumbnail);
     document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
     window.removeEventListener('beforeunload', this._handleBeforeUnload);
@@ -613,6 +632,7 @@ export class WorkspaceView extends HTMLElement {
       if (isStale(compilationId)) return;
 
       this.annotatedPane.content = annotated;
+      store.set('annotatedOutput', annotated);
     } catch (e) {
       // Don't update if stale
       if (e.message === 'Stale result') return;
@@ -701,6 +721,7 @@ export class WorkspaceView extends HTMLElement {
           flex-direction: column;
           height: 100%;
           overflow: hidden;
+          position: relative;
           font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
           background: var(--bg-secondary, #f5f5f5);
           color: var(--text-primary, #1a1a1a);
