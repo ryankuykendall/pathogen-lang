@@ -418,6 +418,7 @@ const nullLiteral: Parsimmon.Parser<NullLiteral> = keyword('null').map((): NullL
 const arrayLiteral: Parsimmon.Parser<ArrayLiteral> = P.seq(
   word('['),
   P.sepBy(P.lazy(() => expression), word(',')),
+  word(',').atMost(1),
   word(']')
 ).map(([, elements]): ArrayLiteral => ({
   type: 'ArrayLiteral' as const,

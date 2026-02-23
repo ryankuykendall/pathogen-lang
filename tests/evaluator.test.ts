@@ -1059,6 +1059,14 @@ describe('Evaluator', () => {
       expect(compilePath('let pts = [10, 20]; for ([p, i] in pts) { M p i }')).toBe('M 10 0 M 20 1');
     });
 
+    it('trailing comma in array literal', () => {
+      expect(compilePath('let arr = [10, 20, 30,]; M arr[0] arr[1]')).toBe('M 10 20');
+    });
+
+    it('for-each with destructuring over nested arrays binds element and index', () => {
+      expect(compilePath('let nested = [[1, 2], [3, 4]]; for ([item, i] in nested) { M item[0] i }')).toBe('M 1 0 M 3 1');
+    });
+
     it('for-each over empty array produces nothing', () => {
       expect(compilePath('let list = []; for (x in list) { M x 0 }')).toBe('');
     });

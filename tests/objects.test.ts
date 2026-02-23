@@ -153,12 +153,14 @@ describe('Objects', () => {
       expect(result.logs[1].parts[0].value).toBe('b');
     });
 
-    it('iterates Object.entries with smart destructuring', () => {
-      const result = compile('let obj = { a: 1, b: 2 }; for ([k, v] in Object.entries(obj)) { log(k, v); }');
+    it('iterates Object.entries with element and index', () => {
+      const result = compile('let obj = { a: 1, b: 2 }; for ([entry, i] in Object.entries(obj)) { log(entry[0], entry[1], i); }');
       expect(result.logs[0].parts[0].value).toBe('a');
       expect(result.logs[0].parts[1].value).toBe('1');
+      expect(result.logs[0].parts[2].value).toBe('0');
       expect(result.logs[1].parts[0].value).toBe('b');
       expect(result.logs[1].parts[1].value).toBe('2');
+      expect(result.logs[1].parts[2].value).toBe('1');
     });
   });
 
@@ -178,8 +180,8 @@ describe('Objects', () => {
     });
   });
 
-  describe('smart destructuring (backward compat)', () => {
-    it('preserves item+index for non-array elements', () => {
+  describe('for-in always binds element + index', () => {
+    it('binds element and index for scalar elements', () => {
       const result = compile('let arr = [10, 20, 30]; for ([item, idx] in arr) { log(item, idx); }');
       expect(result.logs[0].parts[0].value).toBe('10');
       expect(result.logs[0].parts[1].value).toBe('0');
@@ -187,12 +189,12 @@ describe('Objects', () => {
       expect(result.logs[1].parts[1].value).toBe('1');
     });
 
-    it('destructures array elements when element is an array', () => {
+    it('binds array element and index for nested arrays', () => {
       const result = compile('let pairs = [[1, 2], [3, 4]]; for ([a, b] in pairs) { log(a, b); }');
-      expect(result.logs[0].parts[0].value).toBe('1');
-      expect(result.logs[0].parts[1].value).toBe('2');
-      expect(result.logs[1].parts[0].value).toBe('3');
-      expect(result.logs[1].parts[1].value).toBe('4');
+      expect(result.logs[0].parts[0].value).toBe('[1, 2]');
+      expect(result.logs[0].parts[1].value).toBe('0');
+      expect(result.logs[1].parts[0].value).toBe('[3, 4]');
+      expect(result.logs[1].parts[1].value).toBe('1');
     });
   });
 

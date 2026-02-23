@@ -1669,13 +1669,8 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       for (let i = 0; i < iterable.elements.length; i++) {
         const loopScope = createScope(scope);
         const element = iterable.elements[i];
-        if (stmt.indexVariable && isArrayValue(element)) {
-          setVariable(loopScope, stmt.variable, element.elements[0] ?? null);
-          setVariable(loopScope, stmt.indexVariable, element.elements[1] ?? null);
-        } else {
-          setVariable(loopScope, stmt.variable, element);
-          if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
-        }
+        setVariable(loopScope, stmt.variable, element);
+        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
         for (const bodyStmt of stmt.body) {
           const result = evaluateStatementPlain(bodyStmt, loopScope);
           if (result) results.push(result);

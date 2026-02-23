@@ -2628,15 +2628,8 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       for (let i = 0; i < iterable.elements.length; i++) {
         const loopScope = createScope(scope);
         const element = iterable.elements[i];
-        if (stmt.indexVariable && isArrayValue(element)) {
-          // Smart destructuring: element is array → destructure
-          setVariable(loopScope, stmt.variable, element.elements[0] ?? null);
-          setVariable(loopScope, stmt.indexVariable, element.elements[1] ?? null);
-        } else {
-          // Standard: item + loop index
-          setVariable(loopScope, stmt.variable, element);
-          if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
-        }
+        setVariable(loopScope, stmt.variable, element);
+        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
         evaluateStatementsToAccum(stmt.body, loopScope, accum);
       }
       return;
