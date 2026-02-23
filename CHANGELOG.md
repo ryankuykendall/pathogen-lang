@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-02-22
+
+### Added
+
+#### Core
+- String type with `length`, `empty()`, index access, `split()`, `append()`, `prepend()`, `includes()`, and `slice()` operations.
+- First-class `Point` type with `x`/`y` properties and geometric methods: `translate()`, `polarTranslate()`, `midpoint()`, `lerp()`, `rotate()`, `distanceTo()`, `angleTo()`.
+- Objects with key-value literals, property access, `length`, `has()`, iteration, and `Object.keys()`/`values()`/`entries()`/`delete()` namespace methods.
+- Path Blocks (`@{ ... }`) — reusable path data with `draw()`, `project()`, parametric sampling (`get`, `tangent`, `normal`, `partition`), transforms (`reverse`, `boundingBox`, `offset`, `mirror`, `rotateAtVertexIndex`, `scale`), properties (`length`, `vertices`, `subPathCount`, `subPathCommands`, `startPoint`, `endPoint`), and `<<` concatenation.
+- `Cycler(array, shuffle?)` stdlib function for deterministic round-robin cycling with `.pick()` and `.length`.
+- Matrix transforms (`translate`, `rotate`, `scale`) on layer contexts with `set()`/`reset()` and property access.
+- Line and column numbers in runtime error messages.
+
+#### Playground
+- Autocompletion for Cycler, PathBlock, ProjectedPath, Object types, `mpi()`, `null`, and `Object` namespace methods with `pathblock` snippet template.
+- Line/column error highlighting in the code editor.
+- SEO-friendly static pages and theme toggle component.
+
+#### Documentation
+- Path Blocks documentation covering definition, drawing, projection, parametric sampling, and transforms.
+- Single-page markdown docs for AI/LLM consumption.
+- Blog post: *SEO Pages and Cloudflare Workers Routing*.
+- `Content-Signal` directive added to `robots.txt`.
+
+### Fixed
+
+#### Playground
+- Style block syntax in layer autocomplete and TextLayer widget.
+- Autosave data loss when navigating away from workspace.
+
+### Changed
+
+#### Playground
+- Cmd/Ctrl+S now saves immediately instead of exporting.
+
 ## [Unreleased] - 2026-02-16
 
 ### Added
