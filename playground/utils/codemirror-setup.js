@@ -29,10 +29,12 @@ export const stdlibCompletions = [
 
   // Point constructor
   { label: 'Point', type: 'function', info: 'Point(x, y) - Create a 2D point' },
+  { label: 'Cycler', type: 'function', info: 'Cycler(array, shuffle?) - Create a round-robin cycler' },
 
   // Layer types
   { label: 'PathLayer', type: 'keyword', info: "PathLayer('name') - Path layer type for define" },
   { label: 'TextLayer', type: 'keyword', info: "TextLayer('name') - Text layer type for define" },
+  { label: 'null', type: 'keyword', info: 'null - Null literal' },
 
   // 1. Polar Coordinate functions
   { label: 'polarPoint', type: 'function', info: 'polarPoint(angle, distance) - Point at polar offset' },
@@ -64,6 +66,7 @@ export const stdlibCompletions = [
   { label: 'PI', type: 'function', info: 'PI() - Returns π' },
   { label: 'E', type: 'function', info: 'E() - Returns e' },
   { label: 'TAU', type: 'function', info: 'TAU() - Returns 2π' },
+  { label: 'mpi', type: 'function', info: 'mpi(x) - Multiply by π' },
 
   // 5. Angle Conversion
   { label: 'deg', type: 'function', info: 'deg(radians) - Convert radians to degrees' },
@@ -110,6 +113,9 @@ export const stdlibCompletions = [
   { label: 'pow', type: 'function', info: 'pow(x, y) - x raised to power y' },
   { label: 'sqrt', type: 'function', info: 'sqrt(x) - Square root' },
   { label: 'cbrt', type: 'function', info: 'cbrt(x) - Cube root' },
+
+  // 12. Object namespace
+  { label: 'Object', type: 'variable', info: 'Object - Object namespace for static methods' },
 ];
 
 // Snippet templates for autocomplete
@@ -191,7 +197,18 @@ export const snippetTemplates = [
     template: "tspan(0, 20)`content`",
     cursorOffset: 13,
   },
+  {
+    label: 'pathblock',
+    type: 'keyword',
+    info: 'path block - reusable path data',
+    template: 'let name = @{\n  \n}',
+    cursorOffset: 4,
+  },
 ];
+
+// Shared property/method names for PathBlock and ProjectedPath completions
+const pathSamplingProps = ['length', 'vertices', 'subPathCount', 'subPathCommands', 'startPoint', 'endPoint'];
+const pathSamplingMethods = ['get', 'tangent', 'normal', 'partition', 'reverse', 'boundingBox', 'offset', 'mirror', 'rotateAtVertexIndex', 'scale'];
 
 // Completion source for svg-path-extended
 export function svgPathCompletions(context) {
@@ -308,6 +325,22 @@ export function svgPathCompletions(context) {
           };
         }
       }
+
+      // PathBlock/ProjectedPath startPoint.x/y and endPoint.x/y
+      if (prop === 'startPoint' || prop === 'endPoint') {
+        const doc = context.state.doc.toString();
+        const pathVarRegex = new RegExp(`let\\s+${obj}\\s*=\\s*(@\\s*\\{|\\w+\\.(draw|project)\\s*\\()`);
+        if (pathVarRegex.test(doc)) {
+          return {
+            from,
+            options: [
+              { label: 'x', type: 'property', info: `${obj}.${prop}.x - X coordinate`, boost: 2 },
+              { label: 'y', type: 'property', info: `${obj}.${prop}.y - Y coordinate`, boost: 1 },
+            ],
+            validFor: /^\w*$/,
+          };
+        }
+      }
     }
   }
 
@@ -327,6 +360,35 @@ export function svgPathCompletions(context) {
             { label: 'transform', type: 'property', info: 'ctx.transform - Layer transform (translate, rotate, scale)', boost: 3 },
             { label: 'tangentAngle', type: 'property', info: 'ctx.tangentAngle - Current tangent direction (radians)', boost: 2 },
             { label: 'commands', type: 'property', info: 'ctx.commands - Array of executed commands', boost: 1 },
+          ],
+          validFor: /^\w*$/,
+        };
+      }
+      if (obj === 'Object') {
+        const from = singleProp.from + obj.length + 1;
+        return {
+          from,
+          options: [
+            { label: 'keys()', type: 'function', info: 'Object.keys(obj) - Array of key names', boost: 4,
+              apply: (view, completion, from, to) => {
+                view.dispatch({ changes: { from, to, insert: 'keys()' }, selection: { anchor: from + 5 } });
+              },
+            },
+            { label: 'values()', type: 'function', info: 'Object.values(obj) - Array of values', boost: 3,
+              apply: (view, completion, from, to) => {
+                view.dispatch({ changes: { from, to, insert: 'values()' }, selection: { anchor: from + 7 } });
+              },
+            },
+            { label: 'entries()', type: 'function', info: 'Object.entries(obj) - Array of [key, value] pairs', boost: 2,
+              apply: (view, completion, from, to) => {
+                view.dispatch({ changes: { from, to, insert: 'entries()' }, selection: { anchor: from + 8 } });
+              },
+            },
+            { label: 'delete()', type: 'function', info: 'Object.delete(obj, key) - Remove a key', boost: 1,
+              apply: (view, completion, from, to) => {
+                view.dispatch({ changes: { from, to, insert: 'delete()' }, selection: { anchor: from + 7 } });
+              },
+            },
           ],
           validFor: /^\w*$/,
         };
@@ -417,6 +479,89 @@ export function svgPathCompletions(context) {
           options: [
             { label: 'point', type: 'property', info: `${obj}.point - Endpoint {x, y}`, boost: 3 },
             { label: 'angle', type: 'property', info: `${obj}.angle - Tangent angle (radians)`, boost: 2 },
+          ],
+          validFor: /^\w*$/,
+        };
+      }
+
+      // Check for Cycler variables (let x = Cycler(...))
+      const cyclerVarRegex = new RegExp(`let\\s+${obj}\\s*=\\s*Cycler\\s*\\(`);
+      if (cyclerVarRegex.test(doc)) {
+        return {
+          from,
+          options: [
+            { label: 'length', type: 'property', info: `${obj}.length - Number of items`, boost: 2 },
+            { label: 'pick()', type: 'function', info: `${obj}.pick() - Next element in cycle order`, boost: 1 },
+          ],
+          validFor: /^\w*$/,
+        };
+      }
+
+      // Check for PathBlock variables (let x = @{ ... })
+      const pathBlockVarRegex = new RegExp(`let\\s+${obj}\\s*=\\s*@\\s*\\{`);
+      if (pathBlockVarRegex.test(doc)) {
+        let boost = pathSamplingProps.length + pathSamplingMethods.length + 2;
+        const options = [];
+        // PathBlock-only methods
+        options.push({
+          label: 'draw()', type: 'function', info: `${obj}.draw() - Draw the path block`, boost: boost--,
+          apply: (view, completion, from, to) => {
+            view.dispatch({ changes: { from, to, insert: 'draw()' }, selection: { anchor: from + 5 } });
+          },
+        });
+        options.push({
+          label: 'project()', type: 'function', info: `${obj}.project(t) - Project a point onto the path`, boost: boost--,
+          apply: (view, completion, from, to) => {
+            view.dispatch({ changes: { from, to, insert: 'project()' }, selection: { anchor: from + 8 } });
+          },
+        });
+        // Shared properties
+        for (const p of pathSamplingProps) {
+          options.push({ label: p, type: 'property', info: `${obj}.${p}`, boost: boost-- });
+        }
+        // Shared methods
+        for (const m of pathSamplingMethods) {
+          options.push({
+            label: `${m}()`, type: 'function', info: `${obj}.${m}()`, boost: boost--,
+            apply: (view, completion, from, to) => {
+              view.dispatch({ changes: { from, to, insert: `${m}()` }, selection: { anchor: from + m.length + 1 } });
+            },
+          });
+        }
+        return { from, options, validFor: /^\w*$/ };
+      }
+
+      // Check for ProjectedPath variables (let x = var.draw() or let x = var.project(...))
+      const projectedPathVarRegex = new RegExp(`let\\s+${obj}\\s*=\\s*\\w+\\.(draw|project)\\s*\\(`);
+      if (projectedPathVarRegex.test(doc)) {
+        let boost = pathSamplingProps.length + pathSamplingMethods.length;
+        const options = [];
+        for (const p of pathSamplingProps) {
+          options.push({ label: p, type: 'property', info: `${obj}.${p}`, boost: boost-- });
+        }
+        for (const m of pathSamplingMethods) {
+          options.push({
+            label: `${m}()`, type: 'function', info: `${obj}.${m}()`, boost: boost--,
+            apply: (view, completion, from, to) => {
+              view.dispatch({ changes: { from, to, insert: `${m}()` }, selection: { anchor: from + m.length + 1 } });
+            },
+          });
+        }
+        return { from, options, validFor: /^\w*$/ };
+      }
+
+      // Check for Object variables (let x = { ... })
+      const objectVarRegex = new RegExp(`let\\s+${obj}\\s*=\\s*\\{`);
+      if (objectVarRegex.test(doc)) {
+        return {
+          from,
+          options: [
+            { label: 'length', type: 'property', info: `${obj}.length - Property count`, boost: 2 },
+            { label: 'has()', type: 'function', info: `${obj}.has(key) - Check if key exists`, boost: 1,
+              apply: (view, completion, from, to) => {
+                view.dispatch({ changes: { from, to, insert: 'has()' }, selection: { anchor: from + 4 } });
+              },
+            },
           ],
           validFor: /^\w*$/,
         };
