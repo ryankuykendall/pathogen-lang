@@ -40,10 +40,11 @@ import {
   transformStateToSvg,
 } from './context';
 import { formatNum, setNumberFormat, resetNumberFormat } from './format';
+import { sanitizeSVGFragment } from './svg-sanitize';
 import { calculateCommandLength, calculatePathLength, samplePathAtFraction, partitionPath } from './sampling';
 import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands } from './path-transforms';
 
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue;
 
 /**
  * Represents an array value (reference semantics)
@@ -81,6 +82,20 @@ export interface CyclerValue {
 
 export function isCyclerValue(value: Value): value is CyclerValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CyclerValue';
+}
+
+/**
+ * Represents a sanitized SVG document fragment for injection into the workspace
+ */
+export interface SVGFragmentValue {
+  type: 'SVGFragmentValue';
+  defsContent: string;
+  visualContent: string;
+  rawContent: string;
+}
+
+export function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
 }
 
 /**
@@ -224,7 +239,16 @@ export interface TextLayerState {
   textElements: TextElement[];
 }
 
-export type LayerState = PathLayerState | TextLayerState;
+export interface FragmentLayerState {
+  name: string;
+  layerType: 'FragmentLayer';
+  isDefault: false;
+  styles: LayerStyle;
+  defsContent: string;
+  visualContent: string;
+}
+
+export type LayerState = PathLayerState | TextLayerState | FragmentLayerState;
 
 export interface LayerReference {
   type: 'LayerReference';
@@ -246,9 +270,11 @@ export interface TransformPropertyReference {
 
 export interface LayerOutput {
   name: string;
-  type: 'path' | 'text';
-  data: string;                    // Path: d-attribute. Text: concatenated plain text.
+  type: 'path' | 'text' | 'fragment';
+  data: string;                    // Path: d-attribute. Text: concatenated plain text. Fragment: empty.
   textElements?: TextElement[];    // Only present when type === 'text'
+  fragmentDefs?: string;           // Only present when type === 'fragment'
+  fragmentVisuals?: string;        // Only present when type === 'fragment'
   styles: Record<string, string>;  // SVG attribute name → value
   isDefault: boolean;
   transform?: string;              // SVG transform attribute value
@@ -1363,6 +1389,36 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // SVGFragmentValue methods
+  if (isSVGFragmentValue(obj)) {
+    switch (expr.method) {
+      case 'insert': {
+        if (expr.args.length !== 0) throw new Error('insert() expects 0 arguments');
+        if (!scope.evalState) throw new Error('insert() requires evaluation context');
+        // Generate unique fragment layer name
+        let counter = 1;
+        let name = `__fragment_${counter}`;
+        while (scope.evalState.layers.has(name)) {
+          counter++;
+          name = `__fragment_${counter}`;
+        }
+        const fragmentLayer: FragmentLayerState = {
+          name,
+          layerType: 'FragmentLayer',
+          isDefault: false as const,
+          styles: {},
+          defsContent: obj.defsContent,
+          visualContent: obj.visualContent,
+        };
+        scope.evalState.layers.set(name, fragmentLayer);
+        scope.evalState.layerOrder.push(name);
+        return 0;
+      }
+      default:
+        throw new Error(`Unknown SVGDocumentFragment method: ${expr.method}`);
+    }
+  }
+
   // ObjectNamespace methods (Object.keys, Object.values, Object.entries, Object.delete)
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ObjectNamespace') {
     const args = expr.args.map(a => evaluateExpression(a, scope));
@@ -1507,6 +1563,12 @@ function formatValueForDisplay(val: Value): string {
   }
   if (isCyclerValue(val)) {
     return `Cycler(${val.elements.length} items, index ${val.index})`;
+  }
+  if (isSVGFragmentValue(val)) {
+    const preview = val.rawContent.length > 60
+      ? val.rawContent.slice(0, 60) + '...'
+      : val.rawContent;
+    return `SVGDocumentFragment(${preview})`;
   }
   if (isArrayValue(val)) {
     return '[' + val.elements.map(formatValueForDisplay).join(', ') + ']';
@@ -1854,6 +1916,24 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     }
 
     return { type: 'CyclerValue' as const, elements, index: 0 };
+  }
+
+  // Handle SVGDocumentFragment() constructor
+  if (call.name === 'SVGDocumentFragment') {
+    if (call.args.length !== 1) {
+      throw new Error(`SVGDocumentFragment() expects 1 argument, got ${call.args.length}`);
+    }
+    const arg = evaluateExpression(call.args[0], scope);
+    if (typeof arg !== 'string') {
+      throw new Error('SVGDocumentFragment() argument must be a string');
+    }
+    const result = sanitizeSVGFragment(arg);
+    return {
+      type: 'SVGFragmentValue' as const,
+      defsContent: result.defsContent,
+      visualContent: result.visualContent,
+      rawContent: result.rawContent,
+    };
   }
 
   // Check if it's a context-aware function
@@ -2919,7 +2999,18 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     // Add defined layers in definition order
     for (const name of evalState.layerOrder) {
       const layer = evalState.layers.get(name)!;
-      if (layer.layerType === 'TextLayer') {
+      if (layer.layerType === 'FragmentLayer') {
+        const fragmentLayer = layer as FragmentLayerState;
+        layers.push({
+          name: layer.name,
+          type: 'fragment',
+          data: '',
+          fragmentDefs: fragmentLayer.defsContent,
+          fragmentVisuals: fragmentLayer.visualContent,
+          styles: { ...layer.styles },
+          isDefault: false,
+        });
+      } else if (layer.layerType === 'TextLayer') {
         const textLayer = layer as TextLayerState;
         const allText = textLayer.textElements
           .map(te => te.children.map(c => c.text).join(''))

@@ -108,8 +108,47 @@ export class SvgPreviewPane extends HTMLElement {
       // Clear existing layer paths
       layersGroup.innerHTML = '';
 
+      // Clean up previous fragment defs
+      const defsEl = this.shadowRoot.querySelector('#preview defs');
+      if (defsEl) {
+        for (const old of defsEl.querySelectorAll('[data-fragment-layer]')) {
+          old.remove();
+        }
+      }
+
       const SVG_NS = 'http://www.w3.org/2000/svg';
       for (const layer of layers) {
+        // Fragment layers: inject defs and append visual content
+        if (layer.type === 'fragment') {
+          if (layer.fragmentDefs && defsEl) {
+            const defsDoc = new DOMParser().parseFromString(
+              `<svg xmlns="http://www.w3.org/2000/svg"><defs>${layer.fragmentDefs}</defs></svg>`,
+              'image/svg+xml'
+            );
+            const parsedDefs = defsDoc.querySelector('defs');
+            if (parsedDefs) {
+              for (const child of Array.from(parsedDefs.children)) {
+                const imported = document.importNode(child, true);
+                imported.setAttribute('data-fragment-layer', layer.name);
+                defsEl.appendChild(imported);
+              }
+            }
+          }
+          if (layer.fragmentVisuals) {
+            const visualDoc = new DOMParser().parseFromString(
+              `<svg xmlns="http://www.w3.org/2000/svg">${layer.fragmentVisuals}</svg>`,
+              'image/svg+xml'
+            );
+            const visualRoot = visualDoc.documentElement;
+            const wrapper = document.createElementNS(SVG_NS, 'g');
+            wrapper.dataset.layerName = layer.name;
+            for (const child of Array.from(visualRoot.children)) {
+              wrapper.appendChild(document.importNode(child, true));
+            }
+            layersGroup.appendChild(wrapper);
+          }
+          continue;
+        }
         if (layer.type === 'text' && layer.textElements) {
           for (const te of layer.textElements) {
             const textEl = document.createElementNS(SVG_NS, 'text');

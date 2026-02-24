@@ -974,4 +974,99 @@ describe('Multi-Layer Support', () => {
       });
     });
   });
+
+  describe('SVGDocumentFragment', () => {
+    it('creates a fragment from a template literal', () => {
+      const result = compile(`
+        let fragment = SVGDocumentFragment(\`<rect width="100" height="100" fill="red"/>\`);
+        fragment.insert()
+      `);
+      expect(result.layers.some(l => l.type === 'fragment')).toBe(true);
+    });
+
+    it('separates defs from visual content', () => {
+      const result = compile(`
+        let fragment = SVGDocumentFragment(\`
+          <defs>
+            <filter id="blur"><feGaussianBlur stdDeviation="5"/></filter>
+          </defs>
+          <rect width="100" height="100" fill="red"/>
+        \`);
+        fragment.insert()
+      `);
+      const frag = result.layers.find(l => l.type === 'fragment')!;
+      expect(frag.fragmentDefs).toContain('filter');
+      expect(frag.fragmentDefs).toContain('feGaussianBlur');
+      expect(frag.fragmentVisuals).toContain('rect');
+      expect(frag.fragmentVisuals).not.toContain('filter');
+    });
+
+    it('rejects <script> tags', () => {
+      expect(() => compile(`
+        SVGDocumentFragment(\`<script>alert(1)</script>\`);
+      `)).toThrow('<script> elements are not allowed');
+    });
+
+    it('rejects on* event handlers', () => {
+      expect(() => compile(`
+        SVGDocumentFragment(\`<rect onclick="alert(1)" width="10" height="10"/>\`);
+      `)).toThrow('on* event handler attributes are not allowed');
+    });
+
+    it('rejects malformed SVG (mismatched tags)', () => {
+      expect(() => compile(`
+        SVGDocumentFragment(\`<g><rect/></text>\`);
+      `)).toThrow('malformed SVG');
+    });
+
+    it('respects layer ordering', () => {
+      const result = compile(`
+        define PathLayer('bg') \${}
+        let frag = SVGDocumentFragment(\`<rect width="100" height="100"/>\`);
+        frag.insert()
+        define PathLayer('fg') \${}
+        layer('bg').apply { M 0 0 }
+        layer('fg').apply { M 10 10 }
+      `);
+      expect(result.layers.map(l => l.type)).toEqual(['path', 'fragment', 'path']);
+      expect(result.layers[0].name).toBe('bg');
+      expect(result.layers[1].type).toBe('fragment');
+      expect(result.layers[2].name).toBe('fg');
+    });
+
+    it('supports multiple fragment insertions', () => {
+      const result = compile(`
+        let f1 = SVGDocumentFragment(\`<rect width="50" height="50"/>\`);
+        let f2 = SVGDocumentFragment(\`<circle cx="50" cy="50" r="25"/>\`);
+        f1.insert()
+        f2.insert()
+      `);
+      const frags = result.layers.filter(l => l.type === 'fragment');
+      expect(frags).toHaveLength(2);
+      expect(frags[0].fragmentVisuals).toContain('rect');
+      expect(frags[1].fragmentVisuals).toContain('circle');
+    });
+
+    it('supports expression interpolation in template literal', () => {
+      const result = compile(`
+        let r = 25;
+        let frag = SVGDocumentFragment(\`<circle cx="50" cy="50" r="\${r}"/>\`);
+        frag.insert()
+      `);
+      const frag = result.layers.find(l => l.type === 'fragment')!;
+      expect(frag.fragmentVisuals).toContain('r="25"');
+    });
+
+    it('rejects non-string argument', () => {
+      expect(() => compile(`
+        SVGDocumentFragment(42);
+      `)).toThrow('argument must be a string');
+    });
+
+    it('rejects wrong argument count', () => {
+      expect(() => compile(`
+        SVGDocumentFragment(\`a\`, \`b\`);
+      `)).toThrow('expects 1 argument');
+    });
+  });
 });

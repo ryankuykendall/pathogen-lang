@@ -27,6 +27,7 @@ import type {
 } from '../parser/ast';
 import { stdlib, contextAwareFunctions } from '../stdlib';
 import { createPathContext, contextToObject, updateContextForCommand, setLastTangent, type PathContext } from './context';
+import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { samplePathAtFraction, partitionPath } from './sampling';
 import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands } from './path-transforms';
@@ -48,7 +49,18 @@ export interface AnnotatedOutput {
 }
 
 // Value types (same as main evaluator)
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue;
+
+export interface SVGFragmentValue {
+  type: 'SVGFragmentValue';
+  defsContent: string;
+  visualContent: string;
+  rawContent: string;
+}
+
+function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
+}
 
 export interface ArrayValue {
   type: 'ArrayValue';
@@ -1046,6 +1058,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // SVGFragmentValue methods
+  if (isSVGFragmentValue(obj)) {
+    if (expr.method === 'insert') {
+      if (expr.args.length !== 0) throw new Error('insert() expects 0 arguments');
+      return 0; // No-op in annotated mode
+    }
+    throw new Error(`Unknown SVGDocumentFragment method: ${expr.method}`);
+  }
+
   // ObjectValue methods
   if (isObjectValue(obj)) {
     if (expr.method === 'has') {
@@ -1427,6 +1448,24 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     // Evaluate args to check for errors, but don't produce output in annotated mode
     call.args.forEach((arg) => evaluateExpression(arg, scope));
     return { type: 'PathSegment' as const, value: '' };
+  }
+
+  // Handle SVGDocumentFragment() — evaluate args and call sanitizer
+  if (call.name === 'SVGDocumentFragment') {
+    if (call.args.length !== 1) {
+      throw new Error(`SVGDocumentFragment() expects 1 argument, got ${call.args.length}`);
+    }
+    const arg = evaluateExpression(call.args[0], scope);
+    if (typeof arg !== 'string') {
+      throw new Error('SVGDocumentFragment() argument must be a string');
+    }
+    const result = sanitizeSVGFragment(arg);
+    return {
+      type: 'SVGFragmentValue' as const,
+      defsContent: result.defsContent,
+      visualContent: result.visualContent,
+      rawContent: result.rawContent,
+    };
   }
 
   // Check if it's a context-aware function
