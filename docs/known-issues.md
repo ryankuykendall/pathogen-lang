@@ -231,6 +231,86 @@ Option 1 (user-provided API key in preferences) is the cleanest approach. It res
 
 ---
 
+## ISSUE-005: No auto-formatting / code formatter for the Playground editor
+
+**Discovered:** 2026-02-24 (during playground UX investigation)
+
+**Severity:** Low
+
+**Description:**
+
+The Playground uses CodeMirror 6 (loaded from esm.sh CDN) to edit svg-path-extended code. There is no code formatting beyond CodeMirror's built-in `indentOnInput()`. The goal is to add a "format code" capability similar to Prettier, but **Prettier cannot format this language out of the box** — its built-in parsers (babel, typescript, etc.) would fail on SVG path commands like `M 0 0 L 100 100`. Any solution must understand the svg-path-extended syntax.
+
+**Options Investigated:**
+
+### Option A: Prettier Plugin (Heavy)
+
+Write a Prettier plugin that adapts the existing Parsimmon parser for Prettier's pipeline.
+
+**What a Prettier plugin requires:**
+1. **Parser adapter** — Convert Parsimmon AST → Prettier-compatible AST with `locStart`/`locEnd` offsets on every node
+2. **Printer** — Convert AST → Prettier's Doc IR (`group`, `indent`, `line`, `hardline`, etc.) — this is the bulk of the work (~500-800 lines)
+3. **Comment attachment** — Tell Prettier how to associate comments with AST nodes (the parser already parses `Comment` nodes, but they'd need location info and parent/sibling association)
+4. **Browser loading** — Load via `prettier/standalone` + the plugin from CDN or bundled
+
+**Effort:** ~1-2 weeks. The printer alone is substantial — every AST node type (path commands, `for`, `if`, `fn`, `let`, `layer`, `text`, `tspan`, `define`, `apply`, `calc()`, style blocks, path blocks, etc.) needs a printing rule.
+
+**Pros:** Full Prettier experience — configurable print width, format-on-save, consistent with other editors.
+**Cons:** Heavy dependency (~1-2 MB loaded in browser), significant upfront investment, must maintain the plugin as the language evolves. Prettier plugins are designed for "real" languages — the DSL's path command syntax (space-separated args, single-letter commands) is awkward to model in Prettier's Doc IR.
+
+### Option B: AST-Based Custom Formatter (Medium)
+
+Write a standalone formatter that uses the existing parser: `parse(code) → AST → pretty-print`.
+
+**What this requires:**
+1. **Printer function** — Walk the AST and emit formatted text with proper indentation, line breaks, and spacing (~400-600 lines)
+2. **Comment preservation** — The parser must preserve comments with location info (needs verification — Parsimmon AST may drop or reorder comments)
+3. **Round-trip fidelity** — Formatting must not change program semantics (path command arguments must stay in order, `calc()` expressions preserved exactly)
+
+**Effort:** ~3-5 days. Simpler than a Prettier plugin because we control the output format directly — no Doc IR translation layer.
+
+**Pros:** No external dependency, full control, lightweight.
+**Cons:** Still significant work. Comment preservation is the hardest part — if the parser doesn't track comment positions relative to surrounding code, comments could be misplaced or lost. Must be maintained alongside parser changes.
+
+### Option C: Brace-Counting Indent Formatter (Light) — Recommended Starting Point
+
+Don't parse the code at all. Scan line-by-line, track `{ }` nesting depth, and reindent each line.
+
+**What this requires:**
+1. **Line scanner** (~100-200 lines) — For each line: strip leading whitespace, count net brace changes (opening `{` increases depth, closing `}` decreases), handle special cases (`${` style blocks, `@{` path blocks, string literals, comments), apply indentation = `depth * indentSize` spaces
+2. **CodeMirror integration** — A command that replaces the document with reindented text
+3. **UI trigger** — Keyboard shortcut (Shift+Alt+F) and/or toolbar button
+
+**Effort:** ~1 day.
+
+**Pros:** Simple, no dependencies, handles the most common formatting need (inconsistent indentation after copy-paste or rapid editing), zero risk of breaking code semantics (only whitespace changes), trivial to maintain.
+**Cons:** Only fixes indentation — won't reflow long lines, normalize spacing, or enforce one-statement-per-line. But for a DSL editor, consistent indentation is 80%+ of the formatting value.
+
+**Could be extended incrementally:** blank line normalization, trailing whitespace removal, consistent spacing around `=` in `let` declarations.
+
+**Impact:**
+
+1. **Poor editing experience:** After copy-pasting code or rapid editing, indentation becomes inconsistent with no way to fix it automatically
+2. **No standard tooling:** Unlike mainstream languages, there is no external formatter users can run
+
+**Current Workarounds:**
+
+1. Manually fix indentation
+2. CodeMirror's `indentOnInput()` handles new lines but does not reformat existing code
+
+**Recommended Long-term Solution:**
+
+**Start with Option C** (brace-counting indenter). It delivers the core formatting value with minimal effort and risk. If more sophisticated formatting is needed later, Option B (AST-based) can be built on top — the indenter stays useful as a fast path for simple cases. Option A (Prettier plugin) is not worth the investment unless the language becomes widely adopted and users expect Prettier integration in external editors.
+
+**Implementation plan for Option C:**
+
+| File | Changes |
+|------|---------|
+| `playground/utils/cm-format.js` | New file — brace-counting indent formatter + CodeMirror command |
+| `playground/components/code-editor-pane.js` | Add format keybinding (Shift+Alt+F), toolbar button, import extension |
+
+---
+
 ## Template for New Issues
 
 ```markdown
