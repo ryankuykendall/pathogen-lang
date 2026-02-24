@@ -1491,4 +1491,126 @@ describe('Path Blocks', () => {
       });
     });
   });
+
+  describe('context-aware functions emit relative commands', () => {
+    it('tangentArc emits relative a command inside PathBlock', () => {
+      const result = compilePath(`
+        let p = @{
+          l 20 0
+          tangentArc(20, 0.5pi)
+        };
+        M 100 100
+        p.draw()
+      `);
+      // Should NOT contain uppercase A with absolute coords
+      expect(result).not.toMatch(/A /);
+      // Should contain lowercase a (relative arc)
+      expect(result).toMatch(/a /);
+      // The path should start at 100,100 and all commands should be relative
+      expect(result).toContain('M 100 100');
+    });
+
+    it('tangentLine emits relative l command inside PathBlock', () => {
+      const result = compilePath(`
+        let p = @{
+          l 20 0
+          tangentLine(30)
+        };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).not.toMatch(/L /);
+      expect(result).toContain('M 100 100');
+      // All line commands should be relative
+      expect(result).toMatch(/l 20 0/);
+      expect(result).toMatch(/l 30 /);
+    });
+
+    it('polarLine emits relative l command inside PathBlock', () => {
+      const result = compilePath(`
+        let p = @{
+          polarLine(0, 30)
+        };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).not.toMatch(/L /);
+      expect(result).toMatch(/l /);
+      expect(result).toContain('M 100 100');
+    });
+
+    it('polarMove emits relative command inside PathBlock', () => {
+      const result = compilePath(`
+        let p = @{
+          polarMove(0, 30)
+        };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).not.toMatch(/L /);
+      expect(result).toMatch(/l /);
+      expect(result).toContain('M 100 100');
+    });
+
+    it('arcFromPolarOffset emits relative a command inside PathBlock', () => {
+      const result = compilePath(`
+        let p = @{
+          v 20
+          arcFromPolarOffset(1pi, 20, -0.5pi)
+        };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).not.toMatch(/A /);
+      expect(result).toMatch(/a /);
+      expect(result).toContain('M 100 100');
+    });
+
+    it('arcFromCenter emits relative commands inside PathBlock', () => {
+      const result = compilePath(`
+        let p = @{
+          arcFromCenter(0, 20, 20, -0.5pi, 0, 1)
+        };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).not.toMatch(/A /);
+      expect(result).toMatch(/a /);
+      expect(result).toContain('M 100 100');
+    });
+
+    it('tangentArc produces correct geometry when drawn at non-origin', () => {
+      // The key test: verify the arc endpoint is correct relative to draw position
+      const result = compile(`
+        let p = @{
+          l 20 0
+          tangentArc(20, 0.5pi)
+        };
+        moveTo(100, 100)
+        p.draw()
+        log(ctx.position.x);
+        log(ctx.position.y);
+      `);
+      // Position after: start at (100,100), l 20 0 → (120, 100), tangentArc(20, 90°) → (140, 120)
+      const x = parseFloat(result.logs[0].parts[0].value);
+      const y = parseFloat(result.logs[1].parts[0].value);
+      expect(x).toBeCloseTo(140, 0);
+      expect(y).toBeCloseTo(120, 0);
+    });
+
+    it('chained tangentArc + tangentLine in PathBlock all use relative coords', () => {
+      const result = compilePath(`
+        let p = @{
+          l 20 0
+          tangentArc(20, 0.5pi)
+          tangentLine(30)
+        };
+        M 50 50
+        p.draw()
+      `);
+      // No uppercase absolute commands should appear in the PathBlock portion
+      const afterMove = result.substring(result.indexOf('M 50 50') + 7);
+      expect(afterMove).not.toMatch(/[ALCHVQST] /);
+    });
+  });
 });

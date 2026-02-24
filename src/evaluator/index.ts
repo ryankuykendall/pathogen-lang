@@ -2111,6 +2111,7 @@ function requireNumber(value: Value, label: string): number {
  */
 function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope, loc?: { line?: number; column?: number }): Value {
   const ctx = scope.evalState!.pathContext;
+  const inPathBlock = !!(scope.evalState as EvaluationState & { _insidePathBlock?: boolean })._insidePathBlock;
 
   switch (name) {
     case 'polarPoint': {
@@ -2140,27 +2141,37 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
     case 'polarMove': {
       // polarMove(angle, distance, isMoveTo?) → PathSegment
       const [angle, distance, isMoveTo = 0] = args as number[];
-      const x = ctx.position.x + Math.cos(angle) * distance;
-      const y = ctx.position.y + Math.sin(angle) * distance;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      const x = ctx.position.x + dx;
+      const y = ctx.position.y + dy;
       const command = isMoveTo ? 'M' : 'L';
 
       updateContextForCommand(ctx, command, [x, y]);
       setLastTangent(ctx, angle);  // Set tangent to movement direction
       updateCtxVariable(scope);
 
+      if (inPathBlock) {
+        return { type: 'PathSegment' as const, value: `${command.toLowerCase()} ${formatNum(dx)} ${formatNum(dy)}` };
+      }
       return { type: 'PathSegment' as const, value: `${command} ${formatNum(x)} ${formatNum(y)}` };
     }
 
     case 'polarLine': {
       // polarLine(angle, distance) → PathSegment (always L command)
       const [angle, distance] = args as [number, number];
-      const x = ctx.position.x + Math.cos(angle) * distance;
-      const y = ctx.position.y + Math.sin(angle) * distance;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      const x = ctx.position.x + dx;
+      const y = ctx.position.y + dy;
 
       updateContextForCommand(ctx, 'L', [x, y]);
       setLastTangent(ctx, angle);
       updateCtxVariable(scope);
 
+      if (inPathBlock) {
+        return { type: 'PathSegment' as const, value: `l ${formatNum(dx)} ${formatNum(dy)}` };
+      }
       return { type: 'PathSegment' as const, value: `L ${formatNum(x)} ${formatNum(y)}` };
     }
 
@@ -2201,7 +2212,19 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
 
       // Generate path string - use L instead of M to keep path continuous
       let pathStr: string;
-      if (positionMatches) {
+      if (inPathBlock) {
+        if (positionMatches) {
+          const adx = endX - ctx.position.x;
+          const ady = endY - ctx.position.y;
+          pathStr = `a ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(adx)} ${formatNum(ady)}`;
+        } else {
+          const ldx = startX - ctx.position.x;
+          const ldy = startY - ctx.position.y;
+          const adx = endX - startX;
+          const ady = endY - startY;
+          pathStr = `l ${formatNum(ldx)} ${formatNum(ldy)} a ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(adx)} ${formatNum(ady)}`;
+        }
+      } else if (positionMatches) {
         // Current position is at arc start - just emit arc
         pathStr = `A ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(endX)} ${formatNum(endY)}`;
       } else {
@@ -2263,7 +2286,14 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       const tangentAngle = angleOfArc > 0 ? endAngle + Math.PI / 2 : endAngle - Math.PI / 2;
 
       // No M or L command - current position is guaranteed on circle
-      const pathStr = `A ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(endX)} ${formatNum(endY)}`;
+      let pathStr: string;
+      if (inPathBlock) {
+        const adx = endX - ctx.position.x;
+        const ady = endY - ctx.position.y;
+        pathStr = `a ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(adx)} ${formatNum(ady)}`;
+      } else {
+        pathStr = `A ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(endX)} ${formatNum(endY)}`;
+      }
 
       // Update context tracking
       parseAndTrackPathString(pathStr, scope);
@@ -2295,13 +2325,18 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       }
 
       const savedTangent = ctx.lastTangent;
-      const x = ctx.position.x + Math.cos(ctx.lastTangent) * length;
-      const y = ctx.position.y + Math.sin(ctx.lastTangent) * length;
+      const dx = Math.cos(ctx.lastTangent) * length;
+      const dy = Math.sin(ctx.lastTangent) * length;
+      const x = ctx.position.x + dx;
+      const y = ctx.position.y + dy;
 
       updateContextForCommand(ctx, 'L', [x, y]);
       setLastTangent(ctx, savedTangent);
       updateCtxVariable(scope);
 
+      if (inPathBlock) {
+        return { type: 'PathSegment' as const, value: `l ${formatNum(dx)} ${formatNum(dy)}` };
+      }
       return { type: 'PathSegment' as const, value: `L ${formatNum(x)} ${formatNum(y)}` };
     }
 
@@ -2336,7 +2371,14 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       const newTangent = sweepAngle >= 0 ? endAngle + Math.PI / 2 : endAngle - Math.PI / 2;
 
       // Generate path string
-      const pathStr = `A ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(endX)} ${formatNum(endY)}`;
+      let pathStr: string;
+      if (inPathBlock) {
+        const adx = endX - ctx.position.x;
+        const ady = endY - ctx.position.y;
+        pathStr = `a ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(adx)} ${formatNum(ady)}`;
+      } else {
+        pathStr = `A ${formatNum(radius)} ${formatNum(radius)} 0 ${largeArc} ${sweep} ${formatNum(endX)} ${formatNum(endY)}`;
+      }
 
       // Update context tracking
       parseAndTrackPathString(pathStr, scope);

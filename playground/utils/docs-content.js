@@ -277,7 +277,7 @@ L <span class="hljs-title function_">calc</span>(<span class="hljs-number">100</
 </tr>
 <tr>
 <td><code>&lt;&lt;</code></td>
-<td>Style block merge</td>
+<td>Style block merge / PathBlock concatenation</td>
 </tr>
 </tbody></table>
 <p>Operator precedence follows standard mathematical conventions.</p>
@@ -848,7 +848,24 @@ M <span class="hljs-title function_">calc</span>(<span class="hljs-title functio
 </tr>
 </tbody></table>
 <p><strong>Note</strong>: Random functions are not deterministic. Each call produces a different value.</p>
-<hr>
+<h3 id="stdlib-cycler">Cycler</h3>
+<p>A <code>Cycler</code> wraps an array and cycles through it sequentially via <code>.pick()</code>, returning to the beginning after reaching the end. Useful for deterministic round-robin assignment of colors, layer names, styles, etc.</p>
+<h4 id="stdlib-cyclerarray-shuffle">Cycler(array, shuffle?)</h4>
+<p>Creates a cycler from an array. If the optional <code>shuffle</code> argument is truthy, the array is shuffled once at construction (the shuffled order is stable across all cycles).</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Cycler</span>([<span class="hljs-string">&#x27;red&#x27;</span>, <span class="hljs-string">&#x27;green&#x27;</span>, <span class="hljs-string">&#x27;blue&#x27;</span>]);
+c.<span class="hljs-title function_">pick</span>()  <span class="hljs-comment">// &#x27;red&#x27;</span>
+c.<span class="hljs-title function_">pick</span>()  <span class="hljs-comment">// &#x27;green&#x27;</span>
+c.<span class="hljs-title function_">pick</span>()  <span class="hljs-comment">// &#x27;blue&#x27;</span>
+c.<span class="hljs-title function_">pick</span>()  <span class="hljs-comment">// &#x27;red&#x27; (wraps around)</span>
+</code></pre><pre><code class="hljs"><span class="hljs-comment">// Shuffled cycler — stable order across wraps</span>
+<span class="hljs-keyword">let</span> r = <span class="hljs-title class_">Cycler</span>([<span class="hljs-string">&#x27;a&#x27;</span>, <span class="hljs-string">&#x27;b&#x27;</span>, <span class="hljs-string">&#x27;c&#x27;</span>], <span class="hljs-literal">true</span>);
+</code></pre><h4 id="stdlib-pick">.pick()</h4>
+<p>Returns the next element in the cycle, advancing the internal index. Wraps around to the beginning after the last element.</p>
+<h4 id="stdlib-length">.length</h4>
+<p>Returns the number of items in the cycler.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Cycler</span>([<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>]);
+<span class="hljs-title function_">log</span>(c.<span class="hljs-property">length</span>);  <span class="hljs-comment">// 3</span>
+</code></pre><hr>
 <h2 id="stdlib-path-functions">Path Functions</h2>
 <p>These functions generate complete path segments.</p>
 <h3 id="stdlib-circlecx-cy-r">circle(cx, cy, r)</h3>
@@ -965,15 +982,22 @@ L p.<span class="hljs-property">x</span> p.<span class="hljs-property">y</span> 
 </tr>
 </tbody></table>
 <h3 id="stdlib-tangent-functions">Tangent Functions</h3>
-<p>These functions continue from the previous arc or polar command&#39;s direction.</p>
+<p>These functions continue from the previous drawing command&#39;s direction. Any path command that establishes a direction — including native SVG commands (<code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>) and stdlib path functions — sets a tangent that <code>tangentLine</code> and <code>tangentArc</code> can follow.</p>
+<p><code>M</code> (moveTo) clears the tangent since a move does not establish a direction.</p>
 <h4 id="stdlib-tangentlinelength">tangentLine(length)</h4>
-<p>Draws a line continuing in the tangent direction from the previous arc or polar command.</p>
+<p>Draws a line continuing in the tangent direction from the previous command.</p>
 <pre><code class="hljs"><span class="hljs-title function_">arcFromPolarOffset</span>(<span class="hljs-number">0</span>, <span class="hljs-number">50</span>, 90deg)
 <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">30</span>)  <span class="hljs-comment">// Continues in the arc&#x27;s exit direction</span>
+</code></pre><p>After native SVG commands:</p>
+<pre><code class="hljs">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>  L <span class="hljs-number">150</span> <span class="hljs-number">100</span>
+<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">30</span>)  <span class="hljs-comment">// Continues rightward to (180, 100)</span>
 </code></pre><h4 id="stdlib-tangentarcradius-sweepangle">tangentArc(radius, sweepAngle)</h4>
-<p>Draws an arc continuing tangent to the previous arc or polar command.</p>
+<p>Draws an arc continuing tangent to the previous command.</p>
 <pre><code class="hljs"><span class="hljs-title function_">arcFromPolarOffset</span>(<span class="hljs-number">0</span>, <span class="hljs-number">50</span>, 90deg)
 <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">30</span>, 45deg)  <span class="hljs-comment">// Smooth continuation with a smaller arc</span>
+</code></pre><p>After native SVG commands:</p>
+<pre><code class="hljs">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>  L <span class="hljs-number">150</span> <span class="hljs-number">100</span>
+<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">30</span>, 90deg)  <span class="hljs-comment">// Smooth arc curving down from the line&#x27;s endpoint</span>
 </code></pre><hr>
 <h2 id="stdlib-using-functions-inside-calc">Using Functions Inside calc()</h2>
 <p>Math functions can be used inside <code>calc()</code>:</p>
@@ -1665,6 +1689,16 @@ r.<span class="hljs-title function_">draw</span>()
   M <span class="hljs-number">100</span> <span class="hljs-number">100</span>
   r.<span class="hljs-title function_">draw</span>()
 }
+</code></pre><h3 id="path-blocks-scalesx-sy-pathblock-projectedpath"><code>scale(sx, sy)</code> → PathBlock / ProjectedPath</h3>
+<p>Scales the path from its start point. <code>sx</code> scales x-coordinates, <code>sy</code> scales y-coordinates.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">30</span> };
+<span class="hljs-keyword">let</span> doubled = p.<span class="hljs-title function_">scale</span>(<span class="hljs-number">2</span>, <span class="hljs-number">2</span>);      <span class="hljs-comment">// endPoint (100, 60)</span>
+<span class="hljs-keyword">let</span> wide = p.<span class="hljs-title function_">scale</span>(<span class="hljs-number">3</span>, <span class="hljs-number">1</span>);         <span class="hljs-comment">// endPoint (150, 30)</span>
+<span class="hljs-keyword">let</span> flipped = p.<span class="hljs-title function_">scale</span>(-<span class="hljs-number">1</span>, <span class="hljs-number">1</span>);     <span class="hljs-comment">// mirror across y-axis</span>
+</code></pre><p>Uniform scaling (<code>sx == sy</code>) preserves shape and scales arc radii proportionally. Non-uniform scaling (<code>sx != sy</code>) performs full ellipse eigendecomposition to compute new arc radii and rotation. Negative scale values flip the arc sweep flag (reflection reverses chirality).</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> arc = @{ a <span class="hljs-number">25</span> <span class="hljs-number">25</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">50</span> <span class="hljs-number">0</span> };
+<span class="hljs-keyword">let</span> wide = arc.<span class="hljs-title function_">scale</span>(<span class="hljs-number">2</span>, <span class="hljs-number">1</span>);       <span class="hljs-comment">// stretched elliptical arc</span>
+<span class="hljs-keyword">let</span> big = arc.<span class="hljs-title function_">scale</span>(<span class="hljs-number">3</span>, <span class="hljs-number">3</span>);        <span class="hljs-comment">// uniform: radii tripled</span>
 </code></pre><h3 id="path-blocks-transforms-on-projectedpath">Transforms on ProjectedPath</h3>
 <p>Projected paths return results in absolute coordinates:</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> };
@@ -1680,14 +1714,30 @@ r.<span class="hljs-title function_">draw</span>()
 <span class="hljs-keyword">let</span> m = proj.<span class="hljs-title function_">mirror</span>(<span class="hljs-number">0.</span>5pi);
 <span class="hljs-comment">// Mirrors across vertical line through (100, 100)</span>
 <span class="hljs-comment">// startPoint stays at (100, 100), endPoint moves to (50, 100)</span>
-</code></pre><h2 id="path-blocks-implementation-phases">Implementation Phases</h2>
-<p>Path Blocks are being implemented in phases:</p>
-<ul>
-<li><strong>Phase 1</strong>: Core definition, <code>draw()</code>, <code>project()</code>, basic properties</li>
-<li><strong>Phase 2</strong>: Parametric sampling — <code>get(t)</code>, <code>tangent(t)</code>, <code>normal(t)</code>, <code>partition(n)</code></li>
-<li><strong>Phase 3</strong>: Transforms — <code>reverse()</code>, <code>offset(distance)</code>, <code>boundingBox()</code></li>
-<li><strong>Phase 4</strong> (current): Affine transforms — <code>mirror(angle)</code>, <code>rotateAtVertexIndex(index, angle)</code></li>
-</ul>
+</code></pre><p>For <code>scale()</code> on a ProjectedPath, the scale center is the projection&#39;s start point:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">30</span> };
+<span class="hljs-keyword">let</span> proj = p.<span class="hljs-title function_">project</span>(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>);
+<span class="hljs-keyword">let</span> s = proj.<span class="hljs-title function_">scale</span>(<span class="hljs-number">2</span>, <span class="hljs-number">2</span>);
+<span class="hljs-comment">// startPoint stays at (10, 20), endPoint moves to (110, 80)</span>
+</code></pre><h2 id="path-blocks-concatenation">Concatenation (<code>&lt;&lt;</code>)</h2>
+<p>The <code>&lt;&lt;</code> operator joins two PathBlocks end-to-end. The right path&#39;s relative commands continue from where the left path ends.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> };
+<span class="hljs-keyword">let</span> b = @{ v <span class="hljs-number">30</span> };
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">calc</span>(a &lt;&lt; b);               <span class="hljs-comment">// endPoint (50, 30)</span>
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+c.<span class="hljs-title function_">draw</span>()                             <span class="hljs-comment">// draws &quot;h 50 v 30&quot;</span>
+</code></pre><p>Chaining works naturally since <code>&lt;&lt;</code> is left-associative and the result is a PathBlock:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> };
+<span class="hljs-keyword">let</span> b = @{ v <span class="hljs-number">30</span> };
+<span class="hljs-keyword">let</span> d = <span class="hljs-title function_">calc</span>(a &lt;&lt; b &lt;&lt; a);          <span class="hljs-comment">// endPoint (100, 30)</span>
+</code></pre><p>Self-concatenation repeats the path:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">50</span> };
+<span class="hljs-keyword">let</span> doubled = <span class="hljs-title function_">calc</span>(p &lt;&lt; p);         <span class="hljs-comment">// endPoint (100, 0)</span>
+</code></pre><p>Concatenated paths support all PathBlock methods — draw, project, sampling, and transforms:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> combined = <span class="hljs-title function_">calc</span>(a &lt;&lt; b);
+<span class="hljs-keyword">let</span> rev = combined.<span class="hljs-title function_">reverse</span>();
+<span class="hljs-keyword">let</span> mid = combined.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
+</code></pre><p>The <code>&lt;&lt;</code> operator also works for <a href="syntax.md#style-blocks">style block merging</a>. The operand types must match — mixing PathBlocks and style blocks throws an error.</p>
 `;
 
 export const debug = `<h1 id="debug-debug-console">Debug &amp; Console</h1>
@@ -2597,6 +2647,26 @@ export const tocData = JSON.parse(`[
         "level": 3
       },
       {
+        "id": "stdlib-cycler",
+        "title": "Cycler",
+        "level": 3
+      },
+      {
+        "id": "stdlib-cyclerarray-shuffle",
+        "title": "Cycler(array, shuffle?)",
+        "level": 4
+      },
+      {
+        "id": "stdlib-pick",
+        "title": ".pick()",
+        "level": 4
+      },
+      {
+        "id": "stdlib-length",
+        "title": ".length",
+        "level": 4
+      },
+      {
         "id": "stdlib-path-functions",
         "title": "Path Functions",
         "level": 2
@@ -3039,13 +3109,18 @@ export const tocData = JSON.parse(`[
         "level": 3
       },
       {
+        "id": "path-blocks-scalesx-sy-pathblock-projectedpath",
+        "title": "scale(sx, sy) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
         "id": "path-blocks-transforms-on-projectedpath",
         "title": "Transforms on ProjectedPath",
         "level": 3
       },
       {
-        "id": "path-blocks-implementation-phases",
-        "title": "Implementation Phases",
+        "id": "path-blocks-concatenation",
+        "title": "Concatenation (<<)",
         "level": 2
       }
     ]
