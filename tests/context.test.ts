@@ -758,7 +758,7 @@ describe('Path Context Tracking', () => {
           M 100 100
           tangentLine(30)
         `);
-      }).toThrow('tangentLine requires a previous arc or polar command');
+      }).toThrow('tangentLine requires a previous path command that establishes direction');
     });
 
     it('works after arcFromCenter', () => {
@@ -820,7 +820,7 @@ describe('Path Context Tracking', () => {
           M 100 100
           tangentArc(20, 90deg)
         `);
-      }).toThrow('tangentArc requires a previous arc or polar command');
+      }).toThrow('tangentArc requires a previous path command that establishes direction');
     });
   });
 
@@ -856,6 +856,415 @@ describe('Path Context Tracking', () => {
       // Two tangentLines of 40 each should move 80px left total
       expect(result.context.position.x).toBeCloseTo(50 - 80, 5);
       expect(result.context.position.y).toBeCloseTo(80, 5);
+    });
+  });
+
+  describe('lastTangent from native commands', () => {
+    function getTangentFromLog(result: { logs: { parts: { value: string }[] }[] }): number {
+      return parseFloat(result.logs[0].parts[0].value);
+    }
+
+    it('L sets tangent rightward', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('L sets tangent diagonal', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 50
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 4, 5);
+    });
+
+    it('L sets tangent upward', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 0 -50
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(-Math.PI / 2, 5);
+    });
+
+    it('H sets tangent positive', () => {
+      const result = compileWithContext(`
+        M 0 0
+        H 50
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('H sets tangent negative', () => {
+      const result = compileWithContext(`
+        M 50 0
+        H -50
+        log(ctx.lastTangent)
+      `);
+      // H -50 means go to x=-50, which is leftward from x=50
+      expect(getTangentFromLog(result)).toBeCloseTo(Math.PI, 5);
+    });
+
+    it('V sets tangent positive (down)', () => {
+      const result = compileWithContext(`
+        M 0 0
+        V 50
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    it('V sets tangent negative (up)', () => {
+      const result = compileWithContext(`
+        M 0 0
+        V -50
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(-Math.PI / 2, 5);
+    });
+
+    it('C sets tangent from CP2 to endpoint', () => {
+      // Cubic with CP2 at (40, 20), endpoint at (50, 20) → tangent rightward
+      const result = compileWithContext(`
+        M 0 0
+        C 10 0 40 20 50 20
+        log(ctx.lastTangent)
+      `);
+      // Direction from (40, 20) to (50, 20) is rightward (0)
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('Q sets tangent from CP to endpoint', () => {
+      // Quadratic with CP at (25, 50), endpoint at (50, 0) → tangent from (25,50) to (50,0)
+      const result = compileWithContext(`
+        M 0 0
+        Q 25 50 50 0
+        log(ctx.lastTangent)
+      `);
+      // Direction from (25, 50) to (50, 0) is atan2(-50, 25)
+      expect(getTangentFromLog(result)).toBeCloseTo(Math.atan2(-50, 25), 5);
+    });
+
+    it('S sets tangent from CP2 to endpoint', () => {
+      const result = compileWithContext(`
+        M 0 0
+        C 10 0 20 0 30 0
+        S 50 20 60 20
+        log(ctx.lastTangent)
+      `);
+      // S: CP2 at (50, 20), endpoint at (60, 20) → direction is rightward (0)
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('A sets tangent at arc endpoint', () => {
+      // Semicircular arc from (0,0) to (100,0) with radius 50 sweep=1
+      const result = compileWithContext(`
+        M 0 0
+        A 50 50 0 0 1 100 0
+        log(ctx.lastTangent)
+      `);
+      // Verify the tangent is defined and is a finite number
+      const tangent = getTangentFromLog(result);
+      expect(isFinite(tangent)).toBe(true);
+    });
+
+    it('Z sets tangent toward subpath start', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 100 0
+        L 100 100
+        Z
+        log(ctx.lastTangent)
+      `);
+      // Z goes from (100, 100) back to (0, 0)
+      // Direction: atan2(0-100, 0-100) = atan2(-100, -100)
+      expect(getTangentFromLog(result)).toBeCloseTo(Math.atan2(-100, -100), 5);
+    });
+
+    it('M clears tangent', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        M 100 100
+      `);
+      // After M, lastTangent should be cleared
+      expect(result.context.lastTangent).toBeUndefined();
+    });
+
+    it('M then tangentArc throws', () => {
+      expect(() => {
+        compileWithContext(`
+          M 0 0
+          L 50 0
+          M 100 100
+          tangentArc(20, 90deg)
+        `);
+      }).toThrow(/tangentArc requires a previous path command that establishes direction/);
+    });
+
+    it('zero-length L preserves previous tangent', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        L 50 0
+        log(ctx.lastTangent)
+      `);
+      // Zero-length L should preserve previous tangent (0, rightward)
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('relative l sets tangent', () => {
+      const result = compileWithContext(`
+        M 10 10
+        l 20 0
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('relative h sets tangent', () => {
+      const result = compileWithContext(`
+        M 10 10
+        h 20
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
+    });
+
+    it('relative v sets tangent', () => {
+      const result = compileWithContext(`
+        M 10 10
+        v 20
+        log(ctx.lastTangent)
+      `);
+      expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 2, 5);
+    });
+  });
+
+  describe('tangentArc after native SVG commands', () => {
+    it('works after L rightward', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        tangentArc(20, 90deg)
+      `);
+      // After L rightward (tangent=0), tangentArc with positive sweep curves down
+      // Center at (50, 20), start angle = -π/2, end angle = 0
+      // End point: (70, 20)
+      expect(result.context.position.x).toBeCloseTo(70, 5);
+      expect(result.context.position.y).toBeCloseTo(20, 5);
+    });
+
+    it('works after H rightward', () => {
+      const result = compileWithContext(`
+        M 0 0
+        H 50
+        tangentArc(20, 90deg)
+      `);
+      // Same geometry as L rightward
+      expect(result.context.position.x).toBeCloseTo(70, 5);
+      expect(result.context.position.y).toBeCloseTo(20, 5);
+    });
+
+    it('works after V downward', () => {
+      const result = compileWithContext(`
+        M 0 0
+        V 50
+        tangentArc(20, 90deg)
+      `);
+      // After V downward (tangent=π/2), tangentArc with positive sweep curves left
+      // Center at (-20, 50), endpoint at (-20, 70)
+      expect(result.context.position.x).toBeCloseTo(-20, 5);
+      expect(result.context.position.y).toBeCloseTo(70, 5);
+    });
+
+    it('works after C cubic bezier', () => {
+      const result = compileWithContext(`
+        M 0 0
+        C 0 20 20 20 20 0
+        tangentArc(20, 90deg)
+      `);
+      // CP2 at (20,20), endpoint at (20,0) → tangent = atan2(-20, 0) = -π/2 (upward)
+      // tangentArc with positive sweep from upward heading curves right
+      expect(result.path).toContain('A');
+    });
+
+    it('works after Q quadratic', () => {
+      const result = compileWithContext(`
+        M 0 0
+        Q 25 50 50 0
+        tangentArc(20, 90deg)
+      `);
+      expect(result.path).toContain('A');
+    });
+
+    it('works after A arc', () => {
+      const result = compileWithContext(`
+        M 0 0
+        A 50 50 0 0 1 100 0
+        tangentArc(20, 90deg)
+      `);
+      expect(result.path).toContain('A');
+    });
+
+    it('works after Z close path', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 100 0
+        L 100 100
+        Z
+        tangentArc(20, 90deg)
+      `);
+      // Z goes from (100,100) to (0,0), tangent toward origin
+      expect(result.path).toContain('A');
+    });
+  });
+
+  describe('tangentLine after native SVG commands', () => {
+    it('continues rightward after L', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        tangentLine(30)
+      `);
+      // After L rightward, tangentLine continues right 30px
+      expect(result.context.position.x).toBeCloseTo(80, 5);
+      expect(result.context.position.y).toBeCloseTo(0, 5);
+    });
+
+    it('continues downward after V', () => {
+      const result = compileWithContext(`
+        M 0 0
+        V 50
+        tangentLine(30)
+      `);
+      // After V downward, tangentLine continues down 30px
+      expect(result.context.position.x).toBeCloseTo(0, 5);
+      expect(result.context.position.y).toBeCloseTo(80, 5);
+    });
+
+    it('continues in bezier exit direction after C', () => {
+      const result = compileWithContext(`
+        M 0 0
+        C 0 20 20 20 20 0
+        tangentLine(20)
+      `);
+      // CP2 at (20,20), endpoint at (20,0) → tangent = atan2(-20, 0) = -π/2 (upward)
+      // tangentLine(20) should go 20px upward
+      expect(result.context.position.x).toBeCloseTo(20, 5);
+      expect(result.context.position.y).toBeCloseTo(-20, 5);
+    });
+
+    it('continues rightward after H', () => {
+      const result = compileWithContext(`
+        M 0 0
+        H 50
+        tangentLine(30)
+      `);
+      expect(result.context.position.x).toBeCloseTo(80, 5);
+      expect(result.context.position.y).toBeCloseTo(0, 5);
+    });
+  });
+
+  describe('tangentArc after stdlib path functions', () => {
+    it('works after line() function', () => {
+      const result = compileWithContext(`
+        line(0, 0, 100, 0)
+        tangentArc(20, 90deg)
+      `);
+      // line() emits M 0 0 L 100 0, tangent from L is rightward
+      expect(result.context.position.x).toBeCloseTo(120, 5);
+      expect(result.context.position.y).toBeCloseTo(20, 5);
+    });
+
+    it('works after lineTo() function', () => {
+      // Use moveTo() instead of M to avoid parser treating lineTo as arg to M
+      const result = compileWithContext(`
+        moveTo(0, 0)
+        lineTo(100, 0)
+        tangentArc(20, 90deg)
+      `);
+      // lineTo emits L, tangent rightward
+      expect(result.context.position.x).toBeCloseTo(120, 5);
+      expect(result.context.position.y).toBeCloseTo(20, 5);
+    });
+
+    it('lineTo() sets tangent and position even without preceding M', () => {
+      // Standalone lineTo — no M before it, so no parser ambiguity
+      const result = compileWithContext(`
+        lineTo(100, 0)
+      `);
+      expect(result.context.lastTangent).toBeCloseTo(0, 5);
+      expect(result.context.position.x).toBeCloseTo(100, 5);
+      expect(result.context.position.y).toBeCloseTo(0, 5);
+    });
+
+    it('works after arc() function', () => {
+      // Use moveTo() instead of M to avoid parser treating arc as arg to M
+      const result = compileWithContext(`
+        moveTo(0, 0)
+        arc(50, 50, 0, 0, 1, 100, 0)
+        tangentArc(15, 90deg)
+      `);
+      // arc() emits A command, tangent from arc exit
+      expect(result.path).toContain('A');
+    });
+  });
+
+  describe('tangentArc after PathBlock .draw()', () => {
+    it('works after PathBlock draw', () => {
+      // M before let to avoid parser treating p.draw() as arg to M
+      const result = compileWithContext(`
+        M 100 100
+        let p = @{ l 20 0 };
+        p.draw()
+        tangentArc(20, 90deg)
+      `);
+      // PathBlock l 20 0 goes right, tangent = 0
+      // tangentArc curves down
+      expect(result.context.position.x).toBeCloseTo(140, 5);
+      expect(result.context.position.y).toBeCloseTo(120, 5);
+    });
+  });
+
+  describe('mixed chaining', () => {
+    it('chains L → tangentArc → tangentLine → H → tangentArc', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        tangentArc(20, 90deg)
+        tangentLine(30)
+        H 100
+        tangentArc(15, -90deg)
+      `);
+      // Complex chain — just verify no errors and output contains arcs
+      expect(result.path).toContain('A');
+      expect(result.path).toContain('L');
+    });
+
+    it('chains l inside PathBlock then tangentArc', () => {
+      // M before let to avoid parser treating p.draw() as arg to M
+      const result = compileWithContext(`
+        M 50 50
+        let p = @{ l 20 0 };
+        p.draw()
+        tangentArc(10, 90deg)
+      `);
+      // l 20 0 goes right, tangent=0
+      // tangentArc(10, 90deg) curves down from (70, 50)
+      expect(result.context.position.x).toBeCloseTo(80, 5);
+      expect(result.context.position.y).toBeCloseTo(60, 5);
+    });
+
+    it('error message includes line/col info', () => {
+      expect(() => {
+        compileWithContext(`tangentArc(20, 90deg)`);
+      }).toThrow(/Line.*tangentArc requires/);
     });
   });
 });

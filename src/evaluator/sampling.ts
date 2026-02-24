@@ -268,7 +268,7 @@ export function arcPointFromCenter(p: ArcCenterParams, t: number): Point {
   };
 }
 
-function arcTangentFromCenter(p: ArcCenterParams, t: number): number {
+export function arcTangentFromCenter(p: ArcCenterParams, t: number): number {
   const angle = p.startAngle + t * p.deltaAngle;
   const cosPhi = Math.cos(p.phi);
   const sinPhi = Math.sin(p.phi);

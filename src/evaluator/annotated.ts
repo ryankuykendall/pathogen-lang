@@ -302,7 +302,7 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
 /**
  * Evaluate a context-aware function that needs access to path context
  */
-function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope): Value {
+function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope, loc?: { line?: number; column?: number }): Value {
   const ctx = scope.evalState!.pathContext;
 
   switch (name) {
@@ -484,14 +484,15 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope)
       const [length] = args as [number];
 
       if (ctx.lastTangent === undefined) {
-        throw new Error('tangentLine requires a previous arc or polar command');
+        throw new Error(formatError('tangentLine requires a previous path command that establishes direction', loc?.line, loc?.column));
       }
 
+      const savedTangent = ctx.lastTangent;
       const x = ctx.position.x + Math.cos(ctx.lastTangent) * length;
       const y = ctx.position.y + Math.sin(ctx.lastTangent) * length;
 
       updateContextForCommand(ctx, 'L', [x, y]);
-      // lastTangent stays the same (continuing in same direction)
+      setLastTangent(ctx, savedTangent);
       updateCtxVariable(scope);
 
       return { type: 'PathSegment' as const, value: `L ${x} ${y}` };
@@ -502,7 +503,7 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope)
       const [radius, sweepAngle] = args as [number, number];
 
       if (ctx.lastTangent === undefined) {
-        throw new Error('tangentArc requires a previous arc or polar command');
+        throw new Error(formatError('tangentArc requires a previous path command that establishes direction', loc?.line, loc?.column));
       }
 
       // Center is perpendicular to tangent direction
@@ -1392,7 +1393,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(`Function '${call.name}' requires evaluation context`);
     }
     const args = call.args.map((arg) => evaluateExpression(arg, scope));
-    return evaluateContextAwareFunction(call.name, args, scope);
+    return evaluateContextAwareFunction(call.name, args, scope, call.loc);
   }
 
   const fn = lookupVariable(scope, call.name);
@@ -2037,7 +2038,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
             throw new Error(`Function '${funcCall.name}' requires evaluation context`);
           }
           const args = funcCall.args.map((arg) => evaluateExpression(arg, scope));
-          const result = evaluateContextAwareFunction(funcCall.name, args, scope);
+          const result = evaluateContextAwareFunction(funcCall.name, args, scope, funcCall.loc);
           const argsStr = args.map(a => String(a)).join(', ');
           ctx.output.push({
             type: 'function_call',

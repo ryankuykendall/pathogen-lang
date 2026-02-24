@@ -339,24 +339,40 @@ arcFromPolarOffset(0, 50, 90deg)
 
 ### Tangent Functions
 
-These functions continue from the previous arc or polar command's direction.
+These functions continue from the previous drawing command's direction. Any path command that establishes a direction — including native SVG commands (`L`, `H`, `V`, `C`, `S`, `Q`, `T`, `A`, `Z`) and stdlib path functions — sets a tangent that `tangentLine` and `tangentArc` can follow.
+
+`M` (moveTo) clears the tangent since a move does not establish a direction.
 
 #### tangentLine(length)
 
-Draws a line continuing in the tangent direction from the previous arc or polar command.
+Draws a line continuing in the tangent direction from the previous command.
 
 ```
 arcFromPolarOffset(0, 50, 90deg)
 tangentLine(30)  // Continues in the arc's exit direction
 ```
 
+After native SVG commands:
+
+```
+M 50 100  L 150 100
+tangentLine(30)  // Continues rightward to (180, 100)
+```
+
 #### tangentArc(radius, sweepAngle)
 
-Draws an arc continuing tangent to the previous arc or polar command.
+Draws an arc continuing tangent to the previous command.
 
 ```
 arcFromPolarOffset(0, 50, 90deg)
 tangentArc(30, 45deg)  // Smooth continuation with a smaller arc
+```
+
+After native SVG commands:
+
+```
+M 50 100  L 150 100
+tangentArc(30, 90deg)  // Smooth arc curving down from the line's endpoint
 ```
 
 ---

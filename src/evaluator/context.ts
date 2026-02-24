@@ -1,6 +1,8 @@
 // Path context tracking for svg-path-extended
 // Tracks current position, subpath start, and command history during evaluation
 
+import { arcEndpointToCenter, arcTangentFromCenter } from './sampling';
+
 /**
  * A point in 2D coordinate space
  */
@@ -26,7 +28,8 @@ export interface PathContext {
   position: Point;     // Current pen position
   start: Point;        // Subpath start (set by M, used by Z)
   commands: CommandHistoryEntry[];
-  lastTangent?: number; // Tangent angle from last arc/polar command (radians)
+  lastTangent?: number; // Tangent angle from last drawing command (radians)
+  _lastQuadCP?: Point;  // Previous quadratic control point (for T command tangent reflection)
   trackHistory: boolean;  // Whether to store command history (performance optimization)
   _dirty: boolean;        // Whether context has changed since last object conversion
   _cachedObject: Record<string, unknown> | null;  // Cached object representation
@@ -198,6 +201,138 @@ export function updateContextForCommand(
     default:
       // Unknown command - don't change position
       endPos = copyPoint(ctx.position);
+  }
+
+  // Compute tangent direction for the command
+  let clearQuadCP = true;
+  switch (cmd) {
+    case 'M':
+      // Move clears tangent — no direction established
+      ctx.lastTangent = undefined;
+      break;
+
+    case 'L': {
+      const dx = endPos.x - startPos.x;
+      const dy = endPos.y - startPos.y;
+      if (dx !== 0 || dy !== 0) {
+        ctx.lastTangent = Math.atan2(dy, dx);
+      }
+      // Zero-length: preserve previous tangent
+      break;
+    }
+
+    case 'H': {
+      const dx = endPos.x - startPos.x;
+      if (dx !== 0) {
+        ctx.lastTangent = dx > 0 ? 0 : Math.PI;
+      }
+      break;
+    }
+
+    case 'V': {
+      const dy = endPos.y - startPos.y;
+      if (dy !== 0) {
+        ctx.lastTangent = dy > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
+      break;
+    }
+
+    case 'C': {
+      // Cubic bezier: C x1 y1 x2 y2 x y — tangent from CP2 to endpoint
+      let cp2x = isRelative ? startPos.x + args[2] : args[2];
+      let cp2y = isRelative ? startPos.y + args[3] : args[3];
+      let dx = endPos.x - cp2x;
+      let dy = endPos.y - cp2y;
+      if (dx === 0 && dy === 0) {
+        // CP2 coincides with endpoint, fall back to CP1→endpoint
+        const cp1x = isRelative ? startPos.x + args[0] : args[0];
+        const cp1y = isRelative ? startPos.y + args[1] : args[1];
+        dx = endPos.x - cp1x;
+        dy = endPos.y - cp1y;
+      }
+      if (dx !== 0 || dy !== 0) {
+        ctx.lastTangent = Math.atan2(dy, dx);
+      }
+      break;
+    }
+
+    case 'S': {
+      // Smooth cubic: S x2 y2 x y — tangent from CP2 to endpoint
+      const cp2x = isRelative ? startPos.x + args[0] : args[0];
+      const cp2y = isRelative ? startPos.y + args[1] : args[1];
+      const dx = endPos.x - cp2x;
+      const dy = endPos.y - cp2y;
+      if (dx !== 0 || dy !== 0) {
+        ctx.lastTangent = Math.atan2(dy, dx);
+      }
+      break;
+    }
+
+    case 'Q': {
+      // Quadratic bezier: Q x1 y1 x y — tangent from CP to endpoint
+      const cpx = isRelative ? startPos.x + args[0] : args[0];
+      const cpy = isRelative ? startPos.y + args[1] : args[1];
+      const dx = endPos.x - cpx;
+      const dy = endPos.y - cpy;
+      if (dx !== 0 || dy !== 0) {
+        ctx.lastTangent = Math.atan2(dy, dx);
+      }
+      // Store quad CP for T command reflection
+      ctx._lastQuadCP = { x: cpx, y: cpy };
+      clearQuadCP = false;
+      break;
+    }
+
+    case 'T': {
+      // Smooth quadratic: T x y — reflected CP from previous Q/T
+      const reflectedCP = ctx._lastQuadCP
+        ? { x: 2 * startPos.x - ctx._lastQuadCP.x, y: 2 * startPos.y - ctx._lastQuadCP.y }
+        : { x: startPos.x, y: startPos.y };
+      const dx = endPos.x - reflectedCP.x;
+      const dy = endPos.y - reflectedCP.y;
+      if (dx !== 0 || dy !== 0) {
+        ctx.lastTangent = Math.atan2(dy, dx);
+      }
+      // Update _lastQuadCP to the reflected CP for subsequent T commands
+      ctx._lastQuadCP = reflectedCP;
+      clearQuadCP = false;
+      break;
+    }
+
+    case 'A': {
+      // Arc: A rx ry rotation large-arc sweep x y
+      const rx = args[0];
+      const ry = args[1];
+      const rotation = args[2] * Math.PI / 180;
+      const largeArcFlag = args[3];
+      const sweepFlag = args[4];
+      const center = arcEndpointToCenter(
+        startPos.x, startPos.y,
+        rx, ry, rotation,
+        largeArcFlag, sweepFlag,
+        endPos.x, endPos.y
+      );
+      if (center) {
+        ctx.lastTangent = arcTangentFromCenter(center, 1);
+      }
+      // Degenerate arc: preserve previous tangent
+      break;
+    }
+
+    case 'Z': {
+      const dx = endPos.x - startPos.x;
+      const dy = endPos.y - startPos.y;
+      if (dx !== 0 || dy !== 0) {
+        ctx.lastTangent = Math.atan2(dy, dx);
+      }
+      // Already at start: preserve previous tangent
+      break;
+    }
+  }
+
+  // Clear quad CP for non-Q/T commands
+  if (clearQuadCP) {
+    ctx._lastQuadCP = undefined;
   }
 
   // Record the command in history only if tracking is enabled
