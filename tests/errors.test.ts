@@ -21,7 +21,9 @@ describe('Parse errors', () => {
     });
 
     it('throws on missing semicolon in let declaration', () => {
-      expect(() => compilePath('let x = 10 M x 0')).toThrow();
+      expect(() => compilePath('let x = 10 M x 0')).toThrow(
+        /Missing ';' after let declaration/
+      );
     });
 
     it('throws on invalid operator', () => {
@@ -52,6 +54,50 @@ describe('Parse errors', () => {
 
     it('throws when using calc as variable name', () => {
       expect(() => compilePath('let calc = 10;')).toThrow();
+    });
+  });
+
+  describe('Missing semicolon errors', () => {
+    it('let declaration at EOF', () => {
+      expect(() => compilePath('let x = 10')).toThrow(
+        /Missing ';' after let declaration/
+      );
+    });
+
+    it('let declaration followed by path command', () => {
+      expect(() => compilePath('let x = 10\nM x 0')).toThrow(
+        /Missing ';' after let declaration/
+      );
+    });
+
+    it('points to end of statement, not start of next line', () => {
+      expect(() => compilePath('let x = 10\nM x 0')).toThrow(
+        /line 1, column 11/
+      );
+    });
+
+    it('assignment followed by path command', () => {
+      expect(() => compilePath('let x = 0;\nx = 5\nM 0 0')).toThrow(
+        /Missing ';' after assignment/
+      );
+    });
+
+    it('return statement missing semicolon', () => {
+      expect(() => compilePath('fn test() { return 10 }\ntest()')).toThrow(
+        /Missing ';' after return statement/
+      );
+    });
+
+    it('indexed assignment missing semicolon', () => {
+      expect(() => compilePath('let a = [1, 2];\na[0] = 5\nM 0 0')).toThrow(
+        /Missing ';'/
+      );
+    });
+
+    it('let with complex expression', () => {
+      expect(() => compilePath('let x = (10 + 5) * 3\nM 0 0')).toThrow(
+        /Missing ';' after let declaration/
+      );
     });
   });
 

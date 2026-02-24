@@ -986,6 +986,60 @@ const program: Parsimmon.Parser<Program> = optWhitespace
     body,
   }));
 
+function detectMissingSemicolon(input: string, offset: number): { message: string; line: number; column: number } | null {
+  const before = input.slice(0, offset);
+  // Find the start of the current statement by scanning backward for a boundary,
+  // skipping over @{ ... } path blocks and ${ ... } style blocks
+  let lastBoundary = -1;
+  for (let i = before.length - 1; i >= 0; i--) {
+    const ch = before[i];
+    if (ch === '}') {
+      // Check if this closes a @{ } or ${ } block — skip over it
+      const braceStart = before.lastIndexOf('{', i - 1);
+      if (braceStart >= 1 && (before[braceStart - 1] === '@' || before[braceStart - 1] === '$')) {
+        i = braceStart - 1;
+        continue;
+      }
+      lastBoundary = i;
+      break;
+    }
+    if (ch === ';' || ch === '{') {
+      lastBoundary = i;
+      break;
+    }
+  }
+  const statementText = before.slice(lastBoundary + 1).trim();
+
+  let message: string;
+  if (statementText.startsWith('let ')) {
+    message = "Missing ';' after let declaration";
+  } else if (statementText.startsWith('return ') || statementText === 'return') {
+    message = "Missing ';' after return statement";
+  } else if (/^[a-zA-Z_]\w*\s*(?:\.\w+|\[[\s\S]*?\])*\s*=(?!=)/.test(statementText)) {
+    message = "Missing ';' after assignment";
+  } else {
+    message = "Missing ';'";
+  }
+
+  // Point to where the semicolon should go (end of statement) rather than
+  // where the parser failed (start of next token)
+  let endOffset = offset;
+  for (let i = offset - 1; i >= 0; i--) {
+    if (input[i] !== ' ' && input[i] !== '\t' && input[i] !== '\n' && input[i] !== '\r') {
+      endOffset = i + 1;
+      break;
+    }
+  }
+  const beforeEnd = input.slice(0, endOffset);
+  const endLines = beforeEnd.split('\n');
+
+  return {
+    message,
+    line: endLines.length,
+    column: endLines[endLines.length - 1].length + 1,
+  };
+}
+
 export function parse(input: string): Program {
   const result = program.parse(input);
   if (result.status) {
@@ -995,6 +1049,15 @@ export function parse(input: string): Program {
     const lines = input.slice(0, index.offset).split('\n');
     const line = lines.length;
     const column = lines[lines.length - 1].length + 1;
+
+    // Detect missing semicolons and provide targeted error messages
+    if (expected.includes("';'")) {
+      const result = detectMissingSemicolon(input, index.offset);
+      if (result) {
+        throw new Error(`Parse error at line ${result.line}, column ${result.column}: ${result.message}`);
+      }
+    }
+
     throw new Error(
       `Parse error at line ${line}, column ${column}: expected ${expected.join(' or ')}`
     );
