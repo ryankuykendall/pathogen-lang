@@ -1,5 +1,5 @@
 import type { Point } from './context';
-import { arcEndpointToCenter, arcPointFromCenter } from './sampling';
+import { arcEndpointToCenter, arcPointFromCenter, calculateCommandLength, locateCommandAtFraction, getParametricTForCommand } from './sampling';
 import type { ArcCenterParams } from './sampling';
 import { formatNum } from './format';
 
@@ -1198,6 +1198,271 @@ export function rotateAtVertexCommands(
     if (cmd.command.toUpperCase() === 'A') {
       cmd.args[2] = cmd.args[2] + angleDeg;   // adjust rotation
     }
+  }
+
+  return result;
+}
+
+// ---- splitCommandAtParametricT ----
+
+function lerpPoint(a: Point, b: Point, t: number): Point {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+/**
+ * Split a single drawing command at parametric t ∈ (0, 1).
+ * Returns [head, tail] — two commands covering [0, t] and [t, 1].
+ */
+export function splitCommandAtParametricT(cmd: TransformCmd, t: number): [TransformCmd, TransformCmd] {
+  if (t <= 0) {
+    const zero: TransformCmd = { command: cmd.command, args: [], start: { ...cmd.start }, end: { ...cmd.start } };
+    return [zero, { command: cmd.command, args: [...cmd.args], start: { ...cmd.start }, end: { ...cmd.end } }];
+  }
+  if (t >= 1) {
+    const zero: TransformCmd = { command: cmd.command, args: [], start: { ...cmd.end }, end: { ...cmd.end } };
+    return [{ command: cmd.command, args: [...cmd.args], start: { ...cmd.start }, end: { ...cmd.end } }, zero];
+  }
+
+  const upper = cmd.command.toUpperCase();
+
+  switch (upper) {
+    case 'L': case 'H': case 'V': case 'Z': {
+      // Linear interpolation
+      const dx = cmd.end.x - cmd.start.x;
+      const dy = cmd.end.y - cmd.start.y;
+      const mid = { x: cmd.start.x + dx * t, y: cmd.start.y + dy * t };
+      const head: TransformCmd = {
+        command: 'l',
+        args: [mid.x - cmd.start.x, mid.y - cmd.start.y],
+        start: { ...cmd.start },
+        end: { ...mid },
+      };
+      const tail: TransformCmd = {
+        command: 'l',
+        args: [cmd.end.x - mid.x, cmd.end.y - mid.y],
+        start: { ...mid },
+        end: { ...cmd.end },
+      };
+      return [head, tail];
+    }
+
+    case 'C': {
+      // De Casteljau cubic split
+      const [cx1, cy1, cx2, cy2] = cmd.args;
+      const p0 = cmd.start;
+      const p1 = { x: p0.x + cx1, y: p0.y + cy1 };
+      const p2 = { x: p0.x + cx2, y: p0.y + cy2 };
+      const p3 = cmd.end;
+
+      // First level
+      const p01 = lerpPoint(p0, p1, t);
+      const p12 = lerpPoint(p1, p2, t);
+      const p23 = lerpPoint(p2, p3, t);
+      // Second level
+      const p012 = lerpPoint(p01, p12, t);
+      const p123 = lerpPoint(p12, p23, t);
+      // Third level (split point)
+      const mid = lerpPoint(p012, p123, t);
+
+      const head: TransformCmd = {
+        command: 'c',
+        args: [p01.x - p0.x, p01.y - p0.y, p012.x - p0.x, p012.y - p0.y, mid.x - p0.x, mid.y - p0.y],
+        start: { ...p0 },
+        end: { ...mid },
+      };
+      const tail: TransformCmd = {
+        command: 'c',
+        args: [p123.x - mid.x, p123.y - mid.y, p23.x - mid.x, p23.y - mid.y, p3.x - mid.x, p3.y - mid.y],
+        start: { ...mid },
+        end: { ...p3 },
+      };
+      return [head, tail];
+    }
+
+    case 'Q': {
+      // De Casteljau quadratic split
+      const [qx1, qy1] = cmd.args;
+      const p0 = cmd.start;
+      const p1 = { x: p0.x + qx1, y: p0.y + qy1 };
+      const p2 = cmd.end;
+
+      const p01 = lerpPoint(p0, p1, t);
+      const p12 = lerpPoint(p1, p2, t);
+      const mid = lerpPoint(p01, p12, t);
+
+      const head: TransformCmd = {
+        command: 'q',
+        args: [p01.x - p0.x, p01.y - p0.y, mid.x - p0.x, mid.y - p0.y],
+        start: { ...p0 },
+        end: { ...mid },
+      };
+      const tail: TransformCmd = {
+        command: 'q',
+        args: [p12.x - mid.x, p12.y - mid.y, p2.x - mid.x, p2.y - mid.y],
+        start: { ...mid },
+        end: { ...p2 },
+      };
+      return [head, tail];
+    }
+
+    case 'A': {
+      const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
+      const phi = rotation * Math.PI / 180;
+      const center = arcEndpointToCenter(
+        cmd.start.x, cmd.start.y,
+        rx, ry, phi,
+        largeArcFlag, sweepFlag,
+        cmd.end.x, cmd.end.y
+      );
+
+      if (!center) {
+        // Degenerate arc → treat as line
+        const dx = cmd.end.x - cmd.start.x;
+        const dy = cmd.end.y - cmd.start.y;
+        const mid = { x: cmd.start.x + dx * t, y: cmd.start.y + dy * t };
+        return [
+          { command: 'l', args: [mid.x - cmd.start.x, mid.y - cmd.start.y], start: { ...cmd.start }, end: { ...mid } },
+          { command: 'l', args: [cmd.end.x - mid.x, cmd.end.y - mid.y], start: { ...mid }, end: { ...cmd.end } },
+        ];
+      }
+
+      // Split angle range
+      const midAngle = center.startAngle + t * center.deltaAngle;
+      const mid = arcPointFromCenter(center, t);
+
+      const delta1 = t * center.deltaAngle;
+      const delta2 = (1 - t) * center.deltaAngle;
+
+      // largeArc flag: 1 if |deltaAngle| > π
+      const la1 = Math.abs(delta1) > Math.PI ? 1 : 0;
+      const la2 = Math.abs(delta2) > Math.PI ? 1 : 0;
+
+      const head: TransformCmd = {
+        command: 'a',
+        args: [center.rx, center.ry, rotation, la1, sweepFlag, mid.x - cmd.start.x, mid.y - cmd.start.y],
+        start: { ...cmd.start },
+        end: { ...mid },
+      };
+      const tail: TransformCmd = {
+        command: 'a',
+        args: [center.rx, center.ry, rotation, la2, sweepFlag, cmd.end.x - mid.x, cmd.end.y - mid.y],
+        start: { ...mid },
+        end: { ...cmd.end },
+      };
+      return [head, tail];
+    }
+
+    default: {
+      // Unknown command: treat as line
+      const dx = cmd.end.x - cmd.start.x;
+      const dy = cmd.end.y - cmd.start.y;
+      const mid = { x: cmd.start.x + dx * t, y: cmd.start.y + dy * t };
+      return [
+        { command: 'l', args: [mid.x - cmd.start.x, mid.y - cmd.start.y], start: { ...cmd.start }, end: { ...mid } },
+        { command: 'l', args: [cmd.end.x - mid.x, cmd.end.y - mid.y], start: { ...mid }, end: { ...cmd.end } },
+      ];
+    }
+  }
+}
+
+// ---- subPathCommands ----
+
+/**
+ * Extract the geometric portion of a path between arc-length fractions startT and endT.
+ * If startT > endT, the result is reversed.
+ */
+export function subPathCommands(commands: TransformCmd[], startT: number, endT: number): TransformCmd[] {
+  // Handle reversed range
+  if (startT > endT) {
+    const forward = subPathCommands(commands, endT, startT);
+    return reverseCommands(forward);
+  }
+
+  // Equal → empty path
+  if (startT === endT) return [];
+
+  // Clamp
+  startT = Math.max(0, Math.min(1, startT));
+  endT = Math.max(0, Math.min(1, endT));
+
+  // Resolve smooth curves (S→C, T→Q) for accurate splitting
+  const resolved = resolveSmooth(commands);
+
+  // Filter to drawing commands (skip M) and compute lengths
+  const drawCmds = resolved.filter(c => c.command.toUpperCase() !== 'M');
+  if (drawCmds.length === 0) return [];
+
+  const cmdLengths: number[] = [];
+  let totalLength = 0;
+  for (const cmd of drawCmds) {
+    const len = calculateCommandLength(cmd);
+    cmdLengths.push(len);
+    totalLength += len;
+  }
+
+  if (totalLength === 0) return [];
+
+  // Locate start and end commands
+  const startLoc = locateCommandAtFraction(drawCmds, cmdLengths, totalLength, startT);
+  const endLoc = locateCommandAtFraction(drawCmds, cmdLengths, totalLength, endT);
+
+  // Convert arc-length local t to parametric t
+  const startParamT = getParametricTForCommand(drawCmds[startLoc.cmdIndex], startLoc.localT);
+  const endParamT = getParametricTForCommand(drawCmds[endLoc.cmdIndex], endLoc.localT);
+
+  if (startLoc.cmdIndex === endLoc.cmdIndex) {
+    // Same command: split twice to extract middle
+    const cmd = drawCmds[startLoc.cmdIndex];
+
+    if (startParamT >= 1 || endParamT <= 0) return [];
+
+    // First split at startParamT
+    const [, afterStart] = splitCommandAtParametricT(cmd, startParamT);
+
+    // The remaining portion represents [startParamT, 1] of the original.
+    // We need [startParamT, endParamT], which is [0, (endParamT - startParamT) / (1 - startParamT)] of afterStart.
+    const remainingRange = 1 - startParamT;
+    if (remainingRange <= 0) return [];
+    const adjustedEndT = (endParamT - startParamT) / remainingRange;
+    const [middle] = splitCommandAtParametricT(afterStart, Math.max(0, Math.min(1, adjustedEndT)));
+
+    // Filter zero-length
+    const dx = middle.end.x - middle.start.x;
+    const dy = middle.end.y - middle.start.y;
+    if (middle.args.length === 0 && Math.abs(dx) < 1e-10 && Math.abs(dy) < 1e-10) return [];
+
+    return [middle];
+  }
+
+  // Different commands: tail of start + full middle commands + head of end
+  const result: TransformCmd[] = [];
+
+  // Tail of start command
+  if (startParamT < 1) {
+    const [, startTail] = splitCommandAtParametricT(drawCmds[startLoc.cmdIndex], startParamT);
+    const sdx = startTail.end.x - startTail.start.x;
+    const sdy = startTail.end.y - startTail.start.y;
+    const hasLength = startTail.args.length > 0 || Math.abs(sdx) > 1e-10 || Math.abs(sdy) > 1e-10;
+    if (hasLength) result.push(startTail);
+  }
+
+  // Full middle commands
+  for (let i = startLoc.cmdIndex + 1; i < endLoc.cmdIndex; i++) {
+    result.push({
+      command: drawCmds[i].command,
+      args: [...drawCmds[i].args],
+      start: { ...drawCmds[i].start },
+      end: { ...drawCmds[i].end },
+    });
+  }
+
+  // Head of end command
+  if (endParamT > 0) {
+    const [endHead] = splitCommandAtParametricT(drawCmds[endLoc.cmdIndex], endParamT);
+    const edx = endHead.end.x - endHead.start.x;
+    const edy = endHead.end.y - endHead.start.y;
+    const hasLength = endHead.args.length > 0 || Math.abs(edx) > 1e-10 || Math.abs(edy) > 1e-10;
+    if (hasLength) result.push(endHead);
   }
 
   return result;

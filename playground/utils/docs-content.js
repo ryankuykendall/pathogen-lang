@@ -1607,12 +1607,37 @@ M mid.<span class="hljs-property">x</span> mid.<span class="hljs-property">y</sp
 <span class="hljs-title function_">log</span>(n.<span class="hljs-property">point</span>);                <span class="hljs-comment">// Point(50, 0)</span>
 <span class="hljs-title function_">log</span>(n.<span class="hljs-property">angle</span>);                <span class="hljs-comment">// ~-1.5708 (pointing up — left-hand normal of rightward path)</span>
 </code></pre><h3 id="path-blocks-partitionn-orientedpoint"><code>partition(n)</code> → OrientedPoint[]</h3>
-<p>Divides the path into <code>n</code> equal-length segments, returning <code>n + 1</code> oriented points (endpoints inclusive). Each oriented point has <code>point</code> and <code>angle</code> properties.</p>
+<p>Divides the path into <code>n</code> equal-length segments, returning <code>n + 1</code> oriented points (endpoints inclusive). Each oriented point has <code>point</code>, <code>angle</code>, and <code>t</code> properties.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>point</code></td>
+<td><code>Point</code></td>
+<td>Position at this sample</td>
+</tr>
+<tr>
+<td><code>angle</code></td>
+<td><code>number</code></td>
+<td>Tangent angle (radians)</td>
+</tr>
+<tr>
+<td><code>t</code></td>
+<td><code>number</code></td>
+<td>Arc-length fraction (<code>i / n</code>)</td>
+</tr>
+</tbody></table>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> };
 <span class="hljs-keyword">let</span> pts = p.<span class="hljs-title function_">partition</span>(<span class="hljs-number">4</span>);    <span class="hljs-comment">// 5 points at x = 0, 25, 50, 75, 100</span>
 <span class="hljs-keyword">for</span> (op <span class="hljs-keyword">in</span> pts) {
-  <span class="hljs-title function_">log</span>(op.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, op.<span class="hljs-property">angle</span>);
+  <span class="hljs-title function_">log</span>(op.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, op.<span class="hljs-property">angle</span>, op.<span class="hljs-property">t</span>);
 }
+<span class="hljs-comment">// t values: 0, 0.25, 0.5, 0.75, 1</span>
 </code></pre><h3 id="path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</h3>
 <p>Projected paths return absolute coordinates:</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> };
@@ -1699,6 +1724,37 @@ r.<span class="hljs-title function_">draw</span>()
 <pre><code class="hljs"><span class="hljs-keyword">let</span> arc = @{ a <span class="hljs-number">25</span> <span class="hljs-number">25</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">50</span> <span class="hljs-number">0</span> };
 <span class="hljs-keyword">let</span> wide = arc.<span class="hljs-title function_">scale</span>(<span class="hljs-number">2</span>, <span class="hljs-number">1</span>);       <span class="hljs-comment">// stretched elliptical arc</span>
 <span class="hljs-keyword">let</span> big = arc.<span class="hljs-title function_">scale</span>(<span class="hljs-number">3</span>, <span class="hljs-number">3</span>);        <span class="hljs-comment">// uniform: radii tripled</span>
+</code></pre><h3 id="path-blocks-subpathstartt-endt-pathblock"><code>subPath(startT, endT)</code> → PathBlock</h3>
+<p>Extracts the geometric portion of a path between two arc-length fractions. Both <code>startT</code> and <code>endT</code> must be between 0 and 1. Always returns a PathBlock (normalized to <code>(0, 0)</code> origin), even when called on a ProjectedPath.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> v <span class="hljs-number">100</span> };
+<span class="hljs-keyword">let</span> first = p.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);    <span class="hljs-comment">// first half of the path</span>
+<span class="hljs-keyword">let</span> second = p.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0.5</span>, <span class="hljs-number">1</span>);   <span class="hljs-comment">// second half of the path</span>
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+first.<span class="hljs-title function_">draw</span>()
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+second.<span class="hljs-title function_">draw</span>()                      <span class="hljs-comment">// visually reconstructs the original</span>
+</code></pre><p>If <code>startT &gt; endT</code>, the result is reversed (equivalent to <code>.subPath(endT, startT).reverse()</code>):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> };
+<span class="hljs-keyword">let</span> rev = p.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>);        <span class="hljs-comment">// full path, reversed direction</span>
+</code></pre><p>Use <code>.get()</code> on the ProjectedPath to find the absolute position, then <code>.draw()</code> the extracted PathBlock:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> v <span class="hljs-number">50</span> };
+<span class="hljs-keyword">let</span> proj = p.<span class="hljs-title function_">project</span>(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>);
+<span class="hljs-keyword">let</span> start = proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.2</span>);
+<span class="hljs-keyword">let</span> sub = proj.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0.2</span>, <span class="hljs-number">0.8</span>);  <span class="hljs-comment">// PathBlock, normalized to (0,0)</span>
+M start.<span class="hljs-property">x</span> start.<span class="hljs-property">y</span>
+sub.<span class="hljs-title function_">draw</span>()                          <span class="hljs-comment">// draws the middle 60% at the right position</span>
+</code></pre><p>Edge cases:</p>
+<ul>
+<li><code>subPath(0, 1)</code> returns approximately the original path</li>
+<li><code>subPath(t, t)</code> returns an empty PathBlock (not an error)</li>
+<li>Works with all command types including curves and arcs</li>
+</ul>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">40</span> <span class="hljs-number">50</span> -<span class="hljs-number">40</span> <span class="hljs-number">50</span> <span class="hljs-number">0</span> };
+<span class="hljs-keyword">let</span> front = curve.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
+M <span class="hljs-number">0</span> <span class="hljs-number">50</span>
+curve.<span class="hljs-title function_">draw</span>()
+M <span class="hljs-number">0</span> <span class="hljs-number">80</span>
+front.<span class="hljs-title function_">draw</span>()                        <span class="hljs-comment">// first half of the Bézier curve</span>
 </code></pre><h3 id="path-blocks-transforms-on-projectedpath">Transforms on ProjectedPath</h3>
 <p>Projected paths return results in absolute coordinates:</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">100</span> };
@@ -3111,6 +3167,11 @@ export const tocData = JSON.parse(`[
       {
         "id": "path-blocks-scalesx-sy-pathblock-projectedpath",
         "title": "scale(sx, sy) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-subpathstartt-endt-pathblock",
+        "title": "subPath(startT, endT) → PathBlock",
         "level": 3
       },
       {

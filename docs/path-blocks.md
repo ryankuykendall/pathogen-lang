@@ -185,14 +185,21 @@ log(n.angle);                // ~-1.5708 (pointing up — left-hand normal of ri
 
 ### `partition(n)` → OrientedPoint[]
 
-Divides the path into `n` equal-length segments, returning `n + 1` oriented points (endpoints inclusive). Each oriented point has `point` and `angle` properties.
+Divides the path into `n` equal-length segments, returning `n + 1` oriented points (endpoints inclusive). Each oriented point has `point`, `angle`, and `t` properties.
+
+| Property | Type | Description |
+|---|---|---|
+| `point` | `Point` | Position at this sample |
+| `angle` | `number` | Tangent angle (radians) |
+| `t` | `number` | Arc-length fraction (`i / n`) |
 
 ```
 let p = @{ h 100 };
 let pts = p.partition(4);    // 5 points at x = 0, 25, 50, 75, 100
 for (op in pts) {
-  log(op.point.x, op.angle);
+  log(op.point.x, op.angle, op.t);
 }
+// t values: 0, 0.25, 0.5, 0.75, 1
 ```
 
 ### Sampling on ProjectedPath
@@ -341,6 +348,53 @@ Uniform scaling (`sx == sy`) preserves shape and scales arc radii proportionally
 let arc = @{ a 25 25 0 0 1 50 0 };
 let wide = arc.scale(2, 1);       // stretched elliptical arc
 let big = arc.scale(3, 3);        // uniform: radii tripled
+```
+
+### `subPath(startT, endT)` → PathBlock
+
+Extracts the geometric portion of a path between two arc-length fractions. Both `startT` and `endT` must be between 0 and 1. Always returns a PathBlock (normalized to `(0, 0)` origin), even when called on a ProjectedPath.
+
+```
+let p = @{ h 100 v 100 };
+let first = p.subPath(0, 0.5);    // first half of the path
+let second = p.subPath(0.5, 1);   // second half of the path
+M 10 10
+first.draw()
+M 10 10
+second.draw()                      // visually reconstructs the original
+```
+
+If `startT > endT`, the result is reversed (equivalent to `.subPath(endT, startT).reverse()`):
+
+```
+let p = @{ h 100 };
+let rev = p.subPath(1, 0);        // full path, reversed direction
+```
+
+Use `.get()` on the ProjectedPath to find the absolute position, then `.draw()` the extracted PathBlock:
+
+```
+let p = @{ h 100 v 50 };
+let proj = p.project(10, 20);
+let start = proj.get(0.2);
+let sub = proj.subPath(0.2, 0.8);  // PathBlock, normalized to (0,0)
+M start.x start.y
+sub.draw()                          // draws the middle 60% at the right position
+```
+
+Edge cases:
+
+- `subPath(0, 1)` returns approximately the original path
+- `subPath(t, t)` returns an empty PathBlock (not an error)
+- Works with all command types including curves and arcs
+
+```
+let curve = @{ c 0 -40 50 -40 50 0 };
+let front = curve.subPath(0, 0.5);
+M 0 50
+curve.draw()
+M 0 80
+front.draw()                        // first half of the Bézier curve
 ```
 
 ### Transforms on ProjectedPath

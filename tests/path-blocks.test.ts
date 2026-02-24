@@ -1613,4 +1613,317 @@ describe('Path Blocks', () => {
       expect(afterMove).not.toMatch(/[ALCHVQST] /);
     });
   });
+
+  describe('partition t property', () => {
+    it('partition points have correct t values', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let pts = p.partition(4);
+        for (pt in pts) {
+          log(pt.t);
+        }
+      `);
+      expect(result.logs).toHaveLength(5);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 10);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.25, 10);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(0.5, 10);
+      expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(0.75, 10);
+      expect(parseFloat(result.logs[4].parts[0].value)).toBeCloseTo(1, 10);
+    });
+
+    it('partition t works with n=1', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let pts = p.partition(1);
+        log(pts[0].t);
+        log(pts[1].t);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 10);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(1, 10);
+    });
+
+    it('partition t works on ProjectedPath', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let proj = p.project(10, 20);
+        let pts = proj.partition(2);
+        log(pts[0].t);
+        log(pts[1].t);
+        log(pts[2].t);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 10);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.5, 10);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(1, 10);
+    });
+
+    it('partition t works in annotated mode', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let pts = p.partition(2);
+        log(pts[0].t);
+        log(pts[2].t);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 10);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(1, 10);
+    });
+  });
+
+  describe('subPath', () => {
+    it('subPath(0, 1) returns approximately the original path', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 1);
+        log(sub.endPoint.x);
+        log(sub.endPoint.y);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(100, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0, 1);
+    });
+
+    it('subPath(0, 0.5) returns first half of a line', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 0.5);
+        log(sub.endPoint.x);
+        log(sub.length);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(50, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(50, 1);
+    });
+
+    it('subPath(0.5, 1) returns second half of a line', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0.5, 1);
+        log(sub.endPoint.x);
+        log(sub.length);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(50, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(50, 1);
+    });
+
+    it('subPath(t, t) returns empty path', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0.5, 0.5);
+        log(sub.length);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 1);
+    });
+
+    it('subPath(0, 0) returns empty path', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 0);
+        log(sub.length);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 1);
+    });
+
+    it('subPath with reversed range reverses direction', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(1, 0);
+        log(sub.endPoint.x);
+      `);
+      // Reversed full path: ends at -100 (back to origin relative to new start)
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(-100, 1);
+    });
+
+    it('subPath on multi-segment path', () => {
+      const result = compile(`
+        let p = @{ h 50 v 50 };
+        // Total length = 100, first half is all h 50
+        let sub = p.subPath(0, 0.5);
+        log(sub.endPoint.x);
+        log(sub.endPoint.y);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(50, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0, 1);
+    });
+
+    it('subPath spanning two commands', () => {
+      const result = compile(`
+        let p = @{ h 50 v 50 };
+        // Total length = 100, subPath(0.25, 0.75) spans h and v
+        let sub = p.subPath(0.25, 0.75);
+        log(sub.length);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(50, 1);
+    });
+
+    it('subPath on cubic Bézier curve', () => {
+      const result = compile(`
+        let p = @{ c 0 -40 50 -40 50 0 };
+        let sub = p.subPath(0, 0.5);
+        let full = p.length;
+        let half = sub.length;
+        log(full);
+        log(half);
+      `);
+      const full = parseFloat(result.logs[0].parts[0].value);
+      const half = parseFloat(result.logs[1].parts[0].value);
+      expect(half).toBeCloseTo(full / 2, 0);
+    });
+
+    it('subPath on quadratic Bézier curve', () => {
+      const result = compile(`
+        let p = @{ q 25 -40 50 0 };
+        let sub = p.subPath(0, 0.5);
+        let full = p.length;
+        let half = sub.length;
+        log(full);
+        log(half);
+      `);
+      const full = parseFloat(result.logs[0].parts[0].value);
+      const half = parseFloat(result.logs[1].parts[0].value);
+      expect(half).toBeCloseTo(full / 2, 0);
+    });
+
+    it('subPath two halves reconstruct original length', () => {
+      const result = compile(`
+        let p = @{ h 50 v 50 h -30 };
+        let a = p.subPath(0, 0.5);
+        let b = p.subPath(0.5, 1);
+        log(p.length);
+        log(a.length);
+        log(b.length);
+      `);
+      const full = parseFloat(result.logs[0].parts[0].value);
+      const aLen = parseFloat(result.logs[1].parts[0].value);
+      const bLen = parseFloat(result.logs[2].parts[0].value);
+      expect(aLen + bLen).toBeCloseTo(full, 0);
+    });
+
+    it('subPath on ProjectedPath returns drawable PathBlock', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let proj = p.project(10, 20);
+        let sub = proj.subPath(0, 0.5);
+        // Returns PathBlock normalized to (0,0)
+        log(sub.startPoint.x);
+        log(sub.startPoint.y);
+        log(sub.endPoint.x);
+        log(sub.endPoint.y);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0, 1);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(50, 1);
+      expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(0, 1);
+    });
+
+    it('subPath on ProjectedPath result can be drawn', () => {
+      const result = compilePath(`
+        let p = @{ h 100 };
+        let proj = p.project(10, 20);
+        let sub = proj.subPath(0, 0.5);
+        let start = proj.get(0);
+        M start.x start.y
+        sub.draw()
+      `);
+      expect(result).toContain('M 10 20');
+    });
+
+    it('subPath result can be drawn', () => {
+      const result = compilePath(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 0.5);
+        M 10 10
+        sub.draw()
+      `);
+      expect(result).toContain('M 10 10');
+    });
+
+    it('subPath result can be chained with reverse', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 0.5).reverse();
+        log(sub.endPoint.x);
+      `);
+      // subPath(0, 0.5) gives h 50 (endpoint 50, 0)
+      // reverse gives endpoint (-50, 0)
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(-50, 1);
+    });
+
+    it('subPath result supports length property', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0.25, 0.75);
+        log(sub.length);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(50, 1);
+    });
+
+    it('subPath result supports get()', () => {
+      const result = compile(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 0.5);
+        let mid = sub.get(0.5);
+        log(mid.x);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(25, 1);
+    });
+
+    it('subPath error: wrong arg count', () => {
+      expect(() => compile('let p = @{ h 100 }; p.subPath(0.5);')).toThrow('subPath() expects 2 arguments');
+    });
+
+    it('subPath error: non-number', () => {
+      expect(() => compile('let p = @{ h 100 }; p.subPath("a", 1);')).toThrow('subPath() startT must be a number');
+    });
+
+    it('subPath error: out of range startT', () => {
+      expect(() => compile('let p = @{ h 100 }; p.subPath(-0.5, 1);')).toThrow('subPath() startT must be between 0 and 1');
+    });
+
+    it('subPath error: out of range endT', () => {
+      expect(() => compile('let p = @{ h 100 }; p.subPath(0, 1.5);')).toThrow('subPath() endT must be between 0 and 1');
+    });
+
+    it('subPath on arc command', () => {
+      const result = compile(`
+        let p = @{ a 25 25 0 0 1 50 0 };
+        let a = p.subPath(0, 0.5);
+        let b = p.subPath(0.5, 1);
+        log(a.length);
+        log(b.length);
+        log(a.endPoint.x);
+        log(a.endPoint.y);
+      `);
+      const aLen = parseFloat(result.logs[0].parts[0].value);
+      const bLen = parseFloat(result.logs[1].parts[0].value);
+      // Two halves should have equal lengths
+      expect(aLen).toBeCloseTo(bLen, 1);
+      // Each half covers a quarter-circle (r=25), so arc length ≈ π*25/2 ≈ 39.27
+      expect(aLen).toBeCloseTo(Math.PI * 25 / 2, 0);
+      // First half endpoint should be at the top of the semicircle
+      const endX = parseFloat(result.logs[2].parts[0].value);
+      const endY = parseFloat(result.logs[3].parts[0].value);
+      expect(endX).toBeCloseTo(25, 0);
+      expect(endY).toBeCloseTo(-25, 0);
+    });
+
+    it('subPath works in annotated mode', () => {
+      const result = compileAnnotated(`
+        let p = @{ h 100 };
+        let sub = p.subPath(0, 0.5);
+        M 10 10
+        sub.draw()
+      `);
+      expect(result).toContain('M 10 10');
+    });
+
+    it('subPath on path with z (closePath)', () => {
+      const result = compile(`
+        let p = @{ h 50 v 50 h -50 z };
+        let full = p.length;
+        let sub = p.subPath(0, 0.5);
+        log(full);
+        log(sub.length);
+      `);
+      const full = parseFloat(result.logs[0].parts[0].value);
+      const half = parseFloat(result.logs[1].parts[0].value);
+      expect(half).toBeCloseTo(full / 2, 0);
+    });
+  });
 });

@@ -42,7 +42,7 @@ import {
 import { formatNum, setNumberFormat, resetNumberFormat } from './format';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import { calculateCommandLength, calculatePathLength, samplePathAtFraction, partitionPath } from './sampling';
-import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands } from './path-transforms';
+import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
 
 export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue;
 
@@ -1003,11 +1003,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const points = partitionPath(obj.commands, n);
         return {
           type: 'ArrayValue' as const,
-          elements: points.map(p => ({
+          elements: points.map((p, i) => ({
             type: 'ObjectValue' as const,
             properties: new Map<string, Value>([
               ['point', { type: 'PointValue' as const, x: p.point.x, y: p.point.y }],
               ['angle', p.tangent],
+              ['t', i / n],
             ]),
           })),
         };
@@ -1151,6 +1152,37 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         };
       }
 
+      case 'subPath': {
+        if (expr.args.length !== 2) throw new Error('subPath() expects 2 arguments (startT, endT)');
+        const spStart = evaluateExpression(expr.args[0], scope);
+        const spEnd = evaluateExpression(expr.args[1], scope);
+        if (typeof spStart !== 'number') throw new Error('subPath() startT must be a number');
+        if (typeof spEnd !== 'number') throw new Error('subPath() endT must be a number');
+        if (spStart < 0 || spStart > 1) throw new Error('subPath() startT must be between 0 and 1');
+        if (spEnd < 0 || spEnd > 1) throw new Error('subPath() endT must be between 0 and 1');
+        const subResult = subPathCommands(obj.commands, spStart, spEnd);
+        if (subResult.length === 0) {
+          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+        }
+        // Normalize to (0,0) origin for PathBlockValue
+        const spOriginX = subResult[0].start.x;
+        const spOriginY = subResult[0].start.y;
+        const spNormalized = subResult.map(cmd => ({
+          command: cmd.command,
+          args: [...cmd.args],
+          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
+          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
+        }));
+        const spLast = spNormalized[spNormalized.length - 1];
+        return {
+          type: 'PathBlockValue' as const,
+          commands: spNormalized,
+          pathStrings: spNormalized.map(c => commandToPathString(c)),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: spLast.end.x, y: spLast.end.y },
+        };
+      }
+
       default:
         throw new Error(`Unknown PathBlock method: ${expr.method}`);
     }
@@ -1206,11 +1238,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const points = partitionPath(obj.commands, n);
         return {
           type: 'ArrayValue' as const,
-          elements: points.map(p => ({
+          elements: points.map((p, i) => ({
             type: 'ObjectValue' as const,
             properties: new Map<string, Value>([
               ['point', { type: 'PointValue' as const, x: p.point.x, y: p.point.y }],
               ['angle', p.tangent],
+              ['t', i / n],
             ]),
           })),
         };
@@ -1303,6 +1336,37 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           commands: scaled,
           startPoint: { x: sStart.x, y: sStart.y },
           endPoint: { x: sEnd.x, y: sEnd.y },
+        };
+      }
+
+      case 'subPath': {
+        if (expr.args.length !== 2) throw new Error('subPath() expects 2 arguments (startT, endT)');
+        const spStart = evaluateExpression(expr.args[0], scope);
+        const spEnd = evaluateExpression(expr.args[1], scope);
+        if (typeof spStart !== 'number') throw new Error('subPath() startT must be a number');
+        if (typeof spEnd !== 'number') throw new Error('subPath() endT must be a number');
+        if (spStart < 0 || spStart > 1) throw new Error('subPath() startT must be between 0 and 1');
+        if (spEnd < 0 || spEnd > 1) throw new Error('subPath() endT must be between 0 and 1');
+        const subResult = subPathCommands(obj.commands, spStart, spEnd);
+        // Return PathBlockValue (normalized to 0,0) so result is drawable
+        if (subResult.length === 0) {
+          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+        }
+        const spOriginX = subResult[0].start.x;
+        const spOriginY = subResult[0].start.y;
+        const spNormalized = subResult.map(cmd => ({
+          command: cmd.command,
+          args: [...cmd.args],
+          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
+          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
+        }));
+        const spLast = spNormalized[spNormalized.length - 1];
+        return {
+          type: 'PathBlockValue' as const,
+          commands: spNormalized,
+          pathStrings: spNormalized.map(c => commandToPathString(c)),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
       }
 

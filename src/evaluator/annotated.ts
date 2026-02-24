@@ -30,7 +30,7 @@ import { createPathContext, contextToObject, updateContextForCommand, setLastTan
 import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { samplePathAtFraction, partitionPath } from './sampling';
-import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands } from './path-transforms';
+import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
 
 // Types for annotated output
 export type AnnotatedLine =
@@ -738,11 +738,12 @@ function evaluateAnnotatedPathSampling(
       const points = partitionPath(commands, n);
       return {
         type: 'ArrayValue' as const,
-        elements: points.map(p => ({
+        elements: points.map((p, i) => ({
           type: 'ObjectValue' as const,
           properties: new Map<string, Value>([
             ['point', { type: 'ContextObject' as const, value: { x: p.point.x, y: p.point.y } } as unknown as Value],
             ['angle', p.tangent],
+            ['t', i / n],
           ]),
         })),
       };
@@ -946,6 +947,57 @@ function evaluateAnnotatedPathTransforms(
           commands: scaled,
           startPoint: { x: sStart.x, y: sStart.y },
           endPoint: { x: sEnd.x, y: sEnd.y },
+        };
+      }
+    }
+
+    case 'subPath': {
+      if (expr.args.length !== 2) throw new Error('subPath() expects 2 arguments (startT, endT)');
+      const spStart = evaluateExpression(expr.args[0], scope);
+      const spEnd = evaluateExpression(expr.args[1], scope);
+      if (typeof spStart !== 'number') throw new Error('subPath() startT must be a number');
+      if (typeof spEnd !== 'number') throw new Error('subPath() endT must be a number');
+      if (spStart < 0 || spStart > 1) throw new Error('subPath() startT must be between 0 and 1');
+      if (spEnd < 0 || spEnd > 1) throw new Error('subPath() endT must be between 0 and 1');
+      const subResult = subPathCommands(obj.commands, spStart, spEnd);
+      if (isBlock) {
+        if (subResult.length === 0) {
+          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+        }
+        const spOriginX = subResult[0].start.x;
+        const spOriginY = subResult[0].start.y;
+        const spNormalized = subResult.map(cmd => ({
+          command: cmd.command, args: [...cmd.args],
+          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
+          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
+        }));
+        const spLast = spNormalized[spNormalized.length - 1];
+        return {
+          type: 'PathBlockValue' as const,
+          commands: spNormalized,
+          pathStrings: spNormalized.map(c => commandToPathString(c)),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: spLast.end.x, y: spLast.end.y },
+        };
+      } else {
+        // Return PathBlockValue (normalized to 0,0) so result is drawable
+        if (subResult.length === 0) {
+          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+        }
+        const spOriginX = subResult[0].start.x;
+        const spOriginY = subResult[0].start.y;
+        const spNormalized = subResult.map(cmd => ({
+          command: cmd.command, args: [...cmd.args],
+          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
+          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
+        }));
+        const spLast = spNormalized[spNormalized.length - 1];
+        return {
+          type: 'PathBlockValue' as const,
+          commands: spNormalized,
+          pathStrings: spNormalized.map(c => commandToPathString(c)),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
       }
     }

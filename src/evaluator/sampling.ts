@@ -421,6 +421,128 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
   }
 }
 
+// ---- Command location (arc-length fraction → command index + local t) ----
+
+export interface CommandLocation {
+  cmdIndex: number;
+  localT: number;
+}
+
+/**
+ * Given a set of commands with precomputed lengths, find which command contains
+ * the arc-length fraction `t` and compute the local fraction within that command.
+ */
+export function locateCommandAtFraction(
+  commands: SamplingCmd[],
+  cmdLengths: number[],
+  totalLength: number,
+  t: number
+): CommandLocation {
+  if (totalLength === 0 || commands.length === 0) {
+    return { cmdIndex: 0, localT: 0 };
+  }
+
+  if (t >= 1) {
+    for (let i = commands.length - 1; i >= 0; i--) {
+      if (cmdLengths[i] > 0) return { cmdIndex: i, localT: 1 };
+    }
+    return { cmdIndex: 0, localT: 0 };
+  }
+
+  const targetDist = Math.max(0, t) * totalLength;
+  let accumulated = 0;
+
+  for (let i = 0; i < commands.length; i++) {
+    const cmdLen = cmdLengths[i];
+    if (cmdLen === 0) continue;
+
+    if (accumulated + cmdLen >= targetDist) {
+      const localDist = targetDist - accumulated;
+      const localT = localDist / cmdLen;
+      return { cmdIndex: i, localT: Math.max(0, Math.min(1, localT)) };
+    }
+
+    accumulated += cmdLen;
+  }
+
+  return { cmdIndex: commands.length - 1, localT: 1 };
+}
+
+/**
+ * Convert an arc-length fraction within a single command to a parametric t.
+ * For lines, identity. For curves/arcs, uses arc-length lookup table.
+ */
+export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: number): number {
+  if (arcLengthFraction <= 0) return 0;
+  if (arcLengthFraction >= 1) return 1;
+
+  const upperCmd = cmd.command.toUpperCase();
+
+  switch (upperCmd) {
+    case 'L': case 'H': case 'V': case 'Z': case 'M':
+      // Linear: parametric t === arc-length fraction
+      return arcLengthFraction;
+
+    case 'C': {
+      const [cx1, cy1, cx2, cy2] = cmd.args;
+      const p0 = cmd.start;
+      const p1 = { x: p0.x + cx1, y: p0.y + cy1 };
+      const p2 = { x: p0.x + cx2, y: p0.y + cy2 };
+      const p3 = cmd.end;
+      const table = buildArcLengthLookup(t => cubicBezierAt(p0, p1, p2, p3, t), 64);
+      return lookupArcLengthT(table, arcLengthFraction);
+    }
+
+    case 'S': {
+      const [sx2, sy2] = cmd.args;
+      const p0 = cmd.start;
+      const p1 = p0;
+      const p2 = { x: p0.x + sx2, y: p0.y + sy2 };
+      const p3 = cmd.end;
+      const table = buildArcLengthLookup(t => cubicBezierAt(p0, p1, p2, p3, t), 64);
+      return lookupArcLengthT(table, arcLengthFraction);
+    }
+
+    case 'Q': {
+      const [qx1, qy1] = cmd.args;
+      const p0 = cmd.start;
+      const p1 = { x: p0.x + qx1, y: p0.y + qy1 };
+      const p2 = cmd.end;
+      const table = buildArcLengthLookup(t => quadBezierAt(p0, p1, p2, t), 64);
+      return lookupArcLengthT(table, arcLengthFraction);
+    }
+
+    case 'T':
+      // T is treated as linear (same as sampleOnCommand does)
+      return arcLengthFraction;
+
+    case 'A': {
+      const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
+      const phi = rotation * Math.PI / 180;
+      const center = arcEndpointToCenter(
+        cmd.start.x, cmd.start.y,
+        rx, ry, phi,
+        largeArcFlag, sweepFlag,
+        cmd.end.x, cmd.end.y
+      );
+
+      if (!center) return arcLengthFraction;
+
+      const needsCorrection = Math.abs(center.rx - center.ry) > 1e-10;
+      if (needsCorrection) {
+        const table = buildArcLengthLookup(t => arcPointFromCenter(center, t), 64);
+        return lookupArcLengthT(table, arcLengthFraction);
+      }
+
+      // Circular arc: parametric t === arc-length fraction
+      return arcLengthFraction;
+    }
+
+    default:
+      return arcLengthFraction;
+  }
+}
+
 // ---- Path-level sampling ----
 
 export function samplePathAtFraction(commands: SamplingCmd[], t: number): SampleResult {
@@ -440,30 +562,8 @@ export function samplePathAtFraction(commands: SamplingCmd[], t: number): Sample
     return { point: { x: commands[0].start.x, y: commands[0].start.y }, tangent: 0 };
   }
 
-  if (t >= 1) {
-    for (let i = commands.length - 1; i >= 0; i--) {
-      if (cmdLengths[i] > 0) return sampleOnCommand(commands[i], 1);
-    }
-    return { point: { x: commands[0].start.x, y: commands[0].start.y }, tangent: 0 };
-  }
-
-  const targetDist = Math.max(0, t) * totalLength;
-  let accumulated = 0;
-
-  for (let i = 0; i < commands.length; i++) {
-    const cmdLen = cmdLengths[i];
-    if (cmdLen === 0) continue;
-
-    if (accumulated + cmdLen >= targetDist) {
-      const localDist = targetDist - accumulated;
-      const localT = localDist / cmdLen;
-      return sampleOnCommand(commands[i], Math.max(0, Math.min(1, localT)));
-    }
-
-    accumulated += cmdLen;
-  }
-
-  return sampleOnCommand(commands[commands.length - 1], 1);
+  const loc = locateCommandAtFraction(commands, cmdLengths, totalLength, t);
+  return sampleOnCommand(commands[loc.cmdIndex], loc.localT);
 }
 
 export function partitionPath(commands: SamplingCmd[], n: number): SampleResult[] {
