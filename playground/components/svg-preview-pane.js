@@ -249,16 +249,19 @@ export class SvgPreviewPane extends HTMLElement {
     const viewWidth = width / zoomLevel;
     const viewHeight = height / zoomLevel;
 
-    // Clamp pan values; center canvas when zoomed out
-    if (viewWidth >= width) {
+    // Clamp pan values; center canvas when zoomed out below 50%
+    if (zoomLevel < 0.5) {
       panX = -(viewWidth - width) / 2;
-    } else {
-      panX = Math.max(0, Math.min(panX, width - viewWidth));
-    }
-    if (viewHeight >= height) {
       panY = -(viewHeight - height) / 2;
     } else {
-      panY = Math.max(0, Math.min(panY, height - viewHeight));
+      const marginX = viewWidth / 3;
+      const marginY = viewHeight / 3;
+      const minPanX = Math.min(0, width - viewWidth) - marginX;
+      const maxPanX = Math.max(0, width - viewWidth) + marginX;
+      const minPanY = Math.min(0, height - viewHeight) - marginY;
+      const maxPanY = Math.max(0, height - viewHeight) + marginY;
+      panX = Math.max(minPanX, Math.min(panX, maxPanX));
+      panY = Math.max(minPanY, Math.min(panY, maxPanY));
     }
 
     // Update store with clamped values
@@ -273,7 +276,7 @@ export class SvgPreviewPane extends HTMLElement {
     }
 
     this.updateNavigatorViewport();
-    this.previewContainer.classList.toggle('can-pan', zoomLevel > 1);
+    this.previewContainer.classList.toggle('can-pan', zoomLevel >= 0.5);
   }
 
   adjustPanForZoom(oldZoom, newZoom) {
@@ -319,7 +322,7 @@ export class SvgPreviewPane extends HTMLElement {
 
   // Pan handling
   startPan(e) {
-    if (store.get('zoomLevel') <= 1) return;
+    if (store.get('zoomLevel') < 0.5) return;
     this.isPanning = true;
     this.panStartX = e.clientX;
     this.panStartY = e.clientY;
