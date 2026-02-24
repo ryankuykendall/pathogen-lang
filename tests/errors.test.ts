@@ -439,3 +439,59 @@ describe('Edge cases', () => {
     });
   });
 });
+
+describe('Method call error locations', () => {
+  it('unknown PathBlock method includes line and column', () => {
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo()')).toThrow(/^Line 2, col 2: Unknown PathBlock method: foo$/);
+  });
+
+  it('unknown ProjectedPath method includes line and column', () => {
+    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo()')).toThrow(/^Line 3, col 2: Unknown ProjectedPath method: foo$/);
+  });
+
+  it('argument type error on method call includes line and column', () => {
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x")')).toThrow(/^Line 2, col 2:.*must be a number$/);
+  });
+
+  it('unknown array method includes line and column', () => {
+    expect(() => compilePath('let list = [1, 2];\nlist.foo()')).toThrow(/^Line 2, col 5:.*Unknown array method: foo$/);
+  });
+
+  it('unknown Point method includes line and column', () => {
+    expect(() => compilePath('let pt = Point(1, 2);\npt.foo()')).toThrow(/^Line 2, col 3:.*Unknown Point method: foo$/);
+  });
+
+  it('unknown string method includes line and column', () => {
+    expect(() => compilePath('let s = `hello`;\ns.foo()')).toThrow(/^Line 2, col 2:.*Unknown string method: foo$/);
+  });
+});
+
+describe('Void function calls', () => {
+  it('void function as bare statement does not throw', () => {
+    // A user-defined function that doesn't return anything
+    const result = compilePath('fn doNothing() { let x = 1; }\ndoNothing()');
+    expect(result).toBe('');
+  });
+
+  it('void function with path commands still works', () => {
+    const result = compilePath('fn setup() { let x = 1; }\nsetup()\nM 10 20');
+    expect(result).toBe('M 10 20');
+  });
+
+  it('function with explicit return value still works normally', () => {
+    const result = compilePath('fn makeCircle(r) { return circle(50, 50, r); }\nmakeCircle(25)');
+    expect(result).toContain('M');
+  });
+
+  it('void function in layer apply block does not throw', () => {
+    const result = compile(`
+      define PathLayer('main') \${ stroke: black; }
+      fn doNothing() { let x = 1; }
+      layer('main').apply {
+        doNothing()
+        M 10 20
+      }
+    `);
+    expect(result.layers.length).toBeGreaterThan(0);
+  });
+});

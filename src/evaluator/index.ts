@@ -829,18 +829,23 @@ function evaluateIndexExpression(expr: IndexExpression, scope: Scope): Value {
 
 function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
+  const mLine = getLine(expr);
+  const mCol = getCol(expr);
+  function mError(message: string): Error {
+    return new Error(formatError(message, mLine, mCol));
+  }
 
   // TransformReference methods (ctx.transform.reset())
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'TransformReference') {
     const transformRef = obj as TransformReference;
     if (expr.method === 'reset') {
-      if (expr.args.length !== 0) throw new Error('transform.reset() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('transform.reset() expects 0 arguments');
       transformRef.state.translate = null;
       transformRef.state.rotate = null;
       transformRef.state.scale = null;
       return 0;
     }
-    throw new Error(`Unknown transform method: ${expr.method}`);
+    throw mError(`Unknown transform method: ${expr.method}`);
   }
 
   // TransformPropertyReference methods (ctx.transform.translate.set(), .reset())
@@ -848,7 +853,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     const propRef = obj as TransformPropertyReference;
 
     if (expr.method === 'reset') {
-      if (expr.args.length !== 0) throw new Error(`transform.${propRef.property}.reset() expects 0 arguments`);
+      if (expr.args.length !== 0) throw mError(`transform.${propRef.property}.reset() expects 0 arguments`);
       propRef.state[propRef.property] = null;
       return 0;
     }
@@ -856,13 +861,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     if (expr.method === 'set') {
       const args = expr.args.map(a => {
         const v = evaluateExpression(a, scope);
-        if (typeof v !== 'number') throw new Error(`transform.${propRef.property}.set() arguments must be numbers`);
+        if (typeof v !== 'number') throw mError(`transform.${propRef.property}.set() arguments must be numbers`);
         return v;
       });
 
       switch (propRef.property) {
         case 'translate':
-          if (args.length !== 2) throw new Error('translate.set() expects 2 arguments (x, y)');
+          if (args.length !== 2) throw mError('translate.set() expects 2 arguments (x, y)');
           propRef.state.translate = { x: args[0], y: args[1] };
           return 0;
         case 'rotate':
@@ -871,7 +876,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           } else if (args.length === 3) {
             propRef.state.rotate = { angle: args[0], cx: args[1], cy: args[2] };
           } else {
-            throw new Error('rotate.set() expects 1 or 3 arguments (angle) or (angle, cx, cy)');
+            throw mError('rotate.set() expects 1 or 3 arguments (angle) or (angle, cx, cy)');
           }
           return 0;
         case 'scale':
@@ -880,26 +885,26 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           } else if (args.length === 4) {
             propRef.state.scale = { x: args[0], y: args[1], cx: args[2], cy: args[3] };
           } else {
-            throw new Error('scale.set() expects 2 or 4 arguments (sx, sy) or (sx, sy, cx, cy)');
+            throw mError('scale.set() expects 2 or 4 arguments (sx, sy) or (sx, sy, cx, cy)');
           }
           return 0;
       }
     }
 
-    throw new Error(`Unknown transform.${propRef.property} method: ${expr.method}`);
+    throw mError(`Unknown transform.${propRef.property} method: ${expr.method}`);
   }
 
   // PathBlockValue methods: draw(), project()
   if (isPathBlockValue(obj)) {
     // Check if we're inside a path block — draw/project not allowed there
     if (scope.evalState && (scope.evalState as EvaluationState & { _insidePathBlock?: boolean })._insidePathBlock) {
-      throw new Error(`Cannot call .${expr.method}() inside a path block`);
+      throw mError(`Cannot call .${expr.method}() inside a path block`);
     }
 
     switch (expr.method) {
       case 'draw': {
-        if (expr.args.length !== 0) throw new Error('draw() expects 0 arguments');
-        if (!scope.evalState) throw new Error('draw() requires evaluation context');
+        if (expr.args.length !== 0) throw mError('draw() expects 0 arguments');
+        if (!scope.evalState) throw mError('draw() requires evaluation context');
 
         // Get the current cursor position as the draw origin
         const ctx = scope.evalState.pathContext;
@@ -942,11 +947,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'project': {
-        if (expr.args.length !== 2) throw new Error('project() expects 2 arguments (x, y)');
+        if (expr.args.length !== 2) throw mError('project() expects 2 arguments (x, y)');
         const x = evaluateExpression(expr.args[0], scope);
         const y = evaluateExpression(expr.args[1], scope);
-        if (typeof x !== 'number') throw new Error('project() x must be a number');
-        if (typeof y !== 'number') throw new Error('project() y must be a number');
+        if (typeof x !== 'number') throw mError('project() x must be a number');
+        if (typeof y !== 'number') throw mError('project() y must be a number');
 
         return {
           type: 'ProjectedPathValue' as const,
@@ -957,19 +962,19 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'get': {
-        if (expr.args.length !== 1) throw new Error('get() expects 1 argument (t)');
+        if (expr.args.length !== 1) throw mError('get() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
-        if (typeof t !== 'number') throw new Error('get() argument must be a number');
-        if (t < 0 || t > 1) throw new Error(`get() argument must be between 0 and 1, got ${t}`);
+        if (typeof t !== 'number') throw mError('get() argument must be a number');
+        if (t < 0 || t > 1) throw mError(`get() argument must be between 0 and 1, got ${t}`);
         const result = samplePathAtFraction(obj.commands, t);
         return { type: 'PointValue' as const, x: result.point.x, y: result.point.y };
       }
 
       case 'tangent': {
-        if (expr.args.length !== 1) throw new Error('tangent() expects 1 argument (t)');
+        if (expr.args.length !== 1) throw mError('tangent() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
-        if (typeof t !== 'number') throw new Error('tangent() argument must be a number');
-        if (t < 0 || t > 1) throw new Error(`tangent() argument must be between 0 and 1, got ${t}`);
+        if (typeof t !== 'number') throw mError('tangent() argument must be a number');
+        if (t < 0 || t > 1) throw mError(`tangent() argument must be between 0 and 1, got ${t}`);
         const result = samplePathAtFraction(obj.commands, t);
         return {
           type: 'ObjectValue' as const,
@@ -981,10 +986,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'normal': {
-        if (expr.args.length !== 1) throw new Error('normal() expects 1 argument (t)');
+        if (expr.args.length !== 1) throw mError('normal() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
-        if (typeof t !== 'number') throw new Error('normal() argument must be a number');
-        if (t < 0 || t > 1) throw new Error(`normal() argument must be between 0 and 1, got ${t}`);
+        if (typeof t !== 'number') throw mError('normal() argument must be a number');
+        if (t < 0 || t > 1) throw mError(`normal() argument must be between 0 and 1, got ${t}`);
         const result = samplePathAtFraction(obj.commands, t);
         return {
           type: 'ObjectValue' as const,
@@ -996,10 +1001,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'partition': {
-        if (expr.args.length !== 1) throw new Error('partition() expects 1 argument (n)');
+        if (expr.args.length !== 1) throw mError('partition() expects 1 argument (n)');
         const n = evaluateExpression(expr.args[0], scope);
-        if (typeof n !== 'number') throw new Error('partition() argument must be a number');
-        if (!Number.isInteger(n) || n < 1) throw new Error('partition() argument must be a positive integer');
+        if (typeof n !== 'number') throw mError('partition() argument must be a number');
+        if (!Number.isInteger(n) || n < 1) throw mError('partition() argument must be a positive integer');
         const points = partitionPath(obj.commands, n);
         return {
           type: 'ArrayValue' as const,
@@ -1015,7 +1020,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'reverse': {
-        if (expr.args.length !== 0) throw new Error('reverse() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
         const reversed = reverseCommands(obj.commands);
         // Normalize to (0,0) origin for PathBlockValue
         if (reversed.length === 0) {
@@ -1040,7 +1045,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'boundingBox': {
-        if (expr.args.length !== 0) throw new Error('boundingBox() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('boundingBox() expects 0 arguments');
         const bb = computeBoundingBox(obj.commands);
         return {
           type: 'ObjectValue' as const,
@@ -1051,9 +1056,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'offset': {
-        if (expr.args.length !== 1) throw new Error('offset() expects 1 argument (distance)');
+        if (expr.args.length !== 1) throw mError('offset() expects 1 argument (distance)');
         const dist = evaluateExpression(expr.args[0], scope);
-        if (typeof dist !== 'number') throw new Error('offset() argument must be a number');
+        if (typeof dist !== 'number') throw mError('offset() argument must be a number');
         const offsetResult = offsetCommands(obj.commands, dist);
         // Normalize to (0,0) origin for PathBlockValue
         if (offsetResult.length === 0) {
@@ -1078,9 +1083,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'mirror': {
-        if (expr.args.length !== 1) throw new Error('mirror() expects 1 argument (angle)');
+        if (expr.args.length !== 1) throw mError('mirror() expects 1 argument (angle)');
         const mAngle = evaluateExpression(expr.args[0], scope);
-        if (typeof mAngle !== 'number') throw new Error('mirror() argument must be a number');
+        if (typeof mAngle !== 'number') throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, { x: 0, y: 0 });
         if (mirrored.length === 0) {
           return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
@@ -1104,12 +1109,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'rotateAtVertexIndex': {
-        if (expr.args.length !== 2) throw new Error('rotateAtVertexIndex() expects 2 arguments (index, angle)');
+        if (expr.args.length !== 2) throw mError('rotateAtVertexIndex() expects 2 arguments (index, angle)');
         const rIdx = evaluateExpression(expr.args[0], scope);
         const rAngle = evaluateExpression(expr.args[1], scope);
-        if (typeof rIdx !== 'number') throw new Error('rotateAtVertexIndex() index must be a number');
-        if (typeof rAngle !== 'number') throw new Error('rotateAtVertexIndex() angle must be a number');
-        if (!Number.isInteger(rIdx)) throw new Error('rotateAtVertexIndex() index must be an integer');
+        if (typeof rIdx !== 'number') throw mError('rotateAtVertexIndex() index must be a number');
+        if (typeof rAngle !== 'number') throw mError('rotateAtVertexIndex() angle must be a number');
+        if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
         if (rotated.length === 0) {
           return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
@@ -1133,11 +1138,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'scale': {
-        if (expr.args.length !== 2) throw new Error('scale() expects 2 arguments (sx, sy)');
+        if (expr.args.length !== 2) throw mError('scale() expects 2 arguments (sx, sy)');
         const sSx = evaluateExpression(expr.args[0], scope);
         const sSy = evaluateExpression(expr.args[1], scope);
-        if (typeof sSx !== 'number') throw new Error('scale() sx must be a number');
-        if (typeof sSy !== 'number') throw new Error('scale() sy must be a number');
+        if (typeof sSx !== 'number') throw mError('scale() sx must be a number');
+        if (typeof sSy !== 'number') throw mError('scale() sy must be a number');
         const scaled = scaleCommands(obj.commands, sSx, sSy, { x: 0, y: 0 });
         if (scaled.length === 0) {
           return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
@@ -1153,13 +1158,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'subPath': {
-        if (expr.args.length !== 2) throw new Error('subPath() expects 2 arguments (startT, endT)');
+        if (expr.args.length !== 2) throw mError('subPath() expects 2 arguments (startT, endT)');
         const spStart = evaluateExpression(expr.args[0], scope);
         const spEnd = evaluateExpression(expr.args[1], scope);
-        if (typeof spStart !== 'number') throw new Error('subPath() startT must be a number');
-        if (typeof spEnd !== 'number') throw new Error('subPath() endT must be a number');
-        if (spStart < 0 || spStart > 1) throw new Error('subPath() startT must be between 0 and 1');
-        if (spEnd < 0 || spEnd > 1) throw new Error('subPath() endT must be between 0 and 1');
+        if (typeof spStart !== 'number') throw mError('subPath() startT must be a number');
+        if (typeof spEnd !== 'number') throw mError('subPath() endT must be a number');
+        if (spStart < 0 || spStart > 1) throw mError('subPath() startT must be between 0 and 1');
+        if (spEnd < 0 || spEnd > 1) throw mError('subPath() endT must be between 0 and 1');
         const subResult = subPathCommands(obj.commands, spStart, spEnd);
         if (subResult.length === 0) {
           return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
@@ -1184,7 +1189,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       default:
-        throw new Error(`Unknown PathBlock method: ${expr.method}`);
+        throw mError(`Unknown PathBlock method: ${expr.method}`);
     }
   }
 
@@ -1192,19 +1197,19 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   if (isProjectedPathValue(obj)) {
     switch (expr.method) {
       case 'get': {
-        if (expr.args.length !== 1) throw new Error('get() expects 1 argument (t)');
+        if (expr.args.length !== 1) throw mError('get() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
-        if (typeof t !== 'number') throw new Error('get() argument must be a number');
-        if (t < 0 || t > 1) throw new Error(`get() argument must be between 0 and 1, got ${t}`);
+        if (typeof t !== 'number') throw mError('get() argument must be a number');
+        if (t < 0 || t > 1) throw mError(`get() argument must be between 0 and 1, got ${t}`);
         const result = samplePathAtFraction(obj.commands, t);
         return { type: 'PointValue' as const, x: result.point.x, y: result.point.y };
       }
 
       case 'tangent': {
-        if (expr.args.length !== 1) throw new Error('tangent() expects 1 argument (t)');
+        if (expr.args.length !== 1) throw mError('tangent() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
-        if (typeof t !== 'number') throw new Error('tangent() argument must be a number');
-        if (t < 0 || t > 1) throw new Error(`tangent() argument must be between 0 and 1, got ${t}`);
+        if (typeof t !== 'number') throw mError('tangent() argument must be a number');
+        if (t < 0 || t > 1) throw mError(`tangent() argument must be between 0 and 1, got ${t}`);
         const result = samplePathAtFraction(obj.commands, t);
         return {
           type: 'ObjectValue' as const,
@@ -1216,10 +1221,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'normal': {
-        if (expr.args.length !== 1) throw new Error('normal() expects 1 argument (t)');
+        if (expr.args.length !== 1) throw mError('normal() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
-        if (typeof t !== 'number') throw new Error('normal() argument must be a number');
-        if (t < 0 || t > 1) throw new Error(`normal() argument must be between 0 and 1, got ${t}`);
+        if (typeof t !== 'number') throw mError('normal() argument must be a number');
+        if (t < 0 || t > 1) throw mError(`normal() argument must be between 0 and 1, got ${t}`);
         const result = samplePathAtFraction(obj.commands, t);
         return {
           type: 'ObjectValue' as const,
@@ -1231,10 +1236,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'partition': {
-        if (expr.args.length !== 1) throw new Error('partition() expects 1 argument (n)');
+        if (expr.args.length !== 1) throw mError('partition() expects 1 argument (n)');
         const n = evaluateExpression(expr.args[0], scope);
-        if (typeof n !== 'number') throw new Error('partition() argument must be a number');
-        if (!Number.isInteger(n) || n < 1) throw new Error('partition() argument must be a positive integer');
+        if (typeof n !== 'number') throw mError('partition() argument must be a number');
+        if (!Number.isInteger(n) || n < 1) throw mError('partition() argument must be a positive integer');
         const points = partitionPath(obj.commands, n);
         return {
           type: 'ArrayValue' as const,
@@ -1250,7 +1255,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'reverse': {
-        if (expr.args.length !== 0) throw new Error('reverse() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
         const reversed = reverseCommands(obj.commands);
         // ProjectedPathValue: starts at original endPoint, keeps absolute coords
         const projStartPoint = obj.endPoint;
@@ -1264,7 +1269,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'boundingBox': {
-        if (expr.args.length !== 0) throw new Error('boundingBox() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('boundingBox() expects 0 arguments');
         const bb = computeBoundingBox(obj.commands);
         return {
           type: 'ObjectValue' as const,
@@ -1275,9 +1280,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'offset': {
-        if (expr.args.length !== 1) throw new Error('offset() expects 1 argument (distance)');
+        if (expr.args.length !== 1) throw mError('offset() expects 1 argument (distance)');
         const dist = evaluateExpression(expr.args[0], scope);
-        if (typeof dist !== 'number') throw new Error('offset() argument must be a number');
+        if (typeof dist !== 'number') throw mError('offset() argument must be a number');
         const offsetResult = offsetCommands(obj.commands, dist);
         const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
         const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
@@ -1290,9 +1295,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'mirror': {
-        if (expr.args.length !== 1) throw new Error('mirror() expects 1 argument (angle)');
+        if (expr.args.length !== 1) throw mError('mirror() expects 1 argument (angle)');
         const mAngle = evaluateExpression(expr.args[0], scope);
-        if (typeof mAngle !== 'number') throw new Error('mirror() argument must be a number');
+        if (typeof mAngle !== 'number') throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
         const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
         const mEnd = mirrored.length > 0 ? mirrored[mirrored.length - 1].end : obj.endPoint;
@@ -1305,12 +1310,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'rotateAtVertexIndex': {
-        if (expr.args.length !== 2) throw new Error('rotateAtVertexIndex() expects 2 arguments (index, angle)');
+        if (expr.args.length !== 2) throw mError('rotateAtVertexIndex() expects 2 arguments (index, angle)');
         const rIdx = evaluateExpression(expr.args[0], scope);
         const rAngle = evaluateExpression(expr.args[1], scope);
-        if (typeof rIdx !== 'number') throw new Error('rotateAtVertexIndex() index must be a number');
-        if (typeof rAngle !== 'number') throw new Error('rotateAtVertexIndex() angle must be a number');
-        if (!Number.isInteger(rIdx)) throw new Error('rotateAtVertexIndex() index must be an integer');
+        if (typeof rIdx !== 'number') throw mError('rotateAtVertexIndex() index must be a number');
+        if (typeof rAngle !== 'number') throw mError('rotateAtVertexIndex() angle must be a number');
+        if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
         const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
         const rEnd = rotated.length > 0 ? rotated[rotated.length - 1].end : obj.endPoint;
@@ -1323,11 +1328,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'scale': {
-        if (expr.args.length !== 2) throw new Error('scale() expects 2 arguments (sx, sy)');
+        if (expr.args.length !== 2) throw mError('scale() expects 2 arguments (sx, sy)');
         const sSx = evaluateExpression(expr.args[0], scope);
         const sSy = evaluateExpression(expr.args[1], scope);
-        if (typeof sSx !== 'number') throw new Error('scale() sx must be a number');
-        if (typeof sSy !== 'number') throw new Error('scale() sy must be a number');
+        if (typeof sSx !== 'number') throw mError('scale() sx must be a number');
+        if (typeof sSy !== 'number') throw mError('scale() sy must be a number');
         const scaled = scaleCommands(obj.commands, sSx, sSy, obj.startPoint);
         const sStart = scaled.length > 0 ? scaled[0].start : obj.startPoint;
         const sEnd = scaled.length > 0 ? scaled[scaled.length - 1].end : obj.endPoint;
@@ -1340,13 +1345,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'subPath': {
-        if (expr.args.length !== 2) throw new Error('subPath() expects 2 arguments (startT, endT)');
+        if (expr.args.length !== 2) throw mError('subPath() expects 2 arguments (startT, endT)');
         const spStart = evaluateExpression(expr.args[0], scope);
         const spEnd = evaluateExpression(expr.args[1], scope);
-        if (typeof spStart !== 'number') throw new Error('subPath() startT must be a number');
-        if (typeof spEnd !== 'number') throw new Error('subPath() endT must be a number');
-        if (spStart < 0 || spStart > 1) throw new Error('subPath() startT must be between 0 and 1');
-        if (spEnd < 0 || spEnd > 1) throw new Error('subPath() endT must be between 0 and 1');
+        if (typeof spStart !== 'number') throw mError('subPath() startT must be a number');
+        if (typeof spEnd !== 'number') throw mError('subPath() endT must be a number');
+        if (spStart < 0 || spStart > 1) throw mError('subPath() startT must be between 0 and 1');
+        if (spEnd < 0 || spEnd > 1) throw mError('subPath() endT must be between 0 and 1');
         const subResult = subPathCommands(obj.commands, spStart, spEnd);
         // Return PathBlockValue (normalized to 0,0) so result is drawable
         if (subResult.length === 0) {
@@ -1371,7 +1376,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       default:
-        throw new Error(`Unknown ProjectedPath method: ${expr.method}`);
+        throw mError(`Unknown ProjectedPath method: ${expr.method}`);
     }
   }
 
@@ -1379,41 +1384,41 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   if (isPointValue(obj)) {
     switch (expr.method) {
       case 'translate': {
-        if (expr.args.length !== 2) throw new Error('translate() expects 2 arguments');
+        if (expr.args.length !== 2) throw mError('translate() expects 2 arguments');
         const dx = evaluateExpression(expr.args[0], scope);
         const dy = evaluateExpression(expr.args[1], scope);
-        if (typeof dx !== 'number') throw new Error('translate() dx must be a number');
-        if (typeof dy !== 'number') throw new Error('translate() dy must be a number');
+        if (typeof dx !== 'number') throw mError('translate() dx must be a number');
+        if (typeof dy !== 'number') throw mError('translate() dy must be a number');
         return { type: 'PointValue', x: obj.x + dx, y: obj.y + dy };
       }
       case 'polarTranslate': {
-        if (expr.args.length !== 2) throw new Error('polarTranslate() expects 2 arguments');
+        if (expr.args.length !== 2) throw mError('polarTranslate() expects 2 arguments');
         const angle = evaluateExpression(expr.args[0], scope);
         const distance = evaluateExpression(expr.args[1], scope);
-        if (typeof angle !== 'number') throw new Error('polarTranslate() angle must be a number');
-        if (typeof distance !== 'number') throw new Error('polarTranslate() distance must be a number');
+        if (typeof angle !== 'number') throw mError('polarTranslate() angle must be a number');
+        if (typeof distance !== 'number') throw mError('polarTranslate() distance must be a number');
         return { type: 'PointValue', x: obj.x + Math.cos(angle) * distance, y: obj.y + Math.sin(angle) * distance };
       }
       case 'midpoint': {
-        if (expr.args.length !== 1) throw new Error('midpoint() expects 1 argument');
+        if (expr.args.length !== 1) throw mError('midpoint() expects 1 argument');
         const other = evaluateExpression(expr.args[0], scope);
-        if (!isPointValue(other)) throw new Error('midpoint() argument must be a Point');
+        if (!isPointValue(other)) throw mError('midpoint() argument must be a Point');
         return { type: 'PointValue', x: (obj.x + other.x) / 2, y: (obj.y + other.y) / 2 };
       }
       case 'lerp': {
-        if (expr.args.length !== 2) throw new Error('lerp() expects 2 arguments');
+        if (expr.args.length !== 2) throw mError('lerp() expects 2 arguments');
         const other = evaluateExpression(expr.args[0], scope);
         const t = evaluateExpression(expr.args[1], scope);
-        if (!isPointValue(other)) throw new Error('lerp() first argument must be a Point');
-        if (typeof t !== 'number') throw new Error('lerp() second argument (t) must be a number');
+        if (!isPointValue(other)) throw mError('lerp() first argument must be a Point');
+        if (typeof t !== 'number') throw mError('lerp() second argument (t) must be a number');
         return { type: 'PointValue', x: obj.x + (other.x - obj.x) * t, y: obj.y + (other.y - obj.y) * t };
       }
       case 'rotate': {
-        if (expr.args.length !== 2) throw new Error('rotate() expects 2 arguments');
+        if (expr.args.length !== 2) throw mError('rotate() expects 2 arguments');
         const angle = evaluateExpression(expr.args[0], scope);
         const origin = evaluateExpression(expr.args[1], scope);
-        if (typeof angle !== 'number') throw new Error('rotate() angle must be a number');
-        if (!isPointValue(origin)) throw new Error('rotate() origin must be a Point');
+        if (typeof angle !== 'number') throw mError('rotate() angle must be a number');
+        if (!isPointValue(origin)) throw mError('rotate() origin must be a Point');
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
         const dx = obj.x - origin.x;
@@ -1421,21 +1426,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return { type: 'PointValue', x: origin.x + dx * cos - dy * sin, y: origin.y + dx * sin + dy * cos };
       }
       case 'distanceTo': {
-        if (expr.args.length !== 1) throw new Error('distanceTo() expects 1 argument');
+        if (expr.args.length !== 1) throw mError('distanceTo() expects 1 argument');
         const other = evaluateExpression(expr.args[0], scope);
-        if (!isPointValue(other)) throw new Error('distanceTo() argument must be a Point');
+        if (!isPointValue(other)) throw mError('distanceTo() argument must be a Point');
         const dx = other.x - obj.x;
         const dy = other.y - obj.y;
         return Math.sqrt(dx * dx + dy * dy);
       }
       case 'angleTo': {
-        if (expr.args.length !== 1) throw new Error('angleTo() expects 1 argument');
+        if (expr.args.length !== 1) throw mError('angleTo() expects 1 argument');
         const other = evaluateExpression(expr.args[0], scope);
-        if (!isPointValue(other)) throw new Error('angleTo() argument must be a Point');
+        if (!isPointValue(other)) throw mError('angleTo() argument must be a Point');
         return Math.atan2(other.y - obj.y, other.x - obj.x);
       }
       default:
-        throw new Error(`Unknown Point method: ${expr.method}`);
+        throw mError(`Unknown Point method: ${expr.method}`);
     }
   }
 
@@ -1443,13 +1448,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   if (isCyclerValue(obj)) {
     switch (expr.method) {
       case 'pick': {
-        if (expr.args.length !== 0) throw new Error('pick() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('pick() expects 0 arguments');
         const value = obj.elements[obj.index];
         obj.index = (obj.index + 1) % obj.elements.length;
         return value;
       }
       default:
-        throw new Error(`Unknown Cycler method: ${expr.method}`);
+        throw mError(`Unknown Cycler method: ${expr.method}`);
     }
   }
 
@@ -1457,8 +1462,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   if (isSVGFragmentValue(obj)) {
     switch (expr.method) {
       case 'insert': {
-        if (expr.args.length !== 0) throw new Error('insert() expects 0 arguments');
-        if (!scope.evalState) throw new Error('insert() requires evaluation context');
+        if (expr.args.length !== 0) throw mError('insert() expects 0 arguments');
+        if (!scope.evalState) throw mError('insert() requires evaluation context');
         // Generate unique fragment layer name
         let counter = 1;
         let name = `__fragment_${counter}`;
@@ -1479,7 +1484,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return 0;
       }
       default:
-        throw new Error(`Unknown SVGDocumentFragment method: ${expr.method}`);
+        throw mError(`Unknown SVGDocumentFragment method: ${expr.method}`);
     }
   }
 
@@ -1488,122 +1493,122 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     const args = expr.args.map(a => evaluateExpression(a, scope));
     switch (expr.method) {
       case 'keys': {
-        if (args.length !== 1 || !isObjectValue(args[0])) throw new Error('Object.keys() expects 1 object argument');
+        if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.keys() expects 1 object argument');
         return { type: 'ArrayValue', elements: Array.from(args[0].properties.keys()) };
       }
       case 'values': {
-        if (args.length !== 1 || !isObjectValue(args[0])) throw new Error('Object.values() expects 1 object argument');
+        if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.values() expects 1 object argument');
         return { type: 'ArrayValue', elements: Array.from(args[0].properties.values()) };
       }
       case 'entries': {
-        if (args.length !== 1 || !isObjectValue(args[0])) throw new Error('Object.entries() expects 1 object argument');
+        if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.entries() expects 1 object argument');
         const entries = Array.from(args[0].properties.entries()).map(
           ([k, v]) => ({ type: 'ArrayValue' as const, elements: [k, v] as Value[] })
         );
         return { type: 'ArrayValue', elements: entries };
       }
       case 'delete': {
-        if (args.length !== 2 || !isObjectValue(args[0])) throw new Error('Object.delete() expects 2 arguments (object, key)');
+        if (args.length !== 2 || !isObjectValue(args[0])) throw mError('Object.delete() expects 2 arguments (object, key)');
         const key = args[1];
-        if (typeof key !== 'string') throw new Error('Object.delete() key must be a string');
+        if (typeof key !== 'string') throw mError('Object.delete() key must be a string');
         const val = args[0].properties.get(key) ?? null;
         args[0].properties.delete(key);
         return val;
       }
       default:
-        throw new Error(`Unknown Object method: ${expr.method}`);
+        throw mError(`Unknown Object method: ${expr.method}`);
     }
   }
 
   // ObjectValue methods
   if (isObjectValue(obj)) {
     if (expr.method === 'has') {
-      if (expr.args.length !== 1) throw new Error('has() expects 1 argument');
+      if (expr.args.length !== 1) throw mError('has() expects 1 argument');
       const key = evaluateExpression(expr.args[0], scope);
-      if (typeof key !== 'string') throw new Error('has() argument must be a string');
+      if (typeof key !== 'string') throw mError('has() argument must be a string');
       return obj.properties.has(key) ? 1 : 0;
     }
-    throw new Error(`Unknown object method: ${expr.method}`);
+    throw mError(`Unknown object method: ${expr.method}`);
   }
 
   // String methods
   if (typeof obj === 'string') {
     switch (expr.method) {
       case 'empty': {
-        if (expr.args.length !== 0) throw new Error('empty() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('empty() expects 0 arguments');
         return obj.length === 0 ? 1 : 0;
       }
       case 'split': {
-        if (expr.args.length !== 0) throw new Error('split() expects 0 arguments');
+        if (expr.args.length !== 0) throw mError('split() expects 0 arguments');
         const chars = Array.from(obj);
         return { type: 'ArrayValue' as const, elements: chars };
       }
       case 'append': {
-        if (expr.args.length !== 1) throw new Error('append() expects 1 argument');
+        if (expr.args.length !== 1) throw mError('append() expects 1 argument');
         const val = evaluateExpression(expr.args[0], scope);
-        if (typeof val !== 'string') throw new Error('append() argument must be a string');
+        if (typeof val !== 'string') throw mError('append() argument must be a string');
         return obj + val;
       }
       case 'prepend': {
-        if (expr.args.length !== 1) throw new Error('prepend() expects 1 argument');
+        if (expr.args.length !== 1) throw mError('prepend() expects 1 argument');
         const val = evaluateExpression(expr.args[0], scope);
-        if (typeof val !== 'string') throw new Error('prepend() argument must be a string');
+        if (typeof val !== 'string') throw mError('prepend() argument must be a string');
         return val + obj;
       }
       case 'includes': {
-        if (expr.args.length !== 1) throw new Error('includes() expects 1 argument');
+        if (expr.args.length !== 1) throw mError('includes() expects 1 argument');
         const val = evaluateExpression(expr.args[0], scope);
-        if (typeof val !== 'string') throw new Error('includes() argument must be a string');
+        if (typeof val !== 'string') throw mError('includes() argument must be a string');
         return obj.includes(val) ? 1 : 0;
       }
       case 'slice': {
-        if (expr.args.length !== 2) throw new Error('slice() expects 2 arguments');
+        if (expr.args.length !== 2) throw mError('slice() expects 2 arguments');
         const start = evaluateExpression(expr.args[0], scope);
         const end = evaluateExpression(expr.args[1], scope);
         if (typeof start !== 'number' || typeof end !== 'number') {
-          throw new Error('slice() arguments must be numbers');
+          throw mError('slice() arguments must be numbers');
         }
         return obj.slice(start, end);
       }
       default:
-        throw new Error(`Unknown string method: ${expr.method}`);
+        throw mError(`Unknown string method: ${expr.method}`);
     }
   }
 
   // Array methods
   if (!isArrayValue(obj)) {
-    throw new Error(`Cannot call method '${expr.method}' on non-array value`);
+    throw mError(`Cannot call method '${expr.method}' on non-array value`);
   }
 
   switch (expr.method) {
     case 'push': {
-      if (expr.args.length !== 1) throw new Error('push() expects 1 argument');
+      if (expr.args.length !== 1) throw mError('push() expects 1 argument');
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.push(val);
       return obj.elements.length;
     }
     case 'pop': {
-      if (expr.args.length !== 0) throw new Error('pop() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('pop() expects 0 arguments');
       if (obj.elements.length === 0) return null;
       return obj.elements.pop()!;
     }
     case 'shift': {
-      if (expr.args.length !== 0) throw new Error('shift() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('shift() expects 0 arguments');
       if (obj.elements.length === 0) return null;
       return obj.elements.shift()!;
     }
     case 'unshift': {
-      if (expr.args.length !== 1) throw new Error('unshift() expects 1 argument');
+      if (expr.args.length !== 1) throw mError('unshift() expects 1 argument');
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.unshift(val);
       return obj.elements.length;
     }
     case 'empty': {
-      if (expr.args.length !== 0) throw new Error('empty() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('empty() expects 0 arguments');
       return obj.elements.length === 0 ? 1 : 0;
     }
     default:
-      throw new Error(`Unknown array method: ${expr.method}`);
+      throw mError(`Unknown array method: ${expr.method}`);
   }
 }
 
@@ -2101,8 +2106,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
 
     case 'FunctionCall': {
       const value = evaluateFunctionCall(arg, scope);
-      if (value === null) {
-        throw new Error('Cannot use null as a path argument');
+      // Void functions (side-effect only) return undefined/null/'' — treat as empty path
+      if (value === undefined || value === null || value === '') {
+        return '';
       }
       if (typeof value === 'number') {
         return formatNum(value);
@@ -2143,8 +2149,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
 
     case 'MethodCallExpression': {
       const value = evaluateMethodCall(arg, scope);
-      if (value === null) {
-        throw new Error('Cannot use null as a path argument');
+      // Void method calls (side-effect only) return undefined/null/'' — treat as empty path
+      if (value === undefined || value === null || value === '') {
+        return '';
       }
       if (typeof value === 'number') {
         return formatNum(value);

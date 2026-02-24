@@ -236,6 +236,7 @@ export interface MethodCallExpression {
   object: Expression;
   method: string;
   args: Expression[];
+  loc?: SourceLocation;
 }
 
 // Style block literal: ${ stroke: red; stroke-width: 2; }

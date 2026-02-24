@@ -1010,6 +1010,12 @@ function evaluateAnnotatedPathTransforms(
 function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
 
+  const mLine = (expr as { loc?: { line: number } })?.loc?.line;
+  const mCol = (expr as { loc?: { column: number } })?.loc?.column;
+  function mError(message: string): Error {
+    return new Error(formatError(message, mLine, mCol));
+  }
+
   // PathBlockValue methods: draw(), project()
   if (isPathBlockValue(obj)) {
     if (expr.method === 'draw') {
@@ -1065,7 +1071,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     // Transform methods: reverse, boundingBox, offset
     const pathTransformResult = evaluateAnnotatedPathTransforms(obj, expr, scope);
     if (pathTransformResult !== null) return pathTransformResult;
-    throw new Error(`Unknown PathBlock method: ${expr.method}`);
+    throw mError(`Unknown PathBlock method: ${expr.method}`);
   }
 
   // ProjectedPathValue methods: get(), tangent(), normal(), partition()
@@ -1075,7 +1081,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     // Transform methods: reverse, boundingBox, offset
     const pathTransformResult = evaluateAnnotatedPathTransforms(obj, expr, scope);
     if (pathTransformResult !== null) return pathTransformResult;
-    throw new Error(`Unknown ProjectedPath method: ${expr.method}`);
+    throw mError(`Unknown ProjectedPath method: ${expr.method}`);
   }
 
   // ObjectNamespace methods
@@ -1083,83 +1089,83 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     const args = expr.args.map(a => evaluateExpression(a, scope));
     switch (expr.method) {
       case 'keys': {
-        if (args.length !== 1 || !isObjectValue(args[0])) throw new Error('Object.keys() expects 1 object argument');
+        if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.keys() expects 1 object argument');
         return { type: 'ArrayValue', elements: Array.from(args[0].properties.keys()) };
       }
       case 'values': {
-        if (args.length !== 1 || !isObjectValue(args[0])) throw new Error('Object.values() expects 1 object argument');
+        if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.values() expects 1 object argument');
         return { type: 'ArrayValue', elements: Array.from(args[0].properties.values()) };
       }
       case 'entries': {
-        if (args.length !== 1 || !isObjectValue(args[0])) throw new Error('Object.entries() expects 1 object argument');
+        if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.entries() expects 1 object argument');
         const entries = Array.from(args[0].properties.entries()).map(
           ([k, v]) => ({ type: 'ArrayValue' as const, elements: [k, v] as Value[] })
         );
         return { type: 'ArrayValue', elements: entries };
       }
       case 'delete': {
-        if (args.length !== 2 || !isObjectValue(args[0])) throw new Error('Object.delete() expects 2 arguments (object, key)');
+        if (args.length !== 2 || !isObjectValue(args[0])) throw mError('Object.delete() expects 2 arguments (object, key)');
         const key = args[1];
-        if (typeof key !== 'string') throw new Error('Object.delete() key must be a string');
+        if (typeof key !== 'string') throw mError('Object.delete() key must be a string');
         const val = args[0].properties.get(key) ?? null;
         args[0].properties.delete(key);
         return val;
       }
       default:
-        throw new Error(`Unknown Object method: ${expr.method}`);
+        throw mError(`Unknown Object method: ${expr.method}`);
     }
   }
 
   // SVGFragmentValue methods
   if (isSVGFragmentValue(obj)) {
     if (expr.method === 'insert') {
-      if (expr.args.length !== 0) throw new Error('insert() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('insert() expects 0 arguments');
       return 0; // No-op in annotated mode
     }
-    throw new Error(`Unknown SVGDocumentFragment method: ${expr.method}`);
+    throw mError(`Unknown SVGDocumentFragment method: ${expr.method}`);
   }
 
   // ObjectValue methods
   if (isObjectValue(obj)) {
     if (expr.method === 'has') {
-      if (expr.args.length !== 1) throw new Error('has() expects 1 argument');
+      if (expr.args.length !== 1) throw mError('has() expects 1 argument');
       const key = evaluateExpression(expr.args[0], scope);
-      if (typeof key !== 'string') throw new Error('has() argument must be a string');
+      if (typeof key !== 'string') throw mError('has() argument must be a string');
       return obj.properties.has(key) ? 1 : 0;
     }
-    throw new Error(`Unknown object method: ${expr.method}`);
+    throw mError(`Unknown object method: ${expr.method}`);
   }
 
-  if (!isArrayValue(obj)) throw new Error(`Cannot call method '${expr.method}' on non-array value`);
+  if (!isArrayValue(obj)) throw mError(`Cannot call method '${expr.method}' on non-array value`);
   switch (expr.method) {
     case 'push': {
-      if (expr.args.length !== 1) throw new Error('push() expects 1 argument');
+      if (expr.args.length !== 1) throw mError('push() expects 1 argument');
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.push(val);
       return obj.elements.length;
     }
     case 'pop': {
-      if (expr.args.length !== 0) throw new Error('pop() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('pop() expects 0 arguments');
       if (obj.elements.length === 0) return null;
       return obj.elements.pop()!;
     }
     case 'shift': {
-      if (expr.args.length !== 0) throw new Error('shift() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('shift() expects 0 arguments');
       if (obj.elements.length === 0) return null;
       return obj.elements.shift()!;
     }
     case 'unshift': {
-      if (expr.args.length !== 1) throw new Error('unshift() expects 1 argument');
+      if (expr.args.length !== 1) throw mError('unshift() expects 1 argument');
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.unshift(val);
       return obj.elements.length;
     }
     case 'empty': {
-      if (expr.args.length !== 0) throw new Error('empty() expects 0 arguments');
+      if (expr.args.length !== 0) throw mError('empty() expects 0 arguments');
       return obj.elements.length === 0 ? 1 : 0;
     }
     default:
-      throw new Error(`Unknown array method: ${expr.method}`);
+      throw mError(`Unknown array method: ${expr.method}`);
   }
 }
 
@@ -1628,7 +1634,10 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
 
     case 'FunctionCall': {
       const value = evaluateFunctionCall(arg, scope, null);
-      if (value === null) throw new Error('Cannot use null as a path argument');
+      // Void functions (side-effect only) return undefined/null/'' — treat as empty path
+      if (value === undefined || value === null || value === '') {
+        return '';
+      }
       if (typeof value === 'number') {
         return String(value);
       }
@@ -1661,7 +1670,10 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
 
     case 'MethodCallExpression': {
       const value = evaluateMethodCall(arg, scope);
-      if (value === null) throw new Error('Cannot use null as a path argument');
+      // Void method calls (side-effect only) return undefined/null/'' — treat as empty path
+      if (value === undefined || value === null || value === '') {
+        return '';
+      }
       if (typeof value === 'number') return String(value);
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') return (value as PathSegment).value;

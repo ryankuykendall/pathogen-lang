@@ -151,14 +151,16 @@ function withPostfix(base: Parsimmon.Parser<Expression>): Parsimmon.Parser<Expre
   return base.chain((baseExpr) =>
     P.alt(
       // .name(args) → MethodCallExpression (try first — needs '(' after '.name')
-      P.seq(
+      P.seqMap(
+        P.index,
         P.string('.'),
         token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
         P.string('(').skip(optWhitespace),
         P.sepBy(P.lazy(() => expression), word(',')),
-        word(')')
-      ).map(([, method, , args]): { type: 'method'; method: string; args: Expression[] } =>
-        ({ type: 'method', method, args })),
+        word(')'),
+        (startIndex, _dot, method, _open, args): { type: 'method'; method: string; args: Expression[]; loc: SourceLocation } =>
+          ({ type: 'method', method, args, loc: indexToLoc(startIndex) })
+      ),
       // .name → MemberExpression
       P.seq(P.string('.'), token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)))
         .map(([, prop]): { type: 'member'; prop: string } => ({ type: 'member', prop })),
@@ -170,7 +172,7 @@ function withPostfix(base: Parsimmon.Parser<Expression>): Parsimmon.Parser<Expre
       .map((postfixes) =>
         postfixes.reduce<Expression>((obj, postfix) => {
           if (postfix.type === 'method') {
-            return { type: 'MethodCallExpression' as const, object: obj, method: postfix.method, args: postfix.args };
+            return { type: 'MethodCallExpression' as const, object: obj, method: postfix.method, args: postfix.args, loc: (postfix as { loc: SourceLocation }).loc };
           } else if (postfix.type === 'member') {
             return { type: 'MemberExpression' as const, object: obj, property: postfix.prop };
           } else {
@@ -202,14 +204,16 @@ const pathMemberExpression: Parsimmon.Parser<PathArg> =
     nonPathCommandIdentifier.chain((baseExpr) =>
       P.alt(
         // .name(args) → MethodCallExpression
-        P.seq(
+        P.seqMap(
+          P.index,
           P.string('.'),
           token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
           P.string('(').skip(optWhitespace),
           P.sepBy(P.lazy(() => expression), word(',')),
-          word(')')
-        ).map(([, method, , args]): { type: 'method'; method: string; args: Expression[] } =>
-          ({ type: 'method', method, args })),
+          word(')'),
+          (startIndex, _dot, method, _open, args): { type: 'method'; method: string; args: Expression[]; loc: SourceLocation } =>
+            ({ type: 'method', method, args, loc: indexToLoc(startIndex) })
+        ),
         // .name → MemberExpression
         P.seq(P.string('.'), token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)))
           .map(([, prop]): { type: 'member'; prop: string } => ({ type: 'member', prop })),
@@ -221,7 +225,7 @@ const pathMemberExpression: Parsimmon.Parser<PathArg> =
         .map((postfixes) =>
           postfixes.reduce<PathArg>((obj, postfix) => {
             if (postfix.type === 'method') {
-              return { type: 'MethodCallExpression' as const, object: obj as Expression, method: postfix.method, args: postfix.args };
+              return { type: 'MethodCallExpression' as const, object: obj as Expression, method: postfix.method, args: postfix.args, loc: (postfix as { loc: SourceLocation }).loc };
             } else if (postfix.type === 'member') {
               return { type: 'MemberExpression' as const, object: obj as Expression, property: postfix.prop };
             } else {
