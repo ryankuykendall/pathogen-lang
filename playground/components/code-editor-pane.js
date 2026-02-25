@@ -248,6 +248,10 @@ export class CodeEditorPane extends HTMLElement {
           font-weight: 500;
         }
 
+        #editor-container .cm-editor .cm-content {
+          padding-bottom: 25%;
+        }
+
         #editor-container .cm-editor.cm-focused {
           outline: none;
         }
