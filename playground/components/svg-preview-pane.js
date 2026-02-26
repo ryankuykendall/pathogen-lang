@@ -44,6 +44,9 @@ export class SvgPreviewPane extends HTMLElement {
       this.applyLayerVisibility();
       this.updateNavigatorContent();
     });
+    store.subscribe('defsVisibility', () => {
+      this.applyLayerVisibility();
+    });
   }
 
   get preview() {
@@ -96,7 +99,7 @@ export class SvgPreviewPane extends HTMLElement {
    * @param {Array<{name: string, type: string, data: string, styles: Record<string, string>, isDefault: boolean}>} layers
    * @returns {number} The rendering time in milliseconds
    */
-  setLayersWithTiming(layers) {
+  setLayersWithTiming(layers, defsData = {}) {
     const defaultData = layers[0]?.data || '';
     store.set('pathData', defaultData);
 
@@ -108,11 +111,45 @@ export class SvgPreviewPane extends HTMLElement {
       // Clear existing layer paths
       layersGroup.innerHTML = '';
 
-      // Clean up previous fragment defs
+      // Clean up previous fragment defs and mask/clipPath defs
       const defsEl = this.shadowRoot.querySelector('#preview defs');
       if (defsEl) {
-        for (const old of defsEl.querySelectorAll('[data-fragment-layer]')) {
+        for (const old of defsEl.querySelectorAll('[data-fragment-layer], [data-mask-def], [data-clippath-def]')) {
           old.remove();
+        }
+      }
+
+      // Inject mask defs
+      const SVG_NS_DEFS = 'http://www.w3.org/2000/svg';
+      if (defsData.masks && defsEl) {
+        for (const mask of defsData.masks) {
+          const maskEl = document.createElementNS(SVG_NS_DEFS, 'mask');
+          maskEl.setAttribute('id', mask.id);
+          maskEl.setAttribute('data-mask-def', mask.id);
+          for (const el of mask.elements) {
+            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
+            pathEl.setAttribute('d', el.pathData);
+            for (const [key, value] of Object.entries(el.styles)) {
+              pathEl.setAttribute(key, value);
+            }
+            maskEl.appendChild(pathEl);
+          }
+          defsEl.appendChild(maskEl);
+        }
+      }
+
+      // Inject clipPath defs
+      if (defsData.clipPaths && defsEl) {
+        for (const clip of defsData.clipPaths) {
+          const clipEl = document.createElementNS(SVG_NS_DEFS, 'clipPath');
+          clipEl.setAttribute('id', clip.id);
+          clipEl.setAttribute('data-clippath-def', clip.id);
+          for (const el of clip.elements) {
+            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
+            pathEl.setAttribute('d', el.pathData);
+            clipEl.appendChild(pathEl);
+          }
+          defsEl.appendChild(clipEl);
         }
       }
 
@@ -254,6 +291,45 @@ export class SvgPreviewPane extends HTMLElement {
         el.style.display = 'none';
       } else {
         el.style.display = '';
+      }
+    }
+
+    // Handle mask/clipPath visibility: remove/restore attributes on referencing layers
+    const defsVisibility = store.get('defsVisibility') || {};
+    for (const el of layersGroup.children) {
+      // Check mask attribute
+      const maskAttr = el.getAttribute('mask') || el.dataset.origMask;
+      if (maskAttr) {
+        const match = maskAttr.match(/url\(#(.+?)\)/);
+        if (match) {
+          const maskId = match[1];
+          if (defsVisibility[`mask:${maskId}`] === false) {
+            if (el.getAttribute('mask')) {
+              el.dataset.origMask = el.getAttribute('mask');
+              el.removeAttribute('mask');
+            }
+          } else if (el.dataset.origMask) {
+            el.setAttribute('mask', el.dataset.origMask);
+            delete el.dataset.origMask;
+          }
+        }
+      }
+      // Check clip-path attribute
+      const clipAttr = el.getAttribute('clip-path') || el.dataset.origClipPath;
+      if (clipAttr) {
+        const match = clipAttr.match(/url\(#(.+?)\)/);
+        if (match) {
+          const clipId = match[1];
+          if (defsVisibility[`clip-path:${clipId}`] === false) {
+            if (el.getAttribute('clip-path')) {
+              el.dataset.origClipPath = el.getAttribute('clip-path');
+              el.removeAttribute('clip-path');
+            }
+          } else if (el.dataset.origClipPath) {
+            el.setAttribute('clip-path', el.dataset.origClipPath);
+            delete el.dataset.origClipPath;
+          }
+        }
       }
     }
   }

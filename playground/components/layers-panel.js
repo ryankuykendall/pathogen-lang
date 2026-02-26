@@ -22,7 +22,7 @@ export class LayersPanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this._unsubscribe = store.subscribe(['layers', 'layerVisibility'], () => {
+    this._unsubscribe = store.subscribe(['layers', 'layerVisibility', 'masks', 'clipPaths', 'defsVisibility'], () => {
       this.updateList();
     });
     this.updateList();
@@ -53,6 +53,12 @@ export class LayersPanel extends HTMLElement {
     }));
   }
 
+  toggleDefsVisibility(key) {
+    const visibility = { ...store.get('defsVisibility') };
+    visibility[key] = visibility[key] === false ? true : false;
+    store.set('defsVisibility', visibility);
+  }
+
   toggleCollapse() {
     this._collapsed = !this._collapsed;
     const list = this.shadowRoot.querySelector('.layer-list');
@@ -63,13 +69,36 @@ export class LayersPanel extends HTMLElement {
 
   updateList() {
     const layers = store.get('layers') || [];
+    const masks = store.get('masks') || [];
+    const clipPaths = store.get('clipPaths') || [];
     const visibility = store.get('layerVisibility') || {};
+    const defsVisibility = store.get('defsVisibility') || {};
 
-    // Hide entirely when <= 1 layer
-    this.style.display = layers.length <= 1 ? 'none' : '';
+    // Hide entirely when <= 1 layer and no masks/clipPaths
+    const hasDefs = masks.length > 0 || clipPaths.length > 0;
+    this.style.display = (layers.length <= 1 && !hasDefs) ? 'none' : '';
 
     const list = this.shadowRoot.querySelector('.layer-list');
     if (!list) return;
+
+    // Build lookup of mask/clipPath IDs referenced by each layer
+    const layerDefs = new Map();
+    for (const layer of layers) {
+      const refs = [];
+      for (const [prop, val] of Object.entries(layer.styles || {})) {
+        const match = val.match(/url\(#(.+?)\)/);
+        if (match) {
+          const refId = match[1];
+          // Check if it's a mask or clip-path
+          if (masks.some(m => m.id === refId)) {
+            refs.push({ type: 'mask', id: refId });
+          } else if (clipPaths.some(c => c.id === refId)) {
+            refs.push({ type: 'clip-path', id: refId });
+          }
+        }
+      }
+      if (refs.length > 0) layerDefs.set(layer.name, refs);
+    }
 
     list.innerHTML = '';
     for (const layer of layers) {
@@ -82,7 +111,7 @@ export class LayersPanel extends HTMLElement {
       row.innerHTML = `
         <span class="color-dot" style="background: ${color}"></span>
         <span class="layer-name" title="${layer.name}">${layer.name}</span>
-        <span class="type-badge">${layer.type === 'text' ? 'text' : 'path'}</span>
+        <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : 'path'}</span>
         <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${layer.name}">
           ${isVisible ? EYE_OPEN : EYE_CLOSED}
         </button>
@@ -93,6 +122,30 @@ export class LayersPanel extends HTMLElement {
       });
 
       list.appendChild(row);
+
+      // Render nested mask/clipPath rows for this layer
+      const refs = layerDefs.get(layer.name) || [];
+      for (const ref of refs) {
+        const defKey = `${ref.type}:${ref.id}`;
+        const defVisible = defsVisibility[defKey] !== false;
+        const subRow = document.createElement('div');
+        subRow.className = 'layer-row defs-row';
+
+        subRow.innerHTML = `
+          <span class="tree-connector"></span>
+          <span class="layer-name" title="${ref.id}">${ref.id}</span>
+          <span class="type-badge defs-badge">${ref.type === 'mask' ? 'mask' : 'clip'}</span>
+          <button class="eye-btn" title="${defVisible ? 'Disable' : 'Enable'} ${ref.type}" aria-label="${defVisible ? 'Disable' : 'Enable'} ${ref.type} ${ref.id}">
+            ${defVisible ? EYE_OPEN : EYE_CLOSED}
+          </button>
+        `;
+
+        subRow.querySelector('.eye-btn').addEventListener('click', () => {
+          this.toggleDefsVisibility(defKey);
+        });
+
+        list.appendChild(subRow);
+      }
     }
 
     if (this._collapsed) {
@@ -156,7 +209,7 @@ export class LayersPanel extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 0.375rem;
-          padding: 0.25rem 0.5rem;
+          padding: 0rem 0.5rem;
           height: 28px;
           box-sizing: border-box;
         }
@@ -210,6 +263,26 @@ export class LayersPanel extends HTMLElement {
         .eye-btn:hover {
           color: var(--text-primary, #1a1a2e);
           background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+        }
+
+        .defs-row {
+          padding-left: 0.5rem;
+        }
+
+        .tree-connector {
+          box-sizing: border-box;
+          margin-inline-start: 4px;
+          width: 6px;
+          height: 12px;
+          flex-shrink: 0;
+          border-left: 1px solid var(--text-secondary, #666);
+          border-bottom: 1px solid var(--text-secondary, #666);
+          border-bottom-left-radius: 3px;
+          margin-block-end: 10px;
+        }
+
+        .defs-badge {
+          font-size: 0.5rem;
         }
 
         @media (max-width: 800px) {

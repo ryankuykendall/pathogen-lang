@@ -44,7 +44,10 @@ import { sanitizeSVGFragment } from './svg-sanitize';
 import { calculateCommandLength, calculatePathLength, samplePathAtFraction, partitionPath } from './sampling';
 import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
 
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue;
+/** CSS properties that reference defs elements via url(#id) */
+const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker-start', 'marker-mid', 'marker-end']);
+
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue;
 
 /**
  * Represents an array value (reference semantics)
@@ -96,6 +99,37 @@ export interface SVGFragmentValue {
 
 export function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
+}
+
+/**
+ * Entry in a Mask — a path with optional styles
+ */
+export interface MaskPathEntry { d: string; styles: Record<string, string>; }
+
+/**
+ * Represents a <mask> definition with appended path elements
+ */
+export interface MaskValue {
+  type: 'MaskValue';
+  id: string;
+  paths: MaskPathEntry[];
+}
+
+export function isMaskValue(value: Value): value is MaskValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MaskValue';
+}
+
+/**
+ * Represents a <clipPath> definition with appended path elements
+ */
+export interface ClipPathValue {
+  type: 'ClipPathValue';
+  id: string;
+  paths: string[];
+}
+
+export function isClipPathValue(value: Value): value is ClipPathValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ClipPathValue';
 }
 
 /**
@@ -280,8 +314,20 @@ export interface LayerOutput {
   transform?: string;              // SVG transform attribute value
 }
 
+export interface MaskOutput {
+  id: string;
+  elements: Array<{ pathData: string; styles: Record<string, string> }>;
+}
+
+export interface ClipPathOutput {
+  id: string;
+  elements: Array<{ pathData: string }>;
+}
+
 export interface CompileResult {
   layers: LayerOutput[];
+  masks: MaskOutput[];
+  clipPaths: ClipPathOutput[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
 }
@@ -361,6 +407,8 @@ export interface EvaluationState {
   activeLayerName: string | null;      // Currently inside layer().apply
   defaultLayerName: string | null;     // Default layer name
   transformState: TransformState;      // Transform state for implicit default layer
+  masks: Map<string, MaskValue>;       // Mask definitions by ID
+  clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID
 }
 
 export interface Scope {
@@ -542,6 +590,47 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
   }));
 }
 
+/**
+ * Serialize PathBlockCommands to an absolute SVG d-attribute string.
+ * Commands have absolute start/end points; relative args are converted to absolute.
+ */
+function commandsToAbsoluteD(commands: PathBlockCommand[]): string {
+  const parts: string[] = [];
+  for (const cmd of commands) {
+    const c = cmd.command;
+    const abs = c.toUpperCase();
+    if (c === 'z') {
+      parts.push('Z');
+    } else if (c === 'h') {
+      parts.push(`H ${formatNum(cmd.end.x)}`);
+    } else if (c === 'v') {
+      parts.push(`V ${formatNum(cmd.end.y)}`);
+    } else if (c === 'c') {
+      // c dx1 dy1 dx2 dy2 dx dy → C x1 y1 x2 y2 x y
+      const [dx1, dy1, dx2, dy2] = cmd.args;
+      parts.push(`C ${formatNum(cmd.start.x + dx1)} ${formatNum(cmd.start.y + dy1)} ${formatNum(cmd.start.x + dx2)} ${formatNum(cmd.start.y + dy2)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
+    } else if (c === 's') {
+      // s dx2 dy2 dx dy → S x2 y2 x y
+      const [dx2, dy2] = cmd.args;
+      parts.push(`S ${formatNum(cmd.start.x + dx2)} ${formatNum(cmd.start.y + dy2)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
+    } else if (c === 'q') {
+      // q dx1 dy1 dx dy → Q x1 y1 x y
+      const [dx1, dy1] = cmd.args;
+      parts.push(`Q ${formatNum(cmd.start.x + dx1)} ${formatNum(cmd.start.y + dy1)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
+    } else if (c === 't') {
+      parts.push(`T ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
+    } else if (c === 'a') {
+      // a rx ry rotation largeArc sweep dx dy → A rx ry rotation largeArc sweep x y
+      const [rx, ry, rotation, largeArc, sweep] = cmd.args;
+      parts.push(`A ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${formatNum(largeArc)} ${formatNum(sweep)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
+    } else {
+      // m, l → M, L: use end point as absolute coordinates
+      parts.push(`${abs} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
+    }
+  }
+  return parts.join(' ');
+}
+
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
   const properties: Record<string, string> = {};
   for (const prop of expr.properties) {
@@ -560,6 +649,10 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       }
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
+    }
+    // Auto-wrap URL-reference properties with url(#...)
+    if (URL_REF_PROPERTIES.has(prop.name) && typeof resolvedValue === 'string' && !(/^url\(/i).test(resolvedValue)) {
+      resolvedValue = `url(#${resolvedValue})`;
     }
     properties[prop.name] = resolvedValue;
   }
@@ -733,6 +826,8 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     activeLayerName: null,
     defaultLayerName: null,
     transformState: createTransformState(),
+    masks: scope.evalState?.masks ?? new Map(),
+    clipPaths: scope.evalState?.clipPaths ?? new Map(),
     _insidePathBlock: true,
   };
   blockScope.evalState = blockEvalState;
@@ -1488,6 +1583,58 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // MaskValue methods
+  if (isMaskValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('Mask.append() expects 1-2 arguments (path, styles?)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = projectCommands(pathArg.commands, 0, 0);
+        } else {
+          throw mError('Mask.append() first argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commandsToAbsoluteD(commands);
+        let styles: Record<string, string> = {};
+        if (expr.args.length === 2) {
+          const styleArg = evaluateExpression(expr.args[1], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Mask.append() second argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        obj.paths.push({ d, styles });
+        return 0;
+      }
+      default:
+        throw mError(`Unknown Mask method: ${expr.method}`);
+    }
+  }
+
+  // ClipPathValue methods
+  if (isClipPathValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length !== 1) throw mError('ClipPath.append() expects 1 argument (path)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = projectCommands(pathArg.commands, 0, 0);
+        } else {
+          throw mError('ClipPath.append() argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commandsToAbsoluteD(commands);
+        obj.paths.push(d);
+        return 0;
+      }
+      default:
+        throw mError(`Unknown ClipPath method: ${expr.method}`);
+    }
+  }
+
   // ObjectNamespace methods (Object.keys, Object.values, Object.entries, Object.delete)
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ObjectNamespace') {
     const args = expr.args.map(a => evaluateExpression(a, scope));
@@ -1639,6 +1786,12 @@ function formatValueForDisplay(val: Value): string {
       : val.rawContent;
     return `SVGDocumentFragment(${preview})`;
   }
+  if (isMaskValue(val)) {
+    return `Mask(${val.id}, ${val.paths.length} paths)`;
+  }
+  if (isClipPathValue(val)) {
+    return `ClipPath(${val.id}, ${val.paths.length} paths)`;
+  }
   if (isArrayValue(val)) {
     return '[' + val.elements.map(formatValueForDisplay).join(', ') + ']';
   }
@@ -1784,6 +1937,18 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     throw new Error(`Cannot access property '${expr.property}' of type ${typeof propValue}`);
   }
 
+  // Handle MaskValue property access
+  if (isMaskValue(obj)) {
+    if (expr.property === 'id') return obj.id;
+    throw new Error(`Property '${expr.property}' does not exist on Mask`);
+  }
+
+  // Handle ClipPathValue property access
+  if (isClipPathValue(obj)) {
+    if (expr.property === 'id') return obj.id;
+    throw new Error(`Property '${expr.property}' does not exist on ClipPath`);
+  }
+
   // Handle StyleBlockValue property access (camelCase → kebab-case)
   if (isStyleBlock(obj)) {
     const kebabName = camelToKebab(expr.property);
@@ -1905,6 +2070,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
           stringValue = formatValueForDisplay(value);
         } else if (isCyclerValue(value)) {
           stringValue = formatValueForDisplay(value);
+        } else if (isMaskValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (isClipPathValue(value)) {
+          stringValue = formatValueForDisplay(value);
         } else if (typeof value === 'object' && value !== null && 'type' in value) {
           const typed = value as { type: string; value?: unknown };
           if (typed.type === 'ContextObject' && typed.value) {
@@ -2003,6 +2172,38 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       visualContent: result.visualContent,
       rawContent: result.rawContent,
     };
+  }
+
+  // Handle Mask() constructor
+  if (call.name === 'Mask') {
+    if (call.args.length !== 1) {
+      throw new Error(`Mask() expects 1 argument (id), got ${call.args.length}`);
+    }
+    if (!scope.evalState) throw new Error('Mask() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error('Mask() argument must be a string');
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask or ClipPath with this ID already exists`);
+    }
+    const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
+    scope.evalState.masks.set(id, mask);
+    return mask;
+  }
+
+  // Handle ClipPath() constructor
+  if (call.name === 'ClipPath') {
+    if (call.args.length !== 1) {
+      throw new Error(`ClipPath() expects 1 argument (id), got ${call.args.length}`);
+    }
+    if (!scope.evalState) throw new Error('ClipPath() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error('ClipPath() argument must be a string');
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask or ClipPath with this ID already exists`);
+    }
+    const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
+    scope.evalState.clipPaths.set(id, clipPath);
+    return clipPath;
   }
 
   // Check if it's a context-aware function
@@ -3109,8 +3310,28 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     }
   }
 
+  // Build masks output
+  const masks: MaskOutput[] = [];
+  for (const [, mask] of evalState.masks) {
+    masks.push({
+      id: mask.id,
+      elements: mask.paths.map(p => ({ pathData: p.d, styles: { ...p.styles } })),
+    });
+  }
+
+  // Build clipPaths output
+  const clipPaths: ClipPathOutput[] = [];
+  for (const [, clip] of evalState.clipPaths) {
+    clipPaths.push({
+      id: clip.id,
+      elements: clip.paths.map(d => ({ pathData: d })),
+    });
+  }
+
   return {
     layers,
+    masks,
+    clipPaths,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
   };
@@ -3131,6 +3352,8 @@ export function evaluate(program: Program, options?: { toFixed?: number }): Comp
       activeLayerName: null,
       defaultLayerName: null,
       transformState,
+      masks: new Map(),
+      clipPaths: new Map(),
     };
 
     const scope = createScope();
@@ -3160,6 +3383,8 @@ export interface EvaluateWithContextResult {
   logs: LogEntry[];
   calledStdlibFunctions: string[];  // Stdlib function names invoked during evaluation
   layers: LayerOutput[];
+  masks: MaskOutput[];
+  clipPaths: ClipPathOutput[];
 }
 
 /**
@@ -3192,6 +3417,8 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       activeLayerName: null,
       defaultLayerName: null,
       transformState,
+      masks: new Map(),
+      clipPaths: new Map(),
     };
 
     const scope = createScope();
@@ -3216,6 +3443,8 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       logs,
       calledStdlibFunctions: Array.from(calledStdlibFunctions),
       layers: compileResult.layers,
+      masks: compileResult.masks,
+      clipPaths: compileResult.clipPaths,
     };
   } finally {
     resetNumberFormat();

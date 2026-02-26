@@ -109,7 +109,10 @@ export const store = createStore({
   logs: [],
   error: null,
   layers: [],              // Array of LayerOutput from last compilation
+  masks: [],               // Array of MaskOutput from last compilation
+  clipPaths: [],           // Array of ClipPathOutput from last compilation
   layerVisibility: {},     // { [layerName]: boolean } — true = visible (default)
+  defsVisibility: {},      // { ['mask:id'|'clip-path:id']: boolean } — true = visible (default)
 
   // Compilation status (for async worker)
   compilationStatus: 'idle',    // 'idle', 'compiling', 'rendering', 'completed', 'error'

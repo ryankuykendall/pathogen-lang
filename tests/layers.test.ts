@@ -1069,4 +1069,214 @@ describe('Multi-Layer Support', () => {
       `)).toThrow('expects 1 argument');
     });
   });
+
+  describe('Mask and ClipPath', () => {
+    it('creates a Mask and returns raw id via .id', () => {
+      const result = compile(`
+        let m = Mask('my-mask');
+        log(m.id);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('my-mask');
+      expect(result.masks).toHaveLength(1);
+      expect(result.masks[0].id).toBe('my-mask');
+      expect(result.masks[0].elements).toHaveLength(0);
+    });
+
+    it('creates a ClipPath and returns raw id via .id', () => {
+      const result = compile(`
+        let c = ClipPath('my-clip');
+        log(c.id);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('my-clip');
+      expect(result.clipPaths).toHaveLength(1);
+      expect(result.clipPaths[0].id).toBe('my-clip');
+      expect(result.clipPaths[0].elements).toHaveLength(0);
+    });
+
+    it('style auto-wrapping: mask property gets url(#...) wrapper', () => {
+      const result = compile(`
+        let m = Mask('alpha-mask');
+        define PathLayer('art') \${ mask: m.id; }
+        layer('art').apply { M 0 0 L 10 10 }
+      `);
+      expect(result.layers.find(l => l.name === 'art')!.styles['mask']).toBe('url(#alpha-mask)');
+    });
+
+    it('style auto-wrapping: clip-path property gets url(#...) wrapper', () => {
+      const result = compile(`
+        let c = ClipPath('clip-id');
+        define PathLayer('scene') \${ clip-path: c.id; }
+        layer('scene').apply { M 0 0 L 10 10 }
+      `);
+      expect(result.layers.find(l => l.name === 'scene')!.styles['clip-path']).toBe('url(#clip-id)');
+    });
+
+    it('does not double-wrap values that already start with url(', () => {
+      const result = compile(`
+        define PathLayer('art') \${ mask: url(#existing); }
+        layer('art').apply { M 0 0 L 10 10 }
+      `);
+      expect(result.layers.find(l => l.name === 'art')!.styles['mask']).toBe('url(#existing)');
+    });
+
+    it('Mask.append() with PathBlockValue auto-projects at origin', () => {
+      const result = compile(`
+        let p = @{ m 0 0 l 50 50 };
+        let m = Mask('test');
+        m.append(p, \${ fill: white; });
+      `);
+      expect(result.masks).toHaveLength(1);
+      expect(result.masks[0].elements).toHaveLength(1);
+      expect(result.masks[0].elements[0].pathData).toContain('M');
+      expect(result.masks[0].elements[0].styles).toEqual({ fill: 'white' });
+    });
+
+    it('Mask.append() with ProjectedPathValue', () => {
+      const result = compile(`
+        let p = @{ m 0 0 l 50 50 };
+        let proj = p.project(10, 20);
+        let m = Mask('proj-mask');
+        m.append(proj, \${ fill: black; });
+      `);
+      expect(result.masks[0].elements).toHaveLength(1);
+      expect(result.masks[0].elements[0].pathData).toContain('M');
+      expect(result.masks[0].elements[0].styles).toEqual({ fill: 'black' });
+    });
+
+    it('multiple appends produce multiple elements', () => {
+      const result = compile(`
+        let p1 = @{ m 0 0 l 100 0 l 0 100 z };
+        let p2 = @{ m 50 50 l 20 0 l 0 20 z };
+        let m = Mask('multi');
+        m.append(p1, \${ fill: white; });
+        m.append(p2, \${ fill: black; });
+      `);
+      expect(result.masks[0].elements).toHaveLength(2);
+      expect(result.masks[0].elements[0].styles.fill).toBe('white');
+      expect(result.masks[0].elements[1].styles.fill).toBe('black');
+    });
+
+    it('ClipPath.append() accepts path without styles', () => {
+      const result = compile(`
+        let p = @{ m 0 0 l 100 0 l 0 100 z };
+        let c = ClipPath('clip');
+        c.append(p);
+      `);
+      expect(result.clipPaths[0].elements).toHaveLength(1);
+      expect(result.clipPaths[0].elements[0].pathData).toContain('M');
+    });
+
+    it('Mask.append() without styles uses empty styles', () => {
+      const result = compile(`
+        let p = @{ m 0 0 l 50 50 };
+        let m = Mask('no-style');
+        m.append(p);
+      `);
+      expect(result.masks[0].elements).toHaveLength(1);
+      expect(result.masks[0].elements[0].styles).toEqual({});
+    });
+
+    it('duplicate Mask ID throws error', () => {
+      expect(() => compile(`
+        let m1 = Mask('dup');
+        let m2 = Mask('dup');
+      `)).toThrow("Duplicate defs ID 'dup'");
+    });
+
+    it('duplicate ID across Mask and ClipPath throws error', () => {
+      expect(() => compile(`
+        let m = Mask('shared');
+        let c = ClipPath('shared');
+      `)).toThrow("Duplicate defs ID 'shared'");
+    });
+
+    it('Mask() rejects non-string argument', () => {
+      expect(() => compile(`
+        Mask(42);
+      `)).toThrow('argument must be a string');
+    });
+
+    it('ClipPath() rejects wrong argument count', () => {
+      expect(() => compile(`
+        ClipPath();
+      `)).toThrow('expects 1 argument');
+    });
+
+    it('Mask.append() rejects non-path argument', () => {
+      expect(() => compile(`
+        let m = Mask('bad');
+        m.append(42);
+      `)).toThrow('must be a PathBlock or ProjectedPath');
+    });
+
+    it('ClipPath.append() rejects non-path argument', () => {
+      expect(() => compile(`
+        let c = ClipPath('bad');
+        c.append("not a path");
+      `)).toThrow('must be a PathBlock or ProjectedPath');
+    });
+
+    it('Mask.append() rejects non-style-block second argument', () => {
+      expect(() => compile(`
+        let p = @{ m 0 0 l 10 10 };
+        let m = Mask('bad-style');
+        m.append(p, 42);
+      `)).toThrow('second argument must be a style block');
+    });
+
+    it('empty mask produces empty elements array', () => {
+      const result = compile(`
+        let m = Mask('empty');
+      `);
+      expect(result.masks[0].elements).toHaveLength(0);
+    });
+
+    it('using mask in layer styles with full pipeline', () => {
+      const result = compile(`
+        let maskShape = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
+        let cutout = @{ m 50 50 l 100 0 l 0 100 l -100 0 z };
+        let m = Mask('reveal');
+        m.append(maskShape, \${ fill: white; });
+        m.append(cutout, \${ fill: black; });
+
+        define PathLayer('art') \${ mask: m.id; }
+        layer('art').apply { M 10 10 L 190 190 }
+      `);
+      expect(result.masks).toHaveLength(1);
+      expect(result.masks[0].id).toBe('reveal');
+      expect(result.masks[0].elements).toHaveLength(2);
+      const artLayer = result.layers.find(l => l.name === 'art')!;
+      expect(artLayer.styles['mask']).toBe('url(#reveal)');
+    });
+
+    it('formatValueForDisplay shows Mask and ClipPath', () => {
+      const result = compile(`
+        let m = Mask('disp');
+        let c = ClipPath('disp2');
+        let p = @{ m 0 0 l 10 10 };
+        m.append(p);
+        log(m);
+        log(c);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('Mask(disp, 1 paths)');
+      expect(result.logs[1].parts[0].value).toBe('ClipPath(disp2, 0 paths)');
+    });
+
+    it('auto-wrapping applies to filter, marker-start, marker-mid, marker-end', () => {
+      const result = compile(`
+        define PathLayer('f') \${ filter: blur-filter; }
+        define PathLayer('ms') \${ marker-start: arrow; }
+        define PathLayer('mm') \${ marker-mid: dot; }
+        define PathLayer('me') \${ marker-end: arrowhead; }
+        layer('f').apply { M 0 0 }
+        layer('ms').apply { M 0 0 }
+        layer('mm').apply { M 0 0 }
+        layer('me').apply { M 0 0 }
+      `);
+      expect(result.layers.find(l => l.name === 'f')!.styles['filter']).toBe('url(#blur-filter)');
+      expect(result.layers.find(l => l.name === 'ms')!.styles['marker-start']).toBe('url(#arrow)');
+      expect(result.layers.find(l => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
+      expect(result.layers.find(l => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');
+    });
+  });
 });

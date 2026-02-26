@@ -96,8 +96,27 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     return `  <path d="${layer.data}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${extra}${transformAttr}/>`;
   }).join('\n');
 
+  // Build defs section for masks and clip-paths
+  const defsContent: string[] = [];
+  for (const mask of result.masks) {
+    const children = mask.elements.map(el => {
+      const styleAttrs = Object.entries(el.styles)
+        .map(([k, v]) => `${k}="${v}"`).join(' ');
+      return `    <path d="${el.pathData}"${styleAttrs ? ' ' + styleAttrs : ''}/>`;
+    }).join('\n');
+    defsContent.push(`  <mask id="${mask.id}">\n${children}\n  </mask>`);
+  }
+  for (const clip of result.clipPaths) {
+    const children = clip.elements.map(el => {
+      return `    <path d="${el.pathData}"/>`;
+    }).join('\n');
+    defsContent.push(`  <clipPath id="${clip.id}">\n${children}\n  </clipPath>`);
+  }
+  const defsSection = defsContent.length > 0
+    ? `\n<defs>\n${defsContent.join('\n')}\n</defs>\n` : '';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>${defsSection}
 ${elements}
 </svg>`;
 }
