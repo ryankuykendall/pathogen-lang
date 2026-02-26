@@ -139,6 +139,7 @@ export function isClipPathValue(value: Value): value is ClipPathValue {
 export interface ColorValue {
   type: 'ColorValue';
   oklch: OKLCH;
+  cssVar?: { varName: string; fallback: string };
 }
 
 export function isColorValue(value: Value): value is ColorValue {
@@ -476,6 +477,15 @@ function getCol(node: unknown): number | undefined {
   return (node as { loc?: { column: number } })?.loc?.column;
 }
 
+/** Walk left children of a BinaryExpression to find the nearest node with loc */
+function getLineDeep(node: unknown): number | undefined {
+  const line = getLine(node);
+  if (line) return line;
+  const left = (node as { left?: unknown })?.left;
+  if (left) return getLineDeep(left);
+  return undefined;
+}
+
 function lookupVariable(scope: Scope, name: string, line?: number, column?: number): Value {
   if (scope.variables.has(name)) {
     return scope.variables.get(name)!;
@@ -682,7 +692,12 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
-          resolvedValue = oklchToCSS(evaluated.oklch);
+          if (evaluated.cssVar) {
+            // CSSVar-backed Color: output var() reference with the computed color as fallback
+            resolvedValue = `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
+          } else {
+            resolvedValue = oklchToCSS(evaluated.oklch);
+          }
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
         }
@@ -781,11 +796,11 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
       // Null in arithmetic
       if (left === null || right === null) {
-        throw new Error(formatError('Cannot use null in arithmetic expression', getLine(expr)));
+        throw new Error(formatError('Cannot use null in arithmetic expression', getLineDeep(expr)));
       }
 
       if (typeof left !== 'number' || typeof right !== 'number') {
-        throw new Error(formatError(`Binary operator ${expr.operator} requires numeric operands`, getLine(expr)));
+        throw new Error(formatError(`Binary operator ${expr.operator} requires numeric operands`, getLineDeep(expr)));
       }
 
       switch (expr.operator) {
@@ -2361,48 +2376,59 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
   // Handle Color() constructor
   if (call.name === 'Color') {
+    const cLine = getLine(call);
+    const cCol = getCol(call);
     if (call.args.length === 1) {
       // String-based: Color('#ff0000'), Color('red'), Color('rgb(...)'), etc.
       const arg = evaluateExpression(call.args[0], scope);
-      if (typeof arg !== 'string') throw new Error('Color() with 1 argument expects a color string');
+      if (isCSSVarValue(arg)) {
+        // Color(CSSVar('--name', 'fallback')) — parse fallback for Color methods, preserve var ref for style output
+        if (!arg.fallback) throw new Error(formatError('Color(CSSVar(...)) requires a CSSVar with a fallback color', cLine, cCol));
+        return { type: 'ColorValue' as const, oklch: parseColor(arg.fallback), cssVar: { varName: arg.varName, fallback: arg.fallback } };
+      }
+      if (typeof arg !== 'string') throw new Error(formatError('Color() with 1 argument expects a color string or CSSVar', cLine, cCol));
       return { type: 'ColorValue' as const, oklch: parseColor(arg) };
     } else if (call.args.length === 3 || call.args.length === 4) {
       // Numeric OKLCH: Color(L, C, H) or Color(L, C, H, alpha)
       const L = evaluateExpression(call.args[0], scope);
       const C = evaluateExpression(call.args[1], scope);
       const H = evaluateExpression(call.args[2], scope);
-      if (typeof L !== 'number') throw new Error('Color() L must be a number');
-      if (typeof C !== 'number') throw new Error('Color() C must be a number');
-      if (typeof H !== 'number') throw new Error('Color() H must be a number');
+      if (typeof L !== 'number') throw new Error(formatError('Color() L must be a number', cLine, cCol));
+      if (typeof C !== 'number') throw new Error(formatError('Color() C must be a number', cLine, cCol));
+      if (typeof H !== 'number') throw new Error(formatError('Color() H must be a number', cLine, cCol));
       let alpha = 1;
       if (call.args.length === 4) {
         const a = evaluateExpression(call.args[3], scope);
-        if (typeof a !== 'number') throw new Error('Color() alpha must be a number');
+        if (typeof a !== 'number') throw new Error(formatError('Color() alpha must be a number', cLine, cCol));
         alpha = a;
       }
       return { type: 'ColorValue' as const, oklch: { L, C, H, alpha } };
     } else {
-      throw new Error(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`);
+      throw new Error(formatError(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`, cLine, cCol));
     }
   }
 
   // Handle CSSVar() constructor
   if (call.name === 'CSSVar') {
+    const cvLine = getLine(call);
+    const cvCol = getCol(call);
     if (call.args.length < 1 || call.args.length > 2) {
-      throw new Error(`CSSVar() expects 1 or 2 arguments, got ${call.args.length}`);
+      throw new Error(formatError(`CSSVar() expects 1 or 2 arguments, got ${call.args.length}`, cvLine, cvCol));
     }
     const name = evaluateExpression(call.args[0], scope);
-    if (typeof name !== 'string') throw new Error('CSSVar() first argument must be a string');
-    if (!name.startsWith('--')) throw new Error("CSSVar() variable name must start with '--'");
+    if (typeof name !== 'string') throw new Error(formatError('CSSVar() first argument must be a string', cvLine, cvCol));
+    if (!name.startsWith('--')) throw new Error(formatError("CSSVar() variable name must start with '--'", cvLine, cvCol));
     let fallback: string | null = null;
     if (call.args.length === 2) {
       const fb = evaluateExpression(call.args[1], scope);
-      if (typeof fb === 'string') {
+      if (typeof fb === 'number') {
+        fallback = String(fb);
+      } else if (typeof fb === 'string') {
         fallback = fb;
       } else if (isColorValue(fb)) {
         fallback = oklchToCSS(fb.oklch);
       } else {
-        throw new Error('CSSVar() fallback must be a string or Color');
+        throw new Error(formatError('CSSVar() fallback must be a string, number, or Color', cvLine, cvCol));
       }
     }
     return { type: 'CSSVarValue' as const, varName: name, fallback };

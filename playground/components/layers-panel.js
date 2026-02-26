@@ -39,7 +39,12 @@ export class LayersPanel extends HTMLElement {
     if (layer.type === 'text') {
       return layer.styles?.['fill'] || '#333';
     }
-    return layer.styles?.['stroke'] || '#333';
+    const stroke = layer.styles?.['stroke'];
+    const fill = layer.styles?.['fill'];
+    // Prefer stroke, but fall back to fill if stroke is missing or 'none'
+    if (stroke && stroke !== 'none') return stroke;
+    if (fill && fill !== 'none') return fill;
+    return '#333';
   }
 
   toggleVisibility(name) {

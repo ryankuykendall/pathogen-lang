@@ -2,6 +2,8 @@
 
 import { store } from '../state/store.js';
 import './layers-panel.js';
+import './palette-panel.js';
+import './cssvar-panel.js';
 
 const DEFAULT_STROKE = '#000000';
 const DEFAULT_STROKE_WIDTH = 2;
@@ -34,6 +36,17 @@ export class SvgPreviewPane extends HTMLElement {
     this.setupEventListeners();
     this.subscribeToStore();
     this.updateSvgStyles();
+
+    // Listen for CSS variable overrides from cssvar-panel
+    this.shadowRoot.addEventListener('cssvar-override', (e) => {
+      const svg = this.shadowRoot.querySelector('#preview');
+      const { varName, value } = e.detail;
+      if (value) {
+        svg.style.setProperty(varName, value);
+      } else {
+        svg.style.removeProperty(varName);
+      }
+    });
   }
 
   subscribeToStore() {
@@ -764,11 +777,21 @@ export class SvgPreviewPane extends HTMLElement {
           }
         }
 
-        layers-panel {
+        .panels-stack {
           position: absolute;
           top: 1rem;
           right: 1rem;
           z-index: 10;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: flex-end;
+          max-height: calc(100% - 2rem);
+          pointer-events: none;
+        }
+
+        .panels-stack > * {
+          pointer-events: auto;
         }
 
         #preview-container {
@@ -920,7 +943,11 @@ export class SvgPreviewPane extends HTMLElement {
         }
       </style>
 
-      <layers-panel></layers-panel>
+      <div class="panels-stack">
+        <layers-panel></layers-panel>
+        <palette-panel></palette-panel>
+        <cssvar-panel></cssvar-panel>
+      </div>
 
       <div id="zoom-navigator">
         <svg id="navigator-svg">

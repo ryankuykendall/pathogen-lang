@@ -36,8 +36,16 @@ describe('CSSVar type', () => {
       expect(() => compile('let v = CSSVar("primary");')).toThrow("must start with '--'");
     });
 
+    it('accepts numeric fallback by stringifying', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke-width: CSSVar('--w', 42); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['stroke-width']).toBe('var(--w, 42)');
+    });
+
     it('throws on invalid fallback type', () => {
-      expect(() => compile('let v = CSSVar("--x", 42);')).toThrow('CSSVar() fallback must be a string or Color');
+      expect(() => compile('let a = [1, 2]; let v = CSSVar("--x", a);')).toThrow('CSSVar() fallback must be a string, number, or Color');
     });
   });
 
@@ -144,6 +152,29 @@ describe('CSSVar type', () => {
         layer('main').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'var(--primary, #e63946)' });
+    });
+
+    it('Color(CSSVar(...)) uses fallback for color methods', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.lighten(0.2); }
+        layer('a').apply { M 0 0 }
+      `);
+      // lighten() produces a concrete color (no var wrapper)
+      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('Color(CSSVar(...)) preserves var() in direct style use', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
+    });
+
+    it('Color(CSSVar(...)) throws without fallback', () => {
+      expect(() => compile("let c = Color(CSSVar('--x'));")).toThrow('requires a CSSVar with a fallback color');
     });
   });
 });

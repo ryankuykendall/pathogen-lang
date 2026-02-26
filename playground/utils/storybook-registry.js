@@ -20,6 +20,25 @@ export const componentRegistry = [
       {
         name: 'Empty',
         props: { code: '' }
+      },
+      {
+        name: 'Color Formats',
+        props: { code: `// Color formats demo
+define PathLayer('hex') \${ stroke: #e63946; fill: #a8dadc; }
+define PathLayer('rgb') \${ stroke: rgb(230, 57, 70); fill: rgba(168, 218, 220, 0.8); }
+define PathLayer('hsl') \${ stroke: hsl(355, 78%, 56%); fill: hsla(184, 40%, 76%, 0.8); }
+define PathLayer('oklch') \${ stroke: oklch(0.55 0.2 27); fill: oklch(0.85 0.05 195); }
+define PathLayer('oklab') \${ stroke: oklab(0.55 0.15 0.05); fill: oklab(0.85 -0.04 -0.02); }
+
+// Color() constructor calls
+let primary = Color('#e63946');
+let ocean = Color('steelblue');
+let custom = Color('oklch(0.7 0.15 180)');
+
+// CSSVar with color fallback
+let themed = CSSVar('--accent', '#10b981');
+
+layer('hex').apply { circle(60, 100, 40) }` }
       }
     ],
     controls: [
@@ -129,6 +148,98 @@ export const componentRegistry = [
 
         const panel = document.createElement('layers-panel');
         // Override auto-hide for storybook display
+        panel.style.display = 'block';
+        panel.style.position = 'relative';
+        container.appendChild(panel);
+      });
+    }
+  },
+  {
+    id: 'palette-panel',
+    name: 'Palette Panel',
+    category: 'Editor',
+    description: 'Floating panel showing all colors used in the current program, grouped by layer',
+    stories: [
+      {
+        name: 'Multiple Layers with Colors',
+        props: {
+          layers: [
+            { name: 'outline', type: 'path', data: '', styles: { stroke: '#e63946', 'stroke-width': '2', fill: 'none' } },
+            { name: 'background', type: 'path', data: '', styles: { stroke: 'none', fill: '#a8dadc' } },
+            { name: 'accent', type: 'path', data: '', styles: { stroke: 'steelblue', fill: 'rgba(70, 130, 180, 0.3)' } }
+          ]
+        }
+      },
+      {
+        name: 'With CSS Variables',
+        props: {
+          layers: [
+            { name: 'themed', type: 'path', data: '', styles: { stroke: 'var(--primary, #e63946)', fill: 'var(--bg, #f1faee)' } },
+            { name: 'static', type: 'path', data: '', styles: { stroke: '#333', fill: 'none' } }
+          ]
+        }
+      },
+      {
+        name: 'Empty (Hidden)',
+        props: {
+          layers: [
+            { name: 'default', type: 'path', data: '', styles: { 'stroke-width': '2' } }
+          ]
+        }
+      }
+    ],
+    controls: [],
+    notes: 'Reads layers from store. Shows color swatches grouped by layer. Auto-hides when no colors found.',
+    render: (container, props) => {
+      import('../state/store.js').then(({ store }) => {
+        store.set('layers', props.layers || []);
+
+        const panel = document.createElement('palette-panel');
+        panel.style.display = 'block';
+        panel.style.position = 'relative';
+        container.appendChild(panel);
+      });
+    }
+  },
+  {
+    id: 'cssvar-panel',
+    name: 'CSS Variable Panel',
+    category: 'Editor',
+    description: 'Floating panel for live CSS variable overrides in SVG preview',
+    stories: [
+      {
+        name: 'Color Variables',
+        props: {
+          layers: [
+            { name: 'shape', type: 'path', data: '', styles: { stroke: 'var(--primary, #e63946)', fill: 'var(--bg, #f1faee)' } },
+            { name: 'accent', type: 'path', data: '', styles: { stroke: 'var(--accent, steelblue)', fill: 'none' } }
+          ]
+        }
+      },
+      {
+        name: 'Mixed Variables',
+        props: {
+          layers: [
+            { name: 'main', type: 'path', data: '', styles: { stroke: 'var(--color, #333)', 'stroke-width': 'var(--width, 2)' } }
+          ]
+        }
+      },
+      {
+        name: 'No Variables (Hidden)',
+        props: {
+          layers: [
+            { name: 'default', type: 'path', data: '', styles: { stroke: '#000', fill: 'none' } }
+          ]
+        }
+      }
+    ],
+    controls: [],
+    notes: 'Reads layers from store. Extracts var() references and provides live override inputs. Auto-hides when no vars found.',
+    render: (container, props) => {
+      import('../state/store.js').then(({ store }) => {
+        store.set('layers', props.layers || []);
+
+        const panel = document.createElement('cssvar-panel');
         panel.style.display = 'block';
         panel.style.position = 'relative';
         container.appendChild(panel);

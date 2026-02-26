@@ -66,6 +66,76 @@ function hslToRgb(h, s, l) {
   ];
 }
 
+// ─── OKLab / OKLCH Conversion Utilities ──────────────────────────────────────
+// Ported from src/color.ts — Ottosson's matrices for perceptually uniform color
+
+function srgbToLinear(c) {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+function linearToSRGB(c) {
+  return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+}
+
+/** Convert 0–255 RGB to OKLab {L, a, b} */
+function rgbToOKLab(r, g, b) {
+  const lr = srgbToLinear(r / 255);
+  const lg = srgbToLinear(g / 255);
+  const lb = srgbToLinear(b / 255);
+
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+
+  return {
+    L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+  };
+}
+
+/** Convert OKLab {L, a, b} to 0–255 RGB with gamut clamping */
+function oklabToRgb(L, a, b) {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+
+  const lr = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  return [
+    Math.round(Math.max(0, Math.min(1, linearToSRGB(lr))) * 255),
+    Math.round(Math.max(0, Math.min(1, linearToSRGB(lg))) * 255),
+    Math.round(Math.max(0, Math.min(1, linearToSRGB(lb))) * 255),
+  ];
+}
+
+/** Convert 0–255 RGB to OKLCH {L, C, H} */
+function rgbToOKLCH(r, g, b) {
+  const lab = rgbToOKLab(r, g, b);
+  const C = Math.sqrt(lab.a * lab.a + lab.b * lab.b);
+  let H = Math.atan2(lab.b, lab.a) * 180 / Math.PI;
+  if (H < 0) H += 360;
+  return { L: lab.L, C, H };
+}
+
+/** Convert OKLCH {L, C, H} to 0–255 RGB */
+function oklchToRgb(L, C, H) {
+  const hRad = H * Math.PI / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+  return oklabToRgb(L, a, b);
+}
+
 /**
  * Parse any CSS color string into {r, g, b, a, format}.
  * format: 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla' | 'named'
@@ -112,6 +182,20 @@ export function parseColor(str) {
     return { r, g, b, a: 1, format: 'hsl' };
   }
 
+  // oklch(L C H) or oklch(L C H / alpha)
+  m = str.match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/);
+  if (m) {
+    const [r, g, b] = oklchToRgb(+m[1], +m[2], +m[3]);
+    return { r, g, b, a: m[4] != null ? +m[4] : 1, format: 'oklch' };
+  }
+
+  // oklab(L a b) or oklab(L a b / alpha)
+  m = str.match(/^oklab\(\s*([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)\s*(?:\/\s*([\d.]+))?\s*\)$/);
+  if (m) {
+    const [r, g, b] = oklabToRgb(+m[1], +m[2], +m[3]);
+    return { r, g, b, a: m[4] != null ? +m[4] : 1, format: 'oklab' };
+  }
+
   // Named color → resolve via canvas
   if (CSS_NAMED_COLORS.has(str.toLowerCase())) {
     const ctx = document.createElement('canvas').getContext('2d');
@@ -152,6 +236,16 @@ export function formatColor({ r, g, b, a }, format) {
     case 'hsla': {
       const [h, s, l] = rgbToHsl(r, g, b);
       return `hsla(${Math.round(h*360)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%, ${rd(a)})`;
+    }
+    case 'oklch': {
+      const lch = rgbToOKLCH(r, g, b);
+      if (hasAlpha) return `oklch(${lch.L.toFixed(4)} ${lch.C.toFixed(4)} ${lch.H.toFixed(1)} / ${rd(a)})`;
+      return `oklch(${lch.L.toFixed(4)} ${lch.C.toFixed(4)} ${lch.H.toFixed(1)})`;
+    }
+    case 'oklab': {
+      const lab = rgbToOKLab(r, g, b);
+      if (hasAlpha) return `oklab(${lab.L.toFixed(4)} ${lab.a.toFixed(4)} ${lab.b.toFixed(4)} / ${rd(a)})`;
+      return `oklab(${lab.L.toFixed(4)} ${lab.a.toFixed(4)} ${lab.b.toFixed(4)})`;
     }
     default:
       return `#${hex2(r)}${hex2(g)}${hex2(b)}`;
@@ -226,7 +320,7 @@ export function createColorChip({ color, container, onChange, className, title }
     let { r, g, b, a, format } = parsed;
 
     // Determine format cycle order
-    const FORMAT_CYCLE = ['hex', 'rgb', 'hsl'];
+    const FORMAT_CYCLE = ['hex', 'rgb', 'hsl', 'oklch', 'oklab'];
     // Normalize to base format for the toggle
     let activeFormat = format;
     if (activeFormat === 'rgba') activeFormat = 'rgb';
@@ -541,6 +635,8 @@ function findColorRanges(docText) {
         /^#[0-9a-fA-F]{3,8}$/.test(value) ||
         /^rgba?\(/.test(value) ||
         /^hsla?\(/.test(value) ||
+        /^oklch\(/.test(value) ||
+        /^oklab\(/.test(value) ||
         CSS_NAMED_COLORS.has(value.toLowerCase())
       );
 
@@ -551,6 +647,39 @@ function findColorRanges(docText) {
 
       results.push({ from: valueStart, to: valueEnd, color: value });
     }
+  }
+
+  // Scan for Color('...') and Color("...") constructor calls
+  const colorCallRegex = /Color\(\s*(['"])([^'"]+)\1\s*\)/g;
+  let colorCallMatch;
+  while ((colorCallMatch = colorCallRegex.exec(docText)) !== null) {
+    const colorStr = colorCallMatch[2];
+    // Validate it's a recognized color format
+    const parsed = parseColor(colorStr);
+    if (parsed.format === 'hex' && colorStr !== 'none' && !colorStr.startsWith('#') && !CSS_NAMED_COLORS.has(colorStr.toLowerCase())) {
+      continue; // parseColor returned default — not a real color
+    }
+    // Position chip on the string argument (including quotes)
+    const quote = colorCallMatch[1];
+    const argStart = colorCallMatch.index + colorCallMatch[0].indexOf(quote + colorStr + quote);
+    const argEnd = argStart + colorStr.length + 2; // +2 for quotes
+    results.push({ from: argStart, to: argEnd, color: colorStr });
+  }
+
+  // Scan for CSSVar('--name', 'fallback') where fallback is a color
+  const cssVarRegex = /CSSVar\(\s*(['"])([^'"]+)\1\s*,\s*(['"])([^'"]+)\3\s*\)/g;
+  let cssVarMatch;
+  while ((cssVarMatch = cssVarRegex.exec(docText)) !== null) {
+    const fallback = cssVarMatch[4];
+    const parsed = parseColor(fallback);
+    if (parsed.format === 'hex' && !fallback.startsWith('#') && !CSS_NAMED_COLORS.has(fallback.toLowerCase())) {
+      continue;
+    }
+    const fbQuote = cssVarMatch[3];
+    const fbStr = fbQuote + fallback + fbQuote;
+    const fbStart = cssVarMatch.index + cssVarMatch[0].indexOf(fbStr, cssVarMatch[0].indexOf(','));
+    const fbEnd = fbStart + fbStr.length;
+    results.push({ from: fbStart, to: fbEnd, color: fallback });
   }
 
   return results;
