@@ -414,4 +414,39 @@ describe('CLI', () => {
       unlinkSync(outputFile);
     });
   });
+
+  describe('SVG output escaping', () => {
+    const outputSvg = join(TMP_DIR, 'escape-test.svg');
+
+    beforeEach(() => {
+      if (existsSync(outputSvg)) unlinkSync(outputSvg);
+    });
+
+    it('escapes double quotes in CLI stroke option', () => {
+      runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`, '--stroke=x"y']);
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('stroke="x&quot;y"');
+      expect(content).not.toContain('stroke="x"y"');
+    });
+
+    it('escapes angle brackets in CLI fill option', () => {
+      runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`, '--fill=<script>']);
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('fill="&lt;script&gt;"');
+      expect(content).not.toContain('fill="<script>"');
+    });
+
+    it('escapes ampersands in CLI viewBox option', () => {
+      runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`, '--viewBox=0 0 200&foo 200']);
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('viewBox="0 0 200&amp;foo 200"');
+    });
+
+    it('normal CSS color values pass through unchanged', () => {
+      runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`, '--stroke=oklch(0.7 0.15 180)', '--fill=#e63946']);
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('stroke="oklch(0.7 0.15 180)"');
+      expect(content).toContain('fill="#e63946"');
+    });
+  });
 });

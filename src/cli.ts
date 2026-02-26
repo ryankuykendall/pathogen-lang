@@ -68,7 +68,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     if (layer.type === 'text' && layer.textElements) {
       return layer.textElements.map(te => {
         const attrs = Object.entries(layer.styles)
-          .map(([k, v]) => `${k}="${v}"`).join(' ');
+          .map(([k, v]) => `${k}="${escapeXml(String(v))}"`).join(' ');
         const transform = te.rotation != null
           ? ` transform="rotate(${radToDeg(te.rotation)}, ${te.x}, ${te.y})"` : '';
         const content = te.children.map(child => {
@@ -89,11 +89,11 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     const handled = new Set(['stroke', 'fill', 'stroke-width']);
     const extraAttrs = Object.entries(layer.styles)
       .filter(([key]) => !handled.has(key))
-      .map(([key, value]) => `${key}="${value}"`)
+      .map(([key, value]) => `${key}="${escapeXml(String(value))}"`)
       .join(' ');
     const extra = extraAttrs ? ' ' + extraAttrs : '';
-    const transformAttr = layer.transform ? ` transform="${layer.transform}"` : '';
-    return `  <path d="${layer.data}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${extra}${transformAttr}/>`;
+    const transformAttr = layer.transform ? ` transform="${escapeXml(layer.transform)}"` : '';
+    return `  <path d="${escapeXml(layer.data)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}/>`;
   }).join('\n');
 
   // Build defs section for masks and clip-paths
@@ -101,21 +101,21 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
   for (const mask of result.masks) {
     const children = mask.elements.map(el => {
       const styleAttrs = Object.entries(el.styles)
-        .map(([k, v]) => `${k}="${v}"`).join(' ');
-      return `    <path d="${el.pathData}"${styleAttrs ? ' ' + styleAttrs : ''}/>`;
+        .map(([k, v]) => `${k}="${escapeXml(String(v))}"`).join(' ');
+      return `    <path d="${escapeXml(el.pathData)}"${styleAttrs ? ' ' + styleAttrs : ''}/>`;
     }).join('\n');
-    defsContent.push(`  <mask id="${mask.id}">\n${children}\n  </mask>`);
+    defsContent.push(`  <mask id="${escapeXml(mask.id)}">\n${children}\n  </mask>`);
   }
   for (const clip of result.clipPaths) {
     const children = clip.elements.map(el => {
-      return `    <path d="${el.pathData}"/>`;
+      return `    <path d="${escapeXml(el.pathData)}"/>`;
     }).join('\n');
-    defsContent.push(`  <clipPath id="${clip.id}">\n${children}\n  </clipPath>`);
+    defsContent.push(`  <clipPath id="${escapeXml(clip.id)}">\n${children}\n  </clipPath>`);
   }
   const defsSection = defsContent.length > 0
     ? `\n<defs>\n${defsContent.join('\n')}\n</defs>\n` : '';
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${width}" height="${height}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeXml(viewBox)}" width="${escapeXml(width)}" height="${escapeXml(height)}">
   <rect width="100%" height="100%" fill="#f5f5f5"/>${defsSection}
 ${elements}
 </svg>`;
