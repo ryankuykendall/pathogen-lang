@@ -31,6 +31,7 @@ import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { samplePathAtFraction, partitionPath } from './sampling';
 import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
+import { type OKLCH, parseColor, oklchToCSS, oklchToHex, oklchToRGBString, oklchToHSLString, oklchToOKLCHString, lighten, darken, saturate, desaturate, setAlpha, hueShift, mixColors } from '../color';
 
 // Types for annotated output
 export type AnnotatedLine =
@@ -49,7 +50,7 @@ export interface AnnotatedOutput {
 }
 
 // Value types (same as main evaluator)
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | ColorValue | ColorNamespace;
 
 export interface SVGFragmentValue {
   type: 'SVGFragmentValue';
@@ -60,6 +61,19 @@ export interface SVGFragmentValue {
 
 function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
+}
+
+export interface ColorValue {
+  type: 'ColorValue';
+  oklch: OKLCH;
+}
+
+function isColorValue(value: Value): value is ColorValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ColorValue';
+}
+
+export interface ColorNamespace {
+  type: 'ColorNamespace';
 }
 
 export interface ArrayValue {
@@ -192,6 +206,9 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   }
   if (name === 'Object') {
     return { type: 'ObjectNamespace' } as ObjectNamespace;
+  }
+  if (name === 'Color') {
+    return { type: 'ColorNamespace' } as ColorNamespace;
   }
   if (name in stdlib) {
     return stdlib[name as keyof typeof stdlib] as unknown as Value;
@@ -656,6 +673,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           resolvedValue = String(evaluated);
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
+        } else if (isColorValue(evaluated)) {
+          resolvedValue = oklchToCSS(evaluated.oklch);
         }
       }
     } catch {
@@ -1084,6 +1103,80 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     throw mError(`Unknown ProjectedPath method: ${expr.method}`);
   }
 
+  // Color methods
+  if (isColorValue(obj)) {
+    switch (expr.method) {
+      case 'lighten': {
+        if (expr.args.length !== 1) throw mError('lighten() expects 1 argument');
+        const amount = evaluateExpression(expr.args[0], scope);
+        if (typeof amount !== 'number') throw mError('lighten() amount must be a number');
+        return { type: 'ColorValue', oklch: lighten(obj.oklch, amount) };
+      }
+      case 'darken': {
+        if (expr.args.length !== 1) throw mError('darken() expects 1 argument');
+        const amount = evaluateExpression(expr.args[0], scope);
+        if (typeof amount !== 'number') throw mError('darken() amount must be a number');
+        return { type: 'ColorValue', oklch: darken(obj.oklch, amount) };
+      }
+      case 'saturate': {
+        if (expr.args.length !== 1) throw mError('saturate() expects 1 argument');
+        const factor = evaluateExpression(expr.args[0], scope);
+        if (typeof factor !== 'number') throw mError('saturate() factor must be a number');
+        return { type: 'ColorValue', oklch: saturate(obj.oklch, factor) };
+      }
+      case 'desaturate': {
+        if (expr.args.length !== 1) throw mError('desaturate() expects 1 argument');
+        const factor = evaluateExpression(expr.args[0], scope);
+        if (typeof factor !== 'number') throw mError('desaturate() factor must be a number');
+        return { type: 'ColorValue', oklch: desaturate(obj.oklch, factor) };
+      }
+      case 'alpha': {
+        if (expr.args.length !== 1) throw mError('alpha() expects 1 argument');
+        const a = evaluateExpression(expr.args[0], scope);
+        if (typeof a !== 'number') throw mError('alpha() value must be a number');
+        return { type: 'ColorValue', oklch: setAlpha(obj.oklch, a) };
+      }
+      case 'hueShift': {
+        if (expr.args.length !== 1) throw mError('hueShift() expects 1 argument');
+        const degrees = evaluateExpression(expr.args[0], scope);
+        if (typeof degrees !== 'number') throw mError('hueShift() degrees must be a number');
+        return { type: 'ColorValue', oklch: hueShift(obj.oklch, degrees) };
+      }
+      case 'complement': {
+        if (expr.args.length !== 0) throw mError('complement() expects 0 arguments');
+        return { type: 'ColorValue', oklch: hueShift(obj.oklch, 180) };
+      }
+      case 'mix': {
+        if (expr.args.length !== 2) throw mError('mix() expects 2 arguments');
+        const other = evaluateExpression(expr.args[0], scope);
+        const t = evaluateExpression(expr.args[1], scope);
+        if (!isColorValue(other)) throw mError('mix() first argument must be a Color');
+        if (typeof t !== 'number') throw mError('mix() second argument (ratio) must be a number');
+        return { type: 'ColorValue', oklch: mixColors(obj.oklch, other.oklch, t) };
+      }
+      default:
+        throw mError(`Unknown Color method: ${expr.method}`);
+    }
+  }
+
+  // ColorNamespace methods (Color.mix)
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ColorNamespace') {
+    switch (expr.method) {
+      case 'mix': {
+        if (expr.args.length !== 3) throw mError('Color.mix() expects 3 arguments');
+        const c1 = evaluateExpression(expr.args[0], scope);
+        const c2 = evaluateExpression(expr.args[1], scope);
+        const t = evaluateExpression(expr.args[2], scope);
+        if (!isColorValue(c1)) throw mError('Color.mix() first argument must be a Color');
+        if (!isColorValue(c2)) throw mError('Color.mix() second argument must be a Color');
+        if (typeof t !== 'number') throw mError('Color.mix() third argument (ratio) must be a number');
+        return { type: 'ColorValue', oklch: mixColors(c1.oklch, c2.oklch, t) };
+      }
+      default:
+        throw mError(`Unknown Color method: ${expr.method}`);
+    }
+  }
+
   // ObjectNamespace methods
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ObjectNamespace') {
     const args = expr.args.map(a => evaluateExpression(a, scope));
@@ -1434,6 +1527,23 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle ColorValue property access
+  if (isColorValue(obj)) {
+    switch (expr.property) {
+      case 'css': return oklchToCSS(obj.oklch);
+      case 'hex': return oklchToHex(obj.oklch);
+      case 'oklch': return oklchToOKLCHString(obj.oklch);
+      case 'hsl': return oklchToHSLString(obj.oklch);
+      case 'rgb': return oklchToRGBString(obj.oklch);
+      case 'lightness': return obj.oklch.L;
+      case 'chroma': return obj.oklch.C;
+      case 'hue': return obj.oklch.H;
+      case 'a': return obj.oklch.alpha;
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on Color`, line));
+    }
+  }
+
   // Handle StyleBlockValue property access (camelCase → kebab-case)
   if (isStyleBlock(obj)) {
     const kebabName = camelToKebab(expr.property);
@@ -1506,6 +1616,31 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     // Evaluate args to check for errors, but don't produce output in annotated mode
     call.args.forEach((arg) => evaluateExpression(arg, scope));
     return { type: 'PathSegment' as const, value: '' };
+  }
+
+  // Handle Color() constructor
+  if (call.name === 'Color') {
+    if (call.args.length === 1) {
+      const arg = evaluateExpression(call.args[0], scope);
+      if (typeof arg !== 'string') throw new Error('Color() with 1 argument expects a color string');
+      return { type: 'ColorValue' as const, oklch: parseColor(arg) };
+    } else if (call.args.length === 3 || call.args.length === 4) {
+      const L = evaluateExpression(call.args[0], scope);
+      const C = evaluateExpression(call.args[1], scope);
+      const H = evaluateExpression(call.args[2], scope);
+      if (typeof L !== 'number') throw new Error('Color() L must be a number');
+      if (typeof C !== 'number') throw new Error('Color() C must be a number');
+      if (typeof H !== 'number') throw new Error('Color() H must be a number');
+      let alpha = 1;
+      if (call.args.length === 4) {
+        const a = evaluateExpression(call.args[3], scope);
+        if (typeof a !== 'number') throw new Error('Color() alpha must be a number');
+        alpha = a;
+      }
+      return { type: 'ColorValue' as const, oklch: { L, C, H, alpha } };
+    } else {
+      throw new Error(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`);
+    }
   }
 
   // Handle SVGDocumentFragment() — evaluate args and call sanitizer

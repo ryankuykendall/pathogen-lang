@@ -377,6 +377,20 @@ tangentArc(30, 90deg)  // Smooth arc curving down from the line's endpoint
 
 ---
 
+---
+
+## Color
+
+The `Color` type provides first-class color manipulation in OKLCH color space. See the full [Color documentation](color.md) for constructor forms, methods, properties, and examples.
+
+```
+let c = Color('#e63946');
+let lighter = c.lighten(0.2);
+let comp = c.complement();
+```
+
+---
+
 ## Using Functions Inside calc()
 
 Math functions can be used inside `calc()`:
