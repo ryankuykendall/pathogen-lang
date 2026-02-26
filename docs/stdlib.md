@@ -391,6 +391,17 @@ let comp = c.complement();
 
 ---
 
+## CSSVar
+
+The `CSSVar` type creates CSS custom property references (`var()`) for use in style blocks. See the full [CSSVar documentation](cssvar.md) for constructor forms, properties, and examples.
+
+```
+let fg = CSSVar('--foreground', '#333');
+define PathLayer('main') ${ stroke: fg; }
+```
+
+---
+
 ## Using Functions Inside calc()
 
 Math functions can be used inside `calc()`:

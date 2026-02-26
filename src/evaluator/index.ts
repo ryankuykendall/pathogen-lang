@@ -48,7 +48,7 @@ import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathStrin
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker-start', 'marker-mid', 'marker-end']);
 
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | ColorValue | ColorNamespace;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | ColorValue | ColorNamespace | CSSVarValue;
 
 /**
  * Represents an array value (reference semantics)
@@ -143,6 +143,19 @@ export interface ColorValue {
 
 export function isColorValue(value: Value): value is ColorValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ColorValue';
+}
+
+/**
+ * Represents a CSS custom property reference: var(--name, fallback)
+ */
+export interface CSSVarValue {
+  type: 'CSSVarValue';
+  varName: string;
+  fallback: string | null;
+}
+
+export function isCSSVarValue(value: Value): value is CSSVarValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CSSVarValue';
 }
 
 /**
@@ -670,6 +683,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
           resolvedValue = oklchToCSS(evaluated.oklch);
+        } else if (isCSSVarValue(evaluated)) {
+          resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
         }
         // For other types, keep raw string
       }
@@ -1895,6 +1910,9 @@ function formatValueForDisplay(val: Value): string {
   if (isColorValue(val)) {
     return `Color(${oklchToCSS(val.oklch)})`;
   }
+  if (isCSSVarValue(val)) {
+    return val.fallback ? `CSSVar(${val.varName}, ${val.fallback})` : `CSSVar(${val.varName})`;
+  }
   if (isArrayValue(val)) {
     return '[' + val.elements.map(formatValueForDisplay).join(', ') + ']';
   }
@@ -2069,6 +2087,17 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle CSSVarValue property access
+  if (isCSSVarValue(obj)) {
+    switch (expr.property) {
+      case 'var': return obj.varName;
+      case 'fallback': return obj.fallback;
+      case 'css': return obj.fallback ? `var(${obj.varName}, ${obj.fallback})` : `var(${obj.varName})`;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on CSSVar`);
+    }
+  }
+
   // Handle StyleBlockValue property access (camelCase → kebab-case)
   if (isStyleBlock(obj)) {
     const kebabName = camelToKebab(expr.property);
@@ -2195,6 +2224,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         } else if (isClipPathValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isColorValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (isCSSVarValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (typeof value === 'object' && value !== null && 'type' in value) {
           const typed = value as { type: string; value?: unknown };
@@ -2353,6 +2384,28 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     } else {
       throw new Error(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`);
     }
+  }
+
+  // Handle CSSVar() constructor
+  if (call.name === 'CSSVar') {
+    if (call.args.length < 1 || call.args.length > 2) {
+      throw new Error(`CSSVar() expects 1 or 2 arguments, got ${call.args.length}`);
+    }
+    const name = evaluateExpression(call.args[0], scope);
+    if (typeof name !== 'string') throw new Error('CSSVar() first argument must be a string');
+    if (!name.startsWith('--')) throw new Error("CSSVar() variable name must start with '--'");
+    let fallback: string | null = null;
+    if (call.args.length === 2) {
+      const fb = evaluateExpression(call.args[1], scope);
+      if (typeof fb === 'string') {
+        fallback = fb;
+      } else if (isColorValue(fb)) {
+        fallback = oklchToCSS(fb.oklch);
+      } else {
+        throw new Error('CSSVar() fallback must be a string or Color');
+      }
+    }
+    return { type: 'CSSVarValue' as const, varName: name, fallback };
   }
 
   // Check if it's a context-aware function

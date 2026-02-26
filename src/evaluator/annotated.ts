@@ -50,7 +50,7 @@ export interface AnnotatedOutput {
 }
 
 // Value types (same as main evaluator)
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | ColorValue | ColorNamespace;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | ColorValue | ColorNamespace | CSSVarValue;
 
 export interface SVGFragmentValue {
   type: 'SVGFragmentValue';
@@ -74,6 +74,16 @@ function isColorValue(value: Value): value is ColorValue {
 
 export interface ColorNamespace {
   type: 'ColorNamespace';
+}
+
+export interface CSSVarValue {
+  type: 'CSSVarValue';
+  varName: string;
+  fallback: string | null;
+}
+
+function isCSSVarValue(value: Value): value is CSSVarValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CSSVarValue';
 }
 
 export interface ArrayValue {
@@ -675,6 +685,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
           resolvedValue = oklchToCSS(evaluated.oklch);
+        } else if (isCSSVarValue(evaluated)) {
+          resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
         }
       }
     } catch {
@@ -1544,6 +1556,17 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle CSSVarValue property access
+  if (isCSSVarValue(obj)) {
+    switch (expr.property) {
+      case 'var': return obj.varName;
+      case 'fallback': return obj.fallback;
+      case 'css': return obj.fallback ? `var(${obj.varName}, ${obj.fallback})` : `var(${obj.varName})`;
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on CSSVar`, line));
+    }
+  }
+
   // Handle StyleBlockValue property access (camelCase → kebab-case)
   if (isStyleBlock(obj)) {
     const kebabName = camelToKebab(expr.property);
@@ -1641,6 +1664,28 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     } else {
       throw new Error(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`);
     }
+  }
+
+  // Handle CSSVar() constructor
+  if (call.name === 'CSSVar') {
+    if (call.args.length < 1 || call.args.length > 2) {
+      throw new Error(`CSSVar() expects 1 or 2 arguments, got ${call.args.length}`);
+    }
+    const name = evaluateExpression(call.args[0], scope);
+    if (typeof name !== 'string') throw new Error('CSSVar() first argument must be a string');
+    if (!name.startsWith('--')) throw new Error("CSSVar() variable name must start with '--'");
+    let fallback: string | null = null;
+    if (call.args.length === 2) {
+      const fb = evaluateExpression(call.args[1], scope);
+      if (typeof fb === 'string') {
+        fallback = fb;
+      } else if (isColorValue(fb)) {
+        fallback = oklchToCSS(fb.oklch);
+      } else {
+        throw new Error('CSSVar() fallback must be a string or Color');
+      }
+    }
+    return { type: 'CSSVarValue' as const, varName: name, fallback };
   }
 
   // Handle SVGDocumentFragment() — evaluate args and call sanitizer

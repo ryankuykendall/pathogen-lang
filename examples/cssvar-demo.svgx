@@ -1,0 +1,40 @@
+// CSSVar Demo — themeable SVG via CSS custom properties
+
+// Theme colors using CSSVar with sensible fallbacks
+let bgColor = CSSVar('--bg', '#f5f5f5');
+let primary = CSSVar('--primary', Color('#e63946'));
+let secondary = CSSVar('--secondary', Color('#457b9d'));
+let accent = CSSVar('--accent', Color('#2a9d8f'));
+let strokeW = CSSVar('--stroke-w', '2.5');
+
+// Background
+define PathLayer('bg') ${ fill: bgColor; stroke: none; }
+layer('bg').apply { rect(0, 0, 400, 300) }
+
+// Large central shape — primary color
+define PathLayer('hero') ${ stroke: primary; fill: none; stroke-width: strokeW; stroke-linecap: round; stroke-linejoin: round; }
+layer('hero').apply {
+  // Star
+  star(200, 140, 70, 35, 5)
+}
+
+// Orbiting circles — secondary color
+define PathLayer('orbits') ${ stroke: secondary; fill: none; stroke-width: strokeW; }
+layer('orbits').apply {
+  for (i in 0..3) {
+    let angle = calc(i / 3 * TAU());
+    let cx = calc(200 + cos(angle) * 110);
+    let cy = calc(140 + sin(angle) * 80);
+    circle(cx, cy, 18)
+  }
+}
+
+// Corner accents — accent color
+define PathLayer('accents') ${ stroke: accent; fill: accent; stroke-width: 1; }
+layer('accents').apply {
+  // Corner diamonds
+  polygon(30, 30, 12, 4)
+  polygon(370, 30, 12, 4)
+  polygon(30, 270, 12, 4)
+  polygon(370, 270, 12, 4)
+}

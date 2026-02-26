@@ -7,8 +7,8 @@ export { evaluate, evaluateAnnotated, formatAnnotated, evaluateWithContext } fro
 export { stdlib } from './stdlib';
 
 export type { Program, Statement, Expression, Node, SourceLocation, Comment, StyleProperty, StyleBlockLiteral, LayerDefinition, LayerApplyBlock, TemplateLiteral, TextStatement, TspanStatement, TextBodyItem, ForEachLoop, NullLiteral, ArrayLiteral, ObjectLiteral, IndexExpression, IndexedAssignmentStatement, MethodCallExpression, PathBlockExpression } from './parser/ast';
-export type { AnnotatedOutput, AnnotatedLine, EvaluateWithContextResult, EvaluateWithContextOptions, PathContext, Point, CommandHistoryEntry, LogEntry, LogPart, LayerOutput, CompileResult, LayerStyle, StyleBlockValue, ArrayValue, ObjectValue, PointValue, TextElement, TextChild, PathLayerState, TextLayerState, FragmentLayerState, SVGFragmentValue, PathBlockValue, ProjectedPathValue, PathBlockCommand, MaskValue, ClipPathValue, MaskOutput, ClipPathOutput, MaskPathEntry, ColorValue } from './evaluator';
-export { isPointValue, isObjectValue, isPathBlockValue, isProjectedPathValue, isSVGFragmentValue, isMaskValue, isClipPathValue, isColorValue } from './evaluator';
+export type { AnnotatedOutput, AnnotatedLine, EvaluateWithContextResult, EvaluateWithContextOptions, PathContext, Point, CommandHistoryEntry, LogEntry, LogPart, LayerOutput, CompileResult, LayerStyle, StyleBlockValue, ArrayValue, ObjectValue, PointValue, TextElement, TextChild, PathLayerState, TextLayerState, FragmentLayerState, SVGFragmentValue, PathBlockValue, ProjectedPathValue, PathBlockCommand, MaskValue, ClipPathValue, MaskOutput, ClipPathOutput, MaskPathEntry, ColorValue, CSSVarValue } from './evaluator';
+export { isPointValue, isObjectValue, isPathBlockValue, isProjectedPathValue, isSVGFragmentValue, isMaskValue, isClipPathValue, isColorValue, isCSSVarValue } from './evaluator';
 export type { FormatOptions } from './evaluator/formatter';
 
 /**
