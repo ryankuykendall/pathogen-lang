@@ -1,0 +1,57 @@
+// ── Color Swatch Generator ──
+// Change this to explore any CSS color!
+let baseColor = Color('#e63946');
+
+fn swatch(cx, cy, r) {
+circle(cx, cy, r)
+}
+
+// Layout
+let sx = 30;
+let sp = 55;
+let r = 22;
+let y1 = 40;
+let y2 = 110;
+let labelDy = 36;
+
+// ── Row 1: Lightness & Saturation ──
+define PathLayer('base') ${ fill: baseColor; stroke: none; }
+define PathLayer('lighten') ${ fill: baseColor.lighten(0.2); stroke: none; }
+define PathLayer('darken') ${ fill: baseColor.darken(0.15); stroke: none; }
+define PathLayer('saturate') ${ fill: baseColor.saturate(1.5); stroke: none; }
+define PathLayer('desaturate') ${ fill: baseColor.desaturate(0.3); stroke: none; }
+
+// ── Row 2: Hue, Alpha & Mixing ──
+define PathLayer('hueshift') ${ fill: baseColor.hueShift(90); stroke: none; }
+define PathLayer('complement') ${ fill: baseColor.complement(); stroke: none; }
+define PathLayer('alpha') ${ fill: baseColor.alpha(0.5); stroke: none; }
+define PathLayer('mix') ${ fill: baseColor.mix(Color('#457b9d'), 0.5); stroke: none; }
+
+// ── Labels ──
+define TextLayer('labels') ${ font-size: 9; fill: #333; text-anchor: middle; font-family: monospace; }
+
+// Draw Row 1
+layer('base').apply { swatch(sx, y1, r) }
+layer('lighten').apply { swatch(calc(sx + sp), y1, r) }
+layer('darken').apply { swatch(calc(sx + sp * 2), y1, r) }
+layer('saturate').apply { swatch(calc(sx + sp * 3), y1, r) }
+layer('desaturate').apply { swatch(calc(sx + sp * 4), y1, r) }
+
+// Draw Row 2
+layer('hueshift').apply { swatch(sx, y2, r) }
+layer('complement').apply { swatch(calc(sx + sp), y2, r) }
+layer('alpha').apply { swatch(calc(sx + sp * 2), y2, r) }
+layer('mix').apply { swatch(calc(sx + sp * 3), y2, r) }
+
+// Labels
+layer('labels').apply {
+text(sx, calc(y1 + labelDy))`base`
+text(calc(sx + sp), calc(y1 + labelDy))`.lighten(.2)`
+text(calc(sx + sp * 2), calc(y1 + labelDy))`.darken(.15)`
+text(calc(sx + sp * 3), calc(y1 + labelDy))`.saturate(1.5)`
+text(calc(sx + sp * 4), calc(y1 + labelDy))`.desat(.3)`
+text(sx, calc(y2 + labelDy))`.hueShift(90)`
+text(calc(sx + sp), calc(y2 + labelDy))`.complement()`
+text(calc(sx + sp * 2), calc(y2 + labelDy))`.alpha(.5)`
+text(calc(sx + sp * 3), calc(y2 + labelDy))`.mix(blue,.5)`
+}

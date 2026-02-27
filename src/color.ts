@@ -335,6 +335,10 @@ export function mixCSS(source1: string, source2: string, ratio: number): string 
   return `color-mix(in oklch, ${source1}, ${source2} ${Math.round(ratio * 100)}%)`;
 }
 
+export function setLightnessCSS(source: string, lightness: number): string {
+  return `oklch(from ${source} ${lightness} c h)`;
+}
+
 // ── Unified parser ─────────────────────────────────────────────────────
 
 export function parseColor(input: string): OKLCH {

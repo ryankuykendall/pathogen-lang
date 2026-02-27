@@ -31,7 +31,7 @@ import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { samplePathAtFraction, partitionPath } from './sampling';
 import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
-import { type OKLCH, parseColor, oklchToCSS, oklchToHex, oklchToRGBString, oklchToHSLString, oklchToOKLCHString, lighten, darken, saturate, desaturate, setAlpha, hueShift, mixColors, cssSourceExpr, lightenCSS, darkenCSS, saturateCSS, desaturateCSS, setAlphaCSS, hueShiftCSS, mixCSS } from '../color';
+import { type OKLCH, parseColor, oklchToCSS, oklchToHex, oklchToRGBString, oklchToHSLString, oklchToOKLCHString, lighten, darken, saturate, desaturate, setAlpha, hueShift, mixColors, cssSourceExpr, lightenCSS, darkenCSS, saturateCSS, desaturateCSS, setAlphaCSS, hueShiftCSS, mixCSS, setLightnessCSS } from '../color';
 
 // Types for annotated output
 export type AnnotatedLine =
@@ -1184,12 +1184,65 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const cssExpr = src ? mixCSS(src, otherSrc || oklchToCSS(other.oklch), t) : undefined;
         return { type: 'ColorValue', oklch: mixColors(obj.oklch, other.oklch, t), cssExpr };
       }
+      case 'analogous': {
+        if (expr.args.length > 1) throw mError('analogous() expects 0 or 1 arguments');
+        let angle = 30;
+        if (expr.args.length === 1) {
+          const a = evaluateExpression(expr.args[0], scope);
+          if (typeof a !== 'number') throw mError('analogous() angle must be a number');
+          angle = a;
+        }
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        const colors: ColorValue[] = [
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, -angle), cssExpr: src ? hueShiftCSS(src, -angle) : undefined },
+          { type: 'ColorValue', oklch: obj.oklch, cssVar: obj.cssVar, cssExpr: obj.cssExpr },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, angle), cssExpr: src ? hueShiftCSS(src, angle) : undefined },
+        ];
+        return { type: 'ArrayValue', elements: colors };
+      }
+      case 'triadic': {
+        if (expr.args.length !== 0) throw mError('triadic() expects 0 arguments');
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        const colors: ColorValue[] = [
+          { type: 'ColorValue', oklch: obj.oklch, cssVar: obj.cssVar, cssExpr: obj.cssExpr },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 120), cssExpr: src ? hueShiftCSS(src, 120) : undefined },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 240), cssExpr: src ? hueShiftCSS(src, 240) : undefined },
+        ];
+        return { type: 'ArrayValue', elements: colors };
+      }
+      case 'tetradic': {
+        if (expr.args.length !== 0) throw mError('tetradic() expects 0 arguments');
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        const colors: ColorValue[] = [
+          { type: 'ColorValue', oklch: obj.oklch, cssVar: obj.cssVar, cssExpr: obj.cssExpr },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 90), cssExpr: src ? hueShiftCSS(src, 90) : undefined },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 180), cssExpr: src ? hueShiftCSS(src, 180) : undefined },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 270), cssExpr: src ? hueShiftCSS(src, 270) : undefined },
+        ];
+        return { type: 'ArrayValue', elements: colors };
+      }
+      case 'splitComplementary': {
+        if (expr.args.length > 1) throw mError('splitComplementary() expects 0 or 1 arguments');
+        let angle = 30;
+        if (expr.args.length === 1) {
+          const a = evaluateExpression(expr.args[0], scope);
+          if (typeof a !== 'number') throw mError('splitComplementary() angle must be a number');
+          angle = a;
+        }
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        const colors: ColorValue[] = [
+          { type: 'ColorValue', oklch: obj.oklch, cssVar: obj.cssVar, cssExpr: obj.cssExpr },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 180 - angle), cssExpr: src ? hueShiftCSS(src, 180 - angle) : undefined },
+          { type: 'ColorValue', oklch: hueShift(obj.oklch, 180 + angle), cssExpr: src ? hueShiftCSS(src, 180 + angle) : undefined },
+        ];
+        return { type: 'ArrayValue', elements: colors };
+      }
       default:
         throw mError(`Unknown Color method: ${expr.method}`);
     }
   }
 
-  // ColorNamespace methods (Color.mix)
+  // ColorNamespace methods (Color.mix, Color.palette)
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ColorNamespace') {
     switch (expr.method) {
       case 'mix': {
@@ -1204,6 +1257,49 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const src2 = cssSourceExpr(c2.cssVar, c2.cssExpr);
         const cssExpr = (src1 || src2) ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
         return { type: 'ColorValue', oklch: mixColors(c1.oklch, c2.oklch, t), cssExpr };
+      }
+      case 'palette': {
+        if (expr.args.length === 2) {
+          // Lightness ramp: Color.palette(color, n)
+          const c = evaluateExpression(expr.args[0], scope);
+          const n = evaluateExpression(expr.args[1], scope);
+          if (!isColorValue(c)) throw mError('Color.palette() first argument must be a Color');
+          if (typeof n !== 'number' || !Number.isInteger(n) || n < 2) throw mError('Color.palette() count must be an integer >= 2');
+          const src = cssSourceExpr(c.cssVar, c.cssExpr);
+          const colors: ColorValue[] = [];
+          for (let i = 0; i < n; i++) {
+            const L = Math.round((0.15 + 0.8 * (i / (n - 1))) * 1000) / 1000;
+            colors.push({
+              type: 'ColorValue',
+              oklch: { ...c.oklch, L },
+              cssExpr: src ? setLightnessCSS(src, L) : undefined,
+            });
+          }
+          return { type: 'ArrayValue', elements: colors };
+        } else if (expr.args.length === 3) {
+          // Interpolation: Color.palette(c1, c2, n)
+          const c1 = evaluateExpression(expr.args[0], scope);
+          const c2 = evaluateExpression(expr.args[1], scope);
+          const n = evaluateExpression(expr.args[2], scope);
+          if (!isColorValue(c1)) throw mError('Color.palette() first argument must be a Color');
+          if (!isColorValue(c2)) throw mError('Color.palette() second argument must be a Color');
+          if (typeof n !== 'number' || !Number.isInteger(n) || n < 2) throw mError('Color.palette() count must be an integer >= 2');
+          const src1 = cssSourceExpr(c1.cssVar, c1.cssExpr);
+          const src2 = cssSourceExpr(c2.cssVar, c2.cssExpr);
+          const colors: ColorValue[] = [];
+          for (let i = 0; i < n; i++) {
+            const t = i / (n - 1);
+            const cssExpr = (src1 || src2) ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
+            colors.push({
+              type: 'ColorValue',
+              oklch: mixColors(c1.oklch, c2.oklch, t),
+              cssExpr,
+            });
+          }
+          return { type: 'ArrayValue', elements: colors };
+        } else {
+          throw mError('Color.palette() expects 2 or 3 arguments');
+        }
       }
       default:
         throw mError(`Unknown Color method: ${expr.method}`);

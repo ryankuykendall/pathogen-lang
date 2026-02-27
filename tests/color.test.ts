@@ -478,4 +478,318 @@ describe('Color type', () => {
       expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(240, 1);
     });
   });
+
+  // ── Color Harmonies ─────────────────────────────────────────────────────
+
+  describe('color harmonies', () => {
+    describe('.analogous()', () => {
+      it('returns array of 3 colors', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 60);
+          let colors = c.analogous();
+          log(colors.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('3');
+      });
+
+      it('uses default 30° angle', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 60);
+          let colors = c.analogous();
+          log(colors[0].hue);
+          log(colors[1].hue);
+          log(colors[2].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(30, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(60, 1);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(90, 1);
+      });
+
+      it('accepts custom angle', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 60);
+          let colors = c.analogous(45);
+          log(colors[0].hue);
+          log(colors[2].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(15, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(105, 1);
+      });
+
+      it('wraps hue around 360', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 10);
+          let colors = c.analogous();
+          log(colors[0].hue);
+        `);
+        // 10 - 30 = -20 → 340
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(340, 1);
+      });
+
+      it('preserves lightness and chroma', () => {
+        const result = compile(`
+          let c = Color(0.6, 0.2, 60);
+          let colors = c.analogous();
+          log(colors[0].lightness);
+          log(colors[0].chroma);
+          log(colors[2].lightness);
+          log(colors[2].chroma);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.6, 2);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.2, 2);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(0.6, 2);
+        expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(0.2, 2);
+      });
+
+      it('throws on non-number angle', () => {
+        expect(() => compile('Color(0.5, 0.15, 60).analogous("x");')).toThrow('must be a number');
+      });
+
+      it('throws on too many arguments', () => {
+        expect(() => compile('Color(0.5, 0.15, 60).analogous(30, 45);')).toThrow('expects 0 or 1 arguments');
+      });
+    });
+
+    describe('.triadic()', () => {
+      it('returns array of 3 colors', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 0);
+          let colors = c.triadic();
+          log(colors.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('3');
+      });
+
+      it('returns self, +120, +240', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 30);
+          let colors = c.triadic();
+          log(colors[0].hue);
+          log(colors[1].hue);
+          log(colors[2].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(30, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(150, 1);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(270, 1);
+      });
+
+      it('wraps hue around 360', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 300);
+          let colors = c.triadic();
+          log(colors[1].hue);
+          log(colors[2].hue);
+        `);
+        // 300 + 120 = 420 → 60, 300 + 240 = 540 → 180
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(60, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(180, 1);
+      });
+
+      it('throws on arguments', () => {
+        expect(() => compile('Color(0.5, 0.15, 60).triadic(30);')).toThrow('expects 0 arguments');
+      });
+    });
+
+    describe('.tetradic()', () => {
+      it('returns array of 4 colors', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 0);
+          let colors = c.tetradic();
+          log(colors.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('4');
+      });
+
+      it('returns self, +90, +180, +270', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 45);
+          let colors = c.tetradic();
+          log(colors[0].hue);
+          log(colors[1].hue);
+          log(colors[2].hue);
+          log(colors[3].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(45, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(135, 1);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(225, 1);
+        expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(315, 1);
+      });
+
+      it('throws on arguments', () => {
+        expect(() => compile('Color(0.5, 0.15, 60).tetradic(30);')).toThrow('expects 0 arguments');
+      });
+    });
+
+    describe('.splitComplementary()', () => {
+      it('returns array of 3 colors', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 0);
+          let colors = c.splitComplementary();
+          log(colors.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('3');
+      });
+
+      it('returns self, 180-30, 180+30 with default angle', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 0);
+          let colors = c.splitComplementary();
+          log(colors[0].hue);
+          log(colors[1].hue);
+          log(colors[2].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(150, 1);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(210, 1);
+      });
+
+      it('accepts custom angle', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 0);
+          let colors = c.splitComplementary(15);
+          log(colors[1].hue);
+          log(colors[2].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(165, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(195, 1);
+      });
+
+      it('throws on non-number angle', () => {
+        expect(() => compile('Color(0.5, 0.15, 60).splitComplementary("x");')).toThrow('must be a number');
+      });
+    });
+
+    it('harmony colors work in for-each iteration', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 30);
+        for ([color, i] in c.triadic()) {
+          log(color.hue);
+        }
+      `);
+      expect(result.logs).toHaveLength(3);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(30, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(150, 1);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(270, 1);
+    });
+  });
+
+  // ── Color.palette() ────────────────────────────────────────────────────
+
+  describe('Color.palette()', () => {
+    describe('lightness ramp', () => {
+      it('returns array of n colors', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 30);
+          let p = Color.palette(c, 5);
+          log(p.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('5');
+      });
+
+      it('ramp goes from L=0.15 to L=0.95', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 30);
+          let p = Color.palette(c, 2);
+          log(p[0].lightness);
+          log(p[1].lightness);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.15, 2);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.95, 2);
+      });
+
+      it('preserves hue and chroma', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.2, 120);
+          let p = Color.palette(c, 3);
+          log(p[0].hue);
+          log(p[0].chroma);
+          log(p[2].hue);
+          log(p[2].chroma);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(120, 1);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.2, 2);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(120, 1);
+        expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(0.2, 2);
+      });
+
+      it('intermediate lightness values are evenly spaced', () => {
+        const result = compile(`
+          let c = Color(0.5, 0.15, 30);
+          let p = Color.palette(c, 5);
+          log(p[1].lightness);
+          log(p[2].lightness);
+          log(p[3].lightness);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.35, 2);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.55, 2);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(0.75, 2);
+      });
+
+      it('throws on non-Color first arg', () => {
+        expect(() => compile('Color.palette("red", 5);')).toThrow('must be a Color');
+      });
+
+      it('throws on n < 2', () => {
+        expect(() => compile('let c = Color("#ff0000"); Color.palette(c, 1);')).toThrow('must be an integer >= 2');
+      });
+
+      it('throws on non-integer n', () => {
+        expect(() => compile('let c = Color("#ff0000"); Color.palette(c, 2.5);')).toThrow('must be an integer >= 2');
+      });
+    });
+
+    describe('interpolation', () => {
+      it('returns array of n colors', () => {
+        const result = compile(`
+          let a = Color(0.4, 0.1, 0);
+          let b = Color(0.8, 0.1, 120);
+          let p = Color.palette(a, b, 5);
+          log(p.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('5');
+      });
+
+      it('first and last match inputs', () => {
+        const result = compile(`
+          let a = Color(0.4, 0.1, 0);
+          let b = Color(0.8, 0.1, 120);
+          let p = Color.palette(a, b, 3);
+          log(p[0].lightness);
+          log(p[0].hue);
+          log(p[2].lightness);
+          log(p[2].hue);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.4, 2);
+        expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0, 1);
+        expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(0.8, 2);
+        expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(120, 1);
+      });
+
+      it('midpoint is interpolated', () => {
+        const result = compile(`
+          let a = Color(0.4, 0.1, 0);
+          let b = Color(0.8, 0.1, 0);
+          let p = Color.palette(a, b, 3);
+          log(p[1].lightness);
+        `);
+        expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.6, 2);
+      });
+
+      it('throws on non-Color second arg', () => {
+        expect(() => compile('let a = Color("#ff0000"); Color.palette(a, "blue", 5);')).toThrow('must be a Color');
+      });
+
+      it('throws on n < 2', () => {
+        expect(() => compile('let a = Color("#ff0000"); let b = Color("#0000ff"); Color.palette(a, b, 1);')).toThrow('must be an integer >= 2');
+      });
+    });
+
+    it('throws on wrong arg count (0)', () => {
+      expect(() => compile('Color.palette();')).toThrow('expects 2 or 3 arguments');
+    });
+
+    it('throws on wrong arg count (4)', () => {
+      expect(() => compile('let c = Color("#ff0000"); Color.palette(c, c, c, 5);')).toThrow('expects 2 or 3 arguments');
+    });
+  });
 });

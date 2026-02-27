@@ -1,168 +1,3 @@
-# Color Type
-
-The `Color` type provides first-class color manipulation in OKLCH color space. Colors are resolved at compile time to concrete CSS values.
-
-## Constructor
-
-Create colors from any CSS color format:
-
-```
-let c = Color('#e63946');              // hex (3, 6, or 8 digit)
-let c = Color('red');                  // named CSS color (all 148)
-let c = Color('rgb(255, 0, 0)');       // rgb/rgba
-let c = Color('hsl(0, 100%, 50%)');    // hsl/hsla
-let c = Color('oklch(0.6 0.15 30)');   // oklch
-let c = Color(0.6, 0.15, 30);         // direct OKLCH (L, C, H)
-let c = Color(0.6, 0.15, 30, 0.5);    // OKLCH + alpha
-```
-
-All input formats are converted to OKLCH internally for perceptually uniform manipulation.
-
-## Properties
-
-Read-only properties for inspecting color values:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `.css` | string | Hex if opaque, `rgba()` if transparent |
-| `.hex` | string | `#rrggbb` (ignores alpha) |
-| `.oklch` | string | `oklch(L C H)` or `oklch(L C H / a)` |
-| `.hsl` | string | `hsl(H, S%, L%)` |
-| `.rgb` | string | `rgb(R, G, B)` |
-| `.lightness` | number | OKLCH lightness (0–1) |
-| `.chroma` | number | OKLCH chroma (0–~0.4) |
-| `.hue` | number | OKLCH hue (0–360) |
-| `.a` | number | Alpha (0–1) |
-
-```
-let c = Color('#e63946');
-log(c.hex);        // #e63946
-log(c.lightness);  // ~0.52
-log(c.hue);        // ~27
-log(c.a);          // 1
-```
-
-## Methods
-
-All methods return a new Color — they never mutate the original.
-
-### Lightness
-
-```
-let c = Color('#e63946');
-let lighter = c.lighten(0.2);   // increase L by 0.2
-let darker = c.darken(0.15);    // decrease L by 0.15
-log(lighter.hex);  // lighter red
-log(darker.hex);   // darker red
-```
-
-### Saturation
-
-```
-let c = Color('#e63946');
-let vivid = c.saturate(1.5);     // multiply chroma by 1.5
-let muted = c.desaturate(0.5);   // multiply chroma by 0.5
-```
-
-### Alpha
-
-```
-let c = Color('#e63946');
-let semi = c.alpha(0.5);
-log(semi.css);  // rgba(230, 57, 70, 0.5)
-```
-
-### Hue
-
-```
-let c = Color('#e63946');
-let shifted = c.hueShift(180);   // shift hue by 180°
-let comp = c.complement();       // shorthand for hueShift(180)
-```
-
-### Mixing
-
-Mix two colors in OKLCH space:
-
-```
-let a = Color('#e63946');
-let b = Color('#457b9d');
-let mid = a.mix(b, 0.5);         // 50/50 mix
-let mostly_a = a.mix(b, 0.2);    // 80% a, 20% b
-```
-
-### Method Chaining
-
-Methods return new Colors, so they chain naturally:
-
-```
-let c = Color('#e63946')
-  .lighten(0.1)
-  .desaturate(0.8)
-  .alpha(0.9);
-```
-
-## Color Harmonies
-
-Generate sets of harmonious colors based on color theory. All harmony methods return an array of Colors, preserving lightness, chroma, and alpha.
-
-### .analogous(angle?)
-
-Returns 3 colors: `[hue - angle, self, hue + angle]`. Default angle: 30.
-
-```
-let c = Color('#e63946');
-let colors = c.analogous();       // 3 colors at -30°, 0°, +30°
-let wide = c.analogous(45);       // wider spread at ±45°
-```
-
-### .triadic()
-
-Returns 3 colors evenly spaced at 120° intervals: `[self, hue + 120, hue + 240]`.
-
-```
-let c = Color('#e63946');
-let colors = c.triadic();
-```
-
-### .tetradic()
-
-Returns 4 colors evenly spaced at 90° intervals: `[self, hue + 90, hue + 180, hue + 270]`.
-
-```
-let c = Color('#e63946');
-let colors = c.tetradic();
-```
-
-### .splitComplementary(angle?)
-
-Returns 3 colors: `[self, hue + 180 - angle, hue + 180 + angle]`. Default angle: 30.
-
-```
-let c = Color('#e63946');
-let colors = c.splitComplementary();     // flanks of complement at ±30°
-let narrow = c.splitComplementary(15);   // tighter split
-```
-
-### Using Harmonies
-
-Harmony methods return arrays, so use `for-each` to iterate:
-
-```
-let c = Color('#e63946');
-for ([color, i] in c.triadic()) {
-  define PathLayer(`p${i}`) ${ fill: color; stroke: none; }
-  layer(`p${i}`).apply { circle(calc(50 + i * 60), 100, 25) }
-}
-```
-
-### Complete Example
-
-A full color swatch showcase demonstrating base methods, harmonies, palettes, and derived colors across multiple tiers. Uses `CSSVar`-backed Colors so that changing `--base-color` or `--accent-color` in the playground's CSS var panel reactively updates every swatch. Connecting lines show how colors flow from a single base color through transformations.
-
-Canvas: `600 × 700` viewBox with four sections flowing top-to-bottom.
-
-```
 // ═══════════════════════════════════════════════════════════
 // Color Swatch Showcase — full demo of Color manipulation,
 // harmonies, palettes, and derived colors
@@ -303,36 +138,28 @@ let hsr = 5;
 for ([color, i] in analog) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`analog_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`analog_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(220 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`analog_${i}`).apply { roundRect(calc(x - hsw / 2), calc(220 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Row 4: triadic
 for ([color, i] in triad) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`triad_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`triad_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(275 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`triad_${i}`).apply { roundRect(calc(x - hsw / 2), calc(275 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Row 5: tetradic
 for ([color, i] in tetrad) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`tetrad_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`tetrad_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(330 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`tetrad_${i}`).apply { roundRect(calc(x - hsw / 2), calc(330 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Row 6: splitComplementary
 for ([color, i] in split) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`split_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`split_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(385 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`split_${i}`).apply { roundRect(calc(x - hsw / 2), calc(385 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Harmony row labels
@@ -366,18 +193,14 @@ layer('section-labels').apply {
 for ([color, i] in ramp) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`ramp_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`ramp_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(470 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`ramp_${i}`).apply { roundRect(calc(x - hsw / 2), calc(470 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Row 8: interpolation
 for ([color, i] in interp) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`interp_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`interp_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(525 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`interp_${i}`).apply { roundRect(calc(x - hsw / 2), calc(525 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Palette row labels
@@ -405,34 +228,26 @@ let dsp = 70;
 
 // Row 9: triadic[1] → lighten, darken, saturate
 define PathLayer('tri1_parent') ${ fill: tri1; stroke: #666; stroke-width: 1; }
-layer('tri1_parent').apply {
-  roundRect(calc(hsx - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr)
-}
+layer('tri1_parent').apply { roundRect(calc(hsx - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr) }
 
 let derived1 = [tri1Light, tri1Dark, tri1Vivid];
 let derived1names = ['lighten', 'darken', 'saturate'];
 for ([color, i] in derived1) {
   let x = calc(dsx + i * dsp);
   define PathLayer(`d1_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`d1_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`d1_${i}`).apply { roundRect(calc(x - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Row 10: ramp[2] → hueShift, complement, alpha
 define PathLayer('ramp2_parent') ${ fill: rampMid; stroke: #666; stroke-width: 1; }
-layer('ramp2_parent').apply {
-  roundRect(calc(hsx - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr)
-}
+layer('ramp2_parent').apply { roundRect(calc(hsx - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr) }
 
 let derived2 = [rampShifted, rampComp, rampAlpha];
 let derived2names = ['hueShift', 'compl.', 'alpha'];
 for ([color, i] in derived2) {
   let x = calc(dsx + i * dsp);
   define PathLayer(`d2_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
-  layer(`d2_${i}`).apply {
-    roundRect(calc(x - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr)
-  }
+  layer(`d2_${i}`).apply { roundRect(calc(x - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr) }
 }
 
 // Derived row labels
@@ -478,86 +293,3 @@ layer('connectors').apply {
   M calc(hsx + hsw / 2) 660
   L calc(dsx - hsw / 2) 660
 }
-```
-
-Compile with: `svg-path-extended --output-svg-file=swatches.svg --viewBox="0 0 600 700" --width="600" --height="700"`
-
-## Static Methods
-
-### Color.mix(c1, c2, ratio)
-
-Mix two colors at a given ratio (0 = all c1, 1 = all c2):
-
-```
-let a = Color('#e63946');
-let b = Color('#457b9d');
-let mid = Color.mix(a, b, 0.5);
-```
-
-### Color.palette(color, n)
-
-Generate a lightness ramp of `n` colors from dark (L=0.15) to light (L=0.95), preserving hue and chroma:
-
-```
-let c = Color('#e63946');
-let shades = Color.palette(c, 5);   // 5 shades from dark to light
-```
-
-### Color.palette(c1, c2, n)
-
-Generate `n` evenly interpolated colors between two colors:
-
-```
-let a = Color('#e63946');
-let b = Color('#457b9d');
-let gradient = Color.palette(a, b, 7);   // 7-step gradient
-```
-
-`n` must be an integer >= 2.
-
-## Style Block Auto-Conversion
-
-Colors auto-convert to CSS strings when used in style blocks:
-
-```
-let primary = Color('#e63946');
-let light = primary.lighten(0.2);
-
-layer PathLayer('main') ${
-  stroke: primary;
-  fill: light;
-}
-```
-
-This outputs `stroke="#e63946"` and `fill` as the lightened hex value — no `.css` property needed.
-
-## Template Literals
-
-Colors display as `Color(#hex)` in template literals and `log()`:
-
-```
-let c = Color('#e63946');
-log(c);              // Color(#e63946)
-log(`color: ${c}`);  // color: Color(#e63946)
-```
-
-## Roundtrip Fidelity
-
-Standard CSS colors roundtrip exactly:
-
-```
-let c = Color('#ff0000');
-log(c.hex);  // #ff0000
-```
-
-## Named Colors
-
-All 148 CSS named colors are supported:
-
-```
-let c = Color('coral');
-let c = Color('dodgerblue');
-let c = Color('mediumseagreen');
-```
-
-Named color lookup is case-insensitive.

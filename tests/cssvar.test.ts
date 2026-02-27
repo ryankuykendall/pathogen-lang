@@ -304,4 +304,120 @@ describe('CSSVar type', () => {
       expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
+
+  // ── CSS Relative Color Expressions: Harmonies ──────────────────────────
+
+  describe('CSS expressions for color harmonies', () => {
+    it('analogous() produces hueShift CSS for shifted entries', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        let colors = c.analogous();
+        define PathLayer('a') \${ fill: colors[0]; }
+        define PathLayer('b') \${ fill: colors[1]; }
+        define PathLayer('c') \${ fill: colors[2]; }
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 0 0 }
+        layer('c').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + -30))');
+      expect(result.layers[1].styles['fill']).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
+      expect(result.layers[2].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 30))');
+    });
+
+    it('triadic() produces hueShift CSS', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        let colors = c.triadic();
+        define PathLayer('a') \${ fill: colors[1]; }
+        define PathLayer('b') \${ fill: colors[2]; }
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 120))');
+      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 240))');
+    });
+
+    it('tetradic() produces hueShift CSS for all shifted entries', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        let colors = c.tetradic();
+        define PathLayer('a') \${ fill: colors[0]; }
+        define PathLayer('b') \${ fill: colors[1]; }
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
+      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
+    });
+
+    it('splitComplementary() produces hueShift CSS', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        let colors = c.splitComplementary();
+        define PathLayer('a') \${ fill: colors[1]; }
+        define PathLayer('b') \${ fill: colors[2]; }
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 150))');
+      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 210))');
+    });
+
+    it('non-CSSVar harmonies produce baked values', () => {
+      const result = compile(`
+        let c = Color('#cc6683');
+        let colors = c.triadic();
+        define PathLayer('a') \${ fill: colors[1]; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+    });
+  });
+
+  // ── CSS Relative Color Expressions: Palette ────────────────────────────
+
+  describe('CSS expressions for Color.palette', () => {
+    it('lightness ramp produces setLightness CSS', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        let p = Color.palette(c, 3);
+        define PathLayer('a') \${ fill: p[0]; }
+        define PathLayer('b') \${ fill: p[1]; }
+        define PathLayer('c') \${ fill: p[2]; }
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 0 0 }
+        layer('c').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) 0.15 c h)');
+      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) 0.55 c h)');
+      expect(result.layers[2].styles['fill']).toBe('oklch(from var(--base, #cc6683) 0.95 c h)');
+    });
+
+    it('interpolation ramp produces color-mix CSS', () => {
+      const result = compile(`
+        let c1 = Color(CSSVar('--a', '#cc6683'));
+        let c2 = Color(CSSVar('--b', '#457b9d'));
+        let p = Color.palette(c1, c2, 3);
+        define PathLayer('a') \${ fill: p[0]; }
+        define PathLayer('b') \${ fill: p[1]; }
+        define PathLayer('c') \${ fill: p[2]; }
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 0 0 }
+        layer('c').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 0%)');
+      expect(result.layers[1].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
+      expect(result.layers[2].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 100%)');
+    });
+
+    it('non-CSSVar palette produces baked values', () => {
+      const result = compile(`
+        let c = Color('#cc6683');
+        let p = Color.palette(c, 3);
+        define PathLayer('a') \${ fill: p[0]; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+    });
+  });
 });

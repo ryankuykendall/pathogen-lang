@@ -999,6 +999,18 @@ L p.<span class="hljs-property">x</span> p.<span class="hljs-property">y</span> 
 <pre><code class="hljs">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>  L <span class="hljs-number">150</span> <span class="hljs-number">100</span>
 <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">30</span>, 90deg)  <span class="hljs-comment">// Smooth arc curving down from the line&#x27;s endpoint</span>
 </code></pre><hr>
+<hr>
+<h2 id="stdlib-color">Color</h2>
+<p>The <code>Color</code> type provides first-class color manipulation in OKLCH color space. See the full <a href="color.md">Color documentation</a> for constructor forms, methods, properties, and examples.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> lighter = c.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.2</span>);
+<span class="hljs-keyword">let</span> comp = c.<span class="hljs-title function_">complement</span>();
+</code></pre><hr>
+<h2 id="stdlib-cssvar">CSSVar</h2>
+<p>The <code>CSSVar</code> type creates CSS custom property references (<code>var()</code>) for use in style blocks. See the full <a href="cssvar.md">CSSVar documentation</a> for constructor forms, properties, and examples.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> fg = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--foreground&#x27;</span>, <span class="hljs-string">&#x27;#333&#x27;</span>);
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;main&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: fg; }
+</code></pre><hr>
 <h2 id="stdlib-using-functions-inside-calc">Using Functions Inside calc()</h2>
 <p>Math functions can be used inside <code>calc()</code>:</p>
 <pre><code class="hljs">M <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(<span class="hljs-number">0.5</span>) * <span class="hljs-number">100</span>) <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(<span class="hljs-number">0.5</span>) * <span class="hljs-number">100</span>)
@@ -2846,6 +2858,16 @@ export const tocData = JSON.parse(`[
         "id": "stdlib-tangentarcradius-sweepangle",
         "title": "tangentArc(radius, sweepAngle)",
         "level": 4
+      },
+      {
+        "id": "stdlib-color",
+        "title": "Color",
+        "level": 2
+      },
+      {
+        "id": "stdlib-cssvar",
+        "title": "CSSVar",
+        "level": 2
       },
       {
         "id": "stdlib-using-functions-inside-calc",
