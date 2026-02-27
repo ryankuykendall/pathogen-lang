@@ -1,0 +1,207 @@
+// Swatches Demo — simplified version of the full swatch showcase
+// Light panel on left, dark panel on right
+// CSSVar-backed for reactive color picker updates
+
+let base   = Color(CSSVar('--base-color', '#e63946'));
+let accent = Color(CSSVar('--accent-color', '#457b9d'));
+let darkAccent = Color(CSSVar('--dark-accent', '#f4a261'));
+
+// Derived colors (light panel)
+let lighter = base.lighten(0.15);
+let darker  = base.darken(0.15);
+let vivid   = base.saturate(1.4);
+let muted   = base.desaturate(0.5);
+let shifted = base.hueShift(60);
+let comp    = base.complement();
+
+// Harmonies
+let triad  = base.triadic();
+let ramp   = Color.palette(base, accent, 5);
+
+// Dark panel derived
+let dkLighter = darkAccent.lighten(0.15);
+let dkDarker  = darkAccent.darken(0.15);
+let dkVivid   = darkAccent.saturate(1.4);
+let dkMuted   = darkAccent.desaturate(0.5);
+let dkShifted = darkAccent.hueShift(60);
+let dkComp    = darkAccent.complement();
+let dkTriad   = darkAccent.triadic();
+let dkRamp    = Color.palette(darkAccent, base, 5);
+
+// Theme-aware colors
+let themeFg     = Color.lightDark(Color('#333'), Color('#eee'));
+let themeAccent = Color.lightDark(accent, darkAccent);
+
+// Layout
+let panelW = 280;
+let gapX = 10;
+let darkX = calc(panelW + gapX);
+let sw = 24;
+let sh = 22;
+let sr = 3;
+let colGap = 5;
+let startX = 14;
+
+// Light panel background
+define PathLayer('light-bg') ${ fill: #f5f5f5; stroke: none; }
+layer('light-bg').apply { roundRect(0, 0, panelW, 340, 0) }
+
+// Dark panel background
+define PathLayer('dark-bg') ${ fill: #222266; stroke: none; }
+layer('dark-bg').apply { roundRect(darkX, 0, panelW, 340, 0) }
+
+// Shared text styles
+define TextLayer('section') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  font-weight: bold;
+  fill: #555;
+}
+
+define TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 7;
+  fill: #888;
+  text-anchor: middle;
+}
+
+define TextLayer('dk-section') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  font-weight: bold;
+  fill: #aab;
+}
+
+define TextLayer('dk-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 7;
+  fill: #889;
+  text-anchor: middle;
+}
+
+// ── LIGHT PANEL ──────────────────────────────────
+
+// Methods row
+layer('section').apply { text(8, 18)`Methods` }
+
+let ltRow = [base, lighter, darker, vivid, muted, shifted, comp];
+let ltNames = ['base', 'light', 'dark', 'vivid', 'muted', 'shift', 'compl'];
+for ([color, i] in ltRow) {
+  let x = calc(startX + i * (sw + colGap));
+  define PathLayer(`lt_m${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  layer(`lt_m${i}`).apply { roundRect(x, 24, sw, sh, sr) }
+}
+layer('labels').apply {
+  for ([name, i] in ltNames) {
+    text(calc(startX + i * (sw + colGap) + sw / 2), calc(24 + sh + 10))`${name}`
+  }
+}
+
+// Divider
+define PathLayer('lt-div') ${ stroke: #ddd; stroke-width: 0.5; fill: none; }
+layer('lt-div').apply { M 8 70 L calc(panelW - 8) 70 }
+
+// Harmony row
+layer('section').apply { text(8, 86)`Triadic` }
+for ([color, i] in triad) {
+  let x = calc(startX + i * (sw + colGap));
+  define PathLayer(`lt_h${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  layer(`lt_h${i}`).apply { roundRect(x, 92, sw, sh, sr) }
+}
+
+// Palette row
+layer('lt-div').apply { M 8 130 L calc(panelW - 8) 130 }
+layer('section').apply { text(8, 146)`Palette` }
+for ([color, i] in ramp) {
+  let x = calc(startX + i * (sw + colGap));
+  define PathLayer(`lt_p${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  layer(`lt_p${i}`).apply { roundRect(x, 152, sw, sh, sr) }
+}
+
+// Theme-aware colors
+layer('lt-div').apply { M 8 194 L calc(panelW - 8) 194 }
+layer('section').apply { text(8, 210)`lightDark()` }
+
+define PathLayer('lt-ld-fg') ${ fill: themeFg; stroke: #ccc; stroke-width: 0.5; }
+layer('lt-ld-fg').apply { roundRect(startX, 216, sw, sh, sr) }
+
+define PathLayer('lt-ld-accent') ${ fill: themeAccent; stroke: #ccc; stroke-width: 0.5; }
+layer('lt-ld-accent').apply { roundRect(calc(startX + sw + colGap), 216, sw, sh, sr) }
+
+layer('labels').apply {
+  text(calc(startX + sw / 2), calc(216 + sh + 10))`fg`
+  text(calc(startX + sw + colGap + sw / 2), calc(216 + sh + 10))`accent`
+}
+
+// ── DARK PANEL ──────────────────────────────────
+
+// Methods row
+layer('dk-section').apply { text(calc(darkX + 8), 18)`Methods` }
+
+let dkRow = [darkAccent, dkLighter, dkDarker, dkVivid, dkMuted, dkShifted, dkComp];
+let dkNames = ['base', 'light', 'dark', 'vivid', 'muted', 'shift', 'compl'];
+for ([color, i] in dkRow) {
+  let x = calc(darkX + startX + i * (sw + colGap));
+  define PathLayer(`dk_m${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_m${i}`).apply { roundRect(x, 24, sw, sh, sr) }
+}
+layer('dk-labels').apply {
+  for ([name, i] in dkNames) {
+    text(calc(darkX + startX + i * (sw + colGap) + sw / 2), calc(24 + sh + 10))`${name}`
+  }
+}
+
+// Divider
+define PathLayer('dk-div') ${ stroke: #445; stroke-width: 0.5; fill: none; }
+layer('dk-div').apply { M calc(darkX + 8) 70 L calc(darkX + panelW - 8) 70 }
+
+// Harmony row
+layer('dk-section').apply { text(calc(darkX + 8), 86)`Triadic` }
+for ([color, i] in dkTriad) {
+  let x = calc(darkX + startX + i * (sw + colGap));
+  define PathLayer(`dk_h${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_h${i}`).apply { roundRect(x, 92, sw, sh, sr) }
+}
+
+// Palette row
+layer('dk-div').apply { M calc(darkX + 8) 130 L calc(darkX + panelW - 8) 130 }
+layer('dk-section').apply { text(calc(darkX + 8), 146)`Palette` }
+for ([color, i] in dkRamp) {
+  let x = calc(darkX + startX + i * (sw + colGap));
+  define PathLayer(`dk_p${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_p${i}`).apply { roundRect(x, 152, sw, sh, sr) }
+}
+
+// Theme-aware colors
+layer('dk-div').apply { M calc(darkX + 8) 194 L calc(darkX + panelW - 8) 194 }
+layer('dk-section').apply { text(calc(darkX + 8), 210)`lightDark()` }
+
+define PathLayer('dk-ld-fg') ${ fill: themeFg; stroke: #555; stroke-width: 0.5; }
+layer('dk-ld-fg').apply { roundRect(calc(darkX + startX), 216, sw, sh, sr) }
+
+define PathLayer('dk-ld-accent') ${ fill: themeAccent; stroke: #555; stroke-width: 0.5; }
+layer('dk-ld-accent').apply { roundRect(calc(darkX + startX + sw + colGap), 216, sw, sh, sr) }
+
+layer('dk-labels').apply {
+  text(calc(darkX + startX + sw / 2), calc(216 + sh + 10))`fg`
+  text(calc(darkX + startX + sw + colGap + sw / 2), calc(216 + sh + 10))`accent`
+}
+
+// Panel labels
+define TextLayer('panel-light') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  font-weight: bold;
+  fill: #bbb;
+  text-anchor: middle;
+}
+layer('panel-light').apply { text(calc(panelW / 2), 330)`LIGHT` }
+
+define TextLayer('panel-dark') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  font-weight: bold;
+  fill: #557;
+  text-anchor: middle;
+}
+layer('panel-dark').apply { text(calc(darkX + panelW / 2), 330)`DARK` }

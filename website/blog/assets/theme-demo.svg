@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 260" width="500" height="260">
+  <style>
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #f5f5f5;
+    }
+    @property --primary {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+    @property --secondary {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #457b9d;
+    }
+    @property --accent {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #2a9d8f;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <path d="M 0 0 L 500 0 L 500 260 L 0 260 Z" fill="var(--bg, #f5f5f5)" stroke="none" stroke-width="2"/>
+  <path d="M 250 75 L 266.45798706418924 107.34752415750147 L 302.3081083962334 113.00406530937789 L 276.6295824562643 138.65247584249852 L 282.328188876086 174.4959346906221 L 250 158 L 217.67181112391398 174.4959346906221 L 223.3704175437357 138.65247584249852 L 197.69189160376655 113.00406530937789 L 233.54201293581076 107.34752415750148 Z" fill="oklch(from var(--primary, #e63946) calc(l + 0.2) c h)" stroke="var(--primary, #e63946)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M 336 130 A 14 14 0 1 1 364 130 A 14 14 0 1 1 336 130 M 236 200 A 14 14 0 1 1 264 200 A 14 14 0 1 1 236 200 M 136 130 A 14 14 0 1 1 164 130 A 14 14 0 1 1 136 130 M 235.99999999999997 60 A 14 14 0 1 1 264 60 A 14 14 0 1 1 235.99999999999997 60 M 336 129.99999999999997 A 14 14 0 1 1 364 129.99999999999997 A 14 14 0 1 1 336 129.99999999999997" fill="oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)" stroke="var(--secondary, #457b9d)" stroke-width="1.5"/>
+  <path d="M 40 22 L 58 40 L 40 58 L 22 40 Z M 460 22 L 478 40 L 460 58 L 442 40 Z M 40 202 L 58 220 L 40 238 L 22 220 Z M 460 202 L 478 220 L 460 238 L 442 220 Z" fill="oklch(from var(--accent, #2a9d8f) l c calc(h + 60))" stroke="var(--accent, #2a9d8f)" stroke-width="1"/>
+  <path d="M 70 130 A 40 40 0 0 1 110 130 M 390 130 A 40 40 0 0 1 430 130" fill="none" stroke="oklch(from var(--primary, #e63946) calc(l - 0.15) c h)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 208 130 A 42 42 0 1 1 292 130 A 42 42 0 1 1 208 130" fill="none" stroke="var(--accent, #2a9d8f)" stroke-width="1" stroke-dasharray="4 3"/>
+</svg>

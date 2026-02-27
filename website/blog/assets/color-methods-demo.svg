@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 210" width="350" height="210">
+  <style>
+    @property --demo-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <text x="55" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">base</text>
+  <text x="119" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">lighten</text>
+  <text x="183" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">darken</text>
+  <text x="247" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">saturate</text>
+  <text x="311" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">desaturate</text>
+  <text x="55" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">hueShift</text>
+  <text x="119" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">complement</text>
+  <text x="183" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">alpha(0.5)</text>
+  <text x="247" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">mix</text>
+  <path d="M 38 40 L 72 40 Q 80 40 80 48 L 80 82 Q 80 90 72 90 L 38 90 Q 30 90 30 82 L 30 48 Q 30 40 38 40 Z" fill="var(--demo-color, #e63946)" stroke="#ddd" stroke-width="1"/>
+  <path d="M 102 40 L 136 40 Q 144 40 144 48 L 144 82 Q 144 90 136 90 L 102 90 Q 94 90 94 82 L 94 48 Q 94 40 102 40 Z" fill="oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)" stroke="#ddd" stroke-width="1"/>
+  <path d="M 166 40 L 200 40 Q 208 40 208 48 L 208 82 Q 208 90 200 90 L 166 90 Q 158 90 158 82 L 158 48 Q 158 40 166 40 Z" fill="oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)" stroke="#ddd" stroke-width="1"/>
+  <path d="M 230 40 L 264 40 Q 272 40 272 48 L 272 82 Q 272 90 264 90 L 230 90 Q 222 90 222 82 L 222 48 Q 222 40 230 40 Z" fill="oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)" stroke="#ddd" stroke-width="1"/>
+  <path d="M 294 40 L 328 40 Q 336 40 336 48 L 336 82 Q 336 90 328 90 L 294 90 Q 286 90 286 82 L 286 48 Q 286 40 294 40 Z" fill="oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)" stroke="#ddd" stroke-width="1"/>
+  <path d="M 38 130 L 72 130 Q 80 130 80 138 L 80 172 Q 80 180 72 180 L 38 180 Q 30 180 30 172 L 30 138 Q 30 130 38 130 Z" fill="oklch(from var(--demo-color, #e63946) l c calc(h + 90))" stroke="#ddd" stroke-width="1"/>
+  <path d="M 102 130 L 136 130 Q 144 130 144 138 L 144 172 Q 144 180 136 180 L 102 180 Q 94 180 94 172 L 94 138 Q 94 130 102 130 Z" fill="oklch(from var(--demo-color, #e63946) l c calc(h + 180))" stroke="#ddd" stroke-width="1"/>
+  <path d="M 166 130 L 200 130 Q 208 130 208 138 L 208 172 Q 208 180 200 180 L 166 180 Q 158 180 158 172 L 158 138 Q 158 130 166 130 Z" fill="oklch(from var(--demo-color, #e63946) l c h / 0.5)" stroke="#ddd" stroke-width="1"/>
+  <path d="M 230 130 L 264 130 Q 272 130 272 138 L 272 172 Q 272 180 264 180 L 230 180 Q 222 180 222 172 L 222 138 Q 222 130 230 130 Z" fill="color-mix(in oklch, var(--demo-color, #e63946), #457b9d 50%)" stroke="#ddd" stroke-width="1"/>
+</svg>

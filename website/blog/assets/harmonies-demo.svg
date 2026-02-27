@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 450" width="460" height="450">
+  <style>
+    @property --harmony-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <text x="20" y="74" font-family="system-ui, sans-serif" font-size="11" fill="#777">analogous</text>
+  <text x="20" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#777">triadic</text>
+  <text x="20" y="190" font-family="system-ui, sans-serif" font-size="11" fill="#777">tetradic</text>
+  <text x="20" y="248" font-family="system-ui, sans-serif" font-size="11" fill="#777">splitComp</text>
+  <text x="20" y="354" font-family="system-ui, sans-serif" font-size="11" fill="#777">lightness</text>
+  <text x="20" y="412" font-family="system-ui, sans-serif" font-size="11" fill="#777">interpolate</text>
+  <text x="20" y="28" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Harmonies</text>
+  <text x="20" y="306" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Palettes</text>
+  <path d="M 146 50 L 174 50 Q 180 50 180 56 L 180 84 Q 180 90 174 90 L 146 90 Q 140 90 140 84 L 140 56 Q 140 50 146 50 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + -30))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 198 50 L 226 50 Q 232 50 232 56 L 232 84 Q 232 90 226 90 L 198 90 Q 192 90 192 84 L 192 56 Q 192 50 198 50 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 250 50 L 278 50 Q 284 50 284 56 L 284 84 Q 284 90 278 90 L 250 90 Q 244 90 244 84 L 244 56 Q 244 50 250 50 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 30))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 146 108 L 174 108 Q 180 108 180 114 L 180 142 Q 180 148 174 148 L 146 148 Q 140 148 140 142 L 140 114 Q 140 108 146 108 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 198 108 L 226 108 Q 232 108 232 114 L 232 142 Q 232 148 226 148 L 198 148 Q 192 148 192 142 L 192 114 Q 192 108 198 108 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 120))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 250 108 L 278 108 Q 284 108 284 114 L 284 142 Q 284 148 278 148 L 250 148 Q 244 148 244 142 L 244 114 Q 244 108 250 108 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 240))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 146 166 L 174 166 Q 180 166 180 172 L 180 200 Q 180 206 174 206 L 146 206 Q 140 206 140 200 L 140 172 Q 140 166 146 166 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 198 166 L 226 166 Q 232 166 232 172 L 232 200 Q 232 206 226 206 L 198 206 Q 192 206 192 200 L 192 172 Q 192 166 198 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 90))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 250 166 L 278 166 Q 284 166 284 172 L 284 200 Q 284 206 278 206 L 250 206 Q 244 206 244 200 L 244 172 Q 244 166 250 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 180))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 302 166 L 330 166 Q 336 166 336 172 L 336 200 Q 336 206 330 206 L 302 206 Q 296 206 296 200 L 296 172 Q 296 166 302 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 270))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 146 224 L 174 224 Q 180 224 180 230 L 180 258 Q 180 264 174 264 L 146 264 Q 140 264 140 258 L 140 230 Q 140 224 146 224 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 198 224 L 226 224 Q 232 224 232 230 L 232 258 Q 232 264 226 264 L 198 264 Q 192 264 192 258 L 192 230 Q 192 224 198 224 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 150))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 250 224 L 278 224 Q 284 224 284 230 L 284 258 Q 284 264 278 264 L 250 264 Q 244 264 244 258 L 244 230 Q 244 224 250 224 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 210))" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 20 282 L 440 282" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+  <path d="M 146 330 L 174 330 Q 180 330 180 336 L 180 364 Q 180 370 174 370 L 146 370 Q 140 370 140 364 L 140 336 Q 140 330 146 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.15 c h)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 198 330 L 226 330 Q 232 330 232 336 L 232 364 Q 232 370 226 370 L 198 370 Q 192 370 192 364 L 192 336 Q 192 330 198 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.35 c h)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 250 330 L 278 330 Q 284 330 284 336 L 284 364 Q 284 370 278 370 L 250 370 Q 244 370 244 364 L 244 336 Q 244 330 250 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.55 c h)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 302 330 L 330 330 Q 336 330 336 336 L 336 364 Q 336 370 330 370 L 302 370 Q 296 370 296 364 L 296 336 Q 296 330 302 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.75 c h)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 354 330 L 382 330 Q 388 330 388 336 L 388 364 Q 388 370 382 370 L 354 370 Q 348 370 348 364 L 348 336 Q 348 330 354 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.95 c h)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 146 388 L 174 388 Q 180 388 180 394 L 180 422 Q 180 428 174 428 L 146 428 Q 140 428 140 422 L 140 394 Q 140 388 146 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 0%)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 198 388 L 226 388 Q 232 388 232 394 L 232 422 Q 232 428 226 428 L 198 428 Q 192 428 192 422 L 192 394 Q 192 388 198 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 250 388 L 278 388 Q 284 388 284 394 L 284 422 Q 284 428 278 428 L 250 428 Q 244 428 244 422 L 244 394 Q 244 388 250 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 302 388 L 330 388 Q 336 388 336 394 L 336 422 Q 336 428 330 428 L 302 428 Q 296 428 296 422 L 296 394 Q 296 388 302 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 354 388 L 382 388 Q 388 388 388 394 L 388 422 Q 388 428 382 428 L 354 428 Q 348 428 348 422 L 348 394 Q 348 388 354 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 100%)" stroke="#ddd" stroke-width="0.5"/>
+</svg>

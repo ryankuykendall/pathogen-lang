@@ -1,0 +1,54 @@
+// Theme Demo — geometric composition with CSSVar theming
+// Multiple CSS variables drive the entire illustration
+
+let bg      = Color(CSSVar('--bg', '#f5f5f5'));
+let primary = Color(CSSVar('--primary', '#e63946'));
+let secondary = Color(CSSVar('--secondary', '#457b9d'));
+let accent  = Color(CSSVar('--accent', '#2a9d8f'));
+
+// Derived reactive colors
+let primaryLight  = primary.lighten(0.2);
+let primaryDark   = primary.darken(0.15);
+let secondaryMuted = secondary.desaturate(0.5);
+let accentShift   = accent.hueShift(60);
+
+// Background
+define PathLayer('bg') ${ fill: bg; stroke: none; }
+layer('bg').apply { rect(0, 0, 500, 260) }
+
+// Central star — primary color
+define PathLayer('star') ${ stroke: primary; fill: primaryLight; stroke-width: 2; stroke-linejoin: round; }
+layer('star').apply { star(250, 130, 55, 28, 5) }
+
+// Orbiting circles — secondary color
+define PathLayer('orbits') ${ stroke: secondary; fill: secondaryMuted; stroke-width: 1.5; }
+layer('orbits').apply {
+  for (i in 0..4) {
+    let angle = calc(i / 4 * TAU());
+    let cx = calc(250 + cos(angle) * 100);
+    let cy = calc(130 + sin(angle) * 70);
+    circle(cx, cy, 14)
+  }
+}
+
+// Corner diamonds — accent color
+define PathLayer('diamonds') ${ stroke: accent; fill: accentShift; stroke-width: 1; }
+layer('diamonds').apply {
+  polygon(40, 40, 18, 4)
+  polygon(460, 40, 18, 4)
+  polygon(40, 220, 18, 4)
+  polygon(460, 220, 18, 4)
+}
+
+// Decorative arcs — dark primary
+define PathLayer('arcs') ${ stroke: primaryDark; fill: none; stroke-width: 2; stroke-linecap: round; }
+layer('arcs').apply {
+  M 70 130
+  A 40 40 0 0 1 110 130
+  M 390 130
+  A 40 40 0 0 1 430 130
+}
+
+// Inner ring — accent
+define PathLayer('ring') ${ stroke: accent; fill: none; stroke-width: 1; stroke-dasharray: 4 3; }
+layer('ring').apply { circle(250, 130, 42) }

@@ -1,0 +1,73 @@
+// Harmonies Demo — base color → harmony rows + palette rows
+// CSSVar-backed for reactive color picker updates
+
+let base = Color(CSSVar('--harmony-color', '#e63946'));
+
+// Harmonies
+let analog = base.analogous();
+let triad  = base.triadic();
+let tetrad = base.tetradic();
+let split  = base.splitComplementary();
+
+// Palettes
+let ramp   = Color.palette(base, 5);
+let interp = Color.palette(base, Color('#457b9d'), 5);
+
+// Layout
+let sw = 40;
+let sh = 40;
+let sr = 6;
+let gap = 12;
+let startX = 140;
+let labelX = 20;
+
+define TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #777;
+}
+
+define TextLayer('section') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  font-weight: bold;
+  fill: #555;
+}
+
+// Section: Harmonies
+layer('section').apply { text(labelX, 28)`Harmonies` }
+
+let rows = [analog, triad, tetrad, split];
+let rowNames = ['analogous', 'triadic', 'tetradic', 'splitComp'];
+let rowYs = [50, 108, 166, 224];
+
+for ([harmony, ri] in rows) {
+  let y = rowYs[ri];
+  layer('labels').apply { text(labelX, calc(y + sw / 2 + 4))`${rowNames[ri]}` }
+  for ([color, ci] in harmony) {
+    let x = calc(startX + ci * (sw + gap));
+    define PathLayer(`h${ri}_${ci}`) ${ fill: color; stroke: #ddd; stroke-width: 0.5; }
+    layer(`h${ri}_${ci}`).apply { roundRect(x, y, sw, sh, sr) }
+  }
+}
+
+// Divider
+define PathLayer('div1') ${ stroke: #e0e0e0; stroke-width: 1; fill: none; }
+layer('div1').apply { M labelX 282 L 440 282 }
+
+// Section: Palettes
+layer('section').apply { text(labelX, 306)`Palettes` }
+
+layer('labels').apply { text(labelX, calc(330 + sw / 2 + 4))`lightness` }
+for ([color, i] in ramp) {
+  let x = calc(startX + i * (sw + gap));
+  define PathLayer(`ramp_${i}`) ${ fill: color; stroke: #ddd; stroke-width: 0.5; }
+  layer(`ramp_${i}`).apply { roundRect(x, 330, sw, sh, sr) }
+}
+
+layer('labels').apply { text(labelX, calc(388 + sw / 2 + 4))`interpolate` }
+for ([color, i] in interp) {
+  let x = calc(startX + i * (sw + gap));
+  define PathLayer(`interp_${i}`) ${ fill: color; stroke: #ddd; stroke-width: 0.5; }
+  layer(`interp_${i}`).apply { roundRect(x, 388, sw, sh, sr) }
+}

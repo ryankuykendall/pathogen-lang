@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 570 340" width="570" height="340">
+  <style>
+    @property --base-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+    @property --accent-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #457b9d;
+    }
+    @property --dark-accent {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #f4a261;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <path d="M 0 0 L 280 0 Q 280 0 280 0 L 280 340 Q 280 340 280 340 L 0 340 Q 0 340 0 340 L 0 0 Q 0 0 0 0 Z" fill="#f5f5f5" stroke="none" stroke-width="2"/>
+  <path d="M 290 0 L 570 0 Q 570 0 570 0 L 570 340 Q 570 340 570 340 L 290 340 Q 290 340 290 340 L 290 0 Q 290 0 290 0 Z" fill="#222266" stroke="none" stroke-width="2"/>
+  <text x="8" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Methods</text>
+  <text x="8" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Triadic</text>
+  <text x="8" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Palette</text>
+  <text x="8" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">lightDark()</text>
+  <text x="26" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">base</text>
+  <text x="55" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">light</text>
+  <text x="84" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">dark</text>
+  <text x="113" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">vivid</text>
+  <text x="142" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">muted</text>
+  <text x="171" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">shift</text>
+  <text x="200" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">compl</text>
+  <text x="26" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">fg</text>
+  <text x="55" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">accent</text>
+  <text x="298" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Methods</text>
+  <text x="298" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Triadic</text>
+  <text x="298" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Palette</text>
+  <text x="298" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">lightDark()</text>
+  <text x="316" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">base</text>
+  <text x="345" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">light</text>
+  <text x="374" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">dark</text>
+  <text x="403" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">vivid</text>
+  <text x="432" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">muted</text>
+  <text x="461" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">shift</text>
+  <text x="490" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">compl</text>
+  <text x="316" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">fg</text>
+  <text x="345" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">accent</text>
+  <path d="M 17 24 L 35 24 Q 38 24 38 27 L 38 43 Q 38 46 35 46 L 17 46 Q 14 46 14 43 L 14 27 Q 14 24 17 24 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 46 24 L 64 24 Q 67 24 67 27 L 67 43 Q 67 46 64 46 L 46 46 Q 43 46 43 43 L 43 27 Q 43 24 46 24 Z" fill="oklch(from var(--base-color, #e63946) calc(l + 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 75 24 L 93 24 Q 96 24 96 27 L 96 43 Q 96 46 93 46 L 75 46 Q 72 46 72 43 L 72 27 Q 72 24 75 24 Z" fill="oklch(from var(--base-color, #e63946) calc(l - 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 104 24 L 122 24 Q 125 24 125 27 L 125 43 Q 125 46 122 46 L 104 46 Q 101 46 101 43 L 101 27 Q 101 24 104 24 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 1.4) h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 133 24 L 151 24 Q 154 24 154 27 L 154 43 Q 154 46 151 46 L 133 46 Q 130 46 130 43 L 130 27 Q 130 24 133 24 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 0.5) h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 162 24 L 180 24 Q 183 24 183 27 L 183 43 Q 183 46 180 46 L 162 46 Q 159 46 159 43 L 159 27 Q 159 24 162 24 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 60))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 191 24 L 209 24 Q 212 24 212 27 L 212 43 Q 212 46 209 46 L 191 46 Q 188 46 188 43 L 188 27 Q 188 24 191 24 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 180))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 8 70 L 272 70 M 8 130 L 272 130 M 8 194 L 272 194" fill="none" stroke="#ddd" stroke-width="0.5"/>
+  <path d="M 17 92 L 35 92 Q 38 92 38 95 L 38 111 Q 38 114 35 114 L 17 114 Q 14 114 14 111 L 14 95 Q 14 92 17 92 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 46 92 L 64 92 Q 67 92 67 95 L 67 111 Q 67 114 64 114 L 46 114 Q 43 114 43 111 L 43 95 Q 43 92 46 92 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 120))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 75 92 L 93 92 Q 96 92 96 95 L 96 111 Q 96 114 93 114 L 75 114 Q 72 114 72 111 L 72 95 Q 72 92 75 92 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 240))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 17 152 L 35 152 Q 38 152 38 155 L 38 171 Q 38 174 35 174 L 17 174 Q 14 174 14 171 L 14 155 Q 14 152 17 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 0%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 46 152 L 64 152 Q 67 152 67 155 L 67 171 Q 67 174 64 174 L 46 174 Q 43 174 43 171 L 43 155 Q 43 152 46 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 25%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 75 152 L 93 152 Q 96 152 96 155 L 96 171 Q 96 174 93 174 L 75 174 Q 72 174 72 171 L 72 155 Q 72 152 75 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 50%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 104 152 L 122 152 Q 125 152 125 155 L 125 171 Q 125 174 122 174 L 104 174 Q 101 174 101 171 L 101 155 Q 101 152 104 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 75%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 133 152 L 151 152 Q 154 152 154 155 L 154 171 Q 154 174 151 174 L 133 174 Q 130 174 130 171 L 130 155 Q 130 152 133 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 100%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 17 216 L 35 216 Q 38 216 38 219 L 38 235 Q 38 238 35 238 L 17 238 Q 14 238 14 235 L 14 219 Q 14 216 17 216 Z" fill="light-dark(#333333, #eeeeee)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 46 216 L 64 216 Q 67 216 67 219 L 67 235 Q 67 238 64 238 L 46 238 Q 43 238 43 235 L 43 219 Q 43 216 46 216 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 307 24 L 325 24 Q 328 24 328 27 L 328 43 Q 328 46 325 46 L 307 46 Q 304 46 304 43 L 304 27 Q 304 24 307 24 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 336 24 L 354 24 Q 357 24 357 27 L 357 43 Q 357 46 354 46 L 336 46 Q 333 46 333 43 L 333 27 Q 333 24 336 24 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l + 0.15) c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 365 24 L 383 24 Q 386 24 386 27 L 386 43 Q 386 46 383 46 L 365 46 Q 362 46 362 43 L 362 27 Q 362 24 365 24 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l - 0.15) c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 394 24 L 412 24 Q 415 24 415 27 L 415 43 Q 415 46 412 46 L 394 46 Q 391 46 391 43 L 391 27 Q 391 24 394 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 1.4) h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 423 24 L 441 24 Q 444 24 444 27 L 444 43 Q 444 46 441 46 L 423 46 Q 420 46 420 43 L 420 27 Q 420 24 423 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 0.5) h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 452 24 L 470 24 Q 473 24 473 27 L 473 43 Q 473 46 470 46 L 452 46 Q 449 46 449 43 L 449 27 Q 449 24 452 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 60))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 481 24 L 499 24 Q 502 24 502 27 L 502 43 Q 502 46 499 46 L 481 46 Q 478 46 478 43 L 478 27 Q 478 24 481 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 180))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 298 70 L 562 70 M 298 130 L 562 130 M 298 194 L 562 194" fill="none" stroke="#445" stroke-width="0.5"/>
+  <path d="M 307 92 L 325 92 Q 328 92 328 95 L 328 111 Q 328 114 325 114 L 307 114 Q 304 114 304 111 L 304 95 Q 304 92 307 92 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 336 92 L 354 92 Q 357 92 357 95 L 357 111 Q 357 114 354 114 L 336 114 Q 333 114 333 111 L 333 95 Q 333 92 336 92 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 120))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 365 92 L 383 92 Q 386 92 386 95 L 386 111 Q 386 114 383 114 L 365 114 Q 362 114 362 111 L 362 95 Q 362 92 365 92 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 240))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 307 152 L 325 152 Q 328 152 328 155 L 328 171 Q 328 174 325 174 L 307 174 Q 304 174 304 171 L 304 155 Q 304 152 307 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 0%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 336 152 L 354 152 Q 357 152 357 155 L 357 171 Q 357 174 354 174 L 336 174 Q 333 174 333 171 L 333 155 Q 333 152 336 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 25%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 365 152 L 383 152 Q 386 152 386 155 L 386 171 Q 386 174 383 174 L 365 174 Q 362 174 362 171 L 362 155 Q 362 152 365 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 50%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 394 152 L 412 152 Q 415 152 415 155 L 415 171 Q 415 174 412 174 L 394 174 Q 391 174 391 171 L 391 155 Q 391 152 394 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 75%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 423 152 L 441 152 Q 444 152 444 155 L 444 171 Q 444 174 441 174 L 423 174 Q 420 174 420 171 L 420 155 Q 420 152 423 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 100%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 307 216 L 325 216 Q 328 216 328 219 L 328 235 Q 328 238 325 238 L 307 238 Q 304 238 304 235 L 304 219 Q 304 216 307 216 Z" fill="light-dark(#333333, #eeeeee)" stroke="#555" stroke-width="0.5"/>
+  <path d="M 336 216 L 354 216 Q 357 216 357 219 L 357 235 Q 357 238 354 238 L 336 238 Q 333 238 333 235 L 333 219 Q 333 216 336 216 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#555" stroke-width="0.5"/>
+  <text x="140" y="330" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#bbb" text-anchor="middle">LIGHT</text>
+  <text x="430" y="330" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#557" text-anchor="middle">DARK</text>
+</svg>

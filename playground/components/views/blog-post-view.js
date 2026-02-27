@@ -4,6 +4,7 @@
 import { store } from '../../state/store.js';
 import { blogIndex, posts } from '../../utils/blog-content.js';
 import { hljsThemeDark } from '../../utils/docs-content.js';
+import '../blog/reactive-svg.js';
 
 const styles = `
   :host {

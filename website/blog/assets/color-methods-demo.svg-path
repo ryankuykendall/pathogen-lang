@@ -1,0 +1,61 @@
+// Color Methods Demo — base color → 8 derived swatches
+// CSSVar-backed for reactive color picker updates
+
+let base = Color(CSSVar('--demo-color', '#e63946'));
+
+let lighter   = base.lighten(0.18);
+let darker    = base.darken(0.18);
+let vivid     = base.saturate(1.5);
+let muted     = base.desaturate(0.4);
+let shifted   = base.hueShift(90);
+let comp      = base.complement();
+let semi      = base.alpha(0.5);
+let mixed     = base.mix(Color('#457b9d'), 0.5);
+
+// Layout
+let sw = 50;
+let sh = 50;
+let sr = 8;
+let gap = 14;
+let startX = 30;
+let row1Y = 40;
+let row2Y = 130;
+
+// Row 1: base + lighten, darken, saturate, desaturate
+let row1 = [base, lighter, darker, vivid, muted];
+let row1names = ['base', 'lighten', 'darken', 'saturate', 'desaturate'];
+
+define TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: middle;
+}
+
+for ([color, i] in row1) {
+  let x = calc(startX + i * (sw + gap));
+  define PathLayer(`r1_${i}`) ${ fill: color; stroke: #ddd; stroke-width: 1; }
+  layer(`r1_${i}`).apply { roundRect(x, row1Y, sw, sh, sr) }
+}
+
+layer('labels').apply {
+  for ([name, i] in row1names) {
+    text(calc(startX + i * (sw + gap) + sw / 2), calc(row1Y + sh + 16))`${name}`
+  }
+}
+
+// Row 2: hueShift, complement, alpha, mix
+let row2 = [shifted, comp, semi, mixed];
+let row2names = ['hueShift', 'complement', 'alpha(0.5)', 'mix'];
+
+for ([color, i] in row2) {
+  let x = calc(startX + i * (sw + gap));
+  define PathLayer(`r2_${i}`) ${ fill: color; stroke: #ddd; stroke-width: 1; }
+  layer(`r2_${i}`).apply { roundRect(x, row2Y, sw, sh, sr) }
+}
+
+layer('labels').apply {
+  for ([name, i] in row2names) {
+    text(calc(startX + i * (sw + gap) + sw / 2), calc(row2Y + sh + 16))`${name}`
+  }
+}
