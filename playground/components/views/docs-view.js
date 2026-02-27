@@ -259,6 +259,16 @@ const styles = `
     margin: 2rem 0;
   }
 
+  a {
+    color: var(--accent-color, #0066cc);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+    color: var(--accent-hover, #0055aa);
+  }
+
   .external-link {
     display: inline-flex;
     align-items: center;

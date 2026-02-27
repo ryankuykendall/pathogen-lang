@@ -161,6 +161,16 @@ const styles = `
     font-weight: 600;
   }
 
+  .post-content a {
+    color: var(--accent-color, #0066cc);
+    text-decoration: none;
+  }
+
+  .post-content a:hover {
+    text-decoration: underline;
+    color: var(--accent-hover, #0055aa);
+  }
+
   .not-found {
     text-align: center;
     padding: 3rem;
