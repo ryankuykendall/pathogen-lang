@@ -154,16 +154,6 @@ describe('CSSVar type', () => {
       expect(result.layers[0].styles).toEqual({ stroke: 'var(--primary, #e63946)' });
     });
 
-    it('Color(CSSVar(...)) uses fallback for color methods', () => {
-      const result = compile(`
-        let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.lighten(0.2); }
-        layer('a').apply { M 0 0 }
-      `);
-      // lighten() produces a concrete color (no var wrapper)
-      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
-    });
-
     it('Color(CSSVar(...)) preserves var() in direct style use', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
@@ -175,6 +165,143 @@ describe('CSSVar type', () => {
 
     it('Color(CSSVar(...)) throws without fallback', () => {
       expect(() => compile("let c = Color(CSSVar('--x'));")).toThrow('requires a CSSVar with a fallback color');
+    });
+  });
+
+  // ── CSS Relative Color Syntax (Tier 4.1) ──────────────────────────────
+
+  describe('CSS relative color expressions', () => {
+    it('lighten() outputs oklch(from var(...) calc(l + n) c h)', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.lighten(0.2); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) calc(l + 0.2) c h)');
+    });
+
+    it('darken() outputs oklch(from var(...) calc(l - n) c h)', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.darken(0.15); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) calc(l - 0.15) c h)');
+    });
+
+    it('saturate() outputs oklch(from var(...) l calc(c * f) h)', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.saturate(1.5); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l calc(c * 1.5) h)');
+    });
+
+    it('desaturate() outputs oklch(from var(...) l calc(c * f) h)', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.desaturate(0.3); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l calc(c * 0.3) h)');
+    });
+
+    it('alpha() outputs oklch(from var(...) l c h / a)', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.alpha(0.5); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c h / 0.5)');
+    });
+
+    it('hueShift() outputs oklch(from var(...) l c calc(h + d))', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.hueShift(90); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
+    });
+
+    it('complement() outputs oklch(from var(...) l c calc(h + 180))', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.complement(); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 180))');
+    });
+
+    it('mix() outputs color-mix(in oklch, ...)', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        let target = Color('#457b9d');
+        define PathLayer('a') \${ fill: c.mix(target, 0.5); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--base, #cc6683), #457b9d 50%)');
+    });
+
+    it('mix() with two CSSVar-backed colors', () => {
+      const result = compile(`
+        let c1 = Color(CSSVar('--base', '#cc6683'));
+        let c2 = Color(CSSVar('--target', '#457b9d'));
+        define PathLayer('a') \${ fill: c1.mix(c2, 0.3); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--base, #cc6683), var(--target, #457b9d) 30%)');
+    });
+
+    it('chaining nests CSS expressions', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.lighten(0.2).hueShift(90); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe(
+        'oklch(from oklch(from var(--base, #cc6683) calc(l + 0.2) c h) l c calc(h + 90))'
+      );
+    });
+
+    it('non-CSSVar Colors still produce baked values', () => {
+      const result = compile(`
+        let c = Color('#cc6683');
+        define PathLayer('a') \${ fill: c.lighten(0.2); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('Color.mix() with CSSVar-backed colors', () => {
+      const result = compile(`
+        let c1 = Color(CSSVar('--a', '#cc6683'));
+        let c2 = Color(CSSVar('--b', '#457b9d'));
+        define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
+    });
+
+    it('Color.mix() with one CSSVar-backed color', () => {
+      const result = compile(`
+        let c1 = Color(CSSVar('--a', '#cc6683'));
+        let c2 = Color('#457b9d');
+        define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), #457b9d 50%)');
+    });
+
+    it('Color.mix() with no CSSVar-backed colors produces baked value', () => {
+      const result = compile(`
+        let c1 = Color('#cc6683');
+        let c2 = Color('#457b9d');
+        define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
 });

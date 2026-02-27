@@ -31,7 +31,7 @@ import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { samplePathAtFraction, partitionPath } from './sampling';
 import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
-import { type OKLCH, parseColor, oklchToCSS, oklchToHex, oklchToRGBString, oklchToHSLString, oklchToOKLCHString, lighten, darken, saturate, desaturate, setAlpha, hueShift, mixColors } from '../color';
+import { type OKLCH, parseColor, oklchToCSS, oklchToHex, oklchToRGBString, oklchToHSLString, oklchToOKLCHString, lighten, darken, saturate, desaturate, setAlpha, hueShift, mixColors, cssSourceExpr, lightenCSS, darkenCSS, saturateCSS, desaturateCSS, setAlphaCSS, hueShiftCSS, mixCSS } from '../color';
 
 // Types for annotated output
 export type AnnotatedLine =
@@ -67,6 +67,7 @@ export interface ColorValue {
   type: 'ColorValue';
   oklch: OKLCH;
   cssVar?: { varName: string; fallback: string };
+  cssExpr?: string;
 }
 
 function isColorValue(value: Value): value is ColorValue {
@@ -685,7 +686,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
-          if (evaluated.cssVar) {
+          if (evaluated.cssExpr) {
+            resolvedValue = evaluated.cssExpr;
+          } else if (evaluated.cssVar) {
             resolvedValue = `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
           } else {
             resolvedValue = oklchToCSS(evaluated.oklch);
@@ -1127,41 +1130,48 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 1) throw mError('lighten() expects 1 argument');
         const amount = evaluateExpression(expr.args[0], scope);
         if (typeof amount !== 'number') throw mError('lighten() amount must be a number');
-        return { type: 'ColorValue', oklch: lighten(obj.oklch, amount) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: lighten(obj.oklch, amount), cssExpr: src ? lightenCSS(src, amount) : undefined };
       }
       case 'darken': {
         if (expr.args.length !== 1) throw mError('darken() expects 1 argument');
         const amount = evaluateExpression(expr.args[0], scope);
         if (typeof amount !== 'number') throw mError('darken() amount must be a number');
-        return { type: 'ColorValue', oklch: darken(obj.oklch, amount) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: darken(obj.oklch, amount), cssExpr: src ? darkenCSS(src, amount) : undefined };
       }
       case 'saturate': {
         if (expr.args.length !== 1) throw mError('saturate() expects 1 argument');
         const factor = evaluateExpression(expr.args[0], scope);
         if (typeof factor !== 'number') throw mError('saturate() factor must be a number');
-        return { type: 'ColorValue', oklch: saturate(obj.oklch, factor) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: saturate(obj.oklch, factor), cssExpr: src ? saturateCSS(src, factor) : undefined };
       }
       case 'desaturate': {
         if (expr.args.length !== 1) throw mError('desaturate() expects 1 argument');
         const factor = evaluateExpression(expr.args[0], scope);
         if (typeof factor !== 'number') throw mError('desaturate() factor must be a number');
-        return { type: 'ColorValue', oklch: desaturate(obj.oklch, factor) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: desaturate(obj.oklch, factor), cssExpr: src ? desaturateCSS(src, factor) : undefined };
       }
       case 'alpha': {
         if (expr.args.length !== 1) throw mError('alpha() expects 1 argument');
         const a = evaluateExpression(expr.args[0], scope);
         if (typeof a !== 'number') throw mError('alpha() value must be a number');
-        return { type: 'ColorValue', oklch: setAlpha(obj.oklch, a) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: setAlpha(obj.oklch, a), cssExpr: src ? setAlphaCSS(src, a) : undefined };
       }
       case 'hueShift': {
         if (expr.args.length !== 1) throw mError('hueShift() expects 1 argument');
         const degrees = evaluateExpression(expr.args[0], scope);
         if (typeof degrees !== 'number') throw mError('hueShift() degrees must be a number');
-        return { type: 'ColorValue', oklch: hueShift(obj.oklch, degrees) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: hueShift(obj.oklch, degrees), cssExpr: src ? hueShiftCSS(src, degrees) : undefined };
       }
       case 'complement': {
         if (expr.args.length !== 0) throw mError('complement() expects 0 arguments');
-        return { type: 'ColorValue', oklch: hueShift(obj.oklch, 180) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        return { type: 'ColorValue', oklch: hueShift(obj.oklch, 180), cssExpr: src ? hueShiftCSS(src, 180) : undefined };
       }
       case 'mix': {
         if (expr.args.length !== 2) throw mError('mix() expects 2 arguments');
@@ -1169,7 +1179,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const t = evaluateExpression(expr.args[1], scope);
         if (!isColorValue(other)) throw mError('mix() first argument must be a Color');
         if (typeof t !== 'number') throw mError('mix() second argument (ratio) must be a number');
-        return { type: 'ColorValue', oklch: mixColors(obj.oklch, other.oklch, t) };
+        const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
+        const otherSrc = cssSourceExpr(other.cssVar, other.cssExpr);
+        const cssExpr = src ? mixCSS(src, otherSrc || oklchToCSS(other.oklch), t) : undefined;
+        return { type: 'ColorValue', oklch: mixColors(obj.oklch, other.oklch, t), cssExpr };
       }
       default:
         throw mError(`Unknown Color method: ${expr.method}`);
@@ -1187,7 +1200,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (!isColorValue(c1)) throw mError('Color.mix() first argument must be a Color');
         if (!isColorValue(c2)) throw mError('Color.mix() second argument must be a Color');
         if (typeof t !== 'number') throw mError('Color.mix() third argument (ratio) must be a number');
-        return { type: 'ColorValue', oklch: mixColors(c1.oklch, c2.oklch, t) };
+        const src1 = cssSourceExpr(c1.cssVar, c1.cssExpr);
+        const src2 = cssSourceExpr(c2.cssVar, c2.cssExpr);
+        const cssExpr = (src1 || src2) ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
+        return { type: 'ColorValue', oklch: mixColors(c1.oklch, c2.oklch, t), cssExpr };
       }
       default:
         throw mError(`Unknown Color method: ${expr.method}`);

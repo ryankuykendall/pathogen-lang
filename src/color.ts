@@ -298,6 +298,43 @@ export function mixColors(c1: OKLCH, c2: OKLCH, t: number): OKLCH {
   };
 }
 
+// ── CSS relative color expression generators ─────────────────────────
+
+/** Build CSS source string from cssVar or cssExpr */
+export function cssSourceExpr(cssVar?: { varName: string; fallback: string }, cssExpr?: string): string | undefined {
+  if (cssExpr) return cssExpr;
+  if (cssVar) return `var(${cssVar.varName}, ${cssVar.fallback})`;
+  return undefined;
+}
+
+export function lightenCSS(source: string, amount: number): string {
+  return `oklch(from ${source} calc(l + ${amount}) c h)`;
+}
+
+export function darkenCSS(source: string, amount: number): string {
+  return `oklch(from ${source} calc(l - ${amount}) c h)`;
+}
+
+export function saturateCSS(source: string, factor: number): string {
+  return `oklch(from ${source} l calc(c * ${factor}) h)`;
+}
+
+export function desaturateCSS(source: string, factor: number): string {
+  return `oklch(from ${source} l calc(c * ${factor}) h)`;
+}
+
+export function setAlphaCSS(source: string, alpha: number): string {
+  return `oklch(from ${source} l c h / ${alpha})`;
+}
+
+export function hueShiftCSS(source: string, degrees: number): string {
+  return `oklch(from ${source} l c calc(h + ${degrees}))`;
+}
+
+export function mixCSS(source1: string, source2: string, ratio: number): string {
+  return `color-mix(in oklch, ${source1}, ${source2} ${Math.round(ratio * 100)}%)`;
+}
+
 // ── Unified parser ─────────────────────────────────────────────────────
 
 export function parseColor(input: string): OKLCH {
