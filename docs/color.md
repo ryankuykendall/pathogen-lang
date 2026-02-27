@@ -515,6 +515,48 @@ let gradient = Color.palette(a, b, 7);   // 7-step gradient
 
 `n` must be an integer >= 2.
 
+### Color.lightDark(light, dark)
+
+Create a theme-aware color that uses CSS `light-dark()` in style output:
+
+```
+let fg = Color.lightDark(Color('#333'), Color('#eee'));
+// Style output: light-dark(#333333, #eeeeee)
+```
+
+Works with CSSVar-backed colors for full customizability:
+
+```
+let fg = Color.lightDark(
+  Color(CSSVar('--fg-light', '#333')),
+  Color(CSSVar('--fg-dark', '#eee'))
+);
+// Style output: light-dark(var(--fg-light, #333), var(--fg-dark, #eee))
+```
+
+Both arguments must be Colors. At compile time, `.hex`, `.lightness`, and other properties resolve to the **light** variant. Method calls (`.lighten()`, `.hueShift()`, etc.) operate on the light variant and lose the light-dark semantics.
+
+## @property Declarations
+
+When you create a `Color(CSSVar('--name', fallback))`, the compiler automatically collects a CSS `@property` declaration for that custom property. This enables browsers to interpolate the property in transitions and animations.
+
+The collected declarations appear in `CompileResult.cssProperties` and are emitted as a `<style>` block in CLI SVG output:
+
+```xml
+<svg ...>
+  <style>
+    @property --base-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+  </style>
+  ...
+</svg>
+```
+
+Only Color-typed CSSVars produce `@property` declarations — plain `CSSVar('--width', 2)` does not. When the same variable name appears multiple times, the first occurrence wins.
+
 ## Style Block Auto-Conversion
 
 Colors auto-convert to CSS strings when used in style blocks:

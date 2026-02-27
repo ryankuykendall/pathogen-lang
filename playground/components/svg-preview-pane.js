@@ -166,6 +166,20 @@ export class SvgPreviewPane extends HTMLElement {
         }
       }
 
+      // Inject @property CSS declarations
+      const svgEl = this.shadowRoot.querySelector('#preview');
+      const existingCssStyle = svgEl.querySelector('style[data-css-properties]');
+      if (existingCssStyle) existingCssStyle.remove();
+      if (defsData.cssProperties && defsData.cssProperties.length > 0) {
+        const styleEl = document.createElementNS(SVG_NS_DEFS, 'style');
+        styleEl.setAttribute('data-css-properties', '');
+        const rules = defsData.cssProperties.map(prop =>
+          `@property ${prop.name} {\n  syntax: "${prop.syntax}";\n  inherits: ${prop.inherits};\n  initial-value: ${prop.initialValue};\n}`
+        ).join('\n');
+        styleEl.textContent = rules;
+        svgEl.insertBefore(styleEl, svgEl.firstChild);
+      }
+
       const SVG_NS = 'http://www.w3.org/2000/svg';
       for (const layer of layers) {
         // Fragment layers: inject defs and append visual content

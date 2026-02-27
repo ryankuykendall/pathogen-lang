@@ -141,6 +141,7 @@ export interface ColorValue {
   oklch: OKLCH;
   cssVar?: { varName: string; fallback: string };
   cssExpr?: string;
+  lightDark?: { lightCSS: string; darkCSS: string };
 }
 
 export function isColorValue(value: Value): value is ColorValue {
@@ -359,10 +360,18 @@ export interface ClipPathOutput {
   elements: Array<{ pathData: string }>;
 }
 
+export interface CSSPropertyDeclaration {
+  name: string;          // '--base-color'
+  syntax: string;        // '<color>'
+  inherits: boolean;     // true
+  initialValue: string;  // '#e63946'
+}
+
 export interface CompileResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
   clipPaths: ClipPathOutput[];
+  cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
 }
@@ -444,6 +453,7 @@ export interface EvaluationState {
   transformState: TransformState;      // Transform state for implicit default layer
   masks: Map<string, MaskValue>;       // Mask definitions by ID
   clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID
+  cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
 }
 
 export interface Scope {
@@ -693,7 +703,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
-          if (evaluated.cssExpr) {
+          if (evaluated.lightDark) {
+            resolvedValue = `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
+          } else if (evaluated.cssExpr) {
             resolvedValue = evaluated.cssExpr;
           } else if (evaluated.cssVar) {
             // CSSVar-backed Color: output var() reference with the computed color as fallback
@@ -887,6 +899,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     transformState: createTransformState(),
     masks: scope.evalState?.masks ?? new Map(),
     clipPaths: scope.evalState?.clipPaths ?? new Map(),
+    cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insidePathBlock: true,
   };
   blockScope.evalState = blockEvalState;
@@ -1872,6 +1885,16 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           throw mError('Color.palette() expects 2 or 3 arguments');
         }
       }
+      case 'lightDark': {
+        if (expr.args.length !== 2) throw mError('Color.lightDark() expects 2 arguments');
+        const light = evaluateExpression(expr.args[0], scope);
+        const dark = evaluateExpression(expr.args[1], scope);
+        if (!isColorValue(light)) throw mError('Color.lightDark() first argument must be a Color');
+        if (!isColorValue(dark)) throw mError('Color.lightDark() second argument must be a Color');
+        const lightCSS = cssSourceExpr(light.cssVar, light.cssExpr) || oklchToCSS(light.oklch);
+        const darkCSS = cssSourceExpr(dark.cssVar, dark.cssExpr) || oklchToCSS(dark.oklch);
+        return { type: 'ColorValue', oklch: light.oklch, lightDark: { lightCSS, darkCSS } };
+      }
       default:
         throw mError(`Unknown Color method: ${expr.method}`);
     }
@@ -2035,6 +2058,9 @@ function formatValueForDisplay(val: Value): string {
     return `ClipPath(${val.id}, ${val.paths.length} paths)`;
   }
   if (isColorValue(val)) {
+    if (val.lightDark) {
+      return `Color.lightDark(${val.lightDark.lightCSS}, ${val.lightDark.darkCSS})`;
+    }
     return `Color(${oklchToCSS(val.oklch)})`;
   }
   if (isCSSVarValue(val)) {
@@ -2496,7 +2522,17 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       if (isCSSVarValue(arg)) {
         // Color(CSSVar('--name', 'fallback')) — parse fallback for Color methods, preserve var ref for style output
         if (!arg.fallback) throw new Error(formatError('Color(CSSVar(...)) requires a CSSVar with a fallback color', cLine, cCol));
-        return { type: 'ColorValue' as const, oklch: parseColor(arg.fallback), cssVar: { varName: arg.varName, fallback: arg.fallback } };
+        const oklch = parseColor(arg.fallback);
+        // Collect @property declaration for CSS custom property registration (dedup: first wins)
+        if (scope.evalState && !scope.evalState.cssProperties.has(arg.varName)) {
+          scope.evalState.cssProperties.set(arg.varName, {
+            name: arg.varName,
+            syntax: '<color>',
+            inherits: true,
+            initialValue: oklchToCSS(oklch),
+          });
+        }
+        return { type: 'ColorValue' as const, oklch, cssVar: { varName: arg.varName, fallback: arg.fallback } };
       }
       if (typeof arg !== 'string') throw new Error(formatError('Color() with 1 argument expects a color string or CSSVar', cLine, cCol));
       return { type: 'ColorValue' as const, oklch: parseColor(arg) };
@@ -3668,10 +3704,14 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     });
   }
 
+  // Build cssProperties output
+  const cssProperties: CSSPropertyDeclaration[] = Array.from(evalState.cssProperties.values());
+
   return {
     layers,
     masks,
     clipPaths,
+    cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
   };
@@ -3694,6 +3734,7 @@ export function evaluate(program: Program, options?: { toFixed?: number }): Comp
       transformState,
       masks: new Map(),
       clipPaths: new Map(),
+      cssProperties: new Map(),
     };
 
     const scope = createScope();
@@ -3725,6 +3766,7 @@ export interface EvaluateWithContextResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
   clipPaths: ClipPathOutput[];
+  cssProperties: CSSPropertyDeclaration[];
 }
 
 /**
@@ -3759,6 +3801,7 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       transformState,
       masks: new Map(),
       clipPaths: new Map(),
+      cssProperties: new Map(),
     };
 
     const scope = createScope();
@@ -3785,6 +3828,7 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       layers: compileResult.layers,
       masks: compileResult.masks,
       clipPaths: compileResult.clipPaths,
+      cssProperties: compileResult.cssProperties,
     };
   } finally {
     resetNumberFormat();

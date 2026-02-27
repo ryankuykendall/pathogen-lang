@@ -415,6 +415,66 @@ describe('CLI', () => {
     });
   });
 
+  describe('@property style block in SVG output', () => {
+    const outputSvg = join(TMP_DIR, 'css-property-test.svg');
+
+    beforeEach(() => {
+      if (existsSync(outputSvg)) unlinkSync(outputSvg);
+    });
+
+    it('includes <style> with @property for Color(CSSVar(...))', () => {
+      const inputFile = join(TMP_DIR, 'css-prop-test.svgx');
+      writeFileSync(inputFile, `
+        let c = Color(CSSVar('--base-color', '#e63946'));
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('<style>');
+      expect(content).toContain('@property --base-color');
+      expect(content).toContain('syntax: "<color>"');
+      expect(content).toContain('inherits: true');
+      expect(content).toContain('initial-value: #e63946');
+
+      unlinkSync(inputFile);
+    });
+
+    it('includes multiple @property declarations', () => {
+      const inputFile = join(TMP_DIR, 'css-prop-multi.svgx');
+      writeFileSync(inputFile, `
+        let c1 = Color(CSSVar('--base', '#e63946'));
+        let c2 = Color(CSSVar('--accent', '#457b9d'));
+        define PathLayer('a') \${ fill: c1; stroke: c2; }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('@property --base');
+      expect(content).toContain('@property --accent');
+
+      unlinkSync(inputFile);
+    });
+
+    it('omits <style> when no Color(CSSVar(...)) used', () => {
+      const inputFile = join(TMP_DIR, 'css-prop-none.svgx');
+      writeFileSync(inputFile, `
+        let c = Color('#e63946');
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).not.toContain('<style>');
+      expect(content).not.toContain('@property');
+
+      unlinkSync(inputFile);
+    });
+  });
+
   describe('SVG output escaping', () => {
     const outputSvg = join(TMP_DIR, 'escape-test.svg');
 

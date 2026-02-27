@@ -68,6 +68,7 @@ export interface ColorValue {
   oklch: OKLCH;
   cssVar?: { varName: string; fallback: string };
   cssExpr?: string;
+  lightDark?: { lightCSS: string; darkCSS: string };
 }
 
 function isColorValue(value: Value): value is ColorValue {
@@ -686,7 +687,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
-          if (evaluated.cssExpr) {
+          if (evaluated.lightDark) {
+            resolvedValue = `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
+          } else if (evaluated.cssExpr) {
             resolvedValue = evaluated.cssExpr;
           } else if (evaluated.cssVar) {
             resolvedValue = `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
@@ -1300,6 +1303,16 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         } else {
           throw mError('Color.palette() expects 2 or 3 arguments');
         }
+      }
+      case 'lightDark': {
+        if (expr.args.length !== 2) throw mError('Color.lightDark() expects 2 arguments');
+        const light = evaluateExpression(expr.args[0], scope);
+        const dark = evaluateExpression(expr.args[1], scope);
+        if (!isColorValue(light)) throw mError('Color.lightDark() first argument must be a Color');
+        if (!isColorValue(dark)) throw mError('Color.lightDark() second argument must be a Color');
+        const lightCSS = cssSourceExpr(light.cssVar, light.cssExpr) || oklchToCSS(light.oklch);
+        const darkCSS = cssSourceExpr(dark.cssVar, dark.cssExpr) || oklchToCSS(dark.oklch);
+        return { type: 'ColorValue', oklch: light.oklch, lightDark: { lightCSS, darkCSS } };
       }
       default:
         throw mError(`Unknown Color method: ${expr.method}`);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '../src';
+import { compile, compileWithContext } from '../src';
 
 describe('CSSVar type', () => {
   // ── Constructor ────────────────────────────────────────────────────────
@@ -418,6 +418,76 @@ describe('CSSVar type', () => {
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+    });
+  });
+
+  // ── @property Declarations ──────────────────────────────────────────────
+
+  describe('@property declarations', () => {
+    it('collects @property from Color(CSSVar(...))', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#e63946'));
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.cssProperties).toHaveLength(1);
+      expect(result.cssProperties[0]).toEqual({
+        name: '--base',
+        syntax: '<color>',
+        inherits: true,
+        initialValue: '#e63946',
+      });
+    });
+
+    it('deduplicates by var name (first wins)', () => {
+      const result = compile(`
+        let c1 = Color(CSSVar('--base', '#e63946'));
+        let c2 = Color(CSSVar('--base', '#457b9d'));
+        log(c1.hex);
+        log(c2.hex);
+      `);
+      expect(result.cssProperties).toHaveLength(1);
+      expect(result.cssProperties[0].initialValue).toBe('#e63946');
+    });
+
+    it('collects multiple distinct vars', () => {
+      const result = compile(`
+        let c1 = Color(CSSVar('--primary', '#e63946'));
+        let c2 = Color(CSSVar('--accent', '#457b9d'));
+        log(c1.hex);
+        log(c2.hex);
+      `);
+      expect(result.cssProperties).toHaveLength(2);
+      expect(result.cssProperties[0].name).toBe('--primary');
+      expect(result.cssProperties[1].name).toBe('--accent');
+    });
+
+    it('plain CSSVar (not in Color) does not produce @property', () => {
+      const result = compile(`
+        let v = CSSVar('--width', 2);
+        define PathLayer('a') \${ stroke-width: v; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.cssProperties).toHaveLength(0);
+    });
+
+    it('empty when no CSSVars used', () => {
+      const result = compile(`
+        let c = Color('#e63946');
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.cssProperties).toHaveLength(0);
+    });
+
+    it('available through compileWithContext', () => {
+      const result = compileWithContext(`
+        let c = Color(CSSVar('--base', '#e63946'));
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.cssProperties).toHaveLength(1);
+      expect(result.cssProperties[0].name).toBe('--base');
     });
   });
 });

@@ -1,12 +1,22 @@
 // ═══════════════════════════════════════════════════════════
-// Color Swatch Showcase — full demo of Color manipulation,
-// harmonies, palettes, and derived colors
+// Color Swatch Showcase — Light & Dark mode side-by-side
+// Demonstrates @property declarations, Color.lightDark(),
+// CSSVar-backed colors, harmonies, palettes, and derived colors
 // ═══════════════════════════════════════════════════════════
 
-let base = Color(CSSVar('--base-color', '#e63946'));
-let accent = Color(CSSVar('--accent-color', '#457b9d'));
+// ── Theme Colors (CSSVar-backed for @property generation) ──
 
-// ── Tier 0: Base Methods ──────────────────────────────────
+let base   = Color(CSSVar('--base-color', '#e63946'));
+let accent = Color(CSSVar('--accent-color', '#457b9d'));
+let darkAccent = Color(CSSVar('--dark-accent', '#f4a261'));
+
+// ── Color.lightDark() theme-aware colors ────────────────────
+
+let themeFg    = Color.lightDark(Color('#333'), Color('#eee'));
+let themeBg    = Color.lightDark(Color('#f5f5f5'), Color('#222266'));
+let themeAccent = Color.lightDark(accent, darkAccent);
+
+// ── Derived colors (from light base) ────────────────────────
 
 let lighter   = base.lighten(0.15);
 let darker    = base.darken(0.15);
@@ -17,19 +27,19 @@ let comp      = base.complement();
 let semi      = base.alpha(0.6);
 let mixed     = base.mix(accent, 0.5);
 
-// ── Tier 1: Harmonies ────────────────────────────────────
+// ── Harmonies ───────────────────────────────────────────────
 
 let analog  = base.analogous();
 let triad   = base.triadic();
 let tetrad  = base.tetradic();
 let split   = base.splitComplementary();
 
-// ── Tier 1b: Palettes ────────────────────────────────────
+// ── Palettes ────────────────────────────────────────────────
 
 let ramp   = Color.palette(base, 5);
 let interp = Color.palette(base, accent, 5);
 
-// ── Tier 2: Derived Colors ───────────────────────────────
+// ── Derived from harmony/palette ────────────────────────────
 
 let tri1       = triad[1];
 let tri1Light  = tri1.lighten(0.15);
@@ -41,9 +51,145 @@ let rampShifted  = rampMid.hueShift(60);
 let rampComp     = rampMid.complement();
 let rampAlpha    = rampMid.alpha(0.5);
 
+// ── Dark panel derived colors (from dark accent) ────────────
+
+let dkLighter  = darkAccent.lighten(0.15);
+let dkDarker   = darkAccent.darken(0.15);
+let dkVivid    = darkAccent.saturate(1.4);
+let dkMuted    = darkAccent.desaturate(0.5);
+let dkShifted  = darkAccent.hueShift(60);
+let dkComp     = darkAccent.complement();
+let dkSemi     = darkAccent.alpha(0.6);
+let dkMixed    = darkAccent.mix(base, 0.5);
+
+let dkAnalog = darkAccent.analogous();
+let dkTriad  = darkAccent.triadic();
+let dkTetrad = darkAccent.tetradic();
+let dkSplit  = darkAccent.splitComplementary();
+
+let dkRamp   = Color.palette(darkAccent, 5);
+let dkInterp = Color.palette(darkAccent, base, 5);
+
+let dkTri1       = dkTriad[1];
+let dkTri1Light  = dkTri1.lighten(0.15);
+let dkTri1Dark   = dkTri1.darken(0.15);
+let dkTri1Vivid  = dkTri1.saturate(1.4);
+
+let dkRampMid      = dkRamp[2];
+let dkRampShifted  = dkRampMid.hueShift(60);
+let dkRampComp     = dkRampMid.complement();
+let dkRampAlpha    = dkRampMid.alpha(0.5);
+
 // ═══════════════════════════════════════════════════════════
-// Layers
+// Layout Constants
 // ═══════════════════════════════════════════════════════════
+
+let panelW = 600;
+let gap = 20;
+let darkX = calc(panelW + gap);
+
+// Swatch sizing
+let sx = 64;
+let sp = 96;
+let sw = 36;
+let sh = 36;
+let sr = 6;
+
+// Harmony sizing
+let hsx = 160;
+let hsp = 55;
+let hsw = 30;
+let hsh = 30;
+let hsr = 5;
+
+// Derived sizing
+let dsx = 260;
+let dsp = 70;
+
+// ═══════════════════════════════════════════════════════════
+// Panel Backgrounds
+// ═══════════════════════════════════════════════════════════
+
+// Light panel background
+define PathLayer('light-bg') ${ fill: #f5f5f5; stroke: none; }
+layer('light-bg').apply { roundRect(0, 0, panelW, 700, 0) }
+
+// Dark panel background
+define PathLayer('dark-bg') ${ fill: #222266; stroke: none; }
+layer('dark-bg').apply { roundRect(darkX, 0, panelW, 700, 0) }
+
+// ═══════════════════════════════════════════════════════════
+// Color.lightDark() Banner
+// ═══════════════════════════════════════════════════════════
+
+// Light banner — show theme-aware colors resolving to light
+define TextLayer('ld-light-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #999;
+}
+layer('ld-light-label').apply {
+  text(480, 18)`lightDark()`
+}
+
+// Show the 3 theme-aware colors as small swatches on each panel
+define PathLayer('ld-fg-light') ${ fill: themeFg; stroke: #ccc; stroke-width: 0.5; }
+layer('ld-fg-light').apply { roundRect(476, 22, 22, 14, 3) }
+
+define PathLayer('ld-accent-light') ${ fill: themeAccent; stroke: #ccc; stroke-width: 0.5; }
+layer('ld-accent-light').apply { roundRect(502, 22, 22, 14, 3) }
+
+define PathLayer('ld-bg-light') ${ fill: themeBg; stroke: #ccc; stroke-width: 0.5; }
+layer('ld-bg-light').apply { roundRect(528, 22, 22, 14, 3) }
+
+define TextLayer('ld-light-sub') ${
+  font-family: system-ui, sans-serif;
+  font-size: 7;
+  fill: #aaa;
+  text-anchor: middle;
+}
+layer('ld-light-sub').apply {
+  text(487, 46)`fg`
+  text(513, 46)`accent`
+  text(539, 46)`bg`
+}
+
+// Dark banner
+define TextLayer('ld-dark-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #99a;
+}
+layer('ld-dark-label').apply {
+  text(calc(darkX + 480), 18)`lightDark()`
+}
+
+define PathLayer('ld-fg-dark') ${ fill: themeFg; stroke: #555; stroke-width: 0.5; }
+layer('ld-fg-dark').apply { roundRect(calc(darkX + 476), 22, 22, 14, 3) }
+
+define PathLayer('ld-accent-dark') ${ fill: themeAccent; stroke: #555; stroke-width: 0.5; }
+layer('ld-accent-dark').apply { roundRect(calc(darkX + 502), 22, 22, 14, 3) }
+
+define PathLayer('ld-bg-dark') ${ fill: themeBg; stroke: #555; stroke-width: 0.5; }
+layer('ld-bg-dark').apply { roundRect(calc(darkX + 528), 22, 22, 14, 3) }
+
+define TextLayer('ld-dark-sub') ${
+  font-family: system-ui, sans-serif;
+  font-size: 7;
+  fill: #88a;
+  text-anchor: middle;
+}
+layer('ld-dark-sub').apply {
+  text(calc(darkX + 487), 46)`fg`
+  text(calc(darkX + 513), 46)`accent`
+  text(calc(darkX + 539), 46)`bg`
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIGHT PANEL (left)
+// ═══════════════════════════════════════════════════════════
+
+// ── Shared text layers for light panel ──────────────────────
 
 define PathLayer('connectors') ${
   stroke: #999;
@@ -65,19 +211,14 @@ define TextLayer('labels') ${
   text-anchor: middle;
 }
 
-// ── Swatch sizing ────────────────────────────────────────
+define TextLayer('hlabels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+}
 
-let sx = 64;
-let sp = 96;
-let sw = 36;
-let sh = 36;
-let sr = 6;
+// ── Tier 0: Base Method Swatches ────────────────────────────
 
-// ═══════════════════════════════════════════════════════════
-// Tier 0: Base Method Swatches
-// ═══════════════════════════════════════════════════════════
-
-// Row 1: base, lighten, darken, saturate, desaturate
 let row1 = [base, lighter, darker, vivid, muted];
 let row1names = ['base', 'lighten', 'darken', 'saturate', 'desat'];
 for ([color, i] in row1) {
@@ -86,7 +227,6 @@ for ([color, i] in row1) {
   layer(`t0r1_${i}`).apply { roundRect(calc(x - sw / 2), calc(50 - sh / 2), sw, sh, sr) }
 }
 
-// Row 2: hueShift, complement, alpha, mix, accent
 let row2 = [shifted, comp, semi, mixed, accent];
 let row2names = ['hueShift', 'compl.', 'alpha', 'mix', 'accent'];
 for ([color, i] in row2) {
@@ -95,79 +235,57 @@ for ([color, i] in row2) {
   layer(`t0r2_${i}`).apply { roundRect(calc(x - sw / 2), calc(115 - sh / 2), sw, sh, sr) }
 }
 
-// Section header
 layer('section-labels').apply {
   text(10, 20)`Base Methods`
 }
 
-// Row 1 labels
 layer('labels').apply {
   for ([name, i] in row1names) {
     text(calc(sx + i * sp), calc(50 + sh / 2 + 12))`${name}`
   }
 }
 
-// Row 2 labels
 layer('labels').apply {
   for ([name, i] in row2names) {
     text(calc(sx + i * sp), calc(115 + sh / 2 + 12))`${name}`
   }
 }
 
-// Section divider
 layer('connectors').apply {
   M 10 170
   L 590 170
 }
 
-// ═══════════════════════════════════════════════════════════
-// Tier 1: Harmonies
-// ═══════════════════════════════════════════════════════════
+// ── Tier 1: Harmonies ───────────────────────────────────────
 
 layer('section-labels').apply {
   text(10, 195)`Harmonies`
 }
 
-let hsx = 160;
-let hsp = 55;
-let hsw = 30;
-let hsh = 30;
-let hsr = 5;
-
-// Row 3: analogous
 for ([color, i] in analog) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`analog_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`analog_${i}`).apply { roundRect(calc(x - hsw / 2), calc(220 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Row 4: triadic
 for ([color, i] in triad) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`triad_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`triad_${i}`).apply { roundRect(calc(x - hsw / 2), calc(275 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Row 5: tetradic
 for ([color, i] in tetrad) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`tetrad_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`tetrad_${i}`).apply { roundRect(calc(x - hsw / 2), calc(330 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Row 6: splitComplementary
 for ([color, i] in split) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`split_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`split_${i}`).apply { roundRect(calc(x - hsw / 2), calc(385 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Harmony row labels
-define TextLayer('hlabels') ${
-  font-family: system-ui, sans-serif;
-  font-size: 10;
-  fill: #888;
-}
 layer('hlabels').apply {
   text(30, 224)`analogous`
   text(30, 279)`triadic`
@@ -175,58 +293,45 @@ layer('hlabels').apply {
   text(30, 389)`splitComp.`
 }
 
-// Section divider
 layer('connectors').apply {
   M 10 420
   L 590 420
 }
 
-// ═══════════════════════════════════════════════════════════
-// Tier 1b: Palettes
-// ═══════════════════════════════════════════════════════════
+// ── Tier 1b: Palettes ───────────────────────────────────────
 
 layer('section-labels').apply {
   text(10, 445)`Palettes`
 }
 
-// Row 7: lightness ramp
 for ([color, i] in ramp) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`ramp_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`ramp_${i}`).apply { roundRect(calc(x - hsw / 2), calc(470 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Row 8: interpolation
 for ([color, i] in interp) {
   let x = calc(hsx + i * hsp);
   define PathLayer(`interp_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`interp_${i}`).apply { roundRect(calc(x - hsw / 2), calc(525 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Palette row labels
 layer('hlabels').apply {
   text(30, 474)`palette(c,5)`
   text(30, 529)`palette(a,b,5)`
 }
 
-// Section divider
 layer('connectors').apply {
   M 10 560
   L 590 560
 }
 
-// ═══════════════════════════════════════════════════════════
-// Tier 2: Derived Colors
-// ═══════════════════════════════════════════════════════════
+// ── Tier 2: Derived Colors ──────────────────────────────────
 
 layer('section-labels').apply {
   text(10, 583)`Derived Colors`
 }
 
-let dsx = 260;
-let dsp = 70;
-
-// Row 9: triadic[1] → lighten, darken, saturate
 define PathLayer('tri1_parent') ${ fill: tri1; stroke: #666; stroke-width: 1; }
 layer('tri1_parent').apply { roundRect(calc(hsx - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr) }
 
@@ -238,7 +343,6 @@ for ([color, i] in derived1) {
   layer(`d1_${i}`).apply { roundRect(calc(x - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Row 10: ramp[2] → hueShift, complement, alpha
 define PathLayer('ramp2_parent') ${ fill: rampMid; stroke: #666; stroke-width: 1; }
 layer('ramp2_parent').apply { roundRect(calc(hsx - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr) }
 
@@ -250,13 +354,11 @@ for ([color, i] in derived2) {
   layer(`d2_${i}`).apply { roundRect(calc(x - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr) }
 }
 
-// Derived row labels
 layer('hlabels').apply {
   text(30, 609)`triad[1] →`
   text(30, 664)`ramp[2] →`
 }
 
-// Derived swatch labels
 layer('labels').apply {
   for ([name, i] in derived1names) {
     text(calc(dsx + i * dsp), calc(605 + hsh / 2 + 12))`${name}`
@@ -266,30 +368,257 @@ layer('labels').apply {
   }
 }
 
-// ── Connecting lines (reactivity chain) ──────────────────
+// ── Light panel connecting lines ────────────────────────────
 
 layer('connectors').apply {
-  // Vertical from base swatch down to tier 1 divider
   M sx calc(50 + sh / 2)
   L sx 170
 
-  // Connector: triadic[1] down to derived row 9
   M calc(hsx + 1 * hsp) calc(275 + hsh / 2)
   L calc(hsx + 1 * hsp) calc(605 - hsh / 2 - 5)
   L hsx calc(605 - hsh / 2 - 5)
   L hsx calc(605 - hsh / 2)
 
-  // Arrow: parent → derived in row 9
   M calc(hsx + hsw / 2) 605
   L calc(dsx - hsw / 2) 605
 
-  // Connector: ramp[2] down to derived row 10
   M calc(hsx + 2 * hsp) calc(470 + hsh / 2)
   L calc(hsx + 2 * hsp) calc(660 - hsh / 2 - 5)
   L hsx calc(660 - hsh / 2 - 5)
   L hsx calc(660 - hsh / 2)
 
-  // Arrow: parent → derived in row 10
   M calc(hsx + hsw / 2) 660
   L calc(dsx - hsw / 2) 660
+}
+
+// ═══════════════════════════════════════════════════════════
+// DARK PANEL (right) — offset by darkX
+// ═══════════════════════════════════════════════════════════
+
+// ── Dark panel text layers ──────────────────────────────────
+
+define PathLayer('dk-connectors') ${
+  stroke: #556;
+  stroke-width: 1;
+  fill: none;
+}
+
+define TextLayer('dk-section-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  font-weight: bold;
+  fill: #aab;
+}
+
+define TextLayer('dk-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: #889;
+  text-anchor: middle;
+}
+
+define TextLayer('dk-hlabels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #779;
+}
+
+// ── Dark Tier 0: Base Method Swatches ───────────────────────
+
+let dkRow1 = [darkAccent, dkLighter, dkDarker, dkVivid, dkMuted];
+let dkRow1names = ['base', 'lighten', 'darken', 'saturate', 'desat'];
+for ([color, i] in dkRow1) {
+  let x = calc(darkX + sx + i * sp);
+  define PathLayer(`dk_t0r1_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_t0r1_${i}`).apply { roundRect(calc(x - sw / 2), calc(50 - sh / 2), sw, sh, sr) }
+}
+
+let dkRow2 = [dkShifted, dkComp, dkSemi, dkMixed, base];
+let dkRow2names = ['hueShift', 'compl.', 'alpha', 'mix', 'base'];
+for ([color, i] in dkRow2) {
+  let x = calc(darkX + sx + i * sp);
+  define PathLayer(`dk_t0r2_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_t0r2_${i}`).apply { roundRect(calc(x - sw / 2), calc(115 - sh / 2), sw, sh, sr) }
+}
+
+layer('dk-section-labels').apply {
+  text(calc(darkX + 10), 20)`Base Methods`
+}
+
+layer('dk-labels').apply {
+  for ([name, i] in dkRow1names) {
+    text(calc(darkX + sx + i * sp), calc(50 + sh / 2 + 12))`${name}`
+  }
+}
+
+layer('dk-labels').apply {
+  for ([name, i] in dkRow2names) {
+    text(calc(darkX + sx + i * sp), calc(115 + sh / 2 + 12))`${name}`
+  }
+}
+
+layer('dk-connectors').apply {
+  M calc(darkX + 10) 170
+  L calc(darkX + 590) 170
+}
+
+// ── Dark Tier 1: Harmonies ──────────────────────────────────
+
+layer('dk-section-labels').apply {
+  text(calc(darkX + 10), 195)`Harmonies`
+}
+
+for ([color, i] in dkAnalog) {
+  let x = calc(darkX + hsx + i * hsp);
+  define PathLayer(`dk_analog_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_analog_${i}`).apply { roundRect(calc(x - hsw / 2), calc(220 - hsh / 2), hsw, hsh, hsr) }
+}
+
+for ([color, i] in dkTriad) {
+  let x = calc(darkX + hsx + i * hsp);
+  define PathLayer(`dk_triad_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_triad_${i}`).apply { roundRect(calc(x - hsw / 2), calc(275 - hsh / 2), hsw, hsh, hsr) }
+}
+
+for ([color, i] in dkTetrad) {
+  let x = calc(darkX + hsx + i * hsp);
+  define PathLayer(`dk_tetrad_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_tetrad_${i}`).apply { roundRect(calc(x - hsw / 2), calc(330 - hsh / 2), hsw, hsh, hsr) }
+}
+
+for ([color, i] in dkSplit) {
+  let x = calc(darkX + hsx + i * hsp);
+  define PathLayer(`dk_split_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_split_${i}`).apply { roundRect(calc(x - hsw / 2), calc(385 - hsh / 2), hsw, hsh, hsr) }
+}
+
+layer('dk-hlabels').apply {
+  text(calc(darkX + 30), 224)`analogous`
+  text(calc(darkX + 30), 279)`triadic`
+  text(calc(darkX + 30), 334)`tetradic`
+  text(calc(darkX + 30), 389)`splitComp.`
+}
+
+layer('dk-connectors').apply {
+  M calc(darkX + 10) 420
+  L calc(darkX + 590) 420
+}
+
+// ── Dark Tier 1b: Palettes ──────────────────────────────────
+
+layer('dk-section-labels').apply {
+  text(calc(darkX + 10), 445)`Palettes`
+}
+
+for ([color, i] in dkRamp) {
+  let x = calc(darkX + hsx + i * hsp);
+  define PathLayer(`dk_ramp_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_ramp_${i}`).apply { roundRect(calc(x - hsw / 2), calc(470 - hsh / 2), hsw, hsh, hsr) }
+}
+
+for ([color, i] in dkInterp) {
+  let x = calc(darkX + hsx + i * hsp);
+  define PathLayer(`dk_interp_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_interp_${i}`).apply { roundRect(calc(x - hsw / 2), calc(525 - hsh / 2), hsw, hsh, hsr) }
+}
+
+layer('dk-hlabels').apply {
+  text(calc(darkX + 30), 474)`palette(c,5)`
+  text(calc(darkX + 30), 529)`palette(a,b,5)`
+}
+
+layer('dk-connectors').apply {
+  M calc(darkX + 10) 560
+  L calc(darkX + 590) 560
+}
+
+// ── Dark Tier 2: Derived Colors ─────────────────────────────
+
+layer('dk-section-labels').apply {
+  text(calc(darkX + 10), 583)`Derived Colors`
+}
+
+define PathLayer('dk_tri1_parent') ${ fill: dkTri1; stroke: #667; stroke-width: 1; }
+layer('dk_tri1_parent').apply { roundRect(calc(darkX + hsx - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr) }
+
+let dkDerived1 = [dkTri1Light, dkTri1Dark, dkTri1Vivid];
+let dkDerived1names = ['lighten', 'darken', 'saturate'];
+for ([color, i] in dkDerived1) {
+  let x = calc(darkX + dsx + i * dsp);
+  define PathLayer(`dk_d1_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_d1_${i}`).apply { roundRect(calc(x - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr) }
+}
+
+define PathLayer('dk_ramp2_parent') ${ fill: dkRampMid; stroke: #667; stroke-width: 1; }
+layer('dk_ramp2_parent').apply { roundRect(calc(darkX + hsx - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr) }
+
+let dkDerived2 = [dkRampShifted, dkRampComp, dkRampAlpha];
+let dkDerived2names = ['hueShift', 'compl.', 'alpha'];
+for ([color, i] in dkDerived2) {
+  let x = calc(darkX + dsx + i * dsp);
+  define PathLayer(`dk_d2_${i}`) ${ fill: color; stroke: #444; stroke-width: 0.5; }
+  layer(`dk_d2_${i}`).apply { roundRect(calc(x - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr) }
+}
+
+layer('dk-hlabels').apply {
+  text(calc(darkX + 30), 609)`triad[1] →`
+  text(calc(darkX + 30), 664)`ramp[2] →`
+}
+
+layer('dk-labels').apply {
+  for ([name, i] in dkDerived1names) {
+    text(calc(darkX + dsx + i * dsp), calc(605 + hsh / 2 + 12))`${name}`
+  }
+  for ([name, i] in dkDerived2names) {
+    text(calc(darkX + dsx + i * dsp), calc(660 + hsh / 2 + 12))`${name}`
+  }
+}
+
+// ── Dark panel connecting lines ─────────────────────────────
+
+layer('dk-connectors').apply {
+  M calc(darkX + sx) calc(50 + sh / 2)
+  L calc(darkX + sx) 170
+
+  M calc(darkX + hsx + 1 * hsp) calc(275 + hsh / 2)
+  L calc(darkX + hsx + 1 * hsp) calc(605 - hsh / 2 - 5)
+  L calc(darkX + hsx) calc(605 - hsh / 2 - 5)
+  L calc(darkX + hsx) calc(605 - hsh / 2)
+
+  M calc(darkX + hsx + hsw / 2) 605
+  L calc(darkX + dsx - hsw / 2) 605
+
+  M calc(darkX + hsx + 2 * hsp) calc(470 + hsh / 2)
+  L calc(darkX + hsx + 2 * hsp) calc(660 - hsh / 2 - 5)
+  L calc(darkX + hsx) calc(660 - hsh / 2 - 5)
+  L calc(darkX + hsx) calc(660 - hsh / 2)
+
+  M calc(darkX + hsx + hsw / 2) 660
+  L calc(darkX + dsx - hsw / 2) 660
+}
+
+// ═══════════════════════════════════════════════════════════
+// Panel Labels
+// ═══════════════════════════════════════════════════════════
+
+define TextLayer('panel-title-light') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  font-weight: bold;
+  fill: #bbb;
+  text-anchor: middle;
+}
+layer('panel-title-light').apply {
+  text(300, 694)`LIGHT`
+}
+
+define TextLayer('panel-title-dark') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  font-weight: bold;
+  fill: #557;
+  text-anchor: middle;
+}
+layer('panel-title-dark').apply {
+  text(calc(darkX + 300), 694)`DARK`
 }

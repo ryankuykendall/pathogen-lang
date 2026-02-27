@@ -792,4 +792,97 @@ describe('Color type', () => {
       expect(() => compile('let c = Color("#ff0000"); Color.palette(c, c, c, 5);')).toThrow('expects 2 or 3 arguments');
     });
   });
+
+  // ── Color.lightDark() ────────────────────────────────────────────────────
+
+  describe('Color.lightDark()', () => {
+    it('returns a Color', () => {
+      const result = compile(`
+        let c = Color.lightDark(Color('#333'), Color('#eee'));
+        log(c.hex);
+      `);
+      // Resolves to light variant
+      expect(result.logs[0].parts[0].value).toBe('#333333');
+    });
+
+    it('resolves properties to light variant', () => {
+      const result = compile(`
+        let c = Color.lightDark(Color(0.4, 0.1, 30), Color(0.9, 0.05, 200));
+        log(c.lightness);
+        log(c.chroma);
+        log(c.hue);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.4, 2);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.1, 2);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(30, 1);
+    });
+
+    it('emits light-dark() in style blocks', () => {
+      const result = compile(`
+        let c = Color.lightDark(Color('#333'), Color('#eee'));
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('light-dark(#333333, #eeeeee)');
+    });
+
+    it('works with CSSVar-backed variants', () => {
+      const result = compile(`
+        let c = Color.lightDark(
+          Color(CSSVar('--fg-light', '#333')),
+          Color(CSSVar('--fg-dark', '#eee'))
+        );
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('light-dark(var(--fg-light, #333), var(--fg-dark, #eee))');
+    });
+
+    it('works with mixed variants (one CSSVar, one plain)', () => {
+      const result = compile(`
+        let c = Color.lightDark(
+          Color(CSSVar('--fg-light', '#333')),
+          Color('#eee')
+        );
+        define PathLayer('a') \${ fill: c; }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles['fill']).toBe('light-dark(var(--fg-light, #333), #eeeeee)');
+    });
+
+    it('method calls on lightDark color operate on light variant', () => {
+      const result = compile(`
+        let c = Color.lightDark(Color('#333'), Color('#eee'));
+        let lighter = c.lighten(0.1);
+        log(lighter.lightness);
+      `);
+      // Should be light variant's lightness + 0.1
+      const lightness = parseFloat(result.logs[0].parts[0].value);
+      expect(lightness).toBeGreaterThan(0.2); // original is dark, lightened
+    });
+
+    it('displays lightDark in log output', () => {
+      const result = compile(`
+        let c = Color.lightDark(Color('#333'), Color('#eee'));
+        log(c);
+      `);
+      expect(result.logs[0].parts[0].value).toContain('Color.lightDark');
+    });
+
+    it('throws on non-Color first argument', () => {
+      expect(() => compile('Color.lightDark("#333", Color("#eee"));')).toThrow('first argument must be a Color');
+    });
+
+    it('throws on non-Color second argument', () => {
+      expect(() => compile('Color.lightDark(Color("#333"), "#eee");')).toThrow('second argument must be a Color');
+    });
+
+    it('throws on wrong argument count', () => {
+      expect(() => compile('Color.lightDark(Color("#333"));')).toThrow('expects 2 arguments');
+    });
+
+    it('throws on too many arguments', () => {
+      expect(() => compile('Color.lightDark(Color("#333"), Color("#eee"), Color("#fff"));')).toThrow('expects 2 arguments');
+    });
+  });
 });

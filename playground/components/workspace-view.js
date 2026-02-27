@@ -565,7 +565,7 @@ export class WorkspaceView extends HTMLElement {
 
       // Use timing method to measure rendering — pass layers if available
       const renderTime = result.layers
-        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [] })
+        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [], cssProperties: result.cssProperties || [] })
         : this.previewPane.setPathDataWithTiming(result.path);
       console.log(`Render time: ${renderTime.toFixed(2)}ms`);
 

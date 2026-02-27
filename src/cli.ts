@@ -115,7 +115,16 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
   const defsSection = defsContent.length > 0
     ? `\n<defs>\n${defsContent.join('\n')}\n</defs>\n` : '';
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeXml(viewBox)}" width="${escapeXml(width)}" height="${escapeXml(height)}">
+  // Build @property style block for CSS custom property registrations
+  let styleSection = '';
+  if (result.cssProperties && result.cssProperties.length > 0) {
+    const rules = result.cssProperties.map(prop =>
+      `    @property ${prop.name} {\n      syntax: "${prop.syntax}";\n      inherits: ${prop.inherits};\n      initial-value: ${prop.initialValue};\n    }`
+    ).join('\n');
+    styleSection = `\n  <style>\n${rules}\n  </style>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeXml(viewBox)}" width="${escapeXml(width)}" height="${escapeXml(height)}">${styleSection}
   <rect width="100%" height="100%" fill="#f5f5f5"/>${defsSection}
 ${elements}
 </svg>`;

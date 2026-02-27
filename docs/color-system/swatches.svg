@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 700" width="1220" height="700">
+  <style>
+    @property --base-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+    @property --accent-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #457b9d;
+    }
+    @property --dark-accent {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #f4a261;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <path d="M 0 0 L 600 0 Q 600 0 600 0 L 600 700 Q 600 700 600 700 L 0 700 Q 0 700 0 700 L 0 0 Q 0 0 0 0 Z" fill="#f5f5f5" stroke="none" stroke-width="0"/>
+  <path d="M 620 0 L 1220 0 Q 1220 0 1220 0 L 1220 700 Q 1220 700 1220 700 L 620 700 Q 620 700 620 700 L 620 0 Q 620 0 620 0 Z" fill="#222266" stroke="none" stroke-width="0"/>
+  <text x="480" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#999">lightDark()</text>
+  <path d="M 479 22 L 495 22 Q 498 22 498 25 L 498 33 Q 498 36 495 36 L 479 36 Q 476 36 476 33 L 476 25 Q 476 22 479 22 Z" fill="light-dark(#333333, #eeeeee)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 505 22 L 521 22 Q 524 22 524 25 L 524 33 Q 524 36 521 36 L 505 36 Q 502 36 502 33 L 502 25 Q 502 22 505 22 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 531 22 L 547 22 Q 550 22 550 25 L 550 33 Q 550 36 547 36 L 531 36 Q 528 36 528 33 L 528 25 Q 528 22 531 22 Z" fill="light-dark(#f5f5f5, #222266)" stroke="#ccc" stroke-width="0.5"/>
+  <text x="487" y="46" font-family="system-ui, sans-serif" font-size="7" fill="#aaa" text-anchor="middle">fg</text>
+  <text x="513" y="46" font-family="system-ui, sans-serif" font-size="7" fill="#aaa" text-anchor="middle">accent</text>
+  <text x="539" y="46" font-family="system-ui, sans-serif" font-size="7" fill="#aaa" text-anchor="middle">bg</text>
+  <text x="1100" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#99a">lightDark()</text>
+  <path d="M 1099 22 L 1115 22 Q 1118 22 1118 25 L 1118 33 Q 1118 36 1115 36 L 1099 36 Q 1096 36 1096 33 L 1096 25 Q 1096 22 1099 22 Z" fill="light-dark(#333333, #eeeeee)" stroke="#555" stroke-width="0.5"/>
+  <path d="M 1125 22 L 1141 22 Q 1144 22 1144 25 L 1144 33 Q 1144 36 1141 36 L 1125 36 Q 1122 36 1122 33 L 1122 25 Q 1122 22 1125 22 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#555" stroke-width="0.5"/>
+  <path d="M 1151 22 L 1167 22 Q 1170 22 1170 25 L 1170 33 Q 1170 36 1167 36 L 1151 36 Q 1148 36 1148 33 L 1148 25 Q 1148 22 1151 22 Z" fill="light-dark(#f5f5f5, #222266)" stroke="#555" stroke-width="0.5"/>
+  <text x="1107" y="46" font-family="system-ui, sans-serif" font-size="7" fill="#88a" text-anchor="middle">fg</text>
+  <text x="1133" y="46" font-family="system-ui, sans-serif" font-size="7" fill="#88a" text-anchor="middle">accent</text>
+  <text x="1159" y="46" font-family="system-ui, sans-serif" font-size="7" fill="#88a" text-anchor="middle">bg</text>
+  <path d="M 10 170 L 590 170 M 10 420 L 590 420 M 10 560 L 590 560 M 64 68 L 64 170 M 215 290 L 215 585 L 160 585 L 160 590 M 175 605 L 245 605 M 270 485 L 270 640 L 160 640 L 160 645 M 175 660 L 245 660" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="10" y="20" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Base Methods</text>
+  <text x="10" y="195" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Harmonies</text>
+  <text x="10" y="445" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Palettes</text>
+  <text x="10" y="583" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Derived Colors</text>
+  <text x="64" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">base</text>
+  <text x="160" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">lighten</text>
+  <text x="256" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">darken</text>
+  <text x="352" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">saturate</text>
+  <text x="448" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">desat</text>
+  <text x="64" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">hueShift</text>
+  <text x="160" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">compl.</text>
+  <text x="256" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">alpha</text>
+  <text x="352" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">mix</text>
+  <text x="448" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">accent</text>
+  <text x="260" y="632" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">lighten</text>
+  <text x="330" y="632" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">darken</text>
+  <text x="400" y="632" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">saturate</text>
+  <text x="260" y="687" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">hueShift</text>
+  <text x="330" y="687" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">compl.</text>
+  <text x="400" y="687" font-family="system-ui, sans-serif" font-size="9" fill="#777" text-anchor="middle">alpha</text>
+  <text x="30" y="224" font-family="system-ui, sans-serif" font-size="10" fill="#888">analogous</text>
+  <text x="30" y="279" font-family="system-ui, sans-serif" font-size="10" fill="#888">triadic</text>
+  <text x="30" y="334" font-family="system-ui, sans-serif" font-size="10" fill="#888">tetradic</text>
+  <text x="30" y="389" font-family="system-ui, sans-serif" font-size="10" fill="#888">splitComp.</text>
+  <text x="30" y="474" font-family="system-ui, sans-serif" font-size="10" fill="#888">palette(c,5)</text>
+  <text x="30" y="529" font-family="system-ui, sans-serif" font-size="10" fill="#888">palette(a,b,5)</text>
+  <text x="30" y="609" font-family="system-ui, sans-serif" font-size="10" fill="#888">triad[1] →</text>
+  <text x="30" y="664" font-family="system-ui, sans-serif" font-size="10" fill="#888">ramp[2] →</text>
+  <path d="M 52 32 L 76 32 Q 82 32 82 38 L 82 62 Q 82 68 76 68 L 52 68 Q 46 68 46 62 L 46 38 Q 46 32 52 32 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 148 32 L 172 32 Q 178 32 178 38 L 178 62 Q 178 68 172 68 L 148 68 Q 142 68 142 62 L 142 38 Q 142 32 148 32 Z" fill="oklch(from var(--base-color, #e63946) calc(l + 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 244 32 L 268 32 Q 274 32 274 38 L 274 62 Q 274 68 268 68 L 244 68 Q 238 68 238 62 L 238 38 Q 238 32 244 32 Z" fill="oklch(from var(--base-color, #e63946) calc(l - 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 340 32 L 364 32 Q 370 32 370 38 L 370 62 Q 370 68 364 68 L 340 68 Q 334 68 334 62 L 334 38 Q 334 32 340 32 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 1.4) h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 436 32 L 460 32 Q 466 32 466 38 L 466 62 Q 466 68 460 68 L 436 68 Q 430 68 430 62 L 430 38 Q 430 32 436 32 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 0.5) h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 52 97 L 76 97 Q 82 97 82 103 L 82 127 Q 82 133 76 133 L 52 133 Q 46 133 46 127 L 46 103 Q 46 97 52 97 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 60))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 148 97 L 172 97 Q 178 97 178 103 L 178 127 Q 178 133 172 133 L 148 133 Q 142 133 142 127 L 142 103 Q 142 97 148 97 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 180))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 244 97 L 268 97 Q 274 97 274 103 L 274 127 Q 274 133 268 133 L 244 133 Q 238 133 238 127 L 238 103 Q 238 97 244 97 Z" fill="oklch(from var(--base-color, #e63946) l c h / 0.6)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 340 97 L 364 97 Q 370 97 370 103 L 370 127 Q 370 133 364 133 L 340 133 Q 334 133 334 127 L 334 103 Q 334 97 340 97 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 50%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 436 97 L 460 97 Q 466 97 466 103 L 466 127 Q 466 133 460 133 L 436 133 Q 430 133 430 127 L 430 103 Q 430 97 436 97 Z" fill="var(--accent-color, #457b9d)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 205 L 170 205 Q 175 205 175 210 L 175 230 Q 175 235 170 235 L 150 235 Q 145 235 145 230 L 145 210 Q 145 205 150 205 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + -30))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 205 205 L 225 205 Q 230 205 230 210 L 230 230 Q 230 235 225 235 L 205 235 Q 200 235 200 230 L 200 210 Q 200 205 205 205 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 260 205 L 280 205 Q 285 205 285 210 L 285 230 Q 285 235 280 235 L 260 235 Q 255 235 255 230 L 255 210 Q 255 205 260 205 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 30))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 260 L 170 260 Q 175 260 175 265 L 175 285 Q 175 290 170 290 L 150 290 Q 145 290 145 285 L 145 265 Q 145 260 150 260 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 205 260 L 225 260 Q 230 260 230 265 L 230 285 Q 230 290 225 290 L 205 290 Q 200 290 200 285 L 200 265 Q 200 260 205 260 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 120))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 260 260 L 280 260 Q 285 260 285 265 L 285 285 Q 285 290 280 290 L 260 290 Q 255 290 255 285 L 255 265 Q 255 260 260 260 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 240))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 315 L 170 315 Q 175 315 175 320 L 175 340 Q 175 345 170 345 L 150 345 Q 145 345 145 340 L 145 320 Q 145 315 150 315 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 205 315 L 225 315 Q 230 315 230 320 L 230 340 Q 230 345 225 345 L 205 345 Q 200 345 200 340 L 200 320 Q 200 315 205 315 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 90))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 260 315 L 280 315 Q 285 315 285 320 L 285 340 Q 285 345 280 345 L 260 345 Q 255 345 255 340 L 255 320 Q 255 315 260 315 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 180))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 315 315 L 335 315 Q 340 315 340 320 L 340 340 Q 340 345 335 345 L 315 345 Q 310 345 310 340 L 310 320 Q 310 315 315 315 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 270))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 370 L 170 370 Q 175 370 175 375 L 175 395 Q 175 400 170 400 L 150 400 Q 145 400 145 395 L 145 375 Q 145 370 150 370 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 205 370 L 225 370 Q 230 370 230 375 L 230 395 Q 230 400 225 400 L 205 400 Q 200 400 200 395 L 200 375 Q 200 370 205 370 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 150))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 260 370 L 280 370 Q 285 370 285 375 L 285 395 Q 285 400 280 400 L 260 400 Q 255 400 255 395 L 255 375 Q 255 370 260 370 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 210))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 455 L 170 455 Q 175 455 175 460 L 175 480 Q 175 485 170 485 L 150 485 Q 145 485 145 480 L 145 460 Q 145 455 150 455 Z" fill="oklch(from var(--base-color, #e63946) 0.15 c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 205 455 L 225 455 Q 230 455 230 460 L 230 480 Q 230 485 225 485 L 205 485 Q 200 485 200 480 L 200 460 Q 200 455 205 455 Z" fill="oklch(from var(--base-color, #e63946) 0.35 c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 260 455 L 280 455 Q 285 455 285 460 L 285 480 Q 285 485 280 485 L 260 485 Q 255 485 255 480 L 255 460 Q 255 455 260 455 Z" fill="oklch(from var(--base-color, #e63946) 0.55 c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 315 455 L 335 455 Q 340 455 340 460 L 340 480 Q 340 485 335 485 L 315 485 Q 310 485 310 480 L 310 460 Q 310 455 315 455 Z" fill="oklch(from var(--base-color, #e63946) 0.75 c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 370 455 L 390 455 Q 395 455 395 460 L 395 480 Q 395 485 390 485 L 370 485 Q 365 485 365 480 L 365 460 Q 365 455 370 455 Z" fill="oklch(from var(--base-color, #e63946) 0.95 c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 510 L 170 510 Q 175 510 175 515 L 175 535 Q 175 540 170 540 L 150 540 Q 145 540 145 535 L 145 515 Q 145 510 150 510 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 0%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 205 510 L 225 510 Q 230 510 230 515 L 230 535 Q 230 540 225 540 L 205 540 Q 200 540 200 535 L 200 515 Q 200 510 205 510 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 25%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 260 510 L 280 510 Q 285 510 285 515 L 285 535 Q 285 540 280 540 L 260 540 Q 255 540 255 535 L 255 515 Q 255 510 260 510 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 50%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 315 510 L 335 510 Q 340 510 340 515 L 340 535 Q 340 540 335 540 L 315 540 Q 310 540 310 535 L 310 515 Q 310 510 315 510 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 75%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 370 510 L 390 510 Q 395 510 395 515 L 395 535 Q 395 540 390 540 L 370 540 Q 365 540 365 535 L 365 515 Q 365 510 370 510 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 100%)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 590 L 170 590 Q 175 590 175 595 L 175 615 Q 175 620 170 620 L 150 620 Q 145 620 145 615 L 145 595 Q 145 590 150 590 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 120))" stroke="#666" stroke-width="1"/>
+  <path d="M 250 590 L 270 590 Q 275 590 275 595 L 275 615 Q 275 620 270 620 L 250 620 Q 245 620 245 615 L 245 595 Q 245 590 250 590 Z" fill="oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 120)) calc(l + 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 320 590 L 340 590 Q 345 590 345 595 L 345 615 Q 345 620 340 620 L 320 620 Q 315 620 315 615 L 315 595 Q 315 590 320 590 Z" fill="oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 120)) calc(l - 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 390 590 L 410 590 Q 415 590 415 595 L 415 615 Q 415 620 410 620 L 390 620 Q 385 620 385 615 L 385 595 Q 385 590 390 590 Z" fill="oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 120)) l calc(c * 1.4) h)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 150 645 L 170 645 Q 175 645 175 650 L 175 670 Q 175 675 170 675 L 150 675 Q 145 675 145 670 L 145 650 Q 145 645 150 645 Z" fill="oklch(from var(--base-color, #e63946) 0.55 c h)" stroke="#666" stroke-width="1"/>
+  <path d="M 250 645 L 270 645 Q 275 645 275 650 L 275 670 Q 275 675 270 675 L 250 675 Q 245 675 245 670 L 245 650 Q 245 645 250 645 Z" fill="oklch(from oklch(from var(--base-color, #e63946) 0.55 c h) l c calc(h + 60))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 320 645 L 340 645 Q 345 645 345 650 L 345 670 Q 345 675 340 675 L 320 675 Q 315 675 315 670 L 315 650 Q 315 645 320 645 Z" fill="oklch(from oklch(from var(--base-color, #e63946) 0.55 c h) l c calc(h + 180))" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 390 645 L 410 645 Q 415 645 415 650 L 415 670 Q 415 675 410 675 L 390 675 Q 385 675 385 670 L 385 650 Q 385 645 390 645 Z" fill="oklch(from oklch(from var(--base-color, #e63946) 0.55 c h) l c h / 0.5)" stroke="#ccc" stroke-width="0.5"/>
+  <path d="M 630 170 L 1210 170 M 630 420 L 1210 420 M 630 560 L 1210 560 M 684 68 L 684 170 M 835 290 L 835 585 L 780 585 L 780 590 M 795 605 L 865 605 M 890 485 L 890 640 L 780 640 L 780 645 M 795 660 L 865 660" fill="none" stroke="#556" stroke-width="1"/>
+  <text x="630" y="20" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#aab">Base Methods</text>
+  <text x="630" y="195" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#aab">Harmonies</text>
+  <text x="630" y="445" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#aab">Palettes</text>
+  <text x="630" y="583" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#aab">Derived Colors</text>
+  <text x="684" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">base</text>
+  <text x="780" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">lighten</text>
+  <text x="876" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">darken</text>
+  <text x="972" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">saturate</text>
+  <text x="1068" y="80" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">desat</text>
+  <text x="684" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">hueShift</text>
+  <text x="780" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">compl.</text>
+  <text x="876" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">alpha</text>
+  <text x="972" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">mix</text>
+  <text x="1068" y="145" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">base</text>
+  <text x="880" y="632" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">lighten</text>
+  <text x="950" y="632" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">darken</text>
+  <text x="1020" y="632" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">saturate</text>
+  <text x="880" y="687" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">hueShift</text>
+  <text x="950" y="687" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">compl.</text>
+  <text x="1020" y="687" font-family="system-ui, sans-serif" font-size="9" fill="#889" text-anchor="middle">alpha</text>
+  <text x="650" y="224" font-family="system-ui, sans-serif" font-size="10" fill="#779">analogous</text>
+  <text x="650" y="279" font-family="system-ui, sans-serif" font-size="10" fill="#779">triadic</text>
+  <text x="650" y="334" font-family="system-ui, sans-serif" font-size="10" fill="#779">tetradic</text>
+  <text x="650" y="389" font-family="system-ui, sans-serif" font-size="10" fill="#779">splitComp.</text>
+  <text x="650" y="474" font-family="system-ui, sans-serif" font-size="10" fill="#779">palette(c,5)</text>
+  <text x="650" y="529" font-family="system-ui, sans-serif" font-size="10" fill="#779">palette(a,b,5)</text>
+  <text x="650" y="609" font-family="system-ui, sans-serif" font-size="10" fill="#779">triad[1] →</text>
+  <text x="650" y="664" font-family="system-ui, sans-serif" font-size="10" fill="#779">ramp[2] →</text>
+  <path d="M 672 32 L 696 32 Q 702 32 702 38 L 702 62 Q 702 68 696 68 L 672 68 Q 666 68 666 62 L 666 38 Q 666 32 672 32 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 768 32 L 792 32 Q 798 32 798 38 L 798 62 Q 798 68 792 68 L 768 68 Q 762 68 762 62 L 762 38 Q 762 32 768 32 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l + 0.15) c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 864 32 L 888 32 Q 894 32 894 38 L 894 62 Q 894 68 888 68 L 864 68 Q 858 68 858 62 L 858 38 Q 858 32 864 32 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l - 0.15) c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 960 32 L 984 32 Q 990 32 990 38 L 990 62 Q 990 68 984 68 L 960 68 Q 954 68 954 62 L 954 38 Q 954 32 960 32 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 1.4) h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 1056 32 L 1080 32 Q 1086 32 1086 38 L 1086 62 Q 1086 68 1080 68 L 1056 68 Q 1050 68 1050 62 L 1050 38 Q 1050 32 1056 32 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 0.5) h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 672 97 L 696 97 Q 702 97 702 103 L 702 127 Q 702 133 696 133 L 672 133 Q 666 133 666 127 L 666 103 Q 666 97 672 97 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 60))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 768 97 L 792 97 Q 798 97 798 103 L 798 127 Q 798 133 792 133 L 768 133 Q 762 133 762 127 L 762 103 Q 762 97 768 97 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 180))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 864 97 L 888 97 Q 894 97 894 103 L 894 127 Q 894 133 888 133 L 864 133 Q 858 133 858 127 L 858 103 Q 858 97 864 97 Z" fill="oklch(from var(--dark-accent, #f4a261) l c h / 0.6)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 960 97 L 984 97 Q 990 97 990 103 L 990 127 Q 990 133 984 133 L 960 133 Q 954 133 954 127 L 954 103 Q 954 97 960 97 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 50%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 1056 97 L 1080 97 Q 1086 97 1086 103 L 1086 127 Q 1086 133 1080 133 L 1056 133 Q 1050 133 1050 127 L 1050 103 Q 1050 97 1056 97 Z" fill="var(--base-color, #e63946)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 205 L 790 205 Q 795 205 795 210 L 795 230 Q 795 235 790 235 L 770 235 Q 765 235 765 230 L 765 210 Q 765 205 770 205 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + -30))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 825 205 L 845 205 Q 850 205 850 210 L 850 230 Q 850 235 845 235 L 825 235 Q 820 235 820 230 L 820 210 Q 820 205 825 205 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 880 205 L 900 205 Q 905 205 905 210 L 905 230 Q 905 235 900 235 L 880 235 Q 875 235 875 230 L 875 210 Q 875 205 880 205 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 30))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 260 L 790 260 Q 795 260 795 265 L 795 285 Q 795 290 790 290 L 770 290 Q 765 290 765 285 L 765 265 Q 765 260 770 260 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 825 260 L 845 260 Q 850 260 850 265 L 850 285 Q 850 290 845 290 L 825 290 Q 820 290 820 285 L 820 265 Q 820 260 825 260 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 120))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 880 260 L 900 260 Q 905 260 905 265 L 905 285 Q 905 290 900 290 L 880 290 Q 875 290 875 285 L 875 265 Q 875 260 880 260 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 240))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 315 L 790 315 Q 795 315 795 320 L 795 340 Q 795 345 790 345 L 770 345 Q 765 345 765 340 L 765 320 Q 765 315 770 315 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 825 315 L 845 315 Q 850 315 850 320 L 850 340 Q 850 345 845 345 L 825 345 Q 820 345 820 340 L 820 320 Q 820 315 825 315 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 90))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 880 315 L 900 315 Q 905 315 905 320 L 905 340 Q 905 345 900 345 L 880 345 Q 875 345 875 340 L 875 320 Q 875 315 880 315 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 180))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 935 315 L 955 315 Q 960 315 960 320 L 960 340 Q 960 345 955 345 L 935 345 Q 930 345 930 340 L 930 320 Q 930 315 935 315 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 270))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 370 L 790 370 Q 795 370 795 375 L 795 395 Q 795 400 790 400 L 770 400 Q 765 400 765 395 L 765 375 Q 765 370 770 370 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 825 370 L 845 370 Q 850 370 850 375 L 850 395 Q 850 400 845 400 L 825 400 Q 820 400 820 395 L 820 375 Q 820 370 825 370 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 150))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 880 370 L 900 370 Q 905 370 905 375 L 905 395 Q 905 400 900 400 L 880 400 Q 875 400 875 395 L 875 375 Q 875 370 880 370 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 210))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 455 L 790 455 Q 795 455 795 460 L 795 480 Q 795 485 790 485 L 770 485 Q 765 485 765 480 L 765 460 Q 765 455 770 455 Z" fill="oklch(from var(--dark-accent, #f4a261) 0.15 c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 825 455 L 845 455 Q 850 455 850 460 L 850 480 Q 850 485 845 485 L 825 485 Q 820 485 820 480 L 820 460 Q 820 455 825 455 Z" fill="oklch(from var(--dark-accent, #f4a261) 0.35 c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 880 455 L 900 455 Q 905 455 905 460 L 905 480 Q 905 485 900 485 L 880 485 Q 875 485 875 480 L 875 460 Q 875 455 880 455 Z" fill="oklch(from var(--dark-accent, #f4a261) 0.55 c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 935 455 L 955 455 Q 960 455 960 460 L 960 480 Q 960 485 955 485 L 935 485 Q 930 485 930 480 L 930 460 Q 930 455 935 455 Z" fill="oklch(from var(--dark-accent, #f4a261) 0.75 c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 990 455 L 1010 455 Q 1015 455 1015 460 L 1015 480 Q 1015 485 1010 485 L 990 485 Q 985 485 985 480 L 985 460 Q 985 455 990 455 Z" fill="oklch(from var(--dark-accent, #f4a261) 0.95 c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 510 L 790 510 Q 795 510 795 515 L 795 535 Q 795 540 790 540 L 770 540 Q 765 540 765 535 L 765 515 Q 765 510 770 510 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 0%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 825 510 L 845 510 Q 850 510 850 515 L 850 535 Q 850 540 845 540 L 825 540 Q 820 540 820 535 L 820 515 Q 820 510 825 510 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 25%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 880 510 L 900 510 Q 905 510 905 515 L 905 535 Q 905 540 900 540 L 880 540 Q 875 540 875 535 L 875 515 Q 875 510 880 510 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 50%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 935 510 L 955 510 Q 960 510 960 515 L 960 535 Q 960 540 955 540 L 935 540 Q 930 540 930 535 L 930 515 Q 930 510 935 510 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 75%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 990 510 L 1010 510 Q 1015 510 1015 515 L 1015 535 Q 1015 540 1010 540 L 990 540 Q 985 540 985 535 L 985 515 Q 985 510 990 510 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 100%)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 590 L 790 590 Q 795 590 795 595 L 795 615 Q 795 620 790 620 L 770 620 Q 765 620 765 615 L 765 595 Q 765 590 770 590 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 120))" stroke="#667" stroke-width="1"/>
+  <path d="M 870 590 L 890 590 Q 895 590 895 595 L 895 615 Q 895 620 890 620 L 870 620 Q 865 620 865 615 L 865 595 Q 865 590 870 590 Z" fill="oklch(from oklch(from var(--dark-accent, #f4a261) l c calc(h + 120)) calc(l + 0.15) c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 940 590 L 960 590 Q 965 590 965 595 L 965 615 Q 965 620 960 620 L 940 620 Q 935 620 935 615 L 935 595 Q 935 590 940 590 Z" fill="oklch(from oklch(from var(--dark-accent, #f4a261) l c calc(h + 120)) calc(l - 0.15) c h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 1010 590 L 1030 590 Q 1035 590 1035 595 L 1035 615 Q 1035 620 1030 620 L 1010 620 Q 1005 620 1005 615 L 1005 595 Q 1005 590 1010 590 Z" fill="oklch(from oklch(from var(--dark-accent, #f4a261) l c calc(h + 120)) l calc(c * 1.4) h)" stroke="#444" stroke-width="0.5"/>
+  <path d="M 770 645 L 790 645 Q 795 645 795 650 L 795 670 Q 795 675 790 675 L 770 675 Q 765 675 765 670 L 765 650 Q 765 645 770 645 Z" fill="oklch(from var(--dark-accent, #f4a261) 0.55 c h)" stroke="#667" stroke-width="1"/>
+  <path d="M 870 645 L 890 645 Q 895 645 895 650 L 895 670 Q 895 675 890 675 L 870 675 Q 865 675 865 670 L 865 650 Q 865 645 870 645 Z" fill="oklch(from oklch(from var(--dark-accent, #f4a261) 0.55 c h) l c calc(h + 60))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 940 645 L 960 645 Q 965 645 965 650 L 965 670 Q 965 675 960 675 L 940 675 Q 935 675 935 670 L 935 650 Q 935 645 940 645 Z" fill="oklch(from oklch(from var(--dark-accent, #f4a261) 0.55 c h) l c calc(h + 180))" stroke="#444" stroke-width="0.5"/>
+  <path d="M 1010 645 L 1030 645 Q 1035 645 1035 650 L 1035 670 Q 1035 675 1030 675 L 1010 675 Q 1005 675 1005 670 L 1005 650 Q 1005 645 1010 645 Z" fill="oklch(from oklch(from var(--dark-accent, #f4a261) 0.55 c h) l c h / 0.5)" stroke="#444" stroke-width="0.5"/>
+  <text x="300" y="694" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#bbb" text-anchor="middle">LIGHT</text>
+  <text x="920" y="694" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#557" text-anchor="middle">DARK</text>
+</svg>
