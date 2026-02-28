@@ -79,11 +79,20 @@ export class WorkspaceView extends HTMLElement {
         autosave.flush();
 
         // Generate thumbnail if content changed since last thumbnail
+        const workspaceId = this._currentWorkspaceId;
         thumbnailService.generateIfDirty(
-          this._currentWorkspaceId,
+          workspaceId,
           () => this.previewPane?.shadowRoot?.querySelector('#preview'),
           store.getAll()
-        );
+        ).then(result => {
+          if (result) {
+            document.dispatchEvent(new CustomEvent('thumbnail-updated', {
+              bubbles: true,
+              composed: true,
+              detail: { workspaceId },
+            }));
+          }
+        });
         thumbnailService.stopAutoGeneration();
       }
     }

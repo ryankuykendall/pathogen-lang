@@ -334,7 +334,7 @@ async function generateIfDirty(workspaceId, getSvgElement, storeState) {
 
   try {
     _lastAutoGenTime = Date.now();
-    await generateThumbnail(workspaceId, svgElement, storeState);
+    return await generateThumbnail(workspaceId, svgElement, storeState);
   } catch (err) {
     console.warn('Auto thumbnail generation failed:', err);
   }
