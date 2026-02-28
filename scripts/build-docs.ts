@@ -268,6 +268,16 @@ async function buildDocs(): Promise<void> {
   <meta property="og:description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
   <meta property="og:url" content="https://pedestal.design/pathogen/docs">
   <meta property="og:type" content="website">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "name": "Pathogen Documentation",
+    "description": "Complete language reference for svg-path-extended",
+    "url": "https://pedestal.design/pathogen/docs",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -446,11 +456,11 @@ async function buildDocs(): Promise<void> {
       </nav>
     </aside>
 
-    <div class="content-area">
+    <main class="content-area">
       <div class="content-inner">
         ${contentHtml}
       </div>
-    </div>
+    </main>
   </div>
 
   <button class="sidebar-toggle" aria-label="Toggle sidebar">&#9776;</button>

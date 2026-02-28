@@ -25,6 +25,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const BLOG_DIR = join(ROOT, 'website', 'blog');
 const OUTPUT_FILE = join(ROOT, 'playground', 'utils', 'blog-content.js');
+const STATIC_BLOG_DIR = join(ROOT, 'website', 'blog-static');
+const HLJS_STYLES_DIR = join(ROOT, 'node_modules', 'highlight.js', 'styles');
 
 // Configure marked with syntax highlighting
 marked.use(
@@ -187,6 +189,275 @@ export const posts = {
 
   console.log(`\nGenerated: playground/utils/blog-content.js`);
   console.log(`Posts: ${blogIndex.length}`);
+
+  // ─── Generate static HTML blog pages ──────────────────────────────
+  console.log('\nGenerating static blog HTML pages...');
+
+  const githubDark = await fs.readFile(join(HLJS_STYLES_DIR, 'github-dark.css'), 'utf-8');
+
+  await fs.mkdir(STATIC_BLOG_DIR, { recursive: true });
+
+  const SITE_URL = 'https://pedestal.design';
+
+  const navLinks = [
+    { href: '/pathogen/', label: 'Workspaces', match: '/pathogen/' },
+    { href: '/pathogen/docs', label: 'Docs', match: '/pathogen/docs' },
+    { href: '/pathogen/explore', label: 'Explore', match: '/pathogen/explore' },
+    { href: '/pathogen/featured', label: 'Featured', match: '/pathogen/featured' },
+    { href: '/pathogen/blog', label: 'Blog', match: '/pathogen/blog' },
+    { href: '/pathogen/preferences', label: 'Preferences', match: '/pathogen/preferences' },
+  ];
+
+  function renderNavHtml(activePath: string): string {
+    return navLinks.map(link => {
+      const isActive = activePath === link.match || (link.match !== '/pathogen/' && activePath.startsWith(link.match));
+      return `<a class="nav-link${isActive ? ' active' : ''}" href="${link.href}">${link.label}</a>`;
+    }).join('\n          ');
+  }
+
+  function escapeHtmlAttr(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderBlogShell({ title, description, path, content, headExtra = '' }: {
+    title: string; description: string; path: string; content: string; headExtra?: string;
+  }): string {
+    const fullTitle = `${title} — Pathogen`;
+    const canonical = `${SITE_URL}${path}`;
+    const navHtml = renderNavHtml('/pathogen/blog');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtmlAttr(fullTitle)}</title>
+  <meta name="description" content="${escapeHtmlAttr(description)}">
+  <link rel="canonical" href="${canonical}">
+  <meta property="og:title" content="${escapeHtmlAttr(fullTitle)}">
+  <meta property="og:description" content="${escapeHtmlAttr(description)}">
+  <meta property="og:url" content="${canonical}">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  ${headExtra}
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg-primary, #f8f9fa);
+      color: var(--text-primary, #1a1a2e);
+    }
+
+    /* Nav bar */
+    .site-header {
+      background: var(--bg-secondary, #ffffff);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .site-header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; height: 56px; gap: 1rem;
+    }
+    .logo {
+      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
+    }
+    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
+    .logo-main {
+      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
+      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
+    }
+    .logo-sub {
+      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
+      color: var(--text-secondary, #64748b); white-space: nowrap;
+    }
+    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
+    .nav-link {
+      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
+      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
+    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    .blog-content code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    .blog-content pre { border-radius: 8px; overflow-x: auto; font-family: 'Inconsolata', monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    .blog-content pre code { background: none; padding: 1rem; display: block; font-size: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    .blog-content table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    .blog-content th, .blog-content td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    .blog-content td code { white-space: nowrap; }
+    .blog-content hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    ${githubDark.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}
+
+    @media (max-width: 768px) {
+      .site-header-inner { padding: 0 0.75rem; height: 52px; }
+      .logo-sub { display: none; }
+      .site-nav { gap: 0; }
+      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+    @media (max-width: 600px) {
+      .site-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="/pathogen/">
+        <span class="logo-main">Pathogen</span>
+        <span class="logo-sub">built on svg-path-extended v1.0</span>
+      </a>
+      <nav class="site-nav">
+          ${navHtml}
+      </nav>
+      <theme-toggle></theme-toggle>
+    </div>
+  </header>
+  <main class="blog-main">
+    ${content}
+  </main>
+  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+</body>
+</html>`;
+  }
+
+  // Generate blog index page
+  const blogPostingsJsonLd = blogIndex.map(entry => ({
+    '@type': 'BlogPosting',
+    'headline': entry.title,
+    'description': entry.description,
+    'datePublished': entry.date,
+    'url': `${SITE_URL}/pathogen/blog/${entry.slug}`,
+  }));
+
+  const indexJsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    'name': 'Pathogen Blog',
+    'description': 'Thoughts, tutorials, and updates about svg-path-extended',
+    'url': `${SITE_URL}/pathogen/blog`,
+    'publisher': { '@type': 'Organization', 'name': 'Pedestal Design', 'url': SITE_URL },
+    'blogPost': blogPostingsJsonLd,
+  });
+
+  const indexCards = blogIndex.map(entry => {
+    const dateFormatted = new Date(entry.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    return `    <article class="blog-card" onclick="location.href='/pathogen/blog/${entry.slug}'">
+      <a href="/pathogen/blog/${entry.slug}" style="text-decoration:none;color:inherit;display:block;">
+        <h2>${escapeHtmlAttr(entry.title)}</h2>
+        <time datetime="${entry.date}">${dateFormatted}</time>
+        ${entry.description ? `<p>${escapeHtmlAttr(entry.description)}</p>` : ''}
+      </a>
+    </article>`;
+  }).join('\n');
+
+  const indexPage = renderBlogShell({
+    title: 'Blog',
+    description: 'Thoughts, tutorials, and updates about svg-path-extended',
+    path: '/pathogen/blog',
+    content: `
+    <h1>Blog</h1>
+    <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about svg-path-extended</p>
+    <div class="blog-cards">
+${indexCards}
+    </div>`,
+    headExtra: `<script type="application/ld+json">${indexJsonLd}</script>`,
+  });
+
+  await fs.writeFile(join(STATIC_BLOG_DIR, 'index.html'), indexPage);
+  console.log('  ✓ blog-static/index.html');
+
+  // Generate individual post pages
+  for (const entry of blogIndex) {
+    const html = posts[entry.slug];
+    if (!html) continue;
+
+    const dateFormatted = new Date(entry.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const postJsonLd = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      'headline': entry.title,
+      'description': entry.description,
+      'datePublished': entry.date,
+      'url': `${SITE_URL}/pathogen/blog/${entry.slug}`,
+      'author': { '@type': 'Organization', 'name': 'Pedestal Design', 'url': SITE_URL },
+    });
+
+    const postPage = renderBlogShell({
+      title: entry.title,
+      description: entry.description || `${entry.title} — a blog post from Pathogen`,
+      path: `/pathogen/blog/${entry.slug}`,
+      content: `
+    <a href="/pathogen/blog" class="back-link">&larr; Back to blog</a>
+    <article>
+      <header class="post-header">
+        <h1>${escapeHtmlAttr(entry.title)}</h1>
+        <p class="post-meta"><time datetime="${entry.date}">${dateFormatted}</time></p>
+      </header>
+      <div class="blog-content">
+        ${html.replace(/^<h1[^>]*>[\s\S]*?<\/h1>\n?/, '')}
+      </div>
+    </article>`,
+      headExtra: `<script type="application/ld+json">${postJsonLd}</script>`,
+    });
+
+    await fs.writeFile(join(STATIC_BLOG_DIR, `${entry.slug}.html`), postPage);
+    console.log(`  ✓ blog-static/${entry.slug}.html`);
+  }
+
+  console.log(`\nStatic blog pages: ${blogIndex.length + 1} files`);
 }
 
 const program = new Command();

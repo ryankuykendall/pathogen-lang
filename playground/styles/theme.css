@@ -217,3 +217,15 @@
 body {
   transition: background-color var(--transition-slow), color var(--transition-slow);
 }
+
+/* Prevent CLS before custom element upgrade */
+app-shell:not(:defined) {
+  display: block;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+app-header:not(:defined) {
+  display: block;
+  height: 56px;
+}

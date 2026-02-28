@@ -803,14 +803,14 @@ async function renderExplorePage(request, env, url) {
       const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
       const date = ws.updatedAt ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
       const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
-      return `<a class="explore-card" href="${href}">
+      return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
         <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
         <div class="explore-info">
           <h3>${escapeHtml(ws.name || 'Untitled')}</h3>
           ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
           ${date ? `<time>${date}</time>` : ''}
         </div>
-      </a>`;
+      </a></article>`;
     }).join('')}</div>`;
   }
 
@@ -831,13 +831,24 @@ async function renderExplorePage(request, env, url) {
     ${paginationHtml}
   `;
 
-  const headExtra = `<style>
+  const headExtra = `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Explore Public Workspaces",
+    "description": "Browse public workspaces created with svg-path-extended",
+    "url": "https://pedestal.design/pathogen/explore",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+  }
+  </script>
+  <style>
     .explore-subtitle { color: var(--text-secondary); margin-bottom: 2rem; }
     .explore-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
     }
+    .explore-card-wrap { display: contents; }
     .explore-card {
       border-radius: 12px;
       border: 1px solid var(--border-color, #e2e8f0);
@@ -927,13 +938,13 @@ async function renderFeaturedPage(request, env, url) {
       const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
       const desc = ws.description ? ws.description.slice(0, 200) + (ws.description.length > 200 ? '...' : '') : '';
       const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
-      return `<a class="featured-card" href="${href}">
+      return `<article class="featured-card-wrap"><a class="featured-card" href="${href}">
         <div class="featured-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="featured-placeholder"></div>`}</div>
         <div class="featured-info">
           <h3>${escapeHtml(ws.name || 'Untitled')}</h3>
           ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
         </div>
-      </a>`;
+      </a></article>`;
     }).join('')}</div>`;
   }
 
@@ -943,13 +954,24 @@ async function renderFeaturedPage(request, env, url) {
     ${cardsHtml}
   `;
 
-  const headExtra = `<style>
+  const headExtra = `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Featured Workspaces",
+    "description": "Hand-picked svg-path-extended workspace showcases",
+    "url": "https://pedestal.design/pathogen/featured",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+  }
+  </script>
+  <style>
     .featured-subtitle { color: var(--text-secondary); margin-bottom: 2rem; }
     .featured-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 2rem;
     }
+    .featured-card-wrap { display: contents; }
     .featured-card {
       border-radius: 12px;
       border: 1px solid var(--border-color, #e2e8f0);
@@ -1061,6 +1083,18 @@ export default {
     }
     if (path === '/pathogen/featured') {
       return renderFeaturedPage(request, env, url);
+    }
+
+    // Blog SEO routes
+    if (path === '/pathogen/blog' || path === '/pathogen/blog/') {
+      url.pathname = '/pathogen/blog/index.html';
+      return env.ASSETS.fetch(url.toString());
+    }
+    // Individual blog posts — check if static file exists
+    const blogPostMatch = path.match(/^\/pathogen\/blog\/([a-z0-9-]+)$/);
+    if (blogPostMatch) {
+      url.pathname = `/pathogen/blog/${blogPostMatch[1]}.html`;
+      return env.ASSETS.fetch(url.toString());
     }
 
     // SPA routes under /pathogen/ that don't have file extensions

@@ -49,8 +49,7 @@ docs/
 ├── cli.md             # CLI usage and options
 ├── examples.md        # Practical examples and recipes
 ├── debug.md           # Debugging guide
-├── known-issues.md    # Known issues and workarounds
-└── PLAN.md            # Feature roadmap
+└── ...                # See docs/CLAUDE.md for file mapping
 ```
 
 ## Architecture
