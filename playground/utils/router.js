@@ -33,8 +33,8 @@ export function buildWorkspaceSlugId(slug, id) {
 export function parseWorkspaceSlugId(slugId) {
   if (!slugId) return { slug: null, id: null };
 
-  // Find the last occurrence of '--' to split slug and id
-  const lastDelimiter = slugId.lastIndexOf('--');
+  // Find the first occurrence of '--' to split slug and id
+  const lastDelimiter = slugId.indexOf('--');
   if (lastDelimiter > 0) {
     return {
       slug: slugId.substring(0, lastDelimiter),

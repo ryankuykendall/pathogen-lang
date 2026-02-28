@@ -8,7 +8,7 @@
  */
 
 // Nano ID implementation (URL-safe, 21 chars)
-const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
+const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
 function generateNanoId(size = 21) {
   let id = '';
   const bytes = crypto.getRandomValues(new Uint8Array(size));
