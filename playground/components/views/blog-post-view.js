@@ -18,6 +18,7 @@ const styles = `
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
+    padding-block-end: 8rem;
   }
 
   .back-link {
@@ -190,6 +191,7 @@ const styles = `
   @media (max-width: 600px) {
     .post-container {
       padding: 1rem;
+      padding-block-end: 8rem;
     }
 
     .post-meta h1 {

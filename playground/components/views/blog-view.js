@@ -15,6 +15,7 @@ const styles = `
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
+    padding-block-end: 8rem;
   }
 
   h1 {
@@ -88,6 +89,7 @@ const styles = `
   @media (max-width: 600px) {
     .blog-container {
       padding: 1rem;
+      padding-block-end: 8rem;
     }
 
     .post-card {
