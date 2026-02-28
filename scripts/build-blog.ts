@@ -219,8 +219,9 @@ export const posts = {
     return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  function renderBlogShell({ title, description, path, content, headExtra = '' }: {
+  function renderBlogShell({ title, description, path, content, headExtra = '', breadcrumbs = [] as { label: string; href?: string }[] }: {
     title: string; description: string; path: string; content: string; headExtra?: string;
+    breadcrumbs?: { label: string; href?: string }[];
   }): string {
     const fullTitle = `${title} — Pathogen`;
     const canonical = `${SITE_URL}${path}`;
@@ -288,6 +289,27 @@ export const posts = {
     .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
     .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
 
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      background: var(--bg-primary, #f8f9fa);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+      position: sticky; top: 56px; z-index: 40;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
     /* Blog content area */
     .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
 
@@ -296,19 +318,20 @@ export const posts = {
     .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
     .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
     .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
-    .blog-content code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
-    .blog-content pre { border-radius: 8px; overflow-x: auto; font-family: 'Inconsolata', monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
-    .blog-content pre code { background: none; padding: 1rem; display: block; font-size: inherit; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
     .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
     .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
-    .blog-content table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
-    .blog-content th, .blog-content td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
-    .blog-content th { font-weight: 600; background: var(--bg-secondary, #fff); }
-    .blog-content td code { white-space: nowrap; }
-    .blog-content hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
     .blog-content a { color: var(--accent-color, #10b981); }
     .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
     .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
 
     /* Blog index cards */
     .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -339,6 +362,7 @@ export const posts = {
 
     @media (max-width: 768px) {
       .site-header-inner { padding: 0 0.75rem; height: 52px; }
+      .breadcrumb-bar { top: 52px; }
       .logo-sub { display: none; }
       .site-nav { gap: 0; }
       .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
@@ -364,10 +388,16 @@ export const posts = {
       <theme-toggle></theme-toggle>
     </div>
   </header>
+  ${breadcrumbs.length > 0 ? `<div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb">${breadcrumbs.map((crumb, i) =>
+    `${i > 0 ? '<span class="separator">/</span>' : ''}${crumb.href
+      ? `<a class="breadcrumb-link" href="${crumb.href}">${crumb.label}</a>`
+      : `<span class="breadcrumb-current">${crumb.label}</span>`}`
+  ).join('')}</nav></div>` : ''}
   <main class="blog-main">
     ${content}
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
 </body>
 </html>`;
   }
@@ -406,6 +436,10 @@ export const posts = {
     title: 'Blog',
     description: 'Thoughts, tutorials, and updates about svg-path-extended',
     path: '/pathogen/blog',
+    breadcrumbs: [
+      { label: 'Workspaces', href: '/pathogen/' },
+      { label: 'Blog' },
+    ],
     content: `
     <h1>Blog</h1>
     <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about svg-path-extended</p>
@@ -439,9 +473,12 @@ ${indexCards}
       title: entry.title,
       description: entry.description || `${entry.title} — a blog post from Pathogen`,
       path: `/pathogen/blog/${entry.slug}`,
-      content: `
-    <a href="/pathogen/blog" class="back-link">&larr; Back to blog</a>
-    <article>
+      breadcrumbs: [
+        { label: 'Workspaces', href: '/pathogen/' },
+        { label: 'Blog', href: '/pathogen/blog' },
+        { label: entry.title },
+      ],
+      content: `<article>
       <header class="post-header">
         <h1>${escapeHtmlAttr(entry.title)}</h1>
         <p class="post-meta"><time datetime="${entry.date}">${dateFormatted}</time></p>

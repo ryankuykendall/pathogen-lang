@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog — Pathogen</title>
+  <meta name="description" content="Thoughts, tutorials, and updates about svg-path-extended">
+  <link rel="canonical" href="https://pedestal.design/pathogen/blog">
+  <meta property="og:title" content="Blog — Pathogen">
+  <meta property="og:description" content="Thoughts, tutorials, and updates about svg-path-extended">
+  <meta property="og:url" content="https://pedestal.design/pathogen/blog">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Blog","name":"Pathogen Blog","description":"Thoughts, tutorials, and updates about svg-path-extended","url":"https://pedestal.design/pathogen/blog","publisher":{"@type":"Organization","name":"Pedestal Design","url":"https://pedestal.design"},"blogPost":[{"@type":"BlogPosting","headline":"Reactive Color in SVG: From Static Paths to Dynamic Themes","description":"How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.","datePublished":"2026-02-27","url":"https://pedestal.design/pathogen/blog/reactive-color-svg"},{"@type":"BlogPosting","headline":"Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel","description":"After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.","datePublished":"2026-02-17","url":"https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing"},{"@type":"BlogPosting","headline":"The SVG Serialization Trap: Why createElementNS Broke Our Thumbnail Pipeline","description":"How programmatically created SVG elements silently produce broken output when serialized with XMLSerializer and loaded as images — and the surprisingly simple fix.","datePublished":"2026-02-11","url":"https://pedestal.design/pathogen/blog/svg-serialization-trap"},{"@type":"BlogPosting","headline":"The CloudFlare Pages SPA Routing Odyssey","description":"A developer's journey through documentation gaps when trying to make SPA routing work on CloudFlare Pages with subdirectory deployments.","datePublished":"2026-01-28","url":"https://pedestal.design/pathogen/blog/cloudflare-pages-spa-routing-struggle"}]}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg-primary, #f8f9fa);
+      color: var(--text-primary, #1a1a2e);
+    }
+
+    /* Nav bar */
+    .site-header {
+      background: var(--bg-secondary, #ffffff);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .site-header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; height: 56px; gap: 1rem;
+    }
+    .logo {
+      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
+    }
+    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
+    .logo-main {
+      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
+      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
+    }
+    .logo-sub {
+      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
+      color: var(--text-secondary, #64748b); white-space: nowrap;
+    }
+    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
+    .nav-link {
+      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
+      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
+    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      background: var(--bg-primary, #f8f9fa);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+      position: sticky; top: 56px; z-index: 40;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .site-header-inner { padding: 0 0.75rem; height: 52px; }
+      .breadcrumb-bar { top: 52px; }
+      .logo-sub { display: none; }
+      .site-nav { gap: 0; }
+      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+    @media (max-width: 600px) {
+      .site-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="/pathogen/">
+        <span class="logo-main">Pathogen</span>
+        <span class="logo-sub">built on svg-path-extended v1.0</span>
+      </a>
+      <nav class="site-nav">
+          <a class="nav-link" href="/pathogen/">Workspaces</a>
+          <a class="nav-link" href="/pathogen/docs">Docs</a>
+          <a class="nav-link" href="/pathogen/explore">Explore</a>
+          <a class="nav-link" href="/pathogen/featured">Featured</a>
+          <a class="nav-link active" href="/pathogen/blog">Blog</a>
+          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+      </nav>
+      <theme-toggle></theme-toggle>
+    </div>
+  </header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><span class="breadcrumb-current">Blog</span></nav></div>
+  <main class="blog-main">
+    
+    <h1>Blog</h1>
+    <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about svg-path-extended</p>
+    <div class="blog-cards">
+    <article class="blog-card" onclick="location.href='/pathogen/blog/reactive-color-svg'">
+      <a href="/pathogen/blog/reactive-color-svg" style="text-decoration:none;color:inherit;display:block;">
+        <h2>Reactive Color in SVG: From Static Paths to Dynamic Themes</h2>
+        <time datetime="2026-02-27">February 26, 2026</time>
+        <p>How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.</p>
+      </a>
+    </article>
+    <article class="blog-card" onclick="location.href='/pathogen/blog/seo-pages-cloudflare-workers-routing'">
+      <a href="/pathogen/blog/seo-pages-cloudflare-workers-routing" style="text-decoration:none;color:inherit;display:block;">
+        <h2>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h2>
+        <time datetime="2026-02-17">February 16, 2026</time>
+        <p>After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.</p>
+      </a>
+    </article>
+    <article class="blog-card" onclick="location.href='/pathogen/blog/svg-serialization-trap'">
+      <a href="/pathogen/blog/svg-serialization-trap" style="text-decoration:none;color:inherit;display:block;">
+        <h2>The SVG Serialization Trap: Why createElementNS Broke Our Thumbnail Pipeline</h2>
+        <time datetime="2026-02-11">February 10, 2026</time>
+        <p>How programmatically created SVG elements silently produce broken output when serialized with XMLSerializer and loaded as images — and the surprisingly simple fix.</p>
+      </a>
+    </article>
+    <article class="blog-card" onclick="location.href='/pathogen/blog/cloudflare-pages-spa-routing-struggle'">
+      <a href="/pathogen/blog/cloudflare-pages-spa-routing-struggle" style="text-decoration:none;color:inherit;display:block;">
+        <h2>The CloudFlare Pages SPA Routing Odyssey</h2>
+        <time datetime="2026-01-28">January 27, 2026</time>
+        <p>A developer's journey through documentation gaps when trying to make SPA routing work on CloudFlare Pages with subdirectory deployments.</p>
+      </a>
+    </article>
+    </div>
+  </main>
+  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
+</body>
+</html>
