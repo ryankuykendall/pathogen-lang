@@ -132,6 +132,84 @@ layer(target).apply {
 }
 ```
 
+## Dynamic Layer Creation
+
+Layers can also be created as first-class values using `PathLayer()` and `TextLayer()` constructor expressions. This allows storing layers in variables, appending styles after creation, and using `.apply { }` directly on the variable.
+
+### Constructor Expression
+
+```
+let myLayer = PathLayer('unique-name') ${ stroke: red; fill: none; };
+myLayer.apply { M 0 0 L 100 100 }
+```
+
+The style block is optional:
+
+```
+let myLayer = PathLayer('unique-name');
+myLayer.apply { M 0 0 }
+```
+
+### Style Mutation with `<<`
+
+The `<<` operator on a layer reference merges styles in place and returns the reference for chaining:
+
+```
+let l = PathLayer('outline');
+l << ${ stroke: red; } << ${ fill: blue; };
+l.apply { M 0 0 L 100 100 }
+// l.styles: stroke: red, fill: blue
+```
+
+### Explicit `.styles` Property
+
+Read or replace a layer's styles via the `.styles` property:
+
+```
+let l = PathLayer('outline') ${ stroke: red; };
+
+// Read: returns a StyleBlockValue copy
+let s = l.styles;
+log(s.stroke)  // "red"
+
+// Write: replaces all styles
+l.styles = l.styles << ${ fill: blue; };
+```
+
+### TextLayer Constructor
+
+```
+let labels = TextLayer('labels') ${ font-size: 14; font-family: monospace; };
+labels.apply { text(50, 45)`Start` }
+```
+
+### Accessing Layer Properties
+
+Dynamic layers support the same properties as `layer()` references:
+
+| Expression | Description |
+|------------|-------------|
+| `myLayer.name` | Layer name string |
+| `myLayer.ctx` | Path context (PathLayer only) |
+| `myLayer.styles` | Style block (read/write) |
+
+### Coexistence with `define`
+
+Both approaches work together. The `define` syntax supports the `default` modifier; dynamic constructors do not:
+
+```
+define default PathLayer('main') ${ stroke: #333; fill: none; }
+let overlay = PathLayer('overlay') ${ stroke: red; };
+
+M 10 10 L 90 90          // goes to 'main' (default)
+overlay.apply { M 50 50 L 60 60 }
+
+// layer() function works for both:
+layer('overlay').apply { M 70 70 }
+```
+
+Layers render in definition order regardless of how they were created.
+
 ## Style Properties
 
 Style properties map directly to SVG presentation attributes. Common properties:

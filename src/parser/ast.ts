@@ -20,6 +20,8 @@ export type Node =
   | LetDeclaration
   | AssignmentStatement
   | IndexedAssignmentStatement
+  | MemberAssignmentStatement
+  | ExpressionStatement
   | ForLoop
   | ForEachLoop
   | IfStatement
@@ -38,6 +40,7 @@ export type Node =
   | ObjectLiteral
   | IndexExpression
   | MethodCallExpression
+  | LayerConstructorExpression
   | Identifier
   | NumberLiteral
   | StringLiteral
@@ -55,6 +58,8 @@ export type Statement =
   | LetDeclaration
   | AssignmentStatement
   | IndexedAssignmentStatement
+  | MemberAssignmentStatement
+  | ExpressionStatement
   | ForLoop
   | ForEachLoop
   | IfStatement
@@ -287,6 +292,31 @@ export interface LayerDefinition {
   loc?: SourceLocation;
 }
 
+// PathLayer('name') or PathLayer('name') ${ ... } as an expression
+export interface LayerConstructorExpression {
+  type: 'LayerConstructorExpression';
+  layerType: 'PathLayer' | 'TextLayer';
+  name: Expression;
+  styleExpr?: Expression;  // Optional trailing style block
+  loc?: SourceLocation;
+}
+
+// expr.property = value;
+export interface MemberAssignmentStatement {
+  type: 'MemberAssignmentStatement';
+  object: Expression;
+  property: string;
+  value: Expression;
+  loc?: SourceLocation;
+}
+
+// expression;  (bare expression as a statement)
+export interface ExpressionStatement {
+  type: 'ExpressionStatement';
+  expression: Expression;
+  loc?: SourceLocation;
+}
+
 // layer('name').apply { statements }
 export interface LayerApplyBlock {
   type: 'LayerApplyBlock';
@@ -313,6 +343,7 @@ export type Expression =
   | ObjectLiteral
   | IndexExpression
   | MethodCallExpression
+  | LayerConstructorExpression
   | Identifier
   | NumberLiteral
   | StringLiteral

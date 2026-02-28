@@ -7,6 +7,8 @@ import type {
   LetDeclaration,
   AssignmentStatement,
   IndexedAssignmentStatement,
+  MemberAssignmentStatement,
+  ExpressionStatement,
   ForLoop,
   ForEachLoop,
   IfStatement,
@@ -18,6 +20,7 @@ import type {
   MethodCallExpression,
   LayerDefinition,
   LayerApplyBlock,
+  LayerConstructorExpression,
   TemplateLiteral,
   TextStatement,
   TspanStatement,
@@ -593,6 +596,10 @@ function isStyleBlock(value: Value): value is StyleBlockValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'StyleBlockValue';
 }
 
+function isLayerReference(value: Value): value is LayerReference {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'LayerReference';
+}
+
 function camelToKebab(name: string): string {
   return name.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 }
@@ -791,6 +798,11 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         if (isStyleBlock(left) && isStyleBlock(right)) {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
+        if (isLayerReference(left) && isStyleBlock(right)) {
+          // Merge styles into layer in place, return same ref for chaining
+          Object.assign(left.layer.styles, right.properties);
+          return left;
+        }
         throw new Error(formatError('Operator << requires matching operand types (both style blocks or both path blocks)', getLine(expr)));
       }
 
@@ -867,9 +879,63 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     case 'PathBlockExpression':
       return evaluatePathBlockExpression(expr as PathBlockExpression, scope);
 
+    case 'LayerConstructorExpression':
+      return evaluateLayerConstructor(expr as LayerConstructorExpression, scope);
+
     default:
       throw new Error(`Unknown expression type: ${(expr as Expression).type}`);
   }
+}
+
+/**
+ * Evaluate a LayerConstructorExpression — creates a new layer and returns a LayerReference
+ */
+function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope): LayerReference {
+  if (!scope.evalState) {
+    throw new Error(formatError('Layer constructors require evaluation context', getLine(expr)));
+  }
+  const nameValue = evaluateExpression(expr.name, scope);
+  if (typeof nameValue !== 'string') {
+    throw new Error(formatError('Layer name must be a string', getLine(expr)));
+  }
+  if (scope.evalState.layers.has(nameValue)) {
+    throw new Error(formatError(`Duplicate layer name: '${nameValue}'`, getLine(expr)));
+  }
+
+  let styles: LayerStyle = {};
+  if (expr.styleExpr) {
+    const styleValue = evaluateExpression(expr.styleExpr, scope);
+    if (!isStyleBlock(styleValue)) {
+      throw new Error(formatError('Layer style must be a style block', getLine(expr)));
+    }
+    styles = { ...styleValue.properties };
+  }
+
+  let layerState: LayerState;
+  if (expr.layerType === 'TextLayer') {
+    layerState = {
+      name: nameValue,
+      layerType: 'TextLayer',
+      isDefault: false,
+      styles,
+      textElements: [],
+    };
+  } else {
+    layerState = {
+      name: nameValue,
+      layerType: 'PathLayer',
+      isDefault: false,
+      styles,
+      pathContext: createPathContext(),
+      accum: [],
+      transformState: createTransformState(),
+    };
+  }
+
+  scope.evalState.layers.set(nameValue, layerState);
+  scope.evalState.layerOrder.push(nameValue);
+
+  return { type: 'LayerReference', layer: layerState };
 }
 
 /**
@@ -2262,8 +2328,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   }
 
   // Handle LayerReference property access
-  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'LayerReference') {
-    const layerRef = obj as LayerReference;
+  if (isLayerReference(obj)) {
+    const layerRef = obj;
     if (expr.property === 'ctx') {
       if (layerRef.layer.layerType !== 'PathLayer') {
         throw new Error(`Property 'ctx' is only available on PathLayer references`);
@@ -2273,6 +2339,9 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
     if (expr.property === 'name') {
       return layerRef.layer.name;
+    }
+    if (expr.property === 'styles') {
+      return { type: 'StyleBlockValue' as const, properties: { ...layerRef.layer.styles } };
     }
     throw new Error(`Property '${expr.property}' does not exist on layer reference`);
   }
@@ -3517,13 +3586,24 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       if (!scope.evalState) {
         throw new Error(formatError('Layer apply blocks require evaluation context', getLine(stmt)));
       }
-      const nameValue = evaluateExpression(stmt.layerName, scope);
-      if (typeof nameValue !== 'string') {
-        throw new Error(formatError('Layer name must be a string', getLine(stmt)));
-      }
-      const layer = scope.evalState.layers.get(nameValue);
-      if (!layer) {
-        throw new Error(formatError(`Undefined layer: '${nameValue}'`, getLine(stmt)));
+      const target = evaluateExpression(stmt.layerName, scope);
+      let layer: LayerState;
+      let nameValue: string;
+
+      if (typeof target === 'string') {
+        // Existing path: look up by name
+        const found = scope.evalState.layers.get(target);
+        if (!found) {
+          throw new Error(formatError(`Undefined layer: '${target}'`, getLine(stmt)));
+        }
+        layer = found;
+        nameValue = target;
+      } else if (isLayerReference(target)) {
+        // New path: use reference directly
+        layer = target.layer;
+        nameValue = layer.name;
+      } else {
+        throw new Error(formatError('layer apply target must be a string or layer reference', getLine(stmt)));
       }
       if (scope.evalState.activeLayerName !== null) {
         throw new Error(formatError(`Cannot nest layer apply blocks. Already inside layer '${scope.evalState.activeLayerName}'`, getLine(stmt)));
@@ -3580,6 +3660,22 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         evaluateTextBody(stmt.body, scope, children);
         activeTextLayer.textElements.push({ x, y, rotation, styles: textStyles, children });
       }
+      return;
+    }
+
+    case 'MemberAssignmentStatement': {
+      const obj = evaluateExpression(stmt.object, scope);
+      const value = evaluateExpression(stmt.value, scope);
+      if (isLayerReference(obj) && stmt.property === 'styles') {
+        if (!isStyleBlock(value)) throw new Error(formatError('Layer styles must be a style block', getLine(stmt)));
+        obj.layer.styles = { ...value.properties };
+        return;
+      }
+      throw new Error(formatError(`Cannot assign to property '${stmt.property}'`, getLine(stmt)));
+    }
+
+    case 'ExpressionStatement': {
+      evaluateExpression(stmt.expression, scope);
       return;
     }
 

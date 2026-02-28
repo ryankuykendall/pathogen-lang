@@ -15,10 +15,13 @@ import type {
   MemberExpression,
   IndexExpression,
   IndexedAssignmentStatement,
+  MemberAssignmentStatement,
+  ExpressionStatement,
   MethodCallExpression,
   Comment,
   LayerDefinition,
   LayerApplyBlock,
+  LayerConstructorExpression,
   TemplateLiteral,
   TextStatement,
   TspanStatement,
@@ -668,6 +671,10 @@ function formatError(message: string, line?: number, column?: number): string {
 
 function isStyleBlock(value: Value): value is StyleBlockValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'StyleBlockValue';
+}
+
+function isAnnotatedLayerRef(value: Value): value is AnnotatedLayerRef {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'LayerReference';
 }
 
 function camelToKebab(name: string): string {
@@ -1461,6 +1468,9 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         if (isStyleBlock(left) && isStyleBlock(right)) {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
+        if (isAnnotatedLayerRef(left) && isStyleBlock(right)) {
+          return left;  // Return same ref, no real layer state in annotated mode
+        }
         throw new Error(formatError('Operator << requires matching operand types (both style blocks or both path blocks)', line));
       }
 
@@ -1557,6 +1567,10 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'PathBlockExpression':
       return evaluatePathBlockExpression(expr as PathBlockExpression, scope);
+
+    case 'LayerConstructorExpression':
+      // In annotated mode, return a dummy LayerReference
+      return { type: 'LayerReference' } as AnnotatedLayerRef;
 
     default:
       throw new Error(formatError(`Unknown expression type: ${(expr as Expression).type}`, line));
@@ -1747,10 +1761,11 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   }
 
   // Handle LayerReference — minimal support in annotated mode
-  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'LayerReference') {
+  if (isAnnotatedLayerRef(obj)) {
     // In annotated mode, return dummy values
     if (expr.property === 'name') return '';
     if (expr.property === 'ctx') return { type: 'ContextObject' as const, value: { position: { x: 0, y: 0 }, start: { x: 0, y: 0 }, commands: [] } };
+    if (expr.property === 'styles') return { type: 'StyleBlockValue' as const, properties: {} };
     throw new Error(formatError(`Property '${expr.property}' does not exist on layer reference`, line));
   }
 
@@ -2199,6 +2214,18 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
     case 'TextStatement':
       // In annotated plain mode, text statements are no-ops (no path output)
       return '';
+
+    case 'MemberAssignmentStatement': {
+      // In annotated mode, just evaluate both sides (no real layer state)
+      evaluateExpression(stmt.object, scope);
+      evaluateExpression(stmt.value, scope);
+      return '';
+    }
+
+    case 'ExpressionStatement': {
+      evaluateExpression(stmt.expression, scope);
+      return '';
+    }
 
     case 'ReturnStatement': {
       const value = evaluateExpression(stmt.value, scope);
@@ -2661,6 +2688,17 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
     case 'TextStatement':
       // In annotated mode, text statements are no-ops (no path output)
       break;
+
+    case 'MemberAssignmentStatement': {
+      evaluateExpression(stmt.object, scope);
+      evaluateExpression(stmt.value, scope);
+      break;
+    }
+
+    case 'ExpressionStatement': {
+      evaluateExpression(stmt.expression, scope);
+      break;
+    }
 
     case 'ReturnStatement': {
       const value = evaluateExpression(stmt.value, scope);

@@ -325,7 +325,7 @@ describe('Multi-Layer Support', () => {
       expect(() => compile(`
         define PathLayer('test') \${}
         layer(42).apply { M 0 0 }
-      `)).toThrow('Layer name must be a string');
+      `)).toThrow('layer apply target must be a string or layer reference');
     });
 
     it('allows TextLayer definitions', () => {
@@ -1277,6 +1277,197 @@ describe('Multi-Layer Support', () => {
       expect(result.layers.find(l => l.name === 'ms')!.styles['marker-start']).toBe('url(#arrow)');
       expect(result.layers.find(l => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
       expect(result.layers.find(l => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');
+    });
+  });
+
+  describe('dynamic layer constructors', () => {
+    it('creates a PathLayer with style block via constructor', () => {
+      const result = compile(`
+        let l = PathLayer('x') \${ stroke: red; fill: none; };
+        l.apply { M 0 0 L 10 10 }
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('x');
+      expect(result.layers[0].type).toBe('path');
+      expect(result.layers[0].data).toBe('M 0 0 L 10 10');
+      expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'none' });
+      expect(result.layers[0].isDefault).toBe(false);
+    });
+
+    it('creates a PathLayer without style block', () => {
+      const result = compile(`
+        let l = PathLayer('x');
+        l.apply { M 0 0 }
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('x');
+      expect(result.layers[0].styles).toEqual({});
+      expect(result.layers[0].data).toBe('M 0 0');
+    });
+
+    it('applies styles via << mutation', () => {
+      const result = compile(`
+        let l = PathLayer('x');
+        l << \${ stroke: red; };
+        l.apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles).toEqual({ stroke: 'red' });
+    });
+
+    it('chains << mutations', () => {
+      const result = compile(`
+        let l = PathLayer('x');
+        l << \${ stroke: red; } << \${ fill: blue; };
+        l.apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue' });
+    });
+
+    it('supports .styles assignment with merge', () => {
+      const result = compile(`
+        let l = PathLayer('x') \${ stroke: red; };
+        l.styles = l.styles << \${ fill: blue; };
+        l.apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue' });
+    });
+
+    it('reads .styles as StyleBlockValue copy', () => {
+      const result = compile(`
+        let l = PathLayer('x') \${ stroke: red; };
+        let s = l.styles;
+        log(s.stroke)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('red');
+    });
+
+    it('creates a TextLayer via constructor', () => {
+      const result = compile(`
+        let t = TextLayer('labels') \${ font-size: 14; font-family: monospace; };
+        t.apply { text(0, 0)\`hi\` }
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('labels');
+      expect(result.layers[0].type).toBe('text');
+      expect(result.layers[0].styles).toEqual({ 'font-size': '14', 'font-family': 'monospace' });
+    });
+
+    it('preserves definition order for multiple dynamic layers', () => {
+      const result = compile(`
+        let a = PathLayer('a') \${ stroke: red; };
+        let b = PathLayer('b') \${ stroke: blue; };
+        a.apply { M 0 0 }
+        b.apply { M 10 10 }
+      `);
+      expect(result.layers).toHaveLength(2);
+      expect(result.layers[0].name).toBe('a');
+      expect(result.layers[1].name).toBe('b');
+    });
+
+    it('coexists with define layers', () => {
+      const result = compile(`
+        define PathLayer('defined') \${ stroke: green; }
+        let dyn = PathLayer('dynamic') \${ stroke: red; };
+        layer('defined').apply { M 0 0 }
+        dyn.apply { M 10 10 }
+      `);
+      expect(result.layers).toHaveLength(2);
+      expect(result.layers[0].name).toBe('defined');
+      expect(result.layers[1].name).toBe('dynamic');
+    });
+
+    it('layer() function works for dynamically-created layers', () => {
+      const result = compile(`
+        let l = PathLayer('x') \${ stroke: red; };
+        layer('x').apply { M 0 0 L 10 10 }
+      `);
+      expect(result.layers[0].data).toBe('M 0 0 L 10 10');
+    });
+
+    it('layer().apply works for dynamically-created layers', () => {
+      const result = compile(`
+        let l = PathLayer('myLayer') \${ stroke: blue; };
+        layer('myLayer').apply { M 5 5 }
+      `);
+      expect(result.layers[0].name).toBe('myLayer');
+      expect(result.layers[0].data).toBe('M 5 5');
+    });
+
+    it('supports .name property on dynamic layer', () => {
+      const result = compile(`
+        let l = PathLayer('test') \${};
+        log(l.name)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('test');
+    });
+
+    it('supports .ctx property on dynamic PathLayer', () => {
+      const result = compile(`
+        let l = PathLayer('test') \${};
+        l.apply { M 50 60 }
+        log(l.ctx.position.x, l.ctx.position.y)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('50');
+      expect(result.logs[0].parts[1].value).toBe('60');
+    });
+
+    describe('errors', () => {
+      it('rejects duplicate layer names (dynamic + dynamic)', () => {
+        expect(() => compile(`
+          let a = PathLayer('x') \${};
+          let b = PathLayer('x') \${};
+        `)).toThrow(/Duplicate layer name: 'x'/);
+      });
+
+      it('rejects duplicate layer names (dynamic + define)', () => {
+        expect(() => compile(`
+          define PathLayer('x') \${ stroke: red; }
+          let b = PathLayer('x') \${};
+        `)).toThrow(/Duplicate layer name: 'x'/);
+      });
+
+      it('rejects PathLayer without name argument', () => {
+        expect(() => compile(`
+          let l = PathLayer();
+        `)).toThrow();
+      });
+
+      it('rejects non-string layer name', () => {
+        expect(() => compile(`
+          let l = PathLayer(123);
+        `)).toThrow(/Layer name must be a string/);
+      });
+
+      it('rejects .apply on a non-layer variable', () => {
+        expect(() => compile(`
+          let x = 42;
+          x.apply { M 0 0 }
+        `)).toThrow(/layer apply target must be a string or layer reference/);
+      });
+
+      it('rejects << with non-StyleBlockValue right side on LayerReference', () => {
+        expect(() => compile(`
+          let l = PathLayer('x') \${};
+          l << 42;
+        `)).toThrow();
+      });
+
+      it('rejects .styles = non-style-block', () => {
+        expect(() => compile(`
+          let l = PathLayer('x') \${};
+          l.styles = 42;
+        `)).toThrow(/Layer styles must be a style block/);
+      });
+
+      it('rejects nested .apply blocks', () => {
+        expect(() => compile(`
+          let a = PathLayer('a') \${};
+          let b = PathLayer('b') \${};
+          a.apply {
+            b.apply { M 0 0 }
+          }
+        `)).toThrow(/Cannot nest layer apply blocks/);
+      });
     });
   });
 });

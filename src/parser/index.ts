@@ -17,6 +17,8 @@ import type {
   ObjectLiteral,
   IndexExpression,
   IndexedAssignmentStatement,
+  MemberAssignmentStatement,
+  ExpressionStatement,
   MethodCallExpression,
   PathCommand,
   LetDeclaration,
@@ -32,6 +34,7 @@ import type {
   StyleBlockLiteral,
   LayerDefinition,
   LayerApplyBlock,
+  LayerConstructorExpression,
   TemplateLiteral,
   TextStatement,
   TspanStatement,
@@ -111,7 +114,7 @@ const identifier: Parsimmon.Parser<Identifier> = P.seqMap(
 );
 
 // Reserved words that cannot be identifiers
-const reservedWords = ['let', 'for', 'in', 'if', 'else', 'fn', 'calc', 'log', 'return', 'define', 'default', 'layer', 'apply', 'text', 'tspan', 'null'];
+const reservedWords = ['let', 'for', 'in', 'if', 'else', 'fn', 'calc', 'log', 'return', 'define', 'default', 'layer', 'apply', 'text', 'tspan', 'null', 'PathLayer', 'TextLayer'];
 
 // Context-aware functions that should be parsed as statements, not path arguments
 // These functions require path context and produce path output
@@ -463,7 +466,24 @@ const pathBlockExpression: Parsimmon.Parser<PathBlockExpression> = P.seqMap(
   })
 );
 
-// Primary expression: style block, path block, number, string, template literal, calc, null, array, object, identifier (with optional postfix), function call (with optional postfix), or parenthesized expression
+// Layer constructor expression: PathLayer('name') or PathLayer('name') ${ ... }
+const layerConstructorExpression: Parsimmon.Parser<LayerConstructorExpression> = P.seqMap(
+  P.index,
+  token(P.regexp(/PathLayer|TextLayer/)),
+  word('('),
+  P.lazy(() => expression),
+  word(')'),
+  P.lazy(() => styleBlockLiteral).fallback(undefined as StyleBlockLiteral | undefined),
+  (startIndex, layerType, _lp, name, _rp, styleExpr) => ({
+    type: 'LayerConstructorExpression' as const,
+    layerType: layerType as 'PathLayer' | 'TextLayer',
+    name,
+    ...(styleExpr ? { styleExpr } : {}),
+    loc: indexToLoc(startIndex),
+  })
+);
+
+// Primary expression: style block, path block, number, string, template literal, calc, null, array, object, layer constructor, identifier (with optional postfix), function call (with optional postfix), or parenthesized expression
 const primaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
   P.alt(
     withPostfix(styleBlockLiteral),
@@ -474,6 +494,7 @@ const primaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
     stringLiteral,
     templateLiteral,
     calcExpression,
+    withPostfix(layerConstructorExpression as Parsimmon.Parser<Expression>),
     withPostfix(functionCall),
     withPostfix(objectLiteral as Parsimmon.Parser<Expression>),
     withPostfix(nonReservedIdentifier),
@@ -707,6 +728,49 @@ const indexedAssignmentStatement: Parsimmon.Parser<IndexedAssignmentStatement> =
   return P.fail('expected indexed assignment');
 });
 
+// Member assignment statement: expr.property = value;
+const memberAssignmentStatement: Parsimmon.Parser<MemberAssignmentStatement> = P.seqMap(
+  P.index,
+  withPostfix(
+    P.alt(
+      functionCall as Parsimmon.Parser<Expression>,
+      nonReservedIdentifier as Parsimmon.Parser<Expression>
+    )
+  ),
+  token(P.regexp(/=(?!=)/)),
+  expression,
+  word(';'),
+  (startIndex, lhs, _eq, value, _semi) => {
+    if (lhs.type !== 'MemberExpression') {
+      return P.fail('expected member expression on left side of assignment') as unknown as MemberAssignmentStatement;
+    }
+    return {
+      type: 'MemberAssignmentStatement' as const,
+      object: lhs.object,
+      property: lhs.property,
+      value,
+      loc: indexToLoc(startIndex),
+    };
+  }
+).chain(result => {
+  if (result && result.type === 'MemberAssignmentStatement') {
+    return P.succeed(result);
+  }
+  return P.fail('expected member assignment');
+});
+
+// Expression statement: expression;
+const expressionStatement: Parsimmon.Parser<ExpressionStatement> = P.seqMap(
+  P.index,
+  expression,
+  word(';'),
+  (startIndex, expr, _semi) => ({
+    type: 'ExpressionStatement' as const,
+    expression: expr,
+    loc: indexToLoc(startIndex),
+  })
+);
+
 // Assignment statement: x = expr;
 const assignmentStatement: Parsimmon.Parser<AssignmentStatement> = P.seqMap(
   P.index,
@@ -798,22 +862,39 @@ const layerDefinition: Parsimmon.Parser<LayerDefinition> = P.seqMap(
   })
 );
 
-// Layer apply block: layer('name').apply { statements }
-const layerApplyBlock: Parsimmon.Parser<LayerApplyBlock> = P.seqMap(
-  P.index,
-  keyword('layer'),
-  word('('),
-  expression,
-  word(')'),
-  word('.'),
-  keyword('apply'),
-  block,
-  (startIndex, _layer, _lp, layerName, _rp, _dot, _apply, body) => ({
-    type: 'LayerApplyBlock' as const,
-    layerName,
-    body,
-    loc: indexToLoc(startIndex),
-  })
+// Layer apply block: layer('name').apply { statements } or variable.apply { statements }
+const layerApplyBlock: Parsimmon.Parser<LayerApplyBlock> = P.alt(
+  // Existing form: layer('name').apply { ... }
+  P.seqMap(
+    P.index,
+    keyword('layer'),
+    word('('),
+    expression,
+    word(')'),
+    word('.'),
+    keyword('apply'),
+    block,
+    (startIndex, _layer, _lp, layerName, _rp, _dot, _apply, body) => ({
+      type: 'LayerApplyBlock' as const,
+      layerName,
+      body,
+      loc: indexToLoc(startIndex),
+    })
+  ),
+  // New form: variable.apply { ... }
+  P.seqMap(
+    P.index,
+    nonReservedIdentifier,
+    word('.'),
+    keyword('apply'),
+    block,
+    (startIndex, id, _dot, _apply, body) => ({
+      type: 'LayerApplyBlock' as const,
+      layerName: id as Expression,
+      body,
+      loc: indexToLoc(startIndex),
+    })
+  )
 );
 
 // tspan statement: tspan()`content` or tspan(dx, dy)`content` or tspan(dx, dy, rotation)`content` or tspan(dx, dy, rotation, styles)`content`
@@ -972,9 +1053,11 @@ const statement: Parsimmon.Parser<Statement> = P.alt(
   functionDefinition,
   returnStatement,
   indexedAssignmentStatement,
+  memberAssignmentStatement,
   assignmentStatement,
   methodCallStatement,
   functionCallStatement,
+  expressionStatement,
   pathCommand
 );
 

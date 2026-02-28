@@ -1139,7 +1139,67 @@ define <span class="hljs-title class_">PathLayer</span>(target) \${ <span class=
 <span class="hljs-title function_">layer</span>(target).<span class="hljs-property">apply</span> {
   M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">100</span> <span class="hljs-number">100</span>
 }
-</code></pre><h2 id="layers-style-properties">Style Properties</h2>
+</code></pre><h2 id="layers-dynamic-layer-creation">Dynamic Layer Creation</h2>
+<p>Layers can also be created as first-class values using <code>PathLayer()</code> and <code>TextLayer()</code> constructor expressions. This allows storing layers in variables, appending styles after creation, and using <code>.apply { }</code> directly on the variable.</p>
+<h3 id="layers-constructor-expression">Constructor Expression</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> myLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;unique-name&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: red; <span class="hljs-attr">fill</span>: none; };
+myLayer.<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">100</span> <span class="hljs-number">100</span> }
+</code></pre><p>The style block is optional:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> myLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;unique-name&#x27;</span>);
+myLayer.<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">0</span> }
+</code></pre><h3 id="layers-style-mutation-with">Style Mutation with <code>&lt;&lt;</code></h3>
+<p>The <code>&lt;&lt;</code> operator on a layer reference merges styles in place and returns the reference for chaining:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> l = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;outline&#x27;</span>);
+l &lt;&lt; \${ <span class="hljs-attr">stroke</span>: red; } &lt;&lt; \${ <span class="hljs-attr">fill</span>: blue; };
+l.<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">100</span> <span class="hljs-number">100</span> }
+<span class="hljs-comment">// l.styles: stroke: red, fill: blue</span>
+</code></pre><h3 id="layers-explicit-styles-property">Explicit <code>.styles</code> Property</h3>
+<p>Read or replace a layer&#39;s styles via the <code>.styles</code> property:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> l = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;outline&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: red; };
+
+<span class="hljs-comment">// Read: returns a StyleBlockValue copy</span>
+<span class="hljs-keyword">let</span> s = l.<span class="hljs-property">styles</span>;
+<span class="hljs-title function_">log</span>(s.<span class="hljs-property">stroke</span>)  <span class="hljs-comment">// &quot;red&quot;</span>
+
+<span class="hljs-comment">// Write: replaces all styles</span>
+l.<span class="hljs-property">styles</span> = l.<span class="hljs-property">styles</span> &lt;&lt; \${ <span class="hljs-attr">fill</span>: blue; };
+</code></pre><h3 id="layers-textlayer-constructor">TextLayer Constructor</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; font-<span class="hljs-attr">family</span>: monospace; };
+labels.<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">45</span>)<span class="hljs-string">\`Start\`</span> }
+</code></pre><h3 id="layers-accessing-layer-properties">Accessing Layer Properties</h3>
+<p>Dynamic layers support the same properties as <code>layer()</code> references:</p>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>myLayer.name</code></td>
+<td>Layer name string</td>
+</tr>
+<tr>
+<td><code>myLayer.ctx</code></td>
+<td>Path context (PathLayer only)</td>
+</tr>
+<tr>
+<td><code>myLayer.styles</code></td>
+<td>Style block (read/write)</td>
+</tr>
+</tbody></table>
+<h3 id="layers-coexistence-with-define">Coexistence with <code>define</code></h3>
+<p>Both approaches work together. The <code>define</code> syntax supports the <code>default</code> modifier; dynamic constructors do not:</p>
+<pre><code class="hljs">define <span class="hljs-keyword">default</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;main&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; <span class="hljs-attr">fill</span>: none; }
+<span class="hljs-keyword">let</span> overlay = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;overlay&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: red; };
+
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span> L <span class="hljs-number">90</span> <span class="hljs-number">90</span>          <span class="hljs-comment">// goes to &#x27;main&#x27; (default)</span>
+overlay.<span class="hljs-property">apply</span> { M <span class="hljs-number">50</span> <span class="hljs-number">50</span> L <span class="hljs-number">60</span> <span class="hljs-number">60</span> }
+
+<span class="hljs-comment">// layer() function works for both:</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;overlay&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">70</span> <span class="hljs-number">70</span> }
+</code></pre><p>Layers render in definition order regardless of how they were created.</p>
+<h2 id="layers-style-properties">Style Properties</h2>
 <p>Style properties map directly to SVG presentation attributes. Common properties:</p>
 <table>
 <thead>
@@ -2909,6 +2969,41 @@ export const tocData = JSON.parse(`[
         "id": "layers-dynamic-layer-names",
         "title": "Dynamic Layer Names",
         "level": 2
+      },
+      {
+        "id": "layers-dynamic-layer-creation",
+        "title": "Dynamic Layer Creation",
+        "level": 2
+      },
+      {
+        "id": "layers-constructor-expression",
+        "title": "Constructor Expression",
+        "level": 3
+      },
+      {
+        "id": "layers-style-mutation-with",
+        "title": "Style Mutation with <<",
+        "level": 3
+      },
+      {
+        "id": "layers-explicit-styles-property",
+        "title": "Explicit .styles Property",
+        "level": 3
+      },
+      {
+        "id": "layers-textlayer-constructor",
+        "title": "TextLayer Constructor",
+        "level": 3
+      },
+      {
+        "id": "layers-accessing-layer-properties",
+        "title": "Accessing Layer Properties",
+        "level": 3
+      },
+      {
+        "id": "layers-coexistence-with-define",
+        "title": "Coexistence with define",
+        "level": 3
       },
       {
         "id": "layers-style-properties",
