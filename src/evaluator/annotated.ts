@@ -53,7 +53,7 @@ export interface AnnotatedOutput {
 }
 
 // Value types (same as main evaluator)
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | ColorValue | ColorNamespace | CSSVarValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | GradientValue | ColorValue | ColorNamespace | CSSVarValue;
 
 export interface SVGFragmentValue {
   type: 'SVGFragmentValue';
@@ -64,6 +64,22 @@ export interface SVGFragmentValue {
 
 function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
+}
+
+export interface GradientValue {
+  type: 'GradientValue';
+  gradientType: 'linear' | 'radial';
+  id: string;
+  attrs: Record<string, string>;
+  stops: Array<{ offset: number; color: string }>;
+  spreadMethod?: string;
+  gradientUnits?: string;
+  gradientTransform?: string;
+  href?: string;
+}
+
+function isGradientValue(value: Value): value is GradientValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GradientValue';
 }
 
 export interface ColorValue {
@@ -705,6 +721,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           }
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
+        } else if (isGradientValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
         }
       }
     } catch {
@@ -1131,6 +1149,32 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     const pathTransformResult = evaluateAnnotatedPathTransforms(obj, expr, scope);
     if (pathTransformResult !== null) return pathTransformResult;
     throw mError(`Unknown ProjectedPath method: ${expr.method}`);
+  }
+
+  // GradientValue methods
+  if (isGradientValue(obj)) {
+    switch (expr.method) {
+      case 'stop': {
+        if (expr.args.length !== 2) throw mError('Gradient.stop() expects 2 arguments (offset, color)');
+        const offset = evaluateExpression(expr.args[0], scope);
+        const color = evaluateExpression(expr.args[1], scope);
+        if (typeof offset !== 'number') throw mError('stop() offset must be a number');
+        if (!isColorValue(color)) throw mError('stop() color must be a Color value');
+        obj.stops.push({ offset, color: oklchToCSS(color.oklch) });
+        return 0;
+      }
+      case 'inherit': {
+        if (expr.args.length !== 1) throw mError('Gradient.inherit() expects 1 argument (newId)');
+        const newId = evaluateExpression(expr.args[0], scope);
+        if (typeof newId !== 'string') throw mError('Gradient.inherit() argument must be a string');
+        return {
+          type: 'GradientValue' as const, gradientType: obj.gradientType, id: newId,
+          attrs: { ...obj.attrs }, stops: [], href: obj.id,
+        };
+      }
+      default:
+        throw mError(`Unknown Gradient method: ${expr.method}`);
+    }
   }
 
   // Color methods
@@ -1683,6 +1727,18 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle GradientValue property access
+  if (isGradientValue(obj)) {
+    switch (expr.property) {
+      case 'id': return obj.id;
+      case 'spreadMethod': return obj.spreadMethod ?? null;
+      case 'gradientUnits': return obj.gradientUnits ?? null;
+      case 'gradientTransform': return obj.gradientTransform ?? null;
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on Gradient`, line));
+    }
+  }
+
   // Handle ColorValue property access
   if (isColorValue(obj)) {
     switch (expr.property) {
@@ -1841,6 +1897,58 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       }
     }
     return { type: 'CSSVarValue' as const, varName: name, fallback };
+  }
+
+  // Handle LinearGradient() constructor
+  if (call.name === 'LinearGradient') {
+    if (call.args.length !== 5) {
+      throw new Error(formatError(`LinearGradient() expects 5 arguments (id, x1, y1, x2, y2), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('LinearGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    const x1 = evaluateExpression(call.args[1], scope);
+    const y1 = evaluateExpression(call.args[2], scope);
+    const x2 = evaluateExpression(call.args[3], scope);
+    const y2 = evaluateExpression(call.args[4], scope);
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'linear', id,
+      attrs: { x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2) },
+      stops: [],
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle RadialGradient() constructor
+  if (call.name === 'RadialGradient') {
+    if (call.args.length < 4 || call.args.length > 6) {
+      throw new Error(formatError(`RadialGradient() expects 4-6 arguments (id, cx, cy, r [, fx, fy]), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('RadialGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    const cx = evaluateExpression(call.args[1], scope);
+    const cy = evaluateExpression(call.args[2], scope);
+    const r = evaluateExpression(call.args[3], scope);
+    const attrs: Record<string, string> = { cx: String(cx), cy: String(cy), r: String(r) };
+    if (call.args.length >= 5) attrs.fx = String(evaluateExpression(call.args[4], scope));
+    if (call.args.length === 6) attrs.fy = String(evaluateExpression(call.args[5], scope));
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'radial', id, attrs, stops: [],
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return gradient;
   }
 
   // Handle SVGDocumentFragment() — evaluate args and call sanitizer

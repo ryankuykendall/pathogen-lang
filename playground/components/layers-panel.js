@@ -22,7 +22,7 @@ export class LayersPanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this._unsubscribe = store.subscribe(['layers', 'layerVisibility', 'masks', 'clipPaths', 'defsVisibility'], () => {
+    this._unsubscribe = store.subscribe(['layers', 'layerVisibility', 'masks', 'clipPaths', 'gradients', 'defsVisibility'], () => {
       this.updateList();
     });
     this.updateList();
@@ -33,6 +33,36 @@ export class LayersPanel extends HTMLElement {
       this._unsubscribe();
       this._unsubscribe = null;
     }
+  }
+
+  /** Convert a GradientOutput to a CSS background value */
+  gradientToCSS(grad) {
+    if (!grad || grad.stops.length === 0) return null;
+    const stops = grad.stops.map(s => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
+    if (grad.type === 'radial') return `radial-gradient(circle, ${stops})`;
+    return `linear-gradient(to right, ${stops})`;
+  }
+
+  /** Resolve a style value, returning { color, isGradient, css } */
+  resolveStyleColor(value) {
+    if (!value || value === 'none') return null;
+    const urlMatch = value.match(/^url\(#(.+?)\)$/);
+    if (urlMatch) {
+      const gradients = store.get('gradients') || [];
+      const grad = gradients.find(g => g.id === urlMatch[1]);
+      if (grad) {
+        // For inherited gradients with no stops, walk the href chain
+        let resolved = grad;
+        while (resolved.stops.length === 0 && resolved.href) {
+          resolved = gradients.find(g => g.id === resolved.href) || resolved;
+          if (resolved.stops.length === 0 && !resolved.href) break;
+        }
+        const css = this.gradientToCSS(resolved);
+        if (css) return { isGradient: true, css };
+      }
+      return null;
+    }
+    return { isGradient: false, css: value };
   }
 
   getLayerColor(layer) {
@@ -110,11 +140,21 @@ export class LayersPanel extends HTMLElement {
       const isVisible = visibility[layer.name] !== false;
       const color = this.getLayerColor(layer);
 
+      // Resolve fill/stroke for gradient-aware swatch
+      const fillResolved = this.resolveStyleColor(layer.styles?.['fill']);
+      const strokeResolved = this.resolveStyleColor(layer.styles?.['stroke']);
+      const dotResolved = (strokeResolved && !fillResolved) ? strokeResolved
+        : fillResolved ? fillResolved
+        : strokeResolved ? strokeResolved : null;
+      const dotStyle = dotResolved
+        ? `background: ${dotResolved.css}` + (dotResolved.isGradient ? '; border-radius: 2px' : '')
+        : `background: ${color}`;
+
       const row = document.createElement('div');
       row.className = 'layer-row';
 
       row.innerHTML = `
-        <span class="color-dot" style="background: ${color}"></span>
+        <span class="color-dot" style="${dotStyle}"></span>
         <span class="layer-name" title="${layer.name}">${layer.name}</span>
         <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : 'path'}</span>
         <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${layer.name}">

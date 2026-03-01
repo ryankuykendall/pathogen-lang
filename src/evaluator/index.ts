@@ -51,7 +51,7 @@ import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathStrin
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker-start', 'marker-mid', 'marker-end']);
 
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | ColorValue | ColorNamespace | CSSVarValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | GradientValue | ColorValue | ColorNamespace | CSSVarValue;
 
 /**
  * Represents an array value (reference semantics)
@@ -134,6 +134,33 @@ export interface ClipPathValue {
 
 export function isClipPathValue(value: Value): value is ClipPathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ClipPathValue';
+}
+
+/**
+ * A color stop in a gradient
+ */
+export interface GradientStop {
+  offset: number;
+  color: string;  // CSS color string from oklchToCSS()
+}
+
+/**
+ * Represents a <linearGradient> or <radialGradient> definition
+ */
+export interface GradientValue {
+  type: 'GradientValue';
+  gradientType: 'linear' | 'radial';
+  id: string;
+  attrs: Record<string, string>;  // x1,y1,x2,y2 or cx,cy,r,fx,fy
+  stops: GradientStop[];
+  spreadMethod?: string;
+  gradientUnits?: string;
+  gradientTransform?: string;
+  href?: string;
+}
+
+export function isGradientValue(value: Value): value is GradientValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GradientValue';
 }
 
 /**
@@ -370,10 +397,22 @@ export interface CSSPropertyDeclaration {
   initialValue: string;  // '#e63946'
 }
 
+export interface GradientOutput {
+  id: string;
+  type: 'linear' | 'radial';
+  attrs: Record<string, string>;
+  stops: Array<{ offset: number; color: string }>;
+  spreadMethod?: string;
+  gradientUnits?: string;
+  gradientTransform?: string;
+  href?: string;
+}
+
 export interface CompileResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
   clipPaths: ClipPathOutput[];
+  gradients: GradientOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
@@ -456,6 +495,7 @@ export interface EvaluationState {
   transformState: TransformState;      // Transform state for implicit default layer
   masks: Map<string, MaskValue>;       // Mask definitions by ID
   clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID
+  gradients: Map<string, GradientValue>; // Gradient definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
 }
 
@@ -722,6 +762,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           }
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
+        } else if (isGradientValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
         }
         // For other types, keep raw string
       }
@@ -965,6 +1007,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     transformState: createTransformState(),
     masks: scope.evalState?.masks ?? new Map(),
     clipPaths: scope.evalState?.clipPaths ?? new Map(),
+    gradients: scope.evalState?.gradients ?? new Map(),
     cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insidePathBlock: true,
   };
@@ -1773,6 +1816,39 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // GradientValue methods
+  if (isGradientValue(obj)) {
+    switch (expr.method) {
+      case 'stop': {
+        if (expr.args.length !== 2) throw mError('Gradient.stop() expects 2 arguments (offset, color)');
+        const offset = evaluateExpression(expr.args[0], scope);
+        const color = evaluateExpression(expr.args[1], scope);
+        if (typeof offset !== 'number') throw mError('stop() offset must be a number');
+        if (!isColorValue(color)) throw mError('stop() color must be a Color value');
+        const colorStr = oklchToCSS(color.oklch);
+        obj.stops.push({ offset, color: colorStr });
+        return 0;
+      }
+      case 'inherit': {
+        if (expr.args.length !== 1) throw mError('Gradient.inherit() expects 1 argument (newId)');
+        const newId = evaluateExpression(expr.args[0], scope);
+        if (typeof newId !== 'string') throw mError('Gradient.inherit() argument must be a string');
+        if (!scope.evalState) throw mError('Gradient.inherit() requires evaluation context');
+        if (scope.evalState.masks.has(newId) || scope.evalState.clipPaths.has(newId) || scope.evalState.gradients.has(newId)) {
+          throw new Error(`Duplicate defs ID '${newId}': a Mask, ClipPath, or Gradient with this ID already exists`);
+        }
+        const child: GradientValue = {
+          type: 'GradientValue', gradientType: obj.gradientType, id: newId,
+          attrs: { ...obj.attrs }, stops: [], href: obj.id,
+        };
+        scope.evalState.gradients.set(newId, child);
+        return child;
+      }
+      default:
+        throw mError(`Unknown Gradient method: ${expr.method}`);
+    }
+  }
+
   // Color methods
   if (isColorValue(obj)) {
     switch (expr.method) {
@@ -2289,6 +2365,18 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     throw new Error(`Property '${expr.property}' does not exist on ClipPath`);
   }
 
+  // Handle GradientValue property access
+  if (isGradientValue(obj)) {
+    switch (expr.property) {
+      case 'id': return obj.id;
+      case 'spreadMethod': return obj.spreadMethod ?? null;
+      case 'gradientUnits': return obj.gradientUnits ?? null;
+      case 'gradientTransform': return obj.gradientTransform ?? null;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on Gradient`);
+    }
+  }
+
   // Handle ColorValue property access
   if (isColorValue(obj)) {
     switch (expr.property) {
@@ -2557,8 +2645,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) throw new Error('Mask() requires evaluation context');
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string') throw new Error('Mask() argument must be a string');
-    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id)) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask or ClipPath with this ID already exists`);
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
     }
     const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
     scope.evalState.masks.set(id, mask);
@@ -2573,12 +2661,90 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) throw new Error('ClipPath() requires evaluation context');
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string') throw new Error('ClipPath() argument must be a string');
-    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id)) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask or ClipPath with this ID already exists`);
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
     }
     const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
     scope.evalState.clipPaths.set(id, clipPath);
     return clipPath;
+  }
+
+  // Handle LinearGradient() constructor
+  if (call.name === 'LinearGradient') {
+    if (call.args.length !== 5) {
+      throw new Error(formatError(`LinearGradient() expects 5 arguments (id, x1, y1, x2, y2), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('LinearGradient() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('LinearGradient() first argument must be a string', getLine(call), getCol(call)));
+    const x1 = evaluateExpression(call.args[1], scope);
+    const y1 = evaluateExpression(call.args[2], scope);
+    const x2 = evaluateExpression(call.args[3], scope);
+    const y2 = evaluateExpression(call.args[4], scope);
+    if (typeof x1 !== 'number' || typeof y1 !== 'number' || typeof x2 !== 'number' || typeof y2 !== 'number') {
+      throw new Error(formatError('LinearGradient() coordinate arguments must be numbers', getLine(call), getCol(call)));
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'linear', id,
+      attrs: { x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2) },
+      stops: [],
+    };
+    scope.evalState.gradients.set(id, gradient);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle RadialGradient() constructor
+  if (call.name === 'RadialGradient') {
+    if (call.args.length < 4 || call.args.length > 6) {
+      throw new Error(formatError(`RadialGradient() expects 4-6 arguments (id, cx, cy, r [, fx, fy]), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('RadialGradient() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('RadialGradient() first argument must be a string', getLine(call), getCol(call)));
+    const cx = evaluateExpression(call.args[1], scope);
+    const cy = evaluateExpression(call.args[2], scope);
+    const r = evaluateExpression(call.args[3], scope);
+    if (typeof cx !== 'number' || typeof cy !== 'number' || typeof r !== 'number') {
+      throw new Error(formatError('RadialGradient() coordinate arguments must be numbers', getLine(call), getCol(call)));
+    }
+    const attrs: Record<string, string> = { cx: String(cx), cy: String(cy), r: String(r) };
+    if (call.args.length >= 5) {
+      const fx = evaluateExpression(call.args[4], scope);
+      if (typeof fx !== 'number') throw new Error(formatError('RadialGradient() fx must be a number', getLine(call), getCol(call)));
+      attrs.fx = String(fx);
+    }
+    if (call.args.length === 6) {
+      const fy = evaluateExpression(call.args[5], scope);
+      if (typeof fy !== 'number') throw new Error(formatError('RadialGradient() fy must be a number', getLine(call), getCol(call)));
+      attrs.fy = String(fy);
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'radial', id, attrs, stops: [],
+    };
+    scope.evalState.gradients.set(id, gradient);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return gradient;
   }
 
   // Handle Color() constructor
@@ -3671,6 +3837,16 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         obj.layer.styles = { ...value.properties };
         return;
       }
+      if (isGradientValue(obj)) {
+        if (typeof value !== 'string') throw new Error(formatError(`Gradient property '${stmt.property}' must be a string`, getLine(stmt)));
+        switch (stmt.property) {
+          case 'spreadMethod': obj.spreadMethod = value; return;
+          case 'gradientUnits': obj.gradientUnits = value; return;
+          case 'gradientTransform': obj.gradientTransform = value; return;
+          default:
+            throw new Error(formatError(`Cannot assign to Gradient property '${stmt.property}'`, getLine(stmt)));
+        }
+      }
       throw new Error(formatError(`Cannot assign to property '${stmt.property}'`, getLine(stmt)));
     }
 
@@ -3800,6 +3976,22 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     });
   }
 
+  // Build gradients output
+  const gradients: GradientOutput[] = [];
+  for (const [, grad] of evalState.gradients) {
+    const output: GradientOutput = {
+      id: grad.id,
+      type: grad.gradientType,
+      attrs: { ...grad.attrs },
+      stops: grad.stops.map(s => ({ offset: s.offset, color: s.color })),
+    };
+    if (grad.spreadMethod) output.spreadMethod = grad.spreadMethod;
+    if (grad.gradientUnits) output.gradientUnits = grad.gradientUnits;
+    if (grad.gradientTransform) output.gradientTransform = grad.gradientTransform;
+    if (grad.href) output.href = grad.href;
+    gradients.push(output);
+  }
+
   // Build cssProperties output
   const cssProperties: CSSPropertyDeclaration[] = Array.from(evalState.cssProperties.values());
 
@@ -3807,6 +3999,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     layers,
     masks,
     clipPaths,
+    gradients,
     cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
@@ -3830,6 +4023,7 @@ export function evaluate(program: Program, options?: { toFixed?: number }): Comp
       transformState,
       masks: new Map(),
       clipPaths: new Map(),
+      gradients: new Map(),
       cssProperties: new Map(),
     };
 
@@ -3862,6 +4056,7 @@ export interface EvaluateWithContextResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
   clipPaths: ClipPathOutput[];
+  gradients: GradientOutput[];
   cssProperties: CSSPropertyDeclaration[];
 }
 
@@ -3897,6 +4092,7 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       transformState,
       masks: new Map(),
       clipPaths: new Map(),
+      gradients: new Map(),
       cssProperties: new Map(),
     };
 
@@ -3924,6 +4120,7 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       layers: compileResult.layers,
       masks: compileResult.masks,
       clipPaths: compileResult.clipPaths,
+      gradients: compileResult.gradients,
       cssProperties: compileResult.cssProperties,
     };
   } finally {

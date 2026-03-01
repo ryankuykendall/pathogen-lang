@@ -112,6 +112,25 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     }).join('\n');
     defsContent.push(`  <clipPath id="${escapeXml(clip.id)}">\n${children}\n  </clipPath>`);
   }
+  for (const grad of result.gradients) {
+    const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
+    const attrParts = [`id="${escapeXml(grad.id)}"`];
+    for (const [key, value] of Object.entries(grad.attrs)) {
+      attrParts.push(`${key}="${escapeXml(value)}"`);
+    }
+    if (grad.spreadMethod) attrParts.push(`spreadMethod="${escapeXml(grad.spreadMethod)}"`);
+    if (grad.gradientUnits) attrParts.push(`gradientUnits="${escapeXml(grad.gradientUnits)}"`);
+    if (grad.gradientTransform) attrParts.push(`gradientTransform="${escapeXml(grad.gradientTransform)}"`);
+    if (grad.href) attrParts.push(`href="#${escapeXml(grad.href)}"`);
+    if (grad.stops.length === 0) {
+      defsContent.push(`  <${tagName} ${attrParts.join(' ')}/>`);
+    } else {
+      const stops = grad.stops.map(s =>
+        `    <stop offset="${s.offset}" stop-color="${escapeXml(s.color)}"/>`
+      ).join('\n');
+      defsContent.push(`  <${tagName} ${attrParts.join(' ')}>\n${stops}\n  </${tagName}>`);
+    }
+  }
   const defsSection = defsContent.length > 0
     ? `\n<defs>\n${defsContent.join('\n')}\n</defs>\n` : '';
 

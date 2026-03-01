@@ -385,17 +385,30 @@ const unaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
   )
 );
 
-// Function call: name(arg1, arg2, ...)
+// Trailing block: {|param| statements} — parsed after function call closing paren
+const trailingBlock: Parsimmon.Parser<{ param: string; body: Statement[] }> = P.seqMap(
+  P.string('{').skip(optWhitespace),
+  P.string('|').skip(optWhitespace),
+  token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
+  P.string('|').skip(optWhitespace),
+  P.lazy(() => statement).many(),
+  word('}'),
+  (_open, _pipe1, param, _pipe2, body, _close) => ({ param, body })
+);
+
+// Function call: name(arg1, arg2, ...) with optional trailing block
 const functionCall: Parsimmon.Parser<FunctionCall> = P.seqMap(
   P.index,
   token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
   P.string('(').skip(optWhitespace),
   P.sepBy(P.lazy(() => expression), word(',')),
   word(')'),
-  (startIndex, name, _open, args, _close) => ({
+  trailingBlock.atMost(1),
+  (startIndex, name, _open, args, _close, block) => ({
     type: 'FunctionCall' as const,
     name,
     args,
+    ...(block.length > 0 ? { block: block[0] } : {}),
     loc: indexToLoc(startIndex),
   })
 );

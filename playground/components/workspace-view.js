@@ -574,7 +574,7 @@ export class WorkspaceView extends HTMLElement {
 
       // Use timing method to measure rendering — pass layers if available
       const renderTime = result.layers
-        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [], cssProperties: result.cssProperties || [] })
+        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [], gradients: result.gradients || [], cssProperties: result.cssProperties || [] })
         : this.previewPane.setPathDataWithTiming(result.path);
       console.log(`Render time: ${renderTime.toFixed(2)}ms`);
 
@@ -587,6 +587,7 @@ export class WorkspaceView extends HTMLElement {
       store.set('layers', resultLayers);
       store.set('masks', result.masks || []);
       store.set('clipPaths', result.clipPaths || []);
+      store.set('gradients', result.gradients || []);
 
       // Clean up stale visibility entries
       const currentVisibility = store.get('layerVisibility');

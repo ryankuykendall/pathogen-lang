@@ -127,7 +127,7 @@ export class SvgPreviewPane extends HTMLElement {
       // Clean up previous fragment defs and mask/clipPath defs
       const defsEl = this.shadowRoot.querySelector('#preview defs');
       if (defsEl) {
-        for (const old of defsEl.querySelectorAll('[data-fragment-layer], [data-mask-def], [data-clippath-def]')) {
+        for (const old of defsEl.querySelectorAll('[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def]')) {
           old.remove();
         }
       }
@@ -163,6 +163,30 @@ export class SvgPreviewPane extends HTMLElement {
             clipEl.appendChild(pathEl);
           }
           defsEl.appendChild(clipEl);
+        }
+      }
+
+      // Inject gradient defs
+      if (defsData.gradients && defsEl) {
+        for (const grad of defsData.gradients) {
+          const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
+          const gradEl = document.createElementNS(SVG_NS_DEFS, tagName);
+          gradEl.setAttribute('id', grad.id);
+          gradEl.setAttribute('data-gradient-def', grad.id);
+          for (const [key, value] of Object.entries(grad.attrs)) {
+            gradEl.setAttribute(key, value);
+          }
+          if (grad.spreadMethod) gradEl.setAttribute('spreadMethod', grad.spreadMethod);
+          if (grad.gradientUnits) gradEl.setAttribute('gradientUnits', grad.gradientUnits);
+          if (grad.gradientTransform) gradEl.setAttribute('gradientTransform', grad.gradientTransform);
+          if (grad.href) gradEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#${grad.href}`);
+          for (const stop of grad.stops) {
+            const stopEl = document.createElementNS(SVG_NS_DEFS, 'stop');
+            stopEl.setAttribute('offset', String(stop.offset));
+            stopEl.setAttribute('stop-color', stop.color);
+            gradEl.appendChild(stopEl);
+          }
+          defsEl.appendChild(gradEl);
         }
       }
 

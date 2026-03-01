@@ -18,7 +18,7 @@ export class PalettePanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this._unsubscribe = store.subscribe(['layers'], () => {
+    this._unsubscribe = store.subscribe(['layers', 'gradients'], () => {
       this.updateList();
     });
     this.updateList();
@@ -84,7 +84,27 @@ export class PalettePanel extends HTMLElement {
 
         const swatch = document.createElement('span');
         swatch.className = 'swatch';
-        if (entry.varName) {
+
+        // Check for gradient url(#id)
+        const urlMatch = entry.value.match(/^url\(#(.+?)\)$/);
+        if (urlMatch) {
+          const gradients = store.get('gradients') || [];
+          let grad = gradients.find(g => g.id === urlMatch[1]);
+          // Walk href chain for inherited gradients
+          while (grad && grad.stops.length === 0 && grad.href) {
+            grad = gradients.find(g => g.id === grad.href) || null;
+          }
+          if (grad && grad.stops.length > 0) {
+            const stops = grad.stops.map(s => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
+            const cssGrad = grad.type === 'radial'
+              ? `radial-gradient(circle, ${stops})`
+              : `linear-gradient(to right, ${stops})`;
+            swatch.style.background = cssGrad;
+            swatch.style.borderRadius = '2px';
+          } else {
+            swatch.classList.add('no-color');
+          }
+        } else if (entry.varName) {
           // For var() references, use fallback as swatch color
           swatch.style.backgroundColor = entry.fallback || 'transparent';
           if (!entry.fallback) {
@@ -102,6 +122,9 @@ export class PalettePanel extends HTMLElement {
         val.className = 'color-value';
         if (entry.varName) {
           val.textContent = entry.varName;
+          val.title = entry.value;
+        } else if (urlMatch) {
+          val.textContent = urlMatch[1];
           val.title = entry.value;
         } else {
           val.textContent = entry.value;

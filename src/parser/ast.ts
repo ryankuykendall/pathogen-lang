@@ -151,6 +151,7 @@ export interface FunctionCall {
   type: 'FunctionCall';
   name: string;
   args: Expression[];
+  block?: { param: string; body: Statement[] };  // Trailing block: {|param| statements}
   loc?: SourceLocation;
 }
 
