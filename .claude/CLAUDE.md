@@ -64,6 +64,13 @@ Build library → scope components → identify reuse → storybook-driven desig
 ## Summary Instructions
 
 When compacting, prioritize:
+
 - Recent code changes and their rationale
 - Test failures and error messages
 - Current task context and next steps
+
+## Preservation of generate artifacts
+
+As Claude is iterating with the user on planning and implentation of features on this project, it is expected that Claude will preserve and organize all artifacts (primers, plans, code snippets, demos) in a directory named after the feature in the project-docs/ directory. Claude should have a bias, when iterating, for saving old versions of an artifact (e.g., not modifying it) and creating new versions so that we can have a shared paper trail of what was proposed, attempted, and what succeeded. Claude should never delete or destroy there artifacts without the users permission. These artifacts are essential for telling the story of how new features are created and developed for this project, and we would like to ensure that we can tell the richest story possible.
+
+That being said, Claude should, when warranted, make recommendations around cleanup once older artifacts begin to impact or pollute context unnecessarily.
