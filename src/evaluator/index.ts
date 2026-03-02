@@ -141,7 +141,8 @@ export function isClipPathValue(value: Value): value is ClipPathValue {
  */
 export interface GradientStop {
   offset: number;
-  color: string;  // CSS color string from oklchToCSS()
+  color: string;  // CSS color string from oklchToCSS() or var() for CSSVar stops
+  oklch?: OKLCH;  // preserved for interpolation; absent on CSSVar stops
 }
 
 /**
@@ -157,6 +158,8 @@ export interface GradientValue {
   gradientUnits?: string;
   gradientTransform?: string;
   href?: string;
+  interpolation?: 'srgb' | 'oklch' | 'linearRGB';
+  steps?: number;
 }
 
 export function isGradientValue(value: Value): value is GradientValue {
@@ -406,6 +409,7 @@ export interface GradientOutput {
   gradientUnits?: string;
   gradientTransform?: string;
   href?: string;
+  colorInterpolation?: string;
 }
 
 export interface CompileResult {
@@ -1825,8 +1829,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const color = evaluateExpression(expr.args[1], scope);
         if (typeof offset !== 'number') throw mError('stop() offset must be a number');
         if (!isColorValue(color)) throw mError('stop() color must be a Color value');
-        const colorStr = oklchToCSS(color.oklch);
-        obj.stops.push({ offset, color: colorStr });
+        if (color.cssVar) {
+          const fallbackCSS = oklchToCSS(color.oklch);
+          obj.stops.push({ offset, color: `var(${color.cssVar.varName}, ${fallbackCSS})` });
+        } else {
+          obj.stops.push({ offset, color: oklchToCSS(color.oklch), oklch: { ...color.oklch } });
+        }
         return 0;
       }
       case 'inherit': {
@@ -1840,6 +1848,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const child: GradientValue = {
           type: 'GradientValue', gradientType: obj.gradientType, id: newId,
           attrs: { ...obj.attrs }, stops: [], href: obj.id,
+          interpolation: obj.interpolation,
+          steps: obj.steps,
         };
         scope.evalState.gradients.set(newId, child);
         return child;
@@ -2372,6 +2382,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'spreadMethod': return obj.spreadMethod ?? null;
       case 'gradientUnits': return obj.gradientUnits ?? null;
       case 'gradientTransform': return obj.gradientTransform ?? null;
+      case 'interpolation': return obj.interpolation ?? null;
+      case 'steps': return obj.steps ?? null;
       default:
         throw new Error(`Property '${expr.property}' does not exist on Gradient`);
     }
@@ -3838,11 +3850,29 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         return;
       }
       if (isGradientValue(obj)) {
-        if (typeof value !== 'string') throw new Error(formatError(`Gradient property '${stmt.property}' must be a string`, getLine(stmt)));
         switch (stmt.property) {
-          case 'spreadMethod': obj.spreadMethod = value; return;
-          case 'gradientUnits': obj.gradientUnits = value; return;
-          case 'gradientTransform': obj.gradientTransform = value; return;
+          case 'spreadMethod':
+          case 'gradientUnits':
+          case 'gradientTransform': {
+            if (typeof value !== 'string') throw new Error(formatError(`Gradient property '${stmt.property}' must be a string`, getLine(stmt)));
+            if (stmt.property === 'spreadMethod') obj.spreadMethod = value;
+            else if (stmt.property === 'gradientUnits') obj.gradientUnits = value;
+            else obj.gradientTransform = value;
+            return;
+          }
+          case 'interpolation': {
+            if (typeof value !== 'string') throw new Error(formatError(`Gradient property 'interpolation' must be a string`, getLine(stmt)));
+            if (value !== 'srgb' && value !== 'oklch' && value !== 'linearRGB') {
+              throw new Error(formatError(`Gradient interpolation must be 'srgb', 'oklch', or 'linearRGB'`, getLine(stmt)));
+            }
+            obj.interpolation = value as 'srgb' | 'oklch' | 'linearRGB';
+            return;
+          }
+          case 'steps': {
+            if (typeof value !== 'number') throw new Error(formatError(`Gradient property 'steps' must be a number`, getLine(stmt)));
+            obj.steps = value;
+            return;
+          }
           default:
             throw new Error(formatError(`Cannot assign to Gradient property '${stmt.property}'`, getLine(stmt)));
         }
@@ -3882,6 +3912,39 @@ function evaluateStatements(stmts: Statement[], scope: Scope): string {
   const accum: string[] = [];
   evaluateStatementsToAccum(stmts, scope, accum);
   return accum.join(' ');
+}
+
+/**
+ * Expand gradient stops using OKLCh interpolation.
+ * Iterates adjacent stop pairs, generating intermediate stops via mixColors().
+ * Skips pairs where either stop lacks oklch data (e.g., CSSVar stops).
+ */
+function expandOklchStops(stops: GradientStop[], stepsPerUnit: number): Array<{ offset: number; color: string }> {
+  if (stops.length < 2) return stops.map(s => ({ offset: s.offset, color: s.color }));
+  const result: Array<{ offset: number; color: string }> = [];
+  for (let i = 0; i < stops.length; i++) {
+    // Always include the original stop
+    result.push({ offset: stops[i].offset, color: stops[i].color });
+    // Generate intermediates between this stop and the next
+    if (i < stops.length - 1) {
+      const a = stops[i];
+      const b = stops[i + 1];
+      // Skip if either stop lacks oklch (CSSVar stops)
+      if (!a.oklch || !b.oklch) continue;
+      const span = b.offset - a.offset;
+      if (span <= 0) continue;
+      const count = Math.ceil(stepsPerUnit * span) - 1;
+      for (let j = 1; j <= count; j++) {
+        const t = j / (count + 1);
+        const offset = a.offset + span * t;
+        const mixed = mixColors(a.oklch, b.oklch, t);
+        result.push({ offset, color: oklchToCSS(mixed) });
+      }
+    }
+  }
+  // Sort by offset to ensure correct order after interleaving
+  result.sort((a, b) => a.offset - b.offset);
+  return result;
 }
 
 /**
@@ -3979,16 +4042,21 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
   // Build gradients output
   const gradients: GradientOutput[] = [];
   for (const [, grad] of evalState.gradients) {
+    const stepsPerUnit = grad.steps ?? 10;
+    const stops = (grad.interpolation === 'oklch')
+      ? expandOklchStops(grad.stops, stepsPerUnit)
+      : grad.stops.map(s => ({ offset: s.offset, color: s.color }));
     const output: GradientOutput = {
       id: grad.id,
       type: grad.gradientType,
       attrs: { ...grad.attrs },
-      stops: grad.stops.map(s => ({ offset: s.offset, color: s.color })),
+      stops,
     };
     if (grad.spreadMethod) output.spreadMethod = grad.spreadMethod;
     if (grad.gradientUnits) output.gradientUnits = grad.gradientUnits;
     if (grad.gradientTransform) output.gradientTransform = grad.gradientTransform;
     if (grad.href) output.href = grad.href;
+    if (grad.interpolation === 'linearRGB') output.colorInterpolation = 'linearRGB';
     gradients.push(output);
   }
 

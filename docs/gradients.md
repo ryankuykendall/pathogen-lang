@@ -81,6 +81,66 @@ g.gradientTransform = 'rotate(45)';
 | `spreadMethod` | `'pad'`, `'reflect'`, `'repeat'` | `'pad'` |
 | `gradientUnits` | `'objectBoundingBox'`, `'userSpaceOnUse'` | `'objectBoundingBox'` |
 | `gradientTransform` | SVG transform string | none |
+| `interpolation` | `'srgb'`, `'oklch'`, `'linearRGB'` | `'srgb'` |
+| `steps` | Number of intermediate stops per unit offset | `10` |
+
+## Color Interpolation
+
+Control how colors transition between stops using the `interpolation` property.
+
+### OKLCh Interpolation
+
+Set `interpolation = 'oklch'` for perceptually uniform transitions. The compiler expands stops at compile time using OKLCh color mixing, avoiding the muddy midpoints common with sRGB interpolation:
+
+```
+let smooth = LinearGradient('smooth', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#e63946'));
+  g.stop(1, Color('#2a9d8f'));
+};
+smooth.interpolation = 'oklch';
+smooth.steps = 12;  // 12 intermediate stops per unit offset (default: 10)
+```
+
+The `steps` property controls the density of generated intermediate stops. Higher values produce smoother transitions but increase SVG output size. The compiler:
+
+1. Iterates adjacent stop pairs
+2. Generates `ceil(steps * offsetSpan) - 1` intermediate stops between each pair
+3. Uses `mixColors()` for shortest-arc hue interpolation in OKLCh space
+4. Always preserves the original stops at their exact offsets
+
+### linearRGB Interpolation
+
+Set `interpolation = 'linearRGB'` for physically linear color transitions. This uses the native SVG `color-interpolation` attribute — no stop expansion is needed:
+
+```
+let physical = LinearGradient('physical', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#ff0000'));
+  g.stop(1, Color('#0000ff'));
+};
+physical.interpolation = 'linearRGB';
+```
+
+This emits `color-interpolation="linearRGB"` on the gradient element. The browser handles the interpolation natively.
+
+### Default (sRGB)
+
+When `interpolation` is not set (or set to `'srgb'`), the browser's default sRGB interpolation is used. No additional attributes or stop expansion occur.
+
+## Reactive Gradient Stops
+
+Use `Color(CSSVar(...))` in gradient stops to create live-updating gradients that respond to CSS custom property changes:
+
+```
+let accent = Color(CSSVar('--accent', '#e63946'));
+let reactive = LinearGradient('reactive', 0, 0, 1, 0) {|g|
+  g.stop(0, accent);            // → stop-color="var(--accent, #e63946)"
+  g.stop(1, Color('#2a9d8f'));
+};
+```
+
+The compiler preserves the `var()` reference in the `stop-color` attribute, allowing the gradient to update when the custom property changes at runtime.
+
+CSSVar stops are skipped during OKLCh expansion — since their actual color is determined at runtime, the compiler cannot interpolate them at compile time. Non-CSSVar stops adjacent to CSSVar stops will not have intermediate stops generated between them.
 
 ## Gradient Inheritance
 
@@ -107,6 +167,8 @@ The inherited gradient uses SVG's `href` attribute to reference the parent. It i
 | `gradient.spreadMethod` | Current spreadMethod or `undefined` |
 | `gradient.gradientUnits` | Current gradientUnits or `undefined` |
 | `gradient.gradientTransform` | Current gradientTransform or `undefined` |
+| `gradient.interpolation` | Current interpolation mode or `null` |
+| `gradient.steps` | Current steps value or `null` |
 
 ## Dynamic Stop Generation
 

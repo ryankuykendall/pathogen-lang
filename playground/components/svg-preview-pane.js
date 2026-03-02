@@ -179,6 +179,7 @@ export class SvgPreviewPane extends HTMLElement {
           if (grad.spreadMethod) gradEl.setAttribute('spreadMethod', grad.spreadMethod);
           if (grad.gradientUnits) gradEl.setAttribute('gradientUnits', grad.gradientUnits);
           if (grad.gradientTransform) gradEl.setAttribute('gradientTransform', grad.gradientTransform);
+          if (grad.colorInterpolation) gradEl.setAttribute('color-interpolation', grad.colorInterpolation);
           if (grad.href) gradEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#${grad.href}`);
           for (const stop of grad.stops) {
             const stopEl = document.createElementNS(SVG_NS_DEFS, 'stop');

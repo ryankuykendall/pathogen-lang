@@ -121,6 +121,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     if (grad.spreadMethod) attrParts.push(`spreadMethod="${escapeXml(grad.spreadMethod)}"`);
     if (grad.gradientUnits) attrParts.push(`gradientUnits="${escapeXml(grad.gradientUnits)}"`);
     if (grad.gradientTransform) attrParts.push(`gradientTransform="${escapeXml(grad.gradientTransform)}"`);
+    if (grad.colorInterpolation) attrParts.push(`color-interpolation="${escapeXml(grad.colorInterpolation)}"`);
     if (grad.href) attrParts.push(`href="#${escapeXml(grad.href)}"`);
     if (grad.stops.length === 0) {
       defsContent.push(`  <${tagName} ${attrParts.join(' ')}/>`);

@@ -588,6 +588,7 @@ export class WorkspaceView extends HTMLElement {
       store.set('masks', result.masks || []);
       store.set('clipPaths', result.clipPaths || []);
       store.set('gradients', result.gradients || []);
+      store.set('cssProperties', result.cssProperties || []);
 
       // Clean up stale visibility entries
       const currentVisibility = store.get('layerVisibility');

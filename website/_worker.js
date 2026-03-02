@@ -35,7 +35,8 @@ function slugify(text) {
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 50);
+    .slice(0, 50)
+    .replace(/-+$/, '');
 }
 
 // CORS headers for API responses

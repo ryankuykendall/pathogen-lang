@@ -289,6 +289,273 @@ describe('Gradients', () => {
     });
   });
 
+  describe('oklch interpolation', () => {
+    it('expansion increases stop count', () => {
+      const result = compile(`
+        let g = LinearGradient('oklch1', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+      `);
+      // Default steps=10, offset span=1, so ceil(10*1)-1 = 9 intermediates + 2 originals = 11
+      expect(result.gradients[0].stops.length).toBeGreaterThan(2);
+    });
+
+    it('original stops preserved at exact offsets', () => {
+      const result = compile(`
+        let g = LinearGradient('oklch2', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+      `);
+      const stops = result.gradients[0].stops;
+      expect(stops[0].offset).toBe(0);
+      expect(stops[stops.length - 1].offset).toBe(1);
+    });
+
+    it('custom steps controls density', () => {
+      const resultLow = compile(`
+        let g = LinearGradient('low', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+        g.steps = 5;
+      `);
+      const resultHigh = compile(`
+        let g = LinearGradient('high', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+        g.steps = 20;
+      `);
+      expect(resultHigh.gradients[0].stops.length).toBeGreaterThan(resultLow.gradients[0].stops.length);
+    });
+
+    it('stops sorted after expansion', () => {
+      const result = compile(`
+        let g = LinearGradient('sorted', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(0.5, Color('#f4a261'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+      `);
+      const offsets = result.gradients[0].stops.map(s => s.offset);
+      for (let i = 1; i < offsets.length; i++) {
+        expect(offsets[i]).toBeGreaterThanOrEqual(offsets[i - 1]);
+      }
+    });
+
+    it('default (no interpolation) does NOT expand', () => {
+      const result = compile(`
+        let g = LinearGradient('noexpand', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+      `);
+      expect(result.gradients[0].stops).toHaveLength(2);
+    });
+
+    it('non-uniform spacing expands proportionally', () => {
+      const result = compile(`
+        let g = LinearGradient('nonuniform', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(0.1, Color('#f4a261'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+        g.steps = 10;
+      `);
+      const stops = result.gradients[0].stops;
+      // The 0→0.1 span is small, should have fewer intermediates than 0.1→1
+      const stopsBeforePoint1 = stops.filter(s => s.offset <= 0.1);
+      const stopsAfterPoint1 = stops.filter(s => s.offset >= 0.1);
+      expect(stopsAfterPoint1.length).toBeGreaterThan(stopsBeforePoint1.length);
+    });
+
+    it('single stop does not crash', () => {
+      const result = compile(`
+        let g = LinearGradient('single', 0, 0, 1, 0) {|g|
+          g.stop(0.5, Color('#e63946'));
+        };
+        g.interpolation = 'oklch';
+      `);
+      expect(result.gradients[0].stops).toHaveLength(1);
+    });
+  });
+
+  describe('linearRGB interpolation', () => {
+    it('emits colorInterpolation in output', () => {
+      const result = compile(`
+        let g = LinearGradient('linrgb', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#ff0000'));
+          g.stop(1, Color('#0000ff'));
+        };
+        g.interpolation = 'linearRGB';
+      `);
+      expect(result.gradients[0].colorInterpolation).toBe('linearRGB');
+    });
+
+    it('does NOT expand stops', () => {
+      const result = compile(`
+        let g = LinearGradient('linrgb2', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#ff0000'));
+          g.stop(1, Color('#0000ff'));
+        };
+        g.interpolation = 'linearRGB';
+      `);
+      expect(result.gradients[0].stops).toHaveLength(2);
+    });
+  });
+
+  describe('interpolation/steps properties', () => {
+    it('interpolation readable after set', () => {
+      const result = compile(`
+        let g = LinearGradient('readip', 0, 0, 1, 0);
+        g.interpolation = 'oklch';
+        log(g.interpolation)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('oklch');
+    });
+
+    it('steps readable after set', () => {
+      const result = compile(`
+        let g = LinearGradient('readsteps', 0, 0, 1, 0);
+        g.steps = 15;
+        log(g.steps)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('15');
+    });
+
+    it('defaults to null', () => {
+      const result = compile(`
+        let g = LinearGradient('defaults', 0, 0, 1, 0);
+        log(g.interpolation)
+        log(g.steps)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('null');
+      expect(result.logs[1].parts[0].value).toBe('null');
+    });
+
+    it('invalid interpolation value throws', () => {
+      expect(() => compile(`
+        let g = LinearGradient('bad', 0, 0, 1, 0);
+        g.interpolation = 'rgb';
+      `)).toThrow(/interpolation/i);
+    });
+
+    it('non-number steps throws', () => {
+      expect(() => compile(`
+        let g = LinearGradient('bad', 0, 0, 1, 0);
+        g.steps = 'many';
+      `)).toThrow(/steps/i);
+    });
+
+    it('settable inside trailing block', () => {
+      const result = compile(`
+        let g = LinearGradient('inblock', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+          g.interpolation = 'oklch';
+          g.steps = 5;
+        };
+      `);
+      expect(result.gradients[0].stops.length).toBeGreaterThan(2);
+    });
+  });
+
+  describe('interpolation inheritance', () => {
+    it('inherit() propagates interpolation and steps', () => {
+      const result = compile(`
+        let base = LinearGradient('ibase', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        base.interpolation = 'oklch';
+        base.steps = 8;
+        let child = base.inherit('ichild');
+        log(child.interpolation)
+        log(child.steps)
+      `);
+      // Child's output shouldn't have expanded stops since it has no stops of its own
+      // But the properties should be propagated
+      // Actually — inherit creates a child with no stops and href to parent
+      // But the interpolation/steps should be readable on the child
+      // Wait: the child has no stops, so no expansion. But properties should carry.
+      // Let's just check the logs
+      // Actually inherit() creates empty stops with href - the child reads from parent
+      // But interpolation/steps are on the GradientValue, so they should propagate
+      expect(result.logs[0].parts[0].value).toBe('oklch');
+      expect(result.logs[1].parts[0].value).toBe('8');
+    });
+
+    it('child can override inherited interpolation', () => {
+      const result = compile(`
+        let base = LinearGradient('obase', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(1, Color('#2a9d8f'));
+        };
+        base.interpolation = 'oklch';
+        let child = base.inherit('ochild');
+        child.interpolation = 'linearRGB';
+        log(child.interpolation)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('linearRGB');
+    });
+  });
+
+  describe('CSSVar reactive stops', () => {
+    it('preserves var() in stop-color output', () => {
+      const result = compile(`
+        let accent = Color(CSSVar('--accent', '#e63946'));
+        let g = LinearGradient('reactive', 0, 0, 1, 0) {|g|
+          g.stop(0, accent);
+          g.stop(1, Color('#2a9d8f'));
+        };
+      `);
+      expect(result.gradients[0].stops[0].color).toContain('var(--accent');
+    });
+
+    it('non-CSSVar still produces static color', () => {
+      const result = compile(`
+        let g = LinearGradient('static', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#e63946'));
+        };
+      `);
+      expect(result.gradients[0].stops[0].color).not.toContain('var(');
+    });
+
+    it('skips oklch expansion for CSSVar stop pairs', () => {
+      const result = compile(`
+        let accent = Color(CSSVar('--accent', '#e63946'));
+        let g = LinearGradient('skipvar', 0, 0, 1, 0) {|g|
+          g.stop(0, accent);
+          g.stop(1, Color('#2a9d8f'));
+        };
+        g.interpolation = 'oklch';
+      `);
+      // One stop is CSSVar, so the pair should NOT be expanded
+      // Original 2 stops should remain
+      expect(result.gradients[0].stops).toHaveLength(2);
+      expect(result.gradients[0].stops[0].color).toContain('var(--accent');
+    });
+
+    it('registers @property for CSSVar stops', () => {
+      const result = compile(`
+        let accent = Color(CSSVar('--accent', '#e63946'));
+        let g = LinearGradient('prop', 0, 0, 1, 0) {|g|
+          g.stop(0, accent);
+        };
+      `);
+      expect(result.cssProperties).toBeDefined();
+      expect(result.cssProperties.some(p => p.name === '--accent')).toBe(true);
+    });
+  });
+
   describe('error cases', () => {
     it('duplicate gradient ID throws compile error', () => {
       expect(() => compile(`

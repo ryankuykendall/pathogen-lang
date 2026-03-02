@@ -28,7 +28,7 @@ export class CssvarPanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this._unsubscribe = store.subscribe(['layers'], () => {
+    this._unsubscribe = store.subscribe(['layers', 'cssProperties'], () => {
       this.updateList();
     });
     this.updateList();
@@ -72,7 +72,7 @@ export class CssvarPanel extends HTMLElement {
 
     list.innerHTML = '';
 
-    // Extract all var(--name, fallback) references
+    // Extract all var(--name, fallback) references from layer styles
     const varMap = new Map(); // varName → { fallback, layerName, property }
     const varRegex = /var\(\s*(--[\w-]+)\s*(?:,\s*(.+?))?\s*\)/;
 
@@ -85,6 +85,14 @@ export class CssvarPanel extends HTMLElement {
         if (!varMap.has(varName)) {
           varMap.set(varName, { fallback, layerName: layer.name, property: prop });
         }
+      }
+    }
+
+    // Also include CSS properties registered via @property (e.g., from Color(CSSVar(...)) in gradient stops)
+    const cssProperties = store.get('cssProperties') || [];
+    for (const prop of cssProperties) {
+      if (!varMap.has(prop.name)) {
+        varMap.set(prop.name, { fallback: prop.initialValue || '', layerName: '', property: '@property' });
       }
     }
 

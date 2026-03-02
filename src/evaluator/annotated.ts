@@ -76,6 +76,8 @@ export interface GradientValue {
   gradientUnits?: string;
   gradientTransform?: string;
   href?: string;
+  interpolation?: 'srgb' | 'oklch' | 'linearRGB';
+  steps?: number;
 }
 
 function isGradientValue(value: Value): value is GradientValue {
@@ -1160,7 +1162,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const color = evaluateExpression(expr.args[1], scope);
         if (typeof offset !== 'number') throw mError('stop() offset must be a number');
         if (!isColorValue(color)) throw mError('stop() color must be a Color value');
-        obj.stops.push({ offset, color: oklchToCSS(color.oklch) });
+        if (color.cssVar) {
+          const fallbackCSS = oklchToCSS(color.oklch);
+          obj.stops.push({ offset, color: `var(${color.cssVar.varName}, ${fallbackCSS})` });
+        } else {
+          obj.stops.push({ offset, color: oklchToCSS(color.oklch) });
+        }
         return 0;
       }
       case 'inherit': {
@@ -1170,6 +1177,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'GradientValue' as const, gradientType: obj.gradientType, id: newId,
           attrs: { ...obj.attrs }, stops: [], href: obj.id,
+          interpolation: obj.interpolation,
+          steps: obj.steps,
         };
       }
       default:
@@ -1734,6 +1743,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'spreadMethod': return obj.spreadMethod ?? null;
       case 'gradientUnits': return obj.gradientUnits ?? null;
       case 'gradientTransform': return obj.gradientTransform ?? null;
+      case 'interpolation': return obj.interpolation ?? null;
+      case 'steps': return obj.steps ?? null;
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on Gradient`, line));
     }
