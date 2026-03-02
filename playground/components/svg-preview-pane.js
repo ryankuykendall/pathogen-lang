@@ -127,7 +127,7 @@ export class SvgPreviewPane extends HTMLElement {
       // Clean up previous fragment defs and mask/clipPath defs
       const defsEl = this.shadowRoot.querySelector('#preview defs');
       if (defsEl) {
-        for (const old of defsEl.querySelectorAll('[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def]')) {
+        for (const old of defsEl.querySelectorAll('[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def]')) {
           old.remove();
         }
       }
@@ -169,6 +169,65 @@ export class SvgPreviewPane extends HTMLElement {
       // Inject gradient defs
       if (defsData.gradients && defsEl) {
         for (const grad of defsData.gradients) {
+          if (grad.type === 'conic') {
+            // Render conic gradient via canvas → data URL → pattern (synchronous)
+            const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
+            patEl.setAttribute('id', grad.id);
+            patEl.setAttribute('data-gradient-def', grad.id);
+            patEl.setAttribute('x', '0');
+            patEl.setAttribute('y', '0');
+            const w = store.get('width') || 200;
+            const h = store.get('height') || 200;
+            patEl.setAttribute('width', String(w));
+            patEl.setAttribute('height', String(h));
+            patEl.setAttribute('patternUnits', 'userSpaceOnUse');
+
+            try {
+              const scale = 2; // 2x for quality
+              const canvas = document.createElement('canvas');
+              canvas.width = w * scale;
+              canvas.height = h * scale;
+              const ctx2d = canvas.getContext('2d');
+              if (ctx2d) {
+                const fromAngle = grad.from ?? 0;
+                const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
+                const cx = (grad.cx ?? 0) * scale;
+                const cy = (grad.cy ?? 0) * scale;
+                const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
+                const stops = grad.stopsWithOklch || grad.stops;
+                const totalAngle = toAngle - fromAngle;
+                const fullRevolution = 2 * Math.PI;
+                for (const s of stops) {
+                  // Map stop offset [0,1] to the fraction of a full revolution
+                  const scaledOffset = (s.offset * totalAngle) / fullRevolution;
+                  if (scaledOffset >= 0 && scaledOffset <= 1) {
+                    // Canvas 2D can't parse var() CSS — extract fallback color
+                    let color = s.color;
+                    if (typeof color === 'string' && color.startsWith('var(')) {
+                      const ci = color.indexOf(',');
+                      color = ci >= 0 ? color.slice(ci + 1, -1).trim() : '#000000';
+                    }
+                    conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), color);
+                  }
+                }
+                ctx2d.fillStyle = conicGrad;
+                ctx2d.fillRect(0, 0, w * scale, h * scale);
+
+                // Synchronous data URL — no async race condition
+                const dataUrl = canvas.toDataURL('image/png');
+                const imgEl = document.createElementNS(SVG_NS_DEFS, 'image');
+                imgEl.setAttribute('href', dataUrl);
+                imgEl.setAttribute('width', String(w));
+                imgEl.setAttribute('height', String(h));
+                patEl.appendChild(imgEl);
+              }
+            } catch (e) {
+              console.warn('Conic gradient canvas rendering failed:', e);
+            }
+
+            defsEl.appendChild(patEl);
+            continue;
+          }
           const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
           const gradEl = document.createElementNS(SVG_NS_DEFS, tagName);
           gradEl.setAttribute('id', grad.id);
@@ -188,6 +247,29 @@ export class SvgPreviewPane extends HTMLElement {
             gradEl.appendChild(stopEl);
           }
           defsEl.appendChild(gradEl);
+        }
+      }
+
+      // Inject pattern defs
+      if (defsData.patterns && defsEl) {
+        for (const pat of defsData.patterns) {
+          const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
+          patEl.setAttribute('id', pat.id);
+          patEl.setAttribute('data-pattern-def', pat.id);
+          patEl.setAttribute('x', String(pat.x));
+          patEl.setAttribute('y', String(pat.y));
+          patEl.setAttribute('width', String(pat.width));
+          patEl.setAttribute('height', String(pat.height));
+          if (pat.patternUnits) patEl.setAttribute('patternUnits', pat.patternUnits);
+          if (pat.patternTransform) patEl.setAttribute('patternTransform', pat.patternTransform);
+          if (pat.patternContentUnits) patEl.setAttribute('patternContentUnits', pat.patternContentUnits);
+          for (const el of pat.elements) {
+            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
+            pathEl.setAttribute('d', el.pathData);
+            for (const [k, v] of Object.entries(el.styles)) pathEl.setAttribute(k, v);
+            patEl.appendChild(pathEl);
+          }
+          defsEl.appendChild(patEl);
         }
       }
 

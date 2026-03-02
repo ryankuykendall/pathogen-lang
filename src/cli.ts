@@ -1,6 +1,7 @@
 import { compile, compileAnnotated } from './index';
 import type { CompileResult } from './index';
 import { readFileSync, writeFileSync } from 'fs';
+import { renderConicToWedges } from './conic-renderer';
 
 interface CliOptions {
   svgOutput?: string;
@@ -113,6 +114,24 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     defsContent.push(`  <clipPath id="${escapeXml(clip.id)}">\n${children}\n  </clipPath>`);
   }
   for (const grad of result.gradients) {
+    // Conic gradient: render as wedge paths wrapped in <pattern>
+    if (grad.type === 'conic') {
+      const svgW = parseInt(width, 10) || 200;
+      const svgH = parseInt(height, 10) || 200;
+      const wedges = renderConicToWedges(
+        grad.cx ?? 0, grad.cy ?? 0,
+        grad.from ?? 0, grad.to ?? (2 * Math.PI),
+        grad.direction ?? 'cw', grad.spread ?? 'clamp',
+        grad.stopsWithOklch ?? grad.stops,
+        svgW, svgH,
+      );
+      const children = wedges.map(w =>
+        `    <path d="${w.d}" fill="${escapeXml(w.fill)}"/>`
+      ).join('\n');
+      defsContent.push(`  <pattern id="${escapeXml(grad.id)}" x="0" y="0" width="${svgW}" height="${svgH}" patternUnits="userSpaceOnUse">\n${children}\n  </pattern>`);
+      continue;
+    }
+
     const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
     const attrParts = [`id="${escapeXml(grad.id)}"`];
     for (const [key, value] of Object.entries(grad.attrs)) {
@@ -130,6 +149,21 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
         `    <stop offset="${s.offset}" stop-color="${escapeXml(s.color)}"/>`
       ).join('\n');
       defsContent.push(`  <${tagName} ${attrParts.join(' ')}>\n${stops}\n  </${tagName}>`);
+    }
+  }
+  // Pattern serialization
+  if (result.patterns) {
+    for (const pat of result.patterns) {
+      const attrParts = [`id="${escapeXml(pat.id)}" x="${pat.x}" y="${pat.y}" width="${pat.width}" height="${pat.height}"`];
+      if (pat.patternUnits) attrParts.push(`patternUnits="${escapeXml(pat.patternUnits)}"`);
+      if (pat.patternTransform) attrParts.push(`patternTransform="${escapeXml(pat.patternTransform)}"`);
+      if (pat.patternContentUnits) attrParts.push(`patternContentUnits="${escapeXml(pat.patternContentUnits)}"`);
+      const children = pat.elements.map(el => {
+        const styleStr = Object.entries(el.styles)
+          .map(([k, v]) => `${k}="${escapeXml(String(v))}"`).join(' ');
+        return `    <path d="${escapeXml(el.pathData)}"${styleStr ? ' ' + styleStr : ''}/>`;
+      }).join('\n');
+      defsContent.push(`  <pattern ${attrParts.join(' ')}>\n${children}\n  </pattern>`);
     }
   }
   const defsSection = defsContent.length > 0

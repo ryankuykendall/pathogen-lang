@@ -53,7 +53,7 @@ export interface AnnotatedOutput {
 }
 
 // Value types (same as main evaluator)
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | GradientValue | ColorValue | ColorNamespace | CSSVarValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | GradientValue | PatternValue | ColorValue | ColorNamespace | CSSVarValue;
 
 export interface SVGFragmentValue {
   type: 'SVGFragmentValue';
@@ -68,7 +68,7 @@ function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
 
 export interface GradientValue {
   type: 'GradientValue';
-  gradientType: 'linear' | 'radial';
+  gradientType: 'linear' | 'radial' | 'conic';
   id: string;
   attrs: Record<string, string>;
   stops: Array<{ offset: number; color: string }>;
@@ -78,10 +78,29 @@ export interface GradientValue {
   href?: string;
   interpolation?: 'srgb' | 'oklch' | 'linearRGB';
   steps?: number;
+  from?: number;
+  to?: number;
+  direction?: 'cw' | 'ccw';
+  spread?: string;
 }
 
 function isGradientValue(value: Value): value is GradientValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GradientValue';
+}
+
+export interface PatternValue {
+  type: 'PatternValue';
+  id: string;
+  x: number; y: number;
+  width: number; height: number;
+  paths: Array<{ d: string; styles: Record<string, string> }>;
+  patternUnits?: string;
+  patternTransform?: string;
+  patternContentUnits?: string;
+}
+
+function isPatternValue(value: Value): value is PatternValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PatternValue';
 }
 
 export interface ColorValue {
@@ -165,6 +184,50 @@ export interface ProjectedPathValue {
 
 function isProjectedPathValue(value: Value): value is ProjectedPathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
+}
+
+function projectCommands(commands: PathBlockCommand[], originX: number, originY: number): PathBlockCommand[] {
+  return commands.map(cmd => ({
+    command: cmd.command,
+    args: [...cmd.args],
+    start: { x: cmd.start.x + originX, y: cmd.start.y + originY },
+    end: { x: cmd.end.x + originX, y: cmd.end.y + originY },
+  }));
+}
+
+function commandsToRelativeD(commands: PathBlockCommand[]): string {
+  const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+  const parts: string[] = [];
+  for (const cmd of commands) {
+    const c = cmd.command;
+    const dx = cmd.end.x - cmd.start.x;
+    const dy = cmd.end.y - cmd.start.y;
+    if (c === 'z') {
+      parts.push('z');
+    } else if (c === 'h') {
+      parts.push(`h ${fmt(dx)}`);
+    } else if (c === 'v') {
+      parts.push(`v ${fmt(dy)}`);
+    } else if (c === 'c') {
+      const [dx1, dy1, dx2, dy2] = cmd.args;
+      parts.push(`c ${fmt(dx1)} ${fmt(dy1)} ${fmt(dx2)} ${fmt(dy2)} ${fmt(dx)} ${fmt(dy)}`);
+    } else if (c === 's') {
+      const [dx2, dy2] = cmd.args;
+      parts.push(`s ${fmt(dx2)} ${fmt(dy2)} ${fmt(dx)} ${fmt(dy)}`);
+    } else if (c === 'q') {
+      const [dx1, dy1] = cmd.args;
+      parts.push(`q ${fmt(dx1)} ${fmt(dy1)} ${fmt(dx)} ${fmt(dy)}`);
+    } else if (c === 't') {
+      parts.push(`t ${fmt(dx)} ${fmt(dy)}`);
+    } else if (c === 'a') {
+      const [rx, ry, rotation, largeArc, sweep] = cmd.args;
+      parts.push(`a ${fmt(rx)} ${fmt(ry)} ${fmt(rotation)} ${fmt(largeArc)} ${fmt(sweep)} ${fmt(dx)} ${fmt(dy)}`);
+    } else {
+      // m, l → relative move/line
+      parts.push(`${c} ${fmt(dx)} ${fmt(dy)}`);
+    }
+  }
+  return parts.join(' ');
 }
 
 export interface StyleBlockValue {
@@ -699,6 +762,17 @@ function camelToKebab(name: string): string {
   return name.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 }
 
+function hasAngleUnit(expr: Expression): boolean {
+  if (expr.type === 'NumberLiteral') {
+    return expr.unit !== undefined;
+  }
+  // For unary minus on a number with unit: -45deg
+  if (expr.type === 'UnaryExpression' && expr.operator === '-') {
+    return hasAngleUnit(expr.argument);
+  }
+  return false;
+}
+
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
   const properties: Record<string, string> = {};
   for (const prop of expr.properties) {
@@ -724,6 +798,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
         } else if (isGradientValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
+        } else if (isPatternValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
         }
       }
@@ -1088,33 +1164,31 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   // PathBlockValue methods: draw(), project()
   if (isPathBlockValue(obj)) {
     if (expr.method === 'draw') {
-      // In annotated mode, draw() emits relative commands and returns a ProjectedPath
+      // In annotated mode, draw() emits relative commands from structured data
       const ctx = scope.evalState?.pathContext;
       const originX = ctx?.position.x ?? 0;
       const originY = ctx?.position.y ?? 0;
 
-      // Track context updates
-      for (const pathStr of obj.pathStrings) {
-        if (scope.evalState) {
-          parseAndTrackPathString(pathStr, scope);
-        }
+      // Emit relative commands (naturally work from cursor position)
+      const emittedPath = commandsToRelativeD(obj.commands);
+
+      // Track the relative path in context
+      if (scope.evalState) {
+        parseAndTrackPathString(emittedPath, scope);
       }
 
+      // Build ProjectedPathValue with absolute coordinates for programmatic use
+      const projectedCommands = projectCommands(obj.commands, originX, originY);
       const projected: ProjectedPathValue = {
         type: 'ProjectedPathValue',
-        commands: obj.commands.map(cmd => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x + originX, y: cmd.start.y + originY },
-          end: { x: cmd.end.x + originX, y: cmd.end.y + originY },
-        })),
+        commands: projectedCommands,
         startPoint: { x: obj.startPoint.x + originX, y: obj.startPoint.y + originY },
         endPoint: { x: obj.endPoint.x + originX, y: obj.endPoint.y + originY },
       };
 
       return {
         type: 'PathWithResult' as const,
-        path: obj.pathStrings.join(' '),
+        path: emittedPath,
         result: projected as unknown as ContextObject,
       };
     }
@@ -1153,6 +1227,40 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     throw mError(`Unknown ProjectedPath method: ${expr.method}`);
   }
 
+  // PatternValue methods
+  if (isPatternValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('Pattern.append() expects 1-2 arguments (path, styles?)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = pathArg.commands.map(cmd => ({
+            command: cmd.command,
+            args: [...cmd.args],
+            start: { x: cmd.start.x, y: cmd.start.y },
+            end: { x: cmd.end.x, y: cmd.end.y },
+          }));
+        } else {
+          throw mError('Pattern.append() first argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commands.map(c => commandToPathString(c)).join(' ');
+        let styles: Record<string, string> = {};
+        if (expr.args.length === 2) {
+          const styleArg = evaluateExpression(expr.args[1], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Pattern.append() second argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        obj.paths.push({ d, styles });
+        return 0;
+      }
+      default:
+        throw mError(`Unknown Pattern method: ${expr.method}`);
+    }
+  }
+
   // GradientValue methods
   if (isGradientValue(obj)) {
     switch (expr.method) {
@@ -1179,6 +1287,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           attrs: { ...obj.attrs }, stops: [], href: obj.id,
           interpolation: obj.interpolation,
           steps: obj.steps,
+          // Propagate conic fields
+          from: obj.from, to: obj.to,
+          direction: obj.direction, spread: obj.spread,
         };
       }
       default:
@@ -1663,7 +1774,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   }
 
   const commands: PathBlockCommand[] = blockContext.commands.map(entry => ({
-    command: entry.command,
+    command: entry.command.toLowerCase(),
     args: [...entry.args],
     start: { x: entry.start.x, y: entry.start.y },
     end: { x: entry.end.x, y: entry.end.y },
@@ -1736,6 +1847,18 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle PatternValue property access
+  if (isPatternValue(obj)) {
+    switch (expr.property) {
+      case 'id': return obj.id;
+      case 'patternUnits': return obj.patternUnits ?? null;
+      case 'patternTransform': return obj.patternTransform ?? null;
+      case 'patternContentUnits': return obj.patternContentUnits ?? null;
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on Pattern`, line));
+    }
+  }
+
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
@@ -1745,6 +1868,11 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'gradientTransform': return obj.gradientTransform ?? null;
       case 'interpolation': return obj.interpolation ?? null;
       case 'steps': return obj.steps ?? null;
+      // Conic-specific properties
+      case 'from': return obj.from ?? 0;
+      case 'to': return obj.to ?? (2 * Math.PI);
+      case 'direction': return obj.direction ?? 'cw';
+      case 'spread': return obj.spread ?? 'clamp';
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on Gradient`, line));
     }
@@ -1960,6 +2088,61 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       }
     }
     return gradient;
+  }
+
+  // Handle ConicGradient() constructor
+  if (call.name === 'ConicGradient') {
+    if (call.args.length !== 3) {
+      throw new Error(formatError(`ConicGradient() expects 3 arguments (id, cx, cy), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('ConicGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    const cx = evaluateExpression(call.args[1], scope);
+    const cy = evaluateExpression(call.args[2], scope);
+    if (typeof cx !== 'number' || typeof cy !== 'number') {
+      throw new Error(formatError('ConicGradient() coordinate arguments must be numbers', call.loc?.line, call.loc?.column));
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'conic', id,
+      attrs: { cx: String(cx), cy: String(cy) },
+      stops: [],
+      from: 0, to: 2 * Math.PI, direction: 'cw', spread: 'clamp',
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle Pattern() constructor
+  if (call.name === 'Pattern') {
+    if (call.args.length !== 5) {
+      throw new Error(formatError(`Pattern() expects 5 arguments (id, x, y, width, height), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('Pattern() first argument must be a string', call.loc?.line, call.loc?.column));
+    const x = evaluateExpression(call.args[1], scope);
+    const y = evaluateExpression(call.args[2], scope);
+    const w = evaluateExpression(call.args[3], scope);
+    const h = evaluateExpression(call.args[4], scope);
+    if (typeof x !== 'number' || typeof y !== 'number' || typeof w !== 'number' || typeof h !== 'number') {
+      throw new Error(formatError('Pattern() coordinate arguments must be numbers', call.loc?.line, call.loc?.column));
+    }
+    const pattern: PatternValue = {
+      type: 'PatternValue', id, x, y, width: w, height: h, paths: [],
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, pattern);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return pattern;
   }
 
   // Handle SVGDocumentFragment() — evaluate args and call sanitizer
@@ -2335,9 +2518,55 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       return '';
 
     case 'MemberAssignmentStatement': {
-      // In annotated mode, just evaluate both sides (no real layer state)
-      evaluateExpression(stmt.object, scope);
-      evaluateExpression(stmt.value, scope);
+      const obj = evaluateExpression(stmt.object, scope);
+      const value = evaluateExpression(stmt.value, scope);
+      // Handle Pattern property assignment
+      if (isPatternValue(obj)) {
+        if (typeof value === 'string') {
+          switch (stmt.property) {
+            case 'patternUnits': obj.patternUnits = value; break;
+            case 'patternTransform': obj.patternTransform = value; break;
+            case 'patternContentUnits': obj.patternContentUnits = value; break;
+          }
+        }
+      }
+      // Handle Gradient property assignment (including conic fields)
+      if (isGradientValue(obj)) {
+        switch (stmt.property) {
+          case 'spreadMethod':
+          case 'gradientUnits':
+          case 'gradientTransform': {
+            if (typeof value === 'string') {
+              if (stmt.property === 'spreadMethod') obj.spreadMethod = value;
+              else if (stmt.property === 'gradientUnits') obj.gradientUnits = value;
+              else obj.gradientTransform = value;
+            }
+            break;
+          }
+          case 'interpolation': {
+            if (typeof value === 'string' && (value === 'srgb' || value === 'oklch' || value === 'linearRGB')) {
+              obj.interpolation = value as 'srgb' | 'oklch' | 'linearRGB';
+            }
+            break;
+          }
+          case 'steps': {
+            if (typeof value === 'number') obj.steps = value;
+            break;
+          }
+          case 'from': case 'to': {
+            if (typeof value === 'number') obj[stmt.property] = value;
+            break;
+          }
+          case 'direction': {
+            if (value === 'cw' || value === 'ccw') obj.direction = value as 'cw' | 'ccw';
+            break;
+          }
+          case 'spread': {
+            if (typeof value === 'string') obj.spread = value;
+            break;
+          }
+        }
+      }
       return '';
     }
 
@@ -2809,8 +3038,55 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       break;
 
     case 'MemberAssignmentStatement': {
-      evaluateExpression(stmt.object, scope);
-      evaluateExpression(stmt.value, scope);
+      const maObj = evaluateExpression(stmt.object, scope);
+      const maValue = evaluateExpression(stmt.value, scope);
+      // Handle Pattern property assignment
+      if (isPatternValue(maObj)) {
+        if (typeof maValue === 'string') {
+          switch (stmt.property) {
+            case 'patternUnits': maObj.patternUnits = maValue; break;
+            case 'patternTransform': maObj.patternTransform = maValue; break;
+            case 'patternContentUnits': maObj.patternContentUnits = maValue; break;
+          }
+        }
+      }
+      // Handle Gradient property assignment (including conic fields)
+      if (isGradientValue(maObj)) {
+        switch (stmt.property) {
+          case 'spreadMethod':
+          case 'gradientUnits':
+          case 'gradientTransform': {
+            if (typeof maValue === 'string') {
+              if (stmt.property === 'spreadMethod') maObj.spreadMethod = maValue;
+              else if (stmt.property === 'gradientUnits') maObj.gradientUnits = maValue;
+              else maObj.gradientTransform = maValue;
+            }
+            break;
+          }
+          case 'interpolation': {
+            if (typeof maValue === 'string' && (maValue === 'srgb' || maValue === 'oklch' || maValue === 'linearRGB')) {
+              maObj.interpolation = maValue as 'srgb' | 'oklch' | 'linearRGB';
+            }
+            break;
+          }
+          case 'steps': {
+            if (typeof maValue === 'number') maObj.steps = maValue;
+            break;
+          }
+          case 'from': case 'to': {
+            if (typeof maValue === 'number') maObj[stmt.property] = maValue;
+            break;
+          }
+          case 'direction': {
+            if (maValue === 'cw' || maValue === 'ccw') maObj.direction = maValue as 'cw' | 'ccw';
+            break;
+          }
+          case 'spread': {
+            if (typeof maValue === 'string') maObj.spread = maValue;
+            break;
+          }
+        }
+      }
       break;
     }
 

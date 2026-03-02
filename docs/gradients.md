@@ -142,6 +142,180 @@ The compiler preserves the `var()` reference in the `stop-color` attribute, allo
 
 CSSVar stops are skipped during OKLCh expansion — since their actual color is determined at runtime, the compiler cannot interpolate them at compile time. Non-CSSVar stops adjacent to CSSVar stops will not have intermediate stops generated between them.
 
+## Pattern Paint Server
+
+Create a tiling pattern with an ID, position, and tile dimensions:
+
+```
+let dot = @{ circle(10, 10, 3) };
+let dots = Pattern('dots', 0, 0, 20, 20) {|p|
+  p.append(dot, ${ fill: Color('#e63946'); });
+};
+dots.patternUnits = 'userSpaceOnUse';
+```
+
+Constructor signature: `Pattern(id, x, y, width, height)` — defines the tile origin and size.
+
+### Pattern Methods
+
+Use `.append(pathBlock, styles?)` inside the trailing block to add path elements to the pattern. This works the same way as `Mask.append()`:
+
+- **pathBlock** — a PathBlock (`@{ ... }`) or ProjectedPath
+- **styles** — optional style block for the path element
+
+```
+let line = @{ m 0 0 l 20 20 };
+let hatch = Pattern('hatch', 0, 0, 20, 20) {|p|
+  p.append(line, ${ stroke: Color('#999'); stroke-width: 1; });
+};
+```
+
+### Pattern Properties
+
+| Property | Values | Default |
+|----------|--------|---------|
+| `patternUnits` | `'objectBoundingBox'`, `'userSpaceOnUse'` | `'objectBoundingBox'` |
+| `patternTransform` | SVG transform string | none |
+| `patternContentUnits` | `'objectBoundingBox'`, `'userSpaceOnUse'` | `'userSpaceOnUse'` |
+
+### Using Patterns in Styles
+
+Reference a pattern in `fill` or `stroke` style properties, just like gradients:
+
+```
+define PathLayer('bg') ${ fill: dots; stroke: none; }
+layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
+```
+
+This produces `fill="url(#dots)"` on the output `<path>` element.
+
+### Pattern SVG Output
+
+```xml
+<defs>
+  <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+    <path d="M 7 10 A 3 3 0 0 1 13 10 A 3 3 0 0 1 7 10" fill="#e63946"/>
+  </pattern>
+</defs>
+```
+
+## Conic Gradient
+
+Create a conic (angular) gradient with an ID and center point:
+
+```
+let wheel = ConicGradient('wheel', 100, 100) {|g|
+  g.stop(0, Color('#e63946'));
+  g.stop(0.33, Color('#2a9d8f'));
+  g.stop(0.66, Color('#264653'));
+  g.stop(1, Color('#e63946'));
+};
+```
+
+Constructor signature: `ConicGradient(id, cx, cy)` — center coordinates in user space.
+
+Conic gradients use the same `.stop(offset, color)` method as linear and radial gradients. Stops map to the angular sweep: offset 0 is the start angle, offset 1 is the end angle.
+
+### Conic Gradient Properties
+
+| Property | Values | Default |
+|----------|--------|---------|
+| `from` | Start angle (requires unit: `deg`, `rad`, `pi`) | `0rad` (3 o'clock) |
+| `to` | End angle (requires unit) | `from + 2pi` (full revolution) |
+| `direction` | `'cw'`, `'ccw'` | `'cw'` |
+| `spread` | `'clamp'`, `'repeat'`, `'transparent'` | `'clamp'` |
+| `interpolation` | `'srgb'`, `'oklch'`, `'linearRGB'` | `'srgb'` |
+| `steps` | Intermediate stop density | `10` |
+
+### Angle Units Required
+
+The `from` and `to` properties **require** an angle unit suffix on literal numbers:
+
+```
+gauge.from = 135deg;     // degrees → converted to radians
+gauge.to = 2.356rad;     // radians (used as-is)
+gauge.from = 0.75pi;     // multiples of π
+
+gauge.from = 135;        // ERROR: requires angle unit. Use 135deg
+```
+
+Computed expressions and function results are accepted without unit checks (they are assumed to already be in radians):
+
+```
+gauge.from = rad(135);   // OK — rad() returns radians
+```
+
+### Partial Sweep
+
+Set `from` and `to` for arcs less than (or greater than) a full revolution:
+
+```
+// Gauge: 270° arc with gap at bottom
+let gauge = ConicGradient('gauge', 100, 100) {|g|
+  g.stop(0, Color('#2a9d8f'));
+  g.stop(0.5, Color('#e9c46a'));
+  g.stop(1, Color('#e63946'));
+};
+gauge.from = 135deg;
+gauge.to = 405deg;
+```
+
+### Direction
+
+`direction` controls which way colors sweep within the arc:
+
+- `'cw'` (default) — colors flow clockwise from `from` to `to`
+- `'ccw'` — colors flow counter-clockwise (stop offsets are reversed)
+
+```
+let reversed = ConicGradient('rev', 100, 100) {|g|
+  g.stop(0, Color('#000'));
+  g.stop(1, Color('#fff'));
+};
+reversed.direction = 'ccw';
+```
+
+### Spread Modes
+
+`spread` controls what happens outside the `[from, to]` arc for partial sweeps:
+
+| Spread | Effect |
+|--------|--------|
+| `'clamp'` | Edge colors extend to fill remaining area |
+| `'repeat'` | Pattern tiles to fill remaining area |
+| `'transparent'` | Outside-arc area is empty (no wedges emitted) |
+
+### Rendering
+
+Since SVG has no native conic gradient element, the output depends on the consumer:
+
+- **CLI** (`--output-svg-file`): Wedge-path SVG approximation wrapped in `<pattern>`. Each ~1° slice is an individual `<path>` element with an interpolated fill color.
+- **Playground**: Canvas 2D `createConicGradient()` → rendered to a PNG image → injected as `<pattern><image/></pattern>` for higher quality.
+
+Both approaches are referenced via `url(#id)` in `fill`/`stroke`, identical to native gradients.
+
+### OKLCh Interpolation
+
+Conic gradients support OKLCh interpolation via the shared `interpolation` and `steps` properties:
+
+```
+let smooth = ConicGradient('smooth', 100, 100) {|g|
+  g.stop(0, Color('#e63946'));
+  g.stop(1, Color('#2a9d8f'));
+};
+smooth.interpolation = 'oklch';
+smooth.steps = 15;
+```
+
+### Conic Gradient Inheritance
+
+Use `.inherit(newId)` to create child conic gradients. All conic-specific properties (`from`, `to`, `direction`, `spread`) propagate to the child:
+
+```
+let child = wheel.inherit('child-wheel');
+child.from = 90deg;
+```
+
 ## Gradient Inheritance
 
 Create a new gradient that inherits stops and attributes from an existing one using `.inherit(newId)`:
@@ -169,6 +343,14 @@ The inherited gradient uses SVG's `href` attribute to reference the parent. It i
 | `gradient.gradientTransform` | Current gradientTransform or `undefined` |
 | `gradient.interpolation` | Current interpolation mode or `null` |
 | `gradient.steps` | Current steps value or `null` |
+| `gradient.from` | Conic: start angle in radians (default `0`) |
+| `gradient.to` | Conic: end angle in radians (default `2π`) |
+| `gradient.direction` | Conic: `'cw'` or `'ccw'` (default `'cw'`) |
+| `gradient.spread` | Conic: spread mode (default `'clamp'`) |
+| `pattern.id` | The pattern's string ID |
+| `pattern.patternUnits` | Current patternUnits or `null` |
+| `pattern.patternTransform` | Current patternTransform or `null` |
+| `pattern.patternContentUnits` | Current patternContentUnits or `null` |
 
 ## Dynamic Stop Generation
 
@@ -237,12 +419,17 @@ const result = compile(`
 
 | Error | Cause |
 |-------|-------|
-| `Duplicate defs ID 'x'` | Gradient ID conflicts with another gradient, mask, or clipPath |
+| `Duplicate defs ID 'x'` | ID conflicts with another gradient, mask, clipPath, or pattern |
 | `LinearGradient() expects 5 arguments` | Wrong argument count |
 | `RadialGradient() expects 4-6 arguments` | Wrong argument count |
+| `ConicGradient() expects 3 arguments` | Wrong argument count |
+| `Pattern() expects 5 arguments` | Wrong argument count |
 | `First argument must be a string` | Non-string ID |
 | `stop() offset must be a number` | Non-numeric stop offset |
 | `stop() color must be a Color value` | Non-Color stop color |
+| `requires an angle unit` | Bare number on conic `from`/`to` (use `135deg`) |
+| `direction must be 'cw' or 'ccw'` | Invalid conic direction |
+| `spread must be 'clamp', 'repeat', or 'transparent'` | Invalid conic spread |
 
 ## Full Example
 

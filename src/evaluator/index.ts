@@ -51,7 +51,7 @@ import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathStrin
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker-start', 'marker-mid', 'marker-end']);
 
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | GradientValue | ColorValue | ColorNamespace | CSSVarValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | PatternValue | GradientValue | ColorValue | ColorNamespace | CSSVarValue;
 
 /**
  * Represents an array value (reference semantics)
@@ -137,6 +137,24 @@ export function isClipPathValue(value: Value): value is ClipPathValue {
 }
 
 /**
+ * Represents a <pattern> definition with appended path elements
+ */
+export interface PatternValue {
+  type: 'PatternValue';
+  id: string;
+  x: number; y: number;
+  width: number; height: number;
+  paths: MaskPathEntry[];  // reuse {d, styles} type
+  patternUnits?: string;
+  patternTransform?: string;
+  patternContentUnits?: string;
+}
+
+export function isPatternValue(value: Value): value is PatternValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PatternValue';
+}
+
+/**
  * A color stop in a gradient
  */
 export interface GradientStop {
@@ -150,9 +168,9 @@ export interface GradientStop {
  */
 export interface GradientValue {
   type: 'GradientValue';
-  gradientType: 'linear' | 'radial';
+  gradientType: 'linear' | 'radial' | 'conic';
   id: string;
-  attrs: Record<string, string>;  // x1,y1,x2,y2 or cx,cy,r,fx,fy
+  attrs: Record<string, string>;  // x1,y1,x2,y2 or cx,cy,r,fx,fy or cx,cy for conic
   stops: GradientStop[];
   spreadMethod?: string;
   gradientUnits?: string;
@@ -160,6 +178,11 @@ export interface GradientValue {
   href?: string;
   interpolation?: 'srgb' | 'oklch' | 'linearRGB';
   steps?: number;
+  // Conic-specific (angles in radians):
+  from?: number;        // start angle in radians (default 0)
+  to?: number;          // end angle in radians (default from + 2*PI)
+  direction?: 'cw' | 'ccw';
+  spread?: string;      // 'clamp' | 'repeat' | 'transparent'
 }
 
 export function isGradientValue(value: Value): value is GradientValue {
@@ -400,9 +423,19 @@ export interface CSSPropertyDeclaration {
   initialValue: string;  // '#e63946'
 }
 
+export interface PatternOutput {
+  id: string;
+  x: number; y: number;
+  width: number; height: number;
+  elements: Array<{ pathData: string; styles: Record<string, string> }>;
+  patternUnits?: string;
+  patternTransform?: string;
+  patternContentUnits?: string;
+}
+
 export interface GradientOutput {
   id: string;
-  type: 'linear' | 'radial';
+  type: 'linear' | 'radial' | 'conic';
   attrs: Record<string, string>;
   stops: Array<{ offset: number; color: string }>;
   spreadMethod?: string;
@@ -410,6 +443,12 @@ export interface GradientOutput {
   gradientTransform?: string;
   href?: string;
   colorInterpolation?: string;
+  // Conic-specific:
+  cx?: number; cy?: number;
+  from?: number; to?: number;    // radians
+  direction?: 'cw' | 'ccw';
+  spread?: string;
+  stopsWithOklch?: Array<{ offset: number; color: string; oklch?: OKLCH }>;
 }
 
 export interface CompileResult {
@@ -417,6 +456,7 @@ export interface CompileResult {
   masks: MaskOutput[];
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
+  patterns: PatternOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
@@ -500,6 +540,7 @@ export interface EvaluationState {
   masks: Map<string, MaskValue>;       // Mask definitions by ID
   clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID
   gradients: Map<string, GradientValue>; // Gradient definitions by ID
+  patterns: Map<string, PatternValue>;   // Pattern definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
 }
 
@@ -700,6 +741,45 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
 }
 
 /**
+ * Serialize PathBlockCommands to a relative SVG d-attribute string.
+ * Reconstructs relative commands from structured command data. Used by .draw()
+ * so PathBlock geometry stays relative to the cursor position.
+ */
+function commandsToRelativeD(commands: PathBlockCommand[]): string {
+  const parts: string[] = [];
+  for (const cmd of commands) {
+    const c = cmd.command;
+    const dx = cmd.end.x - cmd.start.x;
+    const dy = cmd.end.y - cmd.start.y;
+    if (c === 'z') {
+      parts.push('z');
+    } else if (c === 'h') {
+      parts.push(`h ${formatNum(dx)}`);
+    } else if (c === 'v') {
+      parts.push(`v ${formatNum(dy)}`);
+    } else if (c === 'c') {
+      const [dx1, dy1, dx2, dy2] = cmd.args;
+      parts.push(`c ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`);
+    } else if (c === 's') {
+      const [dx2, dy2] = cmd.args;
+      parts.push(`s ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`);
+    } else if (c === 'q') {
+      const [dx1, dy1] = cmd.args;
+      parts.push(`q ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx)} ${formatNum(dy)}`);
+    } else if (c === 't') {
+      parts.push(`t ${formatNum(dx)} ${formatNum(dy)}`);
+    } else if (c === 'a') {
+      const [rx, ry, rotation, largeArc, sweep] = cmd.args;
+      parts.push(`a ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${formatNum(largeArc)} ${formatNum(sweep)} ${formatNum(dx)} ${formatNum(dy)}`);
+    } else {
+      // m, l → relative move/line
+      parts.push(`${c} ${formatNum(dx)} ${formatNum(dy)}`);
+    }
+  }
+  return parts.join(' ');
+}
+
+/**
  * Serialize PathBlockCommands to an absolute SVG d-attribute string.
  * Commands have absolute start/end points; relative args are converted to absolute.
  */
@@ -767,6 +847,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
         } else if (isGradientValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
+        } else if (isPatternValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
         }
         // For other types, keep raw string
@@ -1012,6 +1094,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     masks: scope.evalState?.masks ?? new Map(),
     clipPaths: scope.evalState?.clipPaths ?? new Map(),
     gradients: scope.evalState?.gradients ?? new Map(),
+    patterns: scope.evalState?.patterns ?? new Map(),
     cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insidePathBlock: true,
   };
@@ -1043,7 +1126,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
 
   // Build the PathBlockValue from accumulated commands
   const commands: PathBlockCommand[] = blockContext.commands.map(entry => ({
-    command: entry.command,
+    command: entry.command.toLowerCase(),
     args: [...entry.args],
     start: { x: entry.start.x, y: entry.start.y },
     end: { x: entry.end.x, y: entry.end.y },
@@ -1200,28 +1283,29 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const originX = activeCtx.position.x;
         const originY = activeCtx.position.y;
 
-        // Emit relative path commands to the active accumulator
-        // The path strings are already relative, so we emit them directly
-        // The context tracking will handle position updates
-        const emittedCommands: string[] = [];
-        for (const pathStr of obj.pathStrings) {
-          emittedCommands.push(pathStr);
-          // Parse and track context for each command string
-          parseAndTrackPathString(pathStr, scope);
-        }
+        // Emit relative commands from structured command data (not raw pathStrings).
+        // Relative commands naturally work from the cursor position, so no projection
+        // is needed for the emitted path. We reconstruct from structured commands
+        // because stdlib functions like circle() store absolute coordinates in their
+        // PathSegment strings, but the structured commands are already relative.
+        const emittedPath = commandsToRelativeD(obj.commands);
 
-        // Build the ProjectedPathValue with absolute coordinates
+        // Track the relative path in context (updates cursor from current position)
+        parseAndTrackPathString(emittedPath, scope);
+
+        // Build the ProjectedPathValue with absolute coordinates for programmatic use
+        const projectedCommands = projectCommands(obj.commands, originX, originY);
         const projected: ProjectedPathValue = {
           type: 'ProjectedPathValue',
-          commands: projectCommands(obj.commands, originX, originY),
+          commands: projectedCommands,
           startPoint: { x: obj.startPoint.x + originX, y: obj.startPoint.y + originY },
           endPoint: { x: obj.endPoint.x + originX, y: obj.endPoint.y + originY },
         };
 
-        // Return as PathWithResult — emits path AND returns ProjectedPath
+        // Return as PathWithResult — emits relative path AND returns ProjectedPath
         return {
           type: 'PathWithResult' as const,
-          path: emittedCommands.join(' '),
+          path: emittedPath,
           result: projected,
         };
       }
@@ -1820,6 +1904,35 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // PatternValue methods
+  if (isPatternValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('Pattern.append() expects 1-2 arguments (path, styles?)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = projectCommands(pathArg.commands, 0, 0);
+        } else {
+          throw mError('Pattern.append() first argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commandsToAbsoluteD(commands);
+        let styles: Record<string, string> = {};
+        if (expr.args.length === 2) {
+          const styleArg = evaluateExpression(expr.args[1], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Pattern.append() second argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        obj.paths.push({ d, styles });
+        return 0;
+      }
+      default:
+        throw mError(`Unknown Pattern method: ${expr.method}`);
+    }
+  }
+
   // GradientValue methods
   if (isGradientValue(obj)) {
     switch (expr.method) {
@@ -1842,14 +1955,17 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const newId = evaluateExpression(expr.args[0], scope);
         if (typeof newId !== 'string') throw mError('Gradient.inherit() argument must be a string');
         if (!scope.evalState) throw mError('Gradient.inherit() requires evaluation context');
-        if (scope.evalState.masks.has(newId) || scope.evalState.clipPaths.has(newId) || scope.evalState.gradients.has(newId)) {
-          throw new Error(`Duplicate defs ID '${newId}': a Mask, ClipPath, or Gradient with this ID already exists`);
+        if (scope.evalState.masks.has(newId) || scope.evalState.clipPaths.has(newId) || scope.evalState.gradients.has(newId) || scope.evalState.patterns.has(newId)) {
+          throw new Error(`Duplicate defs ID '${newId}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
         }
         const child: GradientValue = {
           type: 'GradientValue', gradientType: obj.gradientType, id: newId,
           attrs: { ...obj.attrs }, stops: [], href: obj.id,
           interpolation: obj.interpolation,
           steps: obj.steps,
+          // Propagate conic fields
+          from: obj.from, to: obj.to,
+          direction: obj.direction, spread: obj.spread,
         };
         scope.evalState.gradients.set(newId, child);
         return child;
@@ -2209,6 +2325,12 @@ function formatValueForDisplay(val: Value): string {
   if (isClipPathValue(val)) {
     return `ClipPath(${val.id}, ${val.paths.length} paths)`;
   }
+  if (isPatternValue(val)) {
+    return `Pattern(${val.id}, ${val.paths.length} elements)`;
+  }
+  if (isGradientValue(val)) {
+    return `${val.gradientType.charAt(0).toUpperCase() + val.gradientType.slice(1)}Gradient(${val.id}, ${val.stops.length} stops)`;
+  }
   if (isColorValue(val)) {
     if (val.lightDark) {
       return `Color.lightDark(${val.lightDark.lightCSS}, ${val.lightDark.darkCSS})`;
@@ -2375,6 +2497,18 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     throw new Error(`Property '${expr.property}' does not exist on ClipPath`);
   }
 
+  // Handle PatternValue property access
+  if (isPatternValue(obj)) {
+    switch (expr.property) {
+      case 'id': return obj.id;
+      case 'patternUnits': return obj.patternUnits ?? null;
+      case 'patternTransform': return obj.patternTransform ?? null;
+      case 'patternContentUnits': return obj.patternContentUnits ?? null;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on Pattern`);
+    }
+  }
+
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
@@ -2384,6 +2518,11 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'gradientTransform': return obj.gradientTransform ?? null;
       case 'interpolation': return obj.interpolation ?? null;
       case 'steps': return obj.steps ?? null;
+      // Conic-specific properties
+      case 'from': return obj.from ?? 0;
+      case 'to': return obj.to ?? (2 * Math.PI);
+      case 'direction': return obj.direction ?? 'cw';
+      case 'spread': return obj.spread ?? 'clamp';
       default:
         throw new Error(`Property '${expr.property}' does not exist on Gradient`);
     }
@@ -2545,6 +2684,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
           stringValue = formatValueForDisplay(value);
         } else if (isClipPathValue(value)) {
           stringValue = formatValueForDisplay(value);
+        } else if (isPatternValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (isGradientValue(value)) {
+          stringValue = formatValueForDisplay(value);
         } else if (isColorValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isCSSVarValue(value)) {
@@ -2657,8 +2800,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) throw new Error('Mask() requires evaluation context');
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string') throw new Error('Mask() argument must be a string');
-    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
     }
     const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
     scope.evalState.masks.set(id, mask);
@@ -2673,8 +2816,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) throw new Error('ClipPath() requires evaluation context');
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string') throw new Error('ClipPath() argument must be a string');
-    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
     }
     const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
     scope.evalState.clipPaths.set(id, clipPath);
@@ -2696,8 +2839,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (typeof x1 !== 'number' || typeof y1 !== 'number' || typeof x2 !== 'number' || typeof y2 !== 'number') {
       throw new Error(formatError('LinearGradient() coordinate arguments must be numbers', getLine(call), getCol(call)));
     }
-    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue', gradientType: 'linear', id,
@@ -2741,11 +2884,78 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       if (typeof fy !== 'number') throw new Error(formatError('RadialGradient() fy must be a number', getLine(call), getCol(call)));
       attrs.fy = String(fy);
     }
-    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id)) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, or Gradient with this ID already exists`);
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue', gradientType: 'radial', id, attrs, stops: [],
+    };
+    scope.evalState.gradients.set(id, gradient);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle Pattern() constructor
+  if (call.name === 'Pattern') {
+    if (call.args.length !== 5) {
+      throw new Error(formatError(`Pattern() expects 5 arguments (id, x, y, width, height), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('Pattern() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('Pattern() first argument must be a string', getLine(call), getCol(call)));
+    const x = evaluateExpression(call.args[1], scope);
+    const y = evaluateExpression(call.args[2], scope);
+    const w = evaluateExpression(call.args[3], scope);
+    const h = evaluateExpression(call.args[4], scope);
+    if (typeof x !== 'number' || typeof y !== 'number' || typeof w !== 'number' || typeof h !== 'number') {
+      throw new Error(formatError('Pattern() coordinate arguments must be numbers', getLine(call), getCol(call)));
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+    }
+    const pattern: PatternValue = {
+      type: 'PatternValue', id, x, y, width: w, height: h, paths: [],
+    };
+    scope.evalState.patterns.set(id, pattern);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, pattern);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return pattern;
+  }
+
+  // Handle ConicGradient() constructor
+  if (call.name === 'ConicGradient') {
+    if (call.args.length !== 3) {
+      throw new Error(formatError(`ConicGradient() expects 3 arguments (id, cx, cy), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('ConicGradient() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('ConicGradient() first argument must be a string', getLine(call), getCol(call)));
+    const cx = evaluateExpression(call.args[1], scope);
+    const cy = evaluateExpression(call.args[2], scope);
+    if (typeof cx !== 'number' || typeof cy !== 'number') {
+      throw new Error(formatError('ConicGradient() coordinate arguments must be numbers', getLine(call), getCol(call)));
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'conic', id,
+      attrs: { cx: String(cx), cy: String(cy) },
+      stops: [],
+      from: 0, to: 2 * Math.PI, direction: 'cw', spread: 'clamp',
     };
     scope.evalState.gradients.set(id, gradient);
     // Execute trailing block if present
@@ -3849,6 +4059,16 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         obj.layer.styles = { ...value.properties };
         return;
       }
+      if (isPatternValue(obj)) {
+        if (typeof value !== 'string') throw new Error(formatError(`Pattern property '${stmt.property}' must be a string`, getLine(stmt)));
+        switch (stmt.property) {
+          case 'patternUnits': obj.patternUnits = value; return;
+          case 'patternTransform': obj.patternTransform = value; return;
+          case 'patternContentUnits': obj.patternContentUnits = value; return;
+          default:
+            throw new Error(formatError(`Cannot assign to Pattern property '${stmt.property}'`, getLine(stmt)));
+        }
+      }
       if (isGradientValue(obj)) {
         switch (stmt.property) {
           case 'spreadMethod':
@@ -3871,6 +4091,32 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
           case 'steps': {
             if (typeof value !== 'number') throw new Error(formatError(`Gradient property 'steps' must be a number`, getLine(stmt)));
             obj.steps = value;
+            return;
+          }
+          // Conic-specific properties
+          case 'from': case 'to': {
+            // Enforce angle unit on literal numbers
+            if (stmt.value.type === 'NumberLiteral' && !stmt.value.unit) {
+              throw new Error(formatError(`ConicGradient '${stmt.property}' requires an angle unit. Use e.g. ${stmt.value.value}deg, ${(stmt.value.value * Math.PI / 180).toFixed(2)}rad, or ${(stmt.value.value / 180).toFixed(2)}pi`, getLine(stmt)));
+            }
+            // Also check negative unary on bare number
+            if (stmt.value.type === 'UnaryExpression' && stmt.value.operator === '-' && !hasAngleUnit(stmt.value)) {
+              throw new Error(formatError(`ConicGradient '${stmt.property}' requires an angle unit`, getLine(stmt)));
+            }
+            if (typeof value !== 'number') throw new Error(formatError(`ConicGradient '${stmt.property}' must be a number (with angle unit)`, getLine(stmt)));
+            obj[stmt.property] = value;
+            return;
+          }
+          case 'direction': {
+            if (value !== 'cw' && value !== 'ccw') throw new Error(formatError(`ConicGradient direction must be 'cw' or 'ccw'`, getLine(stmt)));
+            obj.direction = value as 'cw' | 'ccw';
+            return;
+          }
+          case 'spread': {
+            if (typeof value !== 'string' || !['clamp', 'repeat', 'transparent'].includes(value)) {
+              throw new Error(formatError(`ConicGradient spread must be 'clamp', 'repeat', or 'transparent'`, getLine(stmt)));
+            }
+            obj.spread = value;
             return;
           }
           default:
@@ -4057,7 +4303,48 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     if (grad.gradientTransform) output.gradientTransform = grad.gradientTransform;
     if (grad.href) output.href = grad.href;
     if (grad.interpolation === 'linearRGB') output.colorInterpolation = 'linearRGB';
+    // Conic-specific output
+    if (grad.gradientType === 'conic') {
+      output.cx = parseFloat(grad.attrs.cx);
+      output.cy = parseFloat(grad.attrs.cy);
+      output.from = grad.from ?? 0;
+      output.to = grad.to ?? (2 * Math.PI);
+      output.direction = grad.direction ?? 'cw';
+      output.spread = grad.spread ?? 'clamp';
+      // Preserve oklch on stops for rendering.
+      // For CSSVar stops, extract the fallback color from var(--name, fallback)
+      // so Canvas 2D renderers have a concrete color to work with.
+      output.stopsWithOklch = grad.stops.map(s => {
+        let color: string;
+        if (s.oklch) {
+          color = oklchToCSS(s.oklch);
+        } else if (s.color.startsWith('var(')) {
+          // Extract fallback: "var(--name, #hex)" → "#hex"
+          const commaIdx = s.color.indexOf(',');
+          color = commaIdx >= 0 ? s.color.slice(commaIdx + 1, -1).trim() : '#000000';
+        } else {
+          color = s.color;
+        }
+        return {
+          offset: s.offset,
+          color,
+          ...(s.oklch ? { oklch: { ...s.oklch } } : {}),
+        };
+      });
+    }
     gradients.push(output);
+  }
+
+  // Build patterns output
+  const patterns: PatternOutput[] = [];
+  for (const [, pat] of evalState.patterns) {
+    patterns.push({
+      id: pat.id, x: pat.x, y: pat.y, width: pat.width, height: pat.height,
+      elements: pat.paths.map(p => ({ pathData: p.d, styles: { ...p.styles } })),
+      patternUnits: pat.patternUnits,
+      patternTransform: pat.patternTransform,
+      patternContentUnits: pat.patternContentUnits,
+    });
   }
 
   // Build cssProperties output
@@ -4068,6 +4355,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     masks,
     clipPaths,
     gradients,
+    patterns,
     cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
@@ -4092,6 +4380,7 @@ export function evaluate(program: Program, options?: { toFixed?: number }): Comp
       masks: new Map(),
       clipPaths: new Map(),
       gradients: new Map(),
+      patterns: new Map(),
       cssProperties: new Map(),
     };
 
@@ -4125,6 +4414,7 @@ export interface EvaluateWithContextResult {
   masks: MaskOutput[];
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
+  patterns: PatternOutput[];
   cssProperties: CSSPropertyDeclaration[];
 }
 
@@ -4161,6 +4451,7 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       masks: new Map(),
       clipPaths: new Map(),
       gradients: new Map(),
+      patterns: new Map(),
       cssProperties: new Map(),
     };
 
@@ -4189,6 +4480,7 @@ export function evaluateWithContext(program: Program, options: EvaluateWithConte
       masks: compileResult.masks,
       clipPaths: compileResult.clipPaths,
       gradients: compileResult.gradients,
+      patterns: compileResult.patterns,
       cssProperties: compileResult.cssProperties,
     };
   } finally {

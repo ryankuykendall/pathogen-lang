@@ -612,4 +612,423 @@ describe('Gradients', () => {
       `)).toThrow(/stop\(\) color must be a Color value/);
     });
   });
+
+  describe('Pattern constructor', () => {
+    it('creates Pattern with correct attributes', () => {
+      const result = compile(`
+        let dot = @{ circle(10, 10, 3) };
+        let p = Pattern('dots', 0, 0, 20, 20) {|p|
+          p.append(dot, \${ fill: Color('#e63946'); });
+        };
+      `);
+      expect(result.patterns).toHaveLength(1);
+      expect(result.patterns[0].id).toBe('dots');
+      expect(result.patterns[0].x).toBe(0);
+      expect(result.patterns[0].y).toBe(0);
+      expect(result.patterns[0].width).toBe(20);
+      expect(result.patterns[0].height).toBe(20);
+    });
+
+    it('append adds path elements to pattern', () => {
+      const result = compile(`
+        let dot = @{ circle(5, 5, 2) };
+        let p = Pattern('p1', 0, 0, 10, 10) {|p|
+          p.append(dot);
+        };
+      `);
+      expect(result.patterns[0].elements).toHaveLength(1);
+      expect(result.patterns[0].elements[0].pathData).toContain('A');
+    });
+
+    it('append with styles preserves style properties', () => {
+      const result = compile(`
+        let dot = @{ circle(5, 5, 2) };
+        let p = Pattern('p1', 0, 0, 10, 10) {|p|
+          p.append(dot, \${ fill: Color('#ff0000'); stroke: Color('#000000'); });
+        };
+      `);
+      expect(result.patterns[0].elements[0].styles).toHaveProperty('fill');
+      expect(result.patterns[0].elements[0].styles).toHaveProperty('stroke');
+    });
+
+    it('patternUnits property can be set and read', () => {
+      const result = compile(`
+        let dot = @{ circle(10, 10, 3) };
+        let p = Pattern('dots', 0, 0, 20, 20) {|p|
+          p.append(dot);
+        };
+        p.patternUnits = 'userSpaceOnUse';
+      `);
+      expect(result.patterns[0].patternUnits).toBe('userSpaceOnUse');
+    });
+
+    it('duplicate Pattern ID throws error', () => {
+      expect(() => compile(`
+        let dot = @{ circle(5, 5, 2) };
+        let a = Pattern('dup', 0, 0, 10, 10) {|p| p.append(dot); };
+        let b = Pattern('dup', 0, 0, 20, 20) {|p| p.append(dot); };
+      `)).toThrow(/Duplicate defs ID 'dup'/);
+    });
+  });
+
+  describe('Pattern output', () => {
+    it('output structure matches PatternOutput interface', () => {
+      const result = compile(`
+        let line = @{ m 0 0 l 50 50 };
+        let p = Pattern('grid', 0, 0, 50, 50) {|p|
+          p.append(line, \${ fill: none; stroke: Color('#ccc'); });
+        };
+      `);
+      const pat = result.patterns[0];
+      expect(pat).toHaveProperty('id');
+      expect(pat).toHaveProperty('x');
+      expect(pat).toHaveProperty('y');
+      expect(pat).toHaveProperty('width');
+      expect(pat).toHaveProperty('height');
+      expect(pat).toHaveProperty('elements');
+    });
+
+    it('elements contain pathData and styles', () => {
+      const result = compile(`
+        let dot = @{ circle(5, 5, 3) };
+        let p = Pattern('p1', 0, 0, 10, 10) {|p|
+          p.append(dot, \${ fill: Color('#f00'); });
+        };
+      `);
+      const el = result.patterns[0].elements[0];
+      expect(el).toHaveProperty('pathData');
+      expect(el).toHaveProperty('styles');
+      expect(typeof el.pathData).toBe('string');
+    });
+
+    it('referenced via url(#id) in layer fill', () => {
+      const result = compile(`
+        let dot = @{ circle(10, 10, 3) };
+        let p = Pattern('dots', 0, 0, 20, 20) {|p|
+          p.append(dot, \${ fill: Color('#e63946'); });
+        };
+        p.patternUnits = 'userSpaceOnUse';
+        define PathLayer('bg') \${ fill: p; stroke: none; }
+        layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
+      `);
+      const bgLayer = result.layers.find(l => l.name === 'bg');
+      expect(bgLayer?.styles.fill).toBe('url(#dots)');
+    });
+  });
+
+  describe('ConicGradient constructor', () => {
+    it('creates with cx/cy', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000000'));
+          g.stop(1, Color('#ffffff'));
+        };
+      `);
+      expect(result.gradients).toHaveLength(1);
+      expect(result.gradients[0].type).toBe('conic');
+      expect(result.gradients[0].id).toBe('cg');
+      expect(result.gradients[0].cx).toBe(100);
+      expect(result.gradients[0].cy).toBe(100);
+    });
+
+    it('trailing block with stops works', () => {
+      const result = compile(`
+        let g = ConicGradient('wheel', 50, 50) {|g|
+          g.stop(0, Color('#ff0000'));
+          g.stop(0.5, Color('#00ff00'));
+          g.stop(1, Color('#0000ff'));
+        };
+      `);
+      expect(result.gradients[0].stops).toHaveLength(3);
+    });
+
+    it('duplicate ID throws error', () => {
+      expect(() => compile(`
+        let a = ConicGradient('dup', 50, 50) {|g| g.stop(0, Color('#000')); };
+        let b = ConicGradient('dup', 100, 100) {|g| g.stop(0, Color('#fff')); };
+      `)).toThrow(/Duplicate defs ID 'dup'/);
+    });
+
+    it('inherit propagates conic fields', () => {
+      const result = compile(`
+        let parent = ConicGradient('p', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        parent.from = 135deg;
+        parent.to = 405deg;
+        parent.direction = 'ccw';
+        parent.spread = 'repeat';
+        let child = parent.inherit('c');
+      `);
+      const child = result.gradients.find(g => g.id === 'c');
+      expect(child).toBeDefined();
+      expect(child!.type).toBe('conic');
+      expect(child!.from).toBeCloseTo(135 * Math.PI / 180);
+      expect(child!.to).toBeCloseTo(405 * Math.PI / 180);
+      expect(child!.direction).toBe('ccw');
+      expect(child!.spread).toBe('repeat');
+    });
+  });
+
+  describe('ConicGradient properties', () => {
+    it('from/to default to 0 and 2*PI', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+      `);
+      expect(result.gradients[0].from).toBeCloseTo(0);
+      expect(result.gradients[0].to).toBeCloseTo(2 * Math.PI);
+    });
+
+    it('from/to readable after set with angle unit', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.from = 135deg;
+        g.to = 405deg;
+      `);
+      expect(result.gradients[0].from).toBeCloseTo(135 * Math.PI / 180);
+      expect(result.gradients[0].to).toBeCloseTo(405 * Math.PI / 180);
+    });
+
+    it('direction defaults to cw', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+      `);
+      expect(result.gradients[0].direction).toBe('cw');
+    });
+
+    it('spread defaults to clamp', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+      `);
+      expect(result.gradients[0].spread).toBe('clamp');
+    });
+
+    it('invalid direction throws error', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.direction = 'up';
+      `)).toThrow(/ConicGradient direction must be 'cw' or 'ccw'/);
+    });
+
+    it('invalid spread throws error', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.spread = 'mirror';
+      `)).toThrow(/ConicGradient spread must be 'clamp', 'repeat', or 'transparent'/);
+    });
+
+    it('partial sweep with from/to', () => {
+      const result = compile(`
+        let g = ConicGradient('gauge', 100, 100) {|g|
+          g.stop(0, Color('#2a9d8f'));
+          g.stop(1, Color('#e63946'));
+        };
+        g.from = 135deg;
+        g.to = 405deg;
+      `);
+      const grad = result.gradients[0];
+      expect(grad.from).toBeCloseTo(135 * Math.PI / 180);
+      expect(grad.to).toBeCloseTo(405 * Math.PI / 180);
+    });
+
+    it('bare number on from/to throws with helpful message', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.from = 135;
+      `)).toThrow(/requires an angle unit.*135deg/);
+    });
+
+    it('computed expression without unit is accepted', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.from = rad(135);
+      `);
+      expect(result.gradients[0].from).toBeCloseTo(135 * Math.PI / 180);
+    });
+  });
+
+  describe('ConicGradient output', () => {
+    it('output type is conic', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+      `);
+      expect(result.gradients[0].type).toBe('conic');
+    });
+
+    it('stops preserved in output', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#ff0000'));
+          g.stop(0.5, Color('#00ff00'));
+          g.stop(1, Color('#0000ff'));
+        };
+      `);
+      expect(result.gradients[0].stops).toHaveLength(3);
+      expect(result.gradients[0].stops[0].offset).toBe(0);
+      expect(result.gradients[0].stops[2].offset).toBe(1);
+    });
+
+    it('from/to/direction/spread in output', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.from = 90deg;
+        g.to = 270deg;
+        g.direction = 'ccw';
+        g.spread = 'transparent';
+      `);
+      const grad = result.gradients[0];
+      expect(grad.from).toBeCloseTo(Math.PI / 2);
+      expect(grad.to).toBeCloseTo(3 * Math.PI / 2);
+      expect(grad.direction).toBe('ccw');
+      expect(grad.spread).toBe('transparent');
+    });
+
+    it('oklch preserved on stops via stopsWithOklch', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#ff0000'));
+          g.stop(1, Color('#0000ff'));
+        };
+      `);
+      const grad = result.gradients[0];
+      expect(grad.stopsWithOklch).toBeDefined();
+      expect(grad.stopsWithOklch!.length).toBe(2);
+    });
+
+    it('inherits interpolation/steps', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#ff0000'));
+          g.stop(1, Color('#0000ff'));
+        };
+        g.interpolation = 'oklch';
+        g.steps = 20;
+      `);
+      const grad = result.gradients[0];
+      // oklch interpolation causes stop expansion
+      expect(grad.stops.length).toBeGreaterThan(2);
+    });
+  });
+
+  describe('ConicGradient rendering', () => {
+    it('conic gradient is usable as fill', () => {
+      const result = compile(`
+        let g = ConicGradient('wheel', 100, 100) {|g|
+          g.stop(0, Color('#e63946'));
+          g.stop(0.33, Color('#2a9d8f'));
+          g.stop(0.66, Color('#264653'));
+          g.stop(1, Color('#e63946'));
+        };
+        define PathLayer('bg') \${ fill: g; stroke: none; }
+        layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
+      `);
+      const bgLayer = result.layers.find(l => l.name === 'bg');
+      expect(bgLayer?.styles.fill).toBe('url(#wheel)');
+    });
+
+    it('negative angle with unit accepted', () => {
+      const result = compile(`
+        let g = ConicGradient('spot', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.from = -15deg;
+        g.to = 15deg;
+      `);
+      expect(result.gradients[0].from).toBeCloseTo(-15 * Math.PI / 180);
+      expect(result.gradients[0].to).toBeCloseTo(15 * Math.PI / 180);
+    });
+
+    it('pi unit accepted for angles', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.from = 0.5pi;
+        g.to = 1.5pi;
+      `);
+      expect(result.gradients[0].from).toBeCloseTo(Math.PI / 2);
+      expect(result.gradients[0].to).toBeCloseTo(1.5 * Math.PI);
+    });
+
+    it('rad unit accepted for angles', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.from = 1.5708rad;
+        g.to = 4.7124rad;
+      `);
+      expect(result.gradients[0].from).toBeCloseTo(Math.PI / 2, 2);
+      expect(result.gradients[0].to).toBeCloseTo(3 * Math.PI / 2, 2);
+    });
+  });
+
+  describe('Pattern and ConicGradient cross-type duplicate ID checks', () => {
+    it('duplicate ID across Pattern and Mask throws error', () => {
+      expect(() => compile(`
+        let m = Mask('shared');
+        let dot = @{ circle(5, 5, 2) };
+        let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
+      `)).toThrow(/Duplicate defs ID 'shared'/);
+    });
+
+    it('duplicate ID across Pattern and Gradient throws error', () => {
+      expect(() => compile(`
+        let g = LinearGradient('shared', 0, 0, 1, 0);
+        let dot = @{ circle(5, 5, 2) };
+        let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
+      `)).toThrow(/Duplicate defs ID 'shared'/);
+    });
+
+    it('duplicate ID across ConicGradient and Pattern throws error', () => {
+      expect(() => compile(`
+        let dot = @{ circle(5, 5, 2) };
+        let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
+        let g = ConicGradient('shared', 50, 50) {|g| g.stop(0, Color('#000')); };
+      `)).toThrow(/Duplicate defs ID 'shared'/);
+    });
+
+    it('wrong argument count for Pattern throws error', () => {
+      expect(() => compile(`
+        let p = Pattern('bad', 0, 0);
+      `)).toThrow(/Pattern\(\) expects 5 arguments/);
+    });
+
+    it('wrong argument count for ConicGradient throws error', () => {
+      expect(() => compile(`
+        let g = ConicGradient('bad', 50);
+      `)).toThrow(/ConicGradient\(\) expects 3 arguments/);
+    });
+  });
 });

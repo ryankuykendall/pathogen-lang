@@ -112,6 +112,7 @@ export const store = createStore({
   masks: [],               // Array of MaskOutput from last compilation
   clipPaths: [],           // Array of ClipPathOutput from last compilation
   gradients: [],           // Array of GradientOutput from last compilation
+  patterns: [],            // Array of PatternOutput from last compilation
   cssProperties: [],       // Array of CSSPropertyDeclaration from last compilation
   layerVisibility: {},     // { [layerName]: boolean } — true = visible (default)
   defsVisibility: {},      // { ['mask:id'|'clip-path:id']: boolean } — true = visible (default)
