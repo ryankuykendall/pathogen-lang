@@ -4311,6 +4311,16 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
       output.to = grad.to ?? (2 * Math.PI);
       output.direction = grad.direction ?? 'cw';
       output.spread = grad.spread ?? 'clamp';
+      // Warn if conic gradient has CSSVar stops — they are baked at compile time
+      if (grad.stops.some(s => s.color.startsWith('var('))) {
+        evalState.logs.push({
+          line: null,
+          parts: [{
+            type: 'string',
+            value: `Warning: Conic gradient '${grad.id}' has CSSVar stops — CSS variable changes won't update conic gradients (rasterized at compile time).`,
+          }],
+        });
+      }
       // Preserve oklch on stops for rendering.
       // For CSSVar stops, extract the fallback color from var(--name, fallback)
       // so Canvas 2D renderers have a concrete color to work with.

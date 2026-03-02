@@ -182,6 +182,15 @@ export class SvgPreviewPane extends HTMLElement {
             patEl.setAttribute('height', String(h));
             patEl.setAttribute('patternUnits', 'userSpaceOnUse');
 
+            // Conic gradients are rasterized via synchronous Canvas 2D because:
+            // 1. The rendering pipeline (updatePreview → setLayersWithTiming) relies on
+            //    synchronous DOM updates between the compilationId staleness check and the
+            //    actual DOM write. Making this async (e.g., OffscreenCanvas + convertToBlob)
+            //    would open a race window where a newer compilation sneaks in.
+            // 2. Synchronous canvas.toDataURL() is fast (<1ms) and correct for this use case.
+            // 3. If async rendering is ever needed, see workers/thumbnail.worker.js for the
+            //    OffscreenCanvas pattern — but the staleness check would need to move to an
+            //    RxJS switchMap or similar cancellation-aware pipeline first.
             try {
               const scale = 2; // 2x for quality
               const canvas = document.createElement('canvas');
@@ -194,6 +203,7 @@ export class SvgPreviewPane extends HTMLElement {
                 const cx = (grad.cx ?? 0) * scale;
                 const cy = (grad.cy ?? 0) * scale;
                 const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
+                // stopsWithOklch has concrete colors (oklch resolved, var() fallbacks extracted by evaluator)
                 const stops = grad.stopsWithOklch || grad.stops;
                 const totalAngle = toAngle - fromAngle;
                 const fullRevolution = 2 * Math.PI;
@@ -201,13 +211,7 @@ export class SvgPreviewPane extends HTMLElement {
                   // Map stop offset [0,1] to the fraction of a full revolution
                   const scaledOffset = (s.offset * totalAngle) / fullRevolution;
                   if (scaledOffset >= 0 && scaledOffset <= 1) {
-                    // Canvas 2D can't parse var() CSS — extract fallback color
-                    let color = s.color;
-                    if (typeof color === 'string' && color.startsWith('var(')) {
-                      const ci = color.indexOf(',');
-                      color = ci >= 0 ? color.slice(ci + 1, -1).trim() : '#000000';
-                    }
-                    conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), color);
+                    conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), s.color);
                   }
                 }
                 ctx2d.fillStyle = conicGrad;

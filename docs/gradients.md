@@ -307,6 +307,14 @@ smooth.interpolation = 'oklch';
 smooth.steps = 15;
 ```
 
+### Conic Gradient CSS Variable Limitation
+
+Conic gradients are rasterized at compile time (Canvas 2D in the playground, wedge-path approximation in the CLI). This means `Color(CSSVar(...))` stops in conic gradients are **baked out** — the fallback color is extracted and used directly in the rasterized output.
+
+Unlike linear and radial gradients, which use native SVG elements with live `var()` references, conic gradients will **not** update when CSS custom properties change at runtime.
+
+Unfortunately, live-updating CSS variable colors is only available in the playground at this time. The compiler emits a warning when conic gradients contain CSSVar stops.
+
 ### Conic Gradient Inheritance
 
 Use `.inherit(newId)` to create child conic gradients. All conic-specific properties (`from`, `to`, `direction`, `spread`) propagate to the child:

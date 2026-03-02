@@ -28,7 +28,7 @@ export class CssvarPanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this._unsubscribe = store.subscribe(['layers', 'cssProperties'], () => {
+    this._unsubscribe = store.subscribe(['layers', 'cssProperties', 'gradients'], () => {
       this.updateList();
     });
     this.updateList();
@@ -179,6 +179,18 @@ export class CssvarPanel extends HTMLElement {
 
       row.appendChild(controls);
       list.appendChild(row);
+    }
+
+    // Conic gradient warning: CSS vars are baked at render time for rasterized conic gradients
+    const gradients = store.get('gradients') || [];
+    const hasConic = gradients.some(g => g.type === 'conic');
+    const existingNote = list.querySelector('.conic-warning');
+    if (existingNote) existingNote.remove();
+    if (hasConic && varMap.size > 0) {
+      const note = document.createElement('div');
+      note.className = 'conic-warning';
+      note.textContent = "Conic gradients use baked colors \u2014 CSS variable changes won't update them live.";
+      list.appendChild(note);
     }
 
     // Reset All button
@@ -362,6 +374,15 @@ export class CssvarPanel extends HTMLElement {
         .reset-all button:hover {
           background: var(--hover-bg, rgba(0, 0, 0, 0.04));
           color: var(--error-text, #c00);
+        }
+
+        .conic-warning {
+          padding: 0.375rem 0.5rem;
+          font-size: 0.625rem;
+          color: var(--warning-text, #92400e);
+          background: var(--warning-bg, #fef3c7);
+          border-top: 1px solid var(--border-color, #e2e8f0);
+          line-height: 1.4;
         }
 
         @media (max-width: 800px) {

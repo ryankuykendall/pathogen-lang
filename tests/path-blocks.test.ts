@@ -1926,4 +1926,160 @@ describe('Path Blocks', () => {
       expect(half).toBeCloseTo(full / 2, 0);
     });
   });
+
+  describe('non-context-aware stdlib functions in PathBlock with .draw()', () => {
+    // Helper: check that draw() emits only relative commands (no uppercase A, L, Q, C, H, V, M, S, T)
+    // after the initial M that positions the cursor.
+    function assertRelativeAfterMove(path: string) {
+      // Path should start with M (the cursor position), then only lowercase commands
+      const afterMove = path.replace(/^M\s+[\d.e+-]+\s+[\d.e+-]+\s*/, '');
+      // Should not contain any uppercase commands except Z (closePath is uppercase in SVG spec,
+      // but commandsToRelativeD uses lowercase z)
+      expect(afterMove).not.toMatch(/[ACLQHVSMT]\s/);
+    }
+
+    it('circle() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ circle(50, 50, 10) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\ba\b/); // relative arc commands
+    });
+
+    it('rect() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ rect(10, 10, 30, 20) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bl\b/); // relative line commands
+    });
+
+    it('roundRect() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ roundRect(10, 10, 40, 30, 5) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bq\b/); // relative quadratic for rounded corners
+      expect(result).toMatch(/\bl\b/); // relative lines for sides
+    });
+
+    it('polygon() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ polygon(50, 50, 20, 6) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bl\b/);
+    });
+
+    it('star() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ star(50, 50, 20, 10, 5) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bl\b/);
+    });
+
+    it('line() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ line(10, 10, 40, 50) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bl\b/);
+    });
+
+    it('quadratic() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ quadratic(0, 0, 25, -30, 50, 0) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bq\b/);
+    });
+
+    it('cubic() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ cubic(0, 0, 10, -20, 40, -20, 50, 0) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bc\b/);
+    });
+
+    it('arc() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ arc(25, 25, 0, 0, 1, 50, 0) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\ba\b/);
+    });
+
+    it('moveTo() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ moveTo(30, 40) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bm\b/);
+    });
+
+    it('lineTo() emits relative commands via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ lineTo(30, 40) };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      assertRelativeAfterMove(result);
+      expect(result).toMatch(/\bl\b/);
+    });
+
+    it('closePath() emits z via .draw()', () => {
+      const result = compilePath(`
+        let p = @{ l 20 20 l 20 -20 closePath() };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('M 100 100');
+      expect(result).toContain('z');
+    });
+
+    it('circle drawn at offset produces correct end position', () => {
+      const result = compile(`
+        let p = @{ circle(50, 50, 10) };
+        M 100 100
+        let proj = p.draw();
+        log(proj.endPoint);
+      `);
+      // circle(50,50,10) starts at M 40 50, arc to 60 50, arc back to 40 50
+      // Relative end = (40, 50). Projected from (100, 100) → (140, 150)
+      expect(result.logs[0].parts[0].value).toBe('Point(140, 150)');
+    });
+  });
 });

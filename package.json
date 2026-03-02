@@ -29,7 +29,7 @@
     "dev": "tsup --watch",
     "dev:website": "npm run kill:wrangler; npm run build:website && npx wrangler pages dev public --port 3000",
     "dev:website:quick": "npm run kill:wrangler; npx wrangler pages dev public --port 3000",
-    "kill:wrangler": "lsof -ti:3000 | xargs kill -9 2>/dev/null; exit 0",
+    "kill:wrangler": "tsx scripts/kill-port.ts",
     "website:admin-token": "npm run build:website && tsx scripts/rotate-admin-token.ts",
     "test": "vitest",
     "test:run": "vitest run",

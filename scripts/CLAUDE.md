@@ -34,6 +34,7 @@ program.parse();
 | `build-website.ts` | Assemble CloudFlare Pages output in `public/` |
 | `new-blog-post.ts` | Scaffold a new blog post with frontmatter |
 | `rotate-admin-token.ts` | Generate and deploy a new admin token via Wrangler |
+| `kill-port.ts` | Kill processes on a port (default 3000); used by `kill:wrangler` |
 | `install-git-hooks.ts` | Install git hooks from `scripts/git-hooks/` |
 
 ## Git Hooks
