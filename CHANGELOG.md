@@ -5,11 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-02-22
+## [Unreleased] - 2026-03-02
 
 ### Added
 
 #### Core
+- Native SVG gradient support: `LinearGradient()`, `RadialGradient()`, `ConicGradient()` constructors with trailing-block stop definitions.
+- Gradient interpolation modes (`srgb`, `oklch`) and stepped interpolation via `.steps`.
+- Pattern paint server: `Pattern()` constructor with embedded path drawing.
+- Conic gradient `innerRadius` property for smooth center plateau effects (WebGPU-only rendering) with configurable `innerFill` (`'transparent'` default, `'center'`, or `Color(...)`).
+- Conic gradient features: partial sweep (`from`/`to` angles), `direction` (`cw`/`ccw`), `spread` modes (`clamp`/`repeat`/`transparent`).
+- Gradient `.inherit(newId)` for creating child gradients that reference parents via SVG `href`.
+- CSS custom property (`--var`) output from gradients with OKLCh fallback extraction.
 - String type with `length`, `empty()`, index access, `split()`, `append()`, `prepend()`, `includes()`, and `slice()` operations.
 - First-class `Point` type with `x`/`y` properties and geometric methods: `translate()`, `polarTranslate()`, `midpoint()`, `lerp()`, `rotate()`, `distanceTo()`, `angleTo()`.
 - Objects with key-value literals, property access, `length`, `has()`, iteration, and `Object.keys()`/`values()`/`entries()`/`delete()` namespace methods.
@@ -19,11 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Line and column numbers in runtime error messages.
 
 #### Playground
+- WebGPU rendering pipeline for conic gradients with WGSL fragment shader, LRU texture cache, and Canvas 2D fallback.
+- GPU gradient service with pre-rendering between compilation and DOM update, staleness re-checks, and automatic cache invalidation.
+- CSS custom property panel for gradients with OKLCh/CSSVar warnings.
 - Autocompletion for Cycler, PathBlock, ProjectedPath, Object types, `mpi()`, `null`, and `Object` namespace methods with `pathblock` snippet template.
 - Line/column error highlighting in the code editor.
 - SEO-friendly static pages and theme toggle component.
 
 #### Documentation
+- Gradients documentation covering LinearGradient, RadialGradient, ConicGradient, Pattern, inheritance, interpolation, `innerRadius`, and `innerFill`.
+- Conic gradient rendering implementation section (WebGPU vs Canvas 2D vs CLI wedge-path).
 - Path Blocks documentation covering definition, drawing, projection, parametric sampling, and transforms.
 - Single-page markdown docs for AI/LLM consumption.
 - Blog post: *SEO Pages and Cloudflare Workers Routing*.
@@ -38,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### Playground
+- Conic gradient rendering moved from inline Canvas 2D to GPU gradient service with WebGPU primary path and Canvas 2D fallback.
 - Cmd/Ctrl+S now saves immediately instead of exporting.
 
 ## [Unreleased] - 2026-02-16

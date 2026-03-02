@@ -224,6 +224,8 @@ Conic gradients use the same `.stop(offset, color)` method as linear and radial 
 | `to` | End angle (requires unit) | `from + 2pi` (full revolution) |
 | `direction` | `'cw'`, `'ccw'` | `'cw'` |
 | `spread` | `'clamp'`, `'repeat'`, `'transparent'` | `'clamp'` |
+| `innerRadius` | Number (pixels) | `0` |
+| `innerFill` | `'transparent'`, `'transparent-blend'`, `'center'`, or `Color(...)` | `'transparent'` |
 | `interpolation` | `'srgb'`, `'oklch'`, `'linearRGB'` | `'srgb'` |
 | `steps` | Intermediate stop density | `10` |
 
@@ -285,6 +287,45 @@ reversed.direction = 'ccw';
 | `'repeat'` | Pattern tiles to fill remaining area |
 | `'transparent'` | Outside-arc area is empty (no wedges emitted) |
 
+### Inner Radius
+
+Set `innerRadius` to create a smooth center plateau — the area within `innerRadius` pixels of the center blends smoothly into the angular sweep:
+
+```
+gauge.innerRadius = 30;
+```
+
+By default, the center area is transparent with a hard edge (a "donut hole"). Use `innerFill` to control what fills inside the inner radius:
+
+| Value | Effect |
+|-------|--------|
+| `'transparent'` | Hard cutoff — empty center (default) |
+| `'transparent-blend'` | Smooth blend from transparent at center to gradient at edge |
+| `'center'` | Smooth blend from first stop color at center to gradient at edge |
+| `Color(...)` | Smooth blend from custom color at center to gradient at edge |
+
+```
+gauge.innerFill = 'transparent';        // hard donut hole (default)
+gauge.innerFill = 'transparent-blend';  // soft transparent fade
+gauge.innerFill = 'center';             // first-stop color, blends outward
+gauge.innerFill = Color('#1a1a2e');     // custom color, blends outward
+```
+
+This is useful for donut-style gauges and ring charts. Inner radius rendering requires WebGPU, which is only available in the playground. The CLI wedge-path renderer ignores `innerRadius` and emits a warning when it is set.
+
+```
+// Ring gauge with transparent center and partial sweep
+let ring = ConicGradient('ring', 100, 100) {|g|
+  g.stop(0, Color('#2a9d8f'));
+  g.stop(0.5, Color('#e9c46a'));
+  g.stop(1, Color('#e63946'));
+};
+ring.from = 135deg;
+ring.to = 405deg;
+ring.innerRadius = 30;
+ring.innerFill = 'transparent';  // donut hole
+```
+
 ### Rendering
 
 Since SVG has no native conic gradient element, the output depends on the consumer:
@@ -317,7 +358,7 @@ Unfortunately, live-updating CSS variable colors is only available in the playgr
 
 ### Conic Gradient Inheritance
 
-Use `.inherit(newId)` to create child conic gradients. All conic-specific properties (`from`, `to`, `direction`, `spread`) propagate to the child:
+Use `.inherit(newId)` to create child conic gradients. All conic-specific properties (`from`, `to`, `direction`, `spread`, `innerRadius`, `innerFill`) propagate to the child:
 
 ```
 let child = wheel.inherit('child-wheel');
@@ -355,6 +396,8 @@ The inherited gradient uses SVG's `href` attribute to reference the parent. It i
 | `gradient.to` | Conic: end angle in radians (default `2π`) |
 | `gradient.direction` | Conic: `'cw'` or `'ccw'` (default `'cw'`) |
 | `gradient.spread` | Conic: spread mode (default `'clamp'`) |
+| `gradient.innerRadius` | Conic: center plateau radius in pixels (default `0`) |
+| `gradient.innerFill` | Conic: inner fill mode — `'transparent'`, `'transparent-blend'`, `'center'`, or Color value |
 | `pattern.id` | The pattern's string ID |
 | `pattern.patternUnits` | Current patternUnits or `null` |
 | `pattern.patternTransform` | Current patternTransform or `null` |
@@ -438,6 +481,9 @@ const result = compile(`
 | `requires an angle unit` | Bare number on conic `from`/`to` (use `135deg`) |
 | `direction must be 'cw' or 'ccw'` | Invalid conic direction |
 | `spread must be 'clamp', 'repeat', or 'transparent'` | Invalid conic spread |
+| `innerRadius must be a number` | Non-numeric innerRadius |
+| `innerRadius must be >= 0` | Negative innerRadius |
+| `innerFill must be 'transparent', 'transparent-blend', 'center', or a Color value` | Invalid innerFill |
 
 ## Full Example
 
@@ -466,3 +512,11 @@ layer('circle').apply {
   circle(100, 100, 60)
 }
 ```
+
+## Conic Gradient Rendering
+
+Conic gradients are rasterized to bitmap and injected as SVG `<pattern>` elements because SVG has no native conic gradient primitive.
+
+**Playground (browser):** When WebGPU is available (Chrome 113+), all conic gradients render through a WGSL fragment shader. This enables `innerRadius`/`innerFill` and consistent quality. Rendered textures are cached — unchanged gradients skip re-rendering. When WebGPU is unavailable (Firefox, Safari), the playground falls back to Canvas 2D's `createConicGradient()`, which does not support `innerRadius` or `innerFill`.
+
+**CLI:** Conic gradients render as wedge-shaped SVG paths (pure math, no GPU). The `innerRadius` and `innerFill` properties are ignored with a warning.

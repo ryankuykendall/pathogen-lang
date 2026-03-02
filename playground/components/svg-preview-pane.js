@@ -170,7 +170,7 @@ export class SvgPreviewPane extends HTMLElement {
       if (defsData.gradients && defsEl) {
         for (const grad of defsData.gradients) {
           if (grad.type === 'conic') {
-            // Render conic gradient via canvas → data URL → pattern (synchronous)
+            // Render conic gradient as <pattern> with rasterized <image>
             const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
             patEl.setAttribute('id', grad.id);
             patEl.setAttribute('data-gradient-def', grad.id);
@@ -182,53 +182,47 @@ export class SvgPreviewPane extends HTMLElement {
             patEl.setAttribute('height', String(h));
             patEl.setAttribute('patternUnits', 'userSpaceOnUse');
 
-            // Conic gradients are rasterized via synchronous Canvas 2D because:
-            // 1. The rendering pipeline (updatePreview → setLayersWithTiming) relies on
-            //    synchronous DOM updates between the compilationId staleness check and the
-            //    actual DOM write. Making this async (e.g., OffscreenCanvas + convertToBlob)
-            //    would open a race window where a newer compilation sneaks in.
-            // 2. Synchronous canvas.toDataURL() is fast (<1ms) and correct for this use case.
-            // 3. If async rendering is ever needed, see workers/thumbnail.worker.js for the
-            //    OffscreenCanvas pattern — but the staleness check would need to move to an
-            //    RxJS switchMap or similar cancellation-aware pipeline first.
-            try {
-              const scale = 2; // 2x for quality
-              const canvas = document.createElement('canvas');
-              canvas.width = w * scale;
-              canvas.height = h * scale;
-              const ctx2d = canvas.getContext('2d');
-              if (ctx2d) {
-                const fromAngle = grad.from ?? 0;
-                const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
-                const cx = (grad.cx ?? 0) * scale;
-                const cy = (grad.cy ?? 0) * scale;
-                const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
-                // stopsWithOklch has concrete colors (oklch resolved, var() fallbacks extracted by evaluator)
-                const stops = grad.stopsWithOklch || grad.stops;
-                const totalAngle = toAngle - fromAngle;
-                const fullRevolution = 2 * Math.PI;
-                for (const s of stops) {
-                  // Map stop offset [0,1] to the fraction of a full revolution
-                  const scaledOffset = (s.offset * totalAngle) / fullRevolution;
-                  if (scaledOffset >= 0 && scaledOffset <= 1) {
-                    conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), s.color);
-                  }
-                }
-                ctx2d.fillStyle = conicGrad;
-                ctx2d.fillRect(0, 0, w * scale, h * scale);
+            const imgEl = document.createElementNS(SVG_NS_DEFS, 'image');
+            imgEl.setAttribute('width', String(w));
+            imgEl.setAttribute('height', String(h));
 
-                // Synchronous data URL — no async race condition
-                const dataUrl = canvas.toDataURL('image/png');
-                const imgEl = document.createElementNS(SVG_NS_DEFS, 'image');
-                imgEl.setAttribute('href', dataUrl);
-                imgEl.setAttribute('width', String(w));
-                imgEl.setAttribute('height', String(h));
-                patEl.appendChild(imgEl);
+            // Use pre-rendered GPU texture if available (WebGPU or cached)
+            const preRenderedUrl = defsData.gpuGradientUrls?.get(grad.id);
+            if (preRenderedUrl) {
+              imgEl.setAttribute('href', preRenderedUrl);
+            } else {
+              // Inline Canvas 2D fallback (safety net if GPU service hasn't initialized)
+              try {
+                const scale = 2;
+                const canvas = document.createElement('canvas');
+                canvas.width = w * scale;
+                canvas.height = h * scale;
+                const ctx2d = canvas.getContext('2d');
+                if (ctx2d) {
+                  const fromAngle = grad.from ?? 0;
+                  const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
+                  const cx = (grad.cx ?? 0) * scale;
+                  const cy = (grad.cy ?? 0) * scale;
+                  const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
+                  const stops = grad.stopsWithOklch || grad.stops;
+                  const totalAngle = toAngle - fromAngle;
+                  const fullRevolution = 2 * Math.PI;
+                  for (const s of stops) {
+                    const scaledOffset = (s.offset * totalAngle) / fullRevolution;
+                    if (scaledOffset >= 0 && scaledOffset <= 1) {
+                      conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), s.color);
+                    }
+                  }
+                  ctx2d.fillStyle = conicGrad;
+                  ctx2d.fillRect(0, 0, w * scale, h * scale);
+                  imgEl.setAttribute('href', canvas.toDataURL('image/png'));
+                }
+              } catch (e) {
+                console.warn('Conic gradient canvas rendering failed:', e);
               }
-            } catch (e) {
-              console.warn('Conic gradient canvas rendering failed:', e);
             }
 
+            patEl.appendChild(imgEl);
             defsEl.appendChild(patEl);
             continue;
           }

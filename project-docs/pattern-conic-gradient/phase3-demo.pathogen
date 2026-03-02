@@ -1,0 +1,227 @@
+// ═══════════════════════════════════════════════════════════
+// Phase 3: Conic Gradient + innerRadius/innerFill — Showcase
+// Reactive CSSVar colors, PathBlock schematic overlays,
+// dynamic layers, off-center cone examples
+// ═══════════════════════════════════════════════════════════
+
+let W = 800;
+let H = 800;
+let pad = 30;
+
+// ── Reactive colors — tweak in the CSS var panel ──
+let base    = Color(CSSVar('--base', '#2a9d8f'));
+let accent  = Color(CSSVar('--accent', '#e76f51'));
+let surface = Color(CSSVar('--surface', '#1a1a2e'));
+
+// Derived palette (all reactive to the three vars above)
+let warm     = accent.hueShift(-30);
+let cool     = base.hueShift(60);
+let faint    = base.alpha(0.35);
+let guideClr = base.lighten(0.2).alpha(0.55);
+let labelClr = base.desaturate(0.4).lighten(0.3);
+
+// ── Background ──
+let bg = PathLayer('bg') ${ fill: surface; stroke: none; };
+bg.apply { rect(0, 0, W, H) }
+
+// ── Schematic PathBlock builder ──
+// Builds a diagram showing: inner radius circle, gradient fill
+// area (rect), and from/to angle lines from the cone center.
+// All coords are relative to (0,0) = top-left of the cell.
+fn buildSchematic(coneCx, coneCy, innerR, fromDeg, toDeg, rectX, rectY, rectW, rectH) {
+  // Inner radius circle
+  if (innerR > 0) {
+    circle(coneCx, coneCy, innerR)
+  }
+
+  // Center crosshair
+  line(calc(coneCx - 4), coneCy, calc(coneCx + 4), coneCy)
+  line(coneCx, calc(coneCy - 4), coneCx, calc(coneCy + 4))
+
+  // Gradient fill area outline
+  rect(rectX, rectY, rectW, rectH)
+
+  // From-angle line — extends from center past the rect
+  let lineLen = calc(max(rectW, rectH) * 1.1);
+  let fromRad = rad(fromDeg);
+  let fx = calc(coneCx + cos(fromRad) * lineLen);
+  let fy = calc(coneCy + sin(fromRad) * lineLen);
+  line(coneCx, coneCy, fx, fy)
+
+  // To-angle line
+  let toRad = rad(toDeg);
+  let tx = calc(coneCx + cos(toRad) * lineLen);
+  let ty = calc(coneCy + sin(toRad) * lineLen);
+  line(coneCx, coneCy, tx, ty)
+}
+
+// ═══════════════════════════════════════════════════════════
+// Grid: 2×3 cells, each with a gradient + schematic overlay
+// ═══════════════════════════════════════════════════════════
+let cols = 3;
+let rows = 2;
+let cellW = calc((W - pad * (cols + 1)) / cols);
+let cellH = calc((H - pad * (rows + 1) - 40) / rows);
+let fillW = calc(cellW * 0.65);
+let fillH = calc(cellH * 0.65);
+
+// ── Variation configs ──
+// coneOff is relative to cell center; the gradient fill rect
+// is always centered, so offset cones land "outside" the rect.
+// Row 1: The four innerFill modes (centered, large iR for visibility)
+// Row 2: Off-center examples with various fills
+let cfgs = [
+  { title: 'transparent',       coneOff: Point(0, 0),     innerR: 50, fromDeg: 0,   toDeg: 360, dir: 'cw',  spread: 'clamp',       innerFill: 'transparent' },
+  { title: 'transparent-blend', coneOff: Point(0, 0),     innerR: 50, fromDeg: 0,   toDeg: 360, dir: 'cw',  spread: 'clamp',       innerFill: 'transparent-blend' },
+  { title: 'center',            coneOff: Point(0, 0),     innerR: 50, fromDeg: 0,   toDeg: 360, dir: 'cw',  spread: 'clamp',       innerFill: 'center' },
+  { title: 'Color fill',        coneOff: Point(0, 0),     innerR: 50, fromDeg: 0,   toDeg: 360, dir: 'cw',  spread: 'clamp',       innerFill: 'color' },
+  { title: 'Off-center donut',  coneOff: Point(-60, -50), innerR: 40, fromDeg: 135, toDeg: 405, dir: 'cw',  spread: 'clamp',       innerFill: 'transparent' },
+  { title: 'Repeat + blend',    coneOff: Point(-50, 30),  innerR: 45, fromDeg: 0,   toDeg: 20,  dir: 'cw',  spread: 'repeat',      innerFill: 'transparent-blend' }
+];
+
+for ([cfg, i] in cfgs) {
+  let col = calc(i % cols);
+  let row = calc(floor(i / cols));
+  let cellX = calc(pad + col * (cellW + pad));
+  let cellY = calc(pad + row * (cellH + pad));
+  let cellCx = calc(cellX + cellW / 2);
+  let cellCy = calc(cellY + cellH / 2);
+
+  // Cone center (absolute)
+  let coneCx = calc(cellCx + cfg.coneOff.x);
+  let coneCy = calc(cellCy + cfg.coneOff.y);
+
+  // Fill rect position (centered in cell)
+  let rectX = calc(cellCx - fillW / 2);
+  let rectY = calc(cellCy - fillH / 2);
+
+  // ── Gradient ──
+  let g = ConicGradient(`conic_${i}`, coneCx, coneCy) {|g|
+    g.stop(0,    base);
+    g.stop(0.25, accent);
+    g.stop(0.5,  warm);
+    g.stop(0.75, cool);
+    g.stop(1,    base);
+  };
+  if (cfg.fromDeg != 0) {
+    g.from = calc(rad(cfg.fromDeg));
+  }
+  if (cfg.toDeg != 360) {
+    g.to = calc(rad(cfg.toDeg));
+  }
+  g.innerRadius = cfg.innerR;
+  if (cfg.innerFill == 'center') { g.innerFill = 'center'; }
+  if (cfg.innerFill == 'transparent-blend') { g.innerFill = 'transparent-blend'; }
+  if (cfg.innerFill == 'color') { g.innerFill = surface; }
+  g.direction = cfg.dir;
+  g.spread = cfg.spread;
+  g.interpolation = 'oklch';
+
+  // ── Fill layer — rectangle filled with gradient ──
+  let fillLayer = PathLayer(`fill_${i}`) ${ fill: g; stroke: none; };
+  fillLayer.apply {
+    rect(rectX, rectY, fillW, fillH)
+  }
+
+  // ── Schematic overlay via PathBlock ──
+  let schematic = @{
+    buildSchematic(
+      calc(coneCx - cellX), calc(coneCy - cellY),
+      cfg.innerR, cfg.fromDeg, cfg.toDeg,
+      calc(rectX - cellX), calc(rectY - cellY),
+      fillW, fillH
+    )
+  };
+
+  let schemaLayer = PathLayer(`schema_${i}`) ${
+    fill: none;
+    stroke: guideClr;
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+  };
+  schemaLayer.apply {
+    M cellX cellY
+    schematic.draw()
+  }
+
+  // ── Inner radius highlight (solid) ──
+  if (cfg.innerR > 0) {
+    let irLayer = PathLayer(`ir_${i}`) ${
+      fill: faint;
+      stroke: guideClr;
+      stroke-width: 1.5;
+    };
+    irLayer.apply {
+      circle(coneCx, coneCy, cfg.innerR)
+    }
+  }
+
+  // ── Center dot ──
+  let dotLayer = PathLayer(`dot_${i}`) ${
+    fill: guideClr;
+    stroke: none;
+  };
+  dotLayer.apply {
+    circle(coneCx, coneCy, 3)
+  }
+}
+
+// ── Title labels ──
+let titleLayer = TextLayer('titles') ${
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12;
+  fill: labelClr;
+  text-anchor: middle;
+};
+titleLayer.apply {
+  for ([cfg, i] in cfgs) {
+    let col = calc(i % cols);
+    let row = calc(floor(i / cols));
+    let cellX = calc(pad + col * (cellW + pad));
+    let cellY = calc(pad + row * (cellH + pad));
+    text(calc(cellX + cellW / 2), calc(cellY + cellH + 14))`${cfg.title}`
+  }
+}
+
+// ── Parameter annotations ──
+let annotLayer = TextLayer('params') ${
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 9;
+  fill: guideClr;
+  text-anchor: middle;
+};
+annotLayer.apply {
+  for ([cfg, i] in cfgs) {
+    let col = calc(i % cols);
+    let row = calc(floor(i / cols));
+    let cellX = calc(pad + col * (cellW + pad));
+    let cellY = calc(pad + row * (cellH + pad));
+    let cx = calc(cellX + cellW / 2);
+    let paramY = calc(cellY + cellH + 26);
+    if (cfg.innerR > 0) {
+      text(cx, paramY)`iR=${cfg.innerR}  fill:${cfg.innerFill}  ${cfg.fromDeg}°→${cfg.toDeg}°  ${cfg.dir}`
+    } else {
+      text(cx, paramY)`full sweep  ${cfg.dir}`
+    }
+  }
+}
+
+// ── Footer ──
+let footer = TextLayer('footer') ${
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11;
+  fill: labelClr;
+  text-anchor: start;
+};
+footer.apply {
+  text(pad, calc(H - 10))`Phase 3 — ConicGradient innerRadius/innerFill + WebGPU  ·  change --base / --accent / --surface in CSS var panel`
+}
+
+// ── Console log ──
+for ([cfg, i] in cfgs) {
+  log(`[${i}] ${cfg.title}`,
+    "offset:", cfg.coneOff.x, cfg.coneOff.y,
+    "iR:", cfg.innerR, "fill:", cfg.innerFill,
+    "from:", cfg.fromDeg, "to:", cfg.toDeg,
+    "dir:", cfg.dir, "spread:", cfg.spread)
+}

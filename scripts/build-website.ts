@@ -63,7 +63,7 @@ async function build(): Promise<void> {
   await fs.writeFile(join(playgroundDest, '404.html'), indexHtml);
 
   // Copy playground directories
-  const playgroundDirs = ['styles', 'components', 'state', 'utils', 'services', 'workers'];
+  const playgroundDirs = ['styles', 'components', 'state', 'utils', 'services', 'workers', 'gpu'];
   for (const dir of playgroundDirs) {
     console.log(`  Copying ${dir}/...`);
     await copyDir(

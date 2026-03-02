@@ -129,6 +129,9 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
         `    <path d="${w.d}" fill="${escapeXml(w.fill)}"/>`
       ).join('\n');
       defsContent.push(`  <pattern id="${escapeXml(grad.id)}" x="0" y="0" width="${svgW}" height="${svgH}" patternUnits="userSpaceOnUse">\n${children}\n  </pattern>`);
+      if ((grad.innerRadius ?? 0) > 0 || (grad.innerFill && grad.innerFill !== 'transparent')) {
+        console.warn('[svg-path-extended] innerRadius/innerFill on conic gradients requires WebGPU (playground only); ignored in CLI output');
+      }
       continue;
     }
 

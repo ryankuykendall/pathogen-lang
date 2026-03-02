@@ -10,6 +10,7 @@ import { getUserId } from '../services/user-id.js';
 import { BASE_PATH, parseWorkspaceSlugId, buildWorkspaceSlugId } from '../utils/router.js';
 import compilerWorker from '../services/compiler-worker.js';
 import thumbnailService from '../services/thumbnail-service.js';
+import gpuGradientService from '../gpu/gradient-service.js';
 
 // Import all sub-components
 import './playground-main.js';
@@ -38,6 +39,9 @@ export class WorkspaceView extends HTMLElement {
     this.render();
     this.setupEventListeners();
 
+    // Initialize WebGPU gradient service (async, non-blocking)
+    gpuGradientService.init();
+
     // Subscribe to route changes to initialize when becoming active
     this._routeUnsubscribe = store.subscribe(['currentView', 'routeParams'], () => {
       this.handleRouteChange();
@@ -57,6 +61,8 @@ export class WorkspaceView extends HTMLElement {
     this.cleanupEventListeners();
     // Terminate compiler worker
     compilerWorker.terminateWorker();
+    // Release GPU texture cache
+    gpuGradientService.clearCache();
   }
 
   handleRouteChange() {
@@ -569,12 +575,21 @@ export class WorkspaceView extends HTMLElement {
       // Don't update if stale
       if (isStale(compilationId)) return;
 
+      // Pre-render conic gradients via GPU (or Canvas 2D fallback)
+      let gpuGradientUrls = new Map();
+      if (result.gradients?.some(g => g.type === 'conic')) {
+        gpuGradientUrls = await gpuGradientService.renderConicGradients(
+          result.gradients, store.get('width') || 200, store.get('height') || 200
+        );
+        if (isStale(compilationId)) return; // Re-check after async GPU work
+      }
+
       // Set rendering state before updating the SVG
       store.set('compilationStatus', 'rendering');
 
       // Use timing method to measure rendering — pass layers if available
       const renderTime = result.layers
-        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [], gradients: result.gradients || [], patterns: result.patterns || [], cssProperties: result.cssProperties || [] })
+        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [], gradients: result.gradients || [], patterns: result.patterns || [], cssProperties: result.cssProperties || [], gpuGradientUrls })
         : this.previewPane.setPathDataWithTiming(result.path);
       console.log(`Render time: ${renderTime.toFixed(2)}ms`);
 

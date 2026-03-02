@@ -379,8 +379,8 @@ export class CssvarPanel extends HTMLElement {
         .conic-warning {
           padding: 0.375rem 0.5rem;
           font-size: 0.625rem;
-          color: var(--warning-text, #92400e);
-          background: var(--warning-bg, #fef3c7);
+          color: var(--warning-color, #e0a840);
+          background: var(--warning-bg, #fffbeb);
           border-top: 1px solid var(--border-color, #e2e8f0);
           line-height: 1.4;
         }

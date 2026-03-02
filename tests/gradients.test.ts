@@ -1031,4 +1031,256 @@ describe('Gradients', () => {
       `)).toThrow(/ConicGradient\(\) expects 3 arguments/);
     });
   });
+
+  describe('ConicGradient innerRadius', () => {
+    it('defaults to 0', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+      `);
+      expect(result.gradients[0].innerRadius).toBe(0);
+    });
+
+    it('is settable via assignment', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerRadius = 30;
+      `);
+      expect(result.gradients[0].innerRadius).toBe(30);
+    });
+
+    it('is readable via log', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerRadius = 25;
+        log(g.innerRadius)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('25');
+    });
+
+    it('rejects negative values', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.innerRadius = -10;
+      `)).toThrow(/innerRadius must be >= 0/);
+    });
+
+    it('rejects non-number values', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.innerRadius = 'big';
+      `)).toThrow(/innerRadius must be a number/);
+    });
+
+    it('propagates via inherit', () => {
+      const result = compile(`
+        let parent = ConicGradient('p', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        parent.innerRadius = 20;
+        let child = parent.inherit('c');
+        log(child.innerRadius)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('20');
+      const child = result.gradients.find(g => g.id === 'c');
+      expect(child!.innerRadius).toBe(20);
+    });
+
+    it('is present in output', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerRadius = 40;
+      `);
+      const grad = result.gradients[0];
+      expect(grad).toHaveProperty('innerRadius');
+      expect(grad.innerRadius).toBe(40);
+    });
+
+    it('combined: innerRadius + partial sweep', () => {
+      const result = compile(`
+        let g = ConicGradient('ring', 100, 100) {|g|
+          g.stop(0, Color('#2a9d8f'));
+          g.stop(1, Color('#e63946'));
+        };
+        g.from = 135deg;
+        g.to = 405deg;
+        g.innerRadius = 30;
+      `);
+      const grad = result.gradients[0];
+      expect(grad.innerRadius).toBe(30);
+      expect(grad.from).toBeCloseTo(135 * Math.PI / 180);
+      expect(grad.to).toBeCloseTo(405 * Math.PI / 180);
+    });
+
+    it('combined: innerRadius + spread transparent', () => {
+      const result = compile(`
+        let g = ConicGradient('ring', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.spread = 'transparent';
+        g.innerRadius = 15;
+      `);
+      const grad = result.gradients[0];
+      expect(grad.innerRadius).toBe(15);
+      expect(grad.spread).toBe('transparent');
+    });
+
+    it('combined: innerRadius + direction ccw', () => {
+      const result = compile(`
+        let g = ConicGradient('ring', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.direction = 'ccw';
+        g.innerRadius = 50;
+      `);
+      const grad = result.gradients[0];
+      expect(grad.innerRadius).toBe(50);
+      expect(grad.direction).toBe('ccw');
+    });
+  });
+
+  describe('ConicGradient innerFill', () => {
+    it('defaults to transparent', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+      `);
+      expect(result.gradients[0].innerFill).toBe('transparent');
+    });
+
+    it('accepts transparent', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerFill = 'transparent';
+      `);
+      expect(result.gradients[0].innerFill).toBe('transparent');
+    });
+
+    it('accepts center', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerFill = 'center';
+      `);
+      expect(result.gradients[0].innerFill).toBe('center');
+    });
+
+    it('accepts transparent-blend', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerFill = 'transparent-blend';
+      `);
+      expect(result.gradients[0].innerFill).toBe('transparent-blend');
+    });
+
+    it('accepts a Color value', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerFill = Color('#e63946');
+      `);
+      expect(result.gradients[0].innerFill).toBe('#e63946');
+    });
+
+    it('is readable via log', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerFill = 'center';
+        log(g.innerFill)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('center');
+    });
+
+    it('rejects invalid string values', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.innerFill = 'blur';
+      `)).toThrow(/innerFill must be 'transparent', 'transparent-blend', 'center', or a Color/);
+    });
+
+    it('rejects number values', () => {
+      expect(() => compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+        };
+        g.innerFill = 42;
+      `)).toThrow(/innerFill must be 'transparent', 'transparent-blend', 'center', or a Color/);
+    });
+
+    it('propagates via inherit', () => {
+      const result = compile(`
+        let parent = ConicGradient('p', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        parent.innerFill = 'center';
+        let child = parent.inherit('c');
+        log(child.innerFill)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('center');
+    });
+
+    it('combined: innerRadius + innerFill center', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#2a9d8f'));
+          g.stop(1, Color('#e63946'));
+        };
+        g.innerRadius = 30;
+        g.innerFill = 'center';
+      `);
+      const grad = result.gradients[0];
+      expect(grad.innerRadius).toBe(30);
+      expect(grad.innerFill).toBe('center');
+    });
+
+    it('combined: innerRadius + innerFill Color', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 100, 100) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        g.innerRadius = 20;
+        g.innerFill = Color('#1a1a2e');
+      `);
+      const grad = result.gradients[0];
+      expect(grad.innerRadius).toBe(20);
+      expect(grad.innerFill).toBe('#1a1a2e');
+    });
+  });
 });

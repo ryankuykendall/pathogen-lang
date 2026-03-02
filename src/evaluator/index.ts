@@ -183,6 +183,8 @@ export interface GradientValue {
   to?: number;          // end angle in radians (default from + 2*PI)
   direction?: 'cw' | 'ccw';
   spread?: string;      // 'clamp' | 'repeat' | 'transparent'
+  innerRadius?: number; // center plateau radius in px (default 0)
+  innerFill?: 'transparent' | 'transparent-blend' | 'center' | ColorValue; // what fills inside innerRadius (default 'transparent')
 }
 
 export function isGradientValue(value: Value): value is GradientValue {
@@ -448,6 +450,8 @@ export interface GradientOutput {
   from?: number; to?: number;    // radians
   direction?: 'cw' | 'ccw';
   spread?: string;
+  innerRadius?: number;
+  innerFill?: string; // 'transparent' | 'center' | CSS color string
   stopsWithOklch?: Array<{ offset: number; color: string; oklch?: OKLCH }>;
 }
 
@@ -1966,6 +1970,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           // Propagate conic fields
           from: obj.from, to: obj.to,
           direction: obj.direction, spread: obj.spread,
+          innerRadius: obj.innerRadius, innerFill: obj.innerFill,
         };
         scope.evalState.gradients.set(newId, child);
         return child;
@@ -2523,6 +2528,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'to': return obj.to ?? (2 * Math.PI);
       case 'direction': return obj.direction ?? 'cw';
       case 'spread': return obj.spread ?? 'clamp';
+      case 'innerRadius': return obj.innerRadius ?? 0;
+      case 'innerFill': return obj.innerFill ?? 'transparent';
       default:
         throw new Error(`Property '${expr.property}' does not exist on Gradient`);
     }
@@ -2955,7 +2962,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       type: 'GradientValue', gradientType: 'conic', id,
       attrs: { cx: String(cx), cy: String(cy) },
       stops: [],
-      from: 0, to: 2 * Math.PI, direction: 'cw', spread: 'clamp',
+      from: 0, to: 2 * Math.PI, direction: 'cw', spread: 'clamp', innerRadius: 0, innerFill: 'transparent',
     };
     scope.evalState.gradients.set(id, gradient);
     // Execute trailing block if present
@@ -4119,6 +4126,26 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             obj.spread = value;
             return;
           }
+          case 'innerRadius': {
+            if (typeof value !== 'number') {
+              throw new Error(formatError(`ConicGradient innerRadius must be a number`, getLine(stmt)));
+            }
+            if (value < 0) {
+              throw new Error(formatError(`ConicGradient innerRadius must be >= 0`, getLine(stmt)));
+            }
+            obj.innerRadius = value;
+            return;
+          }
+          case 'innerFill': {
+            if (value === 'transparent' || value === 'center' || value === 'transparent-blend') {
+              obj.innerFill = value;
+            } else if (isColorValue(value)) {
+              obj.innerFill = value;
+            } else {
+              throw new Error(formatError(`ConicGradient innerFill must be 'transparent', 'transparent-blend', 'center', or a Color value`, getLine(stmt)));
+            }
+            return;
+          }
           default:
             throw new Error(formatError(`Cannot assign to Gradient property '${stmt.property}'`, getLine(stmt)));
         }
@@ -4311,6 +4338,13 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
       output.to = grad.to ?? (2 * Math.PI);
       output.direction = grad.direction ?? 'cw';
       output.spread = grad.spread ?? 'clamp';
+      output.innerRadius = grad.innerRadius ?? 0;
+      const fill = grad.innerFill;
+      if (fill && typeof fill === 'object' && 'oklch' in fill) {
+        output.innerFill = oklchToCSS(fill.oklch);
+      } else {
+        output.innerFill = fill ?? 'transparent';
+      }
       // Warn if conic gradient has CSSVar stops — they are baked at compile time
       if (grad.stops.some(s => s.color.startsWith('var('))) {
         evalState.logs.push({
