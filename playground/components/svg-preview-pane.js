@@ -226,6 +226,35 @@ export class SvgPreviewPane extends HTMLElement {
             defsEl.appendChild(patEl);
             continue;
           }
+          if (grad.type === 'mesh' || grad.type === 'freeform') {
+            // Render mesh/freeform gradient as <pattern> with rasterized <image>
+            // Use objectBoundingBox so the image stretches to fill the element
+            // (userSpaceOnUse causes tiling/wrap-around artifacts)
+            const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
+            patEl.setAttribute('id', grad.id);
+            patEl.setAttribute('data-gradient-def', grad.id);
+            patEl.setAttribute('x', '0');
+            patEl.setAttribute('y', '0');
+            patEl.setAttribute('width', '1');
+            patEl.setAttribute('height', '1');
+            patEl.setAttribute('patternUnits', 'objectBoundingBox');
+            patEl.setAttribute('patternContentUnits', 'objectBoundingBox');
+
+            const imgEl = document.createElementNS(SVG_NS_DEFS, 'image');
+            imgEl.setAttribute('width', '1');
+            imgEl.setAttribute('height', '1');
+            imgEl.setAttribute('preserveAspectRatio', 'none');
+
+            // Use pre-rendered GPU texture if available
+            const preRenderedUrl = defsData.gpuGradientUrls?.get(grad.id);
+            if (preRenderedUrl) {
+              imgEl.setAttribute('href', preRenderedUrl);
+            }
+
+            patEl.appendChild(imgEl);
+            defsEl.appendChild(patEl);
+            continue;
+          }
           const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
           const gradEl = document.createElementNS(SVG_NS_DEFS, tagName);
           gradEl.setAttribute('id', grad.id);

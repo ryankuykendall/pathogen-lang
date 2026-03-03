@@ -4,6 +4,7 @@
 let gpuDevice = null;
 let gpuAdapter = null;
 let availabilityResult = null;
+let _devicePromise = null;
 
 /**
  * Check if WebGPU is available in this browser.
@@ -37,6 +38,20 @@ export async function isWebGPUAvailable() {
 export async function getDevice() {
   if (gpuDevice) return gpuDevice;
 
+  // Deduplicate concurrent calls — only the first creates the device,
+  // all others await the same promise. Prevents "adapter is consumed" errors
+  // when multiple pipelines call getDevice() in parallel via Promise.all().
+  if (_devicePromise) return _devicePromise;
+
+  _devicePromise = _createDevice();
+  try {
+    return await _devicePromise;
+  } finally {
+    _devicePromise = null;
+  }
+}
+
+async function _createDevice() {
   if (!await isWebGPUAvailable()) return null;
 
   try {

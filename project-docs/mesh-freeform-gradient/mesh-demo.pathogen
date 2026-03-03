@@ -1,0 +1,26 @@
+// MeshGradient demo — fire gradient with translated center point
+let mesh = MeshGradient('fire', 200, 200, 3, 2) {|grad|
+  // Set a base color for all points
+  grad.colorAll(Color('#264653'));
+
+  // Get and color individual points
+  let tl = grad.getPoint(0, 0);
+  tl.color = Color('#ff4500');
+
+  let tr = grad.getPoint(0, 2);
+  tr.color = Color('#ffd700');
+
+  // Color the bottom row
+  let bottomRow = grad.getRow(1);
+  for ([pt, i] in bottomRow) {
+    pt.color = Color('#8b0000');
+  }
+
+  // Move a point off-grid
+  let center = grad.getPoint(0, 1);
+  center.translate(10, -5);
+};
+mesh.interpolation = 'oklch';
+
+define PathLayer('bg') ${ fill: mesh; stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200) }

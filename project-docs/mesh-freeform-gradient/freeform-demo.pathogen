@@ -1,0 +1,12 @@
+// FreeformGradient demo — nebula with IDW blending
+let nebula = FreeformGradient('nebula', 400, 300) {|grad|
+  grad.point(50, 50, Color('#e63946'))
+  grad.point(350, 80, Color('#f4a261'))
+  grad.point(200, 250, Color('#2a9d8f'))
+  grad.point(100, 180, Color('#264653'))
+};
+nebula.falloff = 2.5;
+nebula.interpolation = 'oklch';
+
+define PathLayer('bg') ${ fill: nebula; stroke: none; }
+layer('bg').apply { rect(0, 0, 400, 300) }

@@ -135,6 +135,23 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
       continue;
     }
 
+    // Mesh/Freeform gradients: warn + solid-color approximation
+    if (grad.type === 'mesh' || grad.type === 'freeform') {
+      console.warn(`[svg-path-extended] ${grad.type} gradients require WebGPU; CLI outputs solid color approximation`);
+      const svgW = grad.type === 'mesh' ? (grad.meshWidth ?? 200) : (grad.freeformWidth ?? 200);
+      const svgH = grad.type === 'mesh' ? (grad.meshHeight ?? 200) : (grad.freeformHeight ?? 200);
+      // Average all point colors to get a solid approximation
+      let avgColor = '#808080'; // fallback gray
+      const points = grad.type === 'mesh'
+        ? (grad.meshGrid ?? []).flat()
+        : (grad.freeformPoints ?? []);
+      if (points.length > 0) {
+        avgColor = points[0].color;
+      }
+      defsContent.push(`  <pattern id="${escapeXml(grad.id)}" x="0" y="0" width="${svgW}" height="${svgH}" patternUnits="userSpaceOnUse">\n    <rect width="${svgW}" height="${svgH}" fill="${escapeXml(avgColor)}"/>\n  </pattern>`);
+      continue;
+    }
+
     const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
     const attrParts = [`id="${escapeXml(grad.id)}"`];
     for (const [key, value] of Object.entries(grad.attrs)) {

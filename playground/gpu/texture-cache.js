@@ -73,6 +73,33 @@ export class TextureCache {
  * @returns {string}
  */
 export function hashGradient(grad, w, h) {
+  if (grad.type === 'mesh') {
+    const grid = (grad.meshGrid || [])
+      .map(row => row.map(p => `${p.x},${p.y}:${p.color}`).join(';'))
+      .join('/');
+    return [
+      'mesh', w, h,
+      grad.meshWidth ?? 0,
+      grad.meshHeight ?? 0,
+      grad.interpolation ?? 'srgb',
+      grid,
+    ].join('|');
+  }
+
+  if (grad.type === 'freeform') {
+    const pts = (grad.freeformPoints || [])
+      .map(p => `${p.x},${p.y}:${p.color}`)
+      .join(';');
+    return [
+      'freeform', w, h,
+      grad.freeformWidth ?? 0,
+      grad.freeformHeight ?? 0,
+      grad.falloff ?? 2.0,
+      grad.interpolation ?? 'srgb',
+      pts,
+    ].join('|');
+  }
+
   const stops = (grad.stopsWithOklch || grad.stops || [])
     .map(s => `${s.offset}:${s.color}`)
     .join(',');

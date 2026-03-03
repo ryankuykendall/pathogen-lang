@@ -51,7 +51,7 @@ import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathStrin
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker-start', 'marker-mid', 'marker-end']);
 
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | PatternValue | GradientValue | ColorValue | ColorNamespace | CSSVarValue;
+export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | LayerReference | StyleBlockValue | ArrayValue | PointValue | TransformReference | TransformPropertyReference | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | CyclerValue | SVGFragmentValue | MaskValue | ClipPathValue | PatternValue | GradientValue | MeshPointValue | ColorValue | ColorNamespace | CSSVarValue;
 
 /**
  * Represents an array value (reference semantics)
@@ -155,6 +155,31 @@ export function isPatternValue(value: Value): value is PatternValue {
 }
 
 /**
+ * Represents a single control point in a mesh gradient grid
+ */
+export interface MeshPointValue {
+  type: 'MeshPointValue';
+  x: number;
+  y: number;
+  color: OKLCH;
+  colorCSS: string;
+  gridRow: number;
+  gridCol: number;
+}
+
+export function isMeshPointValue(value: Value): value is MeshPointValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MeshPointValue';
+}
+
+/**
+ * Represents a single point in a freeform gradient
+ */
+export interface FreeformPoint {
+  x: number; y: number;
+  color: OKLCH; colorCSS: string;
+}
+
+/**
  * A color stop in a gradient
  */
 export interface GradientStop {
@@ -168,7 +193,7 @@ export interface GradientStop {
  */
 export interface GradientValue {
   type: 'GradientValue';
-  gradientType: 'linear' | 'radial' | 'conic';
+  gradientType: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform';
   id: string;
   attrs: Record<string, string>;  // x1,y1,x2,y2 or cx,cy,r,fx,fy or cx,cy for conic
   stops: GradientStop[];
@@ -185,6 +210,17 @@ export interface GradientValue {
   spread?: string;      // 'clamp' | 'repeat' | 'transparent'
   innerRadius?: number; // center plateau radius in px (default 0)
   innerFill?: 'transparent' | 'transparent-blend' | 'center' | ColorValue; // what fills inside innerRadius (default 'transparent')
+  // Mesh-specific:
+  meshGrid?: MeshPointValue[][];
+  meshWidth?: number;
+  meshHeight?: number;
+  meshCols?: number;
+  meshRows?: number;
+  // Freeform-specific:
+  freeformPoints?: FreeformPoint[];
+  freeformWidth?: number;
+  freeformHeight?: number;
+  falloff?: number;
 }
 
 export function isGradientValue(value: Value): value is GradientValue {
@@ -437,7 +473,7 @@ export interface PatternOutput {
 
 export interface GradientOutput {
   id: string;
-  type: 'linear' | 'radial' | 'conic';
+  type: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform';
   attrs: Record<string, string>;
   stops: Array<{ offset: number; color: string }>;
   spreadMethod?: string;
@@ -453,6 +489,15 @@ export interface GradientOutput {
   innerRadius?: number;
   innerFill?: string; // 'transparent' | 'center' | CSS color string
   stopsWithOklch?: Array<{ offset: number; color: string; oklch?: OKLCH }>;
+  // Mesh-specific:
+  meshGrid?: Array<Array<{ x: number; y: number; color: string }>>;
+  meshWidth?: number;
+  meshHeight?: number;
+  // Freeform-specific:
+  freeformPoints?: Array<{ x: number; y: number; color: string }>;
+  freeformWidth?: number;
+  freeformHeight?: number;
+  falloff?: number;
 }
 
 export interface CompileResult {
@@ -1975,8 +2020,90 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         scope.evalState.gradients.set(newId, child);
         return child;
       }
+      // Mesh-specific methods
+      case 'getPoint': {
+        if (obj.gradientType !== 'mesh') throw mError('getPoint() is only available on MeshGradient');
+        if (expr.args.length !== 2) throw mError('getPoint() expects 2 arguments (row, col)');
+        const row = evaluateExpression(expr.args[0], scope);
+        const col = evaluateExpression(expr.args[1], scope);
+        if (typeof row !== 'number' || typeof col !== 'number') throw mError('getPoint() arguments must be numbers');
+        const grid = obj.meshGrid!;
+        if (row < 0 || row >= grid.length || col < 0 || col >= grid[0].length) {
+          throw mError(`getPoint(${row}, ${col}) out of bounds for ${grid.length}×${grid[0].length} grid`);
+        }
+        return grid[row][col];
+      }
+      case 'getRow': {
+        if (obj.gradientType !== 'mesh') throw mError('getRow() is only available on MeshGradient');
+        if (expr.args.length !== 1) throw mError('getRow() expects 1 argument (row)');
+        const row = evaluateExpression(expr.args[0], scope);
+        if (typeof row !== 'number') throw mError('getRow() argument must be a number');
+        const grid = obj.meshGrid!;
+        if (row < 0 || row >= grid.length) {
+          throw mError(`getRow(${row}) out of bounds for grid with ${grid.length} rows`);
+        }
+        return { type: 'ArrayValue' as const, elements: [...grid[row]] };
+      }
+      case 'getCol': {
+        if (obj.gradientType !== 'mesh') throw mError('getCol() is only available on MeshGradient');
+        if (expr.args.length !== 1) throw mError('getCol() expects 1 argument (col)');
+        const col = evaluateExpression(expr.args[0], scope);
+        if (typeof col !== 'number') throw mError('getCol() argument must be a number');
+        const grid = obj.meshGrid!;
+        if (col < 0 || col >= grid[0].length) {
+          throw mError(`getCol(${col}) out of bounds for grid with ${grid[0].length} columns`);
+        }
+        return { type: 'ArrayValue' as const, elements: grid.map(r => r[col]) };
+      }
+      case 'colorAll': {
+        if (obj.gradientType !== 'mesh') throw mError('colorAll() is only available on MeshGradient');
+        if (expr.args.length !== 1) throw mError('colorAll() expects 1 argument (color)');
+        const color = evaluateExpression(expr.args[0], scope);
+        if (!isColorValue(color)) throw mError('colorAll() argument must be a Color value');
+        const css = oklchToCSS(color.oklch);
+        for (const row of obj.meshGrid!) {
+          for (const pt of row) {
+            pt.color = { ...color.oklch };
+            pt.colorCSS = css;
+          }
+        }
+        return 0;
+      }
+      // Freeform-specific methods
+      case 'point': {
+        if (obj.gradientType !== 'freeform') throw mError('point() is only available on FreeformGradient');
+        if (expr.args.length !== 3) throw mError('point() expects 3 arguments (x, y, color)');
+        const x = evaluateExpression(expr.args[0], scope);
+        const y = evaluateExpression(expr.args[1], scope);
+        const color = evaluateExpression(expr.args[2], scope);
+        if (typeof x !== 'number' || typeof y !== 'number') throw mError('point() x and y must be numbers');
+        if (!isColorValue(color)) throw mError('point() third argument must be a Color value');
+        obj.freeformPoints!.push({
+          x, y,
+          color: { ...color.oklch },
+          colorCSS: oklchToCSS(color.oklch),
+        });
+        return 0;
+      }
       default:
         throw mError(`Unknown Gradient method: ${expr.method}`);
+    }
+  }
+
+  // MeshPointValue methods
+  if (isMeshPointValue(obj)) {
+    switch (expr.method) {
+      case 'translate': {
+        if (expr.args.length !== 2) throw mError('translate() expects 2 arguments (dx, dy)');
+        const dx = evaluateExpression(expr.args[0], scope);
+        const dy = evaluateExpression(expr.args[1], scope);
+        if (typeof dx !== 'number' || typeof dy !== 'number') throw mError('translate() arguments must be numbers');
+        obj.x += dx;
+        obj.y += dy;
+        return 0;
+      }
+      default:
+        throw mError(`Unknown MeshPoint method: ${expr.method}`);
     }
   }
 
@@ -2334,7 +2461,16 @@ function formatValueForDisplay(val: Value): string {
     return `Pattern(${val.id}, ${val.paths.length} elements)`;
   }
   if (isGradientValue(val)) {
+    if (val.gradientType === 'mesh') {
+      return `MeshGradient(${val.id}, ${val.meshCols}×${val.meshRows})`;
+    }
+    if (val.gradientType === 'freeform') {
+      return `FreeformGradient(${val.id}, ${val.freeformPoints?.length ?? 0} points)`;
+    }
     return `${val.gradientType.charAt(0).toUpperCase() + val.gradientType.slice(1)}Gradient(${val.id}, ${val.stops.length} stops)`;
+  }
+  if (isMeshPointValue(val)) {
+    return `MeshPoint(${val.gridRow},${val.gridCol} @ ${val.x.toFixed(1)},${val.y.toFixed(1)})`;
   }
   if (isColorValue(val)) {
     if (val.lightDark) {
@@ -2514,6 +2650,17 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle MeshPointValue property access
+  if (isMeshPointValue(obj)) {
+    switch (expr.property) {
+      case 'x': return obj.x;
+      case 'y': return obj.y;
+      case 'color': return { type: 'ColorValue', oklch: { ...obj.color } } as ColorValue;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on MeshPoint`);
+    }
+  }
+
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
@@ -2530,6 +2677,20 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'spread': return obj.spread ?? 'clamp';
       case 'innerRadius': return obj.innerRadius ?? 0;
       case 'innerFill': return obj.innerFill ?? 'transparent';
+      // Mesh/Freeform-specific properties
+      case 'falloff': return obj.falloff ?? 2.0;
+      case 'cols': return obj.meshCols ?? 0;
+      case 'rows': return obj.meshRows ?? 0;
+      case 'width': {
+        if (obj.gradientType === 'mesh') return obj.meshWidth!;
+        if (obj.gradientType === 'freeform') return obj.freeformWidth!;
+        throw new Error(`Property 'width' does not exist on ${obj.gradientType} gradient`);
+      }
+      case 'height': {
+        if (obj.gradientType === 'mesh') return obj.meshHeight!;
+        if (obj.gradientType === 'freeform') return obj.freeformHeight!;
+        throw new Error(`Property 'height' does not exist on ${obj.gradientType} gradient`);
+      }
       default:
         throw new Error(`Property '${expr.property}' does not exist on Gradient`);
     }
@@ -2963,6 +3124,98 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       attrs: { cx: String(cx), cy: String(cy) },
       stops: [],
       from: 0, to: 2 * Math.PI, direction: 'cw', spread: 'clamp', innerRadius: 0, innerFill: 'transparent',
+    };
+    scope.evalState.gradients.set(id, gradient);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle MeshGradient() constructor
+  if (call.name === 'MeshGradient') {
+    if (call.args.length !== 5) {
+      throw new Error(formatError(`MeshGradient() expects 5 arguments (id, width, height, cols, rows), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('MeshGradient() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('MeshGradient() first argument must be a string', getLine(call), getCol(call)));
+    const width = evaluateExpression(call.args[1], scope);
+    const height = evaluateExpression(call.args[2], scope);
+    const cols = evaluateExpression(call.args[3], scope);
+    const rows = evaluateExpression(call.args[4], scope);
+    if (typeof width !== 'number' || typeof height !== 'number' || typeof cols !== 'number' || typeof rows !== 'number') {
+      throw new Error(formatError('MeshGradient() width, height, cols, rows must be numbers', getLine(call), getCol(call)));
+    }
+    if (cols < 2 || rows < 2) {
+      throw new Error(formatError('MeshGradient() cols and rows must be >= 2 (need at least one patch)', getLine(call), getCol(call)));
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+    }
+    // Build grid: rows × cols MeshPointValue objects, evenly spaced
+    const meshGrid: MeshPointValue[][] = [];
+    for (let r = 0; r < rows; r++) {
+      const row: MeshPointValue[] = [];
+      for (let c = 0; c < cols; c++) {
+        row.push({
+          type: 'MeshPointValue',
+          x: (c / (cols - 1)) * width,
+          y: (r / (rows - 1)) * height,
+          color: { L: 0, C: 0, H: 0, alpha: 0 },
+          colorCSS: 'oklch(0 0 0 / 0)',
+          gridRow: r,
+          gridCol: c,
+        });
+      }
+      meshGrid.push(row);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'mesh', id,
+      attrs: {},
+      stops: [],
+      meshGrid, meshWidth: width, meshHeight: height,
+      meshCols: cols, meshRows: rows,
+    };
+    scope.evalState.gradients.set(id, gradient);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle FreeformGradient() constructor
+  if (call.name === 'FreeformGradient') {
+    if (call.args.length !== 3) {
+      throw new Error(formatError(`FreeformGradient() expects 3 arguments (id, width, height), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('FreeformGradient() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('FreeformGradient() first argument must be a string', getLine(call), getCol(call)));
+    const width = evaluateExpression(call.args[1], scope);
+    const height = evaluateExpression(call.args[2], scope);
+    if (typeof width !== 'number' || typeof height !== 'number') {
+      throw new Error(formatError('FreeformGradient() width and height must be numbers', getLine(call), getCol(call)));
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'freeform', id,
+      attrs: {},
+      stops: [],
+      freeformPoints: [], freeformWidth: width, freeformHeight: height,
+      falloff: 2.0,
     };
     scope.evalState.gradients.set(id, gradient);
     // Execute trailing block if present
@@ -4076,6 +4329,28 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             throw new Error(formatError(`Cannot assign to Pattern property '${stmt.property}'`, getLine(stmt)));
         }
       }
+      if (isMeshPointValue(obj)) {
+        switch (stmt.property) {
+          case 'color': {
+            if (!isColorValue(value)) throw new Error(formatError('MeshPoint color must be a Color value', getLine(stmt)));
+            obj.color = { ...value.oklch };
+            obj.colorCSS = oklchToCSS(value.oklch);
+            return;
+          }
+          case 'x': {
+            if (typeof value !== 'number') throw new Error(formatError('MeshPoint x must be a number', getLine(stmt)));
+            obj.x = value;
+            return;
+          }
+          case 'y': {
+            if (typeof value !== 'number') throw new Error(formatError('MeshPoint y must be a number', getLine(stmt)));
+            obj.y = value;
+            return;
+          }
+          default:
+            throw new Error(formatError(`Cannot assign to MeshPoint property '${stmt.property}'`, getLine(stmt)));
+        }
+      }
       if (isGradientValue(obj)) {
         switch (stmt.property) {
           case 'spreadMethod':
@@ -4144,6 +4419,13 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             } else {
               throw new Error(formatError(`ConicGradient innerFill must be 'transparent', 'transparent-blend', 'center', or a Color value`, getLine(stmt)));
             }
+            return;
+          }
+          case 'falloff': {
+            if (obj.gradientType !== 'freeform') throw new Error(formatError(`Property 'falloff' is only available on FreeformGradient`, getLine(stmt)));
+            if (typeof value !== 'number') throw new Error(formatError(`FreeformGradient falloff must be a number`, getLine(stmt)));
+            if (value <= 0) throw new Error(formatError(`FreeformGradient falloff must be positive`, getLine(stmt)));
+            obj.falloff = value;
             return;
           }
           default:
@@ -4375,6 +4657,33 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
           ...(s.oklch ? { oklch: { ...s.oklch } } : {}),
         };
       });
+    }
+    // Mesh-specific output
+    if (grad.gradientType === 'mesh') {
+      output.meshWidth = grad.meshWidth;
+      output.meshHeight = grad.meshHeight;
+      output.meshGrid = (grad.meshGrid ?? []).map(row =>
+        row.map(p => ({ x: p.x, y: p.y, color: p.colorCSS }))
+      );
+    }
+    // Freeform-specific output
+    if (grad.gradientType === 'freeform') {
+      output.freeformWidth = grad.freeformWidth;
+      output.freeformHeight = grad.freeformHeight;
+      output.falloff = grad.falloff ?? 2.0;
+      output.freeformPoints = (grad.freeformPoints ?? []).map(p => ({
+        x: p.x, y: p.y, color: p.colorCSS,
+      }));
+      // Warn if freeform gradient has fewer than 2 points
+      if ((grad.freeformPoints ?? []).length < 2) {
+        evalState.logs.push({
+          line: null,
+          parts: [{
+            type: 'string',
+            value: `Warning: FreeformGradient '${grad.id}' has fewer than 2 points — gradient will be empty or uniform.`,
+          }],
+        });
+      }
     }
     gradients.push(output);
   }

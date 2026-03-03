@@ -3,6 +3,10 @@
 
 import { isWebGPUAvailable, getDevice, destroyDevice } from './webgpu-device.js';
 import { getConicPipeline } from './conic-pipeline.js';
+import { getFreeformPipeline } from './freeform-pipeline.js';
+import { getMeshPipeline } from './mesh-pipeline.js';
+import { FREEFORM_PARAMS_SIZE, COLOR_POINT_STRIDE } from './freeform-shader.js';
+import { MESH_PARAMS_SIZE, MESH_VERTEX_STRIDE } from './mesh-shader.js';
 import { TextureCache, hashGradient } from './texture-cache.js';
 
 const cache = new TextureCache(32);
@@ -74,6 +78,98 @@ export async function renderConicGradients(gradients, width, height, scale = 2) 
   return result;
 }
 
+/**
+ * Render all freeform gradients from a compilation result.
+ * Returns a Map of gradient ID → data URL for SVG DOM injection.
+ *
+ * @param {object[]} gradients - GradientOutput array from compilation
+ * @param {number} width - Canvas width in CSS pixels
+ * @param {number} height - Canvas height in CSS pixels
+ * @param {number} [scale=2] - Resolution multiplier (2 = retina)
+ * @returns {Promise<Map<string, string>>} Map of gradient ID → data URL
+ */
+export async function renderFreeformGradients(gradients, width, height, scale = 2) {
+  const result = new Map();
+  const freeforms = gradients.filter(g => g.type === 'freeform');
+  if (freeforms.length === 0) return result;
+
+  for (const grad of freeforms) {
+    const gw = grad.freeformWidth || width;
+    const gh = grad.freeformHeight || height;
+    const key = hashGradient(grad, gw * scale, gh * scale);
+    const cached = cache.get(key);
+    if (cached) {
+      result.set(grad.id, cached);
+      continue;
+    }
+
+    let dataUrl = null;
+    if (_gpuAvailable) {
+      try {
+        dataUrl = await renderFreeformWebGPU(grad, gw, gh, scale);
+      } catch (e) {
+        console.warn('[GradientService] Freeform WebGPU render failed, falling back to Canvas 2D:', e.message);
+        dataUrl = renderFreeformCanvas2D(grad, gw, gh, scale);
+      }
+    } else {
+      dataUrl = renderFreeformCanvas2D(grad, gw, gh, scale);
+    }
+
+    if (dataUrl) {
+      cache.set(key, dataUrl);
+      result.set(grad.id, dataUrl);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Render all mesh gradients from a compilation result.
+ * Returns a Map of gradient ID → data URL for SVG DOM injection.
+ *
+ * @param {object[]} gradients - GradientOutput array from compilation
+ * @param {number} width - Canvas width in CSS pixels
+ * @param {number} height - Canvas height in CSS pixels
+ * @param {number} [scale=2] - Resolution multiplier (2 = retina)
+ * @returns {Promise<Map<string, string>>} Map of gradient ID → data URL
+ */
+export async function renderMeshGradients(gradients, width, height, scale = 2) {
+  const result = new Map();
+  const meshes = gradients.filter(g => g.type === 'mesh');
+  if (meshes.length === 0) return result;
+
+  for (const grad of meshes) {
+    const gw = grad.meshWidth || width;
+    const gh = grad.meshHeight || height;
+    const key = hashGradient(grad, gw * scale, gh * scale);
+    const cached = cache.get(key);
+    if (cached) {
+      result.set(grad.id, cached);
+      continue;
+    }
+
+    let dataUrl = null;
+    if (_gpuAvailable) {
+      try {
+        dataUrl = await renderMeshWebGPU(grad, gw, gh, scale);
+      } catch (e) {
+        console.warn('[GradientService] Mesh WebGPU render failed, falling back to Canvas 2D:', e.message);
+        dataUrl = renderMeshCanvas2D(grad, gw, gh, scale);
+      }
+    } else {
+      dataUrl = renderMeshCanvas2D(grad, gw, gh, scale);
+    }
+
+    if (dataUrl) {
+      cache.set(key, dataUrl);
+      result.set(grad.id, dataUrl);
+    }
+  }
+
+  return result;
+}
+
 /** Clear the texture cache. Call on cleanup / disconnectedCallback. */
 export function clearCache() {
   cache.clear();
@@ -100,17 +196,12 @@ async function renderConicWebGPU(grad, w, h, scale) {
   const ph = h * scale;
 
   // --- Canvas & texture ---
-  let canvas, context;
-  try {
-    canvas = new OffscreenCanvas(pw, ph);
-    context = canvas.getContext('webgpu');
-  } catch {
-    // OffscreenCanvas + webgpu context unsupported — use DOM canvas
-    canvas = document.createElement('canvas');
-    canvas.width = pw;
-    canvas.height = ph;
-    context = canvas.getContext('webgpu');
-  }
+  // Always use DOM canvas — OffscreenCanvas lacks toDataURL(), and blob URLs
+  // from createObjectURL don't render in SVG <image> elements in Shadow DOM.
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const context = canvas.getContext('webgpu');
   if (!context) throw new Error('Could not get webgpu context');
 
   context.configure({ device, format, alphaMode: 'premultiplied' });
@@ -228,7 +319,456 @@ async function renderConicWebGPU(grad, w, h, scale) {
 }
 
 // ---------------------------------------------------------------------------
-// Canvas 2D fallback
+// Freeform WebGPU render path
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a single freeform gradient via WebGPU.
+ * @param {object} grad - GradientOutput
+ * @param {number} w - CSS pixel width
+ * @param {number} h - CSS pixel height
+ * @param {number} scale - Resolution multiplier
+ * @returns {Promise<string>} data URL
+ */
+async function renderFreeformWebGPU(grad, w, h, scale) {
+  const pipelineResult = await getFreeformPipeline();
+  if (!pipelineResult) throw new Error('Freeform pipeline unavailable');
+  const { device, pipeline, format } = pipelineResult;
+
+  const pw = w * scale;
+  const ph = h * scale;
+
+  // --- Canvas & texture ---
+  // Always use DOM canvas — blob URLs don't render in SVG <image> in Shadow DOM
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const context = canvas.getContext('webgpu');
+  if (!context) throw new Error('Could not get webgpu context');
+
+  context.configure({ device, format, alphaMode: 'premultiplied' });
+
+  // --- Uniform buffer (FreeformParams, 32 bytes) ---
+  const points = grad.freeformPoints || [];
+  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+
+  const uniformData = new ArrayBuffer(FREEFORM_PARAMS_SIZE);
+  const f32 = new Float32Array(uniformData);
+  const u32 = new Uint32Array(uniformData);
+
+  f32[0] = pw;                          // resolution.x
+  f32[1] = ph;                          // resolution.y
+  f32[2] = grad.freeformWidth || w;     // grad_size.x
+  f32[3] = grad.freeformHeight || h;    // grad_size.y
+  f32[4] = grad.falloff ?? 2.0;         // falloff
+  u32[5] = points.length;               // point_count
+  u32[6] = interpVal;                   // interpolation
+  // u32[7] = _pad
+
+  const uniformBuffer = device.createBuffer({
+    size: FREEFORM_PARAMS_SIZE,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+  // --- Points storage buffer ---
+  const FLOATS_PER_POINT = 6; // x, y, r, g, b, a
+  const pointCount = Math.max(points.length, 1);
+  const pointData = new Float32Array(pointCount * FLOATS_PER_POINT);
+  for (let i = 0; i < points.length; i++) {
+    const rgba = cssColorToLinearRGBA(points[i].color);
+    const base = i * FLOATS_PER_POINT;
+    pointData[base] = points[i].x;
+    pointData[base + 1] = points[i].y;
+    pointData[base + 2] = rgba[0];
+    pointData[base + 3] = rgba[1];
+    pointData[base + 4] = rgba[2];
+    pointData[base + 5] = rgba[3];
+  }
+
+  const pointBuffer = device.createBuffer({
+    size: pointCount * FLOATS_PER_POINT * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(pointBuffer, 0, pointData);
+
+  // --- Bind group ---
+  const bindGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniformBuffer } },
+      { binding: 1, resource: { buffer: pointBuffer } },
+    ],
+  });
+
+  // --- Render pass ---
+  const textureView = context.getCurrentTexture().createView();
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [{
+      view: textureView,
+      clearValue: { r: 0, g: 0, b: 0, a: 0 },
+      loadOp: 'clear',
+      storeOp: 'store',
+    }],
+  });
+
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bindGroup);
+  pass.draw(3, 1, 0, 0);
+  pass.end();
+  device.queue.submit([encoder.finish()]);
+
+  const dataUrl = await canvasToDataURL(canvas);
+
+  uniformBuffer.destroy();
+  pointBuffer.destroy();
+
+  return dataUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Mesh WebGPU render path
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a single mesh gradient via WebGPU.
+ * @param {object} grad - GradientOutput
+ * @param {number} w - CSS pixel width
+ * @param {number} h - CSS pixel height
+ * @param {number} scale - Resolution multiplier
+ * @returns {Promise<string>} data URL
+ */
+async function renderMeshWebGPU(grad, w, h, scale) {
+  const pipelineResult = await getMeshPipeline();
+  if (!pipelineResult) throw new Error('Mesh pipeline unavailable');
+  const { device, pipeline, format } = pipelineResult;
+
+  const pw = w * scale;
+  const ph = h * scale;
+
+  // --- Canvas & texture ---
+  // Always use DOM canvas — blob URLs don't render in SVG <image> in Shadow DOM
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const context = canvas.getContext('webgpu');
+  if (!context) throw new Error('Could not get webgpu context');
+
+  context.configure({ device, format, alphaMode: 'premultiplied' });
+
+  // --- Uniform buffer (MeshParams, 32 bytes) ---
+  const grid = grad.meshGrid || [];
+  const rows = grid.length;
+  const cols = rows > 0 ? grid[0].length : 0;
+  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+
+  const uniformData = new ArrayBuffer(MESH_PARAMS_SIZE);
+  const f32 = new Float32Array(uniformData);
+  const u32 = new Uint32Array(uniformData);
+
+  f32[0] = pw;                         // resolution.x
+  f32[1] = ph;                         // resolution.y
+  f32[2] = grad.meshWidth || w;        // grad_size.x
+  f32[3] = grad.meshHeight || h;       // grad_size.y
+  u32[4] = rows;                       // rows
+  u32[5] = cols;                       // cols
+  u32[6] = interpVal;                  // interpolation
+  // u32[7] = _pad
+
+  const uniformBuffer = device.createBuffer({
+    size: MESH_PARAMS_SIZE,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+  // --- Vertices storage buffer (row-major) ---
+  const FLOATS_PER_VERTEX = 6; // x, y, r, g, b, a
+  const totalVertices = Math.max(rows * cols, 1);
+  const vertexData = new Float32Array(totalVertices * FLOATS_PER_VERTEX);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const pt = grid[r][c];
+      const rgba = cssColorToLinearRGBA(pt.color);
+      const base = (r * cols + c) * FLOATS_PER_VERTEX;
+      vertexData[base] = pt.x;
+      vertexData[base + 1] = pt.y;
+      vertexData[base + 2] = rgba[0];
+      vertexData[base + 3] = rgba[1];
+      vertexData[base + 4] = rgba[2];
+      vertexData[base + 5] = rgba[3];
+    }
+  }
+
+  const vertexBuffer = device.createBuffer({
+    size: totalVertices * FLOATS_PER_VERTEX * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(vertexBuffer, 0, vertexData);
+
+  // --- Bind group ---
+  const bindGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniformBuffer } },
+      { binding: 1, resource: { buffer: vertexBuffer } },
+    ],
+  });
+
+  // --- Render pass ---
+  const textureView = context.getCurrentTexture().createView();
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [{
+      view: textureView,
+      clearValue: { r: 0, g: 0, b: 0, a: 0 },
+      loadOp: 'clear',
+      storeOp: 'store',
+    }],
+  });
+
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bindGroup);
+  pass.draw(3, 1, 0, 0);
+  pass.end();
+  device.queue.submit([encoder.finish()]);
+
+  const dataUrl = await canvasToDataURL(canvas);
+
+  uniformBuffer.destroy();
+  vertexBuffer.destroy();
+
+  return dataUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Canvas 2D fallbacks
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a single freeform gradient via Canvas 2D (pixel-by-pixel IDW).
+ * @param {object} grad - GradientOutput
+ * @param {number} w - CSS pixel width
+ * @param {number} h - CSS pixel height
+ * @param {number} scale - Resolution multiplier
+ * @returns {string|null} data URL
+ */
+function renderFreeformCanvas2D(grad, w, h, scale) {
+  try {
+    const pw = w * scale;
+    const ph = h * scale;
+    // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const points = (grad.freeformPoints || []).map(p => ({
+      x: p.x, y: p.y, rgba: cssColorToLinearRGBA(p.color),
+    }));
+
+    if (points.length === 0) return null;
+
+    const falloff = grad.falloff ?? 2.0;
+    const gw = grad.freeformWidth || w;
+    const gh = grad.freeformHeight || h;
+    const imageData = ctx.createImageData(pw, ph);
+    const data = imageData.data;
+
+    for (let py = 0; py < ph; py++) {
+      for (let px = 0; px < pw; px++) {
+        // Map pixel to gradient coordinate space
+        const gx = (px / pw) * gw;
+        const gy = (py / ph) * gh;
+
+        let totalR = 0, totalG = 0, totalB = 0, totalA = 0, totalWeight = 0;
+        for (const pt of points) {
+          const dx = gx - pt.x;
+          const dy = gy - pt.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          const weight = 1 / Math.pow(Math.max(d, 0.001), falloff);
+          totalR += pt.rgba[0] * weight;
+          totalG += pt.rgba[1] * weight;
+          totalB += pt.rgba[2] * weight;
+          totalA += pt.rgba[3] * weight;
+          totalWeight += weight;
+        }
+
+        const idx = (py * pw + px) * 4;
+        data[idx] = Math.round(Math.min(1, Math.max(0, totalR / totalWeight)) * 255);
+        data[idx + 1] = Math.round(Math.min(1, Math.max(0, totalG / totalWeight)) * 255);
+        data[idx + 2] = Math.round(Math.min(1, Math.max(0, totalB / totalWeight)) * 255);
+        data[idx + 3] = Math.round(Math.min(1, Math.max(0, totalA / totalWeight)) * 255);
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    if (canvas.toDataURL) {
+      return canvas.toDataURL('image/png');
+    }
+    return null;
+  } catch (e) {
+    console.warn('[GradientService] Freeform Canvas 2D fallback failed:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Render a single mesh gradient via Canvas 2D (pixel-by-pixel bilinear patches).
+ * @param {object} grad - GradientOutput
+ * @param {number} w - CSS pixel width
+ * @param {number} h - CSS pixel height
+ * @param {number} scale - Resolution multiplier
+ * @returns {string|null} data URL
+ */
+function renderMeshCanvas2D(grad, w, h, scale) {
+  try {
+    const pw = w * scale;
+    const ph = h * scale;
+    // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const grid = grad.meshGrid || [];
+    const rows = grid.length;
+    const cols = rows > 0 ? grid[0].length : 0;
+    if (rows < 2 || cols < 2) return null;
+
+    // Pre-parse colors
+    const parsedGrid = grid.map(row => row.map(p => ({
+      x: p.x, y: p.y, rgba: cssColorToLinearRGBA(p.color),
+    })));
+
+    const gw = grad.meshWidth || w;
+    const gh = grad.meshHeight || h;
+    const imageData = ctx.createImageData(pw, ph);
+    const data = imageData.data;
+
+    for (let py = 0; py < ph; py++) {
+      for (let px = 0; px < pw; px++) {
+        const gx = (px / pw) * gw;
+        const gy = (py / ph) * gh;
+
+        let found = false;
+        let rOut = 0, gOut = 0, bOut = 0, aOut = 0;
+
+        // Iterate patches
+        for (let r = 0; r < rows - 1 && !found; r++) {
+          for (let c = 0; c < cols - 1 && !found; c++) {
+            const p00 = parsedGrid[r][c];
+            const p10 = parsedGrid[r][c + 1];
+            const p01 = parsedGrid[r + 1][c];
+            const p11 = parsedGrid[r + 1][c + 1];
+
+            // Bounding box check
+            const minX = Math.min(p00.x, p10.x, p01.x, p11.x);
+            const maxX = Math.max(p00.x, p10.x, p01.x, p11.x);
+            const minY = Math.min(p00.y, p10.y, p01.y, p11.y);
+            const maxY = Math.max(p00.y, p10.y, p01.y, p11.y);
+
+            if (gx < minX || gx > maxX || gy < minY || gy > maxY) continue;
+
+            // Inverse bilinear mapping
+            const uv = inverseBilinearCPU(gx, gy, p00, p10, p01, p11);
+            if (uv && uv[0] >= -0.01 && uv[0] <= 1.01 && uv[1] >= -0.01 && uv[1] <= 1.01) {
+              // smoothstep eases transitions at patch boundaries
+              const u = smoothstep(Math.max(0, Math.min(1, uv[0])));
+              const v = smoothstep(Math.max(0, Math.min(1, uv[1])));
+
+              // Bilinear interpolation
+              rOut = lerp(lerp(p00.rgba[0], p10.rgba[0], u), lerp(p01.rgba[0], p11.rgba[0], u), v);
+              gOut = lerp(lerp(p00.rgba[1], p10.rgba[1], u), lerp(p01.rgba[1], p11.rgba[1], u), v);
+              bOut = lerp(lerp(p00.rgba[2], p10.rgba[2], u), lerp(p01.rgba[2], p11.rgba[2], u), v);
+              aOut = lerp(lerp(p00.rgba[3], p10.rgba[3], u), lerp(p01.rgba[3], p11.rgba[3], u), v);
+              found = true;
+            }
+          }
+        }
+
+        const idx = (py * pw + px) * 4;
+        if (found) {
+          data[idx] = Math.round(Math.min(1, Math.max(0, rOut)) * 255);
+          data[idx + 1] = Math.round(Math.min(1, Math.max(0, gOut)) * 255);
+          data[idx + 2] = Math.round(Math.min(1, Math.max(0, bOut)) * 255);
+          data[idx + 3] = Math.round(Math.min(1, Math.max(0, aOut)) * 255);
+        }
+        // else: transparent (ImageData defaults to 0)
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    if (canvas.toDataURL) {
+      return canvas.toDataURL('image/png');
+    }
+    return null;
+  } catch (e) {
+    console.warn('[GradientService] Mesh Canvas 2D fallback failed:', e.message);
+    return null;
+  }
+}
+
+/** CPU inverse bilinear mapping. Returns [u, v] or null. */
+function inverseBilinearCPU(px, py, p00, p10, p01, p11) {
+  const ex = p10.x - p00.x, ey = p10.y - p00.y;
+  const fx = p01.x - p00.x, fy = p01.y - p00.y;
+  const gx = p00.x - p10.x + p11.x - p01.x;
+  const gy = p00.y - p10.y + p11.y - p01.y;
+  const hx = px - p00.x, hy = py - p00.y;
+
+  const k2 = gx * fy - gy * fx;
+  const k1 = ex * fy - ey * fx + hx * gy - hy * gx;
+  const k0 = hx * ey - hy * ex;
+
+  if (Math.abs(k2) < 0.0001) {
+    // Linear case
+    const v = -k0 / k1;
+    const ud = ex + gx * v;
+    let u;
+    if (Math.abs(ud) > 0.0001) {
+      u = (hx - fx * v) / ud;
+    } else {
+      u = (hy - fy * v) / (ey + gy * v);
+    }
+    return [u, v];
+  }
+
+  const disc = k1 * k1 - 4 * k0 * k2;
+  if (disc < 0) return null;
+
+  const sqrtDisc = Math.sqrt(disc);
+  let v = (-k1 - sqrtDisc) / (2 * k2);
+  if (v < -0.01 || v > 1.01) v = (-k1 + sqrtDisc) / (2 * k2);
+
+  const ud = ex + gx * v;
+  let u;
+  if (Math.abs(ud) > 0.0001) {
+    u = (hx - fx * v) / ud;
+  } else {
+    u = (hy - fy * v) / (ey + gy * v);
+  }
+  return [u, v];
+}
+
+/** Linear interpolation. */
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+/** Smoothstep: S-curve with zero derivative at 0 and 1. */
+function smoothstep(t) {
+  return t * t * (3 - 2 * t);
+}
+
+// ---------------------------------------------------------------------------
+// Conic Canvas 2D fallback
 // ---------------------------------------------------------------------------
 
 /**
@@ -244,14 +784,10 @@ async function renderConicWebGPU(grad, w, h, scale) {
  */
 function renderConicCanvas2D(grad, w, h, scale) {
   try {
-    let canvas;
-    try {
-      canvas = new OffscreenCanvas(w * scale, h * scale);
-    } catch {
-      canvas = document.createElement('canvas');
-      canvas.width = w * scale;
-      canvas.height = h * scale;
-    }
+    // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
+    const canvas = document.createElement('canvas');
+    canvas.width = w * scale;
+    canvas.height = h * scale;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
@@ -319,23 +855,13 @@ function cssColorToLinearRGBA(color) {
 }
 
 /**
- * Convert a canvas (regular or OffscreenCanvas) to a data URL.
- * @param {HTMLCanvasElement|OffscreenCanvas} canvas
+ * Convert a canvas to a data URL (PNG).
+ * All WebGPU render paths use DOM canvas, so toDataURL() is always available.
+ * @param {HTMLCanvasElement} canvas
  * @returns {Promise<string>}
  */
 async function canvasToDataURL(canvas) {
-  if (canvas.toDataURL) {
-    return canvas.toDataURL('image/png');
-  }
-
-  // OffscreenCanvas → Blob → data URL via FileReader
-  const blob = await canvas.convertToBlob({ type: 'image/png' });
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('FileReader failed'));
-    reader.readAsDataURL(blob);
-  });
+  return canvas.toDataURL('image/png');
 }
 
 /** Singleton service instance for convenient import. */
@@ -343,6 +869,8 @@ export const gpuGradientService = {
   init,
   isGPUActive,
   renderConicGradients,
+  renderFreeformGradients,
+  renderMeshGradients,
   clearCache,
 };
 

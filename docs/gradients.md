@@ -520,3 +520,172 @@ Conic gradients are rasterized to bitmap and injected as SVG `<pattern>` element
 **Playground (browser):** When WebGPU is available (Chrome 113+), all conic gradients render through a WGSL fragment shader. This enables `innerRadius`/`innerFill` and consistent quality. Rendered textures are cached — unchanged gradients skip re-rendering. When WebGPU is unavailable (Firefox, Safari), the playground falls back to Canvas 2D's `createConicGradient()`, which does not support `innerRadius` or `innerFill`.
 
 **CLI:** Conic gradients render as wedge-shaped SVG paths (pure math, no GPU). The `innerRadius` and `innerFill` properties are ignored with a warning.
+
+## Mesh Gradient
+
+Create a mesh gradient with an ID, dimensions, and grid size:
+
+```
+let mesh = MeshGradient('terrain', 200, 200, 4, 3) {|g|
+  g.getPoint(0, 0).color = Color('#264653');
+  g.getPoint(0, 3).color = Color('#2a9d8f');
+  g.getPoint(2, 0).color = Color('#e9c46a');
+  g.getPoint(2, 3).color = Color('#e63946');
+};
+```
+
+Constructor signature: `MeshGradient(id, width, height, cols, rows)` — creates a `rows × cols` grid of control points evenly spaced across the given dimensions.
+
+- `cols` and `rows` must be >= 2 (at least one patch)
+- All points start transparent (`oklch(0 0 0 / 0)`)
+- The trailing block `{|g| ... }` is optional
+
+### Grid Access Methods
+
+| Method | Arguments | Returns | Description |
+|--------|-----------|---------|-------------|
+| `getPoint(row, col)` | row, col (numbers) | MeshPoint | Single control point at grid position |
+| `getRow(row)` | row (number) | Array of MeshPoints | All points in a row |
+| `getCol(col)` | col (number) | Array of MeshPoints | All points in a column |
+| `colorAll(color)` | Color value | — | Set every point to the same color |
+
+### MeshPoint Properties
+
+Each point returned by `getPoint`, `getRow`, or `getCol` has:
+
+| Property | Read | Write | Type |
+|----------|------|-------|------|
+| `x` | yes | yes | number |
+| `y` | yes | yes | number |
+| `color` | yes | yes | Color |
+
+### MeshPoint Methods
+
+| Method | Arguments | Description |
+|--------|-----------|-------------|
+| `translate(dx, dy)` | numbers | Shift the point position |
+
+### Mesh Gradient Properties
+
+| Expression | Returns |
+|------------|---------|
+| `mesh.id` | The gradient's string ID |
+| `mesh.cols` | Number of columns |
+| `mesh.rows` | Number of rows |
+| `mesh.width` | Width in user-space units |
+| `mesh.height` | Height in user-space units |
+
+### Mesh Gradient Example
+
+```
+let m = MeshGradient('heat', 200, 200, 3, 3) {|g|
+  // Color the corners
+  g.getPoint(0, 0).color = Color('#264653');
+  g.getPoint(0, 2).color = Color('#2a9d8f');
+  g.getPoint(2, 0).color = Color('#e9c46a');
+  g.getPoint(2, 2).color = Color('#e63946');
+
+  // Shift a point for artistic control
+  g.getPoint(1, 1).translate(10, -5);
+  g.getPoint(1, 1).color = Color('#f4a261');
+};
+
+define PathLayer('bg') ${ fill: m; stroke: none; }
+layer('bg').apply {
+  M 0 0 L 200 0 L 200 200 L 0 200 Z
+}
+```
+
+### Rendering
+
+Mesh gradients are rasterized via WebGPU using bilinear patch interpolation. Each quad cell in the grid is rendered as a smooth color blend between its four corner points.
+
+- **Playground**: WebGPU shader renders each patch; the result is injected as `<pattern><image/></pattern>`, same as conic gradients.
+- **CLI**: Mesh gradients are not supported in the CLI wedge-path renderer. A warning is emitted and the gradient renders as transparent.
+
+## Freeform Gradient
+
+Create a freeform (scattered-point) gradient with an ID and dimensions:
+
+```
+let ff = FreeformGradient('glow', 200, 200) {|g|
+  g.point(100, 100, Color('#ffffff'));
+  g.point(0, 0, Color('#264653'));
+  g.point(200, 0, Color('#2a9d8f'));
+  g.point(200, 200, Color('#e63946'));
+  g.point(0, 200, Color('#e9c46a'));
+};
+```
+
+Constructor signature: `FreeformGradient(id, width, height)` — creates an empty gradient canvas. Add points with `.point(x, y, color)`.
+
+### Methods
+
+| Method | Arguments | Description |
+|--------|-----------|-------------|
+| `point(x, y, color)` | x, y (numbers), color (Color) | Add a color point at the given position |
+
+### Freeform Gradient Properties
+
+| Expression | Returns |
+|------------|---------|
+| `ff.id` | The gradient's string ID |
+| `ff.width` | Width in user-space units |
+| `ff.height` | Height in user-space units |
+| `ff.falloff` | Distance falloff exponent (default `2.0`) |
+
+### Falloff
+
+The `falloff` property controls how quickly colors blend with distance. Higher values create sharper boundaries around each point; lower values create smoother blends:
+
+```
+ff.falloff = 1.0;   // very smooth, linear falloff
+ff.falloff = 2.0;   // default — inverse-square (natural)
+ff.falloff = 4.0;   // tight halos around each point
+```
+
+`falloff` must be a positive number.
+
+### Freeform Gradient Example
+
+```
+let nebula = FreeformGradient('nebula', 300, 300) {|g|
+  g.point(150, 150, Color('#ffffff'));
+  g.point(50, 80, Color('#e63946'));
+  g.point(250, 80, Color('#2a9d8f'));
+  g.point(80, 250, Color('#f4a261'));
+  g.point(220, 250, Color('#264653'));
+};
+nebula.falloff = 3.0;
+
+define PathLayer('bg') ${ fill: nebula; stroke: none; }
+layer('bg').apply {
+  M 0 0 L 300 0 L 300 300 L 0 300 Z
+}
+```
+
+### Rendering
+
+Freeform gradients are rasterized via WebGPU using inverse-distance weighted interpolation. Each pixel's color is a weighted average of all control points, where the weight is `1 / distance^falloff`.
+
+- **Playground**: WebGPU shader computes IDW per-pixel; the result is injected as `<pattern><image/></pattern>`.
+- **CLI**: Freeform gradients are not supported in the CLI. A warning is emitted and the gradient renders as transparent.
+
+A warning is also emitted at compile time if a freeform gradient has fewer than 2 points.
+
+### Error Handling
+
+| Error | Cause |
+|-------|-------|
+| `MeshGradient() expects 5 arguments` | Wrong argument count |
+| `MeshGradient() first argument must be a string` | Non-string ID |
+| `MeshGradient() width, height, cols, rows must be numbers` | Non-numeric dimensions |
+| `MeshGradient() cols and rows must be >= 2` | Grid too small |
+| `FreeformGradient() expects 3 arguments` | Wrong argument count |
+| `FreeformGradient() first argument must be a string` | Non-string ID |
+| `FreeformGradient() width and height must be numbers` | Non-numeric dimensions |
+| `getPoint(row, col) out of bounds` | Index outside grid |
+| `getRow(row) out of bounds` | Row index outside grid |
+| `getCol(col) out of bounds` | Column index outside grid |
+| `point() expects 3 arguments (x, y, color)` | Wrong argument count |
+| `FreeformGradient falloff must be positive` | Non-positive falloff |
