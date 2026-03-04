@@ -5,8 +5,11 @@ import { isWebGPUAvailable, getDevice, destroyDevice } from './webgpu-device.js'
 import { getConicPipeline } from './conic-pipeline.js';
 import { getFreeformPipeline } from './freeform-pipeline.js';
 import { getMeshPipeline } from './mesh-pipeline.js';
+import { getTopoPipeline } from './topo-pipeline.js';
 import { FREEFORM_PARAMS_SIZE, COLOR_POINT_STRIDE } from './freeform-shader.js';
 import { MESH_PARAMS_SIZE, MESH_VERTEX_STRIDE } from './mesh-shader.js';
+import { TOPO_PARAMS_SIZE, CONTOUR_HEADER_STRIDE, SEGMENT_STRIDE, TOPO_COLOR_STOP_STRIDE } from './topo-shader.js';
+import { flattenToSegments } from './svg-path-parser.js';
 import { TextureCache, hashGradient } from './texture-cache.js';
 
 const cache = new TextureCache(32);
@@ -159,6 +162,52 @@ export async function renderMeshGradients(gradients, width, height, scale = 2) {
       }
     } else {
       dataUrl = renderMeshCanvas2D(grad, gw, gh, scale);
+    }
+
+    if (dataUrl) {
+      cache.set(key, dataUrl);
+      result.set(grad.id, dataUrl);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Render all topo gradients from a compilation result.
+ * Returns a Map of gradient ID → data URL for SVG DOM injection.
+ *
+ * @param {object[]} gradients - GradientOutput array from compilation
+ * @param {number} width - Canvas width in CSS pixels
+ * @param {number} height - Canvas height in CSS pixels
+ * @param {number} [scale=2] - Resolution multiplier (2 = retina)
+ * @returns {Promise<Map<string, string>>} Map of gradient ID → data URL
+ */
+export async function renderTopoGradients(gradients, width, height, scale = 2) {
+  const result = new Map();
+  const topos = gradients.filter(g => g.type === 'topo');
+  if (topos.length === 0) return result;
+
+  for (const grad of topos) {
+    const gw = grad.topoWidth || width;
+    const gh = grad.topoHeight || height;
+    const key = hashGradient(grad, gw * scale, gh * scale);
+    const cached = cache.get(key);
+    if (cached) {
+      result.set(grad.id, cached);
+      continue;
+    }
+
+    let dataUrl = null;
+    if (_gpuAvailable) {
+      try {
+        dataUrl = await renderTopoWebGPU(grad, gw, gh, scale);
+      } catch (e) {
+        console.warn('[GradientService] Topo WebGPU render failed, falling back to Canvas 2D:', e.message);
+        dataUrl = renderTopoCanvas2D(grad, gw, gh, scale);
+      }
+    } else {
+      dataUrl = renderTopoCanvas2D(grad, gw, gh, scale);
     }
 
     if (dataUrl) {
@@ -825,6 +874,307 @@ function renderConicCanvas2D(grad, w, h, scale) {
 }
 
 // ---------------------------------------------------------------------------
+// Topo WebGPU render path
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a single topo gradient via WebGPU.
+ * @param {object} grad - GradientOutput
+ * @param {number} w - CSS pixel width
+ * @param {number} h - CSS pixel height
+ * @param {number} scale - Resolution multiplier
+ * @returns {Promise<string>} data URL
+ */
+async function renderTopoWebGPU(grad, w, h, scale) {
+  const pipelineResult = await getTopoPipeline();
+  if (!pipelineResult) throw new Error('Topo pipeline unavailable');
+  const { device, pipeline, format } = pipelineResult;
+
+  const pw = w * scale;
+  const ph = h * scale;
+
+  // --- Canvas & texture ---
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const context = canvas.getContext('webgpu');
+  if (!context) throw new Error('Could not get webgpu context');
+
+  context.configure({ device, format, alphaMode: 'premultiplied' });
+
+  // --- Flatten contour paths to line segments ---
+  // Sort contours by elevation (lowest first) for smooth blending algorithm
+  const contours = [...(grad.topoContours || [])].sort((a, b) => a.elevation - b.elevation);
+  const stops = grad.stopsWithOklch || [];
+  const allSegments = []; // Float32Array segments per contour
+  const contourHeaders = []; // { elevation, segmentStart, segmentCount }
+  let globalSegmentIdx = 0;
+
+  for (const c of contours) {
+    const segs = flattenToSegments(c.path, 8);
+    const segCount = segs.length / 4; // each segment = 4 floats
+    contourHeaders.push({
+      elevation: c.elevation,
+      segmentStart: globalSegmentIdx,
+      segmentCount: segCount,
+    });
+    allSegments.push(segs);
+    globalSegmentIdx += segCount;
+  }
+
+  const totalSegments = Math.max(globalSegmentIdx, 1);
+
+  // --- Easing mode ---
+  const easingMap = { 'linear': 0, 'smoothstep': 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4 };
+  const easingVal = easingMap[grad.topoEasing] ?? 0;
+  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+
+  // --- Uniform buffer (TopoParams, 32 bytes) ---
+  const uniformData = new ArrayBuffer(TOPO_PARAMS_SIZE);
+  const f32 = new Float32Array(uniformData);
+  const u32 = new Uint32Array(uniformData);
+
+  f32[0] = pw;                           // resolution.x
+  f32[1] = ph;                           // resolution.y
+  f32[2] = grad.topoWidth || w;          // grad_size.x
+  f32[3] = grad.topoHeight || h;         // grad_size.y
+  u32[4] = contours.length;              // contour_count
+  u32[5] = stops.length;                 // stop_count
+  u32[6] = easingVal;                    // easing
+  u32[7] = interpVal;                    // interpolation
+
+  const uniformBuffer = device.createBuffer({
+    size: TOPO_PARAMS_SIZE,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+  // --- Contour headers storage buffer ---
+  const contourCount = Math.max(contours.length, 1);
+  const headerData = new ArrayBuffer(contourCount * CONTOUR_HEADER_STRIDE);
+  const headerF32 = new Float32Array(headerData);
+  const headerU32 = new Uint32Array(headerData);
+
+  for (let i = 0; i < contourHeaders.length; i++) {
+    const base = i * 4; // 4 values per header (16 bytes / 4)
+    headerF32[base] = contourHeaders[i].elevation;
+    headerU32[base + 1] = contourHeaders[i].segmentStart;
+    headerU32[base + 2] = contourHeaders[i].segmentCount;
+    headerU32[base + 3] = 0; // padding
+  }
+
+  const headerBuffer = device.createBuffer({
+    size: contourCount * CONTOUR_HEADER_STRIDE,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(headerBuffer, 0, headerData);
+
+  // --- Segments storage buffer ---
+  const segmentData = new Float32Array(totalSegments * 4);
+  let offset = 0;
+  for (const segs of allSegments) {
+    segmentData.set(segs, offset);
+    offset += segs.length;
+  }
+
+  const segmentBuffer = device.createBuffer({
+    size: totalSegments * SEGMENT_STRIDE,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(segmentBuffer, 0, segmentData);
+
+  // --- Color stops storage buffer ---
+  const stopCount = Math.max(stops.length, 1);
+  const stopData = new Float32Array(stopCount * 4);
+  for (let i = 0; i < stops.length; i++) {
+    const rgba = cssColorToLinearRGBA(stops[i].color);
+    const base = i * 4;
+    stopData[base] = stops[i].offset;
+    stopData[base + 1] = rgba[0];
+    stopData[base + 2] = rgba[1];
+    stopData[base + 3] = rgba[2];
+  }
+
+  const stopBuffer = device.createBuffer({
+    size: stopCount * TOPO_COLOR_STOP_STRIDE,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(stopBuffer, 0, stopData);
+
+  // --- Bind group (4 entries) ---
+  const bindGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniformBuffer } },
+      { binding: 1, resource: { buffer: headerBuffer } },
+      { binding: 2, resource: { buffer: segmentBuffer } },
+      { binding: 3, resource: { buffer: stopBuffer } },
+    ],
+  });
+
+  // --- Render pass ---
+  const textureView = context.getCurrentTexture().createView();
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [{
+      view: textureView,
+      clearValue: { r: 0, g: 0, b: 0, a: 0 },
+      loadOp: 'clear',
+      storeOp: 'store',
+    }],
+  });
+
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bindGroup);
+  pass.draw(3, 1, 0, 0);
+  pass.end();
+  device.queue.submit([encoder.finish()]);
+
+  const dataUrl = await canvasToDataURL(canvas);
+
+  // Cleanup GPU resources
+  uniformBuffer.destroy();
+  headerBuffer.destroy();
+  segmentBuffer.destroy();
+  stopBuffer.destroy();
+
+  return dataUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Topo Canvas 2D fallback
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a single topo gradient via Canvas 2D (pixel-by-pixel SDF).
+ * @param {object} grad - GradientOutput
+ * @param {number} w - CSS pixel width
+ * @param {number} h - CSS pixel height
+ * @param {number} scale - Resolution multiplier
+ * @returns {string|null} data URL
+ */
+function renderTopoCanvas2D(grad, w, h, scale) {
+  try {
+    const pw = w * scale;
+    const ph = h * scale;
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    // Sort contours by elevation (lowest first) for smooth blending algorithm
+    const contours = [...(grad.topoContours || [])]
+      .sort((a, b) => a.elevation - b.elevation)
+      .map(c => ({
+        elevation: c.elevation,
+        path2d: new Path2D(c.path),
+        segments: flattenToSegments(c.path, 8),
+      }));
+
+    const stops = (grad.stopsWithOklch || []).map(s => ({
+      offset: s.offset,
+      rgba: cssColorToLinearRGBA(s.color),
+    }));
+
+    if (stops.length === 0) return null;
+
+    const gw = grad.topoWidth || w;
+    const gh = grad.topoHeight || h;
+    const imageData = ctx.createImageData(pw, ph);
+    const data = imageData.data;
+
+    const easingFn = getEasingFn(grad.topoEasing || 'linear');
+    const bw = Math.min(gw, gh) * 0.08; // bandwidth: half-width of transition zone
+
+    for (let py = 0; py < ph; py++) {
+      for (let px = 0; px < pw; px++) {
+        // Map pixel to gradient coordinate space
+        const gx = (px / pw) * gw;
+        const gy = (py / ph) * gh;
+
+        // Smooth signed-distance blending: process contours lowest to highest
+        let elevation = 0;
+        for (const c of contours) {
+          const inside = ctx.isPointInPath(c.path2d, gx, gy);
+          const uDist = minDistToSegments(gx, gy, c.segments);
+          const sd = inside ? -uDist : uDist;
+
+          const rawBlend = Math.max(0, Math.min(1, 0.5 - sd / (2 * bw)));
+          const blend = easingFn(rawBlend);
+          elevation = elevation * (1 - blend) + c.elevation * blend;
+        }
+
+        // Sample color ramp
+        const color = sampleRamp(stops, elevation);
+        const idx = (py * pw + px) * 4;
+        data[idx] = Math.round(Math.min(1, Math.max(0, color[0])) * 255);
+        data[idx + 1] = Math.round(Math.min(1, Math.max(0, color[1])) * 255);
+        data[idx + 2] = Math.round(Math.min(1, Math.max(0, color[2])) * 255);
+        data[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return canvas.toDataURL ? canvas.toDataURL('image/png') : null;
+  } catch (e) {
+    console.warn('[GradientService] Topo Canvas 2D fallback failed:', e.message);
+    return null;
+  }
+}
+
+/** Minimum distance from point to any segment in a Float32Array [x1,y1,x2,y2,...] */
+function minDistToSegments(px, py, segments) {
+  let minDist = Infinity;
+  for (let i = 0; i < segments.length; i += 4) {
+    const ax = segments[i], ay = segments[i + 1];
+    const bx = segments[i + 2], by = segments[i + 3];
+    const dx = bx - ax, dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    let t = 0;
+    if (lenSq > 0.0001) {
+      t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+    }
+    const projX = ax + t * dx, projY = ay + t * dy;
+    const dist = Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
+    if (dist < minDist) minDist = dist;
+  }
+  return minDist;
+}
+
+/** Get easing function by name */
+function getEasingFn(name) {
+  switch (name) {
+    case 'smoothstep': return t => t * t * (3 - 2 * t);
+    case 'ease-in': return t => t * t;
+    case 'ease-out': return t => 1 - (1 - t) * (1 - t);
+    case 'ease-in-out': return t => t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+    default: return t => t; // linear
+  }
+}
+
+/** Sample a color ramp at a given elevation */
+function sampleRamp(stops, elevation) {
+  if (stops.length === 0) return [0.5, 0.5, 0.5];
+  if (stops.length === 1 || elevation <= stops[0].offset) return stops[0].rgba;
+  if (elevation >= stops[stops.length - 1].offset) return stops[stops.length - 1].rgba;
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (elevation >= stops[i].offset && elevation <= stops[i + 1].offset) {
+      const range = stops[i + 1].offset - stops[i].offset;
+      const t = range > 0.0001 ? (elevation - stops[i].offset) / range : 0;
+      return [
+        stops[i].rgba[0] + (stops[i + 1].rgba[0] - stops[i].rgba[0]) * t,
+        stops[i].rgba[1] + (stops[i + 1].rgba[1] - stops[i].rgba[1]) * t,
+        stops[i].rgba[2] + (stops[i + 1].rgba[2] - stops[i].rgba[2]) * t,
+      ];
+    }
+  }
+  return stops[stops.length - 1].rgba;
+}
+
+// ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
 
@@ -871,6 +1221,7 @@ export const gpuGradientService = {
   renderConicGradients,
   renderFreeformGradients,
   renderMeshGradients,
+  renderTopoGradients,
   clearCache,
 };
 

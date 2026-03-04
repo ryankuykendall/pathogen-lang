@@ -100,6 +100,25 @@ export function hashGradient(grad, w, h) {
     ].join('|');
   }
 
+  if (grad.type === 'topo') {
+    const contours = (grad.topoContours || [])
+      .map(c => `${c.elevation}:${c.path}:${c.color}`)
+      .join(',');
+    const stops = (grad.stopsWithOklch || [])
+      .map(s => `${s.offset}:${s.color}`)
+      .join(',');
+    return [
+      'topo', w, h,
+      grad.topoWidth ?? 0,
+      grad.topoHeight ?? 0,
+      grad.topoEasing ?? 'linear',
+      grad.topoMethod ?? 'distance',
+      grad.topoBaseColor ?? '',
+      contours,
+      stops,
+    ].join('|');
+  }
+
   const stops = (grad.stopsWithOklch || grad.stops || [])
     .map(s => `${s.offset}:${s.color}`)
     .join(',');

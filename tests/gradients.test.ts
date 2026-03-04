@@ -1969,4 +1969,438 @@ describe('Gradients', () => {
       `)).toThrow(/Duplicate defs ID 'shared'/);
     });
   });
+
+  // ── TopoGradient ───────────────────────────────────────────────────────
+
+  describe('TopoGradient constructor', () => {
+    it('creates with correct type and dimensions', () => {
+      const result = compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      expect(result.gradients).toHaveLength(1);
+      expect(result.gradients[0].type).toBe('topo');
+      expect(result.gradients[0].id).toBe('terrain');
+      expect(result.gradients[0].topoWidth).toBe(400);
+      expect(result.gradients[0].topoHeight).toBe(300);
+    });
+
+    it('validates 3 arguments are required', () => {
+      expect(() => compile(`let g = TopoGradient('t', 200);`))
+        .toThrow(/TopoGradient\(\) expects 3 arguments/);
+    });
+
+    it('validates id is a string', () => {
+      expect(() => compile(`let g = TopoGradient(42, 200, 100);`))
+        .toThrow(/first argument must be a string/);
+    });
+
+    it('validates width/height are numbers', () => {
+      expect(() => compile(`let g = TopoGradient('t', 'w', 100);`))
+        .toThrow(/must be numbers/);
+    });
+
+    it('duplicate ID throws error', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 50); closePath() };
+        let a = TopoGradient('dup', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#000')); };
+        let b = TopoGradient('dup', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#fff')); };
+      `)).toThrow(/Duplicate defs ID 'dup'/);
+    });
+
+    it('defaults easing to linear and method to distance', () => {
+      const result = compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      expect(result.gradients[0].topoEasing).toBe('linear');
+      expect(result.gradients[0].topoMethod).toBe('distance');
+    });
+
+    it('TopoGradient cannot reuse existing gradient ID', () => {
+      expect(() => compile(`
+        let lg = LinearGradient('shared', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
+        let s = @{ circle(0, 0, 50); closePath() };
+        let tg = TopoGradient('shared', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#000')); };
+      `)).toThrow(/Duplicate defs ID 'shared'/);
+    });
+  });
+
+  describe('TopoGradient .contour()', () => {
+    it('adds contours with path, elevation, and color', () => {
+      const result = compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let peak = @{ circle(0, 0, 40); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(shore.project(200, 150), 0.3, Color('#f9e79f'))
+          g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'))
+        };
+      `);
+      const contours = result.gradients[0].topoContours!;
+      expect(contours).toHaveLength(2);
+      expect(contours[0].elevation).toBe(0.3);
+      expect(contours[0].color).toBeDefined();
+      expect(contours[0].path).toBeDefined();
+      expect(contours[1].elevation).toBe(0.8);
+    });
+
+    it('validates 3 arguments', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(shore.project(100, 50), 0.5);
+        };
+      `)).toThrow(/expects 3 arguments/);
+    });
+
+    it('validates first argument is ProjectedPathValue', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(shore, 0.5, Color('#000'));
+        };
+      `)).toThrow(/must be a ProjectedPathValue/);
+    });
+
+    it('rejects string as first argument', () => {
+      expect(() => compile(`
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour('path', 0.5, Color('#000'));
+        };
+      `)).toThrow(/must be a ProjectedPathValue/);
+    });
+
+    it('validates elevation is a number', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(shore.project(100, 50), 'high', Color('#000'));
+        };
+      `)).toThrow(/elevation must be a number/);
+    });
+
+    it('rejects elevation < 0', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(shore.project(100, 50), -0.1, Color('#000'));
+        };
+      `)).toThrow(/elevation must be between 0 and 1/);
+    });
+
+    it('rejects elevation > 1', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(shore.project(100, 50), 1.5, Color('#000'));
+        };
+      `)).toThrow(/elevation must be between 0 and 1/);
+    });
+
+    it('validates third argument is Color', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(shore.project(100, 50), 0.5, '#000');
+        };
+      `)).toThrow(/must be a Color value/);
+    });
+
+    it('rejects open paths (not ending with closePath)', () => {
+      expect(() => compile(`
+        let openPath = @{ moveTo(0, 0); lineTo(100, 0); lineTo(100, 100) };
+        let topo = TopoGradient('t', 200, 100) {|g|
+          g.contour(openPath.project(50, 50), 0.5, Color('#000'));
+        };
+      `)).toThrow(/path must be closed/);
+    });
+
+    it('only available on topo gradients', () => {
+      expect(() => compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let g = LinearGradient('lg', 0, 0, 1, 1) {|g|
+          g.contour(shore.project(100, 50), 0.5, Color('#000'));
+        };
+      `)).toThrow(/\.contour\(\) is only available on TopoGradient/);
+    });
+
+    it('contour path is serialized as absolute d-string', () => {
+      const result = compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      const path = result.gradients[0].topoContours![0].path;
+      expect(path).toBeDefined();
+      expect(typeof path).toBe('string');
+      expect(path.length).toBeGreaterThan(0);
+    });
+
+    it('accumulates multiple contours at different elevations', () => {
+      const result = compile(`
+        let shore = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(shore.project(200, 150), 0.2, Color('#1a5276'))
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(shore.project(200, 150), 0.8, Color('#ffffff'))
+        };
+      `);
+      expect(result.gradients[0].topoContours).toHaveLength(3);
+      expect(result.gradients[0].topoContours![0].elevation).toBe(0.2);
+      expect(result.gradients[0].topoContours![1].elevation).toBe(0.5);
+      expect(result.gradients[0].topoContours![2].elevation).toBe(0.8);
+    });
+  });
+
+  describe('TopoGradient properties', () => {
+    it('easing defaults to linear', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      expect(result.gradients[0].topoEasing).toBe('linear');
+    });
+
+    it('easing can be set to smoothstep', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.easing = 'smoothstep';
+      `);
+      expect(result.gradients[0].topoEasing).toBe('smoothstep');
+    });
+
+    it('easing can be set to ease-in, ease-out, ease-in-out', () => {
+      for (const ease of ['ease-in', 'ease-out', 'ease-in-out']) {
+        const result = compile(`
+          let s = @{ circle(0, 0, 100); closePath() };
+          let topo = TopoGradient('t', 400, 300) {|g|
+            g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          };
+          topo.easing = '${ease}';
+        `);
+        expect(result.gradients[0].topoEasing).toBe(ease);
+      }
+    });
+
+    it('easing rejects invalid values', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.easing = 'cubic';
+      `)).toThrow(/easing must be one of/);
+    });
+
+    it('easing only settable on topo gradients', () => {
+      expect(() => compile(`
+        let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
+        lg.easing = 'smoothstep';
+      `)).toThrow(/only available on TopoGradient/);
+    });
+
+    it('method defaults to distance', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      expect(result.gradients[0].topoMethod).toBe('distance');
+    });
+
+    it('method = laplace throws not yet implemented', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.method = 'laplace';
+      `)).toThrow(/not yet implemented/);
+    });
+
+    it('method only settable on topo gradients', () => {
+      expect(() => compile(`
+        let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
+        lg.method = 'distance';
+      `)).toThrow(/only available on TopoGradient/);
+    });
+
+    it('width, height, id are readable', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        log(topo.id)
+        log(topo.width)
+        log(topo.height)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('terrain');
+      expect(result.logs[1].parts[0].value).toBe('400');
+      expect(result.logs[2].parts[0].value).toBe('300');
+    });
+
+    it('interpolation is settable', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.interpolation = 'oklch';
+      `);
+      expect(result.gradients[0]).toBeDefined();
+    });
+
+    it('baseColor can be set', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.baseColor = Color('#1a5276');
+      `);
+      expect(result.gradients[0].topoBaseColor).toBeDefined();
+    });
+
+    it('baseColor rejects non-Color values', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.baseColor = '#1a5276';
+      `)).toThrow(/must be a Color value/);
+    });
+
+    it('baseColor only settable on topo gradients', () => {
+      expect(() => compile(`
+        let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
+        lg.baseColor = Color('#fff');
+      `)).toThrow(/only available on TopoGradient/);
+    });
+  });
+
+  describe('TopoGradient output serialization', () => {
+    it('builds stopsWithOklch from contours sorted by elevation', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.8, Color('#ffffff'))
+          g.contour(s.project(200, 150), 0.3, Color('#27ae60'))
+        };
+      `);
+      const stops = result.gradients[0].stopsWithOklch!;
+      expect(stops.length).toBeGreaterThanOrEqual(2);
+      // Stops should be sorted by elevation
+      for (let i = 1; i < stops.length; i++) {
+        expect(stops[i].offset).toBeGreaterThanOrEqual(stops[i - 1].offset);
+      }
+    });
+
+    it('includes baseColor at offset 0 when set', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.baseColor = Color('#1a5276');
+      `);
+      const stops = result.gradients[0].stopsWithOklch!;
+      expect(stops[0].offset).toBe(0);
+      expect(stops[0].oklch).toBeDefined();
+    });
+
+    it('contours have oklch data in output', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      const contour = result.gradients[0].topoContours![0];
+      expect(contour.oklch).toBeDefined();
+      expect(contour.color).toBeDefined();
+    });
+  });
+
+  describe('TopoGradient validation warnings', () => {
+    it('warns with 0 contours', () => {
+      const result = compile(`
+        let topo = TopoGradient('t', 400, 300) {|g| };
+      `);
+      const warns = result.logs.filter(l => l.parts[0].value.includes('no contours'));
+      expect(warns.length).toBe(1);
+    });
+  });
+
+  describe('TopoGradient log formatting', () => {
+    it('shows contour count in log output', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.3, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.8, Color('#ffffff'))
+        };
+        log(topo)
+      `);
+      expect(result.logs[0].parts[0].value).toBe('TopoGradient(terrain, 2 contours)');
+    });
+  });
+
+  describe('TopoGradient fill/stroke integration', () => {
+    it('auto-wraps to url(#id) when used as fill', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('terrain', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        define PathLayer('bg') \${ fill: topo; }
+        layer('bg').apply { rect(0, 0, 400, 300) }
+      `);
+      expect(result.layers[0].styles?.fill).toBe('url(#terrain)');
+    });
+
+    it('multiple topos in same program', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo1 = TopoGradient('t1', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        let topo2 = TopoGradient('t2', 200, 200) {|g|
+          g.contour(s.project(100, 100), 0.3, Color('#ffffff'))
+        };
+      `);
+      expect(result.gradients).toHaveLength(2);
+      expect(result.gradients[0].id).toBe('t1');
+      expect(result.gradients[1].id).toBe('t2');
+    });
+  });
+
+  describe('TopoGradient programmatic contours', () => {
+    it('generates contours via for-loop', () => {
+      const result = compile(`
+        let topo = TopoGradient('rings', 400, 400) {|g|
+          for ([level, i] in [0.2, 0.4, 0.6, 0.8]) {
+            let r = calc(150 - i * 35);
+            let ring = @{ circle(0, 0, r); closePath() };
+            g.contour(ring.project(200, 200), level, Color('#27ae60'))
+          }
+        };
+      `);
+      expect(result.gradients[0].topoContours).toHaveLength(4);
+      expect(result.gradients[0].topoContours![0].elevation).toBe(0.2);
+      expect(result.gradients[0].topoContours![3].elevation).toBe(0.8);
+    });
+  });
 });

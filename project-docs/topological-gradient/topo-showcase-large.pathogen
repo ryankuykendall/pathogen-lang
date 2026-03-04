@@ -1,0 +1,379 @@
+// ═══════════════════════════════════════════════════════════════
+// TopoGradient Showcase — Large Format (2048×2048 panels, column)
+// Set viewBox: 2200 x 11200, width: 2200, height: 11200
+// ═══════════════════════════════════════════════════════════════
+
+let pw = 2048;
+let ph = 2048;
+let px = 76;
+
+let p1y = 130;
+let p2y = 2340;
+let p3y = 4550;
+let p4y = 6760;
+let p5y = 8970;
+
+
+// ─── 1. Create all five TopoGradients ───────────────────────
+
+// ── Panel 1: "Concentric Rings" ──
+let ring870 = @{ circle(0, 0, 870); closePath() };
+let ring595 = @{ circle(0, 0, 595); closePath() };
+let ring307 = @{ circle(0, 0, 307); closePath() };
+
+let volcano = TopoGradient('volcano', pw, ph) {|g|
+  g.contour(ring870.project(1024, 1024), 0.25, Color('#f4d35e'))
+  g.contour(ring595.project(1024, 1024), 0.50, Color('#45b764'))
+  g.contour(ring307.project(1024, 1024), 0.80, Color('#c0392b'))
+};
+volcano.baseColor = Color('#264653');
+volcano.easing = 'smoothstep';
+
+
+// ── Panel 2: "Oval Terrain" ──
+let outer  = @{ circle(0, 0, 820); closePath() };
+let middle = @{ circle(0, 0, 512); closePath() };
+let inner  = @{ circle(0, 0, 225); closePath() };
+
+let ovalTerrain = TopoGradient('oval', pw, ph) {|g|
+  g.contour(outer.scale(1.2, 0.8).project(1075, 1024),  0.20, Color('#e9c46a'))
+  g.contour(middle.scale(1.1, 0.85).project(1004, 975),  0.50, Color('#2a9d8f'))
+  g.contour(inner.project(922, 902),                      0.82, Color('#8b4513'))
+};
+ovalTerrain.baseColor = Color('#1d3557');
+ovalTerrain.easing = 'smoothstep';
+ovalTerrain.interpolation = 'oklch';
+
+
+// ── Panel 3: "Twin Peaks" ──
+let cxA = 717;
+let cyA = 973;
+let cxB = 1485;
+let cyB = 1178;
+
+let baseA = @{ circle(0, 0, 563); closePath() };
+let midA  = @{ circle(0, 0, 307); closePath() };
+let topA  = @{ circle(0, 0, 123); closePath() };
+let baseB = @{ circle(0, 0, 430); closePath() };
+let midB  = @{ circle(0, 0, 205); closePath() };
+
+let peaks = TopoGradient('peaks', pw, ph) {|g|
+  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'))
+  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'))
+  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'))
+  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'))
+  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'))
+};
+peaks.baseColor = Color('#003049');
+peaks.easing = 'ease-out';
+
+
+// ── Panel 4: "Nested Rectangles" ──
+// Sharp geometry — pure straight edges
+let rectOuter  = @{ rect(0, 0, 1600, 1600) };
+let rectMiddle = @{ rect(0, 0, 1000, 1000) };
+let rectInner  = @{ rect(0, 0, 500, 500) };
+let rectCore   = @{ rect(0, 0, 180, 180) };
+
+let boxes = TopoGradient('boxes', pw, ph) {|g|
+  g.contour(rectOuter.project(224, 224),   0.15, Color('#a8dadc'))
+  g.contour(rectMiddle.project(524, 524),  0.40, Color('#457b9d'))
+  g.contour(rectInner.project(774, 774),   0.65, Color('#1d3557'))
+  g.contour(rectCore.project(934, 934),    0.90, Color('#e63946'))
+};
+boxes.baseColor = Color('#f1faee');
+boxes.easing = 'linear';
+
+
+// ── Panel 5: "Rounded Contours" ──
+// Mixed geometry — rounded rectangles with varying corner radii
+let rrOuter  = @{ roundRect(0, 0, 1700, 1700, 200) };
+let rrMiddle = @{ roundRect(0, 0, 1100, 1100, 140) };
+let rrInner  = @{ roundRect(0, 0, 600, 600, 80) };
+let rrCore   = @{ roundRect(0, 0, 220, 220, 40) };
+
+let rounded = TopoGradient('rounded', pw, ph) {|g|
+  g.contour(rrOuter.project(174, 174),   0.15, Color('#ffd6a5'))
+  g.contour(rrMiddle.project(474, 474),  0.40, Color('#caffbf'))
+  g.contour(rrInner.project(724, 724),   0.65, Color('#9bf6ff'))
+  g.contour(rrCore.project(914, 914),    0.90, Color('#bdb2ff'))
+};
+rounded.baseColor = Color('#fdffb6');
+rounded.easing = 'smoothstep';
+rounded.interpolation = 'oklch';
+
+
+// ─── 2. Define all layers ────────────────────────────────────
+
+define PathLayer('fill1') ${ fill: volcano; stroke: none; }
+define PathLayer('fill2') ${ fill: ovalTerrain; stroke: none; }
+define PathLayer('fill3') ${ fill: peaks; stroke: none; }
+define PathLayer('fill4') ${ fill: boxes; stroke: none; }
+define PathLayer('fill5') ${ fill: rounded; stroke: none; }
+
+define PathLayer('contours') ${
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 4;
+  fill: none;
+  stroke-dasharray: 24 14;
+}
+
+define PathLayer('frames') ${
+  stroke: #bbb;
+  stroke-width: 3;
+  fill: none;
+}
+
+define PathLayer('leaders') ${
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 10 8;
+}
+
+define TextLayer('title') ${
+  font-size: 72;
+  font-weight: bold;
+  fill: #222;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+}
+
+define TextLayer('ptitle') ${
+  font-size: 44;
+  font-weight: bold;
+  fill: #333;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+}
+
+define TextLayer('elev') ${
+  font-size: 34;
+  fill: rgba(255, 255, 255, 0.9);
+  font-family: monospace;
+  font-weight: bold;
+}
+
+define TextLayer('elevDark') ${
+  font-size: 34;
+  fill: rgba(0, 0, 0, 0.6);
+  font-family: monospace;
+  font-weight: bold;
+}
+
+define TextLayer('info') ${
+  font-size: 34;
+  fill: #666;
+  font-family: monospace;
+}
+
+define TextLayer('notes') ${
+  font-size: 34;
+  fill: #555;
+  font-family: system-ui, sans-serif;
+}
+
+
+// ─── 3. Draw everything ─────────────────────────────────────
+
+layer('title').apply {
+  text(1100, 72)`TopoGradient Showcase`
+}
+
+
+// ── Panel 1: Concentric Rings ────────────────────────────────
+
+layer('ptitle').apply {
+  text(calc(px + 1024), calc(p1y - 24))`Concentric Rings — smoothstep / srgb`
+}
+
+layer('fill1').apply { rect(px, p1y, pw, ph) }
+layer('frames').apply { rect(px, p1y, pw, ph) }
+
+layer('contours').apply {
+  circle(calc(px + 1024), calc(p1y + 1024), 870)
+  closePath()
+  circle(calc(px + 1024), calc(p1y + 1024), 595)
+  closePath()
+  circle(calc(px + 1024), calc(p1y + 1024), 307)
+  closePath()
+}
+
+layer('elev').apply {
+  text(calc(px + 1680), calc(p1y + 320))`0.25`
+  text(calc(px + 1530), calc(p1y + 520))`0.50`
+  text(calc(px + 1300), calc(p1y + 760))`0.80`
+}
+
+layer('leaders').apply {
+  moveTo(calc(px + 1675), calc(p1y + 328))
+  lineTo(calc(px + 1630), calc(p1y + 370))
+  moveTo(calc(px + 1525), calc(p1y + 528))
+  lineTo(calc(px + 1490), calc(p1y + 560))
+  moveTo(calc(px + 1298), calc(p1y + 764))
+  lineTo(calc(px + 1270), calc(p1y + 790))
+}
+
+
+// ── Panel 2: Oval Terrain ────────────────────────────────────
+
+layer('ptitle').apply {
+  text(calc(px + 1024), calc(p2y - 24))`Oval Terrain — smoothstep / oklch`
+}
+
+layer('fill2').apply { rect(px, p2y, pw, ph) }
+layer('frames').apply { rect(px, p2y, pw, ph) }
+
+layer('contours').apply {
+  let ecx = calc(px + 1075);
+  let ecy = calc(p2y + 1024);
+  moveTo(calc(ecx - 984), ecy)
+  arc(984, 656, 0, 0, 1, calc(ecx + 984), ecy)
+  arc(984, 656, 0, 0, 1, calc(ecx - 984), ecy)
+  closePath()
+
+  let mcx = calc(px + 1004);
+  let mcy = calc(p2y + 975);
+  moveTo(calc(mcx - 563), mcy)
+  arc(563, 435, 0, 0, 1, calc(mcx + 563), mcy)
+  arc(563, 435, 0, 0, 1, calc(mcx - 563), mcy)
+  closePath()
+
+  circle(calc(px + 922), calc(p2y + 902), 225)
+  closePath()
+}
+
+layer('elev').apply {
+  text(calc(px + 1750), calc(p2y + 500))`0.20`
+  text(calc(px + 1480), calc(p2y + 630))`0.50`
+  text(calc(px + 870), calc(p2y + 720))`0.82`
+}
+
+layer('leaders').apply {
+  moveTo(calc(px + 1745), calc(p2y + 508))
+  lineTo(calc(px + 1700), calc(p2y + 545))
+  moveTo(calc(px + 1475), calc(p2y + 638))
+  lineTo(calc(px + 1440), calc(p2y + 665))
+}
+
+
+// ── Panel 3: Twin Peaks ──────────────────────────────────────
+
+layer('ptitle').apply {
+  text(calc(px + 1024), calc(p3y - 24))`Twin Peaks — ease-out / srgb`
+}
+
+layer('fill3').apply { rect(px, p3y, pw, ph) }
+layer('frames').apply { rect(px, p3y, pw, ph) }
+
+layer('contours').apply {
+  circle(calc(px + cxA), calc(p3y + cyA), 563)
+  closePath()
+  circle(calc(px + cxA), calc(p3y + cyA), 307)
+  closePath()
+  circle(calc(px + cxA), calc(p3y + cyA), 123)
+  closePath()
+}
+
+layer('contours').apply {
+  circle(calc(px + cxB), calc(p3y + cyB), 430)
+  closePath()
+  circle(calc(px + cxB), calc(p3y + cyB), 205)
+  closePath()
+}
+
+layer('elev').apply {
+  text(calc(px + cxA - 220), calc(p3y + cyA - 470))`0.20`
+  text(calc(px + cxA - 130), calc(p3y + cyA - 230))`0.50`
+  text(calc(px + cxA + 30), calc(p3y + cyA + 30))`0.80`
+}
+
+layer('elev').apply {
+  text(calc(px + cxB + 260), calc(p3y + cyB - 310))`0.20`
+  text(calc(px + cxB + 110), calc(p3y + cyB - 80))`0.45`
+}
+
+layer('elev').apply {
+  text(calc(px + cxA - 80), calc(p3y + cyA + 170))`Peak A`
+  text(calc(px + cxB - 80), calc(p3y + cyB + 270))`Peak B`
+}
+
+
+// ── Panel 4: Nested Rectangles ───────────────────────────────
+
+layer('ptitle').apply {
+  text(calc(px + 1024), calc(p4y - 24))`Nested Rectangles — linear / srgb`
+}
+
+layer('fill4').apply { rect(px, p4y, pw, ph) }
+layer('frames').apply { rect(px, p4y, pw, ph) }
+
+// Rectangle outlines
+layer('contours').apply {
+  rect(calc(px + 224), calc(p4y + 224), 1600, 1600)
+  rect(calc(px + 524), calc(p4y + 524), 1000, 1000)
+  rect(calc(px + 774), calc(p4y + 774), 500, 500)
+  rect(calc(px + 934), calc(p4y + 934), 180, 180)
+}
+
+layer('elevDark').apply {
+  text(calc(px + 260), calc(p4y + 260))`0.15`
+  text(calc(px + 560), calc(p4y + 560))`0.40`
+  text(calc(px + 810), calc(p4y + 810))`0.65`
+  text(calc(px + 960), calc(p4y + 970))`0.90`
+}
+
+layer('leaders').apply {
+  moveTo(calc(px + 310), calc(p4y + 268))
+  lineTo(calc(px + 340), calc(p4y + 290))
+  moveTo(calc(px + 610), calc(p4y + 568))
+  lineTo(calc(px + 640), calc(p4y + 590))
+  moveTo(calc(px + 860), calc(p4y + 818))
+  lineTo(calc(px + 880), calc(p4y + 840))
+}
+
+
+// ── Panel 5: Rounded Contours ────────────────────────────────
+
+layer('ptitle').apply {
+  text(calc(px + 1024), calc(p5y - 24))`Rounded Contours — smoothstep / oklch`
+}
+
+layer('fill5').apply { rect(px, p5y, pw, ph) }
+layer('frames').apply { rect(px, p5y, pw, ph) }
+
+// Rounded rectangle outlines
+layer('contours').apply {
+  roundRect(calc(px + 174), calc(p5y + 174), 1700, 1700, 200)
+  roundRect(calc(px + 474), calc(p5y + 474), 1100, 1100, 140)
+  roundRect(calc(px + 724), calc(p5y + 724), 600, 600, 80)
+  roundRect(calc(px + 914), calc(p5y + 914), 220, 220, 40)
+}
+
+layer('elevDark').apply {
+  text(calc(px + 210), calc(p5y + 210))`0.15`
+  text(calc(px + 510), calc(p5y + 510))`0.40`
+  text(calc(px + 760), calc(p5y + 760))`0.65`
+  text(calc(px + 945), calc(p5y + 955))`0.90`
+}
+
+layer('leaders').apply {
+  moveTo(calc(px + 310), calc(p5y + 218))
+  lineTo(calc(px + 340), calc(p5y + 250))
+  moveTo(calc(px + 610), calc(p5y + 518))
+  lineTo(calc(px + 640), calc(p5y + 545))
+  moveTo(calc(px + 860), calc(p5y + 768))
+  lineTo(calc(px + 880), calc(p5y + 790))
+}
+
+
+// ─── 4. Legend & Notes ───────────────────────────────────────
+
+let ly = calc(p5y + ph + 70);
+
+layer('notes').apply {
+  text(px, calc(ly + 10))`Each contour defines shape + elevation + color. Dashed lines show contour boundaries.`
+  text(px, calc(ly + 60))`baseColor fills elevation 0 (outside all contours). Inner contours = higher elevation.`
+  text(px, calc(ly + 110))`Non-nested contours at the same elevation create independent features (Twin Peaks).`
+  text(px, calc(ly + 160))`Sharp geometry (rectangles) produces crisp edges. Rounded corners blend soft and hard transitions.`
+}

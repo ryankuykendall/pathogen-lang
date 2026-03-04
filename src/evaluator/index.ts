@@ -180,6 +180,17 @@ export interface FreeformPoint {
 }
 
 /**
+ * Represents a single contour in a topological gradient
+ */
+export interface TopoContour {
+  elevation: number;           // 0–1 normalized elevation
+  commands: PathBlockCommand[]; // absolute coordinates from ProjectedPathValue
+  dString: string;              // cached absolute SVG d-string
+  color: OKLCH;                 // color at this elevation
+  colorCSS: string;             // CSS color string
+}
+
+/**
  * A color stop in a gradient
  */
 export interface GradientStop {
@@ -193,7 +204,7 @@ export interface GradientStop {
  */
 export interface GradientValue {
   type: 'GradientValue';
-  gradientType: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform';
+  gradientType: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform' | 'topo';
   id: string;
   attrs: Record<string, string>;  // x1,y1,x2,y2 or cx,cy,r,fx,fy or cx,cy for conic
   stops: GradientStop[];
@@ -221,6 +232,14 @@ export interface GradientValue {
   freeformWidth?: number;
   freeformHeight?: number;
   falloff?: number;
+  // Topo-specific:
+  topoContours?: TopoContour[];
+  topoWidth?: number;
+  topoHeight?: number;
+  topoEasing?: string;    // 'linear' | 'smoothstep' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  topoMethod?: string;    // 'distance' | 'laplace'
+  topoBaseColor?: OKLCH;
+  topoBaseColorCSS?: string;
 }
 
 export function isGradientValue(value: Value): value is GradientValue {
@@ -473,7 +492,7 @@ export interface PatternOutput {
 
 export interface GradientOutput {
   id: string;
-  type: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform';
+  type: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform' | 'topo';
   attrs: Record<string, string>;
   stops: Array<{ offset: number; color: string }>;
   spreadMethod?: string;
@@ -498,6 +517,14 @@ export interface GradientOutput {
   freeformWidth?: number;
   freeformHeight?: number;
   falloff?: number;
+  // Topo-specific:
+  topoContours?: Array<{ elevation: number; path: string; color: string; oklch?: OKLCH }>;
+  topoWidth?: number;
+  topoHeight?: number;
+  topoEasing?: string;
+  topoMethod?: string;
+  topoBaseColor?: string;
+  topoBaseColorOklch?: OKLCH;
 }
 
 export interface CompileResult {
@@ -2085,6 +2112,35 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         });
         return 0;
       }
+      // Topo-specific methods
+      case 'contour': {
+        if (obj.gradientType !== 'topo') throw mError('.contour() is only available on TopoGradient');
+        if (expr.args.length !== 3) throw mError('.contour() expects 3 arguments (path, elevation, color)');
+        const pathVal = evaluateExpression(expr.args[0], scope);
+        const elevation = evaluateExpression(expr.args[1], scope);
+        const color = evaluateExpression(expr.args[2], scope);
+        if (!isProjectedPathValue(pathVal))
+          throw mError('.contour() first argument must be a ProjectedPathValue (use .project(x, y) on a path block)');
+        if (typeof elevation !== 'number') throw mError('.contour() elevation must be a number');
+        if (elevation < 0 || elevation > 1) throw mError('.contour() elevation must be between 0 and 1');
+        if (!isColorValue(color)) throw mError('.contour() third argument must be a Color value');
+        // Validate path is closed
+        const cmds = pathVal.commands;
+        if (cmds.length === 0 || cmds[cmds.length - 1].command !== 'z')
+          throw mError('.contour() path must be closed (end with closePath())');
+        const dString = commandsToAbsoluteD(cmds);
+        obj.topoContours!.push({
+          elevation,
+          commands: cmds.map(c => ({
+            command: c.command, args: [...c.args],
+            start: { ...c.start }, end: { ...c.end },
+          })),
+          dString,
+          color: { ...color.oklch },
+          colorCSS: oklchToCSS(color.oklch),
+        });
+        return 0;
+      }
       default:
         throw mError(`Unknown Gradient method: ${expr.method}`);
     }
@@ -2467,6 +2523,9 @@ function formatValueForDisplay(val: Value): string {
     if (val.gradientType === 'freeform') {
       return `FreeformGradient(${val.id}, ${val.freeformPoints?.length ?? 0} points)`;
     }
+    if (val.gradientType === 'topo') {
+      return `TopoGradient(${val.id}, ${val.topoContours?.length ?? 0} contours)`;
+    }
     return `${val.gradientType.charAt(0).toUpperCase() + val.gradientType.slice(1)}Gradient(${val.id}, ${val.stops.length} stops)`;
   }
   if (isMeshPointValue(val)) {
@@ -2684,12 +2743,23 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'width': {
         if (obj.gradientType === 'mesh') return obj.meshWidth!;
         if (obj.gradientType === 'freeform') return obj.freeformWidth!;
+        if (obj.gradientType === 'topo') return obj.topoWidth!;
         throw new Error(`Property 'width' does not exist on ${obj.gradientType} gradient`);
       }
       case 'height': {
         if (obj.gradientType === 'mesh') return obj.meshHeight!;
         if (obj.gradientType === 'freeform') return obj.freeformHeight!;
+        if (obj.gradientType === 'topo') return obj.topoHeight!;
         throw new Error(`Property 'height' does not exist on ${obj.gradientType} gradient`);
+      }
+      // Topo-specific properties
+      case 'easing': return obj.topoEasing ?? 'linear';
+      case 'method': return obj.topoMethod ?? 'distance';
+      case 'baseColor': {
+        if (obj.topoBaseColor) {
+          return { type: 'ColorValue', oklch: { ...obj.topoBaseColor } } as ColorValue;
+        }
+        return null;
       }
       default:
         throw new Error(`Property '${expr.property}' does not exist on Gradient`);
@@ -3216,6 +3286,41 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       stops: [],
       freeformPoints: [], freeformWidth: width, freeformHeight: height,
       falloff: 2.0,
+    };
+    scope.evalState.gradients.set(id, gradient);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.param, gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle TopoGradient() constructor
+  if (call.name === 'TopoGradient') {
+    if (call.args.length !== 3) {
+      throw new Error(formatError(`TopoGradient() expects 3 arguments (id, width, height), got ${call.args.length}`, getLine(call), getCol(call)));
+    }
+    if (!scope.evalState) throw new Error('TopoGradient() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string') throw new Error(formatError('TopoGradient() first argument must be a string', getLine(call), getCol(call)));
+    const width = evaluateExpression(call.args[1], scope);
+    const height = evaluateExpression(call.args[2], scope);
+    if (typeof width !== 'number' || typeof height !== 'number') {
+      throw new Error(formatError('TopoGradient() width and height must be numbers', getLine(call), getCol(call)));
+    }
+    if (scope.evalState.masks.has(id) || scope.evalState.clipPaths.has(id) || scope.evalState.gradients.has(id) || scope.evalState.patterns.has(id)) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue', gradientType: 'topo', id,
+      attrs: {},
+      stops: [],
+      topoContours: [], topoWidth: width, topoHeight: height,
+      topoEasing: 'linear', topoMethod: 'distance',
     };
     scope.evalState.gradients.set(id, gradient);
     // Execute trailing block if present
@@ -4428,6 +4533,34 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             obj.falloff = value;
             return;
           }
+          // Topo-specific properties
+          case 'easing': {
+            if (obj.gradientType !== 'topo') throw new Error(formatError(`Property 'easing' is only available on TopoGradient`, getLine(stmt)));
+            const valid = ['linear', 'smoothstep', 'ease-in', 'ease-out', 'ease-in-out'];
+            if (typeof value !== 'string' || !valid.includes(value)) {
+              throw new Error(formatError(`TopoGradient easing must be one of: ${valid.join(', ')}`, getLine(stmt)));
+            }
+            obj.topoEasing = value;
+            return;
+          }
+          case 'method': {
+            if (obj.gradientType !== 'topo') throw new Error(formatError(`Property 'method' is only available on TopoGradient`, getLine(stmt)));
+            if (value !== 'distance' && value !== 'laplace') {
+              throw new Error(formatError(`TopoGradient method must be 'distance' or 'laplace'`, getLine(stmt)));
+            }
+            if (value === 'laplace') {
+              throw new Error(formatError(`Laplace solver is not yet implemented (coming in Phase 5B)`, getLine(stmt)));
+            }
+            obj.topoMethod = value as string;
+            return;
+          }
+          case 'baseColor': {
+            if (obj.gradientType !== 'topo') throw new Error(formatError(`Property 'baseColor' is only available on TopoGradient`, getLine(stmt)));
+            if (!isColorValue(value)) throw new Error(formatError(`TopoGradient baseColor must be a Color value`, getLine(stmt)));
+            obj.topoBaseColor = { ...value.oklch };
+            obj.topoBaseColorCSS = oklchToCSS(value.oklch);
+            return;
+          }
           default:
             throw new Error(formatError(`Cannot assign to Gradient property '${stmt.property}'`, getLine(stmt)));
         }
@@ -4682,6 +4815,42 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
             type: 'string',
             value: `Warning: FreeformGradient '${grad.id}' has fewer than 2 points — gradient will be empty or uniform.`,
           }],
+        });
+      }
+    }
+    // Topo-specific output
+    if (grad.gradientType === 'topo') {
+      output.topoWidth = grad.topoWidth;
+      output.topoHeight = grad.topoHeight;
+      output.topoEasing = grad.topoEasing ?? 'linear';
+      output.topoMethod = grad.topoMethod ?? 'distance';
+      output.topoContours = (grad.topoContours ?? []).map(c => ({
+        elevation: c.elevation, path: c.dString, color: c.colorCSS,
+        oklch: { ...c.color },
+      }));
+      if (grad.topoBaseColor) {
+        output.topoBaseColor = grad.topoBaseColorCSS;
+        output.topoBaseColorOklch = { ...grad.topoBaseColor };
+      }
+      // Build stopsWithOklch from baseColor + contours (sorted by elevation) for rendering
+      const contoursSorted = [...(grad.topoContours ?? [])].sort((a, b) => a.elevation - b.elevation);
+      const rampStops: Array<{ offset: number; color: string; oklch?: OKLCH }> = [];
+      if (grad.topoBaseColor) {
+        rampStops.push({ offset: 0, color: grad.topoBaseColorCSS!, oklch: { ...grad.topoBaseColor } });
+      } else if (contoursSorted.length > 0) {
+        // If no base color, use first contour's color at offset 0
+        rampStops.push({ offset: 0, color: contoursSorted[0].colorCSS, oklch: { ...contoursSorted[0].color } });
+      }
+      for (const c of contoursSorted) {
+        rampStops.push({ offset: c.elevation, color: c.colorCSS, oklch: { ...c.color } });
+      }
+      output.stopsWithOklch = rampStops;
+      // Warnings
+      if ((grad.topoContours ?? []).length < 1) {
+        evalState.logs.push({
+          line: null,
+          parts: [{ type: 'string',
+            value: `Warning: TopoGradient '${grad.id}' has no contours — gradient will be uniform.` }],
         });
       }
     }

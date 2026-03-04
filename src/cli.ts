@@ -135,18 +135,30 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
       continue;
     }
 
-    // Mesh/Freeform gradients: warn + solid-color approximation
-    if (grad.type === 'mesh' || grad.type === 'freeform') {
+    // Mesh/Freeform/Topo gradients: warn + solid-color approximation
+    if (grad.type === 'mesh' || grad.type === 'freeform' || grad.type === 'topo') {
       console.warn(`[svg-path-extended] ${grad.type} gradients require WebGPU; CLI outputs solid color approximation`);
-      const svgW = grad.type === 'mesh' ? (grad.meshWidth ?? 200) : (grad.freeformWidth ?? 200);
-      const svgH = grad.type === 'mesh' ? (grad.meshHeight ?? 200) : (grad.freeformHeight ?? 200);
-      // Average all point colors to get a solid approximation
+      let svgW: number, svgH: number;
+      if (grad.type === 'mesh') { svgW = grad.meshWidth ?? 200; svgH = grad.meshHeight ?? 200; }
+      else if (grad.type === 'freeform') { svgW = grad.freeformWidth ?? 200; svgH = grad.freeformHeight ?? 200; }
+      else { svgW = grad.topoWidth ?? 200; svgH = grad.topoHeight ?? 200; }
+      // Pick a solid color approximation
       let avgColor = '#808080'; // fallback gray
-      const points = grad.type === 'mesh'
-        ? (grad.meshGrid ?? []).flat()
-        : (grad.freeformPoints ?? []);
-      if (points.length > 0) {
-        avgColor = points[0].color;
+      if (grad.type === 'topo') {
+        // Use base color if set, otherwise first contour's color
+        if (grad.topoBaseColor) {
+          avgColor = grad.topoBaseColor;
+        } else {
+          const contours = grad.topoContours ?? [];
+          if (contours.length > 0) avgColor = contours[0].color;
+        }
+      } else {
+        const points = grad.type === 'mesh'
+          ? (grad.meshGrid ?? []).flat()
+          : (grad.freeformPoints ?? []);
+        if (points.length > 0) {
+          avgColor = points[0].color;
+        }
       }
       defsContent.push(`  <pattern id="${escapeXml(grad.id)}" x="0" y="0" width="${svgW}" height="${svgH}" patternUnits="userSpaceOnUse">\n    <rect width="${svgW}" height="${svgH}" fill="${escapeXml(avgColor)}"/>\n  </pattern>`);
       continue;

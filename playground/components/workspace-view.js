@@ -577,17 +577,19 @@ export class WorkspaceView extends HTMLElement {
 
       // Pre-render GPU-rendered gradients (conic, freeform, mesh)
       let gpuGradientUrls = new Map();
-      if (result.gradients?.some(g => g.type === 'conic' || g.type === 'freeform' || g.type === 'mesh')) {
+      if (result.gradients?.some(g => g.type === 'conic' || g.type === 'freeform' || g.type === 'mesh' || g.type === 'topo')) {
         const svgW = store.get('width') || 200;
         const svgH = store.get('height') || 200;
-        const [conicUrls, freeformUrls, meshUrls] = await Promise.all([
+        const [conicUrls, freeformUrls, meshUrls, topoUrls] = await Promise.all([
           gpuGradientService.renderConicGradients(result.gradients, svgW, svgH),
           gpuGradientService.renderFreeformGradients(result.gradients, svgW, svgH),
           gpuGradientService.renderMeshGradients(result.gradients, svgW, svgH),
+          gpuGradientService.renderTopoGradients(result.gradients, svgW, svgH),
         ]);
         for (const [id, url] of conicUrls) gpuGradientUrls.set(id, url);
         for (const [id, url] of freeformUrls) gpuGradientUrls.set(id, url);
         for (const [id, url] of meshUrls) gpuGradientUrls.set(id, url);
+        for (const [id, url] of topoUrls) gpuGradientUrls.set(id, url);
         if (isStale(compilationId)) return; // Re-check after async GPU work
       }
 

@@ -689,3 +689,137 @@ A warning is also emitted at compile time if a freeform gradient has fewer than 
 | `getCol(col) out of bounds` | Column index outside grid |
 | `point() expects 3 arguments (x, y, color)` | Wrong argument count |
 | `FreeformGradient falloff must be positive` | Non-positive falloff |
+
+## TopoGradient
+
+Topological gradients define smooth surfaces using closed-path contours at specific elevations, like topographic map contour lines rendered as a smooth gradient. Each contour carries its own color, creating a natural mapping from shape to color.
+
+### Constructor
+
+```
+TopoGradient(id, width, height)
+```
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `id` | string | Unique gradient identifier |
+| `width` | number | Gradient coordinate width |
+| `height` | number | Gradient coordinate height |
+
+### Contours
+
+Each contour defines a closed path at a specific elevation with a color. Contours are the color stops of a topological gradient — the gradient interpolates between them based on distance.
+
+```
+g.contour(projectedPath, elevation, color)
+```
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `projectedPath` | ProjectedPathValue | Closed path from `.project(x, y)` |
+| `elevation` | number | Elevation level (0–1) |
+| `color` | Color | Color at this elevation |
+
+The path must be closed (end with `closePath()`). Use `@{ ... }` path blocks with `.project(x, y)` to position contours in absolute space.
+
+### Properties
+
+| Property | Read | Write | Type | Default | Description |
+|----------|------|-------|------|---------|-------------|
+| `id` | yes | no | string | — | Gradient ID |
+| `width` | yes | no | number | — | Render width |
+| `height` | yes | no | number | — | Render height |
+| `easing` | yes | yes | string | `'linear'` | Easing: `linear`, `smoothstep`, `ease-in`, `ease-out`, `ease-in-out` |
+| `interpolation` | yes | yes | string | `'srgb'` | Color interpolation space |
+| `method` | yes | yes | string | `'distance'` | Solver: `'distance'` (SDF-based) |
+| `baseColor` | yes | yes | Color | — | Color outside all contours (elevation 0) |
+
+### Basic Example
+
+```pathogen
+// Define contour shapes
+let shore = @{
+  M(0, 0)
+  C(100, -40, 250, 30, 300, 100)
+  C(270, 210, 30, 220, 0, 0)
+  closePath()
+};
+
+let peak = @{ circle(0, 0, 40); closePath() };
+
+let topo = TopoGradient('terrain', 400, 300) {|g|
+  g.contour(shore.project(50, 50), 0.3, Color('#f9e79f'))
+  g.contour(shore.scale(0.7, 0.7).project(100, 90), 0.55, Color('#27ae60'))
+  g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'))
+};
+topo.baseColor = Color('#1a5276');
+topo.easing = 'smoothstep';
+
+define PathLayer('bg') ${ fill: topo; }
+layer('bg').apply { rect(0, 0, 400, 300) }
+```
+
+### Programmatic Contours
+
+Contours can be generated procedurally using loops:
+
+```pathogen
+let topo = TopoGradient('rings', 400, 400) {|g|
+  for ([level, i] in [0.2, 0.4, 0.6, 0.8]) {
+    let r = calc(150 - i * 35);
+    let ring = @{ circle(0, 0, r); closePath() };
+    g.contour(ring.project(200, 200), level, Color('#27ae60'))
+  }
+};
+topo.baseColor = Color('#1a5276');
+```
+
+### Multiple Peaks / Islands
+
+Non-nested contours at the same elevation create separate features. Each pixel's elevation is determined by its innermost containing contour.
+
+```pathogen
+let topo = TopoGradient('archipelago', 600, 400) {|g|
+  // Main island
+  g.contour(mainIsland.project(100, 100), 0.35, Color('#f9e79f'))
+  g.contour(mainPeak.project(180, 160), 0.7, Color('#6e2c00'))
+
+  // Small island (separate, not nested)
+  g.contour(smallIsland.project(450, 280), 0.35, Color('#f9e79f'))
+  g.contour(smallPeak.project(460, 290), 0.6, Color('#27ae60'))
+};
+topo.baseColor = Color('#1a5276');
+```
+
+### Algorithm
+
+TopoGradient uses distance-based SDF (Signed Distance Field) interpolation:
+
+1. **Containment test**: For each contour, ray-cast to determine if the pixel is inside (even-odd rule)
+2. **Floor elevation**: Highest elevation among all contours containing the pixel
+3. **Ceiling elevation**: Lowest elevation among contours NOT containing the pixel but above the floor
+4. **Distance interpolation**: Compute minimum distances to floor and ceiling boundaries, interpolate elevation
+5. **Easing**: Apply the easing function to the interpolation parameter
+6. **Color lookup**: Sample the color ramp (built from contour colors sorted by elevation)
+
+### Rendering
+
+TopoGradient is rasterized per-pixel:
+
+- **Playground**: WebGPU shader with SDF computation (fast); Canvas 2D fallback on Firefox/Safari (slower)
+- **CLI**: Warning emitted, solid-color approximation rendered
+
+### Error Handling
+
+| Error | Cause |
+|-------|-------|
+| `TopoGradient() expects 3 arguments` | Wrong argument count |
+| `TopoGradient() first argument must be a string` | Non-string ID |
+| `TopoGradient() width and height must be numbers` | Non-numeric dimensions |
+| `.contour() expects 3 arguments` | Wrong argument count |
+| `.contour() first argument must be a ProjectedPathValue` | Non-projected path |
+| `.contour() elevation must be between 0 and 1` | Out-of-range elevation |
+| `.contour() third argument must be a Color value` | Non-Color color |
+| `.contour() path must be closed` | Path not ending with closePath() |
+| `TopoGradient easing must be one of: ...` | Invalid easing value |
+| `Laplace solver is not yet implemented` | Setting method to 'laplace' |

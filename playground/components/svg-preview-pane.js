@@ -226,7 +226,7 @@ export class SvgPreviewPane extends HTMLElement {
             defsEl.appendChild(patEl);
             continue;
           }
-          if (grad.type === 'mesh' || grad.type === 'freeform') {
+          if (grad.type === 'mesh' || grad.type === 'freeform' || grad.type === 'topo') {
             // Render mesh/freeform gradient as <pattern> with rasterized <image>
             // Use objectBoundingBox so the image stretches to fill the element
             // (userSpaceOnUse causes tiling/wrap-around artifacts)

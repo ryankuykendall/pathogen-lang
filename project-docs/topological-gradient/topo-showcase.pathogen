@@ -1,0 +1,306 @@
+// ═══════════════════════════════════════════════════════════════
+// TopoGradient Showcase
+// Set viewBox: 720 x 420, width: 720, height: 420
+// ═══════════════════════════════════════════════════════════════
+
+
+// ─── 1. Create all three TopoGradients ───────────────────────
+
+let pw = 200;
+let ph = 200;
+
+// ── Panel 1: "Concentric Rings" ──
+// Simple nested circles — smoothstep easing, srgb interpolation
+let ring85 = @{ circle(0, 0, 85); closePath() };
+let ring58 = @{ circle(0, 0, 58); closePath() };
+let ring30 = @{ circle(0, 0, 30); closePath() };
+
+let volcano = TopoGradient('volcano', pw, ph) {|g|
+  g.contour(ring85.project(100, 100), 0.25, Color('#f4d35e'))
+  g.contour(ring58.project(100, 100), 0.50, Color('#45b764'))
+  g.contour(ring30.project(100, 100), 0.80, Color('#c0392b'))
+};
+volcano.baseColor = Color('#264653');
+volcano.easing = 'smoothstep';
+
+// ── Panel 2: "Oval Terrain" ──
+// Elliptical contours offset from center — oklch interpolation
+let outer  = @{ circle(0, 0, 80); closePath() };
+let middle = @{ circle(0, 0, 50); closePath() };
+let inner  = @{ circle(0, 0, 22); closePath() };
+
+let ovalTerrain = TopoGradient('oval', pw, ph) {|g|
+  g.contour(outer.scale(1.2, 0.8).project(105, 100),  0.20, Color('#e9c46a'))
+  g.contour(middle.scale(1.1, 0.85).project(98, 95),  0.50, Color('#2a9d8f'))
+  g.contour(inner.project(90, 88),                     0.82, Color('#8b4513'))
+};
+ovalTerrain.baseColor = Color('#1d3557');
+ovalTerrain.easing = 'smoothstep';
+ovalTerrain.interpolation = 'oklch';
+
+// ── Panel 3: "Twin Peaks" ──
+// Non-nested contours at same elevation create separate features
+let cxA = 70;
+let cyA = 95;
+let cxB = 145;
+let cyB = 115;
+
+let baseA = @{ circle(0, 0, 55); closePath() };
+let midA  = @{ circle(0, 0, 30); closePath() };
+let topA  = @{ circle(0, 0, 12); closePath() };
+let baseB = @{ circle(0, 0, 42); closePath() };
+let midB  = @{ circle(0, 0, 20); closePath() };
+
+let peaks = TopoGradient('peaks', pw, ph) {|g|
+  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'))
+  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'))
+  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'))
+  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'))
+  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'))
+};
+peaks.baseColor = Color('#003049');
+peaks.easing = 'ease-out';
+
+
+// ─── 2. Define all layers ────────────────────────────────────
+
+let p1x = 30;
+let p2x = 260;
+let p3x = 490;
+let py  = 60;
+
+// One fill layer per gradient
+define PathLayer('fill1') ${ fill: volcano; stroke: none; }
+define PathLayer('fill2') ${ fill: ovalTerrain; stroke: none; }
+define PathLayer('fill3') ${ fill: peaks; stroke: none; }
+
+// Shared overlay layers
+define PathLayer('contours') ${
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: 5 3;
+}
+
+define PathLayer('frames') ${
+  stroke: #bbb;
+  stroke-width: 1;
+  fill: none;
+}
+
+define PathLayer('leaders') ${
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-width: 0.5;
+  fill: none;
+  stroke-dasharray: 2 2;
+}
+
+// Text layers
+define TextLayer('title') ${
+  font-size: 18;
+  font-weight: bold;
+  fill: #222;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+}
+
+define TextLayer('ptitle') ${
+  font-size: 12;
+  font-weight: bold;
+  fill: #333;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+}
+
+define TextLayer('elev') ${
+  font-size: 8;
+  fill: rgba(255, 255, 255, 0.85);
+  font-family: monospace;
+}
+
+define TextLayer('info') ${
+  font-size: 9;
+  fill: #666;
+  font-family: monospace;
+}
+
+define TextLayer('notes') ${
+  font-size: 10;
+  fill: #555;
+  font-family: system-ui, sans-serif;
+}
+
+// Color swatch layers for legend
+define PathLayer('sw0') ${ fill: #264653; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw1') ${ fill: #f4d35e; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw2') ${ fill: #45b764; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw3') ${ fill: #c0392b; stroke: #aaa; stroke-width: 0.5; }
+
+
+// ─── 3. Draw everything ─────────────────────────────────────
+
+// Header
+layer('title').apply {
+  text(360, 30)`TopoGradient Showcase`
+}
+
+layer('ptitle').apply {
+  text(calc(p1x + 100), 52)`Concentric Rings`
+  text(calc(p2x + 100), 52)`Oval Terrain`
+  text(calc(p3x + 100), 52)`Twin Peaks`
+}
+
+
+// ── Panel 1 ──────────────────────────────────────────────────
+
+layer('fill1').apply { rect(p1x, py, pw, ph) }
+layer('frames').apply { rect(p1x, py, pw, ph) }
+
+// Contour outlines: three concentric circles centered at (p1x+100, py+100)
+layer('contours').apply {
+  circle(calc(p1x + 100), calc(py + 100), 85)
+  closePath()
+  circle(calc(p1x + 100), calc(py + 100), 58)
+  closePath()
+  circle(calc(p1x + 100), calc(py + 100), 30)
+  closePath()
+}
+
+// Elevation labels positioned at upper-right of each ring
+layer('elev').apply {
+  text(calc(p1x + 163), calc(py + 42))`0.25`
+  text(calc(p1x + 142), calc(py + 58))`0.50`
+  text(calc(p1x + 118), calc(py + 78))`0.80`
+}
+
+// Leader lines connecting labels to contour edges
+layer('leaders').apply {
+  moveTo(calc(p1x + 160), calc(py + 44))
+  lineTo(calc(p1x + 152), calc(py + 50))
+  moveTo(calc(p1x + 140), calc(py + 60))
+  lineTo(calc(p1x + 135), calc(py + 64))
+  moveTo(calc(p1x + 118), calc(py + 79))
+  lineTo(calc(p1x + 116), calc(py + 82))
+}
+
+
+// ── Panel 2 ──────────────────────────────────────────────────
+
+layer('fill2').apply { rect(p2x, py, pw, ph) }
+layer('frames').apply { rect(p2x, py, pw, ph) }
+
+// Contour outlines: ellipses approximated with scaled circles
+// outer: scale(1.2, 0.8) circle r=80 at (105, 100)
+// → ellipse rx=96, ry=64 centered at (p2x+105, py+100)
+layer('contours').apply {
+  // Outer ellipse approximation (4-arc)
+  let ecx = calc(p2x + 105);
+  let ecy = calc(py + 100);
+  let erx = 96;
+  let ery = 64;
+  moveTo(calc(ecx - erx), ecy)
+  arc(erx, ery, 0, 0, 1, calc(ecx + erx), ecy)
+  arc(erx, ery, 0, 0, 1, calc(ecx - erx), ecy)
+  closePath()
+
+  // Middle ellipse: scale(1.1, 0.85) circle r=50 at (98, 95) → rx=55, ry=42.5
+  let mcx = calc(p2x + 98);
+  let mcy = calc(py + 95);
+  let mrx = 55;
+  let mry = 43;
+  moveTo(calc(mcx - mrx), mcy)
+  arc(mrx, mry, 0, 0, 1, calc(mcx + mrx), mcy)
+  arc(mrx, mry, 0, 0, 1, calc(mcx - mrx), mcy)
+  closePath()
+
+  // Inner circle: r=22 at (90, 88)
+  circle(calc(p2x + 90), calc(py + 88), 22)
+  closePath()
+}
+
+// Elevation labels
+layer('elev').apply {
+  text(calc(p2x + 160), calc(py + 40))`0.20`
+  text(calc(p2x + 140), calc(py + 58))`0.50`
+  text(calc(p2x + 82), calc(py + 78))`0.82`
+}
+
+layer('leaders').apply {
+  moveTo(calc(p2x + 158), calc(py + 42))
+  lineTo(calc(p2x + 150), calc(py + 48))
+  moveTo(calc(p2x + 139), calc(py + 60))
+  lineTo(calc(p2x + 134), calc(py + 64))
+}
+
+
+// ── Panel 3 ──────────────────────────────────────────────────
+
+layer('fill3').apply { rect(p3x, py, pw, ph) }
+layer('frames').apply { rect(p3x, py, pw, ph) }
+
+// Peak A contour outlines
+layer('contours').apply {
+  circle(calc(p3x + cxA), calc(py + cyA), 55)
+  closePath()
+  circle(calc(p3x + cxA), calc(py + cyA), 30)
+  closePath()
+  circle(calc(p3x + cxA), calc(py + cyA), 12)
+  closePath()
+}
+
+// Peak B contour outlines
+layer('contours').apply {
+  circle(calc(p3x + cxB), calc(py + cyB), 42)
+  closePath()
+  circle(calc(p3x + cxB), calc(py + cyB), 20)
+  closePath()
+}
+
+// Elevation labels — Peak A (upper-left)
+layer('elev').apply {
+  text(calc(p3x + cxA - 20), calc(py + cyA - 44))`0.20`
+  text(calc(p3x + cxA - 12), calc(py + cyA - 20))`0.50`
+  text(calc(p3x + cxA + 2), calc(py + cyA + 3))`0.80`
+}
+
+// Elevation labels — Peak B (upper-right)
+layer('elev').apply {
+  text(calc(p3x + cxB + 24), calc(py + cyB - 30))`0.20`
+  text(calc(p3x + cxB + 10), calc(py + cyB - 8))`0.45`
+}
+
+// Peak name indicators
+layer('elev').apply {
+  text(calc(p3x + cxA - 8), calc(py + cyA + 16))`Peak A`
+  text(calc(p3x + cxB - 8), calc(py + cyB + 30))`Peak B`
+}
+
+
+// ─── 4. Legend & Notes ───────────────────────────────────────
+
+// Property info under each panel
+layer('info').apply {
+  text(p1x, calc(py + ph + 16))`smoothstep / srgb`
+  text(p2x, calc(py + ph + 16))`smoothstep / oklch`
+  text(p3x, calc(py + ph + 16))`ease-out / srgb`
+}
+
+// Color ramp legend (Panel 1 colors as example)
+layer('sw0').apply { rect(p1x, calc(py + ph + 26), 14, 14) }
+layer('sw1').apply { rect(calc(p1x + 38), calc(py + ph + 26), 14, 14) }
+layer('sw2').apply { rect(calc(p1x + 76), calc(py + ph + 26), 14, 14) }
+layer('sw3').apply { rect(calc(p1x + 114), calc(py + ph + 26), 14, 14) }
+
+layer('info').apply {
+  text(calc(p1x + 16), calc(py + ph + 37))`base`
+  text(calc(p1x + 54), calc(py + ph + 37))`.25`
+  text(calc(p1x + 92), calc(py + ph + 37))`.50`
+  text(calc(p1x + 130), calc(py + ph + 37))`.80`
+}
+
+// Explanatory notes
+layer('notes').apply {
+  text(30, calc(py + ph + 62))`Each contour defines shape + elevation + color. Dashed lines show contour boundaries.`
+  text(30, calc(py + ph + 78))`baseColor fills elevation 0 (outside all contours). Inner contours = higher elevation.`
+  text(30, calc(py + ph + 94))`Non-nested contours at the same elevation create independent features (see Twin Peaks).`
+}
