@@ -6,6 +6,8 @@ import { getConicPipeline } from './conic-pipeline.js';
 import { getFreeformPipeline } from './freeform-pipeline.js';
 import { getMeshPipeline } from './mesh-pipeline.js';
 import { getTopoPipeline } from './topo-pipeline.js';
+import { getTopoLaplacePipeline } from './topo-laplace-pipeline.js';
+import { LAPLACE_INIT_PARAMS_SIZE, LAPLACE_JACOBI_PARAMS_SIZE, LAPLACE_RENDER_PARAMS_SIZE } from './topo-laplace-shader.js';
 import { FREEFORM_PARAMS_SIZE, COLOR_POINT_STRIDE } from './freeform-shader.js';
 import { MESH_PARAMS_SIZE, MESH_VERTEX_STRIDE } from './mesh-shader.js';
 import { TOPO_PARAMS_SIZE, CONTOUR_HEADER_STRIDE, SEGMENT_STRIDE, TOPO_COLOR_STOP_STRIDE } from './topo-shader.js';
@@ -886,6 +888,9 @@ function renderConicCanvas2D(grad, w, h, scale) {
  * @returns {Promise<string>} data URL
  */
 async function renderTopoWebGPU(grad, w, h, scale) {
+  if ((grad.topoMethod || 'distance') === 'laplace') {
+    return renderTopoLaplaceWebGPU(grad, w, h, scale);
+  }
   const pipelineResult = await getTopoPipeline();
   if (!pipelineResult) throw new Error('Topo pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
@@ -1042,6 +1047,244 @@ async function renderTopoWebGPU(grad, w, h, scale) {
 }
 
 // ---------------------------------------------------------------------------
+// Topo Laplace WebGPU — Jacobi solver via compute shaders
+// ---------------------------------------------------------------------------
+
+async function renderTopoLaplaceWebGPU(grad, w, h, scale) {
+  const pipelineResult = await getTopoLaplacePipeline();
+  if (!pipelineResult) throw new Error('Topo Laplace pipeline unavailable');
+  const { device, renderPipeline, format } = pipelineResult;
+
+  const pw = w * scale;
+  const ph = h * scale;
+  const iterations = grad.topoIterations ?? 200;
+
+  // --- Canvas & texture ---
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const context = canvas.getContext('webgpu');
+  if (!context) throw new Error('Could not get webgpu context');
+  context.configure({ device, format, alphaMode: 'premultiplied' });
+
+  // --- Prepare contours ---
+  const contours = [...(grad.topoContours || [])]
+    .sort((a, b) => a.elevation - b.elevation)
+    .map(c => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
+  const stops = grad.stopsWithOklch || [];
+  if (stops.length === 0) return null;
+
+  const easingMap = { 'linear': 0, 'smoothstep': 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4 };
+  const easingVal = easingMap[grad.topoEasing] ?? 0;
+  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+
+  const gw = grad.topoWidth || w;
+  const gh = grad.topoHeight || h;
+
+  // --- CPU Gauss-Seidel + SOR at adaptive resolution ---
+  // Solve resolution adapts to iteration count: higher iterations → finer grid
+  // At solve_dim S with optimal SOR, convergence needs ~S iterations
+  const maxDim = Math.max(gw, gh);
+  const solveDim = Math.min(maxDim, Math.max(16, Math.ceil(iterations * 0.9)));
+  const solveScale = solveDim / maxDim;
+  const sw = Math.max(16, Math.ceil(gw * solveScale));
+  const sh = Math.max(16, Math.ceil(gh * solveScale));
+
+  const spread = grad.topoBlend ?? 1.0;
+  const elevation = laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread);
+
+  // --- Upload solved elevation to GPU texture ---
+  const elevationTex = device.createTexture({
+    size: [sw, sh],
+    format: 'r32float',
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+  });
+  // WebGPU requires bytesPerRow to be a multiple of 256
+  const bytesPerRow = Math.ceil(sw * 4 / 256) * 256;
+  const paddedData = new Uint8Array(bytesPerRow * sh);
+  const srcBytes = new Uint8Array(elevation.buffer);
+  for (let y = 0; y < sh; y++) {
+    paddedData.set(srcBytes.subarray(y * sw * 4, (y + 1) * sw * 4), y * bytesPerRow);
+  }
+  device.queue.writeTexture(
+    { texture: elevationTex },
+    paddedData,
+    { bytesPerRow },
+    { width: sw, height: sh },
+  );
+
+  // --- Render uniform buffer ---
+  const renderData = new ArrayBuffer(LAPLACE_RENDER_PARAMS_SIZE);
+  const renderF32 = new Float32Array(renderData);
+  const renderU32 = new Uint32Array(renderData);
+  renderF32[0] = pw;
+  renderF32[1] = ph;
+  renderU32[2] = stops.length;
+  renderU32[3] = easingVal;
+  renderU32[4] = interpVal;
+
+  const renderUniformBuffer = device.createBuffer({
+    size: LAPLACE_RENDER_PARAMS_SIZE,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(renderUniformBuffer, 0, renderData);
+
+  // --- Color stops buffer ---
+  const stopCount = Math.max(stops.length, 1);
+  const stopData = new Float32Array(stopCount * 4);
+  for (let i = 0; i < stops.length; i++) {
+    const rgba = cssColorToLinearRGBA(stops[i].color);
+    const base = i * 4;
+    stopData[base] = stops[i].offset;
+    stopData[base + 1] = rgba[0];
+    stopData[base + 2] = rgba[1];
+    stopData[base + 3] = rgba[2];
+  }
+
+  const stopBuffer = device.createBuffer({
+    size: stopCount * 16,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(stopBuffer, 0, stopData);
+
+  // --- Render bind group ---
+  const renderBindGroup = device.createBindGroup({
+    layout: renderPipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: renderUniformBuffer } },
+      { binding: 1, resource: { buffer: stopBuffer } },
+      { binding: 2, resource: elevationTex.createView() },
+    ],
+  });
+
+  // --- Render pass (GPU does color mapping + bilinear upsample) ---
+  const encoder = device.createCommandEncoder();
+  const textureView = context.getCurrentTexture().createView();
+  const renderPass = encoder.beginRenderPass({
+    colorAttachments: [{
+      view: textureView,
+      clearValue: { r: 0, g: 0, b: 0, a: 0 },
+      loadOp: 'clear',
+      storeOp: 'store',
+    }],
+  });
+  renderPass.setPipeline(renderPipeline);
+  renderPass.setBindGroup(0, renderBindGroup);
+  renderPass.draw(3, 1, 0, 0);
+  renderPass.end();
+
+  device.queue.submit([encoder.finish()]);
+
+  const dataUrl = await canvasToDataURL(canvas);
+
+  // Cleanup
+  renderUniformBuffer.destroy();
+  stopBuffer.destroy();
+  elevationTex.destroy();
+
+  return dataUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Shared CPU Laplace solver: Gauss-Seidel with SOR at reduced resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Solve ∇²h = 0 on a sw×sh grid using Gauss-Seidel + SOR.
+ * Contour boundaries are Dirichlet conditions; image edges fixed at 0.
+ * Returns a Float32Array of elevation values.
+ */
+function laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread) {
+  const elevation = new Float32Array(sw * sh);
+  const mask = new Uint8Array(sw * sh); // 1 = boundary (fixed)
+
+  // Temporary canvas for Path2D containment checks
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = 1; tmpCanvas.height = 1;
+  const tmpCtx = tmpCanvas.getContext('2d');
+
+  const stepX = gw / sw; // pixel size in gradient space
+  const stepY = gh / sh;
+
+  // --- Initialize elevation + boundary mask ---
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      const idx = y * sw + x;
+
+      // Image edges: boundary at elevation 0
+      if (x === 0 || y === 0 || x === sw - 1 || y === sh - 1) {
+        elevation[idx] = 0;
+        mask[idx] = 1;
+        continue;
+      }
+
+      // Map solve-grid pixel to gradient coordinate space
+      const gx = (x + 0.5) * stepX;
+      const gy = (y + 0.5) * stepY;
+
+      // Determine elevation from innermost contour (lowest→highest, last wins)
+      let elev = 0;
+      let isBoundary = false;
+      for (const c of contours) {
+        const inside = tmpCtx.isPointInPath(c.path2d, gx, gy);
+        if (inside) elev = c.elevation;
+
+        // Only mark as boundary if pixel is INSIDE this contour AND has a neighbor outside.
+        // This creates a 1-pixel boundary on the inner edge of each contour.
+        // Pixels outside the contour remain free and can diffuse toward the boundary,
+        // which is what creates the smooth gradient between contour levels.
+        if (!isBoundary && inside) {
+          const left  = tmpCtx.isPointInPath(c.path2d, gx - stepX, gy);
+          const right = tmpCtx.isPointInPath(c.path2d, gx + stepX, gy);
+          const up    = tmpCtx.isPointInPath(c.path2d, gx, gy - stepY);
+          const down  = tmpCtx.isPointInPath(c.path2d, gx, gy + stepY);
+          if (!left || !right || !up || !down) {
+            isBoundary = true;
+          }
+        }
+      }
+
+      // Boundary: fixed at contour elevation. Free: region elevation as initial guess.
+      elevation[idx] = elev;
+      mask[idx] = isBoundary ? 1 : 0;
+    }
+  }
+
+  // --- Gauss-Seidel + SOR iteration (in-place, converges much faster than Jacobi) ---
+  // Optimal ω for 2D Laplace on an N×N grid: 2 / (1 + sin(π/N))
+  const N = Math.max(sw, sh);
+  const omega = 2 / (1 + Math.sin(Math.PI / N));
+
+  // Save initial region elevations for spread blending
+  const initial = (spread < 1.0) ? new Float32Array(elevation) : null;
+
+  for (let iter = 0; iter < iterations; iter++) {
+    for (let y = 1; y < sh - 1; y++) {
+      for (let x = 1; x < sw - 1; x++) {
+        const idx = y * sw + x;
+        if (mask[idx]) continue; // boundary: skip
+
+        const left  = elevation[idx - 1];
+        const right = elevation[idx + 1];
+        const up    = elevation[idx - sw];
+        const down  = elevation[idx + sw];
+        const avg = (left + right + up + down) * 0.25;
+        elevation[idx] += omega * (avg - elevation[idx]);
+      }
+    }
+  }
+
+  // Apply spread: lerp between flat region values (0) and full Laplace solution (1)
+  if (initial) {
+    for (let i = 0; i < elevation.length; i++) {
+      elevation[i] = initial[i] + spread * (elevation[i] - initial[i]);
+    }
+  }
+
+  return elevation;
+}
+
+// ---------------------------------------------------------------------------
 // Topo Canvas 2D fallback
 // ---------------------------------------------------------------------------
 
@@ -1054,6 +1297,9 @@ async function renderTopoWebGPU(grad, w, h, scale) {
  * @returns {string|null} data URL
  */
 function renderTopoCanvas2D(grad, w, h, scale) {
+  if ((grad.topoMethod || 'distance') === 'laplace') {
+    return renderTopoLaplaceCanvas2D(grad, w, h, scale);
+  }
   try {
     const pw = w * scale;
     const ph = h * scale;
@@ -1120,6 +1366,95 @@ function renderTopoCanvas2D(grad, w, h, scale) {
     return canvas.toDataURL ? canvas.toDataURL('image/png') : null;
   } catch (e) {
     console.warn('[GradientService] Topo Canvas 2D fallback failed:', e.message);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Topo Laplace Canvas 2D fallback — 4× downscale Jacobi + bilinear upsample
+// ---------------------------------------------------------------------------
+
+function renderTopoLaplaceCanvas2D(grad, w, h, scale) {
+  try {
+    const pw = w * scale;
+    const ph = h * scale;
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const iterations = grad.topoIterations ?? 200;
+
+    const contours = [...(grad.topoContours || [])]
+      .sort((a, b) => a.elevation - b.elevation)
+      .map(c => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
+
+    const stops = (grad.stopsWithOklch || []).map(s => ({
+      offset: s.offset,
+      rgba: cssColorToLinearRGBA(s.color),
+    }));
+
+    if (stops.length === 0) return null;
+
+    const gw = grad.topoWidth || w;
+    const gh = grad.topoHeight || h;
+    const easingFn = getEasingFn(grad.topoEasing || 'linear');
+
+    // Adaptive solve resolution (same formula as WebGPU path)
+    const maxDim = Math.max(gw, gh);
+    const solveDim = Math.min(maxDim, Math.max(16, Math.ceil(iterations * 0.9)));
+    const solveScale = solveDim / maxDim;
+    const lw = Math.max(16, Math.ceil(gw * solveScale));
+    const lh = Math.max(16, Math.ceil(gh * solveScale));
+
+    // Shared CPU Laplace solver (Gauss-Seidel + SOR)
+    const spread = grad.topoBlend ?? 1.0;
+    const src = laplaceSolveCPU(contours, gw, gh, lw, lh, iterations, spread);
+
+    // --- Bilinear upsample to full resolution + color ramp ---
+    const imageData = ctx.createImageData(pw, ph);
+    const data = imageData.data;
+
+    for (let py = 0; py < ph; py++) {
+      for (let px = 0; px < pw; px++) {
+        // Map full-res pixel to low-res coordinates
+        const lxf = (px + 0.5) / pw * lw - 0.5;
+        const lyf = (py + 0.5) / ph * lh - 0.5;
+
+        // Bilinear sample
+        const x0 = Math.max(0, Math.floor(lxf));
+        const y0 = Math.max(0, Math.floor(lyf));
+        const x1 = Math.min(lw - 1, x0 + 1);
+        const y1 = Math.min(lh - 1, y0 + 1);
+        const fx = lxf - x0;
+        const fy = lyf - y0;
+
+        const e00 = src[y0 * lw + x0];
+        const e10 = src[y0 * lw + x1];
+        const e01 = src[y1 * lw + x0];
+        const e11 = src[y1 * lw + x1];
+
+        const elev = e00 * (1 - fx) * (1 - fy) + e10 * fx * (1 - fy) +
+                     e01 * (1 - fx) * fy + e11 * fx * fy;
+
+        // Apply easing AFTER solve (post-process)
+        const easedElev = easingFn(Math.max(0, Math.min(1, elev)));
+
+        // Sample color ramp
+        const color = sampleRamp(stops, easedElev);
+        const idx = (py * pw + px) * 4;
+        data[idx] = Math.round(Math.min(1, Math.max(0, color[0])) * 255);
+        data[idx + 1] = Math.round(Math.min(1, Math.max(0, color[1])) * 255);
+        data[idx + 2] = Math.round(Math.min(1, Math.max(0, color[2])) * 255);
+        data[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return canvas.toDataURL ? canvas.toDataURL('image/png') : null;
+  } catch (e) {
+    console.warn('[GradientService] Topo Laplace Canvas 2D fallback failed:', e.message);
     return null;
   }
 }

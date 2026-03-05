@@ -113,6 +113,8 @@ export function hashGradient(grad, w, h) {
       grad.topoHeight ?? 0,
       grad.topoEasing ?? 'linear',
       grad.topoMethod ?? 'distance',
+      grad.topoIterations ?? 200,
+      grad.topoBlend ?? 1.0,
       grad.topoBaseColor ?? '',
       contours,
       stops,

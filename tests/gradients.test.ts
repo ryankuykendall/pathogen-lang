@@ -2219,14 +2219,15 @@ describe('Gradients', () => {
       expect(result.gradients[0].topoMethod).toBe('distance');
     });
 
-    it('method = laplace throws not yet implemented', () => {
-      expect(() => compile(`
+    it('method = laplace is accepted', () => {
+      const result = compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.method = 'laplace';
-      `)).toThrow(/not yet implemented/);
+      `);
+      expect(result.gradients[0].topoMethod).toBe('laplace');
     });
 
     it('method only settable on topo gradients', () => {
@@ -2287,6 +2288,164 @@ describe('Gradients', () => {
       expect(() => compile(`
         let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         lg.baseColor = Color('#fff');
+      `)).toThrow(/only available on TopoGradient/);
+    });
+
+    it('iterations defaults to 200', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      expect(result.gradients[0].topoIterations).toBe(200);
+    });
+
+    it('iterations settable and readable via log()', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.iterations = 500;
+        log(topo.iterations)
+      `);
+      expect(result.gradients[0].topoIterations).toBe(500);
+      expect(result.logs[0].parts[0].value).toBe('500');
+    });
+
+    it('iterations must be a number', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.iterations = 'many';
+      `)).toThrow(/iterations must be a number/);
+    });
+
+    it('iterations rejects 0 (below range)', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.iterations = 0;
+      `)).toThrow(/iterations must be between 1 and 2000/);
+    });
+
+    it('iterations rejects 3000 (above range)', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.iterations = 3000;
+      `)).toThrow(/iterations must be between 1 and 2000/);
+    });
+
+    it('iterations rounds to integer', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.iterations = 150.7;
+      `);
+      expect(result.gradients[0].topoIterations).toBe(151);
+    });
+
+    it('iterations only settable on topo gradients', () => {
+      expect(() => compile(`
+        let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
+        lg.iterations = 100;
+      `)).toThrow(/only available on TopoGradient/);
+    });
+
+    it('laplace + custom iterations both in output', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.method = 'laplace';
+        topo.iterations = 750;
+      `);
+      expect(result.gradients[0].topoMethod).toBe('laplace');
+      expect(result.gradients[0].topoIterations).toBe(750);
+    });
+
+    it('iterations serialized in output when method is distance', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.iterations = 100;
+      `);
+      expect(result.gradients[0].topoMethod).toBe('distance');
+      expect(result.gradients[0].topoIterations).toBe(100);
+    });
+
+    // --- blend property ---
+
+    it('blend defaults to 1.0', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+      `);
+      expect(result.gradients[0].topoBlend).toBe(1.0);
+    });
+
+    it('blend settable and readable via log()', () => {
+      const result = compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.blend = 0.7;
+        log(topo.blend);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('0.7');
+      expect(result.gradients[0].topoBlend).toBe(0.7);
+    });
+
+    it('blend must be a number', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.blend = "high";
+      `)).toThrow(/blend must be a number/);
+    });
+
+    it('blend range 0 to 1', () => {
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.blend = -0.1;
+      `)).toThrow(/blend must be between 0 and 1/);
+      expect(() => compile(`
+        let s = @{ circle(0, 0, 100); closePath() };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+        };
+        topo.blend = 1.5;
+      `)).toThrow(/blend must be between 0 and 1/);
+    });
+
+    it('blend only on topo', () => {
+      expect(() => compile(`
+        let g = LinearGradient('g', 0, 0, 1, 0) {|g|
+          g.stop(0, Color('#000'))
+          g.stop(1, Color('#fff'))
+        };
+        g.blend = 0.5;
       `)).toThrow(/only available on TopoGradient/);
     });
   });

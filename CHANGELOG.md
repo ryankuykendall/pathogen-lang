@@ -5,20 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-03-03
+## [Unreleased] - 2026-03-04
 
 ### Added
 
 #### Core
 - TopoGradient: topological elevation gradients with distance-based SDF interpolation. Contours are defined as closed projected paths at specific elevations with colors (`g.contour(path, elevation, color)`). Supports easing modes (`linear`, `smoothstep`, `ease-in`, `ease-out`, `ease-in-out`), `baseColor` property, and `oklch` interpolation.
+- Laplace solver for TopoGradient (`method = 'laplace'`) — solves ∇²h = 0 via Jacobi iteration for mathematically smooth elevation fields.
+- `iterations` property on TopoGradient (default 200, range 1–2000) for controlling Jacobi convergence.
 
 #### Playground
 - WebGPU WGSL shader for topo gradients (ray-cast containment, SDF distance interpolation, easing, OKLab color blending).
 - Canvas 2D fallback for topo gradients on non-WebGPU browsers.
 - SVG path parser utility (`flattenToSegments`) for converting d-strings to GPU-ready line segment arrays.
+- WebGPU compute shader pipeline for Laplace solver (init + N Jacobi iterations + render in single GPU submission).
+- Canvas 2D fallback for Laplace with 4× downscale optimization and bilinear upsampling.
 
 #### Documentation
 - TopoGradient section in gradients docs with examples (basic terrain, programmatic rings, multiple peaks/islands).
+- Laplace algorithm description and `iterations` property in gradients docs.
 
 ---
 

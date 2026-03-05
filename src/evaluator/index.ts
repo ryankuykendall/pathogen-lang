@@ -238,6 +238,8 @@ export interface GradientValue {
   topoHeight?: number;
   topoEasing?: string;    // 'linear' | 'smoothstep' | 'ease-in' | 'ease-out' | 'ease-in-out'
   topoMethod?: string;    // 'distance' | 'laplace'
+  topoIterations?: number; // Jacobi iterations for laplace method (1-2000, default 200)
+  topoBlend?: number;     // Laplace diffusion spread (0-1, default 1.0)
   topoBaseColor?: OKLCH;
   topoBaseColorCSS?: string;
 }
@@ -523,6 +525,8 @@ export interface GradientOutput {
   topoHeight?: number;
   topoEasing?: string;
   topoMethod?: string;
+  topoIterations?: number;
+  topoBlend?: number;
   topoBaseColor?: string;
   topoBaseColorOklch?: OKLCH;
 }
@@ -2755,6 +2759,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       // Topo-specific properties
       case 'easing': return obj.topoEasing ?? 'linear';
       case 'method': return obj.topoMethod ?? 'distance';
+      case 'iterations': return obj.topoIterations ?? 200;
+      case 'blend': return obj.topoBlend ?? 1.0;
       case 'baseColor': {
         if (obj.topoBaseColor) {
           return { type: 'ColorValue', oklch: { ...obj.topoBaseColor } } as ColorValue;
@@ -3320,7 +3326,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       attrs: {},
       stops: [],
       topoContours: [], topoWidth: width, topoHeight: height,
-      topoEasing: 'linear', topoMethod: 'distance',
+      topoEasing: 'linear', topoMethod: 'distance', topoIterations: 200, topoBlend: 1.0,
     };
     scope.evalState.gradients.set(id, gradient);
     // Execute trailing block if present
@@ -4548,10 +4554,21 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             if (value !== 'distance' && value !== 'laplace') {
               throw new Error(formatError(`TopoGradient method must be 'distance' or 'laplace'`, getLine(stmt)));
             }
-            if (value === 'laplace') {
-              throw new Error(formatError(`Laplace solver is not yet implemented (coming in Phase 5B)`, getLine(stmt)));
-            }
             obj.topoMethod = value as string;
+            return;
+          }
+          case 'iterations': {
+            if (obj.gradientType !== 'topo') throw new Error(formatError(`Property 'iterations' is only available on TopoGradient`, getLine(stmt)));
+            if (typeof value !== 'number') throw new Error(formatError(`TopoGradient iterations must be a number`, getLine(stmt)));
+            if (value < 1 || value > 2000) throw new Error(formatError(`TopoGradient iterations must be between 1 and 2000`, getLine(stmt)));
+            obj.topoIterations = Math.round(value);
+            return;
+          }
+          case 'blend': {
+            if (obj.gradientType !== 'topo') throw new Error(formatError(`Property 'blend' is only available on TopoGradient`, getLine(stmt)));
+            if (typeof value !== 'number') throw new Error(formatError(`TopoGradient blend must be a number`, getLine(stmt)));
+            if (value < 0 || value > 1) throw new Error(formatError(`TopoGradient blend must be between 0 and 1`, getLine(stmt)));
+            obj.topoBlend = value;
             return;
           }
           case 'baseColor': {
@@ -4824,6 +4841,8 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
       output.topoHeight = grad.topoHeight;
       output.topoEasing = grad.topoEasing ?? 'linear';
       output.topoMethod = grad.topoMethod ?? 'distance';
+      output.topoIterations = grad.topoIterations ?? 200;
+      output.topoBlend = grad.topoBlend ?? 1.0;
       output.topoContours = (grad.topoContours ?? []).map(c => ({
         elevation: c.elevation, path: c.dString, color: c.colorCSS,
         oklch: { ...c.color },

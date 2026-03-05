@@ -731,7 +731,8 @@ The path must be closed (end with `closePath()`). Use `@{ ... }` path blocks wit
 | `height` | yes | no | number | — | Render height |
 | `easing` | yes | yes | string | `'linear'` | Easing: `linear`, `smoothstep`, `ease-in`, `ease-out`, `ease-in-out` |
 | `interpolation` | yes | yes | string | `'srgb'` | Color interpolation space |
-| `method` | yes | yes | string | `'distance'` | Solver: `'distance'` (SDF-based) |
+| `method` | yes | yes | string | `'distance'` | Solver: `'distance'` (SDF-based) or `'laplace'` (Jacobi iteration) |
+| `iterations` | yes | yes | number | `200` | Jacobi iterations for Laplace solver (range: 1–2000). Only meaningful when `method = 'laplace'`; ignored by `'distance'`. Higher values produce smoother results but take longer to compute. |
 | `baseColor` | yes | yes | Color | — | Color outside all contours (elevation 0) |
 
 ### Basic Example
@@ -793,7 +794,11 @@ topo.baseColor = Color('#1a5276');
 
 ### Algorithm
 
-TopoGradient uses distance-based SDF (Signed Distance Field) interpolation:
+TopoGradient supports two solver methods for computing the elevation field.
+
+#### Distance Solver (`method = 'distance'`)
+
+The default method uses distance-based SDF (Signed Distance Field) interpolation:
 
 1. **Containment test**: For each contour, ray-cast to determine if the pixel is inside (even-odd rule)
 2. **Floor elevation**: Highest elevation among all contours containing the pixel
@@ -801,6 +806,27 @@ TopoGradient uses distance-based SDF (Signed Distance Field) interpolation:
 4. **Distance interpolation**: Compute minimum distances to floor and ceiling boundaries, interpolate elevation
 5. **Easing**: Apply the easing function to the interpolation parameter
 6. **Color lookup**: Sample the color ramp (built from contour colors sorted by elevation)
+
+#### Laplace Solver (`method = 'laplace'`)
+
+The Laplace solver computes the mathematically smoothest possible surface between contours by solving the Laplace equation ∇²h = 0 with contour pixels as boundary conditions. This produces results like a rubber sheet stretched between fixed-elevation boundaries.
+
+The solver uses Jacobi iteration: each non-boundary pixel is repeatedly replaced with the average of its 4 neighbors until the field converges. The `iterations` property controls how many passes are performed (default: 200).
+
+**Distance vs Laplace comparison:**
+- **Distance (SDF)**: Fast, uses signed distance blending with smooth transition zones. Produces concentric-like gradients that follow contour shapes. Best for: decorative gradients, radial-style effects.
+- **Laplace**: Solves for the harmonic function, producing physically correct potential field flow. Elevation changes smoothly around corners and between non-nested contours. Best for: terrain/height maps, natural-looking blends, multi-peak topologies.
+
+```pathogen
+let s = @{ circle(0, 0, 80); closePath() };
+let topo = TopoGradient('terrain', 400, 300) {|g|
+  g.contour(s.project(200, 150), 0.3, Color('#2ecc71'))
+  g.contour(s.project(200, 150, 0.5, 0.5), 0.7, Color('#e74c3c'))
+};
+topo.method = 'laplace';
+topo.iterations = 300;
+topo.baseColor = Color('#1a5276');
+```
 
 ### Rendering
 
@@ -822,4 +848,5 @@ TopoGradient is rasterized per-pixel:
 | `.contour() third argument must be a Color value` | Non-Color color |
 | `.contour() path must be closed` | Path not ending with closePath() |
 | `TopoGradient easing must be one of: ...` | Invalid easing value |
-| `Laplace solver is not yet implemented` | Setting method to 'laplace' |
+| `TopoGradient iterations must be a number` | When setting iterations to a non-number |
+| `TopoGradient iterations must be between 1 and 2000` | When iterations is out of range |
