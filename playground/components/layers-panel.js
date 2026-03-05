@@ -94,6 +94,75 @@ export class LayersPanel extends HTMLElement {
     store.set('defsVisibility', visibility);
   }
 
+  renderLayerRow(layer, list, depth, visibility, defsVisibility, layerDefs, layersByName) {
+    const isVisible = visibility[layer.name] !== false;
+    const color = this.getLayerColor(layer);
+
+    // Resolve fill/stroke for gradient-aware swatch
+    const fillResolved = this.resolveStyleColor(layer.styles?.['fill']);
+    const strokeResolved = this.resolveStyleColor(layer.styles?.['stroke']);
+    const dotResolved = (strokeResolved && !fillResolved) ? strokeResolved
+      : fillResolved ? fillResolved
+      : strokeResolved ? strokeResolved : null;
+    const dotStyle = dotResolved
+      ? `background: ${dotResolved.css}` + (dotResolved.isGradient ? '; border-radius: 2px' : '')
+      : `background: ${color}`;
+
+    const row = document.createElement('div');
+    row.className = depth > 0 ? 'layer-row group-child' : 'layer-row';
+    if (depth > 0) row.style.paddingLeft = `calc(0.5rem + ${depth} * 0.5rem)`;
+
+    const connectorHTML = depth > 0 ? '<span class="tree-connector"></span>' : '';
+
+    row.innerHTML = `
+      ${connectorHTML}
+      <span class="color-dot" style="${dotStyle}"></span>
+      <span class="layer-name" title="${layer.name}">${layer.name}</span>
+      <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : layer.type === 'group' ? 'grp' : 'path'}</span>
+      <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${layer.name}">
+        ${isVisible ? EYE_OPEN : EYE_CLOSED}
+      </button>
+    `;
+
+    row.querySelector('.eye-btn').addEventListener('click', () => {
+      this.toggleVisibility(layer.name);
+    });
+
+    list.appendChild(row);
+
+    // Render nested mask/clipPath rows for this layer
+    const refs = layerDefs.get(layer.name) || [];
+    for (const ref of refs) {
+      const defKey = `${ref.type}:${ref.id}`;
+      const defVisible = defsVisibility[defKey] !== false;
+      const subRow = document.createElement('div');
+      subRow.className = 'layer-row defs-row';
+      subRow.style.paddingLeft = `calc(0.5rem + ${depth + 1} * 0.5rem)`;
+
+      subRow.innerHTML = `
+        <span class="tree-connector"></span>
+        <span class="layer-name" title="${ref.id}">${ref.id}</span>
+        <span class="type-badge defs-badge">${ref.type === 'mask' ? 'mask' : 'clip'}</span>
+        <button class="eye-btn" title="${defVisible ? 'Disable' : 'Enable'} ${ref.type}" aria-label="${defVisible ? 'Disable' : 'Enable'} ${ref.type} ${ref.id}">
+          ${defVisible ? EYE_OPEN : EYE_CLOSED}
+        </button>
+      `;
+
+      subRow.querySelector('.eye-btn').addEventListener('click', () => {
+        this.toggleDefsVisibility(defKey);
+      });
+
+      list.appendChild(subRow);
+    }
+
+    // Recursively render group children (children are LayerOutput objects, not names)
+    if (layer.type === 'group' && layer.children) {
+      for (const childLayer of layer.children) {
+        this.renderLayerRow(childLayer, list, depth + 1, visibility, defsVisibility, layerDefs, layersByName);
+      }
+    }
+  }
+
   toggleCollapse() {
     this._collapsed = !this._collapsed;
     const list = this.shadowRoot.querySelector('.layer-list');
@@ -136,61 +205,13 @@ export class LayersPanel extends HTMLElement {
     }
 
     list.innerHTML = '';
+
+    // Build a lookup of all layers by name (for mask/clipPath ref resolution)
+    const layersByName = new Map();
+    for (const layer of layers) layersByName.set(layer.name, layer);
+
     for (const layer of layers) {
-      const isVisible = visibility[layer.name] !== false;
-      const color = this.getLayerColor(layer);
-
-      // Resolve fill/stroke for gradient-aware swatch
-      const fillResolved = this.resolveStyleColor(layer.styles?.['fill']);
-      const strokeResolved = this.resolveStyleColor(layer.styles?.['stroke']);
-      const dotResolved = (strokeResolved && !fillResolved) ? strokeResolved
-        : fillResolved ? fillResolved
-        : strokeResolved ? strokeResolved : null;
-      const dotStyle = dotResolved
-        ? `background: ${dotResolved.css}` + (dotResolved.isGradient ? '; border-radius: 2px' : '')
-        : `background: ${color}`;
-
-      const row = document.createElement('div');
-      row.className = 'layer-row';
-
-      row.innerHTML = `
-        <span class="color-dot" style="${dotStyle}"></span>
-        <span class="layer-name" title="${layer.name}">${layer.name}</span>
-        <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : layer.type === 'group' ? 'grp' : 'path'}</span>
-        <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${layer.name}">
-          ${isVisible ? EYE_OPEN : EYE_CLOSED}
-        </button>
-      `;
-
-      row.querySelector('.eye-btn').addEventListener('click', () => {
-        this.toggleVisibility(layer.name);
-      });
-
-      list.appendChild(row);
-
-      // Render nested mask/clipPath rows for this layer
-      const refs = layerDefs.get(layer.name) || [];
-      for (const ref of refs) {
-        const defKey = `${ref.type}:${ref.id}`;
-        const defVisible = defsVisibility[defKey] !== false;
-        const subRow = document.createElement('div');
-        subRow.className = 'layer-row defs-row';
-
-        subRow.innerHTML = `
-          <span class="tree-connector"></span>
-          <span class="layer-name" title="${ref.id}">${ref.id}</span>
-          <span class="type-badge defs-badge">${ref.type === 'mask' ? 'mask' : 'clip'}</span>
-          <button class="eye-btn" title="${defVisible ? 'Disable' : 'Enable'} ${ref.type}" aria-label="${defVisible ? 'Disable' : 'Enable'} ${ref.type} ${ref.id}">
-            ${defVisible ? EYE_OPEN : EYE_CLOSED}
-          </button>
-        `;
-
-        subRow.querySelector('.eye-btn').addEventListener('click', () => {
-          this.toggleDefsVisibility(defKey);
-        });
-
-        list.appendChild(subRow);
-      }
+      this.renderLayerRow(layer, list, 0, visibility, defsVisibility, layerDefs, layersByName);
     }
 
     if (this._collapsed) {
@@ -210,8 +231,8 @@ export class LayersPanel extends HTMLElement {
           border: 1px solid var(--border-color, #e2e8f0);
           border-radius: var(--radius-lg, 12px);
           box-shadow: var(--shadow-lg);
-          width: 180px;
-          max-height: 240px;
+          width: 240px;
+          max-height: 360px;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -308,6 +329,10 @@ export class LayersPanel extends HTMLElement {
         .eye-btn:hover {
           color: var(--text-primary, #1a1a2e);
           background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+        }
+
+        .group-child {
+          /* padding-left set via inline style based on depth */
         }
 
         .defs-row {

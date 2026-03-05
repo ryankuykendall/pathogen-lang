@@ -474,7 +474,7 @@ export class SvgPreviewPane extends HTMLElement {
     if (!layersGroup) return;
     const visibility = store.get('layerVisibility');
 
-    for (const el of layersGroup.children) {
+    for (const el of layersGroup.querySelectorAll('[data-layer-name]')) {
       const name = el.dataset.layerName;
       if (name && visibility[name] === false) {
         el.style.display = 'none';
@@ -485,7 +485,7 @@ export class SvgPreviewPane extends HTMLElement {
 
     // Handle mask/clipPath visibility: remove/restore attributes on referencing layers
     const defsVisibility = store.get('defsVisibility') || {};
-    for (const el of layersGroup.children) {
+    for (const el of layersGroup.querySelectorAll('[data-layer-name]')) {
       // Check mask attribute
       const maskAttr = el.getAttribute('mask') || el.dataset.origMask;
       if (maskAttr) {
