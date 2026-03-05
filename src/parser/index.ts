@@ -482,14 +482,14 @@ const pathBlockExpression: Parsimmon.Parser<PathBlockExpression> = P.seqMap(
 // Layer constructor expression: PathLayer('name') or PathLayer('name') ${ ... }
 const layerConstructorExpression: Parsimmon.Parser<LayerConstructorExpression> = P.seqMap(
   P.index,
-  token(P.regexp(/PathLayer|TextLayer/)),
+  token(P.regexp(/PathLayer|TextLayer|GroupLayer/)),
   word('('),
   P.lazy(() => expression),
   word(')'),
   P.lazy(() => styleBlockLiteral).fallback(undefined as StyleBlockLiteral | undefined),
   (startIndex, layerType, _lp, name, _rp, styleExpr) => ({
     type: 'LayerConstructorExpression' as const,
-    layerType: layerType as 'PathLayer' | 'TextLayer',
+    layerType: layerType as 'PathLayer' | 'TextLayer' | 'GroupLayer',
     name,
     ...(styleExpr ? { styleExpr } : {}),
     loc: indexToLoc(startIndex),
@@ -860,14 +860,14 @@ const layerDefinition: Parsimmon.Parser<LayerDefinition> = P.seqMap(
   P.index,
   keyword('define'),
   keyword('default').map(() => true).fallback(false),
-  token(P.regexp(/PathLayer|TextLayer/)),
+  token(P.regexp(/PathLayer|TextLayer|GroupLayer/)),
   word('('),
   expression,
   word(')'),
   expression,
   (startIndex, _define, isDefault, layerType, _lp, name, _rp, styleExpr) => ({
     type: 'LayerDefinition' as const,
-    layerType: layerType as 'PathLayer' | 'TextLayer',
+    layerType: layerType as 'PathLayer' | 'TextLayer' | 'GroupLayer',
     name,
     isDefault,
     styleExpr,

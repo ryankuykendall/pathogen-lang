@@ -1470,4 +1470,325 @@ describe('Multi-Layer Support', () => {
       });
     });
   });
+
+  describe('GroupLayer', () => {
+    it('defines GroupLayer with style block via define', () => {
+      const result = compile(`
+        define GroupLayer('panel') \${ opacity: 0.8; }
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('panel');
+      expect(result.layers[0].type).toBe('group');
+      expect(result.layers[0].styles).toEqual({ opacity: '0.8' });
+      expect(result.layers[0].children).toEqual([]);
+    });
+
+    it('creates GroupLayer via constructor expression', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${ opacity: 0.5; };
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].type).toBe('group');
+      expect(result.layers[0].styles).toEqual({ opacity: '0.5' });
+    });
+
+    it('rejects define default GroupLayer', () => {
+      expect(() => compile(`
+        define default GroupLayer('g') \${}
+      `)).toThrow(/GroupLayer cannot be the default layer/);
+    });
+
+    it('appends a PathLayer child', () => {
+      const result = compile(`
+        let g = GroupLayer('panel') \${};
+        let bg = PathLayer('bg') \${ fill: #eee; };
+        bg.apply { M 0 0 L 100 0 }
+        g.append(bg)
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].type).toBe('group');
+      expect(result.layers[0].children).toHaveLength(1);
+      expect(result.layers[0].children![0].name).toBe('bg');
+      expect(result.layers[0].children![0].type).toBe('path');
+      expect(result.layers[0].children![0].data).toBe('M 0 0 L 100 0');
+    });
+
+    it('appends multiple children in order', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${};
+        let a = PathLayer('a') \${};
+        let b = PathLayer('b') \${};
+        g.append(a, b)
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].children).toHaveLength(2);
+      expect(result.layers[0].children![0].name).toBe('a');
+      expect(result.layers[0].children![1].name).toBe('b');
+    });
+
+    it('appends a TextLayer child', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${};
+        let t = TextLayer('label') \${ font-size: 14; fill: #333; };
+        t.apply { text(10, 20)\`Hello\` }
+        g.append(t)
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].children).toHaveLength(1);
+      expect(result.layers[0].children![0].type).toBe('text');
+      expect(result.layers[0].children![0].name).toBe('label');
+    });
+
+    it('nests groups: outer.append(inner)', () => {
+      const result = compile(`
+        let inner = GroupLayer('inner') \${};
+        let child = PathLayer('child') \${};
+        child.apply { M 5 5 }
+        inner.append(child)
+        let outer = GroupLayer('outer') \${};
+        outer.append(inner)
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('outer');
+      expect(result.layers[0].children).toHaveLength(1);
+      expect(result.layers[0].children![0].name).toBe('inner');
+      expect(result.layers[0].children![0].children).toHaveLength(1);
+      expect(result.layers[0].children![0].children![0].name).toBe('child');
+    });
+
+    it('throws on max nesting depth', () => {
+      // Build 11 levels of nesting
+      let code = '';
+      for (let i = 0; i < 12; i++) {
+        code += `let g${i} = GroupLayer('g${i}') \${};\n`;
+      }
+      for (let i = 11; i > 0; i--) {
+        code += `g${i - 1}.append(g${i})\n`;
+      }
+      expect(() => compile(code)).toThrow(/nesting exceeds maximum depth of 10/);
+    });
+
+    it('removes appended layers from top-level result', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${};
+        let a = PathLayer('a') \${};
+        let b = PathLayer('b') \${};
+        g.append(a)
+      `);
+      // Top level: g and b (a is inside g)
+      expect(result.layers).toHaveLength(2);
+      expect(result.layers[0].name).toBe('g');
+      expect(result.layers[1].name).toBe('b');
+    });
+
+    it('applies style block transform', () => {
+      const result = compile(`
+        let g = GroupLayer('panel') \${ transform: translate(100, 200); };
+      `);
+      expect(result.layers[0].transform).toBe('translate(100, 200)');
+      expect(result.layers[0].styles).not.toHaveProperty('transform');
+    });
+
+    it('applies imperative transform via ctx', () => {
+      const result = compile(`
+        let g = GroupLayer('panel') \${};
+        g.ctx.transform.translate.set(50, 75)
+      `);
+      expect(result.layers[0].transform).toBe('translate(50, 75)');
+    });
+
+    it('style block transform takes precedence over imperative', () => {
+      const result = compile(`
+        let g = GroupLayer('panel') \${ transform: scale(2, 2); };
+        g.ctx.transform.translate.set(50, 75)
+      `);
+      expect(result.layers[0].transform).toBe('scale(2, 2)');
+    });
+
+    it('throws on .append() on non-GroupLayer', () => {
+      expect(() => compile(`
+        let p = PathLayer('p') \${};
+        let q = PathLayer('q') \${};
+        p.append(q)
+      `)).toThrow(/\.append\(\) is only available on GroupLayer/);
+    });
+
+    it('throws on .append() with non-layer argument', () => {
+      expect(() => compile(`
+        let g = GroupLayer('g') \${};
+        g.append(42)
+      `)).toThrow(/\.append\(\) arguments must be layer references/);
+    });
+
+    it('moves layer from one group to another with warning log', () => {
+      const result = compile(`
+        let g1 = GroupLayer('g1') \${};
+        let g2 = GroupLayer('g2') \${};
+        let child = PathLayer('child') \${};
+        g1.append(child)
+        g2.append(child)
+      `);
+      // child should be in g2, not g1
+      expect(result.layers[0].children).toHaveLength(0); // g1
+      expect(result.layers[1].children).toHaveLength(1); // g2
+      expect(result.layers[1].children![0].name).toBe('child');
+      // Check for warning log
+      const logMessages = result.logs.map(l => l.parts.map(p => p.value).join(''));
+      expect(logMessages.some(m => m.includes("Layer 'child' was moved from group 'g1' to group 'g2'"))).toBe(true);
+    });
+
+    it('throws on appending a group to itself', () => {
+      expect(() => compile(`
+        let g = GroupLayer('g') \${};
+        g.append(g)
+      `)).toThrow(/Cannot append group 'g' to itself/);
+    });
+
+    it('duplicate append to same group is a no-op', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${};
+        let child = PathLayer('child') \${};
+        g.append(child)
+        g.append(child)
+      `);
+      expect(result.layers[0].children).toHaveLength(1);
+    });
+
+    it('rejects apply blocks on GroupLayer', () => {
+      expect(() => compile(`
+        let g = GroupLayer('g') \${};
+        g.apply { M 0 0 }
+      `)).toThrow(/GroupLayer does not support apply blocks/);
+    });
+
+    it('ctx.transform.rotate.set works on GroupLayer', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${};
+        g.ctx.transform.rotate.set(0.785)
+      `);
+      expect(result.layers[0].transform).toContain('rotate(');
+    });
+
+    it('ctx.transform.scale.set works on GroupLayer', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${};
+        g.ctx.transform.scale.set(2, 3)
+      `);
+      expect(result.layers[0].transform).toBe('scale(2, 3)');
+    });
+  });
+
+  describe('transform convenience properties', () => {
+    it('translate-x and translate-y on PathLayer', () => {
+      const result = compile(`
+        define PathLayer('p') \${ translate-x: 50; translate-y: 100; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('translate(50, 100)');
+      expect(result.layers[0].styles).not.toHaveProperty('translate-x');
+      expect(result.layers[0].styles).not.toHaveProperty('translate-y');
+    });
+
+    it('translate shorthand on PathLayer', () => {
+      const result = compile(`
+        define PathLayer('p') \${ translate: 50, 100; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('translate(50, 100)');
+      expect(result.layers[0].styles).not.toHaveProperty('translate');
+    });
+
+    it('scale-x and scale-y on PathLayer', () => {
+      const result = compile(`
+        define PathLayer('p') \${ scale-x: 2; scale-y: 3; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('scale(2, 3)');
+      expect(result.layers[0].styles).not.toHaveProperty('scale-x');
+      expect(result.layers[0].styles).not.toHaveProperty('scale-y');
+    });
+
+    it('scale shorthand on PathLayer', () => {
+      const result = compile(`
+        define PathLayer('p') \${ scale: 2, 3; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('scale(2, 3)');
+    });
+
+    it('scale shorthand with single value uses it for both axes', () => {
+      const result = compile(`
+        define PathLayer('p') \${ scale: 2; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('scale(2, 2)');
+    });
+
+    it('rotate on PathLayer (value is expression in radians)', () => {
+      const result = compile(`
+        let a = 0.25pi;
+        define PathLayer('p') \${ rotate: a; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('rotate(45)');
+    });
+
+    it('all convenience properties together', () => {
+      const result = compile(`
+        define PathLayer('p') \${ translate-x: 50; translate-y: 100; rotate: 0.5pi; scale-x: 2; scale-y: 3; }
+        layer('p').apply { M 0 0 }
+      `);
+      // Order: translate, rotate, scale
+      expect(result.layers[0].transform).toBe('translate(50, 100) rotate(90) scale(2, 3)');
+    });
+
+    it('convenience properties on GroupLayer', () => {
+      const result = compile(`
+        let g = GroupLayer('g') \${ translate-x: 10; translate-y: 20; scale: 2; };
+      `);
+      expect(result.layers[0].transform).toBe('translate(10, 20) scale(2, 2)');
+    });
+
+    it('convenience properties on TextLayer', () => {
+      const result = compile(`
+        define TextLayer('t') \${ translate-x: 5; translate-y: 10; }
+        layer('t').apply { text(0, 0)\`Hi\` }
+      `);
+      expect(result.layers[0].transform).toBe('translate(5, 10)');
+    });
+
+    it('explicit transform property takes precedence over convenience', () => {
+      const result = compile(`
+        define PathLayer('p') \${ transform: rotate(45); translate-x: 50; }
+        layer('p').apply { M 0 0 }
+      `);
+      // transform property wins, convenience properties are still consumed
+      expect(result.layers[0].transform).toBe('rotate(45)');
+      expect(result.layers[0].styles).not.toHaveProperty('translate-x');
+    });
+
+    it('translate-x only defaults y to 0', () => {
+      const result = compile(`
+        define PathLayer('p') \${ translate-x: 50; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('translate(50, 0)');
+    });
+
+    it('scale-x only defaults y to 1', () => {
+      const result = compile(`
+        define PathLayer('p') \${ scale-x: 2; }
+        layer('p').apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('scale(2, 1)');
+    });
+
+    it('convenience properties with let constructor', () => {
+      const result = compile(`
+        let p = PathLayer('p') \${ translate: 10, 20; rotate: 0.25pi; };
+        p.apply { M 0 0 }
+      `);
+      expect(result.layers[0].transform).toBe('translate(10, 20) rotate(45)');
+    });
+  });
 });

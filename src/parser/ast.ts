@@ -286,7 +286,7 @@ export interface StyleProperty {
 // define [default] PathLayer('name') ${ style declarations }
 export interface LayerDefinition {
   type: 'LayerDefinition';
-  layerType: 'PathLayer' | 'TextLayer';
+  layerType: 'PathLayer' | 'TextLayer' | 'GroupLayer';
   name: Expression;
   isDefault: boolean;
   styleExpr: Expression;
@@ -296,7 +296,7 @@ export interface LayerDefinition {
 // PathLayer('name') or PathLayer('name') ${ ... } as an expression
 export interface LayerConstructorExpression {
   type: 'LayerConstructorExpression';
-  layerType: 'PathLayer' | 'TextLayer';
+  layerType: 'PathLayer' | 'TextLayer' | 'GroupLayer';
   name: Expression;
   styleExpr?: Expression;  // Optional trailing style block
   loc?: SourceLocation;

@@ -156,7 +156,7 @@ export class LayersPanel extends HTMLElement {
       row.innerHTML = `
         <span class="color-dot" style="${dotStyle}"></span>
         <span class="layer-name" title="${layer.name}">${layer.name}</span>
-        <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : 'path'}</span>
+        <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : layer.type === 'group' ? 'grp' : 'path'}</span>
         <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${layer.name}">
           ${isVisible ? EYE_OPEN : EYE_CLOSED}
         </button>

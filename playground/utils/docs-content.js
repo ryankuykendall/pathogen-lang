@@ -1518,7 +1518,28 @@ M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span 
 <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>).<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>.<span class="hljs-property">rotate</span>.<span class="hljs-title function_">set</span>(90deg)
 <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>).<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>.<span class="hljs-property">scale</span>.<span class="hljs-title function_">set</span>(<span class="hljs-number">2</span>, <span class="hljs-number">2</span>)
 <span class="hljs-comment">// Output: transform=&quot;translate(10, 20) rotate(90) scale(2, 2)&quot;</span>
-</code></pre><h3 id="layers-per-layer-isolation">Per-Layer Isolation</h3>
+</code></pre><h3 id="layers-transform-convenience-properties">Transform Convenience Properties</h3>
+<p>Style blocks support individual transform properties as an alternative to <code>transform: ...</code> or the imperative API. These work on PathLayer, GroupLayer, and TextLayer:</p>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;p&#x27;</span>) <span class="hljs-variable">\${
+  translate-x: 50;
+  translate-y: 100;
+  scale-x: 2;
+  scale-y: 2;
+  rotate: 0.25pi;
+}</span>
+// Output: transform=<span class="hljs-string">&quot;translate(50, 100) rotate(45) scale(2, 2)&quot;</span>
+</code></pre><p>Shorthands for translate and scale accept comma-separated values:</p>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;p&#x27;</span>) <span class="hljs-variable">\${ translate: 50, 100; scale: 2, 3; }</span>
+// Output: transform=<span class="hljs-string">&quot;translate(50, 100) scale(2, 3)&quot;</span>
+</code></pre><p>Single-value <code>scale</code> uses the same value for both axes:</p>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;p&#x27;</span>) <span class="hljs-variable">\${ scale: 2; }</span>
+// Output: transform=<span class="hljs-string">&quot;scale(2, 2)&quot;</span>
+</code></pre><p>The <code>rotate</code> value is an expression in radians (angle units like <code>deg</code> and <code>pi</code> work normally):</p>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;p&#x27;</span>) <span class="hljs-variable">\${ rotate: 45deg; }</span>
+// Output: transform=<span class="hljs-string">&quot;rotate(45)&quot;</span>
+</code></pre><p><strong>Precedence</strong>: An explicit <code>transform</code> property overrides convenience properties. Convenience properties override imperative <code>ctx.transform</code> calls. The individual <code>translate-x</code>/<code>translate-y</code> properties override the <code>translate</code> shorthand (and similarly for scale).</p>
+<p>Convenience properties are removed from the output styles — they only affect the <code>transform</code> attribute.</p>
+<h3 id="layers-per-layer-isolation">Per-Layer Isolation</h3>
 <p>Each layer has independent transforms — setting a transform on one layer does not affect others:</p>
 <pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;a&#x27;</span>) <span class="hljs-variable">\${ stroke: red; }</span>
 define PathLayer(<span class="hljs-string">&#x27;b&#x27;</span>) <span class="hljs-variable">\${ stroke: blue; }</span>
@@ -1526,11 +1547,70 @@ define PathLayer(<span class="hljs-string">&#x27;b&#x27;</span>) <span class="hl
 layer(<span class="hljs-string">&#x27;a&#x27;</span>).ctx.transform.translate.set(10, 10)
 layer(<span class="hljs-string">&#x27;b&#x27;</span>).ctx.transform.scale.set(2, 2)
 // Layer <span class="hljs-string">&#x27;a&#x27;</span> gets translate(10, 10), layer <span class="hljs-string">&#x27;b&#x27;</span> gets scale(2, 2)
+</code></pre><h2 id="layers-grouplayer">GroupLayer</h2>
+<p>GroupLayers map to SVG <code>&lt;g&gt;</code> elements and organize child layers via <code>.append()</code>. They support transforms through style blocks and the imperative <code>ctx.transform</code> API, but do not support apply blocks.</p>
+<h3 id="layers-definition">Definition</h3>
+<pre><code class="hljs"><span class="hljs-comment">// Define a group with styles</span>
+<span class="hljs-keyword">let</span> panel = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;panel&#x27;</span>) \${ <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.8</span>; };
+
+<span class="hljs-comment">// Or with define (cannot be default)</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;panel&#x27;</span>) \${ <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.8</span>; }
+</code></pre><p>GroupLayers <strong>cannot</strong> be the default layer — <code>define default GroupLayer(...)</code> is an error.</p>
+<h3 id="layers-adding-children-with-append">Adding Children with <code>.append()</code></h3>
+<p>Use <code>.append(ref1, ref2, ...)</code> to add layers as children of a group. All arguments must be layer references:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> panel = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;panel&#x27;</span>) \${};
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #eee; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) }
+
+<span class="hljs-keyword">let</span> label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; <span class="hljs-attr">fill</span>: #<span class="hljs-number">333</span>; };
+label.<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Panel Title\`</span> }
+
+<span class="hljs-comment">// Append children to group</span>
+panel.<span class="hljs-title function_">append</span>(bg, label)
+</code></pre><p>Output SVG:</p>
+<pre><code class="hljs language-xml">&lt;g&gt;
+  &lt;path d=<span class="hljs-string">&quot;...&quot;</span> fill=<span class="hljs-string">&quot;#eee&quot;</span> .../&gt;
+  &lt;text x=<span class="hljs-string">&quot;10&quot;</span> y=<span class="hljs-string">&quot;20&quot;</span> font-size=<span class="hljs-string">&quot;14&quot;</span> fill=<span class="hljs-string">&quot;#333&quot;</span>&gt;Panel Title&lt;/text&gt;
+&lt;/g&gt;
+</code></pre><p>Appended layers are removed from the top-level output and rendered inside the group.</p>
+<h3 id="layers-nesting-groups">Nesting Groups</h3>
+<p>Groups can contain other groups, up to a maximum nesting depth of 10:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> inner = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;inner&#x27;</span>) \${};
+<span class="hljs-keyword">let</span> child = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;child&#x27;</span>) \${};
+child.<span class="hljs-property">apply</span> { M <span class="hljs-number">5</span> <span class="hljs-number">5</span> }
+inner.<span class="hljs-title function_">append</span>(child)
+
+<span class="hljs-keyword">let</span> outer = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;outer&#x27;</span>) \${};
+outer.<span class="hljs-title function_">append</span>(inner)
+</code></pre><h3 id="layers-transforms-2">Transforms</h3>
+<p>GroupLayers support both style block transforms and imperative transforms:</p>
+<pre><code class="hljs"><span class="hljs-comment">// Style block transform</span>
+<span class="hljs-keyword">let</span> panel = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;panel&#x27;</span>) \${ <span class="hljs-attr">transform</span>: <span class="hljs-title function_">translate</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>); };
+
+<span class="hljs-comment">// Imperative transform</span>
+panel.<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>.<span class="hljs-property">rotate</span>.<span class="hljs-title function_">set</span>(<span class="hljs-number">0.785</span>)
+panel.<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>.<span class="hljs-property">scale</span>.<span class="hljs-title function_">set</span>(<span class="hljs-number">2</span>, <span class="hljs-number">2</span>)
+</code></pre><p>When both are present, the style block transform takes precedence.</p>
+<h3 id="layers-moving-layers-between-groups">Moving Layers Between Groups</h3>
+<p>Appending a layer that already belongs to another group moves it. A warning log is emitted:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> g1 = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g1&#x27;</span>) \${};
+<span class="hljs-keyword">let</span> g2 = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g2&#x27;</span>) \${};
+<span class="hljs-keyword">let</span> child = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;child&#x27;</span>) \${};
+g1.<span class="hljs-title function_">append</span>(child)  <span class="hljs-comment">// child is in g1</span>
+g2.<span class="hljs-title function_">append</span>(child)  <span class="hljs-comment">// child moves to g2, warning logged</span>
+</code></pre><h3 id="layers-no-apply-blocks">No Apply Blocks</h3>
+<p>GroupLayers do not support <code>.apply</code> blocks. Use <code>.append()</code> to add children:</p>
+<pre><code class="hljs"><span class="hljs-comment">// This is an error:</span>
+<span class="hljs-comment">// g.apply { M 0 0 }</span>
+
+<span class="hljs-comment">// Use .append() instead:</span>
+g.<span class="hljs-title function_">append</span>(myPath)
 </code></pre><h2 id="layers-limitations">Limitations</h2>
 <ul>
-<li><strong>No nesting</strong> — <code>layer().apply</code> blocks cannot be nested inside each other</li>
+<li><strong>No nesting apply blocks</strong> — <code>layer().apply</code> blocks cannot be nested inside each other</li>
 <li><strong>Layer order</strong> — layers render in definition order (first defined = bottom)</li>
-<li><strong>PathLayer transforms only</strong> — transforms are currently available on PathLayers via <code>ctx.transform</code>; TextLayer transform support can be added later</li>
+<li><strong>GroupLayer nesting</strong> — maximum depth of 10 levels</li>
+<li><strong>PathLayer transforms only</strong> — transforms are currently available on PathLayers and GroupLayers via <code>ctx.transform</code>; TextLayer transform support can be added later</li>
 </ul>
 `;
 
@@ -3136,8 +3216,48 @@ export const tocData = JSON.parse(`[
         "level": 3
       },
       {
+        "id": "layers-transform-convenience-properties",
+        "title": "Transform Convenience Properties",
+        "level": 3
+      },
+      {
         "id": "layers-per-layer-isolation",
         "title": "Per-Layer Isolation",
+        "level": 3
+      },
+      {
+        "id": "layers-grouplayer",
+        "title": "GroupLayer",
+        "level": 2
+      },
+      {
+        "id": "layers-definition",
+        "title": "Definition",
+        "level": 3
+      },
+      {
+        "id": "layers-adding-children-with-append",
+        "title": "Adding Children with .append()",
+        "level": 3
+      },
+      {
+        "id": "layers-nesting-groups",
+        "title": "Nesting Groups",
+        "level": 3
+      },
+      {
+        "id": "layers-transforms-2",
+        "title": "Transforms",
+        "level": 3
+      },
+      {
+        "id": "layers-moving-layers-between-groups",
+        "title": "Moving Layers Between Groups",
+        "level": 3
+      },
+      {
+        "id": "layers-no-apply-blocks",
+        "title": "No Apply Blocks",
         "level": 3
       },
       {

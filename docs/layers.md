@@ -607,6 +607,46 @@ layer('shape').ctx.transform.scale.set(2, 2)
 // Output: transform="translate(10, 20) rotate(90) scale(2, 2)"
 ```
 
+### Transform Convenience Properties
+
+Style blocks support individual transform properties as an alternative to `transform: ...` or the imperative API. These work on PathLayer, GroupLayer, and TextLayer:
+
+```
+define PathLayer('p') ${
+  translate-x: 50;
+  translate-y: 100;
+  scale-x: 2;
+  scale-y: 2;
+  rotate: 0.25pi;
+}
+// Output: transform="translate(50, 100) rotate(45) scale(2, 2)"
+```
+
+Shorthands for translate and scale accept comma-separated values:
+
+```
+define PathLayer('p') ${ translate: 50, 100; scale: 2, 3; }
+// Output: transform="translate(50, 100) scale(2, 3)"
+```
+
+Single-value `scale` uses the same value for both axes:
+
+```
+define PathLayer('p') ${ scale: 2; }
+// Output: transform="scale(2, 2)"
+```
+
+The `rotate` value is an expression in radians (angle units like `deg` and `pi` work normally):
+
+```
+define PathLayer('p') ${ rotate: 45deg; }
+// Output: transform="rotate(45)"
+```
+
+**Precedence**: An explicit `transform` property overrides convenience properties. Convenience properties override imperative `ctx.transform` calls. The individual `translate-x`/`translate-y` properties override the `translate` shorthand (and similarly for scale).
+
+Convenience properties are removed from the output styles — they only affect the `transform` attribute.
+
 ### Per-Layer Isolation
 
 Each layer has independent transforms — setting a transform on one layer does not affect others:
@@ -620,8 +660,104 @@ layer('b').ctx.transform.scale.set(2, 2)
 // Layer 'a' gets translate(10, 10), layer 'b' gets scale(2, 2)
 ```
 
+## GroupLayer
+
+GroupLayers map to SVG `<g>` elements and organize child layers via `.append()`. They support transforms through style blocks and the imperative `ctx.transform` API, but do not support apply blocks.
+
+### Definition
+
+```
+// Define a group with styles
+let panel = GroupLayer('panel') ${ opacity: 0.8; };
+
+// Or with define (cannot be default)
+define GroupLayer('panel') ${ opacity: 0.8; }
+```
+
+GroupLayers **cannot** be the default layer — `define default GroupLayer(...)` is an error.
+
+### Adding Children with `.append()`
+
+Use `.append(ref1, ref2, ...)` to add layers as children of a group. All arguments must be layer references:
+
+```
+let panel = GroupLayer('panel') ${};
+let bg = PathLayer('bg') ${ fill: #eee; };
+bg.apply { rect(0, 0, 200, 200) }
+
+let label = TextLayer('label') ${ font-size: 14; fill: #333; };
+label.apply { text(10, 20)`Panel Title` }
+
+// Append children to group
+panel.append(bg, label)
+```
+
+Output SVG:
+```xml
+<g>
+  <path d="..." fill="#eee" .../>
+  <text x="10" y="20" font-size="14" fill="#333">Panel Title</text>
+</g>
+```
+
+Appended layers are removed from the top-level output and rendered inside the group.
+
+### Nesting Groups
+
+Groups can contain other groups, up to a maximum nesting depth of 10:
+
+```
+let inner = GroupLayer('inner') ${};
+let child = PathLayer('child') ${};
+child.apply { M 5 5 }
+inner.append(child)
+
+let outer = GroupLayer('outer') ${};
+outer.append(inner)
+```
+
+### Transforms
+
+GroupLayers support both style block transforms and imperative transforms:
+
+```
+// Style block transform
+let panel = GroupLayer('panel') ${ transform: translate(50, 100); };
+
+// Imperative transform
+panel.ctx.transform.rotate.set(0.785)
+panel.ctx.transform.scale.set(2, 2)
+```
+
+When both are present, the style block transform takes precedence.
+
+### Moving Layers Between Groups
+
+Appending a layer that already belongs to another group moves it. A warning log is emitted:
+
+```
+let g1 = GroupLayer('g1') ${};
+let g2 = GroupLayer('g2') ${};
+let child = PathLayer('child') ${};
+g1.append(child)  // child is in g1
+g2.append(child)  // child moves to g2, warning logged
+```
+
+### No Apply Blocks
+
+GroupLayers do not support `.apply` blocks. Use `.append()` to add children:
+
+```
+// This is an error:
+// g.apply { M 0 0 }
+
+// Use .append() instead:
+g.append(myPath)
+```
+
 ## Limitations
 
-- **No nesting** — `layer().apply` blocks cannot be nested inside each other
+- **No nesting apply blocks** — `layer().apply` blocks cannot be nested inside each other
 - **Layer order** — layers render in definition order (first defined = bottom)
-- **PathLayer transforms only** — transforms are currently available on PathLayers via `ctx.transform`; TextLayer transform support can be added later
+- **GroupLayer nesting** — maximum depth of 10 levels
+- **PathLayer transforms only** — transforms are currently available on PathLayers and GroupLayers via `ctx.transform`; TextLayer transform support can be added later

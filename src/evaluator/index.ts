@@ -433,7 +433,16 @@ export interface FragmentLayerState {
   visualContent: string;
 }
 
-export type LayerState = PathLayerState | TextLayerState | FragmentLayerState;
+export interface GroupLayerState {
+  name: string;
+  layerType: 'GroupLayer';
+  isDefault: false;
+  styles: LayerStyle;
+  transformState: TransformState;
+  children: string[];  // Child layer names, in append order
+}
+
+export type LayerState = PathLayerState | TextLayerState | FragmentLayerState | GroupLayerState;
 
 export interface LayerReference {
   type: 'LayerReference';
@@ -455,11 +464,12 @@ export interface TransformPropertyReference {
 
 export interface LayerOutput {
   name: string;
-  type: 'path' | 'text' | 'fragment';
-  data: string;                    // Path: d-attribute. Text: concatenated plain text. Fragment: empty.
+  type: 'path' | 'text' | 'fragment' | 'group';
+  data: string;                    // Path: d-attribute. Text: concatenated plain text. Fragment/Group: empty.
   textElements?: TextElement[];    // Only present when type === 'text'
   fragmentDefs?: string;           // Only present when type === 'fragment'
   fragmentVisuals?: string;        // Only present when type === 'fragment'
+  children?: LayerOutput[];        // Only present when type === 'group'
   styles: Record<string, string>;  // SVG attribute name → value
   isDefault: boolean;
   transform?: string;              // SVG transform attribute value
@@ -1128,6 +1138,15 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
       styles,
       textElements: [],
     };
+  } else if (expr.layerType === 'GroupLayer') {
+    layerState = {
+      name: nameValue,
+      layerType: 'GroupLayer',
+      isDefault: false as const,
+      styles,
+      transformState: createTransformState(),
+      children: [],
+    };
   } else {
     layerState = {
       name: nameValue,
@@ -1335,6 +1354,108 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
 
     throw mError(`Unknown transform.${propRef.property} method: ${expr.method}`);
+  }
+
+  // LayerReference methods: .append() for GroupLayer
+  if (isLayerReference(obj)) {
+    if (expr.method === 'append') {
+      if (obj.layer.layerType !== 'GroupLayer') {
+        throw mError(`.append() is only available on GroupLayer references`);
+      }
+      if (expr.args.length === 0) {
+        throw mError('.append() requires at least 1 argument');
+      }
+      const groupLayer = obj.layer as GroupLayerState;
+      if (!scope.evalState) throw mError('.append() requires evaluation context');
+
+      for (const arg of expr.args) {
+        const childValue = evaluateExpression(arg, scope);
+        if (!isLayerReference(childValue)) {
+          throw mError('.append() arguments must be layer references');
+        }
+        const childName = childValue.layer.name;
+
+        // Self-reference check
+        if (childName === groupLayer.name) {
+          throw mError(`Cannot append group '${childName}' to itself`);
+        }
+
+        // Already a child of this group — no-op
+        if (groupLayer.children.includes(childName)) {
+          continue;
+        }
+
+        // Circular reference check for nested groups
+        if (childValue.layer.layerType === 'GroupLayer') {
+          const childGroup = childValue.layer as GroupLayerState;
+          const checkCircular = (g: GroupLayerState, depth: number): void => {
+            if (depth > 10) throw mError('GroupLayer nesting exceeds maximum depth of 10');
+            for (const cn of g.children) {
+              if (cn === groupLayer.name) {
+                throw mError(`Circular reference: appending '${childName}' to '${groupLayer.name}' would create a cycle`);
+              }
+              const childLayer = scope.evalState!.layers.get(cn);
+              if (childLayer?.layerType === 'GroupLayer') {
+                checkCircular(childLayer as GroupLayerState, depth + 1);
+              }
+            }
+          };
+          checkCircular(childGroup, 1);
+        }
+
+        // Check nesting depth after append
+        const getDepth = (name: string): number => {
+          const l = scope.evalState!.layers.get(name);
+          if (l?.layerType !== 'GroupLayer') return 0;
+          const g = l as GroupLayerState;
+          if (g.children.length === 0) return 0;
+          return 1 + Math.max(...g.children.map(c => getDepth(c)));
+        };
+        const parentDepth = ((): number => {
+          // Walk up from groupLayer to find how deep it is nested
+          const findParentDepth = (targetName: string): number => {
+            for (const [, layer] of scope.evalState!.layers) {
+              if (layer.layerType === 'GroupLayer') {
+                const g = layer as GroupLayerState;
+                if (g.children.includes(targetName)) {
+                  return 1 + findParentDepth(g.name);
+                }
+              }
+            }
+            return 0;
+          };
+          return findParentDepth(groupLayer.name);
+        })();
+        const childDepth = getDepth(childName);
+        if (parentDepth + 1 + childDepth + 1 > 10) {
+          throw mError('GroupLayer nesting exceeds maximum depth of 10');
+        }
+
+        // If child is in another group, move it (remove from old group, log warning)
+        for (const [, layer] of scope.evalState.layers) {
+          if (layer.layerType === 'GroupLayer' && layer !== groupLayer) {
+            const otherGroup = layer as GroupLayerState;
+            const idx = otherGroup.children.indexOf(childName);
+            if (idx !== -1) {
+              otherGroup.children.splice(idx, 1);
+              scope.evalState.logs.push({
+                line: null,
+                parts: [{ type: 'string', value: `Layer '${childName}' was moved from group '${otherGroup.name}' to group '${groupLayer.name}'` }],
+              });
+            }
+          }
+        }
+
+        groupLayer.children.push(childName);
+        // Remove from top-level layer order (children aren't rendered at top level)
+        const orderIdx = scope.evalState.layerOrder.indexOf(childName);
+        if (orderIdx !== -1) {
+          scope.evalState.layerOrder.splice(orderIdx, 1);
+        }
+      }
+      return 0;
+    }
+    throw mError(`Unknown method '${expr.method}' on layer reference`);
   }
 
   // PathBlockValue methods: draw(), project()
@@ -2814,8 +2935,12 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   if (isLayerReference(obj)) {
     const layerRef = obj;
     if (expr.property === 'ctx') {
+      if (layerRef.layer.layerType === 'GroupLayer') {
+        const groupLayer = layerRef.layer as GroupLayerState;
+        return { type: 'ContextObject' as const, value: { _transformState: groupLayer.transformState } };
+      }
       if (layerRef.layer.layerType !== 'PathLayer') {
-        throw new Error(`Property 'ctx' is only available on PathLayer references`);
+        throw new Error(`Property 'ctx' is only available on PathLayer and GroupLayer references`);
       }
       const pathLayer = layerRef.layer as PathLayerState;
       return { type: 'ContextObject' as const, value: contextToObject(pathLayer.pathContext, pathLayer.transformState) };
@@ -4309,6 +4434,22 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         throw new Error(formatError('Layer style must be a style block', getLine(stmt)));
       }
       const styles: LayerStyle = { ...styleValue.properties };
+      if (stmt.layerType === 'GroupLayer') {
+        if (stmt.isDefault) {
+          throw new Error(formatError('GroupLayer cannot be the default layer', getLine(stmt)));
+        }
+        const layerState: GroupLayerState = {
+          name: nameValue,
+          layerType: 'GroupLayer',
+          isDefault: false as const,
+          styles,
+          transformState: createTransformState(),
+          children: [],
+        };
+        scope.evalState.layers.set(nameValue, layerState);
+        scope.evalState.layerOrder.push(nameValue);
+        return;
+      }
       if (stmt.layerType === 'TextLayer') {
         const layerState: TextLayerState = {
           name: nameValue,
@@ -4366,6 +4507,9 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       }
       if (scope.evalState.activeLayerName !== null) {
         throw new Error(formatError(`Cannot nest layer apply blocks. Already inside layer '${scope.evalState.activeLayerName}'`, getLine(stmt)));
+      }
+      if (layer.layerType === 'GroupLayer') {
+        throw new Error(formatError('GroupLayer does not support apply blocks. Use .append() to add children', getLine(stmt)));
       }
       if (layer.layerType === 'TextLayer') {
         // TextLayer apply: set activeLayerName so TextStatements write here
@@ -4684,12 +4828,69 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
         transform,
       });
     }
-    // Add defined layers in definition order
-    for (const name of evalState.layerOrder) {
-      const layer = evalState.layers.get(name)!;
+    // Extract transform convenience properties from a styles dict, returning
+    // a transform string (or undefined) and mutating the dict to remove consumed keys.
+    // Convenience properties: translate-x, translate-y, translate, scale-x, scale-y, scale, rotate
+    const TRANSFORM_CONVENIENCE_KEYS = new Set([
+      'translate-x', 'translate-y', 'translate',
+      'scale-x', 'scale-y', 'scale',
+      'rotate',
+    ]);
+
+    function extractConvenienceTransform(styles: Record<string, string>): string | undefined {
+      const hasConvenience = Object.keys(styles).some(k => TRANSFORM_CONVENIENCE_KEYS.has(k));
+      if (!hasConvenience) return undefined;
+
+      const parts: string[] = [];
+
+      // Translate
+      let tx: string | undefined;
+      let ty: string | undefined;
+      if (styles['translate']) {
+        const vals = styles['translate'].split(/\s*,\s*/);
+        tx = vals[0];
+        ty = vals.length > 1 ? vals[1] : '0';
+        delete styles['translate'];
+      }
+      if (styles['translate-x']) { tx = styles['translate-x']; delete styles['translate-x']; }
+      if (styles['translate-y']) { ty = styles['translate-y']; delete styles['translate-y']; }
+      if (tx != null || ty != null) {
+        parts.push(`translate(${tx ?? '0'}, ${ty ?? '0'})`);
+      }
+
+      // Rotate
+      if (styles['rotate']) {
+        const angleRad = parseFloat(styles['rotate']);
+        if (!isNaN(angleRad)) {
+          const angleDeg = angleRad * 180 / Math.PI;
+          parts.push(`rotate(${angleDeg})`);
+        }
+        delete styles['rotate'];
+      }
+
+      // Scale
+      let sx: string | undefined;
+      let sy: string | undefined;
+      if (styles['scale']) {
+        const vals = styles['scale'].split(/\s*,\s*/);
+        sx = vals[0];
+        sy = vals.length > 1 ? vals[1] : vals[0];
+        delete styles['scale'];
+      }
+      if (styles['scale-x']) { sx = styles['scale-x']; delete styles['scale-x']; }
+      if (styles['scale-y']) { sy = styles['scale-y']; delete styles['scale-y']; }
+      if (sx != null || sy != null) {
+        parts.push(`scale(${sx ?? '1'}, ${sy ?? '1'})`);
+      }
+
+      return parts.length > 0 ? parts.join(' ') : undefined;
+    }
+
+    // Helper to build a single layer's output (used for top-level and group children)
+    function buildLayerOutput(layer: LayerState): LayerOutput {
       if (layer.layerType === 'FragmentLayer') {
         const fragmentLayer = layer as FragmentLayerState;
-        layers.push({
+        return {
           name: layer.name,
           type: 'fragment',
           data: '',
@@ -4697,32 +4898,86 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
           fragmentVisuals: fragmentLayer.visualContent,
           styles: { ...layer.styles },
           isDefault: false,
-        });
+        };
       } else if (layer.layerType === 'TextLayer') {
         const textLayer = layer as TextLayerState;
+        const textStyles = { ...layer.styles };
+        const convenienceTransform = extractConvenienceTransform(textStyles);
+        let transform: string | undefined;
+        if (textStyles['transform']) {
+          transform = textStyles['transform'];
+          delete textStyles['transform'];
+        } else if (convenienceTransform) {
+          transform = convenienceTransform;
+        }
         const allText = textLayer.textElements
           .map(te => te.children.map(c => c.text).join(''))
           .join(' ');
-        layers.push({
+        return {
           name: layer.name,
           type: 'text',
           data: allText,
           textElements: textLayer.textElements,
-          styles: { ...layer.styles },
+          styles: textStyles,
           isDefault: layer.isDefault,
+          transform,
+        };
+      } else if (layer.layerType === 'GroupLayer') {
+        const groupLayer = layer as GroupLayerState;
+        const groupStyles = { ...groupLayer.styles };
+        // Convenience transform properties → transform string
+        const convenienceTransform = extractConvenienceTransform(groupStyles);
+        // Explicit transform property takes highest precedence, then convenience, then imperative
+        let transform: string | undefined;
+        if (groupStyles['transform']) {
+          transform = groupStyles['transform'];
+          delete groupStyles['transform'];
+        } else if (convenienceTransform) {
+          transform = convenienceTransform;
+        } else {
+          transform = transformStateToSvg(groupLayer.transformState) ?? undefined;
+        }
+        const children = groupLayer.children.map(childName => {
+          const childLayer = evalState.layers.get(childName)!;
+          return buildLayerOutput(childLayer);
         });
+        return {
+          name: layer.name,
+          type: 'group',
+          data: '',
+          children,
+          styles: groupStyles,
+          isDefault: false,
+          transform,
+        };
       } else {
         const pathLayer = layer as PathLayerState;
-        const transform = transformStateToSvg(pathLayer.transformState) ?? undefined;
-        layers.push({
+        const pathStyles = { ...layer.styles };
+        const convenienceTransform = extractConvenienceTransform(pathStyles);
+        let transform: string | undefined;
+        if (pathStyles['transform']) {
+          transform = pathStyles['transform'];
+          delete pathStyles['transform'];
+        } else if (convenienceTransform) {
+          transform = convenienceTransform;
+        } else {
+          transform = transformStateToSvg(pathLayer.transformState) ?? undefined;
+        }
+        return {
           name: layer.name,
           type: 'path',
           data: pathLayer.accum.join(' '),
-          styles: { ...layer.styles },
+          styles: pathStyles,
           isDefault: layer.isDefault,
           transform,
-        });
+        };
       }
+    }
+
+    // Add defined layers in definition order
+    for (const name of evalState.layerOrder) {
+      const layer = evalState.layers.get(name)!;
+      layers.push(buildLayerOutput(layer));
     }
   }
 

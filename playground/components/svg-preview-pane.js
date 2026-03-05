@@ -315,7 +315,9 @@ export class SvgPreviewPane extends HTMLElement {
       }
 
       const SVG_NS = 'http://www.w3.org/2000/svg';
-      for (const layer of layers) {
+
+      // Render a single layer to a DOM element, recursing for groups
+      const renderLayerToDOM = (layer, parent) => {
         // Fragment layers: inject defs and append visual content
         if (layer.type === 'fragment') {
           if (layer.fragmentDefs && defsEl) {
@@ -343,10 +345,30 @@ export class SvgPreviewPane extends HTMLElement {
             for (const child of Array.from(visualRoot.children)) {
               wrapper.appendChild(document.importNode(child, true));
             }
-            layersGroup.appendChild(wrapper);
+            parent.appendChild(wrapper);
           }
-          continue;
+          return;
         }
+
+        // Group layers: create <g> and recurse for children
+        if (layer.type === 'group') {
+          const g = document.createElementNS(SVG_NS, 'g');
+          g.dataset.layerName = layer.name;
+          for (const [key, value] of Object.entries(layer.styles)) {
+            g.setAttribute(key, value);
+          }
+          if (layer.transform) {
+            g.setAttribute('transform', layer.transform);
+          }
+          if (layer.children) {
+            for (const child of layer.children) {
+              renderLayerToDOM(child, g);
+            }
+          }
+          parent.appendChild(g);
+          return;
+        }
+
         if (layer.type === 'text' && layer.textElements) {
           for (const te of layer.textElements) {
             const textEl = document.createElementNS(SVG_NS, 'text');
@@ -384,10 +406,12 @@ export class SvgPreviewPane extends HTMLElement {
                 textEl.appendChild(tspan);
               }
             }
-            layersGroup.appendChild(textEl);
+            parent.appendChild(textEl);
           }
-          continue;
+          return;
         }
+
+        // Default: path layer
         const path = document.createElementNS(SVG_NS, 'path');
         path.dataset.layerName = layer.name;
         path.setAttribute('d', layer.data || '');
@@ -413,7 +437,11 @@ export class SvgPreviewPane extends HTMLElement {
             path.setAttribute(key, value);
           }
         }
-        layersGroup.appendChild(path);
+        parent.appendChild(path);
+      };
+
+      for (const layer of layers) {
+        renderLayerToDOM(layer, layersGroup);
       }
 
       // Hide the single preview-path when using layers group

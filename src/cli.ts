@@ -65,7 +65,18 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
   const defaultFill = options.fill || 'none';
   const defaultStrokeWidth = options.strokeWidth || '2';
 
-  const elements = result.layers.map((layer) => {
+  function renderLayerElement(layer: typeof result.layers[0], indent: string): string {
+    if (layer.type === 'group') {
+      const attrs = Object.entries(layer.styles)
+        .map(([k, v]) => `${k}="${escapeXml(String(v))}"`);
+      if (layer.transform) attrs.push(`transform="${escapeXml(layer.transform)}"`);
+      const attrStr = attrs.length ? ' ' + attrs.join(' ') : '';
+      const children = (layer.children || []).map(c => renderLayerElement(c, indent + '  ')).join('\n');
+      if (children) {
+        return `${indent}<g${attrStr}>\n${children}\n${indent}</g>`;
+      }
+      return `${indent}<g${attrStr}/>`;
+    }
     if (layer.type === 'text' && layer.textElements) {
       return layer.textElements.map(te => {
         const attrs = Object.entries(layer.styles)
@@ -81,7 +92,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
           ].filter(Boolean).join(' ');
           return `<tspan${spAttrs ? ' ' + spAttrs : ''}>${escapeXml(child.text)}</tspan>`;
         }).join('');
-        return `  <text x="${te.x}" y="${te.y}"${transform}${attrs ? ' ' + attrs : ''}>${content}</text>`;
+        return `${indent}<text x="${te.x}" y="${te.y}"${transform}${attrs ? ' ' + attrs : ''}>${content}</text>`;
       }).join('\n');
     }
     const stroke = layer.styles['stroke'] || defaultStroke;
@@ -94,8 +105,10 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
       .join(' ');
     const extra = extraAttrs ? ' ' + extraAttrs : '';
     const transformAttr = layer.transform ? ` transform="${escapeXml(layer.transform)}"` : '';
-    return `  <path d="${escapeXml(layer.data)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}/>`;
-  }).join('\n');
+    return `${indent}<path d="${escapeXml(layer.data)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}/>`;
+  }
+
+  const elements = result.layers.map((layer) => renderLayerElement(layer, '  ')).join('\n');
 
   // Build defs section for masks and clip-paths
   const defsContent: string[] = [];
