@@ -131,6 +131,16 @@ async function build(): Promise<void> {
     console.warn('  Static blog pages not found (run build:blog first)');
   }
 
+  // Copy blog sample SVGs (referenced by mini-workspace components)
+  try {
+    const blogSamplesDir = join(ROOT, 'website', 'blog', 'samples');
+    await fs.access(blogSamplesDir);
+    console.log('Copying blog samples...');
+    await copyDir(blogSamplesDir, join(playgroundDest, 'blog', 'samples'));
+  } catch {
+    // No samples directory, that's fine
+  }
+
   // Generate robots.txt
   console.log('Generating robots.txt...');
   const robotsTxt = `User-agent: *

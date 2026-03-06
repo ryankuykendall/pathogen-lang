@@ -20,6 +20,7 @@ hljs.registerLanguage('json', json);
 hljs.registerLanguage('html', xml);
 hljs.registerLanguage('xml', xml);
 hljs.registerLanguage('toml', bash); // Close enough for toml highlighting
+hljs.registerLanguage('pathogen', javascript); // Pathogen shares enough syntax with JS
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -100,6 +101,84 @@ interface BlogEntry {
   description: string;
 }
 
+/**
+ * Process <mini-workspace src="..."> tags in HTML.
+ * Reads the .pathogen source + .svg file, generates progressive-enhancement HTML.
+ */
+async function processMiniWorkspaceTags(html: string, blogDir: string): Promise<string> {
+  // Match <mini-workspace src="..."> with optional attributes
+  const tagRegex = /<mini-workspace\s+([^>]*?)src="([^"]+)"([^>]*?)(?:\/>|><\/mini-workspace>|>[\s\S]*?<\/mini-workspace>)/g;
+
+  const replacements: { match: string; replacement: string }[] = [];
+
+  let m: RegExpExecArray | null;
+  while ((m = tagRegex.exec(html)) !== null) {
+    const [fullMatch, preAttrs, srcPath, postAttrs] = m;
+    const allAttrs = (preAttrs + ' ' + postAttrs).trim();
+
+    // Parse attributes
+    const hasCodeOpen = /\bcode-open\b/.test(allAttrs);
+    const captionMatch = allAttrs.match(/caption="([^"]*)"/);
+    const caption = captionMatch ? captionMatch[1] : '';
+
+    // Resolve source file
+    const sourceFile = join(blogDir, srcPath);
+    let sourceCode = '';
+    try {
+      sourceCode = await fs.readFile(sourceFile, 'utf-8');
+    } catch {
+      console.warn(`  ⚠ mini-workspace: source not found: ${srcPath}`);
+      continue;
+    }
+
+    // Read corresponding SVG file (same basename, .svg extension)
+    const svgPath = sourceFile.replace(/\.[^.]+$/, '.svg');
+    let svgFilename = srcPath.replace(/\.[^.]+$/, '.svg');
+    let hasSvg = false;
+    try {
+      await fs.access(svgPath);
+      hasSvg = true;
+    } catch {
+      // No SVG file available
+    }
+
+    // Base64-encode source for code-data attribute
+    const codeData = Buffer.from(encodeURIComponent(sourceCode)).toString('base64');
+
+    // Syntax-highlight source for static fallback
+    let highlightedCode: string;
+    if (hljs.getLanguage('pathogen')) {
+      highlightedCode = hljs.highlight(sourceCode, { language: 'pathogen', ignoreIllegals: true }).value;
+    } else {
+      highlightedCode = hljs.highlightAuto(sourceCode).value;
+    }
+
+    // Build replacement HTML
+    const attrs = [
+      `code-data="${codeData}"`,
+      hasCodeOpen ? 'code-open' : '',
+      caption ? `caption="${caption}"` : '',
+    ].filter(Boolean).join(' ');
+
+    const svgFallback = hasSvg
+      ? `\n  <img src="/pathogen/blog/${svgFilename}" alt="${caption || 'SVG preview'}" loading="lazy">`
+      : '';
+
+    const replacement = `<mini-workspace ${attrs}>
+  <code class="hljs language-pathogen">${highlightedCode}</code>${svgFallback}
+</mini-workspace>`;
+
+    replacements.push({ match: fullMatch, replacement });
+  }
+
+  // Apply replacements
+  for (const { match, replacement } of replacements) {
+    html = html.replace(match, replacement);
+  }
+
+  return html;
+}
+
 async function buildBlog(): Promise<void> {
   console.log('Building blog...\n');
 
@@ -147,7 +226,10 @@ export const posts = {};
       continue;
     }
 
-    const html = marked.parse(content) as string;
+    let html = marked.parse(content) as string;
+
+    // Process <mini-workspace src="..."> tags
+    html = await processMiniWorkspaceTags(html, BLOG_DIR);
 
     blogIndex.push({
       slug: frontmatter.slug,
@@ -398,6 +480,8 @@ export const posts = {
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>`;
   }

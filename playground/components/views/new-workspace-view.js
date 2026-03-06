@@ -230,16 +230,22 @@ class NewWorkspaceView extends HTMLElement {
     this._copyFromId = null;
     this._loadingSource = false;
     this._sourceWorkspace = null;
+
+    // State mode (from mini-workspace "Open in Playground" links)
+    this._stateCode = null;
   }
 
   connectedCallback() {
     this.loadPreferences();
 
-    // Check for copy mode
+    // Check for copy mode or state mode
     const query = store.get('routeQuery') || {};
     if (query.copyFrom) {
       this._copyFromId = query.copyFrom;
       this.loadSourceWorkspace(query.copyFrom);
+    } else if (query.state) {
+      this._applyStateParam(query.state);
+      this.render();
     } else {
       this.render();
     }
@@ -263,7 +269,13 @@ class NewWorkspaceView extends HTMLElement {
             this.loadPreferences();
             this.resetForm();
           }
+        } else if (newQuery.state) {
+          this._stateCode = null;
+          this.loadPreferences();
+          this._applyStateParam(newQuery.state);
+          this.render();
         } else if (!newCopyFromId) {
+          this._stateCode = null;
           this.loadPreferences();
           this.resetForm();
         }
@@ -281,6 +293,18 @@ class NewWorkspaceView extends HTMLElement {
     const prefs = store.get('preferences') || {};
     this.formData.width = prefs.width || 200;
     this.formData.height = prefs.height || 200;
+  }
+
+  _applyStateParam(encoded) {
+    try {
+      const json = decodeURIComponent(atob(encoded));
+      const state = JSON.parse(json);
+      if (state.code) this._stateCode = state.code;
+      if (state.w) this.formData.width = state.w;
+      if (state.h) this.formData.height = state.h;
+    } catch {
+      // Invalid state param, ignore
+    }
   }
 
   async loadSourceWorkspace(id) {
@@ -331,6 +355,7 @@ class NewWorkspaceView extends HTMLElement {
     };
     this.errors = {};
     this._sourceWorkspace = null;
+    this._stateCode = null;
     this.render();
   }
 
@@ -371,9 +396,11 @@ class NewWorkspaceView extends HTMLElement {
     this.render();
 
     try {
-      // Get code: from source workspace if copying, otherwise from template
+      // Get code: from state param, source workspace, or template
       let code;
-      if (this._sourceWorkspace) {
+      if (this._stateCode) {
+        code = this._stateCode;
+      } else if (this._sourceWorkspace) {
         code = this._sourceWorkspace.code || '';
       } else {
         code = this.formData.template
@@ -485,6 +512,7 @@ class NewWorkspaceView extends HTMLElement {
 
   render() {
     const isCopyMode = !!this._copyFromId;
+    const isStateMode = !!this._stateCode;
     const isLoading = this._loadingSource;
 
     // Show loading state while fetching source workspace
@@ -510,7 +538,9 @@ class NewWorkspaceView extends HTMLElement {
     const title = isCopyMode ? 'Copy Workspace' : 'New Workspace';
     const subtitle = isCopyMode && this._sourceWorkspace
       ? `Creating a copy of "${this.escapeHtml(this._sourceWorkspace.name)}"`
-      : 'Create a new workspace to start building SVG paths';
+      : isStateMode
+        ? 'Create a workspace from imported code'
+        : 'Create a new workspace to start building SVG paths';
     const submitText = this._isSubmitting
       ? (isCopyMode ? 'Creating Copy...' : 'Creating...')
       : (isCopyMode ? 'Create Copy' : 'Create Workspace');
@@ -587,7 +617,7 @@ class NewWorkspaceView extends HTMLElement {
             </div>
           </div>
 
-          ${!isCopyMode ? `
+          ${!isCopyMode && !isStateMode ? `
           <div class="form-section">
             <h2>Starting Template</h2>
 

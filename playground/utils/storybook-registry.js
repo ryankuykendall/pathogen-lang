@@ -998,6 +998,59 @@ layer('hex').apply { circle(60, 100, 40) }` }
       `;
     }
   },
+  // === Blog ===
+  {
+    id: 'mini-workspace',
+    name: 'Mini Workspace',
+    category: 'Blog',
+    description: 'Display-only code+preview embed for blog posts with pannable/zoomable SVG',
+    stories: [
+      {
+        name: 'Default (code closed)',
+        props: { codeOpen: false }
+      },
+      {
+        name: 'Code Open',
+        props: { codeOpen: true }
+      },
+      {
+        name: 'With Caption',
+        props: { codeOpen: false, caption: 'A simple circle drawn with Pathogen' }
+      }
+    ],
+    controls: [
+      { name: 'codeOpen', type: 'toggle', label: 'Code Open', default: false }
+    ],
+    render: (container, props, controls) => {
+      const sampleCode = `let r = 50;
+let cx = 100;
+let cy = 100;
+
+circle(cx, cy, r)`;
+      const sampleSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <rect width="200" height="200" fill="#ffffff"/>
+  <circle cx="100" cy="100" r="50" stroke="#000000" stroke-width="2" fill="none"/>
+</svg>`;
+
+      const el = document.createElement('mini-workspace');
+      const codeData = btoa(encodeURIComponent(sampleCode));
+      el.setAttribute('code-data', codeData);
+      if (props.codeOpen) el.setAttribute('code-open', '');
+      if (props.caption) el.setAttribute('caption', props.caption);
+      el.innerHTML = sampleSvg;
+      el.style.maxWidth = '700px';
+
+      container.appendChild(el);
+
+      controls.on('codeOpen', (value) => {
+        if (value) {
+          el.setAttribute('code-open', '');
+        } else {
+          el.removeAttribute('code-open');
+        }
+      });
+    }
+  },
   {
     id: 'ui-cards',
     name: 'Cards',
