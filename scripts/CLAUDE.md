@@ -36,6 +36,9 @@ program.parse();
 | `rotate-admin-token.ts` | Generate and deploy a new admin token via Wrangler |
 | `kill-port.ts` | Kill processes on a port (default 3000); used by `kill:wrangler` |
 | `install-git-hooks.ts` | Install git hooks from `scripts/git-hooks/` |
+| `compile-bbwp.ts` | Compile `.pathogen` → SVG → HTML artifact in `website/bbwp/` |
+| `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
+| `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
 
 ## Git Hooks
 

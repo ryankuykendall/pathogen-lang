@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BBWP — Bare-Bones Web Page</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; padding: 1rem; background: #1e1e2e; color: #cdd6f4; }
+    .manual-ui { display: none; }
+    body:not(.puppeteer) .manual-ui { display: block; }
+    h1 { font-size: 1.2rem; margin-bottom: 1rem; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: end; }
+    label { font-size: 0.8rem; display: block; margin-bottom: 0.2rem; color: #a6adc8; }
+    input { padding: 0.4rem; border: 1px solid #45475a; border-radius: 4px; background: #313244; color: #cdd6f4; font-size: 0.85rem; }
+    textarea { width: 100%; height: 200px; padding: 0.5rem; border: 1px solid #45475a; border-radius: 4px; background: #313244; color: #cdd6f4; font-family: 'SF Mono', Monaco, monospace; font-size: 0.85rem; resize: vertical; tab-size: 2; margin-bottom: 0.5rem; }
+    button { padding: 0.5rem 1.2rem; background: #89b4fa; color: #1e1e2e; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #74c7ec; }
+    .output { margin-top: 1rem; }
+    .output-svg { border: 1px solid #45475a; border-radius: 4px; background: #fff; padding: 0.5rem; margin-bottom: 0.5rem; }
+    .output-string { white-space: pre-wrap; word-break: break-all; background: #313244; padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.75rem; max-height: 300px; overflow: auto; }
+    .error { color: #f38ba8; margin-top: 0.5rem; }
+    .status { color: #a6e3a1; font-size: 0.8rem; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <script src="../dist/index.global.js"></script>
+  <script type="module">
+    import * as gradientService from './gpu/gradient-service.js';
+    import { buildSvg } from './utils/svg-builder.js';
+
+    // ─── Core render function (shared by Puppeteer and manual UI) ───
+
+    async function renderToSvg(compileResult, svgOptions, scale) {
+      await gradientService.init();
+
+      const gradients = compileResult.gradients || [];
+      const w = parseInt(svgOptions.width, 10) || 200;
+      const h = parseInt(svgOptions.height, 10) || 200;
+      const s = scale || 2;
+
+      // Render all GPU gradient types in parallel
+      const [conicUrls, freeformUrls, meshUrls, topoUrls] = await Promise.all([
+        gradientService.renderConicGradients(gradients, w, h, s),
+        gradientService.renderFreeformGradients(gradients, w, h, s),
+        gradientService.renderMeshGradients(gradients, w, h, s),
+        gradientService.renderTopoGradients(gradients, w, h, s),
+      ]);
+
+      // Merge all GPU URLs into one map
+      const gpuGradientUrls = new Map([
+        ...conicUrls,
+        ...freeformUrls,
+        ...meshUrls,
+        ...topoUrls,
+      ]);
+
+      return buildSvg({
+        layers: compileResult.layers,
+        masks: compileResult.masks || [],
+        clipPaths: compileResult.clipPaths || [],
+        gradients: compileResult.gradients || [],
+        patterns: compileResult.patterns || [],
+        cssProperties: compileResult.cssProperties || [],
+        gpuGradientUrls,
+      }, svgOptions);
+    }
+
+    // ─── Puppeteer API ───
+
+    if (window.__PUPPETEER__) {
+      document.body.classList.add('puppeteer');
+      window.__renderToSvg = async function(compileResult, svgOptions) {
+        const scale = svgOptions._scale || 2;
+        return renderToSvg(compileResult, svgOptions, scale);
+      };
+      // Signal ready
+      window.__BBWP_READY__ = true;
+    }
+
+    // ─── Manual UI ───
+
+    if (!window.__PUPPETEER__) {
+      document.body.innerHTML += `
+        <div class="manual-ui">
+          <h1>BBWP — GPU Gradient Renderer</h1>
+          <textarea id="source" placeholder="Paste .pathogen source code here...">// Example: conic gradient
+let g = ConicGradient('cg', 100, 100);
+g.stop(0, 'red');
+g.stop(0.5, 'blue');
+g.stop(1, 'green');
+
+define PathLayer('p') \${ fill: url(#cg); }
+layer('p').apply {
+  rect(0, 0, 200, 200)
+}</textarea>
+          <div class="controls">
+            <div><label>Width</label><input id="width" value="200"></div>
+            <div><label>Height</label><input id="height" value="200"></div>
+            <div><label>ViewBox</label><input id="viewBox" value="0 0 200 200"></div>
+            <div><button id="renderBtn">Render</button></div>
+          </div>
+          <div id="status" class="status"></div>
+          <div id="error" class="error"></div>
+          <div id="output" class="output" style="display:none">
+            <div id="svgPreview" class="output-svg"></div>
+            <div id="svgString" class="output-string"></div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('renderBtn').addEventListener('click', async () => {
+        const source = document.getElementById('source').value;
+        const statusEl = document.getElementById('status');
+        const errorEl = document.getElementById('error');
+        const outputEl = document.getElementById('output');
+        const previewEl = document.getElementById('svgPreview');
+        const stringEl = document.getElementById('svgString');
+
+        errorEl.textContent = '';
+        statusEl.textContent = 'Compiling...';
+        outputEl.style.display = 'none';
+
+        try {
+          if (!window.SvgPathExtended) {
+            throw new Error('Library not loaded. Run npm run build first.');
+          }
+          const result = window.SvgPathExtended.compile(source);
+
+          const svgOptions = {
+            width: document.getElementById('width').value,
+            height: document.getElementById('height').value,
+            viewBox: document.getElementById('viewBox').value,
+          };
+
+          statusEl.textContent = 'Rendering GPU gradients...';
+          const svgStr = await renderToSvg(result, svgOptions, 2);
+
+          previewEl.innerHTML = svgStr;
+          stringEl.textContent = svgStr;
+          outputEl.style.display = 'block';
+          statusEl.textContent = `Done (${svgStr.length} chars)`;
+        } catch (err) {
+          errorEl.textContent = err.message;
+          statusEl.textContent = '';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

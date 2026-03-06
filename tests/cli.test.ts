@@ -509,4 +509,82 @@ describe('CLI', () => {
       expect(content).toContain('fill="#e63946"');
     });
   });
+
+  describe('--render-gpu and --scale options', () => {
+    it('--render-gpu appears in help text', () => {
+      const result = runCli(['-h']);
+      expect(result.stdout).toContain('--render-gpu');
+    });
+
+    it('--scale appears in help text', () => {
+      const result = runCli(['-h']);
+      expect(result.stdout).toContain('--scale=');
+    });
+
+    it('rejects --scale=0', () => {
+      const result = runCli(['-e', 'M 0 0', '--scale=0']);
+      expect(result.stderr).toContain('--scale must be an integer between 1 and 4');
+      expect(result.status).toBe(1);
+    });
+
+    it('rejects --scale=5', () => {
+      const result = runCli(['-e', 'M 0 0', '--scale=5']);
+      expect(result.stderr).toContain('--scale must be an integer between 1 and 4');
+      expect(result.status).toBe(1);
+    });
+
+    it('rejects --scale=abc', () => {
+      const result = runCli(['-e', 'M 0 0', '--scale=abc']);
+      expect(result.stderr).toContain('--scale must be an integer between 1 and 4');
+      expect(result.status).toBe(1);
+    });
+
+    it('without --render-gpu, existing conic wedge-path output is unchanged', () => {
+      const outputSvg = join(TMP_DIR, 'conic-no-gpu.svg');
+      if (existsSync(outputSvg)) unlinkSync(outputSvg);
+
+      const inputFile = join(TMP_DIR, 'conic-test.svgx');
+      writeFileSync(inputFile, `
+        let g = ConicGradient('cg', 100, 100);
+        g.stop(0, Color('red'));
+        g.stop(1, Color('blue'));
+        define PathLayer('p') \${ fill: url(#cg); }
+        layer('p').apply { rect(0, 0, 200, 200) }
+      `);
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+      expect(existsSync(outputSvg)).toBe(true);
+      const content = readFileSync(outputSvg, 'utf-8');
+      // Wedge-path output uses <pattern> with <path> children (not <image>)
+      expect(content).toContain('<pattern');
+      expect(content).toContain('patternUnits="userSpaceOnUse"');
+      // Should NOT have data URL images (that's GPU mode)
+      expect(content).not.toContain('data:image/png;base64');
+
+      unlinkSync(inputFile);
+      unlinkSync(outputSvg);
+    });
+
+    it('linear-only source without --render-gpu produces native <linearGradient>', () => {
+      const outputSvg = join(TMP_DIR, 'linear-test.svg');
+      if (existsSync(outputSvg)) unlinkSync(outputSvg);
+
+      const inputFile = join(TMP_DIR, 'linear-test.svgx');
+      writeFileSync(inputFile, `
+        let g = LinearGradient('lg', 0, 0, 200, 200);
+        g.stop(0, Color('red'));
+        g.stop(1, Color('blue'));
+        define PathLayer('p') \${ fill: url(#lg); }
+        layer('p').apply { rect(0, 0, 200, 200) }
+      `);
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+      expect(existsSync(outputSvg)).toBe(true);
+      const content = readFileSync(outputSvg, 'utf-8');
+      expect(content).toContain('<linearGradient');
+      expect(content).toContain('stop-color="#ff0000"');
+      expect(content).toContain('stop-color="#0000ff"');
+
+      unlinkSync(inputFile);
+      unlinkSync(outputSvg);
+    });
+  });
 });

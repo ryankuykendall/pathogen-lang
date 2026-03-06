@@ -1,6 +1,10 @@
 import { compile, compileAnnotated } from './index';
 import type { CompileResult } from './index';
 import { readFileSync, writeFileSync } from 'fs';
+import { createServer } from 'http';
+import { join, extname } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { renderConicToWedges } from './conic-renderer';
 
 interface CliOptions {
@@ -13,6 +17,8 @@ interface CliOptions {
   strokeWidth?: string;
   annotated?: boolean;
   toFixed?: number;
+  renderGpu?: boolean;
+  scale?: number;
 }
 
 function printUsage() {
@@ -39,6 +45,8 @@ Options:
   --fill=<color>                 Path fill color (default: "none")
   --stroke-width=<w>             Path stroke width (default: "2")
   --to-fixed=<N>                 Round decimals to N digits (0-20)
+  --render-gpu                   Use headless browser for GPU gradient rendering
+  --scale=<N>                    GPU render resolution multiplier (1-4, default: 2)
 
 Examples:
   svg-path-extended input.svgx
@@ -324,6 +332,24 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
       continue;
     }
 
+    if (arg === '--render-gpu') {
+      options.renderGpu = true;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('--scale=')) {
+      const val = arg.split('=')[1];
+      const n = parseInt(val, 10);
+      if (isNaN(n) || n < 1 || n > 4) {
+        console.error('Error: --scale must be an integer between 1 and 4');
+        process.exit(1);
+      }
+      options.scale = n;
+      i++;
+      continue;
+    }
+
     if (arg.startsWith('--to-fixed=')) {
       const val = arg.split('=')[1];
       const n = parseInt(val, 10);
@@ -358,6 +384,111 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
   return { source, options, outputFile };
 }
 
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.wasm': 'application/wasm',
+};
+
+function startBBWPServer(projectRoot: string): Promise<{ server: ReturnType<typeof createServer>; port: number }> {
+  return new Promise((resolve, reject) => {
+    const server = createServer((req, res) => {
+      const url = new URL(req.url || '/', 'http://localhost');
+      let filePath = join(projectRoot, url.pathname);
+      if (filePath.endsWith('/')) filePath += 'index.html';
+
+      try {
+        const content = readFileSync(filePath);
+        const ext = extname(filePath);
+        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+        res.end(content);
+      } catch {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+      }
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (addr && typeof addr !== 'string') {
+        resolve({ server, port: addr.port });
+      } else {
+        reject(new Error('Failed to bind server'));
+      }
+    });
+
+    server.on('error', reject);
+  });
+}
+
+async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise<string> {
+  let puppeteer: typeof import('puppeteer');
+  try {
+    puppeteer = await import('puppeteer');
+  } catch {
+    throw new Error(
+      '--render-gpu requires puppeteer. Install it with: npm install --save-dev puppeteer'
+    );
+  }
+
+  const __cliDir = dirname(fileURLToPath(import.meta.url));
+  const projectRoot = join(__cliDir, '..');
+
+  const { server, port } = await startBBWPServer(projectRoot);
+  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--enable-unsafe-webgpu', '--no-sandbox'],
+    });
+
+    const page = await browser.newPage();
+
+    // Set the Puppeteer flag before navigating
+    await page.evaluateOnNewDocument(() => {
+      (window as any).__PUPPETEER__ = true;
+    });
+
+    await page.goto(`http://127.0.0.1:${port}/playground/bbwp.html`, {
+      waitUntil: 'networkidle0',
+    });
+
+    // Wait for BBWP to signal ready
+    await page.waitForFunction(() => (window as any).__BBWP_READY__ === true, { timeout: 10000 });
+
+    const svgOptions = {
+      viewBox: options.viewBox || '0 0 200 200',
+      width: options.width || '200',
+      height: options.height || '200',
+      background: '#f5f5f5',
+      defaultStroke: options.stroke || '#000',
+      defaultFill: options.fill || 'none',
+      defaultStrokeWidth: options.strokeWidth || '2',
+      _scale: options.scale || 2,
+    };
+
+    const svgString = await page.evaluate(
+      async (json: string, opts: any) => {
+        const compileResult = JSON.parse(json);
+        return (window as any).__renderToSvg(compileResult, opts);
+      },
+      JSON.stringify(result),
+      svgOptions,
+    );
+
+    return svgString as string;
+  } finally {
+    if (browser) await browser.close();
+    server.close();
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
 
@@ -389,10 +520,32 @@ function main() {
 
     // Output as SVG file
     if (options.svgOutput) {
+      if (options.renderGpu) {
+        renderGpuSvg(result, options).then(svg => {
+          writeFileSync(options.svgOutput!, svg);
+          console.log(`SVG written to: ${options.svgOutput} (GPU rendered)`);
+          console.log(`Path data: ${defaultPath}`);
+        }).catch(err => {
+          console.error(`Error: ${err.message}`);
+          process.exit(1);
+        });
+        return;
+      }
       const svg = generateSvg(result, options);
       writeFileSync(options.svgOutput, svg);
       console.log(`SVG written to: ${options.svgOutput}`);
       console.log(`Path data: ${defaultPath}`);
+      return;
+    }
+
+    // --render-gpu without --output-svg-file: output SVG to stdout
+    if (options.renderGpu) {
+      renderGpuSvg(result, options).then(svg => {
+        process.stdout.write(svg);
+      }).catch(err => {
+        console.error(`Error: ${err.message}`);
+        process.exit(1);
+      });
       return;
     }
 
