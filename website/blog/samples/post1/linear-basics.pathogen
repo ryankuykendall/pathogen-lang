@@ -1,0 +1,67 @@
+// viewBox="0 0 400 300"
+// Linear Gradient Basics — Layered Landscape
+// Demonstrates vertical, diagonal, and horizontal linear gradients
+
+// --- Gradients ---
+
+let sky_grad = LinearGradient('sky', 0, 0, 0, 1) {|g|
+  g.stop(0,    Color('#0d1b2a'));
+  g.stop(0.45, Color('#1b4965'));
+  g.stop(0.75, Color('#c56b5a'));
+  g.stop(0.9,  Color('#e8946b'));
+  g.stop(1,    Color('#f4a261'));
+};
+
+let mtn_grad = LinearGradient('mountains', 0, 0, 0.8, 1) {|g|
+  g.stop(0,   Color('#1a0e2e'));
+  g.stop(0.4, Color('#2d1b4e'));
+  g.stop(1,   Color('#5c6b8a'));
+};
+
+let ground_grad = LinearGradient('ground', 0, 0, 0, 1) {|g|
+  g.stop(0,   Color('#1e4d0f'));
+  g.stop(0.5, Color('#3a6b22'));
+  g.stop(1,   Color('#6b5a1e'));
+};
+
+let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
+  g.stop(0,    Color('#f4a261'));
+  g.stop(0.35, Color('#e8946b'));
+  g.stop(0.7,  Color('#c56b5a'));
+  g.stop(1,    Color('#0d1b2a'));
+};
+
+// --- Layers ---
+
+let sky = PathLayer('sky-fill') ${ fill: sky_grad; stroke: none; };
+sky.apply { rect(0, 0, 400, 300) }
+
+let sun = PathLayer('sun-streak') ${ fill: sun_grad; stroke: none; };
+sun.apply { rect(0, 155, 400, 30) }
+
+let far_mtns = PathLayer('far-mountains') ${ fill: mtn_grad; stroke: none; };
+far_mtns.apply {
+  M 0 220
+  L 40 175 L 90 200 L 140 155 L 200 130
+  L 260 160 L 310 140 L 360 165 L 400 150
+  L 400 300 L 0 300 Z
+}
+
+let near_mtns = PathLayer('near-mountains') ${ fill: mtn_grad; stroke: none; opacity: 0.7; };
+near_mtns.apply {
+  M 0 260
+  L 50 220 L 100 240 L 170 195 L 230 225
+  L 290 205 L 350 230 L 400 210
+  L 400 300 L 0 300 Z
+}
+
+let ground = PathLayer('ground-fill') ${ fill: ground_grad; stroke: none; };
+ground.apply { rect(0, 255, 400, 45) }
+
+let frame = PathLayer('frame') ${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
+frame.apply { rect(0, 0, 400, 300) }
+
+// --- Scene Organization ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(sky, sun, far_mtns, near_mtns, ground, frame)

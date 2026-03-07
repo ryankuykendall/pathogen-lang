@@ -1,0 +1,153 @@
+// viewBox="0 0 580 400"
+// Gradient Gallery — All Six Types
+// A complete overview of every gradient type in the Pathogen language
+
+// --- Linear ---
+
+let g_lin = LinearGradient('lin', 0, 0, 1, 1) {|g|
+  g.stop(0, Color('#ff6b6b'))
+  g.stop(0.5, Color('#feca57'))
+  g.stop(1, Color('#48dbfb'))
+};
+g_lin.interpolation = 'oklch';
+
+// --- Radial ---
+
+let g_rad = RadialGradient('rad', 0.5, 0.45, 0.55) {|g|
+  g.stop(0, Color('#ff9ff3'))
+  g.stop(0.6, Color('#a29bfe'))
+  g.stop(1, Color('#2d1b69'))
+};
+
+// --- Conic ---
+
+let g_con = ConicGradient('con', 480, 80) {|g|
+  g.stop(0, Color('#e74c3c'))
+  g.stop(0.33, Color('#f1c40f'))
+  g.stop(0.66, Color('#3498db'))
+  g.stop(1, Color('#e74c3c'))
+};
+
+// --- Mesh ---
+
+let g_mesh = MeshGradient('mesh', 160, 120, 2, 2) {|g|
+  g.getPoint(0, 0).color = Color('#e74c3c');
+  g.getPoint(0, 1).color = Color('#f1c40f');
+  g.getPoint(1, 0).color = Color('#3498db');
+  g.getPoint(1, 1).color = Color('#2ecc71');
+};
+
+// --- Freeform ---
+
+let g_free = FreeformGradient('free', 160, 120) {|g|
+  g.point(25, 25, Color('#e74c3c'))
+  g.point(135, 20, Color('#f1c40f'))
+  g.point(80, 100, Color('#3498db'))
+  g.point(20, 95, Color('#2ecc71'))
+  g.point(140, 85, Color('#9b59b6'))
+};
+
+// --- Topo (abstract overlapping contours) ---
+
+let blob1 = @{
+  m 0 0
+  c 60 -40 120 10 140 60
+  c -10 70 -150 60 -140 -60
+  z
+};
+let blob2 = @{
+  m 0 0
+  c 50 -30 100 5 110 50
+  c -10 50 -105 45 -110 -50
+  z
+};
+let tdot = @{ circle(0, 0, 8); closePath() };
+
+let g_topo = TopoGradient('topo', 160, 120) {|g|
+  g.contour(blob1.scale(0.38, 0.38).project(10, 45), 0.2, Color('#f72585'))
+  g.contour(tdot.project(38, 68), 0.5, Color('#f9c74f'))
+  g.contour(blob2.scale(0.38, 0.38).project(75, 12), 0.25, Color('#4cc9f0'))
+  g.contour(tdot.project(100, 32), 0.6, Color('#7209b7'))
+  g.contour(blob1.scale(0.28, 0.28).project(50, 35), 0.35, Color('#43aa8b'))
+  g.contour(tdot.project(78, 55), 0.75, Color('#f4a261'))
+};
+g_topo.baseColor = Color('#0a0a1a');
+g_topo.easing = 'ease-in-out';
+g_topo.method = 'laplace';
+g_topo.iterations = 250;
+g_topo.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, 580, 400) }
+
+// --- Panels (2 rows × 3 columns) ---
+
+let p1 = PathLayer('p-lin') ${ fill: g_lin; stroke: #444; stroke-width: 1; };
+p1.apply { roundRect(20, 20, 160, 120, 6) }
+
+let p2 = PathLayer('p-rad') ${ fill: g_rad; stroke: #444; stroke-width: 1; };
+p2.apply { roundRect(210, 20, 160, 120, 6) }
+
+let p3 = PathLayer('p-con') ${ fill: g_con; stroke: #444; stroke-width: 1; };
+p3.apply { roundRect(400, 20, 160, 120, 6) }
+
+let p4 = PathLayer('p-mesh') ${ fill: g_mesh; stroke: #444; stroke-width: 1; };
+p4.apply { roundRect(20, 210, 160, 120, 6) }
+
+let p5 = PathLayer('p-free') ${ fill: g_free; stroke: #444; stroke-width: 1; };
+p5.apply { roundRect(210, 210, 160, 120, 6) }
+
+let p6 = PathLayer('p-topo') ${ fill: g_topo; stroke: #444; stroke-width: 1; };
+p6.apply { roundRect(400, 210, 160, 120, 6) }
+
+// --- Labels ---
+
+let names = TextLayer('names') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+names.apply {
+  text(100, 155)`Linear`
+  text(290, 155)`Radial`
+  text(480, 155)`Conic`
+  text(100, 345)`Mesh`
+  text(290, 345)`Freeform`
+  text(480, 345)`Topo`
+}
+
+let tags = TextLayer('tags') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #666;
+  text-anchor: middle;
+};
+tags.apply {
+  text(100, 168)`native SVG`
+  text(290, 168)`native SVG`
+  text(480, 168)`GPU rendered`
+  text(100, 358)`GPU rendered`
+  text(290, 358)`GPU rendered`
+  text(480, 358)`GPU rendered`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(290, 390)`The Pathogen Gradient System — Six Types, One Language`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title)

@@ -1,0 +1,62 @@
+// viewBox="0 0 500 350"
+// Twin Peaks — Non-Nested Contours
+// Separate contours at the same elevation create independent features
+
+// --- Shared shapes ---
+
+let island = @{
+  m 0 0
+  c 70 -25 180 15 200 70
+  c -20 80 -185 85 -200 -70
+  z
+};
+
+let summit = @{ circle(0, 0, 25); closePath() };
+
+// --- Gradient with two separate peaks ---
+
+let topo = TopoGradient('twins', 500, 350) {|g|
+  // Left peak — warm tones
+  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'))
+  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'))
+
+  // Right peak — cool tones (same elevation = separate feature)
+  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'))
+  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'))
+};
+topo.baseColor = Color('#0f2027');
+topo.easing = 'smoothstep';
+topo.interpolation = 'oklch';
+
+// --- Layers ---
+
+let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+bg.apply { rect(0, 0, 500, 350) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ffffff88;
+  text-anchor: middle;
+};
+labels.apply {
+  text(130, 105)`warm peak (0.7)`
+  text(360, 125)`cool peak (0.7)`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #aaa;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 338)`Non-Nested Contours — Independent Peaks at Same Elevation`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, labels, title)

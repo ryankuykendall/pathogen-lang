@@ -1,0 +1,53 @@
+// viewBox="0 0 400 400"
+// Mesh Basics — 2×2 Corner Colors
+// The simplest mesh gradient: four corners, bilinear interpolation
+
+// --- Gradient ---
+
+let mesh = MeshGradient('corners', 400, 400, 2, 2) {|g|
+  g.getPoint(0, 0).color = Color('#e63946');
+  g.getPoint(0, 1).color = Color('#f4a261');
+  g.getPoint(1, 0).color = Color('#264653');
+  g.getPoint(1, 1).color = Color('#2a9d8f');
+};
+mesh.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// --- Mesh fill ---
+
+let patch = PathLayer('patch') ${ fill: mesh; stroke: none; };
+patch.apply { roundRect(30, 50, 340, 300, 8) }
+
+// --- Corner labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #ccc;
+  text-anchor: middle;
+};
+labels.apply {
+  text(50, 44)`(0,0) #e63946`
+  text(350, 44)`(0,1) #f4a261`
+  text(50, 368)`(1,0) #264653`
+  text(350, 368)`(1,1) #2a9d8f`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(200, 390)`MeshGradient 2×2 — Bilinear OKLCH Interpolation`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, patch, labels, title)

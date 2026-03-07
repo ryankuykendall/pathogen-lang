@@ -1,0 +1,104 @@
+// viewBox="0 0 500 400"
+// Mesh vs Freeform — Side-by-Side Comparison
+// Same palette, two interpolation models: grid vs scatter
+
+// --- Palette ---
+
+let c_rose   = Color('#e63946');
+let c_amber  = Color('#f4a261');
+let c_teal   = Color('#2a9d8f');
+let c_navy   = Color('#264653');
+let c_purple = Color('#7c3aed');
+
+// --- MeshGradient: 3×3 structured grid ---
+
+let mesh = MeshGradient('mesh', 200, 280, 3, 3) {|g|
+  // Top row
+  g.getPoint(0, 0).color = c_rose;
+  g.getPoint(0, 1).color = c_amber;
+  g.getPoint(0, 2).color = c_purple;
+  // Middle row
+  g.getPoint(1, 0).color = c_amber;
+  g.getPoint(1, 1).color = c_teal;
+  g.getPoint(1, 2).color = c_rose;
+  // Bottom row
+  g.getPoint(2, 0).color = c_navy;
+  g.getPoint(2, 1).color = c_purple;
+  g.getPoint(2, 2).color = c_teal;
+};
+mesh.interpolation = 'oklch';
+
+// --- FreeformGradient: same colors at similar positions ---
+
+let freeform = FreeformGradient('freeform', 200, 280) {|g|
+  g.point(10,  10,  c_rose);
+  g.point(100, 10,  c_amber);
+  g.point(190, 10,  c_purple);
+  g.point(10,  140, c_amber);
+  g.point(100, 140, c_teal);
+  g.point(190, 140, c_rose);
+  g.point(10,  270, c_navy);
+  g.point(100, 270, c_purple);
+  g.point(190, 270, c_teal);
+};
+freeform.falloff = 2.0;
+freeform.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 400) }
+
+// --- Fills ---
+
+let mesh_fill = PathLayer('mesh-fill') ${ fill: mesh; stroke: #333; stroke-width: 1; };
+mesh_fill.apply { roundRect(30, 50, 200, 280, 6) }
+
+let ff_fill = PathLayer('ff-fill') ${ fill: freeform; stroke: #333; stroke-width: 1; };
+ff_fill.apply { roundRect(270, 50, 200, 280, 6) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(130, 36)`MeshGradient`
+  text(370, 36)`FreeformGradient`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(130, 348)`bilinear patch interpolation`
+  text(370, 348)`inverse-distance weighting`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 385)`Same 9 Colors — Two Interpolation Models`
+}
+
+// --- Scene ---
+
+let left_group = GroupLayer('left-group') ${};
+left_group.append(mesh_fill)
+
+let right_group = GroupLayer('right-group') ${};
+right_group.append(ff_fill)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left_group, right_group, labels, desc, title)

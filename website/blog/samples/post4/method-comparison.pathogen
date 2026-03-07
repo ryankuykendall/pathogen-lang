@@ -1,0 +1,90 @@
+// viewBox="0 0 500 300"
+// Method Comparison — Distance (SDF) vs Laplace Solver
+// Same contours, two solver algorithms: different blending behavior
+
+// --- Shared contour shapes ---
+
+let ring = @{ circle(0, 0, 60); closePath() };
+let inner = @{ circle(0, 0, 25); closePath() };
+
+// --- Distance method (left) ---
+
+let topo_d = TopoGradient('dist', 220, 220) {|g|
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+};
+topo_d.method = 'distance';
+topo_d.baseColor = Color('#1a1a2e');
+topo_d.easing = 'smoothstep';
+
+// --- Laplace method (right) ---
+
+let topo_l = TopoGradient('lapl', 220, 220) {|g|
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+};
+topo_l.method = 'laplace';
+topo_l.iterations = 300;
+topo_l.baseColor = Color('#1a1a2e');
+topo_l.easing = 'smoothstep';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 300) }
+
+// --- Fills ---
+
+let left = PathLayer('left') ${ fill: topo_d; stroke: #333; stroke-width: 1; };
+left.apply { roundRect(20, 30, 220, 220, 6) }
+
+let right = PathLayer('right') ${ fill: topo_l; stroke: #333; stroke-width: 1; };
+right.apply { roundRect(260, 30, 220, 220, 6) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(130, 22)`Distance (SDF)`
+  text(370, 22)`Laplace Solver`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(130, 268)`fast, concentric flow`
+  text(370, 268)`smooth potential field (300 iter)`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 292)`Same 3 Contours — Two Solver Algorithms`
+}
+
+// --- Scene ---
+
+let left_group = GroupLayer('left-group') ${};
+left_group.append(left)
+
+let right_group = GroupLayer('right-group') ${};
+right_group.append(right)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left_group, right_group, labels, desc, title)

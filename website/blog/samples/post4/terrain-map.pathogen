@@ -1,0 +1,106 @@
+// viewBox="0 0 500 400"
+// Terrain Map — Island with Nested Elevation Bands
+// Classic topographic map aesthetic with 5 elevation levels
+
+// --- Contour shapes (organic coastline) ---
+
+let coast = @{
+  m 0 0
+  c 140 -60 320 30 360 140
+  c -20 140 -320 160 -360 -140
+  z
+};
+
+let lowland = @{
+  m 0 0
+  c 100 -40 220 20 260 100
+  c -20 100 -230 110 -260 -100
+  z
+};
+
+let highland = @{
+  m 0 0
+  c 70 -25 150 15 170 65
+  c -15 65 -155 75 -170 -65
+  z
+};
+
+let ridge = @{
+  m 0 0
+  c 35 -12 80 8 90 35
+  c -8 35 -82 37 -90 -35
+  z
+};
+
+let summit = @{ circle(0, 0, 18); closePath() };
+
+// --- Gradient ---
+
+let topo = TopoGradient('island', 500, 400) {|g|
+  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'))
+  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'))
+  g.contour(highland.project(120, 100), 0.55, Color('#228b22'))
+  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'))
+  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'))
+};
+topo.baseColor = Color('#1a5276');
+topo.easing = 'smoothstep';
+topo.method = 'laplace';
+topo.iterations = 400;
+topo.interpolation = 'oklch';
+
+// --- Layers ---
+
+let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+bg.apply { rect(0, 0, 500, 400) }
+
+// --- Elevation legend ---
+
+let legend_bg = PathLayer('legend-bg') ${ fill: #00000066; stroke: none; };
+legend_bg.apply { roundRect(350, 270, 135, 110, 4) }
+
+let s1 = PathLayer('s1') ${ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
+s1.apply { rect(360, 280, 14, 10) }
+let s2 = PathLayer('s2') ${ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
+s2.apply { rect(360, 296, 14, 10) }
+let s3 = PathLayer('s3') ${ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
+s3.apply { rect(360, 312, 14, 10) }
+let s4 = PathLayer('s4') ${ fill: #228b22; stroke: #444; stroke-width: 0.5; };
+s4.apply { rect(360, 328, 14, 10) }
+let s5 = PathLayer('s5') ${ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
+s5.apply { rect(360, 344, 14, 10) }
+let s6 = PathLayer('s6') ${ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
+s6.apply { rect(360, 360, 14, 10) }
+
+let legend = TextLayer('legend') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #ccc;
+  text-anchor: start;
+};
+legend.apply {
+  text(380, 289)`0.00 ocean`
+  text(380, 305)`0.15 beach`
+  text(380, 321)`0.35 lowland`
+  text(380, 337)`0.55 forest`
+  text(380, 353)`0.75 ridge`
+  text(380, 369)`0.92 summit`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #aaa;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 392)`TopoGradient — Laplace Solver, 5 Elevation Bands`
+}
+
+// --- Scene ---
+
+let legend_group = GroupLayer('legend-group') ${};
+legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, legend_group, title)

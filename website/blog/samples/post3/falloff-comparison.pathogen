@@ -1,0 +1,93 @@
+// viewBox="0 0 500 400"
+// Falloff Comparison — Same Points, Different Exponents
+// How the falloff parameter controls color blending sharpness
+
+// --- Three freeform gradients with different falloff ---
+
+let grad_1 = FreeformGradient('fall-1', 140, 260) {|g|
+  g.point(30,  40,  Color('#e63946'));
+  g.point(110, 30,  Color('#f4a261'));
+  g.point(70,  130, Color('#2a9d8f'));
+  g.point(30,  230, Color('#5e60ce'));
+  g.point(110, 240, Color('#f72585'));
+};
+grad_1.falloff = 1.0;
+grad_1.interpolation = 'oklch';
+
+let grad_2 = FreeformGradient('fall-2', 140, 260) {|g|
+  g.point(30,  40,  Color('#e63946'));
+  g.point(110, 30,  Color('#f4a261'));
+  g.point(70,  130, Color('#2a9d8f'));
+  g.point(30,  230, Color('#5e60ce'));
+  g.point(110, 240, Color('#f72585'));
+};
+grad_2.falloff = 2.0;
+grad_2.interpolation = 'oklch';
+
+let grad_4 = FreeformGradient('fall-4', 140, 260) {|g|
+  g.point(30,  40,  Color('#e63946'));
+  g.point(110, 30,  Color('#f4a261'));
+  g.point(70,  130, Color('#2a9d8f'));
+  g.point(30,  230, Color('#5e60ce'));
+  g.point(110, 240, Color('#f72585'));
+};
+grad_4.falloff = 4.0;
+grad_4.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 400) }
+
+// --- Fills ---
+
+let f1 = PathLayer('f1') ${ fill: grad_1; stroke: #333; stroke-width: 1; };
+f1.apply { roundRect(25, 50, 140, 260, 6) }
+
+let f2 = PathLayer('f2') ${ fill: grad_2; stroke: #333; stroke-width: 1; };
+f2.apply { roundRect(180, 50, 140, 260, 6) }
+
+let f3 = PathLayer('f3') ${ fill: grad_4; stroke: #333; stroke-width: 1; };
+f3.apply { roundRect(335, 50, 140, 260, 6) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(95,  36)`falloff = 1.0`
+  text(250, 36)`falloff = 2.0`
+  text(405, 36)`falloff = 4.0`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(95,  328)`smooth linear blend`
+  text(250, 328)`natural inverse-square`
+  text(405, 328)`tight halos`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 375)`FreeformGradient — Falloff Exponent Controls Blending`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, f1, f2, f3, labels, desc, title)

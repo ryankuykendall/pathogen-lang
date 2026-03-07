@@ -1,0 +1,92 @@
+// viewBox="0 0 500 300"
+// Mesh Landscape — Sunset Scene with Row Coloring
+// Using getRow() and colorAll() for layered color bands
+
+// --- Sky mesh: 4 cols × 4 rows for rich sunset ---
+
+let sky = MeshGradient('sky', 500, 300, 4, 4) {|g|
+  // Top row: deep night sky
+  let top = g.getRow(0);
+  for ([pt, i] in top) { pt.color = Color('#0a0a2e'); }
+
+  // Upper-mid: twilight
+  let upper = g.getRow(1);
+  for ([pt, i] in upper) { pt.color = Color('#2d1b69'); }
+
+  // Lower-mid: warm sunset band
+  let lower = g.getRow(2);
+  for ([pt, i] in lower) { pt.color = Color('#e76f51'); }
+  // Fade edges to darker
+  g.getPoint(2, 0).color = Color('#9b2226');
+  g.getPoint(2, 3).color = Color('#bb3e03');
+
+  // Bottom: golden horizon
+  let bottom = g.getRow(3);
+  for ([pt, i] in bottom) { pt.color = Color('#f9c74f'); }
+  g.getPoint(3, 0).color = Color('#e09f3e');
+  g.getPoint(3, 3).color = Color('#e09f3e');
+};
+sky.interpolation = 'oklch';
+
+// --- Water mesh: reflection below horizon ---
+
+let water = MeshGradient('water', 500, 100, 3, 2) {|g|
+  // Top: reflects golden horizon
+  let top = g.getRow(0);
+  for ([pt, i] in top) { pt.color = Color('#c77f32'); }
+  g.getPoint(0, 1).color = Color('#f9c74f');
+
+  // Bottom: dark water
+  let bottom = g.getRow(1);
+  for ([pt, i] in bottom) { pt.color = Color('#0a1628'); }
+};
+water.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #0a0a2e; stroke: none; };
+bg.apply { rect(0, 0, 500, 300) }
+
+// --- Sky fill ---
+
+let sky_layer = PathLayer('sky-layer') ${ fill: sky; stroke: none; };
+sky_layer.apply { rect(0, 0, 500, 210) }
+
+// --- Water fill ---
+
+let water_layer = PathLayer('water-layer') ${ fill: water; stroke: none; };
+water_layer.apply { rect(0, 210, 500, 90) }
+
+// --- Horizon line ---
+
+let horizon = PathLayer('horizon') ${ fill: none; stroke: #f9c74f44; stroke-width: 1; };
+horizon.apply { line(0, 210, 500, 210) }
+
+// --- Sun glow (simple circle) ---
+
+let sun_grad = RadialGradient('sun-glow', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   Color('#fffbe6'));
+  g.stop(0.3, Color('#f9c74f'));
+  g.stop(0.7, Color('#e76f5166'));
+  g.stop(1,   Color('#00000000'));
+};
+
+let sun = PathLayer('sun') ${ fill: sun_grad; stroke: none; };
+sun.apply { circle(250, 195, 55); closePath() }
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #998866;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 292)`MeshGradient — Sunset: getRow() for layered color bands`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, sky_layer, water_layer, horizon, sun, title)

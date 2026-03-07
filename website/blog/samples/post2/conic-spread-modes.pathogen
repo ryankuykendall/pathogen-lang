@@ -1,0 +1,125 @@
+// viewBox="0 0 500 400"
+// Conic Spread Modes — Clamp / Repeat / Transparent
+// How partial sweeps handle the unfilled arc
+
+// --- Gradients (90°→270°, half-sweep) ---
+
+let clamp_grad = ConicGradient('clamp-grad', 100, 170) {|g|
+  g.stop(0,    Color('#059669'));
+  g.stop(0.4,  Color('#fbbf24'));
+  g.stop(1,    Color('#dc2626'));
+};
+clamp_grad.from = 90deg;
+clamp_grad.to = 270deg;
+clamp_grad.spread = 'clamp';
+clamp_grad.interpolation = 'oklch';
+
+let repeat_grad = ConicGradient('repeat-grad', 250, 170) {|g|
+  g.stop(0,    Color('#059669'));
+  g.stop(0.4,  Color('#fbbf24'));
+  g.stop(1,    Color('#dc2626'));
+};
+repeat_grad.from = 90deg;
+repeat_grad.to = 270deg;
+repeat_grad.spread = 'repeat';
+repeat_grad.interpolation = 'oklch';
+
+let trans_grad = ConicGradient('trans-grad', 400, 170) {|g|
+  g.stop(0,    Color('#059669'));
+  g.stop(0.4,  Color('#fbbf24'));
+  g.stop(1,    Color('#dc2626'));
+};
+trans_grad.from = 90deg;
+trans_grad.to = 270deg;
+trans_grad.spread = 'transparent';
+trans_grad.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 400) }
+
+// --- Checkerboard behind transparent (to show transparency) ---
+
+let checks = PathLayer('checks') ${ fill: #1e1e2a; stroke: none; };
+checks.apply {
+  // Simplified 2×2 checker squares behind the transparent circle
+  rect(368, 138, 16, 16) rect(400, 138, 16, 16)
+  rect(384, 154, 16, 16) rect(416, 154, 16, 16)
+  rect(368, 170, 16, 16) rect(400, 170, 16, 16)
+  rect(384, 186, 16, 16) rect(416, 186, 16, 16)
+}
+
+// --- Gradient circles ---
+
+let c1 = PathLayer('c-clamp') ${ fill: clamp_grad; stroke: #333; stroke-width: 1; };
+c1.apply { circle(100, 170, 80); closePath() }
+
+let c2 = PathLayer('c-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+c2.apply { circle(250, 170, 80); closePath() }
+
+let c3 = PathLayer('c-trans') ${ fill: trans_grad; stroke: #333; stroke-width: 1; };
+c3.apply { circle(400, 170, 80); closePath() }
+
+// --- Arc range indicators ---
+
+let arcs = PathLayer('arc-lines') ${ fill: none; stroke: #ffffff44; stroke-width: 1; stroke-dasharray: 3 3; };
+arcs.apply {
+  // Vertical lines at 90° (top) and 270° (bottom) for each circle
+  line(100, 82, 100, 88)   line(100, 252, 100, 258)
+  line(250, 82, 250, 88)   line(250, 252, 250, 258)
+  line(400, 82, 400, 88)   line(400, 252, 400, 258)
+}
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(100, 282)`clamp`
+  text(250, 282)`repeat`
+  text(400, 282)`transparent`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #777;
+  text-anchor: middle;
+};
+desc.apply {
+  text(100, 298)`edge colors extend`
+  text(250, 298)`pattern tiles`
+  text(400, 298)`gap is empty`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 15;
+  fill: #bbb;
+  text-anchor: middle;
+  font-weight: bold;
+};
+title.apply {
+  text(250, 50)`Spread Modes on Partial Sweep (90° → 270°)`
+}
+
+let angle_note = TextLayer('angle-note') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #555;
+  text-anchor: middle;
+};
+angle_note.apply {
+  text(250, 370)`Half-sweep gradient: emerald → gold → ruby`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, checks, c1, c2, c3, arcs, labels, desc, title, angle_note)

@@ -1,0 +1,128 @@
+// viewBox="0 0 550 350"
+// Easing Modes — 5 Elevation Interpolation Curves
+// How easing changes the visual transition between contours
+
+// --- Shared contour shapes (sized for 400×400 gradient) ---
+
+let ring = @{ circle(0, 0, 160); closePath() };
+let core = @{ circle(0, 0, 60); closePath() };
+
+// --- Five gradients at proper resolution ---
+
+let t1 = TopoGradient('ease-0', 400, 400) {|g|
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+};
+t1.baseColor = Color('#1a1a2e');
+t1.easing = 'linear';
+t1.interpolation = 'oklch';
+
+let t2 = TopoGradient('ease-1', 400, 400) {|g|
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+};
+t2.baseColor = Color('#1a1a2e');
+t2.easing = 'smoothstep';
+t2.interpolation = 'oklch';
+
+let t3 = TopoGradient('ease-2', 400, 400) {|g|
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+};
+t3.baseColor = Color('#1a1a2e');
+t3.easing = 'ease-in';
+t3.interpolation = 'oklch';
+
+let t4 = TopoGradient('ease-3', 400, 400) {|g|
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+};
+t4.baseColor = Color('#1a1a2e');
+t4.easing = 'ease-out';
+t4.interpolation = 'oklch';
+
+let t5 = TopoGradient('ease-4', 400, 400) {|g|
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+};
+t5.baseColor = Color('#1a1a2e');
+t5.easing = 'ease-in-out';
+t5.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 550, 350) }
+
+// --- Fills ---
+
+let p1 = PathLayer('p1') ${ fill: t1; stroke: #333; stroke-width: 1; };
+p1.apply { roundRect(15, 60, 90, 90, 6) }
+
+let p2 = PathLayer('p2') ${ fill: t2; stroke: #333; stroke-width: 1; };
+p2.apply { roundRect(120, 60, 90, 90, 6) }
+
+let p3 = PathLayer('p3') ${ fill: t3; stroke: #333; stroke-width: 1; };
+p3.apply { roundRect(225, 60, 90, 90, 6) }
+
+let p4 = PathLayer('p4') ${ fill: t4; stroke: #333; stroke-width: 1; };
+p4.apply { roundRect(330, 60, 90, 90, 6) }
+
+let p5 = PathLayer('p5') ${ fill: t5; stroke: #333; stroke-width: 1; };
+p5.apply { roundRect(435, 60, 90, 90, 6) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(60, 48)`linear`
+  text(165, 48)`smoothstep`
+  text(270, 48)`ease-in`
+  text(375, 48)`ease-out`
+  text(480, 48)`ease-in-out`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(60, 168)`uniform`
+  text(165, 168)`smooth S-curve`
+  text(270, 168)`slow start`
+  text(375, 168)`slow end`
+  text(480, 168)`slow both`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(275, 240)`Easing Modes — Elevation Interpolation Curves`
+}
+
+let note = TextLayer('note') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #555;
+  text-anchor: middle;
+};
+note.apply {
+  text(275, 310)`Same 2 contours (0.3, 0.8) — easing controls transition shape`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note)

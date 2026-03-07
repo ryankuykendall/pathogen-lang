@@ -1,0 +1,95 @@
+// viewBox="0 0 400 300"
+// Spread Modes — Pad / Reflect / Repeat
+// Same narrow gradient, three different spread behaviors
+
+// --- Base gradient (covers 0 to 0.3 of the element) ---
+
+let pad_grad = LinearGradient('pad-grad', 0, 0, 0.3, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.33, Color('#f4a261'));
+  g.stop(0.66, Color('#2a9d8f'));
+  g.stop(1,    Color('#264653'));
+};
+pad_grad.spreadMethod = 'pad';
+
+let reflect_grad = LinearGradient('reflect-grad', 0, 0, 0.3, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.33, Color('#f4a261'));
+  g.stop(0.66, Color('#2a9d8f'));
+  g.stop(1,    Color('#264653'));
+};
+reflect_grad.spreadMethod = 'reflect';
+
+let repeat_grad = LinearGradient('repeat-grad', 0, 0, 0.3, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.33, Color('#f4a261'));
+  g.stop(0.66, Color('#2a9d8f'));
+  g.stop(1,    Color('#264653'));
+};
+repeat_grad.spreadMethod = 'repeat';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #14141e; stroke: none; };
+bg.apply { rect(0, 0, 400, 300) }
+
+// --- Gradient strips ---
+
+let strip_pad = PathLayer('strip-pad') ${ fill: pad_grad; stroke: #333; stroke-width: 1; };
+strip_pad.apply { roundRect(60, 45, 320, 50, 4) }
+
+let strip_reflect = PathLayer('strip-reflect') ${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
+strip_reflect.apply { roundRect(60, 120, 320, 50, 4) }
+
+let strip_repeat = PathLayer('strip-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+strip_repeat.apply { roundRect(60, 195, 320, 50, 4) }
+
+// --- Range indicator (shows the 0–30% region) ---
+
+let indicator = PathLayer('range-indicator') ${ fill: none; stroke: #ffffff44; stroke-width: 1; };
+indicator.apply {
+  M 60 40 L 60 255
+  M 156 40 L 156 255
+}
+
+let range_label = TextLayer('range-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+range_label.apply {
+  text(108, 265)`← gradient range →`
+}
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 12;
+  fill: #a0a0c0;
+  text-anchor: end;
+};
+labels.apply {
+  text(52, 75)`pad`
+  text(52, 150)`reflect`
+  text(52, 225)`repeat`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 16;
+  fill: #e0e0ff;
+  text-anchor: middle;
+  font-weight: bold;
+};
+title.apply {
+  text(200, 290)`spreadMethod Comparison`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title)

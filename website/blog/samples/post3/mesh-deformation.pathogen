@@ -1,0 +1,100 @@
+// viewBox="0 0 500 400"
+// Mesh Deformation — Translated Control Points
+// Side-by-side: uniform grid vs deformed grid with .translate()
+
+// --- Left: uniform 3×3 mesh ---
+
+let uniform = MeshGradient('uniform', 200, 280, 3, 3) {|g|
+  g.getPoint(0, 0).color = Color('#7c3aed');
+  g.getPoint(0, 1).color = Color('#a78bfa');
+  g.getPoint(0, 2).color = Color('#c4b5fd');
+  g.getPoint(1, 0).color = Color('#ec4899');
+  g.getPoint(1, 1).color = Color('#f9a8d4');
+  g.getPoint(1, 2).color = Color('#fce7f3');
+  g.getPoint(2, 0).color = Color('#059669');
+  g.getPoint(2, 1).color = Color('#34d399');
+  g.getPoint(2, 2).color = Color('#a7f3d0');
+};
+uniform.interpolation = 'oklch';
+
+// --- Right: same colors, deformed grid ---
+
+let deformed = MeshGradient('deformed', 200, 280, 3, 3) {|g|
+  g.getPoint(0, 0).color = Color('#7c3aed');
+  g.getPoint(0, 1).color = Color('#a78bfa');
+  g.getPoint(0, 2).color = Color('#c4b5fd');
+  g.getPoint(1, 0).color = Color('#ec4899');
+  g.getPoint(1, 1).color = Color('#f9a8d4');
+  g.getPoint(1, 2).color = Color('#fce7f3');
+  g.getPoint(2, 0).color = Color('#059669');
+  g.getPoint(2, 1).color = Color('#34d399');
+  g.getPoint(2, 2).color = Color('#a7f3d0');
+
+  // Shift center point dramatically
+  g.getPoint(1, 1).translate(40, -30);
+  // Warp edges
+  g.getPoint(0, 1).translate(0, 20);
+  g.getPoint(2, 1).translate(-20, -15);
+  g.getPoint(1, 0).translate(15, 0);
+  g.getPoint(1, 2).translate(-15, 10);
+};
+deformed.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 400) }
+
+// --- Mesh fills ---
+
+let left = PathLayer('left') ${ fill: uniform; stroke: #333; stroke-width: 1; };
+left.apply { roundRect(30, 50, 200, 280, 6) }
+
+let right = PathLayer('right') ${ fill: deformed; stroke: #333; stroke-width: 1; };
+right.apply { roundRect(270, 50, 200, 280, 6) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(130, 36)`Uniform Grid`
+  text(370, 36)`Deformed Grid`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(130, 348)`3×3 evenly spaced`
+  text(370, 348)`same colors + .translate()`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 385)`MeshGradient — Point Translation for Organic Shapes`
+}
+
+// --- Scene ---
+
+let left_group = GroupLayer('left-group') ${};
+left_group.append(left)
+
+let right_group = GroupLayer('right-group') ${};
+right_group.append(right)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left_group, right_group, labels, desc, title)

@@ -1,0 +1,114 @@
+// viewBox="0 0 500 350"
+// Method Comparison — Organic Geometry
+// Distance vs Laplace with irregular contour shapes
+
+// --- Organic shapes (same for both panels) ---
+
+let coast = @{
+  m 0 0
+  c 50 -35 130 -10 160 30
+  c 15 30 0 90 -30 110
+  c -40 25 -110 10 -140 -30
+  c -15 -40 -10 -80 10 -110
+  z
+};
+
+let mesa = @{
+  m 0 0
+  l 70 -8
+  c 15 3 20 18 15 33
+  l -73 15
+  c -17 -5 -22 -25 -12 -40
+  z
+};
+
+let spire = @{
+  m 0 -15
+  l 12 23
+  l -24 0
+  z
+};
+
+// --- Distance method (left) ---
+
+let topo_d = TopoGradient('dist-org', 220, 260) {|g|
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+};
+topo_d.method = 'distance';
+topo_d.baseColor = Color('#0a0a1a');
+topo_d.easing = 'smoothstep';
+topo_d.interpolation = 'oklch';
+
+// --- Laplace method (right) ---
+
+let topo_l = TopoGradient('lapl-org', 220, 260) {|g|
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+};
+topo_l.method = 'laplace';
+topo_l.iterations = 350;
+topo_l.baseColor = Color('#0a0a1a');
+topo_l.easing = 'smoothstep';
+topo_l.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 350) }
+
+// --- Fills ---
+
+let left = PathLayer('left') ${ fill: topo_d; stroke: #333; stroke-width: 1; };
+left.apply { roundRect(20, 30, 220, 260, 6) }
+
+let right = PathLayer('right') ${ fill: topo_l; stroke: #333; stroke-width: 1; };
+right.apply { roundRect(260, 30, 220, 260, 6) }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(130, 22)`Distance (SDF)`
+  text(370, 22)`Laplace Solver`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(130, 308)`sharp contour-following`
+  text(370, 308)`smooth diffusion (350 iter)`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(250, 340)`Irregular Contours — Coast + Mesa + Spire`
+}
+
+// --- Scene ---
+
+let left_group = GroupLayer('left-group') ${};
+left_group.append(left)
+
+let right_group = GroupLayer('right-group') ${};
+right_group.append(right)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left_group, right_group, labels, desc, title)

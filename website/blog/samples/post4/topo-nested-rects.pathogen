@@ -1,0 +1,79 @@
+// viewBox="0 0 400 400"
+// Nested Rectangles — Rotated Rectangular Contours
+// Using rotateAtVertexIndex() to create angular topographic geometry
+
+// --- Base rectangle shapes (centered at origin) ---
+
+let big_rect = @{
+  m -100 -70
+  l 200 0
+  l 0 140
+  l -200 0
+  z
+};
+
+let med_rect = @{
+  m -65 -45
+  l 130 0
+  l 0 90
+  l -130 0
+  z
+};
+
+let sm_rect = @{
+  m -35 -25
+  l 70 0
+  l 0 50
+  l -70 0
+  z
+};
+
+let diamond = @{
+  m 0 -16
+  l 16 16
+  l -16 16
+  l -16 -16
+  z
+};
+
+// --- Rotate each at increasing angles ---
+// vertex 0 is the top-left corner; rotating around it
+
+let r1 = big_rect.rotateAtVertexIndex(0, 0.2);
+let r2 = med_rect.rotateAtVertexIndex(0, 0.35);
+let r3 = sm_rect.rotateAtVertexIndex(0, 0.55);
+let r4 = diamond.rotateAtVertexIndex(0, 0.4);
+
+// --- Gradient ---
+
+let topo = TopoGradient('rects', 400, 400) {|g|
+  g.contour(r1.project(100, 115), 0.15, Color('#264653'))
+  g.contour(r2.project(135, 145), 0.4, Color('#2a9d8f'))
+  g.contour(r3.project(165, 175), 0.65, Color('#e9c46a'))
+  g.contour(r4.project(195, 195), 0.88, Color('#e76f51'))
+};
+topo.baseColor = Color('#0a0a1a');
+topo.easing = 'smoothstep';
+topo.method = 'laplace';
+topo.iterations = 300;
+topo.interpolation = 'oklch';
+
+// --- Layers ---
+
+let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: #888;
+  text-anchor: middle;
+};
+title.apply {
+  text(200, 390)`Nested Rotated Rectangles — rotateAtVertexIndex()`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, title)

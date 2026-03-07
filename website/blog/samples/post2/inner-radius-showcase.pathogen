@@ -1,0 +1,143 @@
+// viewBox="0 0 450 450"
+// Inner Radius & Fill Modes — 2×2 Grid
+// The 4 innerFill modes with the same base gradient
+
+// --- Base gradient (reused via inherit) ---
+
+let base_grad = ConicGradient('base', 0, 0) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
+};
+base_grad.innerRadius = 35;
+base_grad.interpolation = 'oklch';
+
+// --- Grid layout ---
+
+let cx1 = 130;
+let cy1 = 155;
+let cx2 = 320;
+let cy2 = 155;
+let cx3 = 130;
+let cy3 = 330;
+let cx4 = 320;
+let cy4 = 330;
+let r = 80;
+
+// --- Gradient variants ---
+
+let g1 = ConicGradient('g-transparent', cx1, cy1) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
+};
+g1.innerRadius = 35;
+g1.innerFill = 'transparent';
+g1.interpolation = 'oklch';
+
+let g2 = ConicGradient('g-trans-blend', cx2, cy2) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
+};
+g2.innerRadius = 35;
+g2.innerFill = 'transparent-blend';
+g2.interpolation = 'oklch';
+
+let g3 = ConicGradient('g-center', cx3, cy3) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
+};
+g3.innerRadius = 35;
+g3.innerFill = 'center';
+g3.interpolation = 'oklch';
+
+let g4 = ConicGradient('g-custom', cx4, cy4) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
+};
+g4.innerRadius = 35;
+g4.innerFill = Color('#1a1a2e');
+g4.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 450, 450) }
+
+// --- Circles ---
+
+let c1 = PathLayer('c1') ${ fill: g1; stroke: #333; stroke-width: 1; };
+c1.apply { circle(cx1, cy1, r); closePath() }
+
+let c2 = PathLayer('c2') ${ fill: g2; stroke: #333; stroke-width: 1; };
+c2.apply { circle(cx2, cy2, r); closePath() }
+
+let c3 = PathLayer('c3') ${ fill: g3; stroke: #333; stroke-width: 1; };
+c3.apply { circle(cx3, cy3, r); closePath() }
+
+let c4 = PathLayer('c4') ${ fill: g4; stroke: #333; stroke-width: 1; };
+c4.apply { circle(cx4, cy4, r); closePath() }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(cx1, 255)`transparent`
+  text(cx2, 255)`transparent-blend`
+  text(cx3, 430)`center`
+  text(cx4, 430)`Color('#1a1a2e')`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(cx1, 270)`hard donut hole`
+  text(cx2, 270)`smooth fade out`
+  text(cx3, 443)`first stop fills center`
+  text(cx4, 443)`custom dark center`
+}
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 15;
+  fill: #bbb;
+  text-anchor: middle;
+  font-weight: bold;
+};
+title.apply {
+  text(225, 40)`innerFill Modes (innerRadius = 35)`
+}
+
+// --- Scene ---
+
+let top_row = GroupLayer('top-row') ${};
+top_row.append(c1, c2)
+
+let bottom_row = GroupLayer('bottom-row') ${};
+bottom_row.append(c3, c4)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, top_row, bottom_row, labels, desc, title)

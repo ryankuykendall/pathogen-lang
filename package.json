@@ -36,7 +36,8 @@
     "cli": "tsx src/cli.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",
-    "compile:bbwp": "tsx scripts/compile-bbwp.ts"
+    "compile:bbwp": "tsx scripts/compile-bbwp.ts",
+    "compile:samples": "tsx scripts/compile-samples.ts"
   },
   "keywords": [
     "svg",

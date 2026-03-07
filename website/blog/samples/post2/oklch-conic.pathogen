@@ -1,0 +1,115 @@
+// viewBox="0 0 500 500"
+// OKLCH vs sRGB Interpolation on Conic Gradients
+// Perceptual difference: muddy sRGB midpoints vs vibrant OKLCH transitions
+
+// --- Pair 1: Blue ↔ Yellow ---
+
+let srgb_by = ConicGradient('srgb-by', 135, 155) {|g|
+  g.stop(0,   Color('#2563eb'));
+  g.stop(0.5, Color('#eab308'));
+  g.stop(1,   Color('#2563eb'));
+};
+
+let oklch_by = ConicGradient('oklch-by', 365, 155) {|g|
+  g.stop(0,   Color('#2563eb'));
+  g.stop(0.5, Color('#eab308'));
+  g.stop(1,   Color('#2563eb'));
+};
+oklch_by.interpolation = 'oklch';
+
+// --- Pair 2: Red ↔ Cyan ---
+
+let srgb_rc = ConicGradient('srgb-rc', 135, 375) {|g|
+  g.stop(0,   Color('#dc2626'));
+  g.stop(0.5, Color('#06b6d4'));
+  g.stop(1,   Color('#dc2626'));
+};
+
+let oklch_rc = ConicGradient('oklch-rc', 365, 375) {|g|
+  g.stop(0,   Color('#dc2626'));
+  g.stop(0.5, Color('#06b6d4'));
+  g.stop(1,   Color('#dc2626'));
+};
+oklch_rc.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 500, 500) }
+
+// --- Gradient circles ---
+
+let by_s = PathLayer('by-srgb') ${ fill: srgb_by; stroke: #333; stroke-width: 1; };
+by_s.apply { circle(135, 155, 85); closePath() }
+
+let by_o = PathLayer('by-oklch') ${ fill: oklch_by; stroke: #333; stroke-width: 1; };
+by_o.apply { circle(365, 155, 85); closePath() }
+
+let rc_s = PathLayer('rc-srgb') ${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
+rc_s.apply { circle(135, 375, 85); closePath() }
+
+let rc_o = PathLayer('rc-oklch') ${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
+rc_o.apply { circle(365, 375, 85); closePath() }
+
+// --- Column headers ---
+
+let headers = TextLayer('headers') ${
+  font-family: system-ui, sans-serif;
+  font-size: 16;
+  fill: #ccc;
+  text-anchor: middle;
+  font-weight: bold;
+};
+headers.apply {
+  text(135, 40)`sRGB`
+  text(365, 40)`OKLCH`
+}
+
+// --- Row labels ---
+
+let row_labels = TextLayer('row-labels') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: #888;
+  text-anchor: middle;
+};
+row_labels.apply {
+  text(250, 155)`Blue ↔ Yellow`
+  text(250, 375)`Red ↔ Cyan`
+}
+
+// --- Annotations ---
+
+let notes = TextLayer('notes') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #555;
+  text-anchor: middle;
+};
+notes.apply {
+  text(135, 262)`muddy gray midpoint`
+  text(365, 262)`vibrant green/teal`
+  text(135, 478)`desaturated brown`
+  text(365, 478)`rich magenta arc`
+}
+
+let footer = TextLayer('footer') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #444;
+  text-anchor: middle;
+};
+footer.apply {
+  text(250, 495)`Same color stops — interpolation mode changes everything`
+}
+
+// --- Scene ---
+
+let top_row = GroupLayer('top-row') ${};
+top_row.append(by_s, by_o)
+
+let bottom_row = GroupLayer('bottom-row') ${};
+bottom_row.append(rc_s, rc_o)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)

@@ -14,6 +14,7 @@ export class MiniWorkspace extends HTMLElement {
     this._svgContent = '';
     this._width = 200;
     this._height = 200;
+    this._cssVars = [];
 
     // Lazy CodeMirror state
     this._editor = null;
@@ -26,6 +27,7 @@ export class MiniWorkspace extends HTMLElement {
   connectedCallback() {
     // Capture light DOM children before replacing
     this._captureChildren();
+    this._initCssVars();
     this.render();
     this.setupEventListeners();
 
@@ -44,6 +46,9 @@ export class MiniWorkspace extends HTMLElement {
   disconnectedCallback() {
     if (this._themeUnsubscribe) {
       this._themeUnsubscribe();
+    }
+    if (this._onThemeChange) {
+      document.removeEventListener('theme-change', this._onThemeChange);
     }
   }
 
@@ -103,36 +108,76 @@ export class MiniWorkspace extends HTMLElement {
     }
   }
 
+  // --- CSS Variable Detection ---
+
+  _initCssVars() {
+    // Explicit vars attribute takes precedence
+    const varsAttr = this.getAttribute('vars');
+    if (varsAttr) {
+      this._cssVars = this._parseVarsAttribute(varsAttr);
+      return;
+    }
+
+    // Auto-detect from SVG @property declarations
+    if (this._svgContent) {
+      this._cssVars = this._detectCssVarsFromSvg(this._svgContent);
+    }
+  }
+
+  _parseVarsAttribute(raw) {
+    return raw.split(';').filter(Boolean).map(pair => {
+      const colonIdx = pair.indexOf(':');
+      if (colonIdx === -1) return null;
+      const name = pair.slice(0, colonIdx).trim();
+      const defaultValue = pair.slice(colonIdx + 1).trim();
+      return { name, defaultValue };
+    }).filter(Boolean);
+  }
+
+  _detectCssVarsFromSvg(svgContent) {
+    const styleMatch = svgContent.match(/<style>([\s\S]*?)<\/style>/);
+    if (!styleMatch) return [];
+
+    const vars = [];
+    // Match @property declarations with syntax: "<color>" and extract name + initial-value
+    const propRegex = /@property\s+(--[\w-]+)\s*\{([^}]*)\}/g;
+    let match;
+    while ((match = propRegex.exec(styleMatch[1])) !== null) {
+      const body = match[2];
+      if (!body.includes('"<color>"')) continue;
+      const valMatch = body.match(/initial-value:\s*(#[\da-fA-F]{3,8})/);
+      if (valMatch) {
+        vars.push({ name: match[1], defaultValue: valMatch[1] });
+      }
+    }
+    return vars;
+  }
+
   // --- Lazy CodeMirror ---
 
   async _loadCodeMirror() {
     if (this._cmModules) return this._cmModules;
 
-    const [state, view, language, langJs, oneDark] = await Promise.all([
+    const [state, view, language, langJs, githubTheme] = await Promise.all([
       import('https://esm.sh/@codemirror/state@6'),
       import('https://esm.sh/@codemirror/view@6'),
       import('https://esm.sh/@codemirror/language@6'),
       import('https://esm.sh/@codemirror/lang-javascript@6'),
-      import('https://esm.sh/@codemirror/theme-one-dark@6'),
+      import('https://esm.sh/@uiw/codemirror-theme-github@4'),
     ]);
 
-    this._cmModules = { state, view, language, langJs, oneDark };
+    this._cmModules = { state, view, language, langJs, githubTheme };
     return this._cmModules;
   }
 
   _getThemeExtensions() {
-    const { language, oneDark } = this._cmModules;
+    const { githubTheme } = this._cmModules;
     const isDark = themeManager.getActiveTheme() === 'dark';
 
     if (isDark) {
-      return [
-        oneDark.oneDarkTheme,
-        language.syntaxHighlighting(oneDark.oneDarkHighlightStyle),
-      ];
+      return [githubTheme.githubDark];
     } else {
-      return [
-        language.syntaxHighlighting(language.defaultHighlightStyle),
-      ];
+      return [githubTheme.githubLight];
     }
   }
 
@@ -168,10 +213,14 @@ export class MiniWorkspace extends HTMLElement {
     const fallback = this.shadowRoot.querySelector('#code-fallback');
     if (fallback) fallback.style.display = 'none';
 
-    // Listen for theme changes
+    // Listen for theme changes via themeManager (SPA context)
     this._themeUnsubscribe = themeManager.subscribe(() => {
       this._updateEditorTheme();
     });
+
+    // Listen for theme-change event from standalone theme-toggle component
+    this._onThemeChange = () => this._updateEditorTheme();
+    document.addEventListener('theme-change', this._onThemeChange);
   }
 
   _updateEditorTheme() {
@@ -224,6 +273,41 @@ export class MiniWorkspace extends HTMLElement {
     const copyBtn = this.shadowRoot.querySelector('copy-button');
     if (copyBtn) {
       copyBtn.setText(this._sourceCode);
+    }
+
+    // CSS variable controls
+    const varControls = this.shadowRoot.querySelector('.var-controls');
+    if (varControls) {
+      const preview = this.shadowRoot.querySelector('mini-preview');
+
+      // Apply initial values so SVG inherits them
+      if (preview) {
+        for (const v of this._cssVars) {
+          preview.style.setProperty(v.name, v.defaultValue);
+        }
+      }
+
+      // Live color picker updates
+      varControls.addEventListener('input', (e) => {
+        if (e.target.type === 'color') {
+          const varName = e.target.dataset.var;
+          if (preview) {
+            preview.style.setProperty(varName, e.target.value);
+          }
+        }
+      });
+
+      // Reset button
+      const resetBtn = this.shadowRoot.querySelector('#vars-reset');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          for (const v of this._cssVars) {
+            const input = varControls.querySelector(`input[data-var="${v.name}"]`);
+            if (input) input.value = v.defaultValue;
+            if (preview) preview.style.setProperty(v.name, v.defaultValue);
+          }
+        });
+      }
     }
   }
 
@@ -336,10 +420,75 @@ export class MiniWorkspace extends HTMLElement {
           color: var(--text-primary, #1a1a2e);
         }
 
+        /* CSS variable controls */
+        .var-controls {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.5rem 0.75rem;
+          border-bottom: 1px solid var(--border-color, #e2e8f0);
+          background: var(--bg-secondary, #ffffff);
+        }
+
+        .var-control {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+          cursor: pointer;
+        }
+
+        .var-label {
+          font-family: var(--font-mono, monospace);
+          font-size: 0.6875rem;
+          color: var(--text-secondary, #64748b);
+        }
+
+        .var-controls input[type="color"] {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 26px;
+          height: 26px;
+          border: 2px solid var(--border-color, #ddd);
+          border-radius: var(--radius-sm, 4px);
+          padding: 0;
+          cursor: pointer;
+          background: none;
+        }
+
+        .var-controls input[type="color"]::-webkit-color-swatch-wrapper {
+          padding: 2px;
+        }
+
+        .var-controls input[type="color"]::-webkit-color-swatch {
+          border: none;
+          border-radius: 2px;
+        }
+
+        #vars-reset {
+          margin-left: auto;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.6875rem;
+          font-family: inherit;
+          font-weight: 500;
+          background: var(--bg-tertiary, #f0f1f2);
+          border: 1px solid var(--border-color, #e2e8f0);
+          border-radius: var(--radius-sm, 4px);
+          cursor: pointer;
+          color: var(--text-secondary, #64748b);
+          transition: all var(--transition-base, 0.15s ease);
+        }
+
+        #vars-reset:hover {
+          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+          color: var(--text-primary, #1a1a2e);
+        }
+
         /* Content area */
         .content-area {
           display: grid;
           grid-template-columns: 0fr 1fr;
+          grid-template-rows: 1fr;
           transition: grid-template-columns 0.3s ease;
           flex: 1;
           min-height: 0;
@@ -428,14 +577,30 @@ export class MiniWorkspace extends HTMLElement {
           height: 100%;
         }
 
-        /* Caption */
-        .caption {
-          padding: 0.5rem 0.75rem;
-          font-size: 0.8125rem;
-          color: var(--text-tertiary, #94a3b8);
-          text-align: center;
-          font-style: italic;
+        /* Footer */
+        .footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.375rem 0.75rem;
+          background: var(--bg-tertiary, #f0f1f2);
           border-top: 1px solid var(--border-color, #e2e8f0);
+          font-size: 0.6875rem;
+          color: var(--text-tertiary, #94a3b8);
+          min-height: 1.75rem;
+        }
+
+        .footer-brand {
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          font-size: 0.625rem;
+          opacity: 0.8;
+        }
+
+        .footer-caption {
+          font-style: italic;
+          font-size: 0.75rem;
         }
 
         /* Responsive */
@@ -461,6 +626,18 @@ export class MiniWorkspace extends HTMLElement {
         </div>
       </div>
 
+      ${this._cssVars.length > 0 ? `
+      <div class="var-controls">
+        ${this._cssVars.map(v => `
+          <label class="var-control">
+            <input type="color" value="${v.defaultValue}" data-var="${v.name}">
+            <span class="var-label">${v.name}</span>
+          </label>
+        `).join('')}
+        <button id="vars-reset" title="Reset colors to defaults">Reset</button>
+      </div>
+      ` : ''}
+
       <div class="content-area">
         <div class="code-panel">
           <div class="code-header">
@@ -475,7 +652,10 @@ export class MiniWorkspace extends HTMLElement {
         </div>
       </div>
 
-      ${caption ? `<div class="caption">${caption}</div>` : ''}
+      <div class="footer">
+        <span class="footer-brand">Pathogen</span>
+        ${caption ? `<span class="footer-caption">${caption}</span>` : ''}
+      </div>
     `;
   }
 }

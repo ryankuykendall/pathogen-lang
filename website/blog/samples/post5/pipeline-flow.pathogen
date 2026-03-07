@@ -1,0 +1,123 @@
+// viewBox="0 0 700 250"
+// Pipeline Flow — Source to Blog
+// Visual flowchart showing the Pathogen gradient compilation pipeline
+
+// --- Background ---
+
+let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
+  g.stop(0, Color('#0a0a14'))
+  g.stop(1, Color('#12121f'))
+};
+
+let bg = PathLayer('bg') ${ fill: bg_grad; stroke: none; };
+bg.apply { rect(0, 0, 700, 250) }
+
+// --- Stage boxes (5 pipeline stages) ---
+
+let box1 = PathLayer('box1') ${ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
+box1.apply { roundRect(15, 60, 115, 55, 6) }
+
+let box2 = PathLayer('box2') ${ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
+box2.apply { roundRect(160, 60, 115, 55, 6) }
+
+let box3 = PathLayer('box3') ${ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
+box3.apply { roundRect(305, 60, 115, 55, 6) }
+
+let box4 = PathLayer('box4') ${ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
+box4.apply { roundRect(450, 60, 115, 55, 6) }
+
+let box5 = PathLayer('box5') ${ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
+box5.apply { roundRect(595, 60, 90, 55, 6) }
+
+// --- Arrow lines ---
+
+let arrows = PathLayer('arrows') ${ fill: none; stroke: #555; stroke-width: 1.5; };
+arrows.apply {
+  M 130 87 L 157 87
+  M 275 87 L 302 87
+  M 420 87 L 447 87
+  M 565 87 L 592 87
+}
+
+// --- Arrow heads ---
+
+let heads = PathLayer('heads') ${ fill: #555; stroke: none; };
+heads.apply {
+  M 155 82 L 160 87 L 155 92 Z
+  M 300 82 L 305 87 L 300 92 Z
+  M 445 82 L 450 87 L 445 92 Z
+  M 590 82 L 595 87 L 590 92 Z
+}
+
+// --- Box labels ---
+
+let box_labels = TextLayer('box-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #eee;
+  text-anchor: middle;
+  font-weight: bold;
+};
+box_labels.apply {
+  text(72, 84)`.pathogen`
+  text(72, 96)`Source`
+  text(217, 90)`Compiler`
+  text(362, 84)`GPU`
+  text(362, 96)`Renderer`
+  text(507, 84)`SVG +`
+  text(507, 96)`base64`
+  text(640, 90)`Blog`
+}
+
+// --- Detail labels below each box ---
+
+let details = TextLayer('details') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: #666;
+  text-anchor: middle;
+};
+details.apply {
+  text(72, 130)`variables`
+  text(72, 140)`expressions`
+  text(72, 150)`layers`
+  text(217, 130)`AST → eval`
+  text(217, 140)`GroupLayer`
+  text(217, 150)`gradients`
+  text(362, 130)`WebGPU`
+  text(362, 140)`Canvas 2D`
+  text(362, 150)`fallback`
+  text(507, 130)`<pattern>`
+  text(507, 140)`<image>`
+  text(507, 150)`data URLs`
+  text(640, 130)`mini-`
+  text(640, 140)`workspace`
+  text(640, 150)`component`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #888;
+  text-anchor: middle;
+};
+title.apply {
+  text(350, 200)`The Gradient Compilation Pipeline`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #555;
+  text-anchor: middle;
+};
+subtitle.apply {
+  text(350, 218)`from .pathogen source to interactive blog embed`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle)

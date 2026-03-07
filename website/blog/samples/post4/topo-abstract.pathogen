@@ -1,0 +1,62 @@
+// viewBox="0 0 400 400"
+// Abstract Topo — Artistic Contour Composition
+// Multiple overlapping shapes creating an abstract topographic artwork
+
+// --- Organic contour shapes ---
+
+let blob1 = @{
+  m 0 0
+  c 60 -40 120 10 140 60
+  c -10 70 -150 60 -140 -60
+  z
+};
+
+let blob2 = @{
+  m 0 0
+  c 50 -30 100 5 110 50
+  c -10 50 -105 45 -110 -50
+  z
+};
+
+let dot = @{ circle(0, 0, 20); closePath() };
+
+// --- Gradient with overlapping regions ---
+
+let topo = TopoGradient('abstract', 400, 400) {|g|
+  // Lower-left cluster — warm
+  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'))
+  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'))
+
+  // Upper-right cluster — cool
+  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'))
+  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'))
+
+  // Center overlap — creates interesting blending
+  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'))
+  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'))
+};
+topo.baseColor = Color('#0a0a1a');
+topo.easing = 'ease-in-out';
+topo.method = 'laplace';
+topo.iterations = 250;
+topo.interpolation = 'oklch';
+
+// --- Layers ---
+
+let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: #777;
+  text-anchor: middle;
+};
+title.apply {
+  text(200, 390)`Abstract Topography — Overlapping Contours, Laplace Blending`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, title)

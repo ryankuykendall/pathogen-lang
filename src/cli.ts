@@ -232,7 +232,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeXml(viewBox)}" width="${escapeXml(width)}" height="${escapeXml(height)}">${styleSection}
-  <rect width="100%" height="100%" fill="#f5f5f5"/>${defsSection}
+${defsSection}
 ${elements}
 </svg>`;
 }
@@ -466,7 +466,7 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
       viewBox: options.viewBox || '0 0 200 200',
       width: options.width || '200',
       height: options.height || '200',
-      background: '#f5f5f5',
+      background: 'transparent',
       defaultStroke: options.stroke || '#000',
       defaultFill: options.fill || 'none',
       defaultStrokeWidth: options.strokeWidth || '2',

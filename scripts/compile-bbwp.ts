@@ -126,6 +126,50 @@ ${svgContent}
 </html>`;
 }
 
+function wrapMiniWorkspaceHtml(svgContent: string, source: string, meta: {
+  feature: string;
+  roadmap: string;
+  timestamp: string;
+}): string {
+  const codeData = Buffer.from(encodeURIComponent(source)).toString('base64');
+  const displayTime = meta.timestamp.replace(/-(\d{2}:\d{2}:\d{2})$/, ' $1');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MW: ${meta.feature} — ${meta.roadmap}</title>
+  <link rel="stylesheet" href="../../playground/styles/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100dvw; height: 100dvh; overflow: hidden; }
+    body { background: var(--bg-primary, #1e1e2e); color: var(--text-primary, #cdd6f4); font-family: system-ui, sans-serif; display: flex; flex-direction: column; }
+    .header { padding: 0.625rem 1rem; border-bottom: 1px solid var(--border-color, #313244); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .header-text h1 { font-size: 0.875rem; color: var(--accent-color, #89b4fa); margin-bottom: 0.125rem; }
+    .header-text p { font-size: 0.6875rem; color: var(--text-secondary, #a6adc8); }
+    .workspace-container { flex: 1; min-height: 0; padding: 0.75rem 1rem; }
+    mini-workspace { width: 100%; height: 100%; min-height: 0; max-height: none; margin: 0; }
+  </style>
+  <script type="module" src="../../playground/components/blog/mini-workspace.js"></script>
+  <script type="module" src="../../playground/components/shared/theme-toggle.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div class="header-text">
+      <h1>${meta.feature}</h1>
+      <p>Roadmap: ${meta.roadmap} | Generated: ${displayTime}</p>
+    </div>
+    <theme-toggle></theme-toggle>
+  </div>
+  <div class="workspace-container">
+    <mini-workspace code-data="${codeData}" code-open>
+${svgContent}
+    </mini-workspace>
+  </div>
+</body>
+</html>`;
+}
+
 const program = new Command();
 program
   .name('compile-bbwp')
@@ -213,32 +257,44 @@ program
     // Step 2: Read the SVG and wrap in HTML
     const svgContent = readFileSync(tmpSvg, 'utf-8');
     const timestamp = generateTimestamp();
-    const html = wrapSvgInHtml(svgContent, {
+    const bbwpHtml = wrapSvgInHtml(svgContent, {
       feature, roadmap, timestamp, viewBox, width, height, scale, renderMode,
     });
-
-    // Step 3: Pretty-print the HTML
-    console.log('  Formatting...');
-    const formatted = await prettier.format(html, {
-      parser: 'html',
-      printWidth: 120,
-      tabWidth: 2,
-      htmlWhitespaceSensitivity: 'ignore',
+    const mwHtml = wrapMiniWorkspaceHtml(svgContent, source, {
+      feature, roadmap, timestamp,
     });
 
-    // Step 4: Save to website/bbwp/
-    const outFilename = `${timestamp}--${roadmap}--${feature}.html`;
-    const outPath = join(BBWP_DIR, outFilename);
+    // Step 3: Pretty-print both HTML files
+    console.log('  Formatting...');
+    const prettierOpts = {
+      parser: 'html' as const,
+      printWidth: 120,
+      tabWidth: 2,
+      htmlWhitespaceSensitivity: 'ignore' as const,
+    };
+    const [formattedBbwp, formattedMw] = await Promise.all([
+      prettier.format(bbwpHtml, prettierOpts),
+      prettier.format(mwHtml, prettierOpts),
+    ]);
 
-    if (existsSync(outPath)) {
-      console.error(`Error: File already exists (timestamp collision): ${outFilename}`);
+    // Step 4: Save to website/bbwp/
+    const baseFilename = `${timestamp}--${roadmap}--${feature}`;
+    const bbwpFilename = `${baseFilename}.bbwp.html`;
+    const mwFilename = `${baseFilename}.mw.html`;
+    const bbwpPath = join(BBWP_DIR, bbwpFilename);
+    const mwPath = join(BBWP_DIR, mwFilename);
+
+    if (existsSync(bbwpPath)) {
+      console.error(`Error: File already exists (timestamp collision): ${bbwpFilename}`);
       console.error('Wait a second and try again.');
       process.exit(1);
     }
 
-    writeFileSync(outPath, formatted);
-    console.log(`  Written:  website/bbwp/${outFilename}`);
-    console.log(`  Size:     ${(formatted.length / 1024 / 1024).toFixed(1)} MB`);
+    writeFileSync(bbwpPath, formattedBbwp);
+    writeFileSync(mwPath, formattedMw);
+    console.log(`  Written:  website/bbwp/${bbwpFilename}`);
+    console.log(`            website/bbwp/${mwFilename}`);
+    console.log(`  Size:     bbwp ${(formattedBbwp.length / 1024 / 1024).toFixed(1)} MB | mw ${(formattedMw.length / 1024).toFixed(0)} KB`);
 
     // Step 5: Update the index
     spawnSync('npx', ['tsx', 'scripts/update-bbwp-index.ts'], {
@@ -249,7 +305,9 @@ program
     // Cleanup temp file
     try { unlinkSync(tmpSvg); } catch {}
 
-    console.log(`\nDone. View at: http://localhost:3001/website/bbwp/${outFilename}`);
+    console.log(`\nDone.`);
+    console.log(`  BBWP: http://localhost:3001/website/bbwp/${bbwpFilename}`);
+    console.log(`  MW:   http://localhost:3001/website/bbwp/${mwFilename}`);
   });
 
 program.parse();

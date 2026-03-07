@@ -1,0 +1,90 @@
+// viewBox="0 0 400 400"
+// Radial Gradient Glow — Cosmic Scene
+// Demonstrates radial gradients for light sources, glows, and shading
+
+// --- Gradients ---
+
+let nebula_grad = RadialGradient('nebula', 0.45, 0.4, 0.55) {|g|
+  g.stop(0,    Color('#9b59b6'));
+  g.stop(0.25, Color('#6b2fa0'));
+  g.stop(0.5,  Color('#2c1654'));
+  g.stop(0.8,  Color('#0f0a1a'));
+  g.stop(1,    Color('#080612'));
+};
+nebula_grad.interpolation = 'oklch';
+
+let star_grad = RadialGradient('star-core', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   Color('#ffffff'));
+  g.stop(0.2, Color('#cce5ff'));
+  g.stop(0.5, Color('#5599dd'));
+  g.stop(1,   Color('#00000000'));
+};
+
+let warm_star = RadialGradient('warm-star', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   Color('#fff8e1'));
+  g.stop(0.15, Color('#ffcc80'));
+  g.stop(0.4, Color('#e65100'));
+  g.stop(1,   Color('#00000000'));
+};
+
+let planet_grad = RadialGradient('planet', 0.35, 0.35, 0.5) {|g|
+  g.stop(0,   Color('#4fc3f7'));
+  g.stop(0.3, Color('#0288d1'));
+  g.stop(0.6, Color('#01579b'));
+  g.stop(1,   Color('#0a1929'));
+};
+
+let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
+  g.stop(0,    Color('#00000000'));
+  g.stop(0.2,  Color('#80deea'));
+  g.stop(0.5,  Color('#4dd0e1'));
+  g.stop(0.8,  Color('#80deea'));
+  g.stop(1,    Color('#00000000'));
+};
+
+// --- Background and Nebula ---
+
+let bg = PathLayer('bg') ${ fill: #080612; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+let nebula = PathLayer('nebula-layer') ${ fill: nebula_grad; stroke: none; };
+nebula.apply { rect(0, 0, 400, 400) }
+
+// --- Stars ---
+
+let s1 = PathLayer('s1') ${ fill: star_grad; stroke: none; };
+s1.apply { circle(70, 55, 18); closePath() }
+
+let s2 = PathLayer('s2') ${ fill: warm_star; stroke: none; };
+s2.apply { circle(330, 80, 22); closePath() }
+
+let s3 = PathLayer('s3') ${ fill: star_grad; stroke: none; };
+s3.apply { circle(60, 320, 14); closePath() }
+
+let s4 = PathLayer('s4') ${ fill: warm_star; stroke: none; };
+s4.apply { circle(350, 290, 16); closePath() }
+
+let s5 = PathLayer('s5') ${ fill: star_grad; stroke: none; };
+s5.apply { circle(200, 40, 10); closePath() }
+
+let stars = GroupLayer('stars') ${};
+stars.append(s1, s2, s3, s4, s5)
+
+// --- Planet with Ring ---
+
+let planet_body = PathLayer('planet-body') ${ fill: planet_grad; stroke: none; };
+planet_body.apply { circle(260, 280, 45); closePath() }
+
+let planet_ring = PathLayer('planet-ring') ${ fill: ring_grad; stroke: none; opacity: 0.6; };
+planet_ring.apply {
+  M 200 282 Q 230 260 260 262 Q 290 260 320 282
+  Q 290 290 260 288 Q 230 290 200 282 Z
+}
+
+let planet = GroupLayer('planet') ${};
+planet.append(planet_body, planet_ring)
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, nebula, stars, planet)

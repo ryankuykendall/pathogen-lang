@@ -1,0 +1,83 @@
+// viewBox="0 0 500 300"
+// Direction Comparison — CW vs CCW
+// Same gradient, two directions: showing how direction reverses color flow
+
+// --- Gradients ---
+
+let cw_grad = ConicGradient('cw-grad', 140, 140) {|g|
+  g.stop(0,    Color('#e07a5f'));
+  g.stop(0.33, Color('#f2cc8f'));
+  g.stop(0.66, Color('#3d85c6'));
+  g.stop(1,    Color('#264653'));
+};
+cw_grad.direction = 'cw';
+cw_grad.interpolation = 'oklch';
+
+let ccw_grad = ConicGradient('ccw-grad', 360, 140) {|g|
+  g.stop(0,    Color('#e07a5f'));
+  g.stop(0.33, Color('#f2cc8f'));
+  g.stop(0.66, Color('#3d85c6'));
+  g.stop(1,    Color('#264653'));
+};
+ccw_grad.direction = 'ccw';
+ccw_grad.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, 500, 300) }
+
+// --- Gradient circles ---
+
+let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
+cw_circle.apply { circle(140, 140, 90); closePath() }
+
+let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
+ccw_circle.apply { circle(360, 140, 90); closePath() }
+
+// --- Direction arrows (simple arc hints) ---
+
+let arrows = PathLayer('arrows') ${ fill: none; stroke: #ffffff66; stroke-width: 1.5; };
+arrows.apply {
+  // CW arrow: arc from top curving right
+  M 140 42 A 8 8 0 0 1 156 46
+  M 153 40 L 156 46 L 149 47
+  // CCW arrow: arc from top curving left
+  M 360 42 A 8 8 0 0 0 344 46
+  M 347 40 L 344 46 L 351 47
+}
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+labels.apply {
+  text(140, 262)`Clockwise (CW)`
+  text(360, 262)`Counter-Clockwise (CCW)`
+}
+
+let note = TextLayer('note') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #666;
+  text-anchor: middle;
+};
+note.apply {
+  text(250, 288)`Same 4 stops — direction reverses color flow`
+}
+
+// --- Scene ---
+
+let left = GroupLayer('left') ${};
+left.append(cw_circle)
+
+let right = GroupLayer('right') ${};
+right.append(ccw_circle)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left, right, arrows, labels, note)

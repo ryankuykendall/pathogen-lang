@@ -1,0 +1,165 @@
+// viewBox="0 0 600 320"
+// GroupLayer Cards — Organizational Power
+// Three gradient panels positioned with GroupLayer translate convenience property
+
+// --- Gradients ---
+
+let warm = LinearGradient('warm', 0, 0, 1, 1) {|g|
+  g.stop(0, Color('#ff6b6b'))
+  g.stop(0.5, Color('#feca57'))
+  g.stop(1, Color('#48dbfb'))
+};
+warm.interpolation = 'oklch';
+
+let cool = RadialGradient('cool', 0.5, 0.45, 0.55) {|g|
+  g.stop(0, Color('#ff9ff3'))
+  g.stop(0.6, Color('#a29bfe'))
+  g.stop(1, Color('#2d1b69'))
+};
+
+let blob1 = @{
+  m 0 0
+  c 60 -40 120 10 140 60
+  c -10 70 -150 60 -140 -60
+  z
+};
+let blob2 = @{
+  m 0 0
+  c 50 -30 100 5 110 50
+  c -10 50 -105 45 -110 -50
+  z
+};
+let dot = @{ circle(0, 0, 8); closePath() };
+
+let topo_fill = TopoGradient('topo-card', 170, 140) {|g|
+  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'))
+  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'))
+  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'))
+  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'))
+  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'))
+  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'))
+};
+topo_fill.baseColor = Color('#0a0a1a');
+topo_fill.easing = 'ease-in-out';
+topo_fill.method = 'laplace';
+topo_fill.iterations = 250;
+topo_fill.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, 600, 320) }
+
+// --- Card 1: Linear (left) ---
+
+let card1 = GroupLayer('card-1') ${
+  translate-x: 20;
+  translate-y: 25;
+};
+
+let c1_fill = PathLayer('c1-fill') ${ fill: warm; stroke: #444; stroke-width: 1; };
+c1_fill.apply { roundRect(0, 0, 170, 140, 8) }
+
+let c1_label = TextLayer('c1-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+c1_label.apply { text(85, 160)`LinearGradient` }
+
+let c1_tag = TextLayer('c1-tag') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #666;
+  text-anchor: middle;
+};
+c1_tag.apply { text(85, 174)`native SVG element` }
+
+card1.append(c1_fill, c1_label, c1_tag)
+
+// --- Card 2: Radial (center) ---
+
+let card2 = GroupLayer('card-2') ${
+  translate-x: 215;
+  translate-y: 25;
+};
+
+let c2_fill = PathLayer('c2-fill') ${ fill: cool; stroke: #444; stroke-width: 1; };
+c2_fill.apply { roundRect(0, 0, 170, 140, 8) }
+
+let c2_label = TextLayer('c2-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+c2_label.apply { text(85, 160)`RadialGradient` }
+
+let c2_tag = TextLayer('c2-tag') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #666;
+  text-anchor: middle;
+};
+c2_tag.apply { text(85, 174)`native SVG element` }
+
+card2.append(c2_fill, c2_label, c2_tag)
+
+// --- Card 3: Topo (right) ---
+
+let card3 = GroupLayer('card-3') ${
+  translate-x: 410;
+  translate-y: 25;
+};
+
+let c3_fill = PathLayer('c3-fill') ${ fill: topo_fill; stroke: #444; stroke-width: 1; };
+c3_fill.apply { roundRect(0, 0, 170, 140, 8) }
+
+let c3_label = TextLayer('c3-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+c3_label.apply { text(85, 160)`TopoGradient` }
+
+let c3_tag = TextLayer('c3-tag') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #666;
+  text-anchor: middle;
+};
+c3_tag.apply { text(85, 174)`GPU rendered (base64)` }
+
+card3.append(c3_fill, c3_label, c3_tag)
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(300, 265)`GroupLayer — Card Layout with translate`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #555;
+  text-anchor: middle;
+};
+subtitle.apply {
+  text(300, 282)`each card is a GroupLayer with translate-x / translate-y`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, card1, card2, card3, title, subtitle)
