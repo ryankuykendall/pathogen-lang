@@ -243,6 +243,9 @@ class NewWorkspaceView extends HTMLElement {
     if (query.copyFrom) {
       this._copyFromId = query.copyFrom;
       this.loadSourceWorkspace(query.copyFrom);
+    } else if (query.import) {
+      this._applyImportKey(query.import);
+      this.render();
     } else if (query.state) {
       this._applyStateParam(query.state);
       this.render();
@@ -255,6 +258,9 @@ class NewWorkspaceView extends HTMLElement {
     // Subscribe to route changes to reset form when navigating back
     this._unsubscribe = store.subscribe(['currentView', 'routeQuery'], () => {
       if (store.get('currentView') === 'new-workspace') {
+        // Once import data is applied, don't let route-driven resets overwrite it
+        if (this._importKey) return;
+
         const newQuery = store.get('routeQuery') || {};
         const newCopyFromId = newQuery.copyFrom || null;
 
@@ -268,6 +274,13 @@ class NewWorkspaceView extends HTMLElement {
           } else {
             this.loadPreferences();
             this.resetForm();
+          }
+        } else if (newQuery.import) {
+          if (!this._importKey) {
+            this._stateCode = null;
+            this.loadPreferences();
+            this._applyImportKey(newQuery.import);
+            this.render();
           }
         } else if (newQuery.state) {
           this._stateCode = null;
@@ -284,8 +297,13 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._cleanupImport();
     if (this._unsubscribe) {
       this._unsubscribe();
+    }
+    if (this._beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+      this._beforeUnloadHandler = null;
     }
   }
 
@@ -295,6 +313,35 @@ class NewWorkspaceView extends HTMLElement {
     this.formData.height = prefs.height || 200;
   }
 
+  _applyImportKey(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      this._importKey = key; // track for cleanup
+      const state = JSON.parse(raw);
+      if (state.code) this._stateCode = state.code;
+      if (state.w) this.formData.width = state.w;
+      if (state.h) this.formData.height = state.h;
+      if (state.title) this.formData.name = state.title;
+      if (state.desc) this.formData.description = state.desc;
+
+      // Clean up localStorage if user closes the tab
+      if (!this._beforeUnloadHandler) {
+        this._beforeUnloadHandler = () => this._cleanupImport();
+        window.addEventListener('beforeunload', this._beforeUnloadHandler);
+      }
+    } catch {
+      // Invalid import data, ignore
+    }
+  }
+
+  _cleanupImport() {
+    if (this._importKey) {
+      try { localStorage.removeItem(this._importKey); } catch {}
+      this._importKey = null;
+    }
+  }
+
   _applyStateParam(encoded) {
     try {
       const json = decodeURIComponent(atob(encoded));
@@ -302,6 +349,8 @@ class NewWorkspaceView extends HTMLElement {
       if (state.code) this._stateCode = state.code;
       if (state.w) this.formData.width = state.w;
       if (state.h) this.formData.height = state.h;
+      if (state.title) this.formData.name = state.title;
+      if (state.desc) this.formData.description = state.desc;
     } catch {
       // Invalid state param, ignore
     }
@@ -433,6 +482,9 @@ class NewWorkspaceView extends HTMLElement {
         },
       });
 
+      // Clean up import data before navigating away
+      this._cleanupImport();
+
       // Navigate to the new workspace (with slug--id format)
       const slugId = buildWorkspaceSlugId(workspace.slug, workspace.id);
       navigateTo('/workspace/:slugId', { params: { slugId } });
@@ -446,6 +498,7 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   handleCancel() {
+    this._cleanupImport();
     navigateTo('/');
   }
 

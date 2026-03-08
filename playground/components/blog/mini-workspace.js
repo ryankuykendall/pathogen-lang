@@ -71,6 +71,15 @@ export class MiniWorkspace extends HTMLElement {
       }
     }
 
+    // Extract dimensions from viewBox comment in source (e.g., // viewBox="0 0 400 400")
+    if (this._sourceCode) {
+      const vbMatch = this._sourceCode.match(/\/\/\s*viewBox\s*=\s*"(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
+      if (vbMatch) {
+        this._width = parseInt(vbMatch[3], 10);
+        this._height = parseInt(vbMatch[4], 10);
+      }
+    }
+
     // Extract SVG content
     const svgChild = this.querySelector('svg');
     if (svgChild) {
@@ -82,10 +91,13 @@ export class MiniWorkspace extends HTMLElement {
       if (h) this._height = parseFloat(h);
     }
 
-    // Handle <img> fallback — note the src for reference but we can't use it as SVG content
+    // Handle <img> fallback — fetch the SVG so we can render it in mini-preview
     const imgChild = this.querySelector('img');
     if (imgChild && !this._svgContent) {
       this._imgSrc = imgChild.getAttribute('src');
+      if (this._imgSrc) {
+        this._fetchSvg(this._imgSrc);
+      }
     }
 
     // Handle svg-src attribute
@@ -243,14 +255,31 @@ export class MiniWorkspace extends HTMLElement {
 
   // --- "Open in Playground" ---
 
-  _getPlaygroundUrl() {
-    const state = {
+  _getImportState() {
+    // Extract title from source comment headers (first non-viewBox comment line)
+    const commentLines = this._sourceCode.split('\n')
+      .filter(l => l.trim().startsWith('//'))
+      .map(l => l.replace(/^\/\/\s*/, '').trim())
+      .filter(l => l && !l.startsWith('viewBox'));
+    return {
       code: this._sourceCode,
       w: this._width,
       h: this._height,
+      title: commentLines[0] || '',
+      desc: this.getAttribute('caption') || '',
     };
-    const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
-    return `/pathogen/workspace/new?state=${encoded}`;
+  }
+
+  // Write state to localStorage on click (not render) and navigate.
+  // localStorage is shared across tabs, unlike sessionStorage with target="_blank".
+  _handlePlaygroundClick(e) {
+    e.preventDefault();
+    const state = this._getImportState();
+    const key = 'mw-import-' + Date.now();
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch { /* storage full */ }
+    window.open(`/pathogen/workspace/new?import=${encodeURIComponent(key)}`, '_blank');
   }
 
   // --- Events ---
@@ -267,6 +296,12 @@ export class MiniWorkspace extends HTMLElement {
           this._loadCodeMirrorIfNeeded();
         }
       });
+    }
+
+    // "Open in Playground" — write to localStorage on click, then open new tab
+    const playgroundLink = this.shadowRoot.querySelector('.playground-link');
+    if (playgroundLink) {
+      playgroundLink.addEventListener('click', (e) => this._handlePlaygroundClick(e));
     }
 
     // Set copy button text
@@ -313,7 +348,6 @@ export class MiniWorkspace extends HTMLElement {
 
   render() {
     const caption = this.getAttribute('caption') || '';
-    const playgroundUrl = this._getPlaygroundUrl();
 
     // Static fallback code for display before CodeMirror loads
     const escapedCode = this._sourceCode
@@ -622,7 +656,7 @@ export class MiniWorkspace extends HTMLElement {
           <button id="code-toggle" title="Toggle code panel">&lt;/&gt; Code</button>
         </div>
         <div class="toolbar-right">
-          <a class="playground-link" href="${playgroundUrl}" target="_blank" rel="noopener">Open in Playground &#x2197;</a>
+          <a class="playground-link" href="#" rel="noopener">Open in Playground &#x2197;</a>
         </div>
       </div>
 

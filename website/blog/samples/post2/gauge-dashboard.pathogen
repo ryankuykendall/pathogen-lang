@@ -1,10 +1,11 @@
-// viewBox="0 0 600 300"
+// viewBox="0 0 660 340"
 // Gauge Dashboard — Partial Sweeps + innerRadius
 // Three gauges using conic gradients as speedometer-style UI
 
 // --- Gauge gradients ---
+// Using spread='transparent' so the gap area (bottom) stays empty
 
-let speed_grad = ConicGradient('speed', 120, 150) {|g|
+let speed_grad = ConicGradient('speed', 120, 160) {|g|
   g.stop(0,    Color('#43aa8b'));
   g.stop(0.5,  Color('#f9c74f'));
   g.stop(0.8,  Color('#f3722c'));
@@ -13,10 +14,11 @@ let speed_grad = ConicGradient('speed', 120, 150) {|g|
 speed_grad.from = 135deg;
 speed_grad.to = 405deg;
 speed_grad.innerRadius = 38;
-speed_grad.innerFill = 'center';
+speed_grad.innerFill = 'transparent';
+speed_grad.spread = 'transparent';
 speed_grad.interpolation = 'oklch';
 
-let temp_grad = ConicGradient('temp', 300, 150) {|g|
+let temp_grad = ConicGradient('temp', 330, 160) {|g|
   g.stop(0,    Color('#277da1'));
   g.stop(0.4,  Color('#90e0ef'));
   g.stop(0.7,  Color('#f9c74f'));
@@ -25,10 +27,11 @@ let temp_grad = ConicGradient('temp', 300, 150) {|g|
 temp_grad.from = 135deg;
 temp_grad.to = 405deg;
 temp_grad.innerRadius = 38;
-temp_grad.innerFill = 'center';
+temp_grad.innerFill = 'transparent';
+temp_grad.spread = 'transparent';
 temp_grad.interpolation = 'oklch';
 
-let fuel_grad = ConicGradient('fuel', 480, 150) {|g|
+let fuel_grad = ConicGradient('fuel', 540, 160) {|g|
   g.stop(0,    Color('#43aa8b'));
   g.stop(0.6,  Color('#f9c74f'));
   g.stop(1,    Color('#e63946'));
@@ -36,70 +39,170 @@ let fuel_grad = ConicGradient('fuel', 480, 150) {|g|
 fuel_grad.from = 180deg;
 fuel_grad.to = 360deg;
 fuel_grad.innerRadius = 30;
-fuel_grad.innerFill = 'center';
+fuel_grad.innerFill = 'transparent';
+fuel_grad.spread = 'transparent';
 
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 600, 300) }
+bg.apply { rect(0, 0, 660, 340) }
 
 // --- Gauge faces ---
 
 let g1 = PathLayer('g1') ${ fill: speed_grad; stroke: none; };
-g1.apply { circle(120, 150, 75); closePath() }
+g1.apply { circle(120, 160, 80); closePath() }
 
 let g2 = PathLayer('g2') ${ fill: temp_grad; stroke: none; };
-g2.apply { circle(300, 150, 75); closePath() }
+g2.apply { circle(330, 160, 80); closePath() }
 
 let g3 = PathLayer('g3') ${ fill: fuel_grad; stroke: none; };
-g3.apply { circle(480, 150, 60); closePath() }
+g3.apply { circle(540, 160, 65); closePath() }
 
 // --- Gauge rims ---
 
 let rims = PathLayer('rims') ${ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
-  circle(120, 150, 76); closePath()
-  circle(300, 150, 76); closePath()
-  circle(480, 150, 61); closePath()
+  circle(120, 160, 81); closePath()
+  circle(330, 160, 81); closePath()
+  circle(540, 160, 66); closePath()
 }
 
-// --- Tick marks ---
+// --- Tick marks for Speed gauge (135° to 405°, 270° sweep) ---
+// 7 ticks from 0 to max, evenly spaced along the 270° arc
+// Angles: 135, 180, 225, 270, 315, 360, 405 degrees
 
-let ticks = PathLayer('ticks') ${ fill: none; stroke: #aaa; stroke-width: 1; };
-ticks.apply {
-  // Speed gauge ticks (135°→405° = bottom-left → bottom-right)
-  line(52, 218, 60, 210)
-  line(46, 150, 56, 150)
-  line(52, 82, 60, 90)
-  line(120, 68, 120, 78)
-  line(188, 82, 180, 90)
-  line(194, 150, 184, 150)
-  // Temp gauge ticks
-  line(232, 218, 240, 210)
-  line(226, 150, 236, 150)
-  line(232, 82, 240, 90)
-  line(300, 68, 300, 78)
-  line(368, 82, 360, 90)
-  line(374, 150, 364, 150)
-  // Fuel gauge ticks
-  line(420, 150, 430, 150)
-  line(480, 90, 480, 100)
-  line(540, 150, 530, 150)
+let speed_ticks = PathLayer('speed-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+speed_ticks.apply {
+  // 135° (bottom-left) — 0 km/h
+  line(51, 217, 63, 205)
+  // 180° (left) — 40 km/h
+  line(33, 160, 47, 160)
+  // 225° (top-left) — 80 km/h
+  line(51, 103, 63, 115)
+  // 270° (top) — 120 km/h
+  line(120, 73, 120, 87)
+  // 315° (top-right) — 160 km/h
+  line(189, 103, 177, 115)
+  // 360° (right) — 200 km/h
+  line(207, 160, 193, 160)
+  // 405° (bottom-right) — 240 km/h
+  line(189, 217, 177, 205)
 }
 
-// --- Labels ---
+// --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
+
+let temp_ticks = PathLayer('temp-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+temp_ticks.apply {
+  // 135° — -20°C
+  line(261, 217, 273, 205)
+  // 180° — 0°C
+  line(243, 160, 257, 160)
+  // 225° — 20°C
+  line(261, 103, 273, 115)
+  // 270° — 40°C
+  line(330, 73, 330, 87)
+  // 315° — 60°C
+  line(399, 103, 387, 115)
+  // 360° — 80°C
+  line(417, 160, 403, 160)
+  // 405° — 100°C
+  line(399, 217, 387, 205)
+}
+
+// --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
+
+let fuel_ticks = PathLayer('fuel-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+fuel_ticks.apply {
+  // 180° (left) — E
+  line(468, 160, 480, 160)
+  // 225° — 1/4
+  line(487, 114, 497, 124)
+  // 270° (top) — 1/2
+  line(540, 88, 540, 100)
+  // 315° — 3/4
+  line(593, 114, 583, 124)
+  // 360° (right) — F
+  line(612, 160, 600, 160)
+}
+
+// --- Speed tick labels ---
+
+let speed_vals = TextLayer('speed-vals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #888;
+  text-anchor: middle;
+};
+speed_vals.apply {
+  text(42, 230)`0`
+  text(25, 163)`40`
+  text(42, 96)`80`
+  text(120, 68)`120`
+  text(198, 96)`160`
+  text(215, 163)`200`
+  text(198, 230)`240`
+}
+
+// --- Temp tick labels ---
+
+let temp_vals = TextLayer('temp-vals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #888;
+  text-anchor: middle;
+};
+temp_vals.apply {
+  text(252, 230)`-20`
+  text(233, 163)`0`
+  text(252, 96)`20`
+  text(330, 68)`40`
+  text(408, 96)`60`
+  text(425, 163)`80`
+  text(408, 230)`100`
+}
+
+// --- Fuel tick labels ---
+
+let fuel_vals = TextLayer('fuel-vals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #888;
+  text-anchor: middle;
+};
+fuel_vals.apply {
+  text(460, 163)`E`
+  text(481, 108)`1/4`
+  text(540, 84)`1/2`
+  text(599, 108)`3/4`
+  text(620, 163)`F`
+}
+
+// --- Gauge titles ---
 
 let labels = TextLayer('labels') ${
   font-family: system-ui, sans-serif;
-  font-size: 13;
+  font-size: 14;
   fill: #ccc;
   text-anchor: middle;
   font-weight: bold;
 };
 labels.apply {
-  text(120, 260)`Speed`
-  text(300, 260)`Temp`
-  text(480, 240)`Fuel`
+  text(120, 166)`km/h`
+  text(330, 166)`°C`
+  text(540, 166)`Fuel`
+}
+
+let titles = TextLayer('titles') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+titles.apply {
+  text(120, 280)`Speed`
+  text(330, 280)`Temperature`
+  text(540, 260)`Fuel`
 }
 
 let subtitle = TextLayer('subtitle') ${
@@ -109,21 +212,21 @@ let subtitle = TextLayer('subtitle') ${
   text-anchor: middle;
 };
 subtitle.apply {
-  text(120, 275)`135° → 405°`
-  text(300, 275)`135° → 405°`
-  text(480, 255)`180° → 360°`
+  text(120, 295)`270° sweep`
+  text(330, 295)`270° sweep`
+  text(540, 275)`180° sweep`
 }
 
 // --- Scene ---
 
 let speed_group = GroupLayer('speed-gauge') ${};
-speed_group.append(g1)
+speed_group.append(g1, speed_ticks)
 
 let temp_group = GroupLayer('temp-gauge') ${};
-temp_group.append(g2)
+temp_group.append(g2, temp_ticks)
 
 let fuel_group = GroupLayer('fuel-gauge') ${};
-fuel_group.append(g3)
+fuel_group.append(g3, fuel_ticks)
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, speed_group, temp_group, fuel_group, rims, ticks, labels, subtitle)
+scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle)

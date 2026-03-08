@@ -5002,10 +5002,19 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
   // Build gradients output
   const gradients: GradientOutput[] = [];
   for (const [, grad] of evalState.gradients) {
+    // For inherited GPU-rendered gradients (conic, mesh, freeform, topo),
+    // resolve stops from parent — these are rasterized and can't use SVG xlink:href inheritance
+    const isGpuType = grad.gradientType === 'conic' || grad.gradientType === 'mesh' ||
+                      grad.gradientType === 'freeform' || grad.gradientType === 'topo';
+    let resolvedStops = grad.stops;
+    if (isGpuType && resolvedStops.length === 0 && grad.href) {
+      const parent = evalState.gradients.get(grad.href);
+      if (parent) resolvedStops = parent.stops;
+    }
     const stepsPerUnit = grad.steps ?? 10;
     const stops = (grad.interpolation === 'oklch')
-      ? expandOklchStops(grad.stops, stepsPerUnit)
-      : grad.stops.map(s => ({ offset: s.offset, color: s.color }));
+      ? expandOklchStops(resolvedStops, stepsPerUnit)
+      : resolvedStops.map(s => ({ offset: s.offset, color: s.color }));
     const output: GradientOutput = {
       id: grad.id,
       type: grad.gradientType,
@@ -5033,7 +5042,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
         output.innerFill = fill ?? 'transparent';
       }
       // Warn if conic gradient has CSSVar stops — they are baked at compile time
-      if (grad.stops.some(s => s.color.startsWith('var('))) {
+      if (resolvedStops.some(s => s.color.startsWith('var('))) {
         evalState.logs.push({
           line: null,
           parts: [{
@@ -5045,7 +5054,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
       // Preserve oklch on stops for rendering.
       // For CSSVar stops, extract the fallback color from var(--name, fallback)
       // so Canvas 2D renderers have a concrete color to work with.
-      output.stopsWithOklch = grad.stops.map(s => {
+      output.stopsWithOklch = resolvedStops.map(s => {
         let color: string;
         if (s.oklch) {
           color = oklchToCSS(s.oklch);

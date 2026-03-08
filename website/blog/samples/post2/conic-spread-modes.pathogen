@@ -1,10 +1,10 @@
-// viewBox="0 0 500 400"
+// viewBox="0 0 540 400"
 // Conic Spread Modes — Clamp / Repeat / Transparent
 // How partial sweeps handle the unfilled arc
 
 // --- Gradients (90°→270°, half-sweep) ---
 
-let clamp_grad = ConicGradient('clamp-grad', 100, 170) {|g|
+let clamp_grad = ConicGradient('clamp-grad', 110, 180) {|g|
   g.stop(0,    Color('#059669'));
   g.stop(0.4,  Color('#fbbf24'));
   g.stop(1,    Color('#dc2626'));
@@ -14,7 +14,7 @@ clamp_grad.to = 270deg;
 clamp_grad.spread = 'clamp';
 clamp_grad.interpolation = 'oklch';
 
-let repeat_grad = ConicGradient('repeat-grad', 250, 170) {|g|
+let repeat_grad = ConicGradient('repeat-grad', 270, 180) {|g|
   g.stop(0,    Color('#059669'));
   g.stop(0.4,  Color('#fbbf24'));
   g.stop(1,    Color('#dc2626'));
@@ -24,7 +24,7 @@ repeat_grad.to = 270deg;
 repeat_grad.spread = 'repeat';
 repeat_grad.interpolation = 'oklch';
 
-let trans_grad = ConicGradient('trans-grad', 400, 170) {|g|
+let trans_grad = ConicGradient('trans-grad', 430, 180) {|g|
   g.stop(0,    Color('#059669'));
   g.stop(0.4,  Color('#fbbf24'));
   g.stop(1,    Color('#dc2626'));
@@ -37,38 +37,37 @@ trans_grad.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 540, 400) }
 
 // --- Checkerboard behind transparent (to show transparency) ---
 
 let checks = PathLayer('checks') ${ fill: #1e1e2a; stroke: none; };
 checks.apply {
-  // Simplified 2×2 checker squares behind the transparent circle
-  rect(368, 138, 16, 16) rect(400, 138, 16, 16)
-  rect(384, 154, 16, 16) rect(416, 154, 16, 16)
-  rect(368, 170, 16, 16) rect(400, 170, 16, 16)
-  rect(384, 186, 16, 16) rect(416, 186, 16, 16)
+  rect(398, 148, 16, 16) rect(430, 148, 16, 16)
+  rect(414, 164, 16, 16) rect(446, 164, 16, 16)
+  rect(398, 180, 16, 16) rect(430, 180, 16, 16)
+  rect(414, 196, 16, 16) rect(446, 196, 16, 16)
 }
 
 // --- Gradient circles ---
 
 let c1 = PathLayer('c-clamp') ${ fill: clamp_grad; stroke: #333; stroke-width: 1; };
-c1.apply { circle(100, 170, 80); closePath() }
+c1.apply { circle(110, 180, 80); closePath() }
 
 let c2 = PathLayer('c-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
-c2.apply { circle(250, 170, 80); closePath() }
+c2.apply { circle(270, 180, 80); closePath() }
 
 let c3 = PathLayer('c-trans') ${ fill: trans_grad; stroke: #333; stroke-width: 1; };
-c3.apply { circle(400, 170, 80); closePath() }
+c3.apply { circle(430, 180, 80); closePath() }
 
 // --- Arc range indicators ---
 
 let arcs = PathLayer('arc-lines') ${ fill: none; stroke: #ffffff44; stroke-width: 1; stroke-dasharray: 3 3; };
 arcs.apply {
   // Vertical lines at 90° (top) and 270° (bottom) for each circle
-  line(100, 82, 100, 88)   line(100, 252, 100, 258)
-  line(250, 82, 250, 88)   line(250, 252, 250, 258)
-  line(400, 82, 400, 88)   line(400, 252, 400, 258)
+  line(110, 92, 110, 98)   line(110, 262, 110, 268)
+  line(270, 92, 270, 98)   line(270, 262, 270, 268)
+  line(430, 92, 430, 98)   line(430, 262, 430, 268)
 }
 
 // --- Labels ---
@@ -81,9 +80,9 @@ let labels = TextLayer('labels') ${
   font-weight: bold;
 };
 labels.apply {
-  text(100, 282)`clamp`
-  text(250, 282)`repeat`
-  text(400, 282)`transparent`
+  text(110, 292)`clamp`
+  text(270, 292)`repeat`
+  text(430, 292)`transparent`
 }
 
 let desc = TextLayer('desc') ${
@@ -93,9 +92,9 @@ let desc = TextLayer('desc') ${
   text-anchor: middle;
 };
 desc.apply {
-  text(100, 298)`edge colors extend`
-  text(250, 298)`pattern tiles`
-  text(400, 298)`gap is empty`
+  text(110, 308)`first/last colors fill gap`
+  text(270, 308)`gradient repeats in gap`
+  text(430, 308)`gap area is transparent`
 }
 
 let title = TextLayer('title') ${
@@ -106,7 +105,7 @@ let title = TextLayer('title') ${
   font-weight: bold;
 };
 title.apply {
-  text(250, 50)`Spread Modes on Partial Sweep (90° → 270°)`
+  text(270, 50)`Spread Modes on Partial Sweep (90° → 270°)`
 }
 
 let angle_note = TextLayer('angle-note') ${
@@ -116,7 +115,7 @@ let angle_note = TextLayer('angle-note') ${
   text-anchor: middle;
 };
 angle_note.apply {
-  text(250, 370)`Half-sweep gradient: emerald → gold → ruby`
+  text(270, 68)`Left half: gradient renders | Right half: spread mode fills the gap`
 }
 
 // --- Scene ---

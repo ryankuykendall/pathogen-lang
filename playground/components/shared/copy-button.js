@@ -80,6 +80,7 @@ export class CopyButton extends HTMLElement {
           font-size: 0.75rem;
           font-family: inherit;
           background: var(--bg-primary, #ffffff);
+          color: var(--text-secondary, #64748b);
           border: 1px solid var(--border-color, #ddd);
           border-radius: 4px;
           cursor: pointer;

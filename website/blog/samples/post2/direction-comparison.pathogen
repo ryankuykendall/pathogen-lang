@@ -4,7 +4,7 @@
 
 // --- Gradients ---
 
-let cw_grad = ConicGradient('cw-grad', 140, 140) {|g|
+let cw_grad = ConicGradient('cw-grad', 140, 150) {|g|
   g.stop(0,    Color('#e07a5f'));
   g.stop(0.33, Color('#f2cc8f'));
   g.stop(0.66, Color('#3d85c6'));
@@ -13,7 +13,7 @@ let cw_grad = ConicGradient('cw-grad', 140, 140) {|g|
 cw_grad.direction = 'cw';
 cw_grad.interpolation = 'oklch';
 
-let ccw_grad = ConicGradient('ccw-grad', 360, 140) {|g|
+let ccw_grad = ConicGradient('ccw-grad', 360, 150) {|g|
   g.stop(0,    Color('#e07a5f'));
   g.stop(0.33, Color('#f2cc8f'));
   g.stop(0.66, Color('#3d85c6'));
@@ -30,21 +30,29 @@ bg.apply { rect(0, 0, 500, 300) }
 // --- Gradient circles ---
 
 let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
-cw_circle.apply { circle(140, 140, 90); closePath() }
+cw_circle.apply { circle(140, 150, 90); closePath() }
 
 let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
-ccw_circle.apply { circle(360, 140, 90); closePath() }
+ccw_circle.apply { circle(360, 150, 90); closePath() }
 
-// --- Direction arrows (simple arc hints) ---
+// --- Direction arrows (curved sweep arcs with arrowheads) ---
 
-let arrows = PathLayer('arrows') ${ fill: none; stroke: #ffffff66; stroke-width: 1.5; };
-arrows.apply {
-  // CW arrow: arc from top curving right
-  M 140 42 A 8 8 0 0 1 156 46
-  M 153 40 L 156 46 L 149 47
-  // CCW arrow: arc from top curving left
-  M 360 42 A 8 8 0 0 0 344 46
-  M 347 40 L 344 46 L 351 47
+// CW: curved arrow sweeping clockwise from top
+let cw_arrow = PathLayer('cw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+cw_arrow.apply {
+  // Arc sweeping CW from ~top-left to ~top-right
+  M 118 56 A 20 20 0 0 1 162 56
+  // Arrowhead at end
+  M 156 48 L 163 56 L 155 62
+}
+
+// CCW: curved arrow sweeping counter-clockwise from top
+let ccw_arrow = PathLayer('ccw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+ccw_arrow.apply {
+  // Arc sweeping CCW from ~top-right to ~top-left
+  M 382 56 A 20 20 0 0 0 338 56
+  // Arrowhead at end
+  M 344 48 L 337 56 L 345 62
 }
 
 // --- Labels ---
@@ -57,8 +65,8 @@ let labels = TextLayer('labels') ${
   font-weight: bold;
 };
 labels.apply {
-  text(140, 262)`Clockwise (CW)`
-  text(360, 262)`Counter-Clockwise (CCW)`
+  text(140, 270)`Clockwise (CW)`
+  text(360, 270)`Counter-Clockwise (CCW)`
 }
 
 let note = TextLayer('note') ${
@@ -68,16 +76,16 @@ let note = TextLayer('note') ${
   text-anchor: middle;
 };
 note.apply {
-  text(250, 288)`Same 4 stops — direction reverses color flow`
+  text(250, 292)`Same 4 stops — direction reverses color flow`
 }
 
 // --- Scene ---
 
 let left = GroupLayer('left') ${};
-left.append(cw_circle)
+left.append(cw_circle, cw_arrow)
 
 let right = GroupLayer('right') ${};
-right.append(ccw_circle)
+right.append(ccw_circle, ccw_arrow)
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left, right, arrows, labels, note)
+scene.append(bg, left, right, labels, note)

@@ -1,29 +1,17 @@
-// viewBox="0 0 450 450"
+// viewBox="0 0 520 530"
 // Inner Radius & Fill Modes — 2×2 Grid
 // The 4 innerFill modes with the same base gradient
 
-// --- Base gradient (reused via inherit) ---
+// --- Grid layout (wider spacing to avoid label overlap) ---
 
-let base_grad = ConicGradient('base', 0, 0) {|g|
-  g.stop(0,    Color('#7c3aed'));
-  g.stop(0.25, Color('#ec4899'));
-  g.stop(0.5,  Color('#f59e0b'));
-  g.stop(0.75, Color('#10b981'));
-  g.stop(1,    Color('#7c3aed'));
-};
-base_grad.innerRadius = 35;
-base_grad.interpolation = 'oklch';
-
-// --- Grid layout ---
-
-let cx1 = 130;
+let cx1 = 140;
 let cy1 = 155;
-let cx2 = 320;
+let cx2 = 380;
 let cy2 = 155;
-let cx3 = 130;
-let cy3 = 330;
-let cx4 = 320;
-let cy4 = 330;
+let cx3 = 140;
+let cy3 = 390;
+let cx4 = 380;
+let cy4 = 390;
 let r = 80;
 
 // --- Gradient variants ---
@@ -75,7 +63,7 @@ g4.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 450, 450) }
+bg.apply { rect(0, 0, 520, 530) }
 
 // --- Circles ---
 
@@ -101,10 +89,10 @@ let labels = TextLayer('labels') ${
   font-weight: bold;
 };
 labels.apply {
-  text(cx1, 255)`transparent`
-  text(cx2, 255)`transparent-blend`
-  text(cx3, 430)`center`
-  text(cx4, 430)`Color('#1a1a2e')`
+  text(cx1, 258)`transparent`
+  text(cx2, 258)`transparent-blend`
+  text(cx3, 493)`center`
+  text(cx4, 493)`Color('#1a1a2e')`
 }
 
 let desc = TextLayer('desc') ${
@@ -114,10 +102,10 @@ let desc = TextLayer('desc') ${
   text-anchor: middle;
 };
 desc.apply {
-  text(cx1, 270)`hard donut hole`
-  text(cx2, 270)`smooth fade out`
-  text(cx3, 443)`first stop fills center`
-  text(cx4, 443)`custom dark center`
+  text(cx1, 274)`hard donut hole`
+  text(cx2, 274)`smooth fade out`
+  text(cx3, 509)`first stop fills center`
+  text(cx4, 509)`custom dark center`
 }
 
 let title = TextLayer('title') ${
@@ -128,7 +116,7 @@ let title = TextLayer('title') ${
   font-weight: bold;
 };
 title.apply {
-  text(225, 40)`innerFill Modes (innerRadius = 35)`
+  text(260, 40)`innerFill Modes (innerRadius = 35)`
 }
 
 // --- Scene ---
