@@ -5,33 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-03-04
+## [Unreleased] - 2026-03-08
 
 ### Added
 
 #### Core
-- TopoGradient: topological elevation gradients with distance-based SDF interpolation. Contours are defined as closed projected paths at specific elevations with colors (`g.contour(path, elevation, color)`). Supports easing modes (`linear`, `smoothstep`, `ease-in`, `ease-out`, `ease-in-out`), `baseColor` property, and `oklch` interpolation.
-- Laplace solver for TopoGradient (`method = 'laplace'`) — solves ∇²h = 0 via Jacobi iteration for mathematically smooth elevation fields.
-- `iterations` property on TopoGradient (default 200, range 1–2000) for controlling Jacobi convergence.
-
-#### Playground
-- WebGPU WGSL shader for topo gradients (ray-cast containment, SDF distance interpolation, easing, OKLab color blending).
-- Canvas 2D fallback for topo gradients on non-WebGPU browsers.
-- SVG path parser utility (`flattenToSegments`) for converting d-strings to GPU-ready line segment arrays.
-- WebGPU compute shader pipeline for Laplace solver (init + N Jacobi iterations + render in single GPU submission).
-- Canvas 2D fallback for Laplace with 4× downscale optimization and bilinear upsampling.
-
-#### Documentation
-- TopoGradient section in gradients docs with examples (basic terrain, programmatic rings, multiple peaks/islands).
-- Laplace algorithm description and `iterations` property in gradients docs.
-
----
-
-## [Previous Unreleased] - 2026-03-02
-
-### Added
-
-#### Core
+- First-class `Color` type with OKLCH color space, harmony generation (`complement`, `triad`, `tetrad`, `analogous`, `splitComplement`), palette generation (`tints`, `shades`, `tones`), contrast utilities (`contrastRatio`, `wcagCompliant`, `accessiblePair`), and component access (`hue`, `chroma`, `lightness`, `alpha`).
+- `CSSVar()` constructor for referencing CSS custom properties with `var()` output and OKLCh fallback extraction.
+- CSS relative color syntax for CSSVar-backed Colors — `Color(cssvar, 'oklch(from var(--x) l c h / 0.5)')`.
+- CSS `@property` declarations via `CSSVar.register()` with type, initial value, and inheritance control.
+- `Color.lightDark(light, dark)` for automatic light/dark mode color switching.
 - Native SVG gradient support: `LinearGradient()`, `RadialGradient()`, `ConicGradient()` constructors with trailing-block stop definitions.
 - Gradient interpolation modes (`srgb`, `oklch`) and stepped interpolation via `.steps`.
 - Pattern paint server: `Pattern()` constructor with embedded path drawing.
@@ -39,41 +22,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Conic gradient features: partial sweep (`from`/`to` angles), `direction` (`cw`/`ccw`), `spread` modes (`clamp`/`repeat`/`transparent`).
 - Gradient `.inherit(newId)` for creating child gradients that reference parents via SVG `href`.
 - CSS custom property (`--var`) output from gradients with OKLCh fallback extraction.
-- String type with `length`, `empty()`, index access, `split()`, `append()`, `prepend()`, `includes()`, and `slice()` operations.
+- MeshGradient with bilinear interpolation over control point grids and FreeformGradient with IDW (inverse distance weighting) for scattered color points.
+- TopoGradient: topological elevation gradients with distance-based SDF interpolation. Contours defined via `g.contour(path, elevation, color)`. Supports easing modes (`linear`, `smoothstep`, `ease-in`, `ease-out`, `ease-in-out`), `baseColor`, and `oklch` interpolation.
+- Laplace solver for TopoGradient (`method = 'laplace'`) — solves ∇²h = 0 via Jacobi iteration for smooth elevation fields. `iterations` property (default 200, range 1–2000).
+- GroupLayer for SVG `<g>` element composition with `.append()`, max nesting depth of 10, and circular reference detection.
+- Transform convenience properties (`translate-x`, `translate-y`, `translate`, `scale-x`, `scale-y`, `scale`, `rotate`) on PathLayer, GroupLayer, and TextLayer style blocks.
+- First-class `Mask()` and `ClipPath()` constructors for SVG masking and clipping.
+- `SVGDocumentFragment()` for injecting arbitrary SVG content (filters, markers, etc.).
+- String type with `length`, `empty()`, index access, `split()`, `append()`, `prepend()`, `includes()`, and `slice()`.
 - First-class `Point` type with `x`/`y` properties and geometric methods: `translate()`, `polarTranslate()`, `midpoint()`, `lerp()`, `rotate()`, `distanceTo()`, `angleTo()`.
 - Objects with key-value literals, property access, `length`, `has()`, iteration, and `Object.keys()`/`values()`/`entries()`/`delete()` namespace methods.
 - Path Blocks (`@{ ... }`) — reusable path data with `draw()`, `project()`, parametric sampling (`get`, `tangent`, `normal`, `partition`), transforms (`reverse`, `boundingBox`, `offset`, `mirror`, `rotateAtVertexIndex`, `scale`), properties (`length`, `vertices`, `subPathCount`, `subPathCommands`, `startPoint`, `endPoint`), and `<<` concatenation.
+- `partition` `t` property and `subPath()` method on PathBlocks.
 - `Cycler(array, shuffle?)` stdlib function for deterministic round-robin cycling with `.pick()` and `.length`.
 - Matrix transforms (`translate`, `rotate`, `scale`) on layer contexts with `set()`/`reset()` and property access.
-- Line and column numbers in runtime error messages.
+- Dynamic layer constructors — `PathLayer` and `TextLayer` names can be expressions.
+- Universal tangent tracking for all SVG path commands.
+- Line and column numbers in runtime error messages, including method calls.
+- Void function call support (functions that return no value).
+- Improved missing semicolon error diagnostics with targeted suggestions.
+- `--render-gpu` CLI flag for headless browser GPU gradient rendering via Puppeteer.
 
 #### Playground
-- WebGPU rendering pipeline for conic gradients with WGSL fragment shader, LRU texture cache, and Canvas 2D fallback.
+- WebGPU rendering pipeline for conic gradients with WGSL fragment shader, LRU texture cache (32 entries), and Canvas 2D fallback.
 - GPU gradient service with pre-rendering between compilation and DOM update, staleness re-checks, and automatic cache invalidation.
+- WebGPU rendering pipelines for MeshGradient (bilinear shader) and FreeformGradient (IDW shader).
+- WebGPU WGSL shader for topo gradients (ray-cast containment, SDF distance interpolation, easing, OKLab color blending) with Canvas 2D fallback.
+- WebGPU compute shader pipeline for Laplace solver (init + N Jacobi iterations + render in single GPU submission) with Canvas 2D fallback using 4× downscale and bilinear upsampling.
+- SVG path parser utility (`flattenToSegments`) for converting d-strings to GPU-ready line segment arrays.
+- GroupLayer nesting support in layers panel with recursive visibility toggling.
 - CSS custom property panel for gradients with OKLCh/CSSVar warnings.
+- OKLCH color picker, palette panel, and CSS var panel for the Color system.
+- Floating error panel with Copy Debug Info capture.
+- Scroll padding so error panel doesn't block bottom code lines.
 - Autocompletion for Cycler, PathBlock, ProjectedPath, Object types, `mpi()`, `null`, and `Object` namespace methods with `pathblock` snippet template.
 - Line/column error highlighting in the code editor.
-- SEO-friendly static pages and theme toggle component.
+- SEO-friendly static pages with JSON-LD structured data, breadcrumbs, semantic HTML, and theme toggle component.
+- Extended pan clamp to allow 1/3 viewport over-pan and panning down to 50% zoom.
+- `mini-workspace` and `mini-preview` Web Components for interactive blog post embeds with code toggle.
+- BBWP compilation pipeline (`npm run compile:bbwp`) for archived render artifacts with auto GPU/CPU detection.
 
 #### Documentation
-- Gradients documentation covering LinearGradient, RadialGradient, ConicGradient, Pattern, inheritance, interpolation, `innerRadius`, and `innerFill`.
-- Conic gradient rendering implementation section (WebGPU vs Canvas 2D vs CLI wedge-path).
+- Gradient blog series (5 posts): linear/radial, conic, mesh/freeform, topological, and pipeline infrastructure.
+- Annotated TopoGradient schematics — 3 samples with side-by-side rendered gradients and contour map diagrams (paint chips, elevation labels, leader lines).
+- 20 blog samples for gradient posts (post1–post4) including easing modes, method comparisons, terrain maps, crystal formations, and organic contours.
+- Gradients documentation covering all gradient types, Pattern, inheritance, interpolation, `innerRadius`/`innerFill`, and rendering implementation.
+- TopoGradient documentation with examples (terrain, rings, peaks, Laplace solver).
 - Path Blocks documentation covering definition, drawing, projection, parametric sampling, and transforms.
-- Single-page markdown docs for AI/LLM consumption.
+- Blog post: *Reactive Color in SVG* — interactive Color system demos.
 - Blog post: *SEO Pages and Cloudflare Workers Routing*.
+- Single-page markdown docs for AI/LLM consumption.
 - `Content-Signal` directive added to `robots.txt`.
 
 ### Fixed
 
+#### Core
+- Array trailing commas and for-in loop destructuring.
+- Context-aware functions emitting absolute commands inside PathBlocks.
+- XML attribute injection vulnerability in CLI SVG output.
+
 #### Playground
 - Style block syntax in layer autocomplete and TextLayer widget.
 - Autosave data loss when navigating away from workspace.
+- Dark mode link contrast in blog and docs views.
+- Mobile scroll cutoff in blog and blog post views.
+- Workspace loading failure when nano ID contains hyphens.
+- Nano ID generating "undefined" in workspace IDs.
+- Blog static page regressions (breadcrumb, code styling, reactive-svg).
 
 ### Changed
 
 #### Playground
 - Conic gradient rendering moved from inline Canvas 2D to GPU gradient service with WebGPU primary path and Canvas 2D fallback.
 - Cmd/Ctrl+S now saves immediately instead of exporting.
+- Thumbnail-updated event dispatched on workspace exit.
 
 ## [Unreleased] - 2026-02-16
 
