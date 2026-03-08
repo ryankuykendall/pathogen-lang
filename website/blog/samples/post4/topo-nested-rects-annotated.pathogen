@@ -1,0 +1,144 @@
+// viewBox="0 0 840 420"
+// Nested Rectangles — Annotated Schematic
+// Left: rendered gradient, Right: contour map with paint chips + elevation labels
+
+// --- Base rectangle shapes (centered at origin) ---
+// Sized so each inner shape fully nests inside the outer after rotation
+
+let big_rect = @{
+  m -100 -70
+  l 200 0
+  l 0 140
+  l -200 0
+  z
+};
+
+let med_rect = @{
+  m -55 -40
+  l 110 0
+  l 0 80
+  l -110 0
+  z
+};
+
+let sm_rect = @{
+  m -28 -20
+  l 56 0
+  l 0 40
+  l -56 0
+  z
+};
+
+let diamond = @{
+  m 0 -12
+  l 12 12
+  l -12 12
+  l -12 -12
+  z
+};
+
+// --- Rotate each at gentle increments for nesting ---
+
+let r1 = big_rect.rotateAtVertexIndex(0, 0.12);
+let r2 = med_rect.rotateAtVertexIndex(0, 0.20);
+let r3 = sm_rect.rotateAtVertexIndex(0, 0.30);
+let r4 = diamond.rotateAtVertexIndex(0, 0.22);
+
+// --- Gradient ---
+// Projections computed to center all shapes at (200, 200)
+
+let topo = TopoGradient('rects', 400, 400) {|g|
+  g.contour(r1.project(209, 189), 0.15, Color('#264653'))
+  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'))
+  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'))
+  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'))
+};
+topo.baseColor = Color('#0a0a1a');
+topo.easing = 'smoothstep';
+topo.method = 'laplace';
+topo.iterations = 300;
+topo.interpolation = 'oklch';
+
+// ========== LEFT PANEL: Rendered Gradient ==========
+
+let bg = PathLayer('bg') ${ fill: #111; stroke: none; };
+bg.apply { rect(0, 0, 840, 420) }
+
+let left_fill = PathLayer('left-fill') ${ fill: topo; stroke: #333; stroke-width: 1; };
+left_fill.apply { roundRect(10, 10, 400, 400, 6) }
+
+// ========== RIGHT PANEL: Contour Schematic ==========
+
+let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
+schema_border.apply { roundRect(430, 10, 400, 400, 6) }
+
+// Schematic: same shapes drawn at +430 x offset (center ≈ 630, 200)
+// M positions mirror the gradient projections offset into right panel
+
+let outline1 = PathLayer('outline1') ${ fill: none; stroke: #888; stroke-width: 1.2; };
+outline1.apply { M 639 189 r1.draw() }
+
+let outline2 = PathLayer('outline2') ${ fill: none; stroke: #aaa; stroke-width: 1.2; };
+outline2.apply { M 639 190 r2.draw() }
+
+let outline3 = PathLayer('outline3') ${ fill: none; stroke: #ccc; stroke-width: 1.2; };
+outline3.apply { M 637 193 r3.draw() }
+
+let outline4 = PathLayer('outline4') ${ fill: none; stroke: #eee; stroke-width: 1.2; };
+outline4.apply { M 633 200 r4.draw() }
+
+// --- Paint chips (25% larger: 15x13) + elevation labels ---
+
+let chip1 = PathLayer('chip1') ${ fill: #264653; stroke: #555; stroke-width: 0.5; };
+chip1.apply { rect(770, 145, 15, 13) }
+
+let chip2 = PathLayer('chip2') ${ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
+chip2.apply { rect(770, 190, 15, 13) }
+
+let chip3 = PathLayer('chip3') ${ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
+chip3.apply { rect(770, 235, 15, 13) }
+
+let chip4 = PathLayer('chip4') ${ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
+chip4.apply { rect(770, 280, 15, 13) }
+
+let elev_labels = TextLayer('elev-labels') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: #bbb;
+  text-anchor: start;
+};
+elev_labels.apply {
+  text(790, 156)`0.15`
+  text(790, 201)`0.40`
+  text(790, 246)`0.65`
+  text(790, 291)`0.88`
+}
+
+// --- Leader lines (from chip left edge to shape right edge) ---
+// Endpoints computed from rotated vertex positions in schematic space
+
+let leaders = PathLayer('leaders') ${ fill: none; stroke: #555; stroke-width: 0.7; };
+leaders.apply {
+  M 770 152 l -37 23
+  M 770 197 l -80 -2
+  M 770 242 l -108 -44
+  M 770 287 l -127 -85
+}
+
+// --- Panel labels ---
+
+let panel_labels = TextLayer('panel-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: middle;
+};
+panel_labels.apply {
+  text(210, 405)`Rendered`
+  text(630, 405)`Contour Map`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels)

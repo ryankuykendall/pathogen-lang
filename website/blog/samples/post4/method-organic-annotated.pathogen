@@ -1,0 +1,188 @@
+// viewBox="0 0 740 370"
+// Method Comparison — Organic + Annotated Schematic
+// Left: distance SDF, Center: Laplace solver, Right: contour map
+
+// --- Organic shapes (shared across all 3 panels) ---
+
+let coast = @{
+  m 0 0
+  c 50 -35 130 -10 160 30
+  c 15 30 0 90 -30 110
+  c -40 25 -110 10 -140 -30
+  c -15 -40 -10 -80 10 -110
+  z
+};
+
+let mesa = @{
+  m 0 0
+  l 70 -8
+  c 15 3 20 18 15 33
+  l -73 15
+  c -17 -5 -22 -25 -12 -40
+  z
+};
+
+let spire = @{
+  m 0 -15
+  l 12 23
+  l -24 0
+  z
+};
+
+// --- Distance method (left panel) ---
+
+let topo_d = TopoGradient('dist-org', 220, 260) {|g|
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+};
+topo_d.method = 'distance';
+topo_d.baseColor = Color('#0a0a1a');
+topo_d.easing = 'smoothstep';
+topo_d.interpolation = 'oklch';
+
+// --- Laplace method (center panel) ---
+
+let topo_l = TopoGradient('lapl-org', 220, 260) {|g|
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+};
+topo_l.method = 'laplace';
+topo_l.iterations = 350;
+topo_l.baseColor = Color('#0a0a1a');
+topo_l.easing = 'smoothstep';
+topo_l.interpolation = 'oklch';
+
+// ========== BACKGROUND ==========
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 740, 370) }
+
+// ========== LEFT PANEL: Distance ==========
+
+let left = PathLayer('left') ${ fill: topo_d; stroke: #333; stroke-width: 1; };
+left.apply { roundRect(15, 30, 220, 260, 6) }
+
+// ========== CENTER PANEL: Laplace ==========
+
+let center = PathLayer('center') ${ fill: topo_l; stroke: #333; stroke-width: 1; };
+center.apply { roundRect(255, 30, 220, 260, 6) }
+
+// ========== RIGHT PANEL: Contour Schematic ==========
+
+let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
+schema_border.apply { roundRect(495, 30, 230, 260, 6) }
+
+// Contour outlines — offset shapes into schematic panel
+// Original projections: coast(30,50), mesa(55,85), spire(110,130)
+// Schematic panel starts at x=495, so shape origin ≈ 495+30=525 for coast
+
+let o_coast = PathLayer('o-coast') ${ fill: none; stroke: #8bc4e0; stroke-width: 1.2; };
+o_coast.apply { M 525 80 coast.draw() }
+
+let o_mesa = PathLayer('o-mesa') ${ fill: none; stroke: #7bb89a; stroke-width: 1.2; };
+o_mesa.apply { M 550 115 mesa.draw() }
+
+let o_spire = PathLayer('o-spire') ${ fill: none; stroke: #d4b060; stroke-width: 1.2; };
+o_spire.apply { M 605 160 spire.draw() }
+
+// --- Paint chips ---
+
+let chip_coast = PathLayer('chip-coast') ${ fill: #4cc9f0; stroke: #555; stroke-width: 0.5; };
+chip_coast.apply { rect(680, 90, 12, 10) }
+
+let chip_mesa = PathLayer('chip-mesa') ${ fill: #43aa8b; stroke: #555; stroke-width: 0.5; };
+chip_mesa.apply { rect(680, 140, 12, 10) }
+
+let chip_spire = PathLayer('chip-spire') ${ fill: #f9c74f; stroke: #555; stroke-width: 0.5; };
+chip_spire.apply { rect(680, 190, 12, 10) }
+
+// --- Elevation labels ---
+
+let elev_labels = TextLayer('elev-labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #bbb;
+  text-anchor: start;
+};
+elev_labels.apply {
+  text(697, 99)`0.20`
+  text(697, 149)`0.50`
+  text(697, 199)`0.80`
+}
+
+// --- Shape name labels ---
+
+let shape_labels = TextLayer('shape-labels') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: #777;
+  text-anchor: start;
+};
+shape_labels.apply {
+  text(697, 108)`coast`
+  text(697, 158)`mesa`
+  text(697, 208)`spire`
+}
+
+// --- Leader lines ---
+
+let leaders = PathLayer('leaders') ${ fill: none; stroke: #444; stroke-width: 0.5; };
+leaders.apply {
+  M 680 95 l -30 15
+  M 680 145 l -40 -15
+  M 680 195 l -45 -30
+}
+
+// --- Panel header labels ---
+
+let headers = TextLayer('headers') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
+};
+headers.apply {
+  text(125, 22)`Distance (SDF)`
+  text(365, 22)`Laplace Solver`
+  text(610, 22)`Contour Map`
+}
+
+// --- Panel descriptions ---
+
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #666;
+  text-anchor: middle;
+};
+desc.apply {
+  text(125, 308)`sharp contour-following`
+  text(365, 308)`smooth diffusion (350 iter)`
+  text(610, 308)`3 shapes, 3 elevations`
+}
+
+// --- Bottom title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: #999;
+  text-anchor: middle;
+};
+title.apply {
+  text(370, 355)`Organic Contours — Coast + Mesa + Spire`
+}
+
+// --- Scene ---
+
+let left_group = GroupLayer('left-group') ${};
+left_group.append(left)
+
+let center_group = GroupLayer('center-group') ${};
+center_group.append(center)
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title)
