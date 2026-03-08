@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBWP: linear-basics — gradient-blogpost</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        font-family: system-ui, sans-serif;
+      }
+      .header {
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #313244;
+      }
+      .header h1 {
+        font-size: 1rem;
+        color: #89b4fa;
+        margin-bottom: 0.25rem;
+      }
+      .header p {
+        font-size: 0.75rem;
+        color: #a6adc8;
+      }
+      .svg-container {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .svg-container svg {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>linear-basics</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 11:19:02 | string-based (no GPU) | viewBox: 0 0 400 300</p>
+    </div>
+    <div class="svg-container">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0d1b2a" />
+            <stop offset="0.45" stop-color="#1b4965" />
+            <stop offset="0.75" stop-color="#c56b5a" />
+            <stop offset="0.9" stop-color="#e8946b" />
+            <stop offset="1" stop-color="#f4a261" />
+          </linearGradient>
+          <linearGradient id="mountains" x1="0" y1="0" x2="0.8" y2="1">
+            <stop offset="0" stop-color="#1a0e2e" />
+            <stop offset="0.4" stop-color="#2d1b4e" />
+            <stop offset="1" stop-color="#5c6b8a" />
+          </linearGradient>
+          <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1e4d0f" />
+            <stop offset="0.5" stop-color="#3a6b22" />
+            <stop offset="1" stop-color="#6b5a1e" />
+          </linearGradient>
+          <linearGradient id="sunstreak" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#f4a261" />
+            <stop offset="0.35" stop-color="#e8946b" />
+            <stop offset="0.7" stop-color="#c56b5a" />
+            <stop offset="1" stop-color="#0d1b2a" />
+          </linearGradient>
+        </defs>
+
+        <g>
+          <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="url(#sky)" stroke="none" stroke-width="2" />
+          <path d="M 0 155 L 400 155 L 400 185 L 0 185 Z" fill="url(#sunstreak)" stroke="none" stroke-width="2" />
+          <path
+            d="M 0 220 L 40 175 L 90 200 L 140 155 L 200 130 L 260 160 L 310 140 L 360 165 L 400 150 L 400 300 L 0 300 Z"
+            fill="url(#mountains)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 0 260 L 50 220 L 100 240 L 170 195 L 230 225 L 290 205 L 350 230 L 400 210 L 400 300 L 0 300 Z"
+            fill="url(#mountains)"
+            stroke="none"
+            stroke-width="2"
+            opacity="0.7"
+          />
+          <path d="M 0 255 L 400 255 L 400 300 L 0 300 Z" fill="url(#ground)" stroke="none" stroke-width="2" />
+          <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="none" stroke="#1a0e2e" stroke-width="4" />
+        </g>
+      </svg>
+    </div>
+  </body>
+</html>

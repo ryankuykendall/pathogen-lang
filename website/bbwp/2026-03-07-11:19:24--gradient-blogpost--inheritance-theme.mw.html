@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MW: inheritance-theme — gradient-blogpost</title>
+    <link rel="stylesheet" href="../../playground/styles/theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg-primary, #1e1e2e);
+        color: var(--text-primary, #cdd6f4);
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid var(--border-primary, #313244);
+        flex-shrink: 0;
+      }
+      .header h1 {
+        font-size: 0.875rem;
+        color: var(--accent-primary, #89b4fa);
+        margin-bottom: 0.125rem;
+      }
+      .header p {
+        font-size: 0.6875rem;
+        color: var(--text-secondary, #a6adc8);
+      }
+      .workspace-container {
+        flex: 1;
+        min-height: 0;
+        padding: 0.75rem 1rem;
+      }
+      mini-workspace {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+      }
+    </style>
+    <script type="module" src="../../playground/components/blog/mini-workspace.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <h1>inheritance-theme</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 11:19:24</p>
+    </div>
+    <div class="workspace-container">
+      <mini-workspace
+        code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwR3JhZGllbnQlMjBJbmhlcml0YW5jZSUyMCVFMiU4MCU5NCUyMFRoZW1lZCUyMFVJJTIwUGFsZXR0ZSUwQSUyRiUyRiUyME9uZSUyMGJhc2UlMjBncmFkaWVudCUyMHNwYXducyUyMHZhcmlhbnRzJTIwdmlhJTIwaW5oZXJpdCgpJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFzZSUyMGdyYWRpZW50JTNBJTIwd2FybSUyMHN1bnNldCUyMHBhbGV0dGUlMjAtLS0lMEElMEFsZXQlMjBiYXNlJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ3dhcm0tYmFzZSclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNlNjM5NDYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4zNSUyQyUyMENvbG9yKCclMjNmNGEyNjEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC42NSUyQyUyMENvbG9yKCclMjNlOWM0NmEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMyYTlkOGYnKSklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBJbmhlcml0ZWQlMjB2YXJpYW50cyUyMC0tLSUwQSUwQWxldCUyMGNvb2wlMjAlM0QlMjBiYXNlLmluaGVyaXQoJ2Nvb2wtdmFyaWFudCcpJTNCJTBBY29vbC5ncmFkaWVudFRyYW5zZm9ybSUyMCUzRCUyMCdyb3RhdGUoMTgwJTJDJTIwMC41JTJDJTIwMC41KSclM0IlMEElMEFsZXQlMjB2ZXJ0aWNhbCUyMCUzRCUyMGJhc2UuaW5oZXJpdCgndmVydGljYWwtdmFyaWFudCcpJTNCJTBBdmVydGljYWwuZ3JhZGllbnRUcmFuc2Zvcm0lMjAlM0QlMjAncm90YXRlKDkwJTJDJTIwMC41JTJDJTIwMC41KSclM0IlMEElMEFsZXQlMjBzdWJ0bGUlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3VidGxlLXZhcmlhbnQnJTJDJTIwMCUyQyUyMDAlMkMlMjAxJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzYzQ5MDhhJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMENvbG9yKCclMjNkNGI4OTYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjM4YWJjYjMnKSklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMTExMTE4JTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDMwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBCYXNlJTIwc2hvd2Nhc2UlMjAobGFyZ2UlMjBjYXJkKSUyMC0tLSUwQSUwQWxldCUyMGJhc2VfY2FyZCUyMCUzRCUyMFBhdGhMYXllcignYmFzZS1jYXJkJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwYmFzZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFiYXNlX2NhcmQuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMjAlMkMlMjA0MCUyQyUyMDE3MCUyQyUyMDgwJTJDJTIwOCklMjAlN0QlMEElMEFsZXQlMjBjb29sX2NhcmQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2Nvb2wtY2FyZCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNvb2wlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBY29vbF9jYXJkLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDIxMCUyQyUyMDQwJTJDJTIwMTcwJTJDJTIwODAlMkMlMjA4KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFZlcnRpY2FsJTIwdmFyaWFudCUzQSUyMHRhbGwlMjBzaWRlYmFyJTIwLS0tJTBBJTBBbGV0JTIwdmVydF9iYXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3ZlcnQtYmFyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwdmVydGljYWwlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBdmVydF9iYXIuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMjAlMkMlMjAxNDUlMkMlMjA2MCUyQyUyMDEyMCUyQyUyMDgpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU3VidGxlJTIwdmFyaWFudCUzQSUyMFVJJTIwZWxlbWVudHMlMjAtLS0lMEElMEFsZXQlMjBidG4xJTIwJTNEJTIwUGF0aExheWVyKCdidG4xJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwc3VidGxlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJ0bjEuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMTAwJTJDJTIwMTQ1JTJDJTIwMTIwJTJDJTIwMzYlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMGJ0bjIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2J0bjInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzdWJ0bGUlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYnRuMi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgxMDAlMkMlMjAxOTUlMkMlMjAxMjAlMkMlMjAzNiUyQyUyMDYpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU21hbGwlMjBhY2NlbnQlMjBjaXJjbGVzJTIwdXNpbmclMjBiYXNlJTIwLS0tJTBBJTBBbGV0JTIwZG90MSUyMCUzRCUyMFBhdGhMYXllcignZG90MScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGJhc2UlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZG90MS5hcHBseSUyMCU3QiUyMGNpcmNsZSgyNjAlMkMlMjAxNjMlMkMlMjAxOCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMGRvdDIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RvdDInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBjb29sJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWRvdDIuYXBwbHklMjAlN0IlMjBjaXJjbGUoMzEwJTJDJTIwMTYzJTJDJTIwMTgpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBkb3QzJTIwJTNEJTIwUGF0aExheWVyKCdkb3QzJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwdmVydGljYWwlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZG90My5hcHBseSUyMCU3QiUyMGNpcmNsZSgzNjAlMkMlMjAxNjMlMkMlMjAxOCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFBpbGwlMjBzaGFwZXMlMjB3aXRoJTIwaW5oZXJpdGVkJTIwZ3JhZGllbnQlMjAtLS0lMEElMEFsZXQlMjBwaWxsMSUyMCUzRCUyMFBhdGhMYXllcigncGlsbDEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBiYXNlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXBpbGwxLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDI0MCUyQyUyMDIwMCUyQyUyMDE0MCUyQyUyMDI4JTJDJTIwMTQpJTIwJTdEJTBBJTBBbGV0JTIwcGlsbDIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3BpbGwyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwY29vbCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFwaWxsMi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgyNDAlMkMlMjAyMzYlMkMlMjAxNDAlMkMlMjAyOCUyQyUyMDE0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzg4OCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxMDUlMkMlMjAxMzUpJTYwYmFzZSUyMCh3YXJtKSU2MCUwQSUyMCUyMHRleHQoMjk1JTJDJTIwMTM1KSU2MGluaGVyaXQlMjAlRTIlODYlOTIlMjBjb29sJTYwJTBBJTIwJTIwdGV4dCg1MCUyQyUyMDI3OCklNjB2ZXJ0aWNhbCU2MCUwQSUyMCUyMHRleHQoMTYwJTJDJTIwMjQ4KSU2MHN1YnRsZSU2MCUwQSUyMCUyMHRleHQoMzEwJTJDJTIwMTk1KSU2MGFjY2VudCUyMGRvdHMlNjAlMEElN0QlMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2NjY2NkZCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTIwJTIwZm9udC13ZWlnaHQlM0ElMjBib2xkJTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDI1KSU2MEdyYWRpZW50JTIwSW5oZXJpdGFuY2UlM0ElMjBPbmUlMjBCYXNlJTJDJTIwTWFueSUyMFZhcmlhbnRzJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBwYWxldHRlJTIwJTNEJTIwR3JvdXBMYXllcigncGFsZXR0ZScpJTIwJTI0JTdCJTdEJTNCJTBBcGFsZXR0ZS5hcHBlbmQoYmclMkMlMjBiYXNlX2NhcmQlMkMlMjBjb29sX2NhcmQlMkMlMjB2ZXJ0X2JhciUyQyUyMGJ0bjElMkMlMjBidG4yJTJDJTIwZG90MSUyQyUyMGRvdDIlMkMlMjBkb3QzJTJDJTIwcGlsbDElMkMlMjBwaWxsMiUyQyUyMGxhYmVscyUyQyUyMHRpdGxlKSUwQQ=="
+        code-open
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+          <defs>
+            <linearGradient id="warm-base" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.35" stop-color="#f4a261" />
+              <stop offset="0.65" stop-color="#e9c46a" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+            <linearGradient
+              id="cool-variant"
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="0"
+              gradientTransform="rotate(180, 0.5, 0.5)"
+              href="#warm-base"
+            />
+            <linearGradient
+              id="vertical-variant"
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="0"
+              gradientTransform="rotate(90, 0.5, 0.5)"
+              href="#warm-base"
+            />
+            <linearGradient id="subtle-variant" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#c4908a" />
+              <stop offset="0.5" stop-color="#d4b896" />
+              <stop offset="1" stop-color="#8abcb3" />
+            </linearGradient>
+          </defs>
+
+          <g>
+            <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="#111118" stroke="none" stroke-width="2" />
+            <path
+              d="M 28 40 L 182 40 Q 190 40 190 48 L 190 112 Q 190 120 182 120 L 28 120 Q 20 120 20 112 L 20 48 Q 20 40 28 40 Z"
+              fill="url(#warm-base)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 218 40 L 372 40 Q 380 40 380 48 L 380 112 Q 380 120 372 120 L 218 120 Q 210 120 210 112 L 210 48 Q 210 40 218 40 Z"
+              fill="url(#cool-variant)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 28 145 L 72 145 Q 80 145 80 153 L 80 257 Q 80 265 72 265 L 28 265 Q 20 265 20 257 L 20 153 Q 20 145 28 145 Z"
+              fill="url(#vertical-variant)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 106 145 L 214 145 Q 220 145 220 151 L 220 175 Q 220 181 214 181 L 106 181 Q 100 181 100 175 L 100 151 Q 100 145 106 145 Z"
+              fill="url(#subtle-variant)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 106 195 L 214 195 Q 220 195 220 201 L 220 225 Q 220 231 214 231 L 106 231 Q 100 231 100 225 L 100 201 Q 100 195 106 195 Z"
+              fill="url(#subtle-variant)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 242 163 A 18 18 0 1 1 278 163 A 18 18 0 1 1 242 163 Z"
+              fill="url(#warm-base)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 292 163 A 18 18 0 1 1 328 163 A 18 18 0 1 1 292 163 Z"
+              fill="url(#cool-variant)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 342 163 A 18 18 0 1 1 378 163 A 18 18 0 1 1 342 163 Z"
+              fill="url(#vertical-variant)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 254 200 L 366 200 Q 380 200 380 214 L 380 214 Q 380 228 366 228 L 254 228 Q 240 228 240 214 L 240 214 Q 240 200 254 200 Z"
+              fill="url(#warm-base)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 254 236 L 366 236 Q 380 236 380 250 L 380 250 Q 380 264 366 264 L 254 264 Q 240 264 240 250 L 240 250 Q 240 236 254 236 Z"
+              fill="url(#cool-variant)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <text x="105" y="135" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">
+              base (warm)
+            </text>
+            <text x="295" y="135" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">
+              inherit → cool
+            </text>
+            <text x="50" y="278" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">vertical</text>
+            <text x="160" y="248" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">subtle</text>
+            <text x="310" y="195" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">
+              accent dots
+            </text>
+            <text
+              x="200"
+              y="25"
+              font-family="system-ui, sans-serif"
+              font-size="14"
+              fill="#ccccdd"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Gradient Inheritance: One Base, Many Variants
+            </text>
+          </g>
+        </svg>
+      </mini-workspace>
+    </div>
+  </body>
+</html>

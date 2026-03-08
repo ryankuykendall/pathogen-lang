@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MW: radial-glow — gradient-blogpost</title>
+    <link rel="stylesheet" href="../../playground/styles/theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg-primary, #1e1e2e);
+        color: var(--text-primary, #cdd6f4);
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid var(--border-primary, #313244);
+        flex-shrink: 0;
+      }
+      .header h1 {
+        font-size: 0.875rem;
+        color: var(--accent-primary, #89b4fa);
+        margin-bottom: 0.125rem;
+      }
+      .header p {
+        font-size: 0.6875rem;
+        color: var(--text-secondary, #a6adc8);
+      }
+      .workspace-container {
+        flex: 1;
+        min-height: 0;
+        padding: 0.75rem 1rem;
+      }
+      mini-workspace {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+      }
+    </style>
+    <script type="module" src="../../playground/components/blog/mini-workspace.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <h1>radial-glow</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 11:19:04</p>
+    </div>
+    <div class="workspace-container">
+      <mini-workspace
+        code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUmFkaWFsJTIwR3JhZGllbnQlMjBHbG93JTIwJUUyJTgwJTk0JTIwQ29zbWljJTIwU2NlbmUlMEElMkYlMkYlMjBEZW1vbnN0cmF0ZXMlMjByYWRpYWwlMjBncmFkaWVudHMlMjBmb3IlMjBsaWdodCUyMHNvdXJjZXMlMkMlMjBnbG93cyUyQyUyMGFuZCUyMHNoYWRpbmclMEElMEElMkYlMkYlMjAtLS0lMjBHcmFkaWVudHMlMjAtLS0lMEElMEFsZXQlMjBuZWJ1bGFfZ3JhZCUyMCUzRCUyMFJhZGlhbEdyYWRpZW50KCduZWJ1bGEnJTJDJTIwMC40NSUyQyUyMDAuNCUyQyUyMDAuNTUpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzliNTliNicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjI1JTJDJTIwQ29sb3IoJyUyMzZiMmZhMCcpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjUlMkMlMjAlMjBDb2xvcignJTIzMmMxNjU0JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuOCUyQyUyMCUyMENvbG9yKCclMjMwZjBhMWEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMwODA2MTInKSklM0IlMEElN0QlM0IlMEFuZWJ1bGFfZ3JhZC5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQWxldCUyMHN0YXJfZ3JhZCUyMCUzRCUyMFJhZGlhbEdyYWRpZW50KCdzdGFyLWNvcmUnJTJDJTIwMC41JTJDJTIwMC41JTJDJTIwMC41KSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMENvbG9yKCclMjNmZmZmZmYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4yJTJDJTIwQ29sb3IoJyUyM2NjZTVmZicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjUlMkMlMjBDb2xvcignJTIzNTU5OWRkJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjBDb2xvcignJTIzMDAwMDAwMDAnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjB3YXJtX3N0YXIlMjAlM0QlMjBSYWRpYWxHcmFkaWVudCgnd2FybS1zdGFyJyUyQyUyMDAuNSUyQyUyMDAuNSUyQyUyMDAuNSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzZmZmOGUxJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMTUlMkMlMjBDb2xvcignJTIzZmZjYzgwJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNCUyQyUyMENvbG9yKCclMjNlNjUxMDAnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjMwMDAwMDAwMCcpKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHBsYW5ldF9ncmFkJTIwJTNEJTIwUmFkaWFsR3JhZGllbnQoJ3BsYW5ldCclMkMlMjAwLjM1JTJDJTIwMC4zNSUyQyUyMDAuNSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzNGZjM2Y3JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMyUyQyUyMENvbG9yKCclMjMwMjg4ZDEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC42JTJDJTIwQ29sb3IoJyUyMzAxNTc5YicpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwQ29sb3IoJyUyMzBhMTkyOScpKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHJpbmdfZ3JhZCUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdyaW5nJyUyQyUyMDAlMkMlMjAwJTJDJTIwMSUyQyUyMDApJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzAwMDAwMDAwJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMiUyQyUyMCUyMENvbG9yKCclMjM4MGRlZWEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC41JTJDJTIwJTIwQ29sb3IoJyUyMzRkZDBlMScpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjglMkMlMjAlMjBDb2xvcignJTIzODBkZWVhJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMDAwMDAwMDAnKSklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwYW5kJTIwTmVidWxhJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMDgwNjEyJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDQwMCklMjAlN0QlMEElMEFsZXQlMjBuZWJ1bGElMjAlM0QlMjBQYXRoTGF5ZXIoJ25lYnVsYS1sYXllcicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5lYnVsYV9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQW5lYnVsYS5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU3RhcnMlMjAtLS0lMEElMEFsZXQlMjBzMSUyMCUzRCUyMFBhdGhMYXllcignczEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzdGFyX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBczEuYXBwbHklMjAlN0IlMjBjaXJjbGUoNzAlMkMlMjA1NSUyQyUyMDE4KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwczIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3MyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwd2FybV9zdGFyJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXMyLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDMzMCUyQyUyMDgwJTJDJTIwMjIpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBzMyUyMCUzRCUyMFBhdGhMYXllcignczMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzdGFyX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBczMuYXBwbHklMjAlN0IlMjBjaXJjbGUoNjAlMkMlMjAzMjAlMkMlMjAxNCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMHM0JTIwJTNEJTIwUGF0aExheWVyKCdzNCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHdhcm1fc3RhciUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFzNC5hcHBseSUyMCU3QiUyMGNpcmNsZSgzNTAlMkMlMjAyOTAlMkMlMjAxNiklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMHM1JTIwJTNEJTIwUGF0aExheWVyKCdzNScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHN0YXJfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFzNS5hcHBseSUyMCU3QiUyMGNpcmNsZSgyMDAlMkMlMjA0MCUyQyUyMDEwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwc3RhcnMlMjAlM0QlMjBHcm91cExheWVyKCdzdGFycycpJTIwJTI0JTdCJTdEJTNCJTBBc3RhcnMuYXBwZW5kKHMxJTJDJTIwczIlMkMlMjBzMyUyQyUyMHM0JTJDJTIwczUpJTBBJTBBJTJGJTJGJTIwLS0tJTIwUGxhbmV0JTIwd2l0aCUyMFJpbmclMjAtLS0lMEElMEFsZXQlMjBwbGFuZXRfYm9keSUyMCUzRCUyMFBhdGhMYXllcigncGxhbmV0LWJvZHknKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBwbGFuZXRfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFwbGFuZXRfYm9keS5hcHBseSUyMCU3QiUyMGNpcmNsZSgyNjAlMkMlMjAyODAlMkMlMjA0NSklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMHBsYW5ldF9yaW5nJTIwJTNEJTIwUGF0aExheWVyKCdwbGFuZXQtcmluZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHJpbmdfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjBvcGFjaXR5JTNBJTIwMC42JTNCJTIwJTdEJTNCJTBBcGxhbmV0X3JpbmcuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwMjAwJTIwMjgyJTIwUSUyMDIzMCUyMDI2MCUyMDI2MCUyMDI2MiUyMFElMjAyOTAlMjAyNjAlMjAzMjAlMjAyODIlMEElMjAlMjBRJTIwMjkwJTIwMjkwJTIwMjYwJTIwMjg4JTIwUSUyMDIzMCUyMDI5MCUyMDIwMCUyMDI4MiUyMFolMEElN0QlMEElMEFsZXQlMjBwbGFuZXQlMjAlM0QlMjBHcm91cExheWVyKCdwbGFuZXQnKSUyMCUyNCU3QiU3RCUzQiUwQXBsYW5ldC5hcHBlbmQocGxhbmV0X2JvZHklMkMlMjBwbGFuZXRfcmluZyklMEElMEElMkYlMkYlMjAtLS0lMjBTY2VuZSUyMC0tLSUwQSUwQWxldCUyMHNjZW5lJTIwJTNEJTIwR3JvdXBMYXllcignc2NlbmUnKSUyMCUyNCU3QiU3RCUzQiUwQXNjZW5lLmFwcGVuZChiZyUyQyUyMG5lYnVsYSUyQyUyMHN0YXJzJTJDJTIwcGxhbmV0KSUwQQ=="
+        code-open
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+          <defs>
+            <radialGradient id="nebula" cx="0.45" cy="0.4" r="0.55">
+              <stop offset="0" stop-color="#9b59b6" />
+              <stop offset="0.08333333333333333" stop-color="#8b4baf" />
+              <stop offset="0.16666666666666666" stop-color="#7b3da7" />
+              <stop offset="0.25" stop-color="#6b2fa0" />
+              <stop offset="0.3333333333333333" stop-color="#542787" />
+              <stop offset="0.41666666666666663" stop-color="#3f1f6d" />
+              <stop offset="0.5" stop-color="#2c1654" />
+              <stop offset="0.575" stop-color="#251345" />
+              <stop offset="0.65" stop-color="#1d1036" />
+              <stop offset="0.7250000000000001" stop-color="#160d27" />
+              <stop offset="0.8" stop-color="#0f0a1a" />
+              <stop offset="0.9" stop-color="#0b0816" />
+              <stop offset="1" stop-color="#080612" />
+            </radialGradient>
+            <radialGradient id="star-core" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#ffffff" />
+              <stop offset="0.2" stop-color="#cce5ff" />
+              <stop offset="0.5" stop-color="#5599dd" />
+              <stop offset="1" stop-color="rgba(0, 0, 0, 0)" />
+            </radialGradient>
+            <radialGradient id="warm-star" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#fff8e1" />
+              <stop offset="0.15" stop-color="#ffcc80" />
+              <stop offset="0.4" stop-color="#e65100" />
+              <stop offset="1" stop-color="rgba(0, 0, 0, 0)" />
+            </radialGradient>
+            <radialGradient id="planet" cx="0.35" cy="0.35" r="0.5">
+              <stop offset="0" stop-color="#4fc3f7" />
+              <stop offset="0.3" stop-color="#0288d1" />
+              <stop offset="0.6" stop-color="#01579b" />
+              <stop offset="1" stop-color="#0a1929" />
+            </radialGradient>
+            <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="rgba(0, 0, 0, 0)" />
+              <stop offset="0.2" stop-color="#80deea" />
+              <stop offset="0.5" stop-color="#4dd0e1" />
+              <stop offset="0.8" stop-color="#80deea" />
+              <stop offset="1" stop-color="rgba(0, 0, 0, 0)" />
+            </linearGradient>
+          </defs>
+
+          <g>
+            <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="#080612" stroke="none" stroke-width="2" />
+            <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="url(#nebula)" stroke="none" stroke-width="2" />
+            <g>
+              <path
+                d="M 52 55 A 18 18 0 1 1 88 55 A 18 18 0 1 1 52 55 Z"
+                fill="url(#star-core)"
+                stroke="none"
+                stroke-width="2"
+              />
+              <path
+                d="M 308 80 A 22 22 0 1 1 352 80 A 22 22 0 1 1 308 80 Z"
+                fill="url(#warm-star)"
+                stroke="none"
+                stroke-width="2"
+              />
+              <path
+                d="M 46 320 A 14 14 0 1 1 74 320 A 14 14 0 1 1 46 320 Z"
+                fill="url(#star-core)"
+                stroke="none"
+                stroke-width="2"
+              />
+              <path
+                d="M 334 290 A 16 16 0 1 1 366 290 A 16 16 0 1 1 334 290 Z"
+                fill="url(#warm-star)"
+                stroke="none"
+                stroke-width="2"
+              />
+              <path
+                d="M 190 40 A 10 10 0 1 1 210 40 A 10 10 0 1 1 190 40 Z"
+                fill="url(#star-core)"
+                stroke="none"
+                stroke-width="2"
+              />
+            </g>
+            <g>
+              <path
+                d="M 215 280 A 45 45 0 1 1 305 280 A 45 45 0 1 1 215 280 Z"
+                fill="url(#planet)"
+                stroke="none"
+                stroke-width="2"
+              />
+              <path
+                d="M 200 282 Q 230 260 260 262 Q 290 260 320 282 Q 290 290 260 288 Q 230 290 200 282 Z"
+                fill="url(#ring)"
+                stroke="none"
+                stroke-width="2"
+                opacity="0.6"
+              />
+            </g>
+          </g>
+        </svg>
+      </mini-workspace>
+    </div>
+  </body>
+</html>

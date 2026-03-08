@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBWP: spread-modes — gradient-blogpost</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        font-family: system-ui, sans-serif;
+      }
+      .header {
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #313244;
+      }
+      .header h1 {
+        font-size: 1rem;
+        color: #89b4fa;
+        margin-bottom: 0.25rem;
+      }
+      .header p {
+        font-size: 0.75rem;
+        color: #a6adc8;
+      }
+      .svg-container {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .svg-container svg {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>spread-modes</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-06 17:42:54 | string-based (no GPU) | viewBox: 0 0 400 300</p>
+    </div>
+    <div class="svg-container">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+        <rect width="100%" height="100%" fill="#f5f5f5" />
+        <defs>
+          <linearGradient id="pad-grad" x1="0" y1="0" x2="0.3" y2="0" spreadMethod="pad">
+            <stop offset="0" stop-color="#e63946" />
+            <stop offset="0.33" stop-color="#f4a261" />
+            <stop offset="0.66" stop-color="#2a9d8f" />
+            <stop offset="1" stop-color="#264653" />
+          </linearGradient>
+          <linearGradient id="reflect-grad" x1="0" y1="0" x2="0.3" y2="0" spreadMethod="reflect">
+            <stop offset="0" stop-color="#e63946" />
+            <stop offset="0.33" stop-color="#f4a261" />
+            <stop offset="0.66" stop-color="#2a9d8f" />
+            <stop offset="1" stop-color="#264653" />
+          </linearGradient>
+          <linearGradient id="repeat-grad" x1="0" y1="0" x2="0.3" y2="0" spreadMethod="repeat">
+            <stop offset="0" stop-color="#e63946" />
+            <stop offset="0.33" stop-color="#f4a261" />
+            <stop offset="0.66" stop-color="#2a9d8f" />
+            <stop offset="1" stop-color="#264653" />
+          </linearGradient>
+        </defs>
+
+        <g>
+          <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="#14141e" stroke="none" stroke-width="2" />
+          <path
+            d="M 64 45 L 376 45 Q 380 45 380 49 L 380 91 Q 380 95 376 95 L 64 95 Q 60 95 60 91 L 60 49 Q 60 45 64 45 Z"
+            fill="url(#pad-grad)"
+            stroke="#333"
+            stroke-width="1"
+          />
+          <path
+            d="M 64 120 L 376 120 Q 380 120 380 124 L 380 166 Q 380 170 376 170 L 64 170 Q 60 170 60 166 L 60 124 Q 60 120 64 120 Z"
+            fill="url(#reflect-grad)"
+            stroke="#333"
+            stroke-width="1"
+          />
+          <path
+            d="M 64 195 L 376 195 Q 380 195 380 199 L 380 241 Q 380 245 376 245 L 64 245 Q 60 245 60 241 L 60 199 Q 60 195 64 195 Z"
+            fill="url(#repeat-grad)"
+            stroke="#333"
+            stroke-width="1"
+          />
+          <path d="M 60 40 L 60 255 M 156 40 L 156 255" fill="none" stroke="#ffffff44" stroke-width="1" />
+          <text x="108" y="265" font-family="monospace" font-size="9" fill="#666" text-anchor="middle">
+            ← gradient range →
+          </text>
+          <text x="52" y="75" font-family="monospace" font-size="12" fill="#a0a0c0" text-anchor="end">pad</text>
+          <text x="52" y="150" font-family="monospace" font-size="12" fill="#a0a0c0" text-anchor="end">reflect</text>
+          <text x="52" y="225" font-family="monospace" font-size="12" fill="#a0a0c0" text-anchor="end">repeat</text>
+          <text
+            x="200"
+            y="290"
+            font-family="system-ui, sans-serif"
+            font-size="16"
+            fill="#e0e0ff"
+            text-anchor="middle"
+            font-weight="bold"
+          >
+            spreadMethod Comparison
+          </text>
+        </g>
+      </svg>
+    </div>
+  </body>
+</html>

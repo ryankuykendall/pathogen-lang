@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBWP: radial-glow — gradient-blogpost</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        font-family: system-ui, sans-serif;
+      }
+      .header {
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #313244;
+      }
+      .header h1 {
+        font-size: 1rem;
+        color: #89b4fa;
+        margin-bottom: 0.25rem;
+      }
+      .header p {
+        font-size: 0.75rem;
+        color: #a6adc8;
+      }
+      .svg-container {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .svg-container svg {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>radial-glow</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 11:36:12 | string-based (no GPU) | viewBox: 0 0 400 400</p>
+    </div>
+    <div class="svg-container">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+        <defs>
+          <radialGradient id="nebula" cx="0.45" cy="0.4" r="0.55">
+            <stop offset="0" stop-color="#9b59b6" />
+            <stop offset="0.08333333333333333" stop-color="#8b4baf" />
+            <stop offset="0.16666666666666666" stop-color="#7b3da7" />
+            <stop offset="0.25" stop-color="#6b2fa0" />
+            <stop offset="0.3333333333333333" stop-color="#542787" />
+            <stop offset="0.41666666666666663" stop-color="#3f1f6d" />
+            <stop offset="0.5" stop-color="#2c1654" />
+            <stop offset="0.575" stop-color="#251345" />
+            <stop offset="0.65" stop-color="#1d1036" />
+            <stop offset="0.7250000000000001" stop-color="#160d27" />
+            <stop offset="0.8" stop-color="#0f0a1a" />
+            <stop offset="0.9" stop-color="#0b0816" />
+            <stop offset="1" stop-color="#080612" />
+          </radialGradient>
+          <radialGradient id="star-core" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#ffffff" />
+            <stop offset="0.2" stop-color="#cce5ff" />
+            <stop offset="0.5" stop-color="#5599dd" />
+            <stop offset="1" stop-color="rgba(0, 0, 0, 0)" />
+          </radialGradient>
+          <radialGradient id="warm-star" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#fff8e1" />
+            <stop offset="0.15" stop-color="#ffcc80" />
+            <stop offset="0.4" stop-color="#e65100" />
+            <stop offset="1" stop-color="rgba(0, 0, 0, 0)" />
+          </radialGradient>
+          <radialGradient id="planet" cx="0.35" cy="0.35" r="0.5">
+            <stop offset="0" stop-color="#4fc3f7" />
+            <stop offset="0.3" stop-color="#0288d1" />
+            <stop offset="0.6" stop-color="#01579b" />
+            <stop offset="1" stop-color="#0a1929" />
+          </radialGradient>
+          <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="rgba(0, 0, 0, 0)" />
+            <stop offset="0.2" stop-color="#80deea" />
+            <stop offset="0.5" stop-color="#4dd0e1" />
+            <stop offset="0.8" stop-color="#80deea" />
+            <stop offset="1" stop-color="rgba(0, 0, 0, 0)" />
+          </linearGradient>
+        </defs>
+
+        <g>
+          <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="#080612" stroke="none" stroke-width="2" />
+          <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="url(#nebula)" stroke="none" stroke-width="2" />
+          <g>
+            <path
+              d="M 52 55 A 18 18 0 1 1 88 55 A 18 18 0 1 1 52 55 Z"
+              fill="url(#star-core)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 308 80 A 22 22 0 1 1 352 80 A 22 22 0 1 1 308 80 Z"
+              fill="url(#warm-star)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 46 320 A 14 14 0 1 1 74 320 A 14 14 0 1 1 46 320 Z"
+              fill="url(#star-core)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 334 290 A 16 16 0 1 1 366 290 A 16 16 0 1 1 334 290 Z"
+              fill="url(#warm-star)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 190 40 A 10 10 0 1 1 210 40 A 10 10 0 1 1 190 40 Z"
+              fill="url(#star-core)"
+              stroke="none"
+              stroke-width="2"
+            />
+          </g>
+          <g>
+            <path
+              d="M 215 280 A 45 45 0 1 1 305 280 A 45 45 0 1 1 215 280 Z"
+              fill="url(#planet)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 200 282 Q 230 260 260 262 Q 290 260 320 282 Q 290 290 260 288 Q 230 290 200 282 Z"
+              fill="url(#ring)"
+              stroke="none"
+              stroke-width="2"
+              opacity="0.6"
+            />
+          </g>
+        </g>
+      </svg>
+    </div>
+  </body>
+</html>

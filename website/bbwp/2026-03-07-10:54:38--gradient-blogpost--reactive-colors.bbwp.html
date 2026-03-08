@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBWP: reactive-colors — gradient-blogpost</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        font-family: system-ui, sans-serif;
+      }
+      .header {
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #313244;
+      }
+      .header h1 {
+        font-size: 1rem;
+        color: #89b4fa;
+        margin-bottom: 0.25rem;
+      }
+      .header p {
+        font-size: 0.75rem;
+        color: #a6adc8;
+      }
+      .svg-container {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .svg-container svg {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>reactive-colors</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 10:54:38 | string-based (no GPU) | viewBox: 0 0 400 400</p>
+    </div>
+    <div class="svg-container">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+        <style>
+          @property --primary {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #2563eb;
+          }
+          @property --accent {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #e63946;
+          }
+          @property --surface {
+            syntax: "<color>";
+            inherits: true;
+            initial-value: #1a1a2e;
+          }
+        </style>
+        <rect width="100%" height="100%" fill="#f5f5f5" />
+        <defs>
+          <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#0030b7" />
+            <stop offset="0.5" stop-color="var(--primary, #2563eb)" />
+            <stop offset="1" stop-color="#60a5ff" />
+          </linearGradient>
+          <linearGradient id="accent-bar" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="var(--accent, #e63946)" />
+            <stop offset="0.5" stop-color="#e03879" />
+            <stop offset="1" stop-color="#ff6f73" />
+          </linearGradient>
+          <radialGradient id="glow" cx="0.5" cy="0.5" r="0.6">
+            <stop offset="0" stop-color="#60a5ff" />
+            <stop offset="0.5" stop-color="var(--primary, #2563eb)" />
+            <stop offset="1" stop-color="var(--surface, #1a1a2e)" />
+          </radialGradient>
+          <radialGradient id="badge" cx="0.4" cy="0.4" r="0.5">
+            <stop offset="0" stop-color="#ff6f73" />
+            <stop offset="0.6" stop-color="var(--accent, #e63946)" />
+            <stop offset="1" stop-color="#e03879" />
+          </radialGradient>
+          <linearGradient id="complement" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ab5b00" />
+            <stop offset="1" stop-color="#0030b7" />
+          </linearGradient>
+        </defs>
+
+        <g>
+          <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="var(--surface, #1a1a2e)" stroke="none" stroke-width="2" />
+          <path
+            d="M 20 200 A 180 180 0 1 1 380 200 A 180 180 0 1 1 20 200 Z"
+            fill="url(#glow)"
+            stroke="none"
+            stroke-width="2"
+            opacity="0.5"
+          />
+          <path
+            d="M 52 60 L 228 60 Q 240 60 240 72 L 240 188 Q 240 200 228 200 L 52 200 Q 40 200 40 188 L 40 72 Q 40 60 52 60 Z"
+            fill="url(#hero)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 52 60 L 228 60 Q 240 60 240 72 L 240 188 Q 240 200 228 200 L 52 200 Q 40 200 40 188 L 40 72 Q 40 60 52 60 Z"
+            fill="none"
+            stroke="oklch(from var(--primary, #2563eb) calc(l + 0.2) c h)"
+            stroke-width="1"
+            opacity="0.4"
+          />
+          <path
+            d="M 44 220 L 356 220 Q 360 220 360 224 L 360 224 Q 360 228 356 228 L 44 228 Q 40 228 40 224 L 40 224 Q 40 220 44 220 Z"
+            fill="url(#accent-bar)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 265 100 A 35 35 0 1 1 335 100 A 35 35 0 1 1 265 100 Z"
+            fill="url(#badge)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 320 155 A 20 20 0 1 1 360 155 A 20 20 0 1 1 320 155 Z"
+            fill="url(#badge)"
+            stroke="none"
+            stroke-width="2"
+            opacity="0.6"
+          />
+          <path
+            d="M 48 250 L 82 250 Q 90 250 90 258 L 90 362 Q 90 370 82 370 L 48 370 Q 40 370 40 362 L 40 258 Q 40 250 48 250 Z"
+            fill="url(#complement)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 124 260 L 176 260 Q 190 260 190 274 L 190 274 Q 190 288 176 288 L 124 288 Q 110 288 110 274 L 110 274 Q 110 260 124 260 Z"
+            fill="var(--primary, #2563eb)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 214 260 L 266 260 Q 280 260 280 274 L 280 274 Q 280 288 266 288 L 214 288 Q 200 288 200 274 L 200 274 Q 200 260 214 260 Z"
+            fill="var(--accent, #e63946)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 304 260 L 356 260 Q 370 260 370 274 L 370 274 Q 370 288 356 288 L 304 288 Q 290 288 290 274 L 290 274 Q 290 260 304 260 Z"
+            fill="oklch(from var(--primary, #2563eb) l c calc(h + 180))"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 114 310 L 366 310 Q 370 310 370 314 L 370 314 Q 370 318 366 318 L 114 318 Q 110 318 110 314 L 110 314 Q 110 310 114 310 Z"
+            fill="oklch(from var(--primary, #2563eb) calc(l - 0.15) c h)"
+            stroke="none"
+            stroke-width="2"
+            opacity="0.4"
+          />
+          <path
+            d="M 114 310 L 286 310 Q 290 310 290 314 L 290 314 Q 290 318 286 318 L 114 318 Q 110 318 110 314 L 110 314 Q 110 310 114 310 Z"
+            fill="url(#hero)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <path
+            d="M 114 335 L 366 335 Q 370 335 370 339 L 370 339 Q 370 343 366 343 L 114 343 Q 110 343 110 339 L 110 339 Q 110 335 114 335 Z"
+            fill="oklch(from var(--primary, #2563eb) calc(l - 0.15) c h)"
+            stroke="none"
+            stroke-width="2"
+            opacity="0.4"
+          />
+          <path
+            d="M 114 335 L 236 335 Q 240 335 240 339 L 240 339 Q 240 343 236 343 L 114 343 Q 110 343 110 339 L 110 339 Q 110 335 114 335 Z"
+            fill="url(#accent-bar)"
+            stroke="none"
+            stroke-width="2"
+          />
+          <text x="48" y="85" font-family="system-ui, sans-serif" font-size="11" fill="#888" text-anchor="start">
+            --primary
+          </text>
+          <text x="270" y="85" font-family="system-ui, sans-serif" font-size="11" fill="#888" text-anchor="start">
+            --accent
+          </text>
+          <text x="135" y="282" font-family="system-ui, sans-serif" font-size="11" fill="#888" text-anchor="start">
+            primary
+          </text>
+          <text x="225" y="282" font-family="system-ui, sans-serif" font-size="11" fill="#888" text-anchor="start">
+            accent
+          </text>
+          <text x="305" y="282" font-family="system-ui, sans-serif" font-size="11" fill="#888" text-anchor="start">
+            complement
+          </text>
+          <text
+            x="200"
+            y="390"
+            font-family="system-ui, sans-serif"
+            font-size="15"
+            fill="#ccc"
+            text-anchor="middle"
+            font-weight="bold"
+          >
+            Reactive Colors: Override CSS Variables to Retheme
+          </text>
+        </g>
+      </svg>
+    </div>
+  </body>
+</html>

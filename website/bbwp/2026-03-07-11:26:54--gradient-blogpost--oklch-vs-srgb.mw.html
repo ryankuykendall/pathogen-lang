@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MW: oklch-vs-srgb — gradient-blogpost</title>
+    <link rel="stylesheet" href="../../playground/styles/theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg-primary, #1e1e2e);
+        color: var(--text-primary, #cdd6f4);
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid var(--border-color, #313244);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .header-text h1 {
+        font-size: 0.875rem;
+        color: var(--accent-color, #89b4fa);
+        margin-bottom: 0.125rem;
+      }
+      .header-text p {
+        font-size: 0.6875rem;
+        color: var(--text-secondary, #a6adc8);
+      }
+      .workspace-container {
+        flex: 1;
+        min-height: 0;
+        padding: 0.75rem 1rem;
+      }
+      mini-workspace {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+      }
+    </style>
+    <script type="module" src="../../playground/components/blog/mini-workspace.js"></script>
+    <script type="module" src="../../playground/components/shared/theme-toggle.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-text">
+        <h1>oklch-vs-srgb</h1>
+        <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 11:26:54</p>
+      </div>
+      <theme-toggle></theme-toggle>
+    </div>
+    <div class="workspace-container">
+      <mini-workspace
+        code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwT0tMQ0glMjB2cyUyMHNSR0IlMjBJbnRlcnBvbGF0aW9uJTIwJUUyJTgwJTk0JTIwU2lkZS1ieS1TaWRlJTIwQ29tcGFyaXNvbiUwQSUyRiUyRiUyMFNhbWUlMjBjb2xvciUyMHN0b3BzJTJDJTIwZHJhbWF0aWNhbGx5JTIwZGlmZmVyZW50JTIwbWlkcG9pbnRzJTBBJTBBJTJGJTJGJTIwLS0tJTIwUGFpciUyMDElM0ElMjBCbHVlJTIwJUUyJTg2JTkyJTIwWWVsbG93JTIwKHRoZSUyMGNsYXNzaWMlMjBleGFtcGxlKSUyMC0tLSUwQSUwQWxldCUyMHNyZ2JfYmx1ZV95ZWxsb3clMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3JnYi1ieSclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjNlYWIzMDgnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9ibHVlX3llbGxvdyUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdva2xjaC1ieSclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjNlYWIzMDgnKSklM0IlMEElN0QlM0IlMEFva2xjaF9ibHVlX3llbGxvdy5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhaXIlMjAyJTNBJTIwUmVkJTIwJUUyJTg2JTkyJTIwQ3lhbiUyMC0tLSUwQSUwQWxldCUyMHNyZ2JfcmVkX2N5YW4lMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3JnYi1yYyclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjNkYzI2MjYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMwNmI2ZDQnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9yZWRfY3lhbiUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdva2xjaC1yYyclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjNkYzI2MjYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMwNmI2ZDQnKSklM0IlMEElN0QlM0IlMEFva2xjaF9yZWRfY3lhbi5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhaXIlMjAzJTNBJTIwTWFnZW50YSUyMCVFMiU4NiU5MiUyMEdyZWVuJTIwLS0tJTBBJTBBbGV0JTIwc3JnYl9tYWdfZ3JlZW4lMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3JnYi1tZyclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjNjMDI2ZDMnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMxNmEzNGEnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9tYWdfZ3JlZW4lMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnb2tsY2gtbWcnJTJDJTIwMCUyQyUyMDAlMkMlMjAxJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBDb2xvcignJTIzYzAyNmQzJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjBDb2xvcignJTIzMTZhMzRhJykpJTNCJTBBJTdEJTNCJTBBb2tsY2hfbWFnX2dyZWVuLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzExMTExOCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwR3JhZGllbnQlMjBiYXJzJTIwLS0tJTBBJTBBbGV0JTIwYmFyX3clMjAlM0QlMjAzMDAlM0IlMEFsZXQlMjBiYXJfaCUyMCUzRCUyMDMyJTNCJTBBbGV0JTIweDAlMjAlM0QlMjA1MCUzQiUwQSUwQSUyRiUyRiUyMFBhaXIlMjAxJTBBbGV0JTIwYnlfc3JnYiUyMCUzRCUyMFBhdGhMYXllcignYnktc3JnYicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHNyZ2JfYmx1ZV95ZWxsb3clM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYnlfc3JnYi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDUyJTJDJTIwYmFyX3clMkMlMjBiYXJfaCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwYnlfb2tsY2glMjAlM0QlMjBQYXRoTGF5ZXIoJ2J5LW9rbGNoJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwb2tsY2hfYmx1ZV95ZWxsb3clM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYnlfb2tsY2guYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoeDAlMkMlMjA5MiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMFBhaXIlMjAyJTBBbGV0JTIwcmNfc3JnYiUyMCUzRCUyMFBhdGhMYXllcigncmMtc3JnYicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHNyZ2JfcmVkX2N5YW4lM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBcmNfc3JnYi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDE3MiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMHJjX29rbGNoJTIwJTNEJTIwUGF0aExheWVyKCdyYy1va2xjaCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG9rbGNoX3JlZF9jeWFuJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXJjX29rbGNoLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KHgwJTJDJTIwMjEyJTJDJTIwYmFyX3clMkMlMjBiYXJfaCUyQyUyMDQpJTIwJTdEJTBBJTBBJTJGJTJGJTIwUGFpciUyMDMlMEFsZXQlMjBtZ19zcmdiJTIwJTNEJTIwUGF0aExheWVyKCdtZy1zcmdiJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwc3JnYl9tYWdfZ3JlZW4lM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbWdfc3JnYi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDI5MiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMG1nX29rbGNoJTIwJTNEJTIwUGF0aExheWVyKCdtZy1va2xjaCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG9rbGNoX21hZ19ncmVlbiUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFtZ19va2xjaC5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDMzMiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMG1vZGVfbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdtb2RlLWxhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM4ODglM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMGVuZCUzQiUwQSU3RCUzQiUwQW1vZGVfbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0NCUyQyUyMDczKSU2MHNSR0IlNjAlMEElMjAlMjB0ZXh0KDQ0JTJDJTIwMTEzKSU2ME9LTENIJTYwJTBBJTIwJTIwdGV4dCg0NCUyQyUyMDE5MyklNjBzUkdCJTYwJTBBJTIwJTIwdGV4dCg0NCUyQyUyMDIzMyklNjBPS0xDSCU2MCUwQSUyMCUyMHRleHQoNDQlMkMlMjAzMTMpJTYwc1JHQiU2MCUwQSUyMCUyMHRleHQoNDQlMkMlMjAzNTMpJTYwT0tMQ0glNjAlMEElN0QlMEElMEFsZXQlMjBwYWlyX2xhYmVscyUyMCUzRCUyMFRleHRMYXllcigncGFpci1sYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEzJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2NjY2NkZCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTIwJTIwZm9udC13ZWlnaHQlM0ElMjBib2xkJTNCJTBBJTdEJTNCJTBBcGFpcl9sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDQyKSU2MEJsdWUlMjAlRTIlODYlOTIlMjBZZWxsb3clNjAlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDE2MiklNjBSZWQlMjAlRTIlODYlOTIlMjBDeWFuJTYwJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAyODIpJTYwTWFnZW50YSUyMCVFMiU4NiU5MiUyMEdyZWVuJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBjb21wYXJpc29uJTIwJTNEJTIwR3JvdXBMYXllcignY29tcGFyaXNvbicpJTIwJTI0JTdCJTdEJTNCJTBBY29tcGFyaXNvbi5hcHBlbmQoYmclMkMlMjBieV9zcmdiJTJDJTIwYnlfb2tsY2glMkMlMjByY19zcmdiJTJDJTIwcmNfb2tsY2glMkMlMjBtZ19zcmdiJTJDJTIwbWdfb2tsY2glMkMlMjBtb2RlX2xhYmVscyUyQyUyMHBhaXJfbGFiZWxzKSUwQQ=="
+        code-open
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+          <defs>
+            <linearGradient id="srgb-by" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#2563eb" />
+              <stop offset="1" stop-color="#eab308" />
+            </linearGradient>
+            <linearGradient id="oklch-by" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#2563eb" />
+              <stop offset="0.1" stop-color="#007be9" />
+              <stop offset="0.2" stop-color="#0090dc" />
+              <stop offset="0.3" stop-color="#00a2c7" />
+              <stop offset="0.4" stop-color="#00afac" />
+              <stop offset="0.5" stop-color="#00b88e" />
+              <stop offset="0.6" stop-color="#00bd6c" />
+              <stop offset="0.7" stop-color="#64be48" />
+              <stop offset="0.8" stop-color="#9cbc1d" />
+              <stop offset="0.9" stop-color="#c7b800" />
+              <stop offset="1" stop-color="#eab308" />
+            </linearGradient>
+            <linearGradient id="srgb-rc" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#dc2626" />
+              <stop offset="1" stop-color="#06b6d4" />
+            </linearGradient>
+            <linearGradient id="oklch-rc" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#dc2626" />
+              <stop offset="0.1" stop-color="#db3061" />
+              <stop offset="0.2" stop-color="#d43f8c" />
+              <stop offset="0.3" stop-color="#c74fb0" />
+              <stop offset="0.4" stop-color="#b660ce" />
+              <stop offset="0.5" stop-color="#a170e4" />
+              <stop offset="0.6" stop-color="#8881f0" />
+              <stop offset="0.7" stop-color="#6c91f4" />
+              <stop offset="0.8" stop-color="#4b9fef" />
+              <stop offset="0.9" stop-color="#26ace4" />
+              <stop offset="1" stop-color="#06b6d4" />
+            </linearGradient>
+            <linearGradient id="srgb-mg" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#c026d3" />
+              <stop offset="1" stop-color="#16a34a" />
+            </linearGradient>
+            <linearGradient id="oklch-mg" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#c026d3" />
+              <stop offset="0.1" stop-color="#a341f1" />
+              <stop offset="0.2" stop-color="#8157ff" />
+              <stop offset="0.3" stop-color="#526bff" />
+              <stop offset="0.4" stop-color="#007eff" />
+              <stop offset="0.5" stop-color="#008eef" />
+              <stop offset="0.6" stop-color="#009bd5" />
+              <stop offset="0.7" stop-color="#00a3b5" />
+              <stop offset="0.8" stop-color="#00a793" />
+              <stop offset="0.9" stop-color="#00a76f" />
+              <stop offset="1" stop-color="#16a34a" />
+            </linearGradient>
+          </defs>
+
+          <g>
+            <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="#111118" stroke="none" stroke-width="2" />
+            <path
+              d="M 54 52 L 346 52 Q 350 52 350 56 L 350 80 Q 350 84 346 84 L 54 84 Q 50 84 50 80 L 50 56 Q 50 52 54 52 Z"
+              fill="url(#srgb-by)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 54 92 L 346 92 Q 350 92 350 96 L 350 120 Q 350 124 346 124 L 54 124 Q 50 124 50 120 L 50 96 Q 50 92 54 92 Z"
+              fill="url(#oklch-by)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 54 172 L 346 172 Q 350 172 350 176 L 350 200 Q 350 204 346 204 L 54 204 Q 50 204 50 200 L 50 176 Q 50 172 54 172 Z"
+              fill="url(#srgb-rc)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 54 212 L 346 212 Q 350 212 350 216 L 350 240 Q 350 244 346 244 L 54 244 Q 50 244 50 240 L 50 216 Q 50 212 54 212 Z"
+              fill="url(#oklch-rc)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 54 292 L 346 292 Q 350 292 350 296 L 350 320 Q 350 324 346 324 L 54 324 Q 50 324 50 320 L 50 296 Q 50 292 54 292 Z"
+              fill="url(#srgb-mg)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <path
+              d="M 54 332 L 346 332 Q 350 332 350 336 L 350 360 Q 350 364 346 364 L 54 364 Q 50 364 50 360 L 50 336 Q 50 332 54 332 Z"
+              fill="url(#oklch-mg)"
+              stroke="none"
+              stroke-width="2"
+            />
+            <text x="44" y="73" font-family="monospace" font-size="10" fill="#888" text-anchor="end">sRGB</text>
+            <text x="44" y="113" font-family="monospace" font-size="10" fill="#888" text-anchor="end">OKLCH</text>
+            <text x="44" y="193" font-family="monospace" font-size="10" fill="#888" text-anchor="end">sRGB</text>
+            <text x="44" y="233" font-family="monospace" font-size="10" fill="#888" text-anchor="end">OKLCH</text>
+            <text x="44" y="313" font-family="monospace" font-size="10" fill="#888" text-anchor="end">sRGB</text>
+            <text x="44" y="353" font-family="monospace" font-size="10" fill="#888" text-anchor="end">OKLCH</text>
+            <text
+              x="200"
+              y="42"
+              font-family="system-ui, sans-serif"
+              font-size="13"
+              fill="#ccccdd"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Blue → Yellow
+            </text>
+            <text
+              x="200"
+              y="162"
+              font-family="system-ui, sans-serif"
+              font-size="13"
+              fill="#ccccdd"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Red → Cyan
+            </text>
+            <text
+              x="200"
+              y="282"
+              font-family="system-ui, sans-serif"
+              font-size="13"
+              fill="#ccccdd"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Magenta → Green
+            </text>
+          </g>
+        </svg>
+      </mini-workspace>
+    </div>
+  </body>
+</html>

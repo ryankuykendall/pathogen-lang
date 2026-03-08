@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MW: pipeline-flow — misc</title>
+    <link rel="stylesheet" href="../../playground/styles/theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg-primary, #1e1e2e);
+        color: var(--text-primary, #cdd6f4);
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid var(--border-color, #313244);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .header-text h1 {
+        font-size: 0.875rem;
+        color: var(--accent-color, #89b4fa);
+        margin-bottom: 0.125rem;
+      }
+      .header-text p {
+        font-size: 0.6875rem;
+        color: var(--text-secondary, #a6adc8);
+      }
+      .workspace-container {
+        flex: 1;
+        min-height: 0;
+        padding: 0.75rem 1rem;
+      }
+      mini-workspace {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+      }
+    </style>
+    <script type="module" src="../../playground/components/blog/mini-workspace.js"></script>
+    <script type="module" src="../../playground/components/shared/theme-toggle.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-text">
+        <h1>pipeline-flow</h1>
+        <p>Roadmap: misc | Generated: 2026-03-07 13:13:10</p>
+      </div>
+      <theme-toggle></theme-toggle>
+    </div>
+    <div class="workspace-container">
+      <mini-workspace
+        code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNzAwJTIwMjUwJTIyJTBBJTJGJTJGJTIwUGlwZWxpbmUlMjBGbG93JTIwJUUyJTgwJTk0JTIwU291cmNlJTIwdG8lMjBCbG9nJTBBJTJGJTJGJTIwVmlzdWFsJTIwZmxvd2NoYXJ0JTIwc2hvd2luZyUyMHRoZSUyMFBhdGhvZ2VuJTIwZ3JhZGllbnQlMjBjb21waWxhdGlvbiUyMHBpcGVsaW5lJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnX2dyYWQlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnYmctZyclMkMlMjAwJTJDJTIwMCUyQyUyMDAlMkMlMjAxKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjMwYTBhMTQnKSklMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMxMjEyMWYnKSklMEElN0QlM0IlMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBiZ19ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDcwMCUyQyUyMDI1MCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTdGFnZSUyMGJveGVzJTIwKDUlMjBwaXBlbGluZSUyMHN0YWdlcyklMjAtLS0lMEElMEFsZXQlMjBib3gxJTIwJTNEJTIwUGF0aExheWVyKCdib3gxJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMWEzYTNhJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMmE5ZDhmJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTIwJTdEJTNCJTBBYm94MS5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgxNSUyQyUyMDYwJTJDJTIwMTE1JTJDJTIwNTUlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMGJveDIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2JveDInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMyYTFhNGElM0IlMjBzdHJva2UlM0ElMjAlMjM3YzNhZWQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMjAlN0QlM0IlMEFib3gyLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDE2MCUyQyUyMDYwJTJDJTIwMTE1JTJDJTIwNTUlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMGJveDMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2JveDMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjM0YTFhMmElM0IlMjBzdHJva2UlM0ElMjAlMjNmNzI1ODUlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMjAlN0QlM0IlMEFib3gzLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDMwNSUyQyUyMDYwJTJDJTIwMTE1JTJDJTIwNTUlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMGJveDQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2JveDQnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMzYTNhMWElM0IlMjBzdHJva2UlM0ElMjAlMjNlOWM0NmElM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMjAlN0QlM0IlMEFib3g0LmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDQ1MCUyQyUyMDYwJTJDJTIwMTE1JTJDJTIwNTUlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMGJveDUlMjAlM0QlMjBQYXRoTGF5ZXIoJ2JveDUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMxYTJhNGElM0IlMjBzdHJva2UlM0ElMjAlMjM0MzYxZWUlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMjAlN0QlM0IlMEFib3g1LmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDU5NSUyQyUyMDYwJTJDJTIwOTAlMkMlMjA1NSUyQyUyMDYpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQXJyb3clMjBsaW5lcyUyMC0tLSUwQSUwQWxldCUyMGFycm93cyUyMCUzRCUyMFBhdGhMYXllcignYXJyb3dzJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzU1NSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUyMCU3RCUzQiUwQWFycm93cy5hcHBseSUyMCU3QiUwQSUyMCUyME0lMjAxMzAlMjA4NyUyMEwlMjAxNTclMjA4NyUwQSUyMCUyME0lMjAyNzUlMjA4NyUyMEwlMjAzMDIlMjA4NyUwQSUyMCUyME0lMjA0MjAlMjA4NyUyMEwlMjA0NDclMjA4NyUwQSUyMCUyME0lMjA1NjUlMjA4NyUyMEwlMjA1OTIlMjA4NyUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEFycm93JTIwaGVhZHMlMjAtLS0lMEElMEFsZXQlMjBoZWFkcyUyMCUzRCUyMFBhdGhMYXllcignaGVhZHMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjM1NTUlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBaGVhZHMuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwMTU1JTIwODIlMjBMJTIwMTYwJTIwODclMjBMJTIwMTU1JTIwOTIlMjBaJTBBJTIwJTIwTSUyMDMwMCUyMDgyJTIwTCUyMDMwNSUyMDg3JTIwTCUyMDMwMCUyMDkyJTIwWiUwQSUyMCUyME0lMjA0NDUlMjA4MiUyMEwlMjA0NTAlMjA4NyUyMEwlMjA0NDUlMjA5MiUyMFolMEElMjAlMjBNJTIwNTkwJTIwODIlMjBMJTIwNTk1JTIwODclMjBMJTIwNTkwJTIwOTIlMjBaJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQm94JTIwbGFiZWxzJTIwLS0tJTBBJTBBbGV0JTIwYm94X2xhYmVscyUyMCUzRCUyMFRleHRMYXllcignYm94LWxhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzZWVlJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElMjAlMjBmb250LXdlaWdodCUzQSUyMGJvbGQlM0IlMEElN0QlM0IlMEFib3hfbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg3MiUyQyUyMDg0KSU2MC5wYXRob2dlbiU2MCUwQSUyMCUyMHRleHQoNzIlMkMlMjA5NiklNjBTb3VyY2UlNjAlMEElMjAlMjB0ZXh0KDIxNyUyQyUyMDkwKSU2MENvbXBpbGVyJTYwJTBBJTIwJTIwdGV4dCgzNjIlMkMlMjA4NCklNjBHUFUlNjAlMEElMjAlMjB0ZXh0KDM2MiUyQyUyMDk2KSU2MFJlbmRlcmVyJTYwJTBBJTIwJTIwdGV4dCg1MDclMkMlMjA4NCklNjBTVkclMjAlMkIlNjAlMEElMjAlMjB0ZXh0KDUwNyUyQyUyMDk2KSU2MGJhc2U2NCU2MCUwQSUyMCUyMHRleHQoNjQwJTJDJTIwOTApJTYwQmxvZyU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMERldGFpbCUyMGxhYmVscyUyMGJlbG93JTIwZWFjaCUyMGJveCUyMC0tLSUwQSUwQWxldCUyMGRldGFpbHMlMjAlM0QlMjBUZXh0TGF5ZXIoJ2RldGFpbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwNyUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NjYlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQWRldGFpbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDcyJTJDJTIwMTMwKSU2MHZhcmlhYmxlcyU2MCUwQSUyMCUyMHRleHQoNzIlMkMlMjAxNDApJTYwZXhwcmVzc2lvbnMlNjAlMEElMjAlMjB0ZXh0KDcyJTJDJTIwMTUwKSU2MGxheWVycyU2MCUwQSUyMCUyMHRleHQoMjE3JTJDJTIwMTMwKSU2MEFTVCUyMCVFMiU4NiU5MiUyMGV2YWwlNjAlMEElMjAlMjB0ZXh0KDIxNyUyQyUyMDE0MCklNjBHcm91cExheWVyJTYwJTBBJTIwJTIwdGV4dCgyMTclMkMlMjAxNTApJTYwZ3JhZGllbnRzJTYwJTBBJTIwJTIwdGV4dCgzNjIlMkMlMjAxMzApJTYwV2ViR1BVJTYwJTBBJTIwJTIwdGV4dCgzNjIlMkMlMjAxNDApJTYwQ2FudmFzJTIwMkQlNjAlMEElMjAlMjB0ZXh0KDM2MiUyQyUyMDE1MCklNjBmYWxsYmFjayU2MCUwQSUyMCUyMHRleHQoNTA3JTJDJTIwMTMwKSU2MCUzQ3BhdHRlcm4lM0UlNjAlMEElMjAlMjB0ZXh0KDUwNyUyQyUyMDE0MCklNjAlM0NpbWFnZSUzRSU2MCUwQSUyMCUyMHRleHQoNTA3JTJDJTIwMTUwKSU2MGRhdGElMjBVUkxzJTYwJTBBJTIwJTIwdGV4dCg2NDAlMkMlMjAxMzApJTYwbWluaS0lNjAlMEElMjAlMjB0ZXh0KDY0MCUyQyUyMDE0MCklNjB3b3Jrc3BhY2UlNjAlMEElMjAlMjB0ZXh0KDY0MCUyQyUyMDE1MCklNjBjb21wb25lbnQlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUaXRsZSUyMC0tLSUwQSUwQWxldCUyMHRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTQlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzODg4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEF0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzUwJTJDJTIwMjAwKSU2MFRoZSUyMEdyYWRpZW50JTIwQ29tcGlsYXRpb24lMjBQaXBlbGluZSU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzU1NSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDM1MCUyQyUyMDIxOCklNjBmcm9tJTIwLnBhdGhvZ2VuJTIwc291cmNlJTIwdG8lMjBpbnRlcmFjdGl2ZSUyMGJsb2clMjBlbWJlZCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNjZW5lJTIwLS0tJTBBJTBBbGV0JTIwc2NlbmUlMjAlM0QlMjBHcm91cExheWVyKCdzY2VuZScpJTIwJTI0JTdCJTdEJTNCJTBBc2NlbmUuYXBwZW5kKGJnJTJDJTIwYm94MSUyQyUyMGJveDIlMkMlMjBib3gzJTJDJTIwYm94NCUyQyUyMGJveDUlMkMlMjBhcnJvd3MlMkMlMjBoZWFkcyUyQyUyMGJveF9sYWJlbHMlMkMlMjBkZXRhaWxzJTJDJTIwdGl0bGUlMkMlMjBzdWJ0aXRsZSklMEE="
+        code-open
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 250" width="700" height="250">
+          <defs>
+            <linearGradient id="bg-g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0a0a14" />
+              <stop offset="1" stop-color="#12121f" />
+            </linearGradient>
+          </defs>
+
+          <g>
+            <path d="M 0 0 L 700 0 L 700 250 L 0 250 Z" fill="url(#bg-g)" stroke="none" stroke-width="2" />
+            <path
+              d="M 21 60 L 124 60 Q 130 60 130 66 L 130 109 Q 130 115 124 115 L 21 115 Q 15 115 15 109 L 15 66 Q 15 60 21 60 Z"
+              fill="#1a3a3a"
+              stroke="#2a9d8f"
+              stroke-width="1.5"
+            />
+            <path
+              d="M 166 60 L 269 60 Q 275 60 275 66 L 275 109 Q 275 115 269 115 L 166 115 Q 160 115 160 109 L 160 66 Q 160 60 166 60 Z"
+              fill="#2a1a4a"
+              stroke="#7c3aed"
+              stroke-width="1.5"
+            />
+            <path
+              d="M 311 60 L 414 60 Q 420 60 420 66 L 420 109 Q 420 115 414 115 L 311 115 Q 305 115 305 109 L 305 66 Q 305 60 311 60 Z"
+              fill="#4a1a2a"
+              stroke="#f72585"
+              stroke-width="1.5"
+            />
+            <path
+              d="M 456 60 L 559 60 Q 565 60 565 66 L 565 109 Q 565 115 559 115 L 456 115 Q 450 115 450 109 L 450 66 Q 450 60 456 60 Z"
+              fill="#3a3a1a"
+              stroke="#e9c46a"
+              stroke-width="1.5"
+            />
+            <path
+              d="M 601 60 L 679 60 Q 685 60 685 66 L 685 109 Q 685 115 679 115 L 601 115 Q 595 115 595 109 L 595 66 Q 595 60 601 60 Z"
+              fill="#1a2a4a"
+              stroke="#4361ee"
+              stroke-width="1.5"
+            />
+            <path
+              d="M 130 87 L 157 87 M 275 87 L 302 87 M 420 87 L 447 87 M 565 87 L 592 87"
+              fill="none"
+              stroke="#555"
+              stroke-width="1.5"
+            />
+            <path
+              d="M 155 82 L 160 87 L 155 92 Z M 300 82 L 305 87 L 300 92 Z M 445 82 L 450 87 L 445 92 Z M 590 82 L 595 87 L 590 92 Z"
+              fill="#555"
+              stroke="none"
+              stroke-width="2"
+            />
+            <text
+              x="72"
+              y="84"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              .pathogen
+            </text>
+            <text
+              x="72"
+              y="96"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Source
+            </text>
+            <text
+              x="217"
+              y="90"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Compiler
+            </text>
+            <text
+              x="362"
+              y="84"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              GPU
+            </text>
+            <text
+              x="362"
+              y="96"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Renderer
+            </text>
+            <text
+              x="507"
+              y="84"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              SVG +
+            </text>
+            <text
+              x="507"
+              y="96"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              base64
+            </text>
+            <text
+              x="640"
+              y="90"
+              font-family="system-ui, sans-serif"
+              font-size="10"
+              fill="#eee"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Blog
+            </text>
+            <text x="72" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">variables</text>
+            <text x="72" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              expressions
+            </text>
+            <text x="72" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">layers</text>
+            <text x="217" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              AST → eval
+            </text>
+            <text x="217" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              GroupLayer
+            </text>
+            <text x="217" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              gradients
+            </text>
+            <text x="362" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">WebGPU</text>
+            <text x="362" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              Canvas 2D
+            </text>
+            <text x="362" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">fallback</text>
+            <text x="507" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              &lt;pattern&gt;
+            </text>
+            <text x="507" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              &lt;image&gt;
+            </text>
+            <text x="507" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              data URLs
+            </text>
+            <text x="640" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">mini-</text>
+            <text x="640" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              workspace
+            </text>
+            <text x="640" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">
+              component
+            </text>
+            <text x="350" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#888" text-anchor="middle">
+              The Gradient Compilation Pipeline
+            </text>
+            <text x="350" y="218" font-family="monospace" font-size="9" fill="#555" text-anchor="middle">
+              from .pathogen source to interactive blog embed
+            </text>
+          </g>
+        </svg>
+      </mini-workspace>
+    </div>
+  </body>
+</html>

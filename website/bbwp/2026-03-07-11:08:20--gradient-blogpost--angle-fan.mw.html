@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MW: angle-fan — gradient-blogpost</title>
+    <link rel="stylesheet" href="../../playground/styles/theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg-primary, #1e1e2e);
+        color: var(--text-primary, #cdd6f4);
+        font-family: system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid var(--border-primary, #313244);
+        flex-shrink: 0;
+      }
+      .header h1 {
+        font-size: 0.875rem;
+        color: var(--accent-primary, #89b4fa);
+        margin-bottom: 0.125rem;
+      }
+      .header p {
+        font-size: 0.6875rem;
+        color: var(--text-secondary, #a6adc8);
+      }
+      .workspace-container {
+        flex: 1;
+        min-height: 0;
+        padding: 0.75rem 1rem;
+      }
+      mini-workspace {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+      }
+    </style>
+    <script type="module" src="../../playground/components/blog/mini-workspace.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <h1>angle-fan</h1>
+      <p>Roadmap: gradient-blogpost | Generated: 2026-03-07 11:08:20</p>
+    </div>
+    <div class="workspace-container">
+      <mini-workspace
+        code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwQW5nbGUlMjBGYW4lMjAlRTIlODAlOTQlMjBMaW5lYXIlMjBHcmFkaWVudCUyMERpcmVjdGlvbiUyMFNob3djYXNlJTBBJTJGJTJGJTIwU2FtZSUyMGdyYWRpZW50JTIwc3RvcHMlMjBhdCUyMDYlMjBkaWZmZXJlbnQlMjBhbmdsZXMlMkMlMjBhcnJhbmdlZCUyMGluJTIwYSUyMGZhbiUwQSUwQSUyRiUyRiUyMC0tLSUyMFNoYXJlZCUyMGNvbG9yJTIwcGFsZXR0ZSUyMC0tLSUwQSUwQWxldCUyMGMxJTIwJTNEJTIwQ29sb3IoJyUyM2U2Mzk0NicpJTNCJTBBbGV0JTIwYzIlMjAlM0QlMjBDb2xvcignJTIzZjRhMjYxJyklM0IlMEFsZXQlMjBjMyUyMCUzRCUyMENvbG9yKCclMjMyYTlkOGYnKSUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFNpeCUyMGdyYWRpZW50cyUyMGF0JTIwZGlmZmVyZW50JTIwZGlyZWN0aW9ucyUyMC0tLSUwQSUwQWxldCUyMGcwJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2ctcmlnaHQnJTJDJTIwMCUyQyUyMDAlMkMlMjAxJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBjMSklM0IlMjBnLnN0b3AoMC41JTJDJTIwYzIpJTNCJTIwZy5zdG9wKDElMkMlMjBjMyklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBnNjAlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnZy1kb3duLXJpZ2h0JyUyQyUyMDAlMkMlMjAwJTJDJTIwMSUyQyUyMDEpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwYzEpJTNCJTIwZy5zdG9wKDAuNSUyQyUyMGMyKSUzQiUyMGcuc3RvcCgxJTJDJTIwYzMpJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwZzkwJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2ctZG93biclMkMlMjAwJTJDJTIwMCUyQyUyMDAlMkMlMjAxKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMGMxKSUzQiUyMGcuc3RvcCgwLjUlMkMlMjBjMiklM0IlMjBnLnN0b3AoMSUyQyUyMGMzKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMGcxODAlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnZy1sZWZ0JyUyQyUyMDElMkMlMjAwJTJDJTIwMCUyQyUyMDApJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwYzEpJTNCJTIwZy5zdG9wKDAuNSUyQyUyMGMyKSUzQiUyMGcuc3RvcCgxJTJDJTIwYzMpJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwZzI0MCUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdnLXVwLWxlZnQnJTJDJTIwMSUyQyUyMDElMkMlMjAwJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBjMSklM0IlMjBnLnN0b3AoMC41JTJDJTIwYzIpJTNCJTIwZy5zdG9wKDElMkMlMjBjMyklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBnMjcwJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2ctdXAnJTJDJTIwMCUyQyUyMDElMkMlMjAwJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBjMSklM0IlMjBnLnN0b3AoMC41JTJDJTIwYzIpJTNCJTIwZy5zdG9wKDElMkMlMjBjMyklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMWExYTJlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDQwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTd2F0Y2glMjBncmlkJTNBJTIwMyUyMGNvbHVtbnMlMjAlQzMlOTclMjAyJTIwcm93cyUyMC0tLSUwQSUwQWxldCUyMHN3MSUyMCUzRCUyMFBhdGhMYXllcignc3dhdGNoLXJpZ2h0JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwZzAlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBc3cxLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDIwJTJDJTIwNTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3cyJTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtZG93bi1yaWdodCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGc2MCUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFzdzIuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMTQ1JTJDJTIwNTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3czJTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtZG93bicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGc5MCUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFzdzMuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMjcwJTJDJTIwNTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3c0JTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtbGVmdCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGcxODAlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBc3c0LmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDIwJTJDJTIwMjE1JTJDJTIwMTEwJTJDJTIwNzAlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMHN3NSUyMCUzRCUyMFBhdGhMYXllcignc3dhdGNoLXVwLWxlZnQnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBnMjQwJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQXN3NS5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgxNDUlMkMlMjAyMTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3c2JTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtdXAnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBnMjcwJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQXN3Ni5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgyNzAlMkMlMjAyMTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwRGlyZWN0aW9uJTIwbGFiZWxzJTIwLS0tJTBBJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzYTBhMGMwJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFsYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDc1JTJDJTIwMTQ1KSU2MCVFMiU4NiU5MiUyMHJpZ2h0JTIwKDAlMkMwJUUyJTg2JTkyMSUyQzApJTYwJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAxNDUpJTYwJUUyJTg2JTk4JTIwZGlhZ29uYWwlMjAoMCUyQzAlRTIlODYlOTIxJTJDMSklNjAlMEElMjAlMjB0ZXh0KDMyNSUyQyUyMDE0NSklNjAlRTIlODYlOTMlMjBkb3duJTIwKDAlMkMwJUUyJTg2JTkyMCUyQzEpJTYwJTBBJTIwJTIwdGV4dCg3NSUyQyUyMDMwNSklNjAlRTIlODYlOTAlMjBsZWZ0JTIwKDElMkMwJUUyJTg2JTkyMCUyQzApJTYwJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAzMDUpJTYwJUUyJTg2JTk2JTIwZGlhZ29uYWwlMjAoMSUyQzElRTIlODYlOTIwJTJDMCklNjAlMEElMjAlMjB0ZXh0KDMyNSUyQyUyMDMwNSklNjAlRTIlODYlOTElMjB1cCUyMCgwJTJDMSVFMiU4NiU5MjAlMkMwKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNlMGUwZmYlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSUyMCUyMGZvbnQtd2VpZ2h0JTNBJTIwYm9sZCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAzNzApJTYwTGluZWFyJTIwR3JhZGllbnQlMjBEaXJlY3Rpb25zJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ2VudHJhbCUyMGNvbm5lY3RvciUyMC0tLSUwQSUwQWxldCUyMGNvbm5lY3RvciUyMCUzRCUyMFBhdGhMYXllcignY29ubmVjdG9yJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ0NDQ2NiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFjb25uZWN0b3IuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwNzUlMjAxMzAlMjBMJTIwNzUlMjAyMTAlMEElMjAlMjBNJTIwMjAwJTIwMTMwJTIwTCUyMDIwMCUyMDIxMCUwQSUyMCUyME0lMjAzMjUlMjAxMzAlMjBMJTIwMzI1JTIwMjEwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBmYW4lMjAlM0QlMjBHcm91cExheWVyKCdmYW4nKSUyMCUyNCU3QiU3RCUzQiUwQWZhbi5hcHBlbmQoYmclMkMlMjBzdzElMkMlMjBzdzIlMkMlMjBzdzMlMkMlMjBzdzQlMkMlMjBzdzUlMkMlMjBzdzYlMkMlMjBsYWJlbHMlMkMlMjB0aXRsZSUyQyUyMGNvbm5lY3RvciklMEE="
+        code-open
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+          <rect width="100%" height="100%" fill="#f5f5f5" />
+          <defs>
+            <linearGradient id="g-right" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.5" stop-color="#f4a261" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+            <linearGradient id="g-down-right" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.5" stop-color="#f4a261" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+            <linearGradient id="g-down" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.5" stop-color="#f4a261" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+            <linearGradient id="g-left" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.5" stop-color="#f4a261" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+            <linearGradient id="g-up-left" x1="1" y1="1" x2="0" y2="0">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.5" stop-color="#f4a261" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+            <linearGradient id="g-up" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0" stop-color="#e63946" />
+              <stop offset="0.5" stop-color="#f4a261" />
+              <stop offset="1" stop-color="#2a9d8f" />
+            </linearGradient>
+          </defs>
+
+          <g>
+            <path d="M 0 0 L 400 0 L 400 400 L 0 400 Z" fill="#1a1a2e" stroke="none" stroke-width="2" />
+            <path
+              d="M 26 55 L 124 55 Q 130 55 130 61 L 130 119 Q 130 125 124 125 L 26 125 Q 20 125 20 119 L 20 61 Q 20 55 26 55 Z"
+              fill="url(#g-right)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 151 55 L 249 55 Q 255 55 255 61 L 255 119 Q 255 125 249 125 L 151 125 Q 145 125 145 119 L 145 61 Q 145 55 151 55 Z"
+              fill="url(#g-down-right)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 276 55 L 374 55 Q 380 55 380 61 L 380 119 Q 380 125 374 125 L 276 125 Q 270 125 270 119 L 270 61 Q 270 55 276 55 Z"
+              fill="url(#g-down)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 26 215 L 124 215 Q 130 215 130 221 L 130 279 Q 130 285 124 285 L 26 285 Q 20 285 20 279 L 20 221 Q 20 215 26 215 Z"
+              fill="url(#g-left)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 151 215 L 249 215 Q 255 215 255 221 L 255 279 Q 255 285 249 285 L 151 285 Q 145 285 145 279 L 145 221 Q 145 215 151 215 Z"
+              fill="url(#g-up-left)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <path
+              d="M 276 215 L 374 215 Q 380 215 380 221 L 380 279 Q 380 285 374 285 L 276 285 Q 270 285 270 279 L 270 221 Q 270 215 276 215 Z"
+              fill="url(#g-up)"
+              stroke="#333"
+              stroke-width="1"
+            />
+            <text x="75" y="145" font-family="monospace" font-size="11" fill="#a0a0c0" text-anchor="middle">
+              → right (0,0→1,0)
+            </text>
+            <text x="200" y="145" font-family="monospace" font-size="11" fill="#a0a0c0" text-anchor="middle">
+              ↘ diagonal (0,0→1,1)
+            </text>
+            <text x="325" y="145" font-family="monospace" font-size="11" fill="#a0a0c0" text-anchor="middle">
+              ↓ down (0,0→0,1)
+            </text>
+            <text x="75" y="305" font-family="monospace" font-size="11" fill="#a0a0c0" text-anchor="middle">
+              ← left (1,0→0,0)
+            </text>
+            <text x="200" y="305" font-family="monospace" font-size="11" fill="#a0a0c0" text-anchor="middle">
+              ↖ diagonal (1,1→0,0)
+            </text>
+            <text x="325" y="305" font-family="monospace" font-size="11" fill="#a0a0c0" text-anchor="middle">
+              ↑ up (0,1→0,0)
+            </text>
+            <text
+              x="200"
+              y="370"
+              font-family="system-ui, sans-serif"
+              font-size="18"
+              fill="#e0e0ff"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              Linear Gradient Directions
+            </text>
+            <path
+              d="M 75 130 L 75 210 M 200 130 L 200 210 M 325 130 L 325 210"
+              fill="none"
+              stroke="#444466"
+              stroke-width="1"
+            />
+          </g>
+        </svg>
+      </mini-workspace>
+    </div>
+  </body>
+</html>
