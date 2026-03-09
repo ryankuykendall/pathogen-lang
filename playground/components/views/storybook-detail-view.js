@@ -2,23 +2,28 @@
 // Route: /storybook and /storybook/:component
 
 import { store } from '../../state/store.js';
-import { componentRegistry, getComponentById, getCategories, getFirstComponent } from '../../utils/storybook-registry.js';
 import { navigateTo } from '../../utils/router.js';
+import {
+  componentRegistry,
+  getCategories,
+  getComponentById,
+  getFirstComponent,
+} from '../../utils/storybook-registry.js';
 
 // Import components that will be demoed
+import '../app-breadcrumb.js';
+import '../app-header.js';
 import '../code-editor-pane.js';
-import '../svg-preview-pane.js';
 import '../console-pane.js';
 import '../annotated-pane.js';
-import '../playground-header.js';
-import '../playground-footer.js';
 import '../docs-panel.js';
-import '../app-header.js';
-import '../app-breadcrumb.js';
+import '../playground-footer.js';
+import '../playground-header.js';
 import '../shared/error-panel.js';
 import '../shared/copy-button.js';
 import '../shared/log-entry.js';
 import '../shared/control-group.js';
+import '../svg-preview-pane.js';
 
 const styles = `
   :host {
@@ -449,7 +454,7 @@ class StorybookDetailView extends HTMLElement {
 
   updateSidebar() {
     const links = this.shadowRoot.querySelectorAll('.component-link');
-    links.forEach(link => {
+    links.forEach((link) => {
       link.classList.toggle('active', link.dataset.id === this.currentComponent?.id);
     });
   }
@@ -465,8 +470,8 @@ class StorybookDetailView extends HTMLElement {
       },
       emit: (name, value) => {
         const callbacks = this.controlCallbacks.get(name) || [];
-        callbacks.forEach(cb => cb(value));
-      }
+        callbacks.forEach((cb) => cb(value));
+      },
     };
   }
 
@@ -489,34 +494,46 @@ class StorybookDetailView extends HTMLElement {
         <div class="demo-section">
           <div class="demo-header">
             <h3>Demo</h3>
-            ${component.stories.length > 1 ? `
+            ${
+              component.stories.length > 1
+                ? `
               <div class="story-tabs">
-                ${component.stories.map((s, i) => `
+                ${component.stories
+                  .map(
+                    (s, i) => `
                   <button class="story-tab ${i === this.currentStoryIndex ? 'active' : ''}" data-story="${i}">
                     ${s.name}
                   </button>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </div>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           <div class="demo-content">
             <div class="demo-container" id="demo-container"></div>
           </div>
         </div>
 
-        ${component.controls && component.controls.length > 0 ? `
+        ${
+          component.controls && component.controls.length > 0
+            ? `
           <div class="controls-section">
             <div class="controls-header">
               <h3>Controls</h3>
             </div>
             <div class="controls-content" id="controls-content"></div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
 
     // Setup story tab listeners
-    mainContent.querySelectorAll('.story-tab').forEach(tab => {
+    mainContent.querySelectorAll('.story-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         const index = parseInt(tab.dataset.story, 10);
         this.selectStory(index);
@@ -547,38 +564,40 @@ class StorybookDetailView extends HTMLElement {
     const controlsContent = this.shadowRoot.querySelector('#controls-content');
     if (!controlsContent) return;
 
-    controlsContent.innerHTML = component.controls.map(control => {
-      const value = this.controlValues.get(control.name);
+    controlsContent.innerHTML = component.controls
+      .map((control) => {
+        const value = this.controlValues.get(control.name);
 
-      let inputHtml = '';
-      switch (control.type) {
-        case 'textarea':
-          inputHtml = `<textarea data-control="${control.name}">${value || ''}</textarea>`;
-          break;
-        case 'toggle':
-          inputHtml = `<button class="toggle-button ${value ? 'on' : 'off'}" data-control="${control.name}">${value ? 'On' : 'Off'}</button>`;
-          break;
-        case 'number':
-          inputHtml = `<input type="number" data-control="${control.name}" value="${value || ''}" ${control.min !== undefined ? `min="${control.min}"` : ''} ${control.max !== undefined ? `max="${control.max}"` : ''}>`;
-          break;
-        case 'text':
-        default:
-          inputHtml = `<input type="text" data-control="${control.name}" value="${value || ''}">`;
-          break;
-      }
+        let inputHtml = '';
+        switch (control.type) {
+          case 'textarea':
+            inputHtml = `<textarea data-control="${control.name}">${value || ''}</textarea>`;
+            break;
+          case 'toggle':
+            inputHtml = `<button class="toggle-button ${value ? 'on' : 'off'}" data-control="${control.name}">${value ? 'On' : 'Off'}</button>`;
+            break;
+          case 'number':
+            inputHtml = `<input type="number" data-control="${control.name}" value="${value || ''}" ${control.min !== undefined ? `min="${control.min}"` : ''} ${control.max !== undefined ? `max="${control.max}"` : ''}>`;
+            break;
+          case 'text':
+          default:
+            inputHtml = `<input type="text" data-control="${control.name}" value="${value || ''}">`;
+            break;
+        }
 
-      return `
+        return `
         <div class="control-row">
           <label class="control-label">${control.label}</label>
           <div class="control-input">${inputHtml}</div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     // Setup control listeners
-    controlsContent.querySelectorAll('[data-control]').forEach(input => {
+    controlsContent.querySelectorAll('[data-control]').forEach((input) => {
       const controlName = input.dataset.control;
-      const control = component.controls.find(c => c.name === controlName);
+      const control = component.controls.find((c) => c.name === controlName);
 
       if (control.type === 'toggle') {
         input.addEventListener('click', () => {
@@ -590,7 +609,7 @@ class StorybookDetailView extends HTMLElement {
 
           // Emit to component
           const callbacks = this.controlCallbacks.get(controlName) || [];
-          callbacks.forEach(cb => cb(newValue));
+          callbacks.forEach((cb) => cb(newValue));
         });
       } else if (control.type === 'number') {
         input.addEventListener('input', () => {
@@ -598,14 +617,14 @@ class StorybookDetailView extends HTMLElement {
           if (!isNaN(value)) {
             this.controlValues.set(controlName, value);
             const callbacks = this.controlCallbacks.get(controlName) || [];
-            callbacks.forEach(cb => cb(value));
+            callbacks.forEach((cb) => cb(value));
           }
         });
       } else {
         input.addEventListener('input', () => {
           this.controlValues.set(controlName, input.value);
           const callbacks = this.controlCallbacks.get(controlName) || [];
-          callbacks.forEach(cb => cb(input.value));
+          callbacks.forEach((cb) => cb(input.value));
         });
       }
     });
@@ -631,16 +650,24 @@ class StorybookDetailView extends HTMLElement {
           <h1>Storybook <span class="badge">Dev</span></h1>
         </div>
         <nav class="sidebar-nav">
-          ${Array.from(categories.entries()).map(([categoryName, components]) => `
+          ${Array.from(categories.entries())
+            .map(
+              ([categoryName, components]) => `
             <div class="category">
               <div class="category-header">${categoryName}</div>
-              ${components.map(comp => `
+              ${components
+                .map(
+                  (comp) => `
                 <button class="component-link ${comp.id === this.currentComponent?.id ? 'active' : ''}" data-id="${comp.id}">
                   ${comp.name}
                 </button>
-              `).join('')}
+              `,
+                )
+                .join('')}
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </nav>
       </aside>
 

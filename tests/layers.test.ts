@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compile, compileWithContext } from '../src';
 import { compilePath } from './helpers';
 
@@ -50,7 +51,7 @@ describe('Multi-Layer Support', () => {
         layer('gamma').apply { M 2 0 }
         layer('alpha').apply { M 0 0 }
       `);
-      expect(result.layers.map(l => l.name)).toEqual(['alpha', 'beta', 'gamma']);
+      expect(result.layers.map((l) => l.name)).toEqual(['alpha', 'beta', 'gamma']);
     });
   });
 
@@ -280,52 +281,66 @@ describe('Multi-Layer Support', () => {
 
   describe('error cases', () => {
     it('throws on duplicate layer name', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define PathLayer('main') \${}
         define PathLayer('main') \${}
-      `)).toThrow("Duplicate layer name: 'main'");
+      `),
+      ).toThrow("Duplicate layer name: 'main'");
     });
 
     it('throws on multiple default layers', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define default PathLayer('a') \${}
         define default PathLayer('b') \${}
-      `)).toThrow("Cannot define multiple default layers. 'a' is already the default");
+      `),
+      ).toThrow("Cannot define multiple default layers. 'a' is already the default");
     });
 
     it('throws on nested apply blocks', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define PathLayer('a') \${}
         define PathLayer('b') \${}
         layer('a').apply {
           layer('b').apply { M 0 0 }
         }
-      `)).toThrow("Cannot nest layer apply blocks. Already inside layer 'a'");
+      `),
+      ).toThrow("Cannot nest layer apply blocks. Already inside layer 'a'");
     });
 
     it('throws on undefined layer in apply', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         layer('nonexistent').apply { M 0 0 }
-      `)).toThrow("Undefined layer: 'nonexistent'");
+      `),
+      ).toThrow("Undefined layer: 'nonexistent'");
     });
 
     it('throws on undefined layer in expression', () => {
-      expect(() => compileWithContext(`
+      expect(() =>
+        compileWithContext(`
         log(layer('nonexistent').ctx)
-      `)).toThrow("Undefined layer: 'nonexistent'");
+      `),
+      ).toThrow("Undefined layer: 'nonexistent'");
     });
 
     it('throws on non-string layer name in define', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define PathLayer(42) \${}
-      `)).toThrow('Layer name must be a string');
+      `),
+      ).toThrow('Layer name must be a string');
     });
 
     it('throws on non-string layer name in apply', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define PathLayer('test') \${}
         layer(42).apply { M 0 0 }
-      `)).toThrow('layer apply target must be a string or layer reference');
+      `),
+      ).toThrow('layer apply target must be a string or layer reference');
     });
 
     it('allows TextLayer definitions', () => {
@@ -338,30 +353,38 @@ describe('Multi-Layer Support', () => {
     });
 
     it('throws when path commands target a TextLayer apply block', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define TextLayer('labels') \${}
         layer('labels').apply { M 10 20 }
-      `)).toThrow('Path commands cannot be used inside a TextLayer apply block');
+      `),
+      ).toThrow('Path commands cannot be used inside a TextLayer apply block');
     });
 
     it('throws when bare path commands route to default TextLayer', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define default TextLayer('labels') \${}
         M 10 20
-      `)).toThrow('Path commands cannot be routed to a TextLayer');
+      `),
+      ).toThrow('Path commands cannot be routed to a TextLayer');
     });
 
     it('throws when text() is used outside a TextLayer apply block', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         text(10, 20)\`hello\`
-      `)).toThrow('text() can only be used inside a TextLayer apply block');
+      `),
+      ).toThrow('text() can only be used inside a TextLayer apply block');
     });
 
     it('throws when text() is used inside a PathLayer apply block', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define PathLayer('main') \${}
         layer('main').apply { text(10, 20)\`hello\` }
-      `)).toThrow('text() can only be used inside a TextLayer apply block');
+      `),
+      ).toThrow('text() can only be used inside a TextLayer apply block');
     });
   });
 
@@ -380,7 +403,9 @@ describe('Multi-Layer Support', () => {
       expect(layer.styles['font-size']).toBe('14');
       expect(layer.textElements).toHaveLength(1);
       expect(layer.textElements![0]).toEqual({
-        x: 10, y: 20, rotation: undefined,
+        x: 10,
+        y: 20,
+        rotation: undefined,
         children: [{ type: 'run', text: 'Hello' }],
       });
     });
@@ -395,7 +420,7 @@ describe('Multi-Layer Support', () => {
       const te = result.layers[0].textElements![0];
       expect(te.x).toBe(50);
       expect(te.y).toBe(45);
-      expect(te.rotation).toBeCloseTo(30 * Math.PI / 180);
+      expect(te.rotation).toBeCloseTo((30 * Math.PI) / 180);
     });
 
     it('creates text with rotation in radians (default)', () => {
@@ -436,7 +461,7 @@ describe('Multi-Layer Support', () => {
       expect(te.children).toHaveLength(3);
       expect(te.children[0]).toEqual({ type: 'run', text: 'Hello ' });
       expect(te.children[1]).toMatchObject({ type: 'tspan', text: 'world', dx: 0, dy: 0 });
-      expect((te.children[1] as any).rotation).toBeCloseTo(30 * Math.PI / 180);
+      expect((te.children[1] as any).rotation).toBeCloseTo((30 * Math.PI) / 180);
       expect(te.children[2]).toEqual({ type: 'run', text: ' end' });
     });
 
@@ -939,38 +964,48 @@ describe('Multi-Layer Support', () => {
 
     describe('error cases', () => {
       it('throws on wrong number of translate.set args', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           define PathLayer('main') \${}
           layer('main').ctx.transform.translate.set(50)
-        `)).toThrow('translate.set() expects 2 arguments');
+        `),
+        ).toThrow('translate.set() expects 2 arguments');
       });
 
       it('throws on wrong number of rotate.set args', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           define PathLayer('main') \${}
           layer('main').ctx.transform.rotate.set(1, 2)
-        `)).toThrow('rotate.set() expects 1 or 3 arguments');
+        `),
+        ).toThrow('rotate.set() expects 1 or 3 arguments');
       });
 
       it('throws on wrong number of scale.set args', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           define PathLayer('main') \${}
           layer('main').ctx.transform.scale.set(2)
-        `)).toThrow('scale.set() expects 2 or 4 arguments');
+        `),
+        ).toThrow('scale.set() expects 2 or 4 arguments');
       });
 
       it('throws on non-numeric transform arguments', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           define PathLayer('main') \${}
           layer('main').ctx.transform.translate.set("a", "b")
-        `)).toThrow('arguments must be numbers');
+        `),
+        ).toThrow('arguments must be numbers');
       });
 
       it('throws on invalid transform property', () => {
-        expect(() => compileWithContext(`
+        expect(() =>
+          compileWithContext(`
           define PathLayer('main') \${}
           log(layer('main').ctx.transform.skew)
-        `)).toThrow("does not exist on transform");
+        `),
+        ).toThrow('does not exist on transform');
       });
     });
   });
@@ -981,7 +1016,7 @@ describe('Multi-Layer Support', () => {
         let fragment = SVGDocumentFragment(\`<rect width="100" height="100" fill="red"/>\`);
         fragment.insert()
       `);
-      expect(result.layers.some(l => l.type === 'fragment')).toBe(true);
+      expect(result.layers.some((l) => l.type === 'fragment')).toBe(true);
     });
 
     it('separates defs from visual content', () => {
@@ -994,7 +1029,7 @@ describe('Multi-Layer Support', () => {
         \`);
         fragment.insert()
       `);
-      const frag = result.layers.find(l => l.type === 'fragment')!;
+      const frag = result.layers.find((l) => l.type === 'fragment')!;
       expect(frag.fragmentDefs).toContain('filter');
       expect(frag.fragmentDefs).toContain('feGaussianBlur');
       expect(frag.fragmentVisuals).toContain('rect');
@@ -1002,21 +1037,27 @@ describe('Multi-Layer Support', () => {
     });
 
     it('rejects <script> tags', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         SVGDocumentFragment(\`<script>alert(1)</script>\`);
-      `)).toThrow('<script> elements are not allowed');
+      `),
+      ).toThrow('<script> elements are not allowed');
     });
 
     it('rejects on* event handlers', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         SVGDocumentFragment(\`<rect onclick="alert(1)" width="10" height="10"/>\`);
-      `)).toThrow('on* event handler attributes are not allowed');
+      `),
+      ).toThrow('on* event handler attributes are not allowed');
     });
 
     it('rejects malformed SVG (mismatched tags)', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         SVGDocumentFragment(\`<g><rect/></text>\`);
-      `)).toThrow('malformed SVG');
+      `),
+      ).toThrow('malformed SVG');
     });
 
     it('respects layer ordering', () => {
@@ -1028,7 +1069,7 @@ describe('Multi-Layer Support', () => {
         layer('bg').apply { M 0 0 }
         layer('fg').apply { M 10 10 }
       `);
-      expect(result.layers.map(l => l.type)).toEqual(['path', 'fragment', 'path']);
+      expect(result.layers.map((l) => l.type)).toEqual(['path', 'fragment', 'path']);
       expect(result.layers[0].name).toBe('bg');
       expect(result.layers[1].type).toBe('fragment');
       expect(result.layers[2].name).toBe('fg');
@@ -1041,7 +1082,7 @@ describe('Multi-Layer Support', () => {
         f1.insert()
         f2.insert()
       `);
-      const frags = result.layers.filter(l => l.type === 'fragment');
+      const frags = result.layers.filter((l) => l.type === 'fragment');
       expect(frags).toHaveLength(2);
       expect(frags[0].fragmentVisuals).toContain('rect');
       expect(frags[1].fragmentVisuals).toContain('circle');
@@ -1053,20 +1094,24 @@ describe('Multi-Layer Support', () => {
         let frag = SVGDocumentFragment(\`<circle cx="50" cy="50" r="\${r}"/>\`);
         frag.insert()
       `);
-      const frag = result.layers.find(l => l.type === 'fragment')!;
+      const frag = result.layers.find((l) => l.type === 'fragment')!;
       expect(frag.fragmentVisuals).toContain('r="25"');
     });
 
     it('rejects non-string argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         SVGDocumentFragment(42);
-      `)).toThrow('argument must be a string');
+      `),
+      ).toThrow('argument must be a string');
     });
 
     it('rejects wrong argument count', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         SVGDocumentFragment(\`a\`, \`b\`);
-      `)).toThrow('expects 1 argument');
+      `),
+      ).toThrow('expects 1 argument');
     });
   });
 
@@ -1099,7 +1144,7 @@ describe('Multi-Layer Support', () => {
         define PathLayer('art') \${ mask: m.id; }
         layer('art').apply { M 0 0 L 10 10 }
       `);
-      expect(result.layers.find(l => l.name === 'art')!.styles['mask']).toBe('url(#alpha-mask)');
+      expect(result.layers.find((l) => l.name === 'art')!.styles.mask).toBe('url(#alpha-mask)');
     });
 
     it('style auto-wrapping: clip-path property gets url(#...) wrapper', () => {
@@ -1108,7 +1153,7 @@ describe('Multi-Layer Support', () => {
         define PathLayer('scene') \${ clip-path: c.id; }
         layer('scene').apply { M 0 0 L 10 10 }
       `);
-      expect(result.layers.find(l => l.name === 'scene')!.styles['clip-path']).toBe('url(#clip-id)');
+      expect(result.layers.find((l) => l.name === 'scene')!.styles['clip-path']).toBe('url(#clip-id)');
     });
 
     it('does not double-wrap values that already start with url(', () => {
@@ -1116,7 +1161,7 @@ describe('Multi-Layer Support', () => {
         define PathLayer('art') \${ mask: url(#existing); }
         layer('art').apply { M 0 0 L 10 10 }
       `);
-      expect(result.layers.find(l => l.name === 'art')!.styles['mask']).toBe('url(#existing)');
+      expect(result.layers.find((l) => l.name === 'art')!.styles.mask).toBe('url(#existing)');
     });
 
     it('Mask.append() with PathBlockValue auto-projects at origin', () => {
@@ -1177,51 +1222,65 @@ describe('Multi-Layer Support', () => {
     });
 
     it('duplicate Mask ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let m1 = Mask('dup');
         let m2 = Mask('dup');
-      `)).toThrow("Duplicate defs ID 'dup'");
+      `),
+      ).toThrow("Duplicate defs ID 'dup'");
     });
 
     it('duplicate ID across Mask and ClipPath throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let m = Mask('shared');
         let c = ClipPath('shared');
-      `)).toThrow("Duplicate defs ID 'shared'");
+      `),
+      ).toThrow("Duplicate defs ID 'shared'");
     });
 
     it('Mask() rejects non-string argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         Mask(42);
-      `)).toThrow('argument must be a string');
+      `),
+      ).toThrow('argument must be a string');
     });
 
     it('ClipPath() rejects wrong argument count', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         ClipPath();
-      `)).toThrow('expects 1 argument');
+      `),
+      ).toThrow('expects 1 argument');
     });
 
     it('Mask.append() rejects non-path argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let m = Mask('bad');
         m.append(42);
-      `)).toThrow('must be a PathBlock or ProjectedPath');
+      `),
+      ).toThrow('must be a PathBlock or ProjectedPath');
     });
 
     it('ClipPath.append() rejects non-path argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let c = ClipPath('bad');
         c.append("not a path");
-      `)).toThrow('must be a PathBlock or ProjectedPath');
+      `),
+      ).toThrow('must be a PathBlock or ProjectedPath');
     });
 
     it('Mask.append() rejects non-style-block second argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let p = @{ m 0 0 l 10 10 };
         let m = Mask('bad-style');
         m.append(p, 42);
-      `)).toThrow('second argument must be a style block');
+      `),
+      ).toThrow('second argument must be a style block');
     });
 
     it('empty mask produces empty elements array', () => {
@@ -1245,8 +1304,8 @@ describe('Multi-Layer Support', () => {
       expect(result.masks).toHaveLength(1);
       expect(result.masks[0].id).toBe('reveal');
       expect(result.masks[0].elements).toHaveLength(2);
-      const artLayer = result.layers.find(l => l.name === 'art')!;
-      expect(artLayer.styles['mask']).toBe('url(#reveal)');
+      const artLayer = result.layers.find((l) => l.name === 'art')!;
+      expect(artLayer.styles.mask).toBe('url(#reveal)');
     });
 
     it('formatValueForDisplay shows Mask and ClipPath', () => {
@@ -1273,10 +1332,10 @@ describe('Multi-Layer Support', () => {
         layer('mm').apply { M 0 0 }
         layer('me').apply { M 0 0 }
       `);
-      expect(result.layers.find(l => l.name === 'f')!.styles['filter']).toBe('url(#blur-filter)');
-      expect(result.layers.find(l => l.name === 'ms')!.styles['marker-start']).toBe('url(#arrow)');
-      expect(result.layers.find(l => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
-      expect(result.layers.find(l => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');
+      expect(result.layers.find((l) => l.name === 'f')!.styles.filter).toBe('url(#blur-filter)');
+      expect(result.layers.find((l) => l.name === 'ms')!.styles['marker-start']).toBe('url(#arrow)');
+      expect(result.layers.find((l) => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
+      expect(result.layers.find((l) => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');
     });
   });
 
@@ -1413,60 +1472,76 @@ describe('Multi-Layer Support', () => {
 
     describe('errors', () => {
       it('rejects duplicate layer names (dynamic + dynamic)', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let a = PathLayer('x') \${};
           let b = PathLayer('x') \${};
-        `)).toThrow(/Duplicate layer name: 'x'/);
+        `),
+        ).toThrow(/Duplicate layer name: 'x'/);
       });
 
       it('rejects duplicate layer names (dynamic + define)', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           define PathLayer('x') \${ stroke: red; }
           let b = PathLayer('x') \${};
-        `)).toThrow(/Duplicate layer name: 'x'/);
+        `),
+        ).toThrow(/Duplicate layer name: 'x'/);
       });
 
       it('rejects PathLayer without name argument', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let l = PathLayer();
-        `)).toThrow();
+        `),
+        ).toThrow();
       });
 
       it('rejects non-string layer name', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let l = PathLayer(123);
-        `)).toThrow(/Layer name must be a string/);
+        `),
+        ).toThrow(/Layer name must be a string/);
       });
 
       it('rejects .apply on a non-layer variable', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let x = 42;
           x.apply { M 0 0 }
-        `)).toThrow(/layer apply target must be a string or layer reference/);
+        `),
+        ).toThrow(/layer apply target must be a string or layer reference/);
       });
 
       it('rejects << with non-StyleBlockValue right side on LayerReference', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let l = PathLayer('x') \${};
           l << 42;
-        `)).toThrow();
+        `),
+        ).toThrow();
       });
 
       it('rejects .styles = non-style-block', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let l = PathLayer('x') \${};
           l.styles = 42;
-        `)).toThrow(/Layer styles must be a style block/);
+        `),
+        ).toThrow(/Layer styles must be a style block/);
       });
 
       it('rejects nested .apply blocks', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let a = PathLayer('a') \${};
           let b = PathLayer('b') \${};
           a.apply {
             b.apply { M 0 0 }
           }
-        `)).toThrow(/Cannot nest layer apply blocks/);
+        `),
+        ).toThrow(/Cannot nest layer apply blocks/);
       });
     });
   });
@@ -1493,9 +1568,11 @@ describe('Multi-Layer Support', () => {
     });
 
     it('rejects define default GroupLayer', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         define default GroupLayer('g') \${}
-      `)).toThrow(/GroupLayer cannot be the default layer/);
+      `),
+      ).toThrow(/GroupLayer cannot be the default layer/);
     });
 
     it('appends a PathLayer child', () => {
@@ -1606,18 +1683,22 @@ describe('Multi-Layer Support', () => {
     });
 
     it('throws on .append() on non-GroupLayer', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let p = PathLayer('p') \${};
         let q = PathLayer('q') \${};
         p.append(q)
-      `)).toThrow(/\.append\(\) is only available on GroupLayer/);
+      `),
+      ).toThrow(/\.append\(\) is only available on GroupLayer/);
     });
 
     it('throws on .append() with non-layer argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = GroupLayer('g') \${};
         g.append(42)
-      `)).toThrow(/\.append\(\) arguments must be layer references/);
+      `),
+      ).toThrow(/\.append\(\) arguments must be layer references/);
     });
 
     it('moves layer from one group to another with warning log', () => {
@@ -1633,15 +1714,17 @@ describe('Multi-Layer Support', () => {
       expect(result.layers[1].children).toHaveLength(1); // g2
       expect(result.layers[1].children![0].name).toBe('child');
       // Check for warning log
-      const logMessages = result.logs.map(l => l.parts.map(p => p.value).join(''));
-      expect(logMessages.some(m => m.includes("Layer 'child' was moved from group 'g1' to group 'g2'"))).toBe(true);
+      const logMessages = result.logs.map((l) => l.parts.map((p) => p.value).join(''));
+      expect(logMessages.some((m) => m.includes("Layer 'child' was moved from group 'g1' to group 'g2'"))).toBe(true);
     });
 
     it('throws on appending a group to itself', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = GroupLayer('g') \${};
         g.append(g)
-      `)).toThrow(/Cannot append group 'g' to itself/);
+      `),
+      ).toThrow(/Cannot append group 'g' to itself/);
     });
 
     it('duplicate append to same group is a no-op', () => {
@@ -1655,10 +1738,12 @@ describe('Multi-Layer Support', () => {
     });
 
     it('rejects apply blocks on GroupLayer', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = GroupLayer('g') \${};
         g.apply { M 0 0 }
-      `)).toThrow(/GroupLayer does not support apply blocks/);
+      `),
+      ).toThrow(/GroupLayer does not support apply blocks/);
     });
 
     it('ctx.transform.rotate.set works on GroupLayer', () => {

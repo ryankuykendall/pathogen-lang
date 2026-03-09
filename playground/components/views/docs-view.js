@@ -1,7 +1,18 @@
 // Docs View - Full-page documentation with sidebar navigation
 // Route: /docs
 
-import { gettingStarted, syntax, stdlib, layers, pathBlocks, debug, cli, examples, tocData, hljsThemeDark } from '../../utils/docs-content.js';
+import {
+  cli,
+  debug,
+  examples,
+  gettingStarted,
+  hljsThemeDark,
+  layers,
+  pathBlocks,
+  stdlib,
+  syntax,
+  tocData,
+} from '../../utils/docs-content.js';
 
 const contentMap = { gettingStarted, syntax, stdlib, layers, pathBlocks, debug, cli, examples };
 
@@ -385,7 +396,7 @@ class DocsView extends HTMLElement {
   }
 
   render() {
-    const sectionKeys = tocData.map(s => s.key);
+    const sectionKeys = tocData.map((s) => s.key);
 
     // Determine which section to expand initially
     const hash = location.hash.slice(1);
@@ -408,31 +419,43 @@ class DocsView extends HTMLElement {
           <p class="subtitle">svg-path-extended</p>
         </div>
         <nav class="sidebar-nav">
-          ${tocData.map(section => `
+          ${tocData
+            .map(
+              (section) => `
             <div class="sidebar-section ${this._expandedSections.has(section.key) ? 'expanded' : ''}" data-section="${section.key}">
               <button class="section-toggle" data-section-toggle="${section.key}">
                 <span class="chevron">\u25B6</span>
                 ${escapeHtml(section.title)}
               </button>
               <div class="section-headings">
-                ${section.headings.map(h => `
+                ${section.headings
+                  .map(
+                    (h) => `
                   <button class="sidebar-heading" data-heading-id="${h.id}" data-level="${h.level}" title="${escapeHtml(h.title)}">
                     ${escapeHtml(h.title)}
                   </button>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </nav>
       </aside>
 
       <div class="content-area">
         <div class="content-inner">
-          ${sectionKeys.map(key => `
+          ${sectionKeys
+            .map(
+              (key) => `
             <section class="doc-section" data-section-key="${key}">
               ${contentMap[key] || ''}
             </section>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
       </div>
 
@@ -442,7 +465,7 @@ class DocsView extends HTMLElement {
 
   findSectionForHeading(headingId) {
     for (const section of tocData) {
-      if (section.headings.some(h => h.id === headingId)) {
+      if (section.headings.some((h) => h.id === headingId)) {
         return section.key;
       }
     }
@@ -527,9 +550,9 @@ class DocsView extends HTMLElement {
 
     // Wait for DOM, then observe
     requestAnimationFrame(() => {
-      const headingEls = Array.from(
-        this.shadowRoot.querySelectorAll('h2[id], h3[id]')
-      ).filter(el => allIds.has(el.id));
+      const headingEls = Array.from(this.shadowRoot.querySelectorAll('h2[id], h3[id]')).filter((el) =>
+        allIds.has(el.id),
+      );
 
       if (headingEls.length === 0) return;
 
@@ -567,7 +590,7 @@ class DocsView extends HTMLElement {
           root: contentArea,
           rootMargin: '0px 0px -70% 0px',
           threshold: 0,
-        }
+        },
       );
 
       for (const el of headingEls) {

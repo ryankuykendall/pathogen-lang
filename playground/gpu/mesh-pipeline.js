@@ -1,8 +1,8 @@
 // Mesh gradient WebGPU render pipeline
 // Caches per-device; recreates after device loss recovery.
 
+import { MESH_FRAGMENT_WGSL, MESH_VERTEX_WGSL } from './mesh-shader.js';
 import { getDevice } from './webgpu-device.js';
-import { MESH_VERTEX_WGSL, MESH_FRAGMENT_WGSL } from './mesh-shader.js';
 
 let cachedMeshPipeline = null;
 let meshPipelineDevice = null;
@@ -38,21 +38,23 @@ export async function getMeshPipeline() {
       fragment: {
         module: fragmentModule,
         entryPoint: 'fs_main',
-        targets: [{
-          format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+        targets: [
+          {
+            format,
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
             },
           },
-        }],
+        ],
       },
       primitive: {
         topology: 'triangle-list',

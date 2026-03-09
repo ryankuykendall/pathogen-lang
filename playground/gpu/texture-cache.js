@@ -74,24 +74,16 @@ export class TextureCache {
  */
 export function hashGradient(grad, w, h) {
   if (grad.type === 'mesh') {
-    const grid = (grad.meshGrid || [])
-      .map(row => row.map(p => `${p.x},${p.y}:${p.color}`).join(';'))
-      .join('/');
-    return [
-      'mesh', w, h,
-      grad.meshWidth ?? 0,
-      grad.meshHeight ?? 0,
-      grad.interpolation ?? 'srgb',
-      grid,
-    ].join('|');
+    const grid = (grad.meshGrid || []).map((row) => row.map((p) => `${p.x},${p.y}:${p.color}`).join(';')).join('/');
+    return ['mesh', w, h, grad.meshWidth ?? 0, grad.meshHeight ?? 0, grad.interpolation ?? 'srgb', grid].join('|');
   }
 
   if (grad.type === 'freeform') {
-    const pts = (grad.freeformPoints || [])
-      .map(p => `${p.x},${p.y}:${p.color}`)
-      .join(';');
+    const pts = (grad.freeformPoints || []).map((p) => `${p.x},${p.y}:${p.color}`).join(';');
     return [
-      'freeform', w, h,
+      'freeform',
+      w,
+      h,
       grad.freeformWidth ?? 0,
       grad.freeformHeight ?? 0,
       grad.falloff ?? 2.0,
@@ -101,14 +93,12 @@ export function hashGradient(grad, w, h) {
   }
 
   if (grad.type === 'topo') {
-    const contours = (grad.topoContours || [])
-      .map(c => `${c.elevation}:${c.path}:${c.color}`)
-      .join(',');
-    const stops = (grad.stopsWithOklch || [])
-      .map(s => `${s.offset}:${s.color}`)
-      .join(',');
+    const contours = (grad.topoContours || []).map((c) => `${c.elevation}:${c.path}:${c.color}`).join(',');
+    const stops = (grad.stopsWithOklch || []).map((s) => `${s.offset}:${s.color}`).join(',');
     return [
-      'topo', w, h,
+      'topo',
+      w,
+      h,
       grad.topoWidth ?? 0,
       grad.topoHeight ?? 0,
       grad.topoEasing ?? 'linear',
@@ -121,16 +111,15 @@ export function hashGradient(grad, w, h) {
     ].join('|');
   }
 
-  const stops = (grad.stopsWithOklch || grad.stops || [])
-    .map(s => `${s.offset}:${s.color}`)
-    .join(',');
+  const stops = (grad.stopsWithOklch || grad.stops || []).map((s) => `${s.offset}:${s.color}`).join(',');
   return [
     'conic',
-    w, h,
+    w,
+    h,
     grad.cx ?? 0,
     grad.cy ?? 0,
     grad.from ?? 0,
-    grad.to ?? (2 * Math.PI),
+    grad.to ?? 2 * Math.PI,
     grad.innerRadius ?? 0,
     grad.innerFill ?? 'transparent',
     grad.spread ?? 'clamp',

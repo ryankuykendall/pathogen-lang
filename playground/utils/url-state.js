@@ -1,7 +1,7 @@
 // URL state encoding/decoding for shareable workspace links
 // Uses query params with History API: /svg-path-extended/workspace/:id?state=...
 
-import { navigateTo, getCurrentRoute, routeUrl } from './router.js';
+import { getCurrentRoute, navigateTo, routeUrl } from './router.js';
 
 export function encodeState(state) {
   const urlState = {
@@ -81,10 +81,12 @@ export function copyURL(store) {
 
   // Build URL with current workspace ID if available
   const workspaceId = route.params?.id || 'new';
-  const url = location.origin + routeUrl('/workspace/:id', {
-    params: { id: workspaceId },
-    query: { state: encodedState }
-  });
+  const url =
+    location.origin +
+    routeUrl('/workspace/:id', {
+      params: { id: workspaceId },
+      query: { state: encodedState },
+    });
 
   return navigator.clipboard.writeText(url);
 }
@@ -101,7 +103,7 @@ export function updateURLState(store, options = {}) {
     navigateTo('/workspace/:id', {
       params: route.params,
       query: { state: encodedState },
-      replace: !addToHistory
+      replace: !addToHistory,
     });
   }
 }

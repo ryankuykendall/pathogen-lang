@@ -17,12 +17,15 @@ class ReactiveSvg extends HTMLElement {
     // Capture inner HTML before we replace it
     const svgContent = this.innerHTML;
 
-    const controlsHTML = vars.map(v =>
-      `<label class="control">
+    const controlsHTML = vars
+      .map(
+        (v) =>
+          `<label class="control">
         <span class="var-name">${v.name}</span>
         <input type="color" value="${v.defaultValue}" data-var="${v.name}">
-      </label>`
-    ).join('');
+      </label>`,
+      )
+      .join('');
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -128,14 +131,18 @@ class ReactiveSvg extends HTMLElement {
   parseVars() {
     const raw = this.getAttribute('vars') || '';
     if (!raw) return [];
-    return raw.split(';').filter(Boolean).map(pair => {
-      const colonIdx = pair.indexOf(':');
-      if (colonIdx === -1) return null;
-      return {
-        name: pair.slice(0, colonIdx).trim(),
-        defaultValue: pair.slice(colonIdx + 1).trim()
-      };
-    }).filter(Boolean);
+    return raw
+      .split(';')
+      .filter(Boolean)
+      .map((pair) => {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx === -1) return null;
+        return {
+          name: pair.slice(0, colonIdx).trim(),
+          defaultValue: pair.slice(colonIdx + 1).trim(),
+        };
+      })
+      .filter(Boolean);
   }
 }
 

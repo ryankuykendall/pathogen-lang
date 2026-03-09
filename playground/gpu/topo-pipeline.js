@@ -1,8 +1,8 @@
 // Topological gradient WebGPU render pipeline
 // Caches per-device; recreates after device loss recovery.
 
+import { TOPO_FRAGMENT_WGSL, TOPO_VERTEX_WGSL } from './topo-shader.js';
 import { getDevice } from './webgpu-device.js';
-import { TOPO_VERTEX_WGSL, TOPO_FRAGMENT_WGSL } from './topo-shader.js';
 
 let cachedTopoPipeline = null;
 let topoPipelineDevice = null;
@@ -38,21 +38,23 @@ export async function getTopoPipeline() {
       fragment: {
         module: fragmentModule,
         entryPoint: 'fs_main',
-        targets: [{
-          format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+        targets: [
+          {
+            format,
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
             },
           },
-        }],
+        ],
       },
       primitive: {
         topology: 'triangle-list',

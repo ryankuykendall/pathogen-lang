@@ -15,31 +15,31 @@ export interface Point {
  * Record of a single path command with its start and end positions
  */
 export interface CommandHistoryEntry {
-  command: string;     // M, L, h, v, etc. (case-preserved)
-  args: number[];      // Evaluated arguments
-  start: Point;        // Position before command
-  end: Point;          // Position after command
+  command: string; // M, L, h, v, etc. (case-preserved)
+  args: number[]; // Evaluated arguments
+  start: Point; // Position before command
+  end: Point; // Position after command
 }
 
 /**
  * Path context state tracking current position, subpath start, and command history
  */
 export interface PathContext {
-  position: Point;     // Current pen position
-  start: Point;        // Subpath start (set by M, used by Z)
+  position: Point; // Current pen position
+  start: Point; // Subpath start (set by M, used by Z)
   commands: CommandHistoryEntry[];
   lastTangent?: number; // Tangent angle from last drawing command (radians)
-  _lastQuadCP?: Point;  // Previous quadratic control point (for T command tangent reflection)
-  trackHistory: boolean;  // Whether to store command history (performance optimization)
-  _dirty: boolean;        // Whether context has changed since last object conversion
-  _cachedObject: Record<string, unknown> | null;  // Cached object representation
+  _lastQuadCP?: Point; // Previous quadratic control point (for T command tangent reflection)
+  trackHistory: boolean; // Whether to store command history (performance optimization)
+  _dirty: boolean; // Whether context has changed since last object conversion
+  _cachedObject: Record<string, unknown> | null; // Cached object representation
 }
 
 /**
  * Options for creating a PathContext
  */
 export interface PathContextOptions {
-  trackHistory?: boolean;  // Whether to track command history (default: false for performance)
+  trackHistory?: boolean; // Whether to track command history (default: false for performance)
 }
 
 /**
@@ -70,11 +70,7 @@ function copyPoint(p: Point): Point {
  * @param command - The SVG path command letter (M, L, h, v, etc.)
  * @param args - The evaluated numeric arguments for the command
  */
-export function updateContextForCommand(
-  ctx: PathContext,
-  command: string,
-  args: number[]
-): void {
+export function updateContextForCommand(ctx: PathContext, command: string, args: number[]): void {
   const startPos = copyPoint(ctx.position);
   let endPos: Point;
 
@@ -239,8 +235,8 @@ export function updateContextForCommand(
 
     case 'C': {
       // Cubic bezier: C x1 y1 x2 y2 x y — tangent from CP2 to endpoint
-      let cp2x = isRelative ? startPos.x + args[2] : args[2];
-      let cp2y = isRelative ? startPos.y + args[3] : args[3];
+      const cp2x = isRelative ? startPos.x + args[2] : args[2];
+      const cp2y = isRelative ? startPos.y + args[3] : args[3];
       let dx = endPos.x - cp2x;
       let dy = endPos.y - cp2y;
       if (dx === 0 && dy === 0) {
@@ -303,14 +299,19 @@ export function updateContextForCommand(
       // Arc: A rx ry rotation large-arc sweep x y
       const rx = args[0];
       const ry = args[1];
-      const rotation = args[2] * Math.PI / 180;
+      const rotation = (args[2] * Math.PI) / 180;
       const largeArcFlag = args[3];
       const sweepFlag = args[4];
       const center = arcEndpointToCenter(
-        startPos.x, startPos.y,
-        rx, ry, rotation,
-        largeArcFlag, sweepFlag,
-        endPos.x, endPos.y
+        startPos.x,
+        startPos.y,
+        rx,
+        ry,
+        rotation,
+        largeArcFlag,
+        sweepFlag,
+        endPos.x,
+        endPos.y,
       );
       if (center) {
         ctx.lastTangent = arcTangentFromCenter(center, 1);
@@ -381,12 +382,14 @@ export function contextToObject(ctx: PathContext, transformState?: TransformStat
     position: { x: ctx.position.x, y: ctx.position.y },
     start: { x: ctx.start.x, y: ctx.start.y },
     // Only include commands if history tracking is enabled
-    commands: ctx.trackHistory ? ctx.commands.map((cmd) => ({
-      command: cmd.command,
-      args: [...cmd.args],
-      start: { x: cmd.start.x, y: cmd.start.y },
-      end: { x: cmd.end.x, y: cmd.end.y },
-    })) : [],
+    commands: ctx.trackHistory
+      ? ctx.commands.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
+          start: { x: cmd.start.x, y: cmd.start.y },
+          end: { x: cmd.end.x, y: cmd.end.y },
+        }))
+      : [],
   };
   // Include lastTangent if defined
   if (ctx.lastTangent !== undefined) {
@@ -421,7 +424,7 @@ export function transformStateToSvg(t: TransformState): string | null {
   const parts: string[] = [];
   if (t.translate) parts.push(`translate(${t.translate.x}, ${t.translate.y})`);
   if (t.rotate) {
-    const deg = t.rotate.angle * 180 / Math.PI;
+    const deg = (t.rotate.angle * 180) / Math.PI;
     if (t.rotate.cx != null && t.rotate.cy != null) {
       parts.push(`rotate(${deg}, ${t.rotate.cx}, ${t.rotate.cy})`);
     } else {

@@ -31,7 +31,7 @@ export class LogEntry extends HTMLElement {
   // Truncate string for previews
   truncate(str, len = 30) {
     if (str.length <= len) return str;
-    return str.slice(0, len) + '...';
+    return `${str.slice(0, len)}...`;
   }
 
   // Generate preview for collapsed objects/arrays
@@ -40,7 +40,7 @@ export class LogEntry extends HTMLElement {
       const len = value.length;
       if (len === 0) return '[]';
       if (len <= 3) {
-        const items = value.slice(0, 3).map(v => {
+        const items = value.slice(0, 3).map((v) => {
           if (v === null) return 'null';
           if (typeof v === 'object') return Array.isArray(v) ? `Array(${v.length})` : '{...}';
           if (typeof v === 'string') return `"${this.truncate(v, 15)}"`;
@@ -49,23 +49,25 @@ export class LogEntry extends HTMLElement {
         return `[${items.join(', ')}]`;
       }
       return `Array(${len})`;
-    } else {
-      const keys = Object.keys(value);
-      if (keys.length === 0) return '{}';
-      if (keys.length <= 3) {
-        const items = keys.slice(0, 3).map(k => {
-          const v = value[k];
-          if (v === null) return `${k}: null`;
-          if (typeof v === 'object') return `${k}: ${Array.isArray(v) ? `Array(${v.length})` : '{...}'}`;
-          if (typeof v === 'string') return `${k}: "${this.truncate(v, 10)}"`;
-          return `${k}: ${v}`;
-        });
-        const suffix = keys.length > 3 ? ', ...' : '';
-        return `{${items.join(', ')}${suffix}}`;
-      }
-      const preview = keys.slice(0, 2).map(k => `${k}: ...`).join(', ');
-      return `{${preview}, ...}`;
     }
+    const keys = Object.keys(value);
+    if (keys.length === 0) return '{}';
+    if (keys.length <= 3) {
+      const items = keys.slice(0, 3).map((k) => {
+        const v = value[k];
+        if (v === null) return `${k}: null`;
+        if (typeof v === 'object') return `${k}: ${Array.isArray(v) ? `Array(${v.length})` : '{...}'}`;
+        if (typeof v === 'string') return `${k}: "${this.truncate(v, 10)}"`;
+        return `${k}: ${v}`;
+      });
+      const suffix = keys.length > 3 ? ', ...' : '';
+      return `{${items.join(', ')}${suffix}}`;
+    }
+    const preview = keys
+      .slice(0, 2)
+      .map((k) => `${k}: ...`)
+      .join(', ');
+    return `{${preview}, ...}`;
   }
 
   // Create span for primitive values
@@ -98,9 +100,7 @@ export class LogEntry extends HTMLElement {
     const preview = this.generatePreview(value, type);
     const id = `expand-${path.replace(/\./g, '-')}-${depth}`;
 
-    const entries = type === 'array'
-      ? value.map((v, i) => [i, v])
-      : Object.entries(value);
+    const entries = type === 'array' ? value.map((v, i) => [i, v]) : Object.entries(value);
 
     const maxItems = 100;
     const displayEntries = entries.slice(0, maxItems);
@@ -299,7 +299,6 @@ export class LogEntry extends HTMLElement {
       </style>
       <div class="entry">${partsHTML}</div>
     `;
-
   }
 }
 

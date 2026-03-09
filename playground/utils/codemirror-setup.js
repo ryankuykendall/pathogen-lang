@@ -43,8 +43,16 @@ export const stdlibCompletions = [
   { label: 'polarLine', type: 'function', info: 'polarLine(angle, distance) - Line in polar direction' },
 
   // 2. Arc and Tangent functions
-  { label: 'arcFromCenter', type: 'function', info: 'arcFromCenter(dcx, dcy, r, start, end, cw) - Arc from center offset' },
-  { label: 'arcFromPolarOffset', type: 'function', info: 'arcFromPolarOffset(angle, radius, sweepAngle) - Arc from polar center' },
+  {
+    label: 'arcFromCenter',
+    type: 'function',
+    info: 'arcFromCenter(dcx, dcy, r, start, end, cw) - Arc from center offset',
+  },
+  {
+    label: 'arcFromPolarOffset',
+    type: 'function',
+    info: 'arcFromPolarOffset(angle, radius, sweepAngle) - Arc from polar center',
+  },
   { label: 'tangentLine', type: 'function', info: 'tangentLine(length) - Line following tangent' },
   { label: 'tangentArc', type: 'function', info: 'tangentArc(radius, sweepAngle) - Arc from tangent' },
 
@@ -187,14 +195,14 @@ export const snippetTemplates = [
     label: 'text',
     type: 'keyword',
     info: 'text element (inline or block form)',
-    template: "text(100, 100)`content`",
+    template: 'text(100, 100)`content`',
     cursorOffset: 15,
   },
   {
     label: 'tspan',
     type: 'keyword',
     info: 'text span inside text() block',
-    template: "tspan(0, 20)`content`",
+    template: 'tspan(0, 20)`content`',
     cursorOffset: 13,
   },
   {
@@ -208,7 +216,18 @@ export const snippetTemplates = [
 
 // Shared property/method names for PathBlock and ProjectedPath completions
 const pathSamplingProps = ['length', 'vertices', 'subPathCount', 'subPathCommands', 'startPoint', 'endPoint'];
-const pathSamplingMethods = ['get', 'tangent', 'normal', 'partition', 'reverse', 'boundingBox', 'offset', 'mirror', 'rotateAtVertexIndex', 'scale'];
+const pathSamplingMethods = [
+  'get',
+  'tangent',
+  'normal',
+  'partition',
+  'reverse',
+  'boundingBox',
+  'offset',
+  'mirror',
+  'rotateAtVertexIndex',
+  'scale',
+];
 
 // Completion source for svg-path-extended
 export function svgPathCompletions(context) {
@@ -224,7 +243,11 @@ export function svgPathCompletions(context) {
         return {
           from,
           options: [
-            { label: 'set()', type: 'function', info: 'translate.set(x, y) - Set translation', boost: 6,
+            {
+              label: 'set()',
+              type: 'function',
+              info: 'translate.set(x, y) - Set translation',
+              boost: 6,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'set()' }, selection: { anchor: from + 4 } });
               },
@@ -241,13 +264,22 @@ export function svgPathCompletions(context) {
         return {
           from,
           options: [
-            { label: 'set()', type: 'function', info: 'rotate.set(angle) or rotate.set(angle, cx, cy)', boost: 6,
+            {
+              label: 'set()',
+              type: 'function',
+              info: 'rotate.set(angle) or rotate.set(angle, cx, cy)',
+              boost: 6,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'set()' }, selection: { anchor: from + 4 } });
               },
             },
             { label: 'reset()', type: 'function', info: 'rotate.reset() - Clear rotation', boost: 5 },
-            { label: 'angle', type: 'property', info: 'rotate.angle - Rotation angle in radians (0 if unset)', boost: 4 },
+            {
+              label: 'angle',
+              type: 'property',
+              info: 'rotate.angle - Rotation angle in radians (0 if unset)',
+              boost: 4,
+            },
             { label: 'cx', type: 'property', info: 'rotate.cx - Origin X (0 if unset)', boost: 3 },
             { label: 'cy', type: 'property', info: 'rotate.cy - Origin Y (0 if unset)', boost: 2 },
           ],
@@ -259,7 +291,11 @@ export function svgPathCompletions(context) {
         return {
           from,
           options: [
-            { label: 'set()', type: 'function', info: 'scale.set(sx, sy) or scale.set(sx, sy, cx, cy)', boost: 6,
+            {
+              label: 'set()',
+              type: 'function',
+              info: 'scale.set(sx, sy) or scale.set(sx, sy, cx, cy)',
+              boost: 6,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'set()' }, selection: { anchor: from + 4 } });
               },
@@ -357,8 +393,18 @@ export function svgPathCompletions(context) {
           options: [
             { label: 'position', type: 'property', info: 'ctx.position - Current pen position {x, y}', boost: 5 },
             { label: 'start', type: 'property', info: 'ctx.start - Subpath start position {x, y}', boost: 4 },
-            { label: 'transform', type: 'property', info: 'ctx.transform - Layer transform (translate, rotate, scale)', boost: 3 },
-            { label: 'tangentAngle', type: 'property', info: 'ctx.tangentAngle - Current tangent direction (radians)', boost: 2 },
+            {
+              label: 'transform',
+              type: 'property',
+              info: 'ctx.transform - Layer transform (translate, rotate, scale)',
+              boost: 3,
+            },
+            {
+              label: 'tangentAngle',
+              type: 'property',
+              info: 'ctx.tangentAngle - Current tangent direction (radians)',
+              boost: 2,
+            },
             { label: 'commands', type: 'property', info: 'ctx.commands - Array of executed commands', boost: 1 },
           ],
           validFor: /^\w*$/,
@@ -369,22 +415,38 @@ export function svgPathCompletions(context) {
         return {
           from,
           options: [
-            { label: 'keys()', type: 'function', info: 'Object.keys(obj) - Array of key names', boost: 4,
+            {
+              label: 'keys()',
+              type: 'function',
+              info: 'Object.keys(obj) - Array of key names',
+              boost: 4,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'keys()' }, selection: { anchor: from + 5 } });
               },
             },
-            { label: 'values()', type: 'function', info: 'Object.values(obj) - Array of values', boost: 3,
+            {
+              label: 'values()',
+              type: 'function',
+              info: 'Object.values(obj) - Array of values',
+              boost: 3,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'values()' }, selection: { anchor: from + 7 } });
               },
             },
-            { label: 'entries()', type: 'function', info: 'Object.entries(obj) - Array of [key, value] pairs', boost: 2,
+            {
+              label: 'entries()',
+              type: 'function',
+              info: 'Object.entries(obj) - Array of [key, value] pairs',
+              boost: 2,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'entries()' }, selection: { anchor: from + 8 } });
               },
             },
-            { label: 'delete()', type: 'function', info: 'Object.delete(obj, key) - Remove a key', boost: 1,
+            {
+              label: 'delete()',
+              type: 'function',
+              info: 'Object.delete(obj, key) - Remove a key',
+              boost: 1,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'delete()' }, selection: { anchor: from + 7 } });
               },
@@ -398,44 +460,74 @@ export function svgPathCompletions(context) {
       const from = singleProp.from + obj.length + 1;
 
       // Check for Point variables (let x = Point(...) or method results returning Points)
-      const pointVarRegex2 = new RegExp(`let\\s+${obj}\\s*=\\s*(Point|\\w+\\.(translate|polarTranslate|midpoint|lerp|rotate))\\s*\\(`);
+      const pointVarRegex2 = new RegExp(
+        `let\\s+${obj}\\s*=\\s*(Point|\\w+\\.(translate|polarTranslate|midpoint|lerp|rotate))\\s*\\(`,
+      );
       if (pointVarRegex2.test(doc)) {
         return {
           from,
           options: [
             { label: 'x', type: 'property', info: `${obj}.x - X coordinate`, boost: 10 },
             { label: 'y', type: 'property', info: `${obj}.y - Y coordinate`, boost: 9 },
-            { label: 'translate()', type: 'function', info: `${obj}.translate(dx, dy) - Offset by deltas`, boost: 8,
+            {
+              label: 'translate()',
+              type: 'function',
+              info: `${obj}.translate(dx, dy) - Offset by deltas`,
+              boost: 8,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'translate()' }, selection: { anchor: from + 10 } });
               },
             },
-            { label: 'polarTranslate()', type: 'function', info: `${obj}.polarTranslate(angle, distance) - Polar offset`, boost: 7,
+            {
+              label: 'polarTranslate()',
+              type: 'function',
+              info: `${obj}.polarTranslate(angle, distance) - Polar offset`,
+              boost: 7,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'polarTranslate()' }, selection: { anchor: from + 15 } });
               },
             },
-            { label: 'midpoint()', type: 'function', info: `${obj}.midpoint(point) - Halfway between two points`, boost: 6,
+            {
+              label: 'midpoint()',
+              type: 'function',
+              info: `${obj}.midpoint(point) - Halfway between two points`,
+              boost: 6,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'midpoint()' }, selection: { anchor: from + 9 } });
               },
             },
-            { label: 'lerp()', type: 'function', info: `${obj}.lerp(point, t) - Linear interpolation`, boost: 5,
+            {
+              label: 'lerp()',
+              type: 'function',
+              info: `${obj}.lerp(point, t) - Linear interpolation`,
+              boost: 5,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'lerp()' }, selection: { anchor: from + 5 } });
               },
             },
-            { label: 'rotate()', type: 'function', info: `${obj}.rotate(angle, origin) - Rotate around point`, boost: 4,
+            {
+              label: 'rotate()',
+              type: 'function',
+              info: `${obj}.rotate(angle, origin) - Rotate around point`,
+              boost: 4,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'rotate()' }, selection: { anchor: from + 7 } });
               },
             },
-            { label: 'distanceTo()', type: 'function', info: `${obj}.distanceTo(point) - Euclidean distance`, boost: 3,
+            {
+              label: 'distanceTo()',
+              type: 'function',
+              info: `${obj}.distanceTo(point) - Euclidean distance`,
+              boost: 3,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'distanceTo()' }, selection: { anchor: from + 11 } });
               },
             },
-            { label: 'angleTo()', type: 'function', info: `${obj}.angleTo(point) - Angle in radians`, boost: 2,
+            {
+              label: 'angleTo()',
+              type: 'function',
+              info: `${obj}.angleTo(point) - Angle in radians`,
+              boost: 2,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'angleTo()' }, selection: { anchor: from + 8 } });
               },
@@ -504,13 +596,19 @@ export function svgPathCompletions(context) {
         const options = [];
         // PathBlock-only methods
         options.push({
-          label: 'draw()', type: 'function', info: `${obj}.draw() - Draw the path block`, boost: boost--,
+          label: 'draw()',
+          type: 'function',
+          info: `${obj}.draw() - Draw the path block`,
+          boost: boost--,
           apply: (view, completion, from, to) => {
             view.dispatch({ changes: { from, to, insert: 'draw()' }, selection: { anchor: from + 5 } });
           },
         });
         options.push({
-          label: 'project()', type: 'function', info: `${obj}.project(t) - Project a point onto the path`, boost: boost--,
+          label: 'project()',
+          type: 'function',
+          info: `${obj}.project(t) - Project a point onto the path`,
+          boost: boost--,
           apply: (view, completion, from, to) => {
             view.dispatch({ changes: { from, to, insert: 'project()' }, selection: { anchor: from + 8 } });
           },
@@ -522,7 +620,10 @@ export function svgPathCompletions(context) {
         // Shared methods
         for (const m of pathSamplingMethods) {
           options.push({
-            label: `${m}()`, type: 'function', info: `${obj}.${m}()`, boost: boost--,
+            label: `${m}()`,
+            type: 'function',
+            info: `${obj}.${m}()`,
+            boost: boost--,
             apply: (view, completion, from, to) => {
               view.dispatch({ changes: { from, to, insert: `${m}()` }, selection: { anchor: from + m.length + 1 } });
             },
@@ -541,7 +642,10 @@ export function svgPathCompletions(context) {
         }
         for (const m of pathSamplingMethods) {
           options.push({
-            label: `${m}()`, type: 'function', info: `${obj}.${m}()`, boost: boost--,
+            label: `${m}()`,
+            type: 'function',
+            info: `${obj}.${m}()`,
+            boost: boost--,
             apply: (view, completion, from, to) => {
               view.dispatch({ changes: { from, to, insert: `${m}()` }, selection: { anchor: from + m.length + 1 } });
             },
@@ -557,7 +661,11 @@ export function svgPathCompletions(context) {
           from,
           options: [
             { label: 'length', type: 'property', info: `${obj}.length - Property count`, boost: 2 },
-            { label: 'has()', type: 'function', info: `${obj}.has(key) - Check if key exists`, boost: 1,
+            {
+              label: 'has()',
+              type: 'function',
+              info: `${obj}.has(key) - Check if key exists`,
+              boost: 1,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'has()' }, selection: { anchor: from + 4 } });
               },
@@ -578,22 +686,38 @@ export function svgPathCompletions(context) {
             { label: 'length', type: 'property', info: `${obj}.length - Number of characters`, boost: 8 },
             { label: 'empty()', type: 'function', info: `${obj}.empty() - 1 if empty, 0 otherwise`, boost: 7 },
             { label: 'split()', type: 'function', info: `${obj}.split() - Array of characters`, boost: 6 },
-            { label: 'includes()', type: 'function', info: `${obj}.includes(substr) - 1 if contains substring`, boost: 5,
+            {
+              label: 'includes()',
+              type: 'function',
+              info: `${obj}.includes(substr) - 1 if contains substring`,
+              boost: 5,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'includes()' }, selection: { anchor: from + 9 } });
               },
             },
-            { label: 'append()', type: 'function', info: `${obj}.append(str) - New string with value at end`, boost: 4,
+            {
+              label: 'append()',
+              type: 'function',
+              info: `${obj}.append(str) - New string with value at end`,
+              boost: 4,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'append()' }, selection: { anchor: from + 7 } });
               },
             },
-            { label: 'prepend()', type: 'function', info: `${obj}.prepend(str) - New string with value at start`, boost: 3,
+            {
+              label: 'prepend()',
+              type: 'function',
+              info: `${obj}.prepend(str) - New string with value at start`,
+              boost: 3,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'prepend()' }, selection: { anchor: from + 8 } });
               },
             },
-            { label: 'slice()', type: 'function', info: `${obj}.slice(start, end) - Extract substring`, boost: 2,
+            {
+              label: 'slice()',
+              type: 'function',
+              info: `${obj}.slice(start, end) - Extract substring`,
+              boost: 2,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'slice()' }, selection: { anchor: from + 6 } });
               },
@@ -612,13 +736,21 @@ export function svgPathCompletions(context) {
           options: [
             { label: 'length', type: 'property', info: `${obj}.length - Number of elements`, boost: 8 },
             { label: 'empty()', type: 'function', info: `${obj}.empty() - 1 if empty, 0 otherwise`, boost: 7 },
-            { label: 'push()', type: 'function', info: `${obj}.push(value) - Append and return new length`, boost: 6,
+            {
+              label: 'push()',
+              type: 'function',
+              info: `${obj}.push(value) - Append and return new length`,
+              boost: 6,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'push()' }, selection: { anchor: from + 5 } });
               },
             },
             { label: 'pop()', type: 'function', info: `${obj}.pop() - Remove and return last element`, boost: 5 },
-            { label: 'unshift()', type: 'function', info: `${obj}.unshift(value) - Prepend and return new length`, boost: 4,
+            {
+              label: 'unshift()',
+              type: 'function',
+              info: `${obj}.unshift(value) - Prepend and return new length`,
+              boost: 4,
               apply: (view, completion, from, to) => {
                 view.dispatch({ changes: { from, to, insert: 'unshift()' }, selection: { anchor: from + 8 } });
               },
@@ -645,14 +777,14 @@ export function svgPathCompletions(context) {
         let boost = 100;
         return {
           from: styleWord.from,
-          options: stylePropertyCompletions.map(prop => ({
+          options: stylePropertyCompletions.map((prop) => ({
             label: prop.label,
             type: 'property',
             info: prop.info,
             boost: boost--,
             apply: (view, completion, from, to) => {
               view.dispatch({
-                changes: { from, to, insert: prop.label + ': ' },
+                changes: { from, to, insert: `${prop.label}: ` },
                 selection: { anchor: from + prop.label.length + 2 },
               });
             },
@@ -737,7 +869,10 @@ export function svgPathCompletions(context) {
 
     // Only add params if cursor is inside this function body
     if (context.pos > openBracePos && context.pos <= closeBracePos) {
-      const paramNames = paramsStr.split(',').map(p => p.trim()).filter(p => p.length > 0);
+      const paramNames = paramsStr
+        .split(',')
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
       for (const name of paramNames) {
         if (!seenParams.has(name) && !seenVars.has(name)) {
           seenParams.add(name);
@@ -766,7 +901,7 @@ export function svgPathCompletions(context) {
         boost: boost--,
         apply: (view, completion, from, to) => {
           view.dispatch({
-            changes: { from, to, insert: name + '()' },
+            changes: { from, to, insert: `${name}()` },
             selection: { anchor: from + name.length + 1 },
           });
         },
@@ -793,7 +928,13 @@ export function svgPathCompletions(context) {
   // 6. Stdlib items (lowest priority)
   for (const item of stdlibCompletions) {
     // Skip if user already defined something with same name
-    if (seenVars.has(item.label) || seenFns.has(item.label) || seenLoopVars.has(item.label) || seenParams.has(item.label)) continue;
+    if (
+      seenVars.has(item.label) ||
+      seenFns.has(item.label) ||
+      seenLoopVars.has(item.label) ||
+      seenParams.has(item.label)
+    )
+      continue;
 
     const completion = {
       label: item.label,
@@ -805,7 +946,7 @@ export function svgPathCompletions(context) {
     // For functions, add parentheses and cursor positioning
     if (item.type === 'function') {
       completion.apply = (view, completion, from, to) => {
-        const insert = item.label + '()';
+        const insert = `${item.label}()`;
         view.dispatch({
           changes: { from, to, insert },
           selection: { anchor: from + item.label.length + 1 },

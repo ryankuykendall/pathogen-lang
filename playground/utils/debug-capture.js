@@ -23,9 +23,7 @@ export function buildDebugCapture() {
     const layer = layers[i];
     const visible = layerVisibility[layer.name] !== false ? 'yes' : 'no';
     const styleEntries = Object.entries(layer.styles || {});
-    const stylesStr = styleEntries.length > 0
-      ? styleEntries.map(([k, v]) => `${k}: ${v}`).join(', ')
-      : '(defaults)';
+    const stylesStr = styleEntries.length > 0 ? styleEntries.map(([k, v]) => `${k}: ${v}`).join(', ') : '(defaults)';
 
     layersTable += `| ${i} | ${layer.name} | ${layer.type} | ${visible} | ${stylesStr} |\n`;
 
@@ -33,7 +31,7 @@ export function buildDebugCapture() {
     if (layer.type === 'text' && layer.textElements) {
       layerDetails += '```\n';
       for (const el of layer.textElements) {
-        layerDetails += `<text>${el.children?.map(c => c.text || '').join('') || ''}</text>\n`;
+        layerDetails += `<text>${el.children?.map((c) => c.text || '').join('') || ''}</text>\n`;
       }
       layerDetails += '```\n';
     } else {
@@ -51,10 +49,12 @@ export function buildDebugCapture() {
   if (logs.length > 0) {
     for (const entry of logs) {
       const prefix = entry.line != null ? `[line ${entry.line}] ` : '';
-      const parts = (entry.parts || []).map(p => {
-        if (p.label) return `${p.label}: ${p.value}`;
-        return p.value;
-      }).join(' ');
+      const parts = (entry.parts || [])
+        .map((p) => {
+          if (p.label) return `${p.label}: ${p.value}`;
+          return p.value;
+        })
+        .join(' ');
       logOutput += `${prefix}${parts}\n`;
     }
   } else {

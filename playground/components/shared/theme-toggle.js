@@ -92,11 +92,13 @@ class ThemeToggle extends HTMLElement {
     }
     this._applyTheme();
     this._updateButton();
-    this.dispatchEvent(new CustomEvent('theme-change', {
-      bubbles: true,
-      composed: true,
-      detail: { preference: next },
-    }));
+    this.dispatchEvent(
+      new CustomEvent('theme-change', {
+        bubbles: true,
+        composed: true,
+        detail: { preference: next },
+      }),
+    );
   }
 
   _applyTheme() {
@@ -106,9 +108,8 @@ class ThemeToggle extends HTMLElement {
     } else {
       document.documentElement.setAttribute('data-theme', pref);
     }
-    const active = pref === 'system'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : pref;
+    const active =
+      pref === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : pref;
     document.documentElement.setAttribute('data-active-theme', active);
   }
 

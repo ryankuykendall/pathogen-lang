@@ -1,5 +1,6 @@
+import { execSync } from 'node:child_process';
+
 import { Command } from 'commander';
-import { execSync } from 'child_process';
 
 const program = new Command();
 program
@@ -8,7 +9,7 @@ program
   .option('-p, --port <number>', 'Port number to free', '3000')
   .action(async (opts) => {
     const port = parseInt(opts.port, 10);
-    if (isNaN(port) || port < 1 || port > 65535) {
+    if (Number.isNaN(port) || port < 1 || port > 65535) {
       console.error(`Invalid port: ${opts.port}`);
       process.exit(1);
     }
@@ -17,7 +18,11 @@ program
     let pids: number[];
     try {
       const output = execSync(`lsof -ti:${port}`, { encoding: 'utf-8' }).trim();
-      pids = output.split('\n').filter(Boolean).map(Number).filter(n => !isNaN(n));
+      pids = output
+        .split('\n')
+        .filter(Boolean)
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
     } catch {
       // lsof exits non-zero when no processes found
       pids = [];
@@ -43,7 +48,7 @@ program
     const interval = 200;
     let elapsed = 0;
     while (elapsed < maxWait) {
-      await new Promise(r => setTimeout(r, interval));
+      await new Promise((r) => setTimeout(r, interval));
       elapsed += interval;
       try {
         const output = execSync(`lsof -ti:${port}`, { encoding: 'utf-8' }).trim();

@@ -1,4 +1,5 @@
 import { compile } from '../src';
+
 import type { CompileOptions } from '../src';
 
 /**

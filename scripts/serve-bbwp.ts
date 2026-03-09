@@ -1,9 +1,9 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { dirname, extname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { createServer } from 'http';
-import { readFileSync, existsSync } from 'fs';
-import { join, extname } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..');
@@ -26,7 +26,7 @@ program
   .option('-p, --port <number>', 'Port to listen on', '3001')
   .action(async (opts) => {
     const port = parseInt(opts.port, 10);
-    if (isNaN(port) || port < 1 || port > 65535) {
+    if (Number.isNaN(port) || port < 1 || port > 65535) {
       console.error('Error: port must be a number between 1 and 65535');
       process.exit(1);
     }

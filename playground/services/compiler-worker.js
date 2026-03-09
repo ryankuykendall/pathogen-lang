@@ -17,9 +17,7 @@ function initWorker() {
     // In dev (playground/index.html), we need the ../ prefix
     // In production build, the base tag handles the path
     const isDevPlayground = window.location.pathname.includes('/playground/');
-    const workerPath = isDevPlayground
-      ? '../dist/worker.worker.js'
-      : 'dist/worker.worker.js';
+    const workerPath = isDevPlayground ? '../dist/worker.worker.js' : 'dist/worker.worker.js';
 
     worker = new Worker(workerPath);
 

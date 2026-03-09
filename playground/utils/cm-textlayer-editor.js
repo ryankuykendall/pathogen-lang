@@ -1,8 +1,8 @@
 // CodeMirror 6 TextLayer style editor extension
 // Adds an "Aa" button next to TextLayer definitions that opens a multi-property style editor
 
-import { fetchGoogleFonts, loadGoogleFont, getAvailableWeights } from './google-fonts.js';
 import { createColorChip } from './cm-color-picker.js';
+import { fetchGoogleFonts, getAvailableWeights, loadGoogleFont } from './google-fonts.js';
 
 // Parse style properties from a define block's inner content
 function parseStyleBlock(content) {
@@ -31,7 +31,13 @@ function findTextLayerBlocks(docText) {
     let closeBrace = -1;
     for (let i = openBrace + 1; i < docText.length; i++) {
       if (docText[i] === '{') depth++;
-      else if (docText[i] === '}') { depth--; if (depth === 0) { closeBrace = i; break; } }
+      else if (docText[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          closeBrace = i;
+          break;
+        }
+      }
     }
     if (closeBrace === -1) continue;
 
@@ -57,7 +63,7 @@ function serializeStyleBlock(props) {
       lines.push(`  ${key}: ${value};`);
     }
   }
-  return '\n' + lines.join('\n') + '\n';
+  return `\n${lines.join('\n')}\n`;
 }
 
 // Singleton: track which popup is currently open
@@ -81,8 +87,7 @@ export function textLayerEditorExtension(cmViewModule) {
     }
 
     eq(other) {
-      return this.block.textLayerPos === other.block.textLayerPos &&
-        this.fontFamily === other.fontFamily;
+      return this.block.textLayerPos === other.block.textLayerPos && this.fontFamily === other.fontFamily;
     }
 
     toDOM(view) {
@@ -107,7 +112,7 @@ export function textLayerEditorExtension(cmViewModule) {
       const docText = view.state.doc.toString();
       const blocks = findTextLayerBlocks(docText);
       // Find the block closest to our position
-      const block = blocks.find(b => Math.abs(b.textLayerPos - this.block.textLayerPos) < 5);
+      const block = blocks.find((b) => Math.abs(b.textLayerPos - this.block.textLayerPos) < 5);
       if (!block) return;
 
       const popup = new TextLayerPopup(view, block, btn);
@@ -190,10 +195,12 @@ export function textLayerEditorExtension(cmViewModule) {
       // Font weight
       controls.appendChild(this._buildSelectRow('Font Weight', 'font-weight', this._getWeightOptions()));
       // Font style
-      controls.appendChild(this._buildSelectRow('Font Style', 'font-style', [
-        { value: 'normal', label: 'Normal' },
-        { value: 'italic', label: 'Italic' },
-      ]));
+      controls.appendChild(
+        this._buildSelectRow('Font Style', 'font-style', [
+          { value: 'normal', label: 'Normal' },
+          { value: 'italic', label: 'Italic' },
+        ]),
+      );
       // Font size
       controls.appendChild(this._buildNumberRow('Font Size', 'font-size', 1, 200));
 
@@ -257,7 +264,9 @@ export function textLayerEditorExtension(cmViewModule) {
 
       // Close dropdown on blur with delay so clicks register
       input.addEventListener('blur', () => {
-        setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+        setTimeout(() => {
+          dropdown.style.display = 'none';
+        }, 200);
       });
 
       this._fontInput = input;
@@ -281,7 +290,7 @@ export function textLayerEditorExtension(cmViewModule) {
 
       const fonts = this._fonts || [];
       const lowerFilter = filter.toLowerCase();
-      const matches = fonts.filter(f => f.family.toLowerCase().includes(lowerFilter)).slice(0, 40);
+      const matches = fonts.filter((f) => f.family.toLowerCase().includes(lowerFilter)).slice(0, 40);
 
       for (const font of matches) {
         const item = document.createElement('div');
@@ -316,11 +325,17 @@ export function textLayerEditorExtension(cmViewModule) {
       const family = this.props.get('font-family');
       const weights = getAvailableWeights(family);
       const labels = {
-        100: '100 (Thin)', 200: '200 (ExtraLight)', 300: '300 (Light)',
-        400: '400 (Regular)', 500: '500 (Medium)', 600: '600 (SemiBold)',
-        700: '700 (Bold)', 800: '800 (ExtraBold)', 900: '900 (Black)',
+        100: '100 (Thin)',
+        200: '200 (ExtraLight)',
+        300: '300 (Light)',
+        400: '400 (Regular)',
+        500: '500 (Medium)',
+        600: '600 (SemiBold)',
+        700: '700 (Bold)',
+        800: '800 (ExtraBold)',
+        900: '900 (Black)',
       };
-      return weights.map(w => ({ value: String(w), label: labels[w] || String(w) }));
+      return weights.map((w) => ({ value: String(w), label: labels[w] || String(w) }));
     }
 
     _updateWeightSelect() {
@@ -335,7 +350,7 @@ export function textLayerEditorExtension(cmViewModule) {
       }
       // Reset to 400 if current weight is unavailable
       const currentWeight = this.props.get('font-weight');
-      if (options.some(o => o.value === currentWeight)) {
+      if (options.some((o) => o.value === currentWeight)) {
         this._weightSelect.value = currentWeight;
       } else {
         this._weightSelect.value = '400';
@@ -471,7 +486,7 @@ export function textLayerEditorExtension(cmViewModule) {
       // Re-read block positions from current doc state
       const docText = this.view.state.doc.toString();
       const blocks = findTextLayerBlocks(docText);
-      const block = blocks.find(b => Math.abs(b.textLayerPos - this.block.textLayerPos) < 5);
+      const block = blocks.find((b) => Math.abs(b.textLayerPos - this.block.textLayerPos) < 5);
       if (!block) return;
 
       const newContent = serializeStyleBlock(this.props);
@@ -559,7 +574,7 @@ export function textLayerEditorExtension(cmViewModule) {
     },
     {
       decorations: (v) => v.decorations,
-    }
+    },
   );
 
   const baseTheme = EditorView.baseTheme({
@@ -659,10 +674,11 @@ export function textLayerEditorExtension(cmViewModule) {
       width: '100%',
       boxSizing: 'border-box',
     },
-    '.cm-textlayer-select:focus, .cm-textlayer-number:focus, .cm-textlayer-font-input:focus, .cm-textlayer-color-text:focus': {
-      borderColor: 'var(--accent-color, #10b981)',
-      boxShadow: '0 0 0 2px var(--focus-ring, rgba(16,185,129,0.4))',
-    },
+    '.cm-textlayer-select:focus, .cm-textlayer-number:focus, .cm-textlayer-font-input:focus, .cm-textlayer-color-text:focus':
+      {
+        borderColor: 'var(--accent-color, #10b981)',
+        boxShadow: '0 0 0 2px var(--focus-ring, rgba(16,185,129,0.4))',
+      },
     '.cm-textlayer-number': {
       width: '80px',
     },

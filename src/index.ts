@@ -1,14 +1,87 @@
+import { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated } from './evaluator';
 import { parse, parseWithComments } from './parser';
-import { evaluate, evaluateAnnotated, formatAnnotated, evaluateWithContext } from './evaluator';
+
 import type { CompileResult } from './evaluator';
 
 export { parse, parseWithComments } from './parser';
-export { evaluate, evaluateAnnotated, formatAnnotated, evaluateWithContext } from './evaluator';
+export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated } from './evaluator';
 export { stdlib } from './stdlib';
 
-export type { Program, Statement, Expression, Node, SourceLocation, Comment, StyleProperty, StyleBlockLiteral, LayerDefinition, LayerApplyBlock, TemplateLiteral, TextStatement, TspanStatement, TextBodyItem, ForEachLoop, NullLiteral, ArrayLiteral, ObjectLiteral, IndexExpression, IndexedAssignmentStatement, MethodCallExpression, PathBlockExpression } from './parser/ast';
-export type { AnnotatedOutput, AnnotatedLine, EvaluateWithContextResult, EvaluateWithContextOptions, PathContext, Point, CommandHistoryEntry, LogEntry, LogPart, LayerOutput, CompileResult, LayerStyle, StyleBlockValue, ArrayValue, ObjectValue, PointValue, TextElement, TextChild, PathLayerState, TextLayerState, FragmentLayerState, GroupLayerState, SVGFragmentValue, PathBlockValue, ProjectedPathValue, PathBlockCommand, MaskValue, ClipPathValue, MaskOutput, ClipPathOutput, MaskPathEntry, GradientValue, GradientOutput, GradientStop, ColorValue, CSSVarValue, CSSPropertyDeclaration } from './evaluator';
-export { isPointValue, isObjectValue, isPathBlockValue, isProjectedPathValue, isSVGFragmentValue, isMaskValue, isClipPathValue, isGradientValue, isColorValue, isCSSVarValue } from './evaluator';
+export type {
+  ArrayLiteral,
+  Comment,
+  Expression,
+  ForEachLoop,
+  IndexedAssignmentStatement,
+  IndexExpression,
+  LayerApplyBlock,
+  LayerDefinition,
+  MethodCallExpression,
+  Node,
+  NullLiteral,
+  ObjectLiteral,
+  PathBlockExpression,
+  Program,
+  SourceLocation,
+  Statement,
+  StyleBlockLiteral,
+  StyleProperty,
+  TemplateLiteral,
+  TextBodyItem,
+  TextStatement,
+  TspanStatement,
+} from './parser/ast';
+export type {
+  AnnotatedLine,
+  AnnotatedOutput,
+  ArrayValue,
+  ClipPathOutput,
+  ClipPathValue,
+  ColorValue,
+  CommandHistoryEntry,
+  CompileResult,
+  CSSPropertyDeclaration,
+  CSSVarValue,
+  EvaluateWithContextOptions,
+  EvaluateWithContextResult,
+  FragmentLayerState,
+  GradientOutput,
+  GradientStop,
+  GradientValue,
+  GroupLayerState,
+  LayerOutput,
+  LayerStyle,
+  LogEntry,
+  LogPart,
+  MaskOutput,
+  MaskPathEntry,
+  MaskValue,
+  ObjectValue,
+  PathBlockCommand,
+  PathBlockValue,
+  PathContext,
+  PathLayerState,
+  Point,
+  PointValue,
+  ProjectedPathValue,
+  StyleBlockValue,
+  SVGFragmentValue,
+  TextChild,
+  TextElement,
+  TextLayerState,
+} from './evaluator';
+export {
+  isClipPathValue,
+  isColorValue,
+  isCSSVarValue,
+  isGradientValue,
+  isMaskValue,
+  isObjectValue,
+  isPathBlockValue,
+  isPointValue,
+  isProjectedPathValue,
+  isSVGFragmentValue,
+} from './evaluator';
 export type { FormatOptions } from './evaluator/formatter';
 
 /**

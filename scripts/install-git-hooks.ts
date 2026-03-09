@@ -1,7 +1,8 @@
+import { execSync } from 'node:child_process';
+import { chmodSync, existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { Command } from 'commander';
-import { execSync } from 'child_process';
-import { writeFileSync, chmodSync, existsSync } from 'fs';
-import { join } from 'path';
 
 function installHook(hooksDir: string, name: string): void {
   const shim = `#!/bin/sh

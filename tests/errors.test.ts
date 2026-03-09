@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { parse, compile } from '../src';
+import { describe, expect, it } from 'vitest';
+
+import { compile, parse } from '../src';
 import { compilePath } from './helpers';
 
 describe('Parse errors', () => {
@@ -21,9 +22,7 @@ describe('Parse errors', () => {
     });
 
     it('throws on missing semicolon in let declaration', () => {
-      expect(() => compilePath('let x = 10 M x 0')).toThrow(
-        /Missing ';' after let declaration/
-      );
+      expect(() => compilePath('let x = 10 M x 0')).toThrow(/Missing ';' after let declaration/);
     });
 
     it('throws on invalid operator', () => {
@@ -59,45 +58,31 @@ describe('Parse errors', () => {
 
   describe('Missing semicolon errors', () => {
     it('let declaration at EOF', () => {
-      expect(() => compilePath('let x = 10')).toThrow(
-        /Missing ';' after let declaration/
-      );
+      expect(() => compilePath('let x = 10')).toThrow(/Missing ';' after let declaration/);
     });
 
     it('let declaration followed by path command', () => {
-      expect(() => compilePath('let x = 10\nM x 0')).toThrow(
-        /Missing ';' after let declaration/
-      );
+      expect(() => compilePath('let x = 10\nM x 0')).toThrow(/Missing ';' after let declaration/);
     });
 
     it('points to end of statement, not start of next line', () => {
-      expect(() => compilePath('let x = 10\nM x 0')).toThrow(
-        /line 1, column 11/
-      );
+      expect(() => compilePath('let x = 10\nM x 0')).toThrow(/line 1, column 11/);
     });
 
     it('assignment followed by path command', () => {
-      expect(() => compilePath('let x = 0;\nx = 5\nM 0 0')).toThrow(
-        /Missing ';' after assignment/
-      );
+      expect(() => compilePath('let x = 0;\nx = 5\nM 0 0')).toThrow(/Missing ';' after assignment/);
     });
 
     it('return statement missing semicolon', () => {
-      expect(() => compilePath('fn test() { return 10 }\ntest()')).toThrow(
-        /Missing ';' after return statement/
-      );
+      expect(() => compilePath('fn test() { return 10 }\ntest()')).toThrow(/Missing ';' after return statement/);
     });
 
     it('indexed assignment missing semicolon', () => {
-      expect(() => compilePath('let a = [1, 2];\na[0] = 5\nM 0 0')).toThrow(
-        /Missing ';'/
-      );
+      expect(() => compilePath('let a = [1, 2];\na[0] = 5\nM 0 0')).toThrow(/Missing ';'/);
     });
 
     it('let with complex expression', () => {
-      expect(() => compilePath('let x = (10 + 5) * 3\nM 0 0')).toThrow(
-        /Missing ';' after let declaration/
-      );
+      expect(() => compilePath('let x = (10 + 5) * 3\nM 0 0')).toThrow(/Missing ';' after let declaration/);
     });
   });
 
@@ -173,7 +158,9 @@ describe('Runtime errors', () => {
 
   describe('runtime error locations', () => {
     it('undefined variable includes line and column', () => {
-      expect(() => compilePath('let x = 10;\nM undefinedVar 0')).toThrow(/^Line 2, col 3: Undefined variable: undefinedVar$/);
+      expect(() => compilePath('let x = 10;\nM undefinedVar 0')).toThrow(
+        /^Line 2, col 3: Undefined variable: undefinedVar$/,
+      );
     });
 
     it('undeclared assignment includes line number', () => {
@@ -181,15 +168,21 @@ describe('Runtime errors', () => {
     });
 
     it('wrong function argument count includes line number', () => {
-      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 }\nadd(1)')).toThrow(/^Line 2, col 1: Function add expects 2 arguments, got 1$/);
+      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 }\nadd(1)')).toThrow(
+        /^Line 2, col 1: Function add expects 2 arguments, got 1$/,
+      );
     });
 
     it('for-loop type error includes line number', () => {
-      expect(() => compilePath('let s = circle(50, 50, 25);\nfor (i in s..10) { M i 0 }')).toThrow(/^Line 2: for loop range must be numeric$/);
+      expect(() => compilePath('let s = circle(50, 50, 25);\nfor (i in s..10) { M i 0 }')).toThrow(
+        /^Line 2: for loop range must be numeric$/,
+      );
     });
 
     it('undefined variable in calc includes line and column', () => {
-      expect(() => compilePath('let a = 1;\nlet b = 2;\nM calc(undefinedVar + 1) 0')).toThrow(/^Line 3, col 8: Undefined variable: undefinedVar$/);
+      expect(() => compilePath('let a = 1;\nlet b = 2;\nM calc(undefinedVar + 1) 0')).toThrow(
+        /^Line 3, col 8: Undefined variable: undefinedVar$/,
+      );
     });
 
     it('no "Line undefined:" in output for graceful degradation', () => {
@@ -470,29 +463,37 @@ describe('Edge cases', () => {
     });
 
     it('throws when layer definition style is not a style block', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let x = 5;
         define PathLayer('test') x
         layer('test').apply { M 0 0 }
-      `)).toThrow();
+      `),
+      ).toThrow();
     });
 
     it('throws when accessing non-existent property on style block', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = \${ stroke: red; };
         let x = s.nonExistent;
-      `)).toThrow();
+      `),
+      ).toThrow();
     });
   });
 });
 
 describe('Method call error locations', () => {
   it('unknown PathBlock method includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo()')).toThrow(/^Line 2, col 2: Unknown PathBlock method: foo$/);
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo()')).toThrow(
+      /^Line 2, col 2: Unknown PathBlock method: foo$/,
+    );
   });
 
   it('unknown ProjectedPath method includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo()')).toThrow(/^Line 3, col 2: Unknown ProjectedPath method: foo$/);
+    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo()')).toThrow(
+      /^Line 3, col 2: Unknown ProjectedPath method: foo$/,
+    );
   });
 
   it('argument type error on method call includes line and column', () => {

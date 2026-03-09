@@ -98,15 +98,9 @@ export class AnnotatedPane extends HTMLElement {
     const isDark = themeManager.getActiveTheme() === 'dark';
 
     if (isDark) {
-      return [
-        oneDark.oneDarkTheme,
-        language.syntaxHighlighting(oneDark.oneDarkHighlightStyle),
-      ];
-    } else {
-      return [
-        language.syntaxHighlighting(language.defaultHighlightStyle),
-      ];
+      return [oneDark.oneDarkTheme, language.syntaxHighlighting(oneDark.oneDarkHighlightStyle)];
     }
+    return [language.syntaxHighlighting(language.defaultHighlightStyle)];
   }
 
   async createEditor() {

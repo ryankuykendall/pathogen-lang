@@ -4,8 +4,16 @@
  */
 
 const BLOCKED_ELEMENTS = new Set([
-  'script', 'iframe', 'object', 'embed', 'form', 'input',
-  'textarea', 'button', 'select', 'option',
+  'script',
+  'iframe',
+  'object',
+  'embed',
+  'form',
+  'input',
+  'textarea',
+  'button',
+  'select',
+  'option',
 ]);
 
 const EVENT_ATTR_RE = /\bon\w+\s*=/i;
@@ -14,15 +22,44 @@ const SELF_CLOSING_RE = /\/\s*>$/;
 
 // SVG elements that are inherently self-closing (void elements)
 const SVG_VOID_ELEMENTS = new Set([
-  'animate', 'animatemotion', 'animatetransform',
-  'circle', 'ellipse', 'feblend', 'fecolormatrix', 'fecomponenttransfer',
-  'fecomposite', 'feconvolvematrix', 'fediffuselighting', 'fedisplacementmap',
-  'fedistantlight', 'fedropshadow', 'feflood', 'fefunca', 'fefuncb',
-  'fefuncg', 'fefuncr', 'fegaussianblur', 'feimage', 'femergenode',
-  'femorphology', 'feoffset', 'fepointlight', 'fespecularlighting',
-  'fespotlight', 'fetile', 'feturbulence',
-  'image', 'line', 'path', 'polygon', 'polyline', 'rect',
-  'set', 'stop', 'use',
+  'animate',
+  'animatemotion',
+  'animatetransform',
+  'circle',
+  'ellipse',
+  'feblend',
+  'fecolormatrix',
+  'fecomponenttransfer',
+  'fecomposite',
+  'feconvolvematrix',
+  'fediffuselighting',
+  'fedisplacementmap',
+  'fedistantlight',
+  'fedropshadow',
+  'feflood',
+  'fefunca',
+  'fefuncb',
+  'fefuncg',
+  'fefuncr',
+  'fegaussianblur',
+  'feimage',
+  'femergenode',
+  'femorphology',
+  'feoffset',
+  'fepointlight',
+  'fespecularlighting',
+  'fespotlight',
+  'fetile',
+  'feturbulence',
+  'image',
+  'line',
+  'path',
+  'polygon',
+  'polyline',
+  'rect',
+  'set',
+  'stop',
+  'use',
 ]);
 
 export interface SanitizeResult {
@@ -88,7 +125,7 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
 
   const visualContent = input.replace(defsRe, '').trim();
   const defsContent = defsMatches
-    .map(d => {
+    .map((d) => {
       // Extract inner content of <defs>...</defs>
       const inner = d.replace(/^<defs[^>]*>/, '').replace(/<\/defs>$/, '');
       return inner.trim();

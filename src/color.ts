@@ -6,26 +6,41 @@
 // ── Internal type ──────────────────────────────────────────────────────
 
 export interface OKLCH {
-  L: number;  // Lightness 0–1
-  C: number;  // Chroma 0–~0.4
-  H: number;  // Hue 0–360
-  alpha: number;  // Alpha 0–1
+  L: number; // Lightness 0–1
+  C: number; // Chroma 0–~0.4
+  H: number; // Hue 0–360
+  alpha: number; // Alpha 0–1
 }
 
 // ── sRGB helpers ───────────────────────────────────────────────────────
 
-interface SRGB { r: number; g: number; b: number; alpha: number; }
-interface LinearRGB { r: number; g: number; b: number; alpha: number; }
-interface OKLab { L: number; a: number; b: number; alpha: number; }
+interface SRGB {
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
+}
+interface LinearRGB {
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
+}
+interface OKLab {
+  L: number;
+  a: number;
+  b: number;
+  alpha: number;
+}
 
 // ── Gamma correction (sRGB ↔ Linear) ──────────────────────────────────
 
 function srgbToLinear(c: number): number {
-  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
 
 function linearToSRGB(c: number): number {
-  return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055;
 }
 
 // ── sRGB ↔ Linear RGB ─────────────────────────────────────────────────
@@ -60,9 +75,9 @@ function linearSRGBToOKLab(rgb: LinearRGB): OKLab {
   const s_ = Math.cbrt(s);
 
   return {
-    L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
-    a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
-    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+    L: 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
     alpha: rgb.alpha,
   };
 }
@@ -70,7 +85,7 @@ function linearSRGBToOKLab(rgb: LinearRGB): OKLab {
 function oklabToLinearSRGB(lab: OKLab): LinearRGB {
   const l_ = lab.L + 0.3963377774 * lab.a + 0.2158037573 * lab.b;
   const m_ = lab.L - 0.1055613458 * lab.a - 0.0638541728 * lab.b;
-  const s_ = lab.L - 0.0894841775 * lab.a - 1.2914855480 * lab.b;
+  const s_ = lab.L - 0.0894841775 * lab.a - 1.291485548 * lab.b;
 
   const l = l_ * l_ * l_;
   const m = m_ * m_ * m_;
@@ -79,7 +94,7 @@ function oklabToLinearSRGB(lab: OKLab): LinearRGB {
   return {
     r: +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
     g: -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    b: -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+    b: -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
     alpha: lab.alpha,
   };
 }
@@ -88,13 +103,13 @@ function oklabToLinearSRGB(lab: OKLab): LinearRGB {
 
 function oklabToOKLCH(lab: OKLab): OKLCH {
   const C = Math.sqrt(lab.a * lab.a + lab.b * lab.b);
-  let H = Math.atan2(lab.b, lab.a) * 180 / Math.PI;
+  let H = (Math.atan2(lab.b, lab.a) * 180) / Math.PI;
   if (H < 0) H += 360;
   return { L: lab.L, C, H, alpha: lab.alpha };
 }
 
 function oklchToOKLab(lch: OKLCH): OKLab {
-  const hRad = lch.H * Math.PI / 180;
+  const hRad = (lch.H * Math.PI) / 180;
   return {
     L: lch.L,
     a: lch.C * Math.cos(hRad),
@@ -110,25 +125,42 @@ function hslToSRGB(h: number, s: number, l: number, alpha: number): SRGB {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; }
-  else if (h < 120) { r = x; g = c; }
-  else if (h < 180) { g = c; b = x; }
-  else if (h < 240) { g = x; b = c; }
-  else if (h < 300) { r = x; b = c; }
-  else { r = c; b = x; }
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) {
+    r = c;
+    g = x;
+  } else if (h < 120) {
+    r = x;
+    g = c;
+  } else if (h < 180) {
+    g = c;
+    b = x;
+  } else if (h < 240) {
+    g = x;
+    b = c;
+  } else if (h < 300) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
   return { r: r + m, g: g + m, b: b + m, alpha };
 }
 
 function srgbToHSL(rgb: SRGB): { h: number; s: number; l: number; alpha: number } {
-  const r = rgb.r, g = rgb.g, b = rgb.b;
+  const { r } = rgb;
+  const { g } = rgb;
+  const { b } = rgb;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const l = (max + min) / 2;
   if (max === min) return { h: 0, s: 0, l, alpha: rgb.alpha };
   const d = max - min;
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
+  let h: number;
   if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
   else if (max === g) h = ((b - r) / d + 2) * 60;
   else h = ((r - g) / d + 4) * 60;
@@ -139,7 +171,10 @@ function srgbToHSL(rgb: SRGB): { h: number; s: number; l: number; alpha: number 
 
 function hexToSRGB(hex: string): SRGB {
   hex = hex.replace(/^#/, '');
-  let r: number, g: number, b: number, a = 1;
+  let r: number;
+  let g: number;
+  let b: number;
+  let a = 1;
   if (hex.length === 3) {
     r = parseInt(hex[0] + hex[0], 16) / 255;
     g = parseInt(hex[1] + hex[1], 16) / 255;
@@ -163,7 +198,7 @@ function srgbToHex(rgb: SRGB): string {
   const r = Math.round(clamp01(rgb.r) * 255);
   const g = Math.round(clamp01(rgb.g) * 255);
   const b = Math.round(clamp01(rgb.b) * 255);
-  return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
 }
 
 // ── Conversion chains ──────────────────────────────────────────────────
@@ -356,17 +391,17 @@ export function parseColor(input: string): OKLCH {
   }
 
   // rgb() / rgba()
-  const rgbMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/);
+  const rgbMatch = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/.exec(trimmed);
   if (rgbMatch) {
-    const r = parseInt(rgbMatch[1]) / 255;
-    const g = parseInt(rgbMatch[2]) / 255;
-    const b = parseInt(rgbMatch[3]) / 255;
+    const r = parseInt(rgbMatch[1], 10) / 255;
+    const g = parseInt(rgbMatch[2], 10) / 255;
+    const b = parseInt(rgbMatch[3], 10) / 255;
     const a = rgbMatch[4] !== undefined ? parseFloat(rgbMatch[4]) : 1;
     return srgbToOKLCH({ r, g, b, alpha: a });
   }
 
   // hsl() / hsla()
-  const hslMatch = trimmed.match(/^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+))?\s*\)$/);
+  const hslMatch = /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+))?\s*\)$/.exec(trimmed);
   if (hslMatch) {
     const h = parseFloat(hslMatch[1]);
     const s = parseFloat(hslMatch[2]) / 100;
@@ -376,7 +411,7 @@ export function parseColor(input: string): OKLCH {
   }
 
   // oklch()
-  const oklchMatch = trimmed.match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/);
+  const oklchMatch = /^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
   if (oklchMatch) {
     return {
       L: parseFloat(oklchMatch[1]),

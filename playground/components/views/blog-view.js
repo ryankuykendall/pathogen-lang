@@ -118,7 +118,7 @@ class BlogView extends HTMLElement {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -127,11 +127,13 @@ class BlogView extends HTMLElement {
       const card = e.target.closest('[data-slug]');
       if (card) {
         const slug = card.dataset.slug;
-        this.dispatchEvent(new CustomEvent('navigate', {
-          bubbles: true,
-          composed: true,
-          detail: { path: '/blog/:slug', params: { slug } }
-        }));
+        this.dispatchEvent(
+          new CustomEvent('navigate', {
+            bubbles: true,
+            composed: true,
+            detail: { path: '/blog/:slug', params: { slug } },
+          }),
+        );
       }
     });
   }
@@ -144,21 +146,29 @@ class BlogView extends HTMLElement {
         <h1>Blog</h1>
         <p class="subtitle">Thoughts, tutorials, and updates about svg-path-extended</p>
 
-        ${blogIndex.length === 0 ? `
+        ${
+          blogIndex.length === 0
+            ? `
           <div class="empty-state">
             <p>No blog posts yet. Check back soon!</p>
           </div>
-        ` : `
+        `
+            : `
           <div class="posts-list">
-            ${blogIndex.map(post => `
+            ${blogIndex
+              .map(
+                (post) => `
               <article class="post-card" data-slug="${post.slug}">
                 <h2 class="post-title">${post.title}</h2>
                 <p class="post-date">${this.formatDate(post.date)}</p>
                 ${post.description ? `<p class="post-description">${post.description}</p>` : ''}
               </article>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
-        `}
+        `
+        }
       </div>
     `;
   }

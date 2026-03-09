@@ -1,11 +1,11 @@
 // App Header - Top navigation bar
 // Contains logo, main navigation links, theme toggle, and workspace-specific actions
 
-import { store } from '../state/store.js';
-import { routeUrl, buildWorkspaceSlugId, navigateTo } from '../utils/router.js';
-import { copyURL } from '../utils/url-state.js';
 import { workspaceApi } from '../services/api.js';
+import { store } from '../state/store.js';
+import { buildWorkspaceSlugId, navigateTo, routeUrl } from '../utils/router.js';
 import { themeManager } from '../utils/theme.js';
+import { copyURL } from '../utils/url-state.js';
 import './shared/theme-toggle.js';
 
 const styles = `
@@ -310,8 +310,12 @@ class AppHeader extends HTMLElement {
 
       // Check if click is on menu button or dropdown using composedPath
       const path = e.composedPath();
-      const isMenuClick = path.some(el =>
-        el.classList && (el.classList.contains('menu-btn') || el.classList.contains('menu-dropdown') || el.classList.contains('menu-container'))
+      const isMenuClick = path.some(
+        (el) =>
+          el.classList &&
+          (el.classList.contains('menu-btn') ||
+            el.classList.contains('menu-dropdown') ||
+            el.classList.contains('menu-container')),
       );
 
       if (!isMenuClick) {
@@ -348,11 +352,13 @@ class AppHeader extends HTMLElement {
         e.preventDefault();
         const path = navLink.dataset.route;
         const params = navLink.dataset.params ? JSON.parse(navLink.dataset.params) : {};
-        this.dispatchEvent(new CustomEvent('navigate', {
-          bubbles: true,
-          composed: true,
-          detail: { path, params }
-        }));
+        this.dispatchEvent(
+          new CustomEvent('navigate', {
+            bubbles: true,
+            composed: true,
+            detail: { path, params },
+          }),
+        );
         return;
       }
 
@@ -380,7 +386,6 @@ class AppHeader extends HTMLElement {
         e.stopPropagation();
         const action = menuAction.dataset.action;
         this.handleMenuAction(action);
-        return;
       }
     });
   }
@@ -442,7 +447,7 @@ class AppHeader extends HTMLElement {
     const currentView = store.get('currentView');
     const links = this.shadowRoot.querySelectorAll('.nav-link[data-route]');
 
-    links.forEach(link => {
+    links.forEach((link) => {
       const route = link.dataset.route;
       const isActive = this.isRouteActive(route, currentView);
       link.classList.toggle('active', isActive);
@@ -454,7 +459,7 @@ class AppHeader extends HTMLElement {
       '/': 'landing',
       '/workspace/:slugId': 'workspace',
       '/blog': 'blog',
-      '/preferences': 'preferences'
+      '/preferences': 'preferences',
     };
     return routeToView[route] === currentView;
   }
@@ -500,7 +505,9 @@ class AppHeader extends HTMLElement {
         <div class="actions">
           <theme-toggle></theme-toggle>
 
-          ${isWorkspaceView ? `
+          ${
+            isWorkspaceView
+              ? `
             <button id="export-btn" class="action-btn" title="Export to file (Ctrl+S)">Export</button>
             <div class="menu-container">
               <button class="menu-btn" title="More actions">
@@ -518,14 +525,18 @@ class AppHeader extends HTMLElement {
                   </svg>
                   Copy URL
                 </button>
-                ${hasWorkspace ? `
+                ${
+                  hasWorkspace
+                    ? `
                   <button data-action="copy-workspace">
                     <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M3 2.5A1.5 1.5 0 014.5 1h5A1.5 1.5 0 0111 2.5v1A1.5 1.5 0 0112.5 5h1A1.5 1.5 0 0115 6.5v7a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 015 13.5v-1A1.5 1.5 0 013.5 11h-1A1.5 1.5 0 011 9.5v-7A1.5 1.5 0 012.5 1H3v1.5zM4.5 2a.5.5 0 00-.5.5v7a.5.5 0 00.5.5h1A1.5 1.5 0 017 11.5v1a.5.5 0 00.5.5h5a.5.5 0 00.5-.5v-7a.5.5 0 00-.5-.5h-1A1.5 1.5 0 0110 3.5v-1a.5.5 0 00-.5-.5h-5z"/>
                     </svg>
                     Copy Workspace
                   </button>
-                ` : ''}
+                `
+                    : ''
+                }
                 <button data-action="copy-svg">
                   <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
                     <path d="M14 1H2a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V2a1 1 0 00-1-1zM2 0a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V2a2 2 0 00-2-2H2z"/>
@@ -548,7 +559,9 @@ class AppHeader extends HTMLElement {
                   </svg>
                   Export with Legend
                 </button>
-                ${hasWorkspace ? `
+                ${
+                  hasWorkspace
+                    ? `
                   <div class="menu-divider"></div>
                   <button data-action="set-thumbnail">
                     <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
@@ -556,11 +569,15 @@ class AppHeader extends HTMLElement {
                     </svg>
                     Set Thumbnail
                   </button>
-                ` : ''}
+                `
+                    : ''
+                }
               </div>
               <span class="copy-feedback"></span>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       </header>
     `;
@@ -581,7 +598,9 @@ class AppHeader extends HTMLElement {
     actionsContainer.innerHTML = `
       <theme-toggle></theme-toggle>
 
-      ${isWorkspaceView ? `
+      ${
+        isWorkspaceView
+          ? `
         <button id="export-btn" class="action-btn" title="Export to file (Ctrl+S)">Export</button>
         <div class="menu-container">
           <button class="menu-btn" title="More actions">
@@ -599,14 +618,18 @@ class AppHeader extends HTMLElement {
               </svg>
               Copy URL
             </button>
-            ${hasWorkspace ? `
+            ${
+              hasWorkspace
+                ? `
               <button data-action="copy-workspace">
                 <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M3 2.5A1.5 1.5 0 014.5 1h5A1.5 1.5 0 0111 2.5v1A1.5 1.5 0 0112.5 5h1A1.5 1.5 0 0115 6.5v7a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 015 13.5v-1A1.5 1.5 0 013.5 11h-1A1.5 1.5 0 011 9.5v-7A1.5 1.5 0 012.5 1H3v1.5zM4.5 2a.5.5 0 00-.5.5v7a.5.5 0 00.5.5h1A1.5 1.5 0 017 11.5v1a.5.5 0 00.5.5h5a.5.5 0 00.5-.5v-7a.5.5 0 00-.5-.5h-1A1.5 1.5 0 0110 3.5v-1a.5.5 0 00-.5-.5h-5z"/>
                 </svg>
                 Copy Workspace
               </button>
-            ` : ''}
+            `
+                : ''
+            }
             <button data-action="copy-svg">
               <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M14 1H2a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V2a1 1 0 00-1-1zM2 0a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V2a2 2 0 00-2-2H2z"/>
@@ -629,7 +652,9 @@ class AppHeader extends HTMLElement {
               </svg>
               Export with Legend
             </button>
-            ${hasWorkspace ? `
+            ${
+              hasWorkspace
+                ? `
               <div class="menu-divider"></div>
               <button data-action="set-thumbnail">
                 <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
@@ -637,11 +662,15 @@ class AppHeader extends HTMLElement {
                 </svg>
                 Set Thumbnail
               </button>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           <span class="copy-feedback"></span>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
     `;
   }
 }

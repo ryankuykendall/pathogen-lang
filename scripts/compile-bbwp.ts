@@ -1,8 +1,9 @@
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs';
-import { join, basename, dirname, relative } from 'path';
-import { fileURLToPath } from 'url';
-import { spawnSync } from 'child_process';
 import prettier from 'prettier';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -23,9 +24,7 @@ function autoDetectDimensions(source: string): {
   const result: { viewBox?: string; width?: string; height?: string } = {};
 
   // Pattern 1: "Set viewBox: W x H, width: W, height: H"
-  const setMatch = source.match(
-    /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i
-  );
+  const setMatch = /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i.exec(source);
   if (setMatch) {
     result.viewBox = `0 0 ${setMatch[1]} ${setMatch[2]}`;
     result.width = setMatch[3];
@@ -34,7 +33,7 @@ function autoDetectDimensions(source: string): {
   }
 
   // Pattern 2: viewBox="x y w h"
-  const vbMatch = source.match(/viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i);
+  const vbMatch = /viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i.exec(source);
   if (vbMatch) {
     result.viewBox = vbMatch[1];
     const parts = vbMatch[1].split(/\s+/);
@@ -43,8 +42,8 @@ function autoDetectDimensions(source: string): {
   }
 
   // Pattern 3: width: N, height: N (standalone)
-  const wMatch = source.match(/\/\/.*width[=:]\s*(\d+)/i);
-  const hMatch = source.match(/\/\/.*height[=:]\s*(\d+)/i);
+  const wMatch = /\/\/.*width[=:]\s*(\d+)/i.exec(source);
+  const hMatch = /\/\/.*height[=:]\s*(\d+)/i.exec(source);
   if (wMatch && !result.width) result.width = wMatch[1];
   if (hMatch && !result.height) result.height = hMatch[1];
 
@@ -85,19 +84,20 @@ function generateTimestamp(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
-function wrapSvgInHtml(svgContent: string, meta: {
-  feature: string;
-  roadmap: string;
-  timestamp: string;
-  viewBox: string;
-  width: string;
-  height: string;
-  scale: number;
-  renderMode: 'gpu' | 'cpu';
-}): string {
-  const renderLabel = meta.renderMode === 'gpu'
-    ? `--render-gpu --scale=${meta.scale}`
-    : 'string-based (no GPU)';
+function wrapSvgInHtml(
+  svgContent: string,
+  meta: {
+    feature: string;
+    roadmap: string;
+    timestamp: string;
+    viewBox: string;
+    width: string;
+    height: string;
+    scale: number;
+    renderMode: 'gpu' | 'cpu';
+  },
+): string {
+  const renderLabel = meta.renderMode === 'gpu' ? `--render-gpu --scale=${meta.scale}` : 'string-based (no GPU)';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -126,11 +126,15 @@ ${svgContent}
 </html>`;
 }
 
-function wrapMiniWorkspaceHtml(svgContent: string, source: string, meta: {
-  feature: string;
-  roadmap: string;
-  timestamp: string;
-}): string {
+function wrapMiniWorkspaceHtml(
+  svgContent: string,
+  source: string,
+  meta: {
+    feature: string;
+    roadmap: string;
+    timestamp: string;
+  },
+): string {
   const codeData = Buffer.from(encodeURIComponent(source)).toString('base64');
   const displayTime = meta.timestamp.replace(/-(\d{2}:\d{2}:\d{2})$/, ' $1');
   return `<!DOCTYPE html>
@@ -216,7 +220,7 @@ program
     } else {
       useGpu = hasGpuGradients(source);
     }
-    const renderMode = useGpu ? 'gpu' as const : 'cpu' as const;
+    const renderMode = useGpu ? ('gpu' as const) : ('cpu' as const);
 
     console.log(`Compiling: ${file}`);
     console.log(`  Roadmap:  ${roadmap}`);
@@ -244,7 +248,9 @@ program
     try {
       console.log(useGpu ? '  Rendering via headless Chrome...' : '  Rendering...');
       const result = spawnSync('npx', ['tsx', 'src/cli.ts', ...cliArgs], {
-        cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 120_000,
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+        timeout: 120_000,
       });
       if (result.status !== 0) {
         throw new Error(result.stderr || result.stdout || 'Unknown error');
@@ -258,10 +264,19 @@ program
     const svgContent = readFileSync(tmpSvg, 'utf-8');
     const timestamp = generateTimestamp();
     const bbwpHtml = wrapSvgInHtml(svgContent, {
-      feature, roadmap, timestamp, viewBox, width, height, scale, renderMode,
+      feature,
+      roadmap,
+      timestamp,
+      viewBox,
+      width,
+      height,
+      scale,
+      renderMode,
     });
     const mwHtml = wrapMiniWorkspaceHtml(svgContent, source, {
-      feature, roadmap, timestamp,
+      feature,
+      roadmap,
+      timestamp,
     });
 
     // Step 3: Pretty-print both HTML files
@@ -294,16 +309,23 @@ program
     writeFileSync(mwPath, formattedMw);
     console.log(`  Written:  website/bbwp/${bbwpFilename}`);
     console.log(`            website/bbwp/${mwFilename}`);
-    console.log(`  Size:     bbwp ${(formattedBbwp.length / 1024 / 1024).toFixed(1)} MB | mw ${(formattedMw.length / 1024).toFixed(0)} KB`);
+    console.log(
+      `  Size:     bbwp ${(formattedBbwp.length / 1024 / 1024).toFixed(1)} MB | mw ${(formattedMw.length / 1024).toFixed(0)} KB`,
+    );
 
     // Step 5: Update the index
     spawnSync('npx', ['tsx', 'scripts/update-bbwp-index.ts'], {
-      cwd: PROJECT_ROOT, encoding: 'utf-8',
+      cwd: PROJECT_ROOT,
+      encoding: 'utf-8',
     });
     console.log('  Index:    updated');
 
     // Cleanup temp file
-    try { unlinkSync(tmpSvg); } catch {}
+    try {
+      unlinkSync(tmpSvg);
+    } catch {
+      // Ignore cleanup errors
+    }
 
     console.log(`\nDone.`);
     console.log(`  BBWP: http://localhost:3001/website/bbwp/${bbwpFilename}`);

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compileWithContext } from '../src';
 
 // Helper to check if two numbers are approximately equal
@@ -124,12 +125,15 @@ describe('Path Context Tracking', () => {
     });
 
     it('records commands in loops', () => {
-      const result = compileWithContext(`
+      const result = compileWithContext(
+        `
         M 0 0
         for (i in 1..3) {
           L calc(i * 10) calc(i * 10)
         }
-      `, { trackHistory: true });
+      `,
+        { trackHistory: true },
+      );
       expect(result.context.commands).toHaveLength(4); // M + 3 L commands
       expect(result.context.position).toEqual({ x: 30, y: 30 });
     });

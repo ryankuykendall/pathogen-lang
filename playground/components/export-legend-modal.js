@@ -797,7 +797,7 @@ class ExportLegendModal extends HTMLElement {
     g.appendChild(accentRect);
 
     // Append text elements on top of rect
-    elements.forEach(el => g.appendChild(el));
+    elements.forEach((el) => g.appendChild(el));
 
     // Branding below box — single baseline: "Pathogen  built with svg-path-extended"
     const brandY = boxHeight + brandGap;
@@ -931,7 +931,7 @@ class ExportLegendModal extends HTMLElement {
       if (i > 0) tspan.setAttribute('dy', lineGap);
       // Truncate long lines
       if (line.length > charsPerLine) {
-        tspan.textContent = line.slice(0, charsPerLine - 3) + '...';
+        tspan.textContent = `${line.slice(0, charsPerLine - 3)}...`;
       } else {
         tspan.textContent = line || ' '; // preserve blank lines with a space
       }
@@ -959,8 +959,8 @@ class ExportLegendModal extends HTMLElement {
     for (const word of words) {
       if (!current) {
         current = word;
-      } else if ((current + ' ' + word).length <= charsPerLine) {
-        current += ' ' + word;
+      } else if (`${current} ${word}`.length <= charsPerLine) {
+        current += ` ${word}`;
       } else {
         lines.push(current);
         current = word;
@@ -1096,8 +1096,9 @@ class ExportLegendModal extends HTMLElement {
       {
         family: 'Inconsolata',
         // All printable ASCII for code block coverage
-        url: 'https://fonts.googleapis.com/css2?family=Inconsolata&text=' +
-          encodeURIComponent(' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'),
+        url: `https://fonts.googleapis.com/css2?family=Inconsolata&text=${encodeURIComponent(
+          ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
+        )}`,
       },
     ];
 
@@ -1181,13 +1182,13 @@ class ExportLegendModal extends HTMLElement {
       clone.setAttribute('viewBox', `0 0 ${this._canvasWidth} ${this._canvasHeight}`);
 
       // Strip interactive elements (resize handles, accent border overlay)
-      clone.querySelectorAll('[data-interactive="true"]').forEach(el => el.remove());
+      clone.querySelectorAll('[data-interactive="true"]').forEach((el) => el.remove());
 
       // Embed fonts for self-contained SVG
       await this._embedFonts(clone);
 
       const serializer = new XMLSerializer();
-      const svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + serializer.serializeToString(clone);
+      const svgString = `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(clone)}`;
       const blob = new Blob([svgString], { type: 'image/svg+xml' });
 
       const workspaceName = this._formData.name || 'untitled';
@@ -1197,10 +1198,12 @@ class ExportLegendModal extends HTMLElement {
       if ('showSaveFilePicker' in window) {
         const handle = await window.showSaveFilePicker({
           suggestedName,
-          types: [{
-            description: 'SVG Files',
-            accept: { 'image/svg+xml': ['.svg'] },
-          }],
+          types: [
+            {
+              description: 'SVG Files',
+              accept: { 'image/svg+xml': ['.svg'] },
+            },
+          ],
         });
         const writable = await handle.createWritable();
         await writable.write(blob);
@@ -1259,7 +1262,7 @@ class ExportLegendModal extends HTMLElement {
 
     // Form inputs → live update legend
     const formInputs = ['#legend-name', '#legend-description', '#legend-date', '#legend-creator'];
-    formInputs.forEach(sel => {
+    formInputs.forEach((sel) => {
       root.querySelector(sel).addEventListener('input', (e) => {
         const field = sel.replace('#legend-', '');
         this._formData[field] = e.target.value;
@@ -1342,17 +1345,21 @@ class ExportLegendModal extends HTMLElement {
     });
 
     // Wheel zoom
-    previewArea.addEventListener('wheel', (e) => {
-      if (!this._svg) return;
-      e.preventDefault();
-      const dampening = 0.002;
-      const delta = -e.deltaY * dampening;
-      const oldZoom = this._zoom;
-      this._zoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, this._zoom * (1 + delta)));
-      this._adjustPanForZoom(oldZoom, this._zoom);
-      this._updateViewBox();
-      this._updateZoomDisplay();
-    }, { passive: false });
+    previewArea.addEventListener(
+      'wheel',
+      (e) => {
+        if (!this._svg) return;
+        e.preventDefault();
+        const dampening = 0.002;
+        const delta = -e.deltaY * dampening;
+        const oldZoom = this._zoom;
+        this._zoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, this._zoom * (1 + delta)));
+        this._adjustPanForZoom(oldZoom, this._zoom);
+        this._updateViewBox();
+        this._updateZoomDisplay();
+      },
+      { passive: false },
+    );
   }
 
   _addDocumentListeners() {

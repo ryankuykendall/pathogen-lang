@@ -1,18 +1,22 @@
 // Gradient Rendering Service
 // Orchestrates WebGPU rendering with Canvas 2D fallback and LRU caching.
 
-import { isWebGPUAvailable, getDevice, destroyDevice } from './webgpu-device.js';
 import { getConicPipeline } from './conic-pipeline.js';
 import { getFreeformPipeline } from './freeform-pipeline.js';
+import { COLOR_POINT_STRIDE, FREEFORM_PARAMS_SIZE } from './freeform-shader.js';
 import { getMeshPipeline } from './mesh-pipeline.js';
-import { getTopoPipeline } from './topo-pipeline.js';
-import { getTopoLaplacePipeline } from './topo-laplace-pipeline.js';
-import { LAPLACE_INIT_PARAMS_SIZE, LAPLACE_JACOBI_PARAMS_SIZE, LAPLACE_RENDER_PARAMS_SIZE } from './topo-laplace-shader.js';
-import { FREEFORM_PARAMS_SIZE, COLOR_POINT_STRIDE } from './freeform-shader.js';
 import { MESH_PARAMS_SIZE, MESH_VERTEX_STRIDE } from './mesh-shader.js';
-import { TOPO_PARAMS_SIZE, CONTOUR_HEADER_STRIDE, SEGMENT_STRIDE, TOPO_COLOR_STOP_STRIDE } from './topo-shader.js';
 import { flattenToSegments } from './svg-path-parser.js';
-import { TextureCache, hashGradient } from './texture-cache.js';
+import { hashGradient, TextureCache } from './texture-cache.js';
+import { getTopoLaplacePipeline } from './topo-laplace-pipeline.js';
+import {
+  LAPLACE_INIT_PARAMS_SIZE,
+  LAPLACE_JACOBI_PARAMS_SIZE,
+  LAPLACE_RENDER_PARAMS_SIZE,
+} from './topo-laplace-shader.js';
+import { getTopoPipeline } from './topo-pipeline.js';
+import { CONTOUR_HEADER_STRIDE, SEGMENT_STRIDE, TOPO_COLOR_STOP_STRIDE, TOPO_PARAMS_SIZE } from './topo-shader.js';
+import { destroyDevice, getDevice, isWebGPUAvailable } from './webgpu-device.js';
 
 const cache = new TextureCache(32);
 
@@ -51,7 +55,7 @@ export function isGPUActive() {
  */
 export async function renderConicGradients(gradients, width, height, scale = 2) {
   const result = new Map();
-  const conics = gradients.filter(g => g.type === 'conic');
+  const conics = gradients.filter((g) => g.type === 'conic');
   if (conics.length === 0) return result;
 
   for (const grad of conics) {
@@ -95,7 +99,7 @@ export async function renderConicGradients(gradients, width, height, scale = 2) 
  */
 export async function renderFreeformGradients(gradients, width, height, scale = 2) {
   const result = new Map();
-  const freeforms = gradients.filter(g => g.type === 'freeform');
+  const freeforms = gradients.filter((g) => g.type === 'freeform');
   if (freeforms.length === 0) return result;
 
   for (const grad of freeforms) {
@@ -141,7 +145,7 @@ export async function renderFreeformGradients(gradients, width, height, scale = 
  */
 export async function renderMeshGradients(gradients, width, height, scale = 2) {
   const result = new Map();
-  const meshes = gradients.filter(g => g.type === 'mesh');
+  const meshes = gradients.filter((g) => g.type === 'mesh');
   if (meshes.length === 0) return result;
 
   for (const grad of meshes) {
@@ -187,7 +191,7 @@ export async function renderMeshGradients(gradients, width, height, scale = 2) {
  */
 export async function renderTopoGradients(gradients, width, height, scale = 2) {
   const result = new Map();
-  const topos = gradients.filter(g => g.type === 'topo');
+  const topos = gradients.filter((g) => g.type === 'topo');
   if (topos.length === 0) return result;
 
   for (const grad of topos) {
@@ -259,7 +263,7 @@ async function renderConicWebGPU(grad, w, h, scale) {
 
   // --- Uniform buffer (ConicParams, 64 bytes) ---
   const fromAngle = grad.from ?? 0;
-  const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
+  const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
   const innerRadius = (grad.innerRadius ?? 0) * scale;
   const direction = grad.direction === 'ccw' ? -1.0 : 1.0;
 
@@ -286,23 +290,23 @@ async function renderConicWebGPU(grad, w, h, scale) {
   const f32 = new Float32Array(uniformData);
   const u32 = new Uint32Array(uniformData);
 
-  f32[0] = (grad.cx ?? (w / 2)) / w;  // center.x in UV space [0,1]
-  f32[1] = (grad.cy ?? (h / 2)) / h;  // center.y in UV space [0,1]
+  f32[0] = (grad.cx ?? w / 2) / w; // center.x in UV space [0,1]
+  f32[1] = (grad.cy ?? h / 2) / h; // center.y in UV space [0,1]
   f32[2] = fromAngle;
   f32[3] = toAngle;
   f32[4] = innerRadius;
   f32[5] = direction;
   f32[6] = spreadVal;
-  u32[7] = innerFillMode;              // inner_fill_mode
-  f32[8] = pw;                         // resolution.x
-  f32[9] = ph;                         // resolution.y
+  u32[7] = innerFillMode; // inner_fill_mode
+  f32[8] = pw; // resolution.x
+  f32[9] = ph; // resolution.y
   const stops = grad.stopsWithOklch || grad.stops || [];
-  u32[10] = stops.length;              // stop_count
+  u32[10] = stops.length; // stop_count
   // u32[11] = _pad
-  f32[12] = innerFillRGBA[0];          // inner_fill_color.r
-  f32[13] = innerFillRGBA[1];          // inner_fill_color.g
-  f32[14] = innerFillRGBA[2];          // inner_fill_color.b
-  f32[15] = innerFillRGBA[3];          // inner_fill_color.a
+  f32[12] = innerFillRGBA[0]; // inner_fill_color.r
+  f32[13] = innerFillRGBA[1]; // inner_fill_color.g
+  f32[14] = innerFillRGBA[2]; // inner_fill_color.b
+  f32[15] = innerFillRGBA[3]; // inner_fill_color.a
 
   const uniformBuffer = device.createBuffer({
     size: 64,
@@ -345,12 +349,14 @@ async function renderConicWebGPU(grad, w, h, scale) {
   const textureView = context.getCurrentTexture().createView();
   const encoder = device.createCommandEncoder();
   const pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: textureView,
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    }],
+    colorAttachments: [
+      {
+        view: textureView,
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
   });
 
   pass.setPipeline(pipeline);
@@ -401,19 +407,19 @@ async function renderFreeformWebGPU(grad, w, h, scale) {
 
   // --- Uniform buffer (FreeformParams, 32 bytes) ---
   const points = grad.freeformPoints || [];
-  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+  const interpVal = grad.interpolation === 'oklch' ? 1 : 0;
 
   const uniformData = new ArrayBuffer(FREEFORM_PARAMS_SIZE);
   const f32 = new Float32Array(uniformData);
   const u32 = new Uint32Array(uniformData);
 
-  f32[0] = pw;                          // resolution.x
-  f32[1] = ph;                          // resolution.y
-  f32[2] = grad.freeformWidth || w;     // grad_size.x
-  f32[3] = grad.freeformHeight || h;    // grad_size.y
-  f32[4] = grad.falloff ?? 2.0;         // falloff
-  u32[5] = points.length;               // point_count
-  u32[6] = interpVal;                   // interpolation
+  f32[0] = pw; // resolution.x
+  f32[1] = ph; // resolution.y
+  f32[2] = grad.freeformWidth || w; // grad_size.x
+  f32[3] = grad.freeformHeight || h; // grad_size.y
+  f32[4] = grad.falloff ?? 2.0; // falloff
+  u32[5] = points.length; // point_count
+  u32[6] = interpVal; // interpolation
   // u32[7] = _pad
 
   const uniformBuffer = device.createBuffer({
@@ -456,12 +462,14 @@ async function renderFreeformWebGPU(grad, w, h, scale) {
   const textureView = context.getCurrentTexture().createView();
   const encoder = device.createCommandEncoder();
   const pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: textureView,
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    }],
+    colorAttachments: [
+      {
+        view: textureView,
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
   });
 
   pass.setPipeline(pipeline);
@@ -512,19 +520,19 @@ async function renderMeshWebGPU(grad, w, h, scale) {
   const grid = grad.meshGrid || [];
   const rows = grid.length;
   const cols = rows > 0 ? grid[0].length : 0;
-  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+  const interpVal = grad.interpolation === 'oklch' ? 1 : 0;
 
   const uniformData = new ArrayBuffer(MESH_PARAMS_SIZE);
   const f32 = new Float32Array(uniformData);
   const u32 = new Uint32Array(uniformData);
 
-  f32[0] = pw;                         // resolution.x
-  f32[1] = ph;                         // resolution.y
-  f32[2] = grad.meshWidth || w;        // grad_size.x
-  f32[3] = grad.meshHeight || h;       // grad_size.y
-  u32[4] = rows;                       // rows
-  u32[5] = cols;                       // cols
-  u32[6] = interpVal;                  // interpolation
+  f32[0] = pw; // resolution.x
+  f32[1] = ph; // resolution.y
+  f32[2] = grad.meshWidth || w; // grad_size.x
+  f32[3] = grad.meshHeight || h; // grad_size.y
+  u32[4] = rows; // rows
+  u32[5] = cols; // cols
+  u32[6] = interpVal; // interpolation
   // u32[7] = _pad
 
   const uniformBuffer = device.createBuffer({
@@ -570,12 +578,14 @@ async function renderMeshWebGPU(grad, w, h, scale) {
   const textureView = context.getCurrentTexture().createView();
   const encoder = device.createCommandEncoder();
   const pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: textureView,
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    }],
+    colorAttachments: [
+      {
+        view: textureView,
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
   });
 
   pass.setPipeline(pipeline);
@@ -616,8 +626,10 @@ function renderFreeformCanvas2D(grad, w, h, scale) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    const points = (grad.freeformPoints || []).map(p => ({
-      x: p.x, y: p.y, rgba: cssColorToLinearRGBA(p.color),
+    const points = (grad.freeformPoints || []).map((p) => ({
+      x: p.x,
+      y: p.y,
+      rgba: cssColorToLinearRGBA(p.color),
     }));
 
     if (points.length === 0) return null;
@@ -634,12 +646,16 @@ function renderFreeformCanvas2D(grad, w, h, scale) {
         const gx = (px / pw) * gw;
         const gy = (py / ph) * gh;
 
-        let totalR = 0, totalG = 0, totalB = 0, totalA = 0, totalWeight = 0;
+        let totalR = 0;
+        let totalG = 0;
+        let totalB = 0;
+        let totalA = 0;
+        let totalWeight = 0;
         for (const pt of points) {
           const dx = gx - pt.x;
           const dy = gy - pt.y;
           const d = Math.sqrt(dx * dx + dy * dy);
-          const weight = 1 / Math.pow(Math.max(d, 0.001), falloff);
+          const weight = 1 / Math.max(d, 0.001) ** falloff;
           totalR += pt.rgba[0] * weight;
           totalG += pt.rgba[1] * weight;
           totalB += pt.rgba[2] * weight;
@@ -693,9 +709,13 @@ function renderMeshCanvas2D(grad, w, h, scale) {
     if (rows < 2 || cols < 2) return null;
 
     // Pre-parse colors
-    const parsedGrid = grid.map(row => row.map(p => ({
-      x: p.x, y: p.y, rgba: cssColorToLinearRGBA(p.color),
-    })));
+    const parsedGrid = grid.map((row) =>
+      row.map((p) => ({
+        x: p.x,
+        y: p.y,
+        rgba: cssColorToLinearRGBA(p.color),
+      })),
+    );
 
     const gw = grad.meshWidth || w;
     const gh = grad.meshHeight || h;
@@ -708,7 +728,10 @@ function renderMeshCanvas2D(grad, w, h, scale) {
         const gy = (py / ph) * gh;
 
         let found = false;
-        let rOut = 0, gOut = 0, bOut = 0, aOut = 0;
+        let rOut = 0;
+        let gOut = 0;
+        let bOut = 0;
+        let aOut = 0;
 
         // Iterate patches
         for (let r = 0; r < rows - 1 && !found; r++) {
@@ -768,11 +791,14 @@ function renderMeshCanvas2D(grad, w, h, scale) {
 
 /** CPU inverse bilinear mapping. Returns [u, v] or null. */
 function inverseBilinearCPU(px, py, p00, p10, p01, p11) {
-  const ex = p10.x - p00.x, ey = p10.y - p00.y;
-  const fx = p01.x - p00.x, fy = p01.y - p00.y;
+  const ex = p10.x - p00.x;
+  const ey = p10.y - p00.y;
+  const fx = p01.x - p00.x;
+  const fy = p01.y - p00.y;
   const gx = p00.x - p10.x + p11.x - p01.x;
   const gy = p00.y - p10.y + p11.y - p01.y;
-  const hx = px - p00.x, hy = py - p00.y;
+  const hx = px - p00.x;
+  const hy = py - p00.y;
 
   const k2 = gx * fy - gy * fx;
   const k1 = ex * fy - ey * fx + hx * gy - hy * gx;
@@ -844,7 +870,7 @@ function renderConicCanvas2D(grad, w, h, scale) {
     if (!ctx) return null;
 
     const fromAngle = grad.from ?? 0;
-    const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
+    const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
     const cx = (grad.cx ?? 0) * scale;
     const cy = (grad.cy ?? 0) * scale;
     const conicGrad = ctx.createConicGradient(fromAngle, cx, cy);
@@ -930,23 +956,23 @@ async function renderTopoWebGPU(grad, w, h, scale) {
   const totalSegments = Math.max(globalSegmentIdx, 1);
 
   // --- Easing mode ---
-  const easingMap = { 'linear': 0, 'smoothstep': 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4 };
+  const easingMap = { linear: 0, smoothstep: 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4 };
   const easingVal = easingMap[grad.topoEasing] ?? 0;
-  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+  const interpVal = grad.interpolation === 'oklch' ? 1 : 0;
 
   // --- Uniform buffer (TopoParams, 32 bytes) ---
   const uniformData = new ArrayBuffer(TOPO_PARAMS_SIZE);
   const f32 = new Float32Array(uniformData);
   const u32 = new Uint32Array(uniformData);
 
-  f32[0] = pw;                           // resolution.x
-  f32[1] = ph;                           // resolution.y
-  f32[2] = grad.topoWidth || w;          // grad_size.x
-  f32[3] = grad.topoHeight || h;         // grad_size.y
-  u32[4] = contours.length;              // contour_count
-  u32[5] = stops.length;                 // stop_count
-  u32[6] = easingVal;                    // easing
-  u32[7] = interpVal;                    // interpolation
+  f32[0] = pw; // resolution.x
+  f32[1] = ph; // resolution.y
+  f32[2] = grad.topoWidth || w; // grad_size.x
+  f32[3] = grad.topoHeight || h; // grad_size.y
+  u32[4] = contours.length; // contour_count
+  u32[5] = stops.length; // stop_count
+  u32[6] = easingVal; // easing
+  u32[7] = interpVal; // interpolation
 
   const uniformBuffer = device.createBuffer({
     size: TOPO_PARAMS_SIZE,
@@ -1021,12 +1047,14 @@ async function renderTopoWebGPU(grad, w, h, scale) {
   const textureView = context.getCurrentTexture().createView();
   const encoder = device.createCommandEncoder();
   const pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: textureView,
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    }],
+    colorAttachments: [
+      {
+        view: textureView,
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
   });
 
   pass.setPipeline(pipeline);
@@ -1070,13 +1098,13 @@ async function renderTopoLaplaceWebGPU(grad, w, h, scale) {
   // --- Prepare contours ---
   const contours = [...(grad.topoContours || [])]
     .sort((a, b) => a.elevation - b.elevation)
-    .map(c => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
+    .map((c) => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
   const stops = grad.stopsWithOklch || [];
   if (stops.length === 0) return null;
 
-  const easingMap = { 'linear': 0, 'smoothstep': 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4 };
+  const easingMap = { linear: 0, smoothstep: 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4 };
   const easingVal = easingMap[grad.topoEasing] ?? 0;
-  const interpVal = (grad.interpolation === 'oklch') ? 1 : 0;
+  const interpVal = grad.interpolation === 'oklch' ? 1 : 0;
 
   const gw = grad.topoWidth || w;
   const gh = grad.topoHeight || h;
@@ -1100,18 +1128,13 @@ async function renderTopoLaplaceWebGPU(grad, w, h, scale) {
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
   });
   // WebGPU requires bytesPerRow to be a multiple of 256
-  const bytesPerRow = Math.ceil(sw * 4 / 256) * 256;
+  const bytesPerRow = Math.ceil((sw * 4) / 256) * 256;
   const paddedData = new Uint8Array(bytesPerRow * sh);
   const srcBytes = new Uint8Array(elevation.buffer);
   for (let y = 0; y < sh; y++) {
     paddedData.set(srcBytes.subarray(y * sw * 4, (y + 1) * sw * 4), y * bytesPerRow);
   }
-  device.queue.writeTexture(
-    { texture: elevationTex },
-    paddedData,
-    { bytesPerRow },
-    { width: sw, height: sh },
-  );
+  device.queue.writeTexture({ texture: elevationTex }, paddedData, { bytesPerRow }, { width: sw, height: sh });
 
   // --- Render uniform buffer ---
   const renderData = new ArrayBuffer(LAPLACE_RENDER_PARAMS_SIZE);
@@ -1161,12 +1184,14 @@ async function renderTopoLaplaceWebGPU(grad, w, h, scale) {
   const encoder = device.createCommandEncoder();
   const textureView = context.getCurrentTexture().createView();
   const renderPass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: textureView,
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    }],
+    colorAttachments: [
+      {
+        view: textureView,
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
   });
   renderPass.setPipeline(renderPipeline);
   renderPass.setBindGroup(0, renderBindGroup);
@@ -1200,7 +1225,8 @@ function laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread) {
 
   // Temporary canvas for Path2D containment checks
   const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = 1; tmpCanvas.height = 1;
+  tmpCanvas.width = 1;
+  tmpCanvas.height = 1;
   const tmpCtx = tmpCanvas.getContext('2d');
 
   const stepX = gw / sw; // pixel size in gradient space
@@ -1234,10 +1260,10 @@ function laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread) {
         // Pixels outside the contour remain free and can diffuse toward the boundary,
         // which is what creates the smooth gradient between contour levels.
         if (!isBoundary && inside) {
-          const left  = tmpCtx.isPointInPath(c.path2d, gx - stepX, gy);
+          const left = tmpCtx.isPointInPath(c.path2d, gx - stepX, gy);
           const right = tmpCtx.isPointInPath(c.path2d, gx + stepX, gy);
-          const up    = tmpCtx.isPointInPath(c.path2d, gx, gy - stepY);
-          const down  = tmpCtx.isPointInPath(c.path2d, gx, gy + stepY);
+          const up = tmpCtx.isPointInPath(c.path2d, gx, gy - stepY);
+          const down = tmpCtx.isPointInPath(c.path2d, gx, gy + stepY);
           if (!left || !right || !up || !down) {
             isBoundary = true;
           }
@@ -1256,7 +1282,7 @@ function laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread) {
   const omega = 2 / (1 + Math.sin(Math.PI / N));
 
   // Save initial region elevations for spread blending
-  const initial = (spread < 1.0) ? new Float32Array(elevation) : null;
+  const initial = spread < 1.0 ? new Float32Array(elevation) : null;
 
   for (let iter = 0; iter < iterations; iter++) {
     for (let y = 1; y < sh - 1; y++) {
@@ -1264,10 +1290,10 @@ function laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread) {
         const idx = y * sw + x;
         if (mask[idx]) continue; // boundary: skip
 
-        const left  = elevation[idx - 1];
+        const left = elevation[idx - 1];
         const right = elevation[idx + 1];
-        const up    = elevation[idx - sw];
-        const down  = elevation[idx + sw];
+        const up = elevation[idx - sw];
+        const down = elevation[idx + sw];
         const avg = (left + right + up + down) * 0.25;
         elevation[idx] += omega * (avg - elevation[idx]);
       }
@@ -1313,13 +1339,13 @@ function renderTopoCanvas2D(grad, w, h, scale) {
     // Sort contours by elevation (lowest first) for smooth blending algorithm
     const contours = [...(grad.topoContours || [])]
       .sort((a, b) => a.elevation - b.elevation)
-      .map(c => ({
+      .map((c) => ({
         elevation: c.elevation,
         path2d: new Path2D(c.path),
         segments: flattenToSegments(c.path, 8),
       }));
 
-    const stops = (grad.stopsWithOklch || []).map(s => ({
+    const stops = (grad.stopsWithOklch || []).map((s) => ({
       offset: s.offset,
       rgba: cssColorToLinearRGBA(s.color),
     }));
@@ -1388,9 +1414,9 @@ function renderTopoLaplaceCanvas2D(grad, w, h, scale) {
 
     const contours = [...(grad.topoContours || [])]
       .sort((a, b) => a.elevation - b.elevation)
-      .map(c => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
+      .map((c) => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
 
-    const stops = (grad.stopsWithOklch || []).map(s => ({
+    const stops = (grad.stopsWithOklch || []).map((s) => ({
       offset: s.offset,
       rgba: cssColorToLinearRGBA(s.color),
     }));
@@ -1419,8 +1445,8 @@ function renderTopoLaplaceCanvas2D(grad, w, h, scale) {
     for (let py = 0; py < ph; py++) {
       for (let px = 0; px < pw; px++) {
         // Map full-res pixel to low-res coordinates
-        const lxf = (px + 0.5) / pw * lw - 0.5;
-        const lyf = (py + 0.5) / ph * lh - 0.5;
+        const lxf = ((px + 0.5) / pw) * lw - 0.5;
+        const lyf = ((py + 0.5) / ph) * lh - 0.5;
 
         // Bilinear sample
         const x0 = Math.max(0, Math.floor(lxf));
@@ -1435,8 +1461,7 @@ function renderTopoLaplaceCanvas2D(grad, w, h, scale) {
         const e01 = src[y1 * lw + x0];
         const e11 = src[y1 * lw + x1];
 
-        const elev = e00 * (1 - fx) * (1 - fy) + e10 * fx * (1 - fy) +
-                     e01 * (1 - fx) * fy + e11 * fx * fy;
+        const elev = e00 * (1 - fx) * (1 - fy) + e10 * fx * (1 - fy) + e01 * (1 - fx) * fy + e11 * fx * fy;
 
         // Apply easing AFTER solve (post-process)
         const easedElev = easingFn(Math.max(0, Math.min(1, elev)));
@@ -1463,15 +1488,19 @@ function renderTopoLaplaceCanvas2D(grad, w, h, scale) {
 function minDistToSegments(px, py, segments) {
   let minDist = Infinity;
   for (let i = 0; i < segments.length; i += 4) {
-    const ax = segments[i], ay = segments[i + 1];
-    const bx = segments[i + 2], by = segments[i + 3];
-    const dx = bx - ax, dy = by - ay;
+    const ax = segments[i];
+    const ay = segments[i + 1];
+    const bx = segments[i + 2];
+    const by = segments[i + 3];
+    const dx = bx - ax;
+    const dy = by - ay;
     const lenSq = dx * dx + dy * dy;
     let t = 0;
     if (lenSq > 0.0001) {
       t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
     }
-    const projX = ax + t * dx, projY = ay + t * dy;
+    const projX = ax + t * dx;
+    const projY = ay + t * dy;
     const dist = Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
     if (dist < minDist) minDist = dist;
   }
@@ -1481,11 +1510,16 @@ function minDistToSegments(px, py, segments) {
 /** Get easing function by name */
 function getEasingFn(name) {
   switch (name) {
-    case 'smoothstep': return t => t * t * (3 - 2 * t);
-    case 'ease-in': return t => t * t;
-    case 'ease-out': return t => 1 - (1 - t) * (1 - t);
-    case 'ease-in-out': return t => t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
-    default: return t => t; // linear
+    case 'smoothstep':
+      return (t) => t * t * (3 - 2 * t);
+    case 'ease-in':
+      return (t) => t * t;
+    case 'ease-out':
+      return (t) => 1 - (1 - t) * (1 - t);
+    case 'ease-in-out':
+      return (t) => (t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t));
+    default:
+      return (t) => t; // linear
   }
 }
 

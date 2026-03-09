@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compile } from '../src';
 import { compilePath } from './helpers';
 
@@ -63,12 +64,14 @@ describe('Evaluator', () => {
     });
 
     it('handles multiple comments', () => {
-      expect(compilePath(`
+      expect(
+        compilePath(`
         // First comment
         let x = 10; // define x
         // Another comment
         M x 0
-      `)).toBe('M 10 0');
+      `),
+      ).toBe('M 10 0');
     });
   });
 
@@ -374,35 +377,35 @@ describe('Evaluator', () => {
     describe('pi suffix and mpi()', () => {
       it('evaluates 0.25pi to Math.PI * 0.25', () => {
         const result = compilePath('M 0.25pi 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI * 0.25);
       });
 
       it('evaluates 1pi to Math.PI', () => {
         const result = compilePath('M 1pi 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI);
       });
 
       it('evaluates mpi(0.5) to Math.PI * 0.5', () => {
         const result = compilePath('M calc(mpi(0.5)) 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI * 0.5);
       });
 
       it('allows calc(0.25pi + 0.25pi)', () => {
         const result = compilePath('M calc(0.25pi + 0.25pi) 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI * 0.5);
       });
 
       it('allows calc(90deg + 0.5pi) — both have angle units', () => {
         const result = compilePath('M calc(90deg + 0.5pi) 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI);
       });
@@ -413,14 +416,14 @@ describe('Evaluator', () => {
 
       it('evaluates calc(0.5pi * 2) — multiply pi suffix by scalar', () => {
         const result = compilePath('M calc(0.5pi * 2) 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI);
       });
 
       it('evaluates calc(0.5pi / 2) — divide pi suffix by scalar', () => {
         const result = compilePath('M calc(0.5pi / 2) 0');
-        const match = result.match(/^M ([\d.]+) 0$/);
+        const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI / 4);
       });
@@ -429,7 +432,7 @@ describe('Evaluator', () => {
     describe('random', () => {
       it('evaluates random (returns number between 0 and 1)', () => {
         const result = compilePath('M calc(random()) 0');
-        const match = result.match(/M ([\d.]+) 0/);
+        const match = /M ([\d.]+) 0/.exec(result);
         expect(match).not.toBeNull();
         const value = parseFloat(match![1]);
         expect(value).toBeGreaterThanOrEqual(0);
@@ -438,7 +441,7 @@ describe('Evaluator', () => {
 
       it('evaluates randomRange (returns number in range)', () => {
         const result = compilePath('M calc(randomRange(10, 20)) 0');
-        const match = result.match(/M ([\d.]+) 0/);
+        const match = /M ([\d.]+) 0/.exec(result);
         expect(match).not.toBeNull();
         const value = parseFloat(match![1]);
         expect(value).toBeGreaterThanOrEqual(10);
@@ -616,8 +619,16 @@ describe('Evaluator', () => {
     });
 
     it('evaluates multi-branch else if chain with final else', () => {
-      expect(compilePath('let x = 3; if (x == 1) { M 1 0 } else if (x == 2) { M 2 0 } else if (x == 3) { M 3 0 } else { M 0 0 }')).toBe('M 3 0');
-      expect(compilePath('let x = 9; if (x == 1) { M 1 0 } else if (x == 2) { M 2 0 } else if (x == 3) { M 3 0 } else { M 0 0 }')).toBe('M 0 0');
+      expect(
+        compilePath(
+          'let x = 3; if (x == 1) { M 1 0 } else if (x == 2) { M 2 0 } else if (x == 3) { M 3 0 } else { M 0 0 }',
+        ),
+      ).toBe('M 3 0');
+      expect(
+        compilePath(
+          'let x = 9; if (x == 1) { M 1 0 } else if (x == 2) { M 2 0 } else if (x == 3) { M 3 0 } else { M 0 0 }',
+        ),
+      ).toBe('M 0 0');
     });
 
     it('evaluates else if without final else (no match returns empty)', () => {
@@ -870,7 +881,7 @@ describe('Evaluator', () => {
 
     it('does not round when option not provided', () => {
       const result = compilePath('M calc(10/3) 0');
-      expect(result).toBe(`M ${10/3} 0`);
+      expect(result).toBe(`M ${10 / 3} 0`);
     });
 
     it('works with stdlib functions', () => {
@@ -1064,7 +1075,9 @@ describe('Evaluator', () => {
     });
 
     it('for-each with destructuring over nested arrays binds element and index', () => {
-      expect(compilePath('let nested = [[1, 2], [3, 4]]; for ([item, i] in nested) { M item[0] i }')).toBe('M 1 0 M 3 1');
+      expect(compilePath('let nested = [[1, 2], [3, 4]]; for ([item, i] in nested) { M item[0] i }')).toBe(
+        'M 1 0 M 3 1',
+      );
     });
 
     it('for-each over empty array produces nothing', () => {
@@ -1211,7 +1224,9 @@ describe('Evaluator', () => {
     });
 
     it('.translate(dx, dy) returns offset point', () => {
-      expect(compilePath('let pt = Point(100, 100); let moved = pt.translate(10, -20); M moved.x moved.y')).toBe('M 110 80');
+      expect(compilePath('let pt = Point(100, 100); let moved = pt.translate(10, -20); M moved.x moved.y')).toBe(
+        'M 110 80',
+      );
     });
 
     it('.polarTranslate(angle, distance) returns point at polar offset', () => {
@@ -1220,41 +1235,60 @@ describe('Evaluator', () => {
     });
 
     it('.midpoint(other) returns halfway point', () => {
-      expect(compilePath('let p1 = Point(0, 0); let p2 = Point(100, 100); let mid = p1.midpoint(p2); M mid.x mid.y')).toBe('M 50 50');
+      expect(
+        compilePath('let p1 = Point(0, 0); let p2 = Point(100, 100); let mid = p1.midpoint(p2); M mid.x mid.y'),
+      ).toBe('M 50 50');
     });
 
     it('.lerp(other, t) interpolates between points', () => {
-      expect(compilePath('let p1 = Point(0, 0); let p2 = Point(100, 200); let mid = p1.lerp(p2, 0.25); M mid.x mid.y')).toBe('M 25 50');
+      expect(
+        compilePath('let p1 = Point(0, 0); let p2 = Point(100, 200); let mid = p1.lerp(p2, 0.25); M mid.x mid.y'),
+      ).toBe('M 25 50');
     });
 
     it('.lerp(other, 0) returns this point', () => {
-      expect(compilePath('let p1 = Point(10, 20); let p2 = Point(100, 200); let result = p1.lerp(p2, 0); M result.x result.y')).toBe('M 10 20');
+      expect(
+        compilePath(
+          'let p1 = Point(10, 20); let p2 = Point(100, 200); let result = p1.lerp(p2, 0); M result.x result.y',
+        ),
+      ).toBe('M 10 20');
     });
 
     it('.lerp(other, 1) returns other point', () => {
-      expect(compilePath('let p1 = Point(10, 20); let p2 = Point(100, 200); let result = p1.lerp(p2, 1); M result.x result.y')).toBe('M 100 200');
+      expect(
+        compilePath(
+          'let p1 = Point(10, 20); let p2 = Point(100, 200); let result = p1.lerp(p2, 1); M result.x result.y',
+        ),
+      ).toBe('M 100 200');
     });
 
     it('.rotate(angle, origin) rotates around center', () => {
-      const result = compilePath('let pt = Point(100, 0); let center = Point(0, 0); let r = pt.rotate(90deg, center); M r.x r.y', { toFixed: 2 });
+      const result = compilePath(
+        'let pt = Point(100, 0); let center = Point(0, 0); let r = pt.rotate(90deg, center); M r.x r.y',
+        { toFixed: 2 },
+      );
       // 100,0 rotated 90deg CW around origin → approximately 0,100
-      const match = result.match(/^M (-?[\d.]+) (-?[\d.]+)$/);
+      const match = /^M (-?[\d.]+) (-?[\d.]+)$/.exec(result);
       expect(match).not.toBeNull();
       expect(parseFloat(match![1])).toBeCloseTo(0, 0);
       expect(parseFloat(match![2])).toBeCloseTo(100, 0);
     });
 
     it('.distanceTo(other) returns Euclidean distance', () => {
-      expect(compilePath('let p1 = Point(0, 0); let p2 = Point(3, 4); let dist = p1.distanceTo(p2); M dist 0')).toBe('M 5 0');
+      expect(compilePath('let p1 = Point(0, 0); let p2 = Point(3, 4); let dist = p1.distanceTo(p2); M dist 0')).toBe(
+        'M 5 0',
+      );
     });
 
     it('.angleTo(other) returns angle in radians', () => {
-      expect(compilePath('let p1 = Point(0, 0); let p2 = Point(1, 0); let ang = p1.angleTo(p2); M ang 0')).toBe('M 0 0');
+      expect(compilePath('let p1 = Point(0, 0); let p2 = Point(1, 0); let ang = p1.angleTo(p2); M ang 0')).toBe(
+        'M 0 0',
+      );
     });
 
     it('.angleTo(other) returns correct angle for vertical', () => {
       const result = compilePath('let p1 = Point(0, 0); let p2 = Point(0, 1); let ang = p1.angleTo(p2); M ang 0');
-      const match = result.match(/^M ([\d.]+) 0$/);
+      const match = /^M ([\d.]+) 0$/.exec(result);
       expect(match).not.toBeNull();
       expect(parseFloat(match![1])).toBeCloseTo(Math.PI / 2);
     });
@@ -1270,7 +1304,9 @@ describe('Evaluator', () => {
     });
 
     it('chained operations work', () => {
-      expect(compilePath('let pt = Point(0, 0); let moved = pt.translate(50, 50).translate(10, 10); M moved.x moved.y')).toBe('M 60 60');
+      expect(
+        compilePath('let pt = Point(0, 0); let moved = pt.translate(50, 50).translate(10, 10); M moved.x moved.y'),
+      ).toBe('M 60 60');
     });
 
     it('point methods work in calc expressions', () => {
@@ -1278,7 +1314,9 @@ describe('Evaluator', () => {
     });
 
     it('works with for loops', () => {
-      expect(compilePath('let center = Point(100, 100); for (i in 0..2) { M calc(center.x + i * 10) center.y }')).toBe('M 100 100 M 110 100 M 120 100');
+      expect(compilePath('let center = Point(100, 100); for (i in 0..2) { M calc(center.x + i * 10) center.y }')).toBe(
+        'M 100 100 M 110 100 M 120 100',
+      );
     });
   });
 
@@ -1363,10 +1401,12 @@ describe('Evaluator', () => {
     });
 
     it('works with numbers in path context', () => {
-      expect(compilePath(`
+      expect(
+        compilePath(`
         let c = Cycler([10, 20, 30]);
         M calc(c.pick()) calc(c.pick())
-      `)).toBe('M 10 20');
+      `),
+      ).toBe('M 10 20');
     });
   });
 

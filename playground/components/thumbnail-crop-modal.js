@@ -1,8 +1,8 @@
 // Thumbnail Crop Modal - Full-screen overlay for setting workspace thumbnail
 // Square crop selection with live preview at multiple sizes
 
-import { store } from '../state/store.js';
 import thumbnailService from '../services/thumbnail-service.js';
+import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
 
 const ACCENT = '#10b981';
@@ -396,11 +396,7 @@ class ThumbnailCropModal extends HTMLElement {
 
   _constrainCrop() {
     // Ensure crop stays within canvas bounds
-    this._cropSize = Math.max(MIN_CROP_SIZE, Math.min(
-      this._cropSize,
-      this._canvasWidth,
-      this._canvasHeight
-    ));
+    this._cropSize = Math.max(MIN_CROP_SIZE, Math.min(this._cropSize, this._canvasWidth, this._canvasHeight));
     this._cropX = Math.max(0, Math.min(this._cropX, this._canvasWidth - this._cropSize));
     this._cropY = Math.max(0, Math.min(this._cropY, this._canvasHeight - this._cropSize));
   }
@@ -442,15 +438,18 @@ class ThumbnailCropModal extends HTMLElement {
     // Top
     if (cy > 0) {
       const r = document.createElementNS(ns, 'rect');
-      r.setAttribute('x', 0); r.setAttribute('y', 0);
-      r.setAttribute('width', this._canvasWidth); r.setAttribute('height', cy);
+      r.setAttribute('x', 0);
+      r.setAttribute('y', 0);
+      r.setAttribute('width', this._canvasWidth);
+      r.setAttribute('height', cy);
       r.setAttribute('fill', OVERLAY_COLOR);
       group.appendChild(r);
     }
     // Bottom
     if (cy + cs < this._canvasHeight) {
       const r = document.createElementNS(ns, 'rect');
-      r.setAttribute('x', 0); r.setAttribute('y', cy + cs);
+      r.setAttribute('x', 0);
+      r.setAttribute('y', cy + cs);
       r.setAttribute('width', this._canvasWidth);
       r.setAttribute('height', this._canvasHeight - cy - cs);
       r.setAttribute('fill', OVERLAY_COLOR);
@@ -459,15 +458,18 @@ class ThumbnailCropModal extends HTMLElement {
     // Left
     if (cx > 0) {
       const r = document.createElementNS(ns, 'rect');
-      r.setAttribute('x', 0); r.setAttribute('y', cy);
-      r.setAttribute('width', cx); r.setAttribute('height', cs);
+      r.setAttribute('x', 0);
+      r.setAttribute('y', cy);
+      r.setAttribute('width', cx);
+      r.setAttribute('height', cs);
       r.setAttribute('fill', OVERLAY_COLOR);
       group.appendChild(r);
     }
     // Right
     if (cx + cs < this._canvasWidth) {
       const r = document.createElementNS(ns, 'rect');
-      r.setAttribute('x', cx + cs); r.setAttribute('y', cy);
+      r.setAttribute('x', cx + cs);
+      r.setAttribute('y', cy);
       r.setAttribute('width', this._canvasWidth - cx - cs);
       r.setAttribute('height', cs);
       r.setAttribute('fill', OVERLAY_COLOR);
@@ -480,8 +482,10 @@ class ThumbnailCropModal extends HTMLElement {
 
     // Invisible drag surface for the crop area (cursor: move)
     const dragSurface = document.createElementNS(ns, 'rect');
-    dragSurface.setAttribute('x', cx); dragSurface.setAttribute('y', cy);
-    dragSurface.setAttribute('width', cs); dragSurface.setAttribute('height', cs);
+    dragSurface.setAttribute('x', cx);
+    dragSurface.setAttribute('y', cy);
+    dragSurface.setAttribute('width', cs);
+    dragSurface.setAttribute('height', cs);
     dragSurface.setAttribute('fill', 'transparent');
     dragSurface.style.cursor = 'move';
     dragSurface.classList.add('crop-area');
@@ -489,8 +493,10 @@ class ThumbnailCropModal extends HTMLElement {
 
     // Accent border (solid, like export legend) — non-scaling-stroke keeps it at 2 CSS px
     const accentBorder = document.createElementNS(ns, 'rect');
-    accentBorder.setAttribute('x', cx); accentBorder.setAttribute('y', cy);
-    accentBorder.setAttribute('width', cs); accentBorder.setAttribute('height', cs);
+    accentBorder.setAttribute('x', cx);
+    accentBorder.setAttribute('y', cy);
+    accentBorder.setAttribute('width', cs);
+    accentBorder.setAttribute('height', cs);
     accentBorder.setAttribute('fill', 'none');
     accentBorder.setAttribute('stroke', ACCENT);
     accentBorder.setAttribute('stroke-width', '2');
@@ -500,8 +506,10 @@ class ThumbnailCropModal extends HTMLElement {
 
     // Marching ants overlay — non-scaling-stroke so dashes are always ~8 CSS px
     const ants = document.createElementNS(ns, 'rect');
-    ants.setAttribute('x', cx); ants.setAttribute('y', cy);
-    ants.setAttribute('width', cs); ants.setAttribute('height', cs);
+    ants.setAttribute('x', cx);
+    ants.setAttribute('y', cy);
+    ants.setAttribute('width', cs);
+    ants.setAttribute('height', cs);
     ants.setAttribute('fill', 'none');
     ants.setAttribute('stroke', '#ffffff');
     ants.setAttribute('stroke-width', '1.5');
@@ -521,8 +529,10 @@ class ThumbnailCropModal extends HTMLElement {
     const thirdLineColor = 'rgba(255, 255, 255, 0.3)';
     for (let i = 1; i <= 2; i++) {
       const vLine = document.createElementNS(ns, 'line');
-      vLine.setAttribute('x1', cx + cs * i / 3); vLine.setAttribute('y1', cy);
-      vLine.setAttribute('x2', cx + cs * i / 3); vLine.setAttribute('y2', cy + cs);
+      vLine.setAttribute('x1', cx + (cs * i) / 3);
+      vLine.setAttribute('y1', cy);
+      vLine.setAttribute('x2', cx + (cs * i) / 3);
+      vLine.setAttribute('y2', cy + cs);
       vLine.setAttribute('stroke', thirdLineColor);
       vLine.setAttribute('stroke-width', '1');
       vLine.setAttribute(nss, 'non-scaling-stroke');
@@ -530,8 +540,10 @@ class ThumbnailCropModal extends HTMLElement {
       group.appendChild(vLine);
 
       const hLine = document.createElementNS(ns, 'line');
-      hLine.setAttribute('x1', cx); hLine.setAttribute('y1', cy + cs * i / 3);
-      hLine.setAttribute('x2', cx + cs); hLine.setAttribute('y2', cy + cs * i / 3);
+      hLine.setAttribute('x1', cx);
+      hLine.setAttribute('y1', cy + (cs * i) / 3);
+      hLine.setAttribute('x2', cx + cs);
+      hLine.setAttribute('y2', cy + (cs * i) / 3);
       hLine.setAttribute('stroke', thirdLineColor);
       hLine.setAttribute('stroke-width', '1');
       hLine.setAttribute(nss, 'non-scaling-stroke');
@@ -554,7 +566,8 @@ class ThumbnailCropModal extends HTMLElement {
       const hit = document.createElementNS(ns, 'rect');
       hit.setAttribute('x', corner.x - hitSize / 2);
       hit.setAttribute('y', corner.y - hitSize / 2);
-      hit.setAttribute('width', hitSize); hit.setAttribute('height', hitSize);
+      hit.setAttribute('width', hitSize);
+      hit.setAttribute('height', hitSize);
       hit.setAttribute('fill', 'transparent');
       hit.style.cursor = corner.cursor;
       hit.classList.add('crop-handle', corner.cls);
@@ -564,7 +577,8 @@ class ThumbnailCropModal extends HTMLElement {
       const h = document.createElementNS(ns, 'rect');
       h.setAttribute('x', corner.x - handleSize / 2);
       h.setAttribute('y', corner.y - handleSize / 2);
-      h.setAttribute('width', handleSize); h.setAttribute('height', handleSize);
+      h.setAttribute('width', handleSize);
+      h.setAttribute('height', handleSize);
       h.setAttribute('fill', ACCENT_LIGHT);
       h.setAttribute('stroke', ACCENT);
       h.setAttribute('stroke-width', '2');
@@ -712,19 +726,16 @@ class ThumbnailCropModal extends HTMLElement {
         size: this._cropSize,
       };
 
-      await thumbnailService.generateThumbnail(
-        workspaceId,
-        this._svgElement,
-        this._storeState,
-        cropRegion
-      );
+      await thumbnailService.generateThumbnail(workspaceId, this._svgElement, this._storeState, cropRegion);
 
       // Dispatch event for landing-view refresh
-      document.dispatchEvent(new CustomEvent('thumbnail-updated', {
-        bubbles: true,
-        composed: true,
-        detail: { workspaceId },
-      }));
+      document.dispatchEvent(
+        new CustomEvent('thumbnail-updated', {
+          bubbles: true,
+          composed: true,
+          detail: { workspaceId },
+        }),
+      );
 
       this.close();
     } catch (err) {
@@ -826,18 +837,22 @@ class ThumbnailCropModal extends HTMLElement {
     });
 
     // Wheel zoom
-    previewArea.addEventListener('wheel', (e) => {
-      if (!this._svg) return;
-      e.preventDefault();
-      const dampening = 0.002;
-      const delta = -e.deltaY * dampening;
-      const old = this._zoom;
-      this._zoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, this._zoom * (1 + delta)));
-      this._adjustPanForZoom(old, this._zoom);
-      this._updateViewBox();
-      this._updateZoomDisplay();
-      this._updateCropOverlay();
-    }, { passive: false });
+    previewArea.addEventListener(
+      'wheel',
+      (e) => {
+        if (!this._svg) return;
+        e.preventDefault();
+        const dampening = 0.002;
+        const delta = -e.deltaY * dampening;
+        const old = this._zoom;
+        this._zoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, this._zoom * (1 + delta)));
+        this._adjustPanForZoom(old, this._zoom);
+        this._updateViewBox();
+        this._updateZoomDisplay();
+        this._updateCropOverlay();
+      },
+      { passive: false },
+    );
   }
 
   _addDocumentListeners() {
@@ -852,7 +867,9 @@ class ThumbnailCropModal extends HTMLElement {
         const origSize = this._dragStartCropSize;
 
         // Resize based on which corner is being dragged (1:1 aspect ratio)
-        let newX, newY, newSize;
+        let newX;
+        let newY;
+        let newSize;
 
         switch (this._resizeCorner) {
           case 'se': {

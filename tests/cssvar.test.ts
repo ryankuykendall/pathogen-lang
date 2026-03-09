@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compile, compileWithContext } from '../src';
 
 describe('CSSVar type', () => {
@@ -45,7 +46,9 @@ describe('CSSVar type', () => {
     });
 
     it('throws on invalid fallback type', () => {
-      expect(() => compile('let a = [1, 2]; let v = CSSVar("--x", a);')).toThrow('CSSVar() fallback must be a string, number, or Color');
+      expect(() => compile('let a = [1, 2]; let v = CSSVar("--x", a);')).toThrow(
+        'CSSVar() fallback must be a string, number, or Color',
+      );
     });
   });
 
@@ -78,7 +81,7 @@ describe('CSSVar type', () => {
     });
 
     it('throws on unknown property', () => {
-      expect(() => compile('let v = CSSVar("--x"); log(v.unknown);')).toThrow("does not exist on CSSVar");
+      expect(() => compile('let v = CSSVar("--x"); log(v.unknown);')).toThrow('does not exist on CSSVar');
     });
   });
 
@@ -160,7 +163,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
+      expect(result.layers[0].styles.fill).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
     });
 
     it('Color(CSSVar(...)) throws without fallback', () => {
@@ -177,7 +180,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.lighten(0.2); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) calc(l + 0.2) c h)');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) calc(l + 0.2) c h)');
     });
 
     it('darken() outputs oklch(from var(...) calc(l - n) c h)', () => {
@@ -186,7 +189,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.darken(0.15); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) calc(l - 0.15) c h)');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) calc(l - 0.15) c h)');
     });
 
     it('saturate() outputs oklch(from var(...) l calc(c * f) h)', () => {
@@ -195,7 +198,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.saturate(1.5); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l calc(c * 1.5) h)');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l calc(c * 1.5) h)');
     });
 
     it('desaturate() outputs oklch(from var(...) l calc(c * f) h)', () => {
@@ -204,7 +207,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.desaturate(0.3); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l calc(c * 0.3) h)');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l calc(c * 0.3) h)');
     });
 
     it('alpha() outputs oklch(from var(...) l c h / a)', () => {
@@ -213,7 +216,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.alpha(0.5); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c h / 0.5)');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c h / 0.5)');
     });
 
     it('hueShift() outputs oklch(from var(...) l c calc(h + d))', () => {
@@ -222,7 +225,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.hueShift(90); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
     });
 
     it('complement() outputs oklch(from var(...) l c calc(h + 180))', () => {
@@ -231,7 +234,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.complement(); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 180))');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 180))');
     });
 
     it('mix() outputs color-mix(in oklch, ...)', () => {
@@ -241,7 +244,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.mix(target, 0.5); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--base, #cc6683), #457b9d 50%)');
+      expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--base, #cc6683), #457b9d 50%)');
     });
 
     it('mix() with two CSSVar-backed colors', () => {
@@ -251,7 +254,9 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c1.mix(c2, 0.3); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--base, #cc6683), var(--target, #457b9d) 30%)');
+      expect(result.layers[0].styles.fill).toBe(
+        'color-mix(in oklch, var(--base, #cc6683), var(--target, #457b9d) 30%)',
+      );
     });
 
     it('chaining nests CSS expressions', () => {
@@ -260,8 +265,8 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.lighten(0.2).hueShift(90); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe(
-        'oklch(from oklch(from var(--base, #cc6683) calc(l + 0.2) c h) l c calc(h + 90))'
+      expect(result.layers[0].styles.fill).toBe(
+        'oklch(from oklch(from var(--base, #cc6683) calc(l + 0.2) c h) l c calc(h + 90))',
       );
     });
 
@@ -271,7 +276,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: c.lighten(0.2); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+      expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('Color.mix() with CSSVar-backed colors', () => {
@@ -281,7 +286,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
+      expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
     });
 
     it('Color.mix() with one CSSVar-backed color', () => {
@@ -291,7 +296,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), #457b9d 50%)');
+      expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), #457b9d 50%)');
     });
 
     it('Color.mix() with no CSSVar-backed colors produces baked value', () => {
@@ -301,7 +306,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+      expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
 
@@ -319,9 +324,9 @@ describe('CSSVar type', () => {
         layer('b').apply { M 0 0 }
         layer('c').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + -30))');
-      expect(result.layers[1].styles['fill']).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
-      expect(result.layers[2].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 30))');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + -30))');
+      expect(result.layers[1].styles.fill).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
+      expect(result.layers[2].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 30))');
     });
 
     it('triadic() produces hueShift CSS', () => {
@@ -333,8 +338,8 @@ describe('CSSVar type', () => {
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 120))');
-      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 240))');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 120))');
+      expect(result.layers[1].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 240))');
     });
 
     it('tetradic() produces hueShift CSS for all shifted entries', () => {
@@ -346,8 +351,8 @@ describe('CSSVar type', () => {
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
-      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
+      expect(result.layers[0].styles.fill).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
+      expect(result.layers[1].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
     });
 
     it('splitComplementary() produces hueShift CSS', () => {
@@ -359,8 +364,8 @@ describe('CSSVar type', () => {
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 150))');
-      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) l c calc(h + 210))');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 150))');
+      expect(result.layers[1].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 210))');
     });
 
     it('non-CSSVar harmonies produce baked values', () => {
@@ -370,7 +375,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: colors[1]; }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+      expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
 
@@ -388,9 +393,9 @@ describe('CSSVar type', () => {
         layer('b').apply { M 0 0 }
         layer('c').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('oklch(from var(--base, #cc6683) 0.15 c h)');
-      expect(result.layers[1].styles['fill']).toBe('oklch(from var(--base, #cc6683) 0.55 c h)');
-      expect(result.layers[2].styles['fill']).toBe('oklch(from var(--base, #cc6683) 0.95 c h)');
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) 0.15 c h)');
+      expect(result.layers[1].styles.fill).toBe('oklch(from var(--base, #cc6683) 0.55 c h)');
+      expect(result.layers[2].styles.fill).toBe('oklch(from var(--base, #cc6683) 0.95 c h)');
     });
 
     it('interpolation ramp produces color-mix CSS', () => {
@@ -405,9 +410,9 @@ describe('CSSVar type', () => {
         layer('b').apply { M 0 0 }
         layer('c').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 0%)');
-      expect(result.layers[1].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
-      expect(result.layers[2].styles['fill']).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 100%)');
+      expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 0%)');
+      expect(result.layers[1].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
+      expect(result.layers[2].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 100%)');
     });
 
     it('non-CSSVar palette produces baked values', () => {
@@ -417,7 +422,7 @@ describe('CSSVar type', () => {
         define PathLayer('a') \${ fill: p[0]; }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toMatch(/^#[0-9a-f]{6}$/);
+      expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
 

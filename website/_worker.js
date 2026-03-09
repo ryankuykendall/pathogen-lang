@@ -24,7 +24,10 @@ async function hashContent(content) {
   const data = encoder.encode(content);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray
+    .slice(0, 8)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 // Create URL-friendly slug from name
@@ -74,7 +77,9 @@ const SITE_URL = 'https://pedestal.design';
 
 function renderPage({ title, description, path, content, headExtra = '' }) {
   const fullTitle = title ? `${title} — Pathogen` : 'Pathogen — SVG Path Extended Playground';
-  const desc = description || 'A visual playground for svg-path-extended — variables, expressions, control flow, functions, and more for SVG paths.';
+  const desc =
+    description ||
+    'A visual playground for svg-path-extended — variables, expressions, control flow, functions, and more for SVG paths.';
   const canonical = `${SITE_URL}${path}`;
 
   const navLinks = [
@@ -86,10 +91,12 @@ function renderPage({ title, description, path, content, headExtra = '' }) {
     { href: '/pathogen/preferences', label: 'Preferences', match: '/pathogen/preferences' },
   ];
 
-  const navHtml = navLinks.map(link => {
-    const isActive = path === link.match || (link.match !== '/pathogen/' && path.startsWith(link.match));
-    return `<a class="nav-link${isActive ? ' active' : ''}" href="${link.href}">${link.label}</a>`;
-  }).join('\n          ');
+  const navHtml = navLinks
+    .map((link) => {
+      const isActive = path === link.match || (link.match !== '/pathogen/' && path.startsWith(link.match));
+      return `<a class="nav-link${isActive ? ' active' : ''}" href="${link.href}">${link.label}</a>`;
+    })
+    .join('\n          ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -257,7 +264,7 @@ const apiHandlers = {
             updatedAt: ws.updatedAt,
             thumbnailAt: ws.thumbnailAt || null,
           };
-        })
+        }),
       );
 
       // Filter out null values (deleted workspaces)
@@ -429,7 +436,7 @@ const apiHandlers = {
       // Remove from user's workspace list
       const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
       const workspaceIds = workspaceIdsJson ? JSON.parse(workspaceIdsJson) : [];
-      const updatedIds = workspaceIds.filter(wsId => wsId !== id);
+      const updatedIds = workspaceIds.filter((wsId) => wsId !== id);
       await env.WORKSPACES.put(`user:${userId}:workspaces`, JSON.stringify(updatedIds));
 
       // Remove from public index if it was public
@@ -597,7 +604,7 @@ const apiHandlers = {
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
       const sizes = ['1024', '512', '256'];
-      await Promise.all(sizes.map(s => env.THUMBNAILS.delete(`${id}/${s}.png`)));
+      await Promise.all(sizes.map((s) => env.THUMBNAILS.delete(`${id}/${s}.png`)));
 
       delete workspace.thumbnailAt;
       await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
@@ -733,7 +740,9 @@ async function handleApiRequest(request, env, apiPath) {
       try {
         const raw = await env.WORKSPACES.get('featured:workspaces');
         return jsonResponse(raw ? JSON.parse(raw) : []);
-      } catch { return jsonResponse([]); }
+      } catch {
+        return jsonResponse([]);
+      }
     }
 
     // POST /api/admin/featured — add workspace to featured list
@@ -748,7 +757,9 @@ async function handleApiRequest(request, env, apiPath) {
           await env.WORKSPACES.put('featured:workspaces', JSON.stringify(ids));
         }
         return jsonResponse(ids);
-      } catch (err) { return errorResponse('Failed: ' + err.message, 500); }
+      } catch (err) {
+        return errorResponse('Failed: ' + err.message, 500);
+      }
     }
 
     // PUT /api/admin/featured — reorder featured list
@@ -758,7 +769,9 @@ async function handleApiRequest(request, env, apiPath) {
         if (!Array.isArray(body.ids)) return errorResponse('Missing ids array');
         await env.WORKSPACES.put('featured:workspaces', JSON.stringify(body.ids));
         return jsonResponse(body.ids);
-      } catch (err) { return errorResponse('Failed: ' + err.message, 500); }
+      } catch (err) {
+        return errorResponse('Failed: ' + err.message, 500);
+      }
     }
 
     // DELETE /api/admin/featured/:id — remove from featured list
@@ -768,10 +781,12 @@ async function handleApiRequest(request, env, apiPath) {
         const removeId = featuredDeleteMatch[1];
         const raw = await env.WORKSPACES.get('featured:workspaces');
         const ids = raw ? JSON.parse(raw) : [];
-        const filtered = ids.filter(id => id !== removeId);
+        const filtered = ids.filter((id) => id !== removeId);
         await env.WORKSPACES.put('featured:workspaces', JSON.stringify(filtered));
         return jsonResponse(filtered);
-      } catch (err) { return errorResponse('Failed: ' + err.message, 500); }
+      } catch (err) {
+        return errorResponse('Failed: ' + err.message, 500);
+      }
     }
   }
 
@@ -788,7 +803,9 @@ async function renderExplorePage(request, env, url) {
   try {
     const raw = await env.WORKSPACES.get('public:workspaces');
     if (raw) workspaces = JSON.parse(raw);
-  } catch { /* empty index */ }
+  } catch {
+    /* empty index */
+  }
 
   const total = workspaces.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -799,12 +816,15 @@ async function renderExplorePage(request, env, url) {
   if (slice.length === 0) {
     cardsHtml = `<p style="text-align:center;color:var(--text-secondary);padding:3rem 0;">No public workspaces yet. Create one and make it public!</p>`;
   } else {
-    cardsHtml = `<div class="explore-grid">${slice.map(ws => {
-      const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
-      const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
-      const date = ws.updatedAt ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-      const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
-      return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
+    cardsHtml = `<div class="explore-grid">${slice
+      .map((ws) => {
+        const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
+        const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
+        const date = ws.updatedAt
+          ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : '';
+        const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
         <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
         <div class="explore-info">
           <h3>${escapeHtml(ws.name || 'Untitled')}</h3>
@@ -812,7 +832,8 @@ async function renderExplorePage(request, env, url) {
           ${date ? `<time>${date}</time>` : ''}
         </div>
       </a></article>`;
-    }).join('')}</div>`;
+      })
+      .join('')}</div>`;
   }
 
   // Pagination
@@ -916,37 +937,45 @@ async function renderFeaturedPage(request, env, url) {
   try {
     const raw = await env.WORKSPACES.get('featured:workspaces');
     if (raw) featuredIds = JSON.parse(raw);
-  } catch { /* empty */ }
+  } catch {
+    /* empty */
+  }
 
   // Fetch workspace metadata in parallel
-  const workspaces = (await Promise.all(
-    featuredIds.map(async (id) => {
-      try {
-        const raw = await env.WORKSPACES.get(`workspace:${id}`);
-        if (!raw) return null;
-        const ws = JSON.parse(raw);
-        if (!ws.isPublic) return null;
-        return ws;
-      } catch { return null; }
-    })
-  )).filter(Boolean);
+  const workspaces = (
+    await Promise.all(
+      featuredIds.map(async (id) => {
+        try {
+          const raw = await env.WORKSPACES.get(`workspace:${id}`);
+          if (!raw) return null;
+          const ws = JSON.parse(raw);
+          if (!ws.isPublic) return null;
+          return ws;
+        } catch {
+          return null;
+        }
+      }),
+    )
+  ).filter(Boolean);
 
   let cardsHtml;
   if (workspaces.length === 0) {
     cardsHtml = `<p style="text-align:center;color:var(--text-secondary);padding:3rem 0;">No featured workspaces yet. Check back soon!</p>`;
   } else {
-    cardsHtml = `<div class="featured-grid">${workspaces.map(ws => {
-      const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
-      const desc = ws.description ? ws.description.slice(0, 200) + (ws.description.length > 200 ? '...' : '') : '';
-      const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
-      return `<article class="featured-card-wrap"><a class="featured-card" href="${href}">
+    cardsHtml = `<div class="featured-grid">${workspaces
+      .map((ws) => {
+        const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
+        const desc = ws.description ? ws.description.slice(0, 200) + (ws.description.length > 200 ? '...' : '') : '';
+        const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        return `<article class="featured-card-wrap"><a class="featured-card" href="${href}">
         <div class="featured-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="featured-placeholder"></div>`}</div>
         <div class="featured-info">
           <h3>${escapeHtml(ws.name || 'Untitled')}</h3>
           ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
         </div>
       </a></article>`;
-    }).join('')}</div>`;
+      })
+      .join('')}</div>`;
   }
 
   const content = `
@@ -1023,10 +1052,12 @@ async function addToPublicIndex(env, workspace) {
   try {
     const raw = await env.WORKSPACES.get('public:workspaces');
     if (raw) index = JSON.parse(raw);
-  } catch { /* empty */ }
+  } catch {
+    /* empty */
+  }
 
   // Remove existing entry if present
-  index = index.filter(entry => entry.id !== workspace.id);
+  index = index.filter((entry) => entry.id !== workspace.id);
 
   // Prepend new entry
   index.unshift({
@@ -1047,9 +1078,11 @@ async function removeFromPublicIndex(env, workspaceId) {
   try {
     const raw = await env.WORKSPACES.get('public:workspaces');
     if (raw) index = JSON.parse(raw);
-  } catch { /* empty */ }
+  } catch {
+    /* empty */
+  }
 
-  const filtered = index.filter(entry => entry.id !== workspaceId);
+  const filtered = index.filter((entry) => entry.id !== workspaceId);
   if (filtered.length !== index.length) {
     await env.WORKSPACES.put('public:workspaces', JSON.stringify(filtered));
   }
@@ -1099,11 +1132,7 @@ export default {
     }
 
     // SPA routes under /pathogen/ that don't have file extensions
-    if (
-      path.startsWith('/pathogen/') &&
-      path !== '/pathogen/' &&
-      !/\.\w+$/.test(path)
-    ) {
+    if (path.startsWith('/pathogen/') && path !== '/pathogen/' && !/\.\w+$/.test(path)) {
       // Serve the SPA index.html
       url.pathname = '/pathogen/index.html';
       return env.ASSETS.fetch(url.toString());
@@ -1111,5 +1140,5 @@ export default {
 
     // For everything else, serve normally
     return env.ASSETS.fetch(request);
-  }
+  },
 };

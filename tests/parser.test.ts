@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { parse, extractComments, parseWithComments } from '../src/parser';
+import { describe, expect, it } from 'vitest';
+
+import { extractComments, parse, parseWithComments } from '../src/parser';
 
 describe('Parser', () => {
   describe('path commands', () => {
@@ -374,11 +375,17 @@ describe('Parser', () => {
       if (stmt.type === 'IfStatement') {
         // first else if
         const elseIf1 = stmt.alternate![0];
-        expect(elseIf1).toMatchObject({ type: 'IfStatement', condition: { type: 'BinaryExpression', left: { name: 'x' }, right: { value: 2 } } });
+        expect(elseIf1).toMatchObject({
+          type: 'IfStatement',
+          condition: { type: 'BinaryExpression', left: { name: 'x' }, right: { value: 2 } },
+        });
         // second else if
         if (elseIf1.type === 'IfStatement') {
           const elseIf2 = elseIf1.alternate![0];
-          expect(elseIf2).toMatchObject({ type: 'IfStatement', condition: { type: 'BinaryExpression', left: { name: 'x' }, right: { value: 3 } } });
+          expect(elseIf2).toMatchObject({
+            type: 'IfStatement',
+            condition: { type: 'BinaryExpression', left: { name: 'x' }, right: { value: 3 } },
+          });
           // final else
           if (elseIf2.type === 'IfStatement') {
             expect(elseIf2.alternate).toHaveLength(1);
@@ -622,7 +629,7 @@ L 10 20 // end point`;
     });
 
     it('parses layer name as expression', () => {
-      const ast = parse("define PathLayer(myVar) ${}");
+      const ast = parse('define PathLayer(myVar) ${}');
       const def = ast.body[0] as any;
       expect(def.name).toMatchObject({ type: 'Identifier', name: 'myVar' });
     });
@@ -695,7 +702,7 @@ L 10 20 // end point`;
     });
 
     it('parses apply block with variable name', () => {
-      const ast = parse("layer(name).apply { M 0 0 }");
+      const ast = parse('layer(name).apply { M 0 0 }');
       const block = ast.body[0] as any;
       expect(block.layerName).toMatchObject({ type: 'Identifier', name: 'name' });
     });

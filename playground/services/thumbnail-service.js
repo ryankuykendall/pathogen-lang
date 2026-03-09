@@ -128,7 +128,7 @@ async function processOnMainThread(bitmap) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, size, size);
       ctx.drawImage(src, 0, 0, size, size);
-      blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     }
 
     results[size] = blob;
@@ -155,7 +155,7 @@ async function generateThumbnail(workspaceId, svgElement, storeState, cropRegion
   if (_generating) {
     const start = Date.now();
     while (_generating && Date.now() - start < 30000) {
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 200));
     }
     if (_generating) {
       console.warn('Thumbnail generation timed out waiting for previous generation');
@@ -177,7 +177,9 @@ async function generateThumbnail(workspaceId, svgElement, storeState, cropRegion
       const canvasWidth = storeState.width || 200;
       const canvasHeight = storeState.height || 200;
 
-      let cropX, cropY, cropSize;
+      let cropX;
+      let cropY;
+      let cropSize;
       if (cropRegion) {
         cropX = cropRegion.x;
         cropY = cropRegion.y;
@@ -301,11 +303,13 @@ async function _tryAutoGenerate() {
   if (now - _lastAutoGenTime < MIN_AUTO_INTERVAL_MS) return;
 
   // We need an SVG element - dispatch a custom event to request it
-  document.dispatchEvent(new CustomEvent('thumbnail-auto-generate', {
-    bubbles: true,
-    composed: true,
-    detail: { workspaceId: _workspaceId },
-  }));
+  document.dispatchEvent(
+    new CustomEvent('thumbnail-auto-generate', {
+      bubbles: true,
+      composed: true,
+      detail: { workspaceId: _workspaceId },
+    }),
+  );
 }
 
 /**

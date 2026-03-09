@@ -43,7 +43,7 @@ export function createSvgSnapshot(svgElement, options = {}) {
       if (defs.children.length === 0) defs.remove();
     }
     // Remove grid rect
-    clone.querySelectorAll('rect[fill^="url(#"]').forEach(rect => {
+    clone.querySelectorAll('rect[fill^="url(#"]').forEach((rect) => {
       const fill = rect.getAttribute('fill');
       if (fill && fill.includes('grid')) rect.remove();
     });

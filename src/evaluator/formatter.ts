@@ -1,5 +1,5 @@
 // Formatter for annotated output
-import type { AnnotatedOutput, AnnotatedLine } from './annotated';
+import type { AnnotatedOutput } from './annotated';
 
 export interface FormatOptions {
   indentSize?: number;
@@ -23,7 +23,7 @@ export function formatAnnotated(output: AnnotatedOutput, options: FormatOptions 
 
       case 'path_command':
         if (line.args) {
-          lines.push(indent() + `${line.command} ${line.args}`);
+          lines.push(`${indent()}${line.command} ${line.args}`);
         } else {
           lines.push(indent() + line.command);
         }
@@ -31,22 +31,22 @@ export function formatAnnotated(output: AnnotatedOutput, options: FormatOptions 
 
       case 'loop_start':
         lines.push('');
-        lines.push(indent() + `//--- for (${line.variable} in ${line.start}..${line.end}) from line ${line.line}`);
+        lines.push(`${indent()}//--- for (${line.variable} in ${line.start}..${line.end}) from line ${line.line}`);
         indentLevel++;
         break;
 
       case 'foreach_start':
         lines.push('');
-        lines.push(indent() + `//--- for (${line.variable} in array[${line.length}]) from line ${line.line}`);
+        lines.push(`${indent()}//--- for (${line.variable} in array[${line.length}]) from line ${line.line}`);
         indentLevel++;
         break;
 
       case 'iteration':
-        lines.push(indent() + `//--- iteration ${line.index}`);
+        lines.push(`${indent()}//--- iteration ${line.index}`);
         break;
 
       case 'iteration_skip':
-        lines.push(indent() + `... ${line.count} more iterations ...`);
+        lines.push(`${indent()}... ${line.count} more iterations ...`);
         break;
 
       case 'loop_end':
@@ -54,7 +54,7 @@ export function formatAnnotated(output: AnnotatedOutput, options: FormatOptions 
         break;
 
       case 'function_call':
-        lines.push(indent() + `//--- ${line.name}(${line.args}) called from line ${line.line}`);
+        lines.push(`${indent()}//--- ${line.name}(${line.args}) called from line ${line.line}`);
         indentLevel++;
         break;
 

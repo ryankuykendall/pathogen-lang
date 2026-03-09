@@ -58,19 +58,28 @@ export class MiniPreview extends HTMLElement {
 
   // --- Public API ---
 
-  get width() { return this._width; }
+  get width() {
+    return this._width;
+  }
+
   set width(val) {
     this._width = val;
     this.updateSvgStyles();
   }
 
-  get height() { return this._height; }
+  get height() {
+    return this._height;
+  }
+
   set height(val) {
     this._height = val;
     this.updateSvgStyles();
   }
 
-  get background() { return this._background; }
+  get background() {
+    return this._background;
+  }
+
   set background(val) {
     this._background = val;
     this.updateSvgStyles();
@@ -292,8 +301,8 @@ export class MiniPreview extends HTMLElement {
     const { x: svgX, y: svgY } = this.screenToNavigatorSVG(e.clientX, e.clientY);
     const viewWidth = this._width / this._zoomLevel;
     const viewHeight = this._height / this._zoomLevel;
-    const inViewport = svgX >= this._panX && svgX <= this._panX + viewWidth &&
-                       svgY >= this._panY && svgY <= this._panY + viewHeight;
+    const inViewport =
+      svgX >= this._panX && svgX <= this._panX + viewWidth && svgY >= this._panY && svgY <= this._panY + viewHeight;
 
     if (inViewport) {
       this.isNavigatorDragging = true;
@@ -380,7 +389,7 @@ export class MiniPreview extends HTMLElement {
         const step = e.shiftKey ? 0.25 : 0.05;
         const direction = e.key === 'ArrowUp' ? 1 : -1;
         const oldZoom = this._zoomLevel;
-        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom + (step * direction)));
+        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom + step * direction));
         this.adjustPanForZoom(oldZoom, newZoom);
         this._zoomLevel = newZoom;
         this.updateViewBox();
@@ -391,28 +400,31 @@ export class MiniPreview extends HTMLElement {
     const container = this.shadowRoot.querySelector('#preview-container');
     const scrollHint = this.shadowRoot.querySelector('#scroll-hint');
     const isMac = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
-    scrollHint.querySelector('span').textContent = isMac
-      ? '\u2318 + scroll to zoom' : 'Ctrl + scroll to zoom';
+    scrollHint.querySelector('span').textContent = isMac ? '\u2318 + scroll to zoom' : 'Ctrl + scroll to zoom';
 
-    container.addEventListener('wheel', (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const dampening = 0.002;
-        const delta = -e.deltaY * dampening;
-        const oldZoom = this._zoomLevel;
-        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
-        this.adjustPanForZoom(oldZoom, newZoom);
-        this._zoomLevel = newZoom;
-        this.updateViewBox();
-      } else {
-        // Show hint briefly
-        scrollHint.classList.add('visible');
-        clearTimeout(this._scrollHintTimer);
-        this._scrollHintTimer = setTimeout(() => {
-          scrollHint.classList.remove('visible');
-        }, 800);
-      }
-    }, { passive: false });
+    container.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const dampening = 0.002;
+          const delta = -e.deltaY * dampening;
+          const oldZoom = this._zoomLevel;
+          const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
+          this.adjustPanForZoom(oldZoom, newZoom);
+          this._zoomLevel = newZoom;
+          this.updateViewBox();
+        } else {
+          // Show hint briefly
+          scrollHint.classList.add('visible');
+          clearTimeout(this._scrollHintTimer);
+          this._scrollHintTimer = setTimeout(() => {
+            scrollHint.classList.remove('visible');
+          }, 800);
+        }
+      },
+      { passive: false },
+    );
 
     // Pan via drag
     container.addEventListener('mousedown', (e) => this.startPan(e));

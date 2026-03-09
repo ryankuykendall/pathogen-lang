@@ -20,7 +20,7 @@ export const mathFunctions = {
   log: Math.log,
   log10: Math.log10,
   log2: Math.log2,
-  pow: Math.pow,
+  pow: (base: number, exp: number) => base ** exp,
   sqrt: Math.sqrt,
   cbrt: Math.cbrt,
 

@@ -28,8 +28,8 @@ docs-view {
 }
 
 /* Dark mode code blocks */
-[data-theme="dark"] docs-view,
-[data-active-theme="dark"] docs-view {
+[data-theme='dark'] docs-view,
+[data-active-theme='dark'] docs-view {
   --code-bg: #1e1e1e;
   --code-text: #d4d4d4;
 }

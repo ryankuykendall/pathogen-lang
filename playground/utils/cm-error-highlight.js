@@ -53,11 +53,14 @@ export function errorHighlightExtension(cmStateModule, cmViewModule) {
       }
       // On doc change, re-create decorations from stored error to survive full doc replacement
       if (tr.docChanged && state.error) {
-        return { error: state.error, decorations: buildDecorations(tr.state.doc, state.error.line, state.error.column) };
+        return {
+          error: state.error,
+          decorations: buildDecorations(tr.state.doc, state.error.line, state.error.column),
+        };
       }
       return state;
     },
-    provide: f => EditorView.decorations.from(f, s => s.decorations),
+    provide: (f) => EditorView.decorations.from(f, (s) => s.decorations),
   });
 
   return {

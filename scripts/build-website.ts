@@ -1,7 +1,8 @@
+import { promises as fs } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -66,25 +67,16 @@ async function build(): Promise<void> {
   const playgroundDirs = ['styles', 'components', 'state', 'utils', 'services', 'workers', 'gpu'];
   for (const dir of playgroundDirs) {
     console.log(`  Copying ${dir}/...`);
-    await copyDir(
-      join(ROOT, 'playground', dir),
-      join(playgroundDest, dir)
-    );
+    await copyDir(join(ROOT, 'playground', dir), join(playgroundDest, dir));
   }
 
   // Copy library dist (for global script tag)
   console.log('Copying library dist...');
   await fs.mkdir(join(playgroundDest, 'dist'), { recursive: true });
-  await copyFile(
-    join(ROOT, 'dist', 'index.global.js'),
-    join(playgroundDest, 'dist', 'index.global.js')
-  );
+  await copyFile(join(ROOT, 'dist', 'index.global.js'), join(playgroundDest, 'dist', 'index.global.js'));
   // Also copy source map if it exists
   try {
-    await copyFile(
-      join(ROOT, 'dist', 'index.global.js.map'),
-      join(playgroundDest, 'dist', 'index.global.js.map')
-    );
+    await copyFile(join(ROOT, 'dist', 'index.global.js.map'), join(playgroundDest, 'dist', 'index.global.js.map'));
   } catch {
     // Map file doesn't exist, that's fine
   }
@@ -92,16 +84,10 @@ async function build(): Promise<void> {
   // Copy worker file for async compilation
   console.log('Copying worker...');
   try {
-    await copyFile(
-      join(ROOT, 'dist', 'worker.worker.js'),
-      join(playgroundDest, 'dist', 'worker.worker.js')
-    );
+    await copyFile(join(ROOT, 'dist', 'worker.worker.js'), join(playgroundDest, 'dist', 'worker.worker.js'));
     // Also copy worker source map if it exists
     try {
-      await copyFile(
-        join(ROOT, 'dist', 'worker.worker.js.map'),
-        join(playgroundDest, 'dist', 'worker.worker.js.map')
-      );
+      await copyFile(join(ROOT, 'dist', 'worker.worker.js.map'), join(playgroundDest, 'dist', 'worker.worker.js.map'));
     } catch {
       // Map file doesn't exist, that's fine
     }
@@ -168,10 +154,10 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
   try {
     const blogDir = join(ROOT, 'website', 'blog');
     const blogFiles = await fs.readdir(blogDir);
-    blogSlugs = blogFiles
-      .filter(f => f.endsWith('.md'))
-      .map(f => f.replace('.md', ''));
-  } catch { /* no blog dir */ }
+    blogSlugs = blogFiles.filter((f) => f.endsWith('.md')).map((f) => f.replace('.md', ''));
+  } catch {
+    /* no blog dir */
+  }
 
   const blogUrls = [
     `  <url>
@@ -180,13 +166,15 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>`,
-    ...blogSlugs.map(slug =>
-      `  <url>
+    ...blogSlugs.map(
+      (slug) =>
+        `  <url>
     <loc>https://pedestal.design/pathogen/blog/${slug}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-  </url>`),
+  </url>`,
+    ),
   ];
 
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>

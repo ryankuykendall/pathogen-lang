@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compile } from '../src';
 
 describe('Gradients', () => {
@@ -36,7 +37,11 @@ describe('Gradients', () => {
         };
       `);
       expect(result.gradients[0].attrs).toEqual({
-        cx: '0.5', cy: '0.5', r: '0.5', fx: '0.3', fy: '0.3',
+        cx: '0.5',
+        cy: '0.5',
+        r: '0.5',
+        fx: '0.3',
+        fy: '0.3',
       });
     });
 
@@ -203,7 +208,7 @@ describe('Gradients', () => {
         let child = base.inherit('child');
       `);
       expect(result.gradients).toHaveLength(2);
-      const child = result.gradients.find(g => g.id === 'child');
+      const child = result.gradients.find((g) => g.id === 'child');
       expect(child).toBeDefined();
       expect(child!.href).toBe('base');
       expect(child!.stops).toHaveLength(0);
@@ -217,7 +222,7 @@ describe('Gradients', () => {
         let child = base.inherit('child2');
         child.gradientTransform = 'rotate(90)';
       `);
-      const child = result.gradients.find(g => g.id === 'child2');
+      const child = result.gradients.find((g) => g.id === 'child2');
       expect(child!.gradientTransform).toBe('rotate(90)');
       expect(child!.href).toBe('base2');
     });
@@ -229,7 +234,7 @@ describe('Gradients', () => {
         };
         let child = base.inherit('child3');
       `);
-      const child = result.gradients.find(g => g.id === 'child3');
+      const child = result.gradients.find((g) => g.id === 'child3');
       expect(child!.stops).toHaveLength(0);
       expect(child!.href).toBe('base3');
     });
@@ -344,7 +349,7 @@ describe('Gradients', () => {
         };
         g.interpolation = 'oklch';
       `);
-      const offsets = result.gradients[0].stops.map(s => s.offset);
+      const offsets = result.gradients[0].stops.map((s) => s.offset);
       for (let i = 1; i < offsets.length; i++) {
         expect(offsets[i]).toBeGreaterThanOrEqual(offsets[i - 1]);
       }
@@ -372,8 +377,8 @@ describe('Gradients', () => {
       `);
       const stops = result.gradients[0].stops;
       // The 0→0.1 span is small, should have fewer intermediates than 0.1→1
-      const stopsBeforePoint1 = stops.filter(s => s.offset <= 0.1);
-      const stopsAfterPoint1 = stops.filter(s => s.offset >= 0.1);
+      const stopsBeforePoint1 = stops.filter((s) => s.offset <= 0.1);
+      const stopsAfterPoint1 = stops.filter((s) => s.offset >= 0.1);
       expect(stopsAfterPoint1.length).toBeGreaterThan(stopsBeforePoint1.length);
     });
 
@@ -442,17 +447,21 @@ describe('Gradients', () => {
     });
 
     it('invalid interpolation value throws', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('bad', 0, 0, 1, 0);
         g.interpolation = 'rgb';
-      `)).toThrow(/interpolation/i);
+      `),
+      ).toThrow(/interpolation/i);
     });
 
     it('non-number steps throws', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('bad', 0, 0, 1, 0);
         g.steps = 'many';
-      `)).toThrow(/steps/i);
+      `),
+      ).toThrow(/steps/i);
     });
 
     it('settable inside trailing block', () => {
@@ -552,64 +561,80 @@ describe('Gradients', () => {
         };
       `);
       expect(result.cssProperties).toBeDefined();
-      expect(result.cssProperties.some(p => p.name === '--accent')).toBe(true);
+      expect(result.cssProperties.some((p) => p.name === '--accent')).toBe(true);
     });
   });
 
   describe('error cases', () => {
     it('duplicate gradient ID throws compile error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let a = LinearGradient('dup', 0, 0, 1, 0);
         let b = LinearGradient('dup', 0, 0, 0, 1);
-      `)).toThrow(/Duplicate defs ID 'dup'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'dup'/);
     });
 
     it('duplicate ID across gradient and mask throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let m = Mask('shared');
         let g = LinearGradient('shared', 0, 0, 1, 0);
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
 
     it('duplicate ID across gradient and clipPath throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let c = ClipPath('shared');
         let g = RadialGradient('shared', 0.5, 0.5, 0.5);
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
 
     it('wrong argument count for LinearGradient throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('bad', 0, 0);
-      `)).toThrow(/LinearGradient\(\) expects 5 arguments/);
+      `),
+      ).toThrow(/LinearGradient\(\) expects 5 arguments/);
     });
 
     it('wrong argument count for RadialGradient throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = RadialGradient('bad', 0.5);
-      `)).toThrow(/RadialGradient\(\) expects 4-6 arguments/);
+      `),
+      ).toThrow(/RadialGradient\(\) expects 4-6 arguments/);
     });
 
     it('non-string ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient(42, 0, 0, 1, 0);
-      `)).toThrow(/first argument must be a string/);
+      `),
+      ).toThrow(/first argument must be a string/);
     });
 
     it('non-number stop offset throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('bad', 0, 0, 1, 0) {|g|
           g.stop('half', Color('#000'));
         };
-      `)).toThrow(/stop\(\) offset must be a number/);
+      `),
+      ).toThrow(/stop\(\) offset must be a number/);
     });
 
     it('non-Color stop color throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('bad', 0, 0, 1, 0) {|g|
           g.stop(0, '#000');
         };
-      `)).toThrow(/stop\(\) color must be a Color value/);
+      `),
+      ).toThrow(/stop\(\) color must be a Color value/);
     });
   });
 
@@ -663,11 +688,13 @@ describe('Gradients', () => {
     });
 
     it('duplicate Pattern ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let dot = @{ circle(5, 5, 2) };
         let a = Pattern('dup', 0, 0, 10, 10) {|p| p.append(dot); };
         let b = Pattern('dup', 0, 0, 20, 20) {|p| p.append(dot); };
-      `)).toThrow(/Duplicate defs ID 'dup'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'dup'/);
     });
   });
 
@@ -711,7 +738,7 @@ describe('Gradients', () => {
         define PathLayer('bg') \${ fill: p; stroke: none; }
         layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
       `);
-      const bgLayer = result.layers.find(l => l.name === 'bg');
+      const bgLayer = result.layers.find((l) => l.name === 'bg');
       expect(bgLayer?.styles.fill).toBe('url(#dots)');
     });
   });
@@ -743,10 +770,12 @@ describe('Gradients', () => {
     });
 
     it('duplicate ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let a = ConicGradient('dup', 50, 50) {|g| g.stop(0, Color('#000')); };
         let b = ConicGradient('dup', 100, 100) {|g| g.stop(0, Color('#fff')); };
-      `)).toThrow(/Duplicate defs ID 'dup'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'dup'/);
     });
 
     it('inherit propagates conic fields', () => {
@@ -761,11 +790,11 @@ describe('Gradients', () => {
         parent.spread = 'repeat';
         let child = parent.inherit('c');
       `);
-      const child = result.gradients.find(g => g.id === 'c');
+      const child = result.gradients.find((g) => g.id === 'c');
       expect(child).toBeDefined();
       expect(child!.type).toBe('conic');
-      expect(child!.from).toBeCloseTo(135 * Math.PI / 180);
-      expect(child!.to).toBeCloseTo(405 * Math.PI / 180);
+      expect(child!.from).toBeCloseTo((135 * Math.PI) / 180);
+      expect(child!.to).toBeCloseTo((405 * Math.PI) / 180);
       expect(child!.direction).toBe('ccw');
       expect(child!.spread).toBe('repeat');
     });
@@ -792,8 +821,8 @@ describe('Gradients', () => {
         g.from = 135deg;
         g.to = 405deg;
       `);
-      expect(result.gradients[0].from).toBeCloseTo(135 * Math.PI / 180);
-      expect(result.gradients[0].to).toBeCloseTo(405 * Math.PI / 180);
+      expect(result.gradients[0].from).toBeCloseTo((135 * Math.PI) / 180);
+      expect(result.gradients[0].to).toBeCloseTo((405 * Math.PI) / 180);
     });
 
     it('direction defaults to cw', () => {
@@ -817,21 +846,25 @@ describe('Gradients', () => {
     });
 
     it('invalid direction throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 50, 50) {|g|
           g.stop(0, Color('#000'));
         };
         g.direction = 'up';
-      `)).toThrow(/ConicGradient direction must be 'cw' or 'ccw'/);
+      `),
+      ).toThrow(/ConicGradient direction must be 'cw' or 'ccw'/);
     });
 
     it('invalid spread throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 50, 50) {|g|
           g.stop(0, Color('#000'));
         };
         g.spread = 'mirror';
-      `)).toThrow(/ConicGradient spread must be 'clamp', 'repeat', or 'transparent'/);
+      `),
+      ).toThrow(/ConicGradient spread must be 'clamp', 'repeat', or 'transparent'/);
     });
 
     it('partial sweep with from/to', () => {
@@ -844,17 +877,19 @@ describe('Gradients', () => {
         g.to = 405deg;
       `);
       const grad = result.gradients[0];
-      expect(grad.from).toBeCloseTo(135 * Math.PI / 180);
-      expect(grad.to).toBeCloseTo(405 * Math.PI / 180);
+      expect(grad.from).toBeCloseTo((135 * Math.PI) / 180);
+      expect(grad.to).toBeCloseTo((405 * Math.PI) / 180);
     });
 
     it('bare number on from/to throws with helpful message', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 50, 50) {|g|
           g.stop(0, Color('#000'));
         };
         g.from = 135;
-      `)).toThrow(/requires an angle unit.*135deg/);
+      `),
+      ).toThrow(/requires an angle unit.*135deg/);
     });
 
     it('computed expression without unit is accepted', () => {
@@ -865,7 +900,7 @@ describe('Gradients', () => {
         };
         g.from = rad(135);
       `);
-      expect(result.gradients[0].from).toBeCloseTo(135 * Math.PI / 180);
+      expect(result.gradients[0].from).toBeCloseTo((135 * Math.PI) / 180);
     });
   });
 
@@ -906,7 +941,7 @@ describe('Gradients', () => {
       `);
       const grad = result.gradients[0];
       expect(grad.from).toBeCloseTo(Math.PI / 2);
-      expect(grad.to).toBeCloseTo(3 * Math.PI / 2);
+      expect(grad.to).toBeCloseTo((3 * Math.PI) / 2);
       expect(grad.direction).toBe('ccw');
       expect(grad.spread).toBe('transparent');
     });
@@ -950,7 +985,7 @@ describe('Gradients', () => {
         define PathLayer('bg') \${ fill: g; stroke: none; }
         layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
       `);
-      const bgLayer = result.layers.find(l => l.name === 'bg');
+      const bgLayer = result.layers.find((l) => l.name === 'bg');
       expect(bgLayer?.styles.fill).toBe('url(#wheel)');
     });
 
@@ -963,8 +998,8 @@ describe('Gradients', () => {
         g.from = -15deg;
         g.to = 15deg;
       `);
-      expect(result.gradients[0].from).toBeCloseTo(-15 * Math.PI / 180);
-      expect(result.gradients[0].to).toBeCloseTo(15 * Math.PI / 180);
+      expect(result.gradients[0].from).toBeCloseTo((-15 * Math.PI) / 180);
+      expect(result.gradients[0].to).toBeCloseTo((15 * Math.PI) / 180);
     });
 
     it('pi unit accepted for angles', () => {
@@ -990,45 +1025,55 @@ describe('Gradients', () => {
         g.to = 4.7124rad;
       `);
       expect(result.gradients[0].from).toBeCloseTo(Math.PI / 2, 2);
-      expect(result.gradients[0].to).toBeCloseTo(3 * Math.PI / 2, 2);
+      expect(result.gradients[0].to).toBeCloseTo((3 * Math.PI) / 2, 2);
     });
   });
 
   describe('Pattern and ConicGradient cross-type duplicate ID checks', () => {
     it('duplicate ID across Pattern and Mask throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let m = Mask('shared');
         let dot = @{ circle(5, 5, 2) };
         let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
 
     it('duplicate ID across Pattern and Gradient throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('shared', 0, 0, 1, 0);
         let dot = @{ circle(5, 5, 2) };
         let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
 
     it('duplicate ID across ConicGradient and Pattern throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let dot = @{ circle(5, 5, 2) };
         let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
         let g = ConicGradient('shared', 50, 50) {|g| g.stop(0, Color('#000')); };
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
 
     it('wrong argument count for Pattern throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let p = Pattern('bad', 0, 0);
-      `)).toThrow(/Pattern\(\) expects 5 arguments/);
+      `),
+      ).toThrow(/Pattern\(\) expects 5 arguments/);
     });
 
     it('wrong argument count for ConicGradient throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('bad', 50);
-      `)).toThrow(/ConicGradient\(\) expects 3 arguments/);
+      `),
+      ).toThrow(/ConicGradient\(\) expects 3 arguments/);
     });
   });
 
@@ -1067,21 +1112,25 @@ describe('Gradients', () => {
     });
 
     it('rejects negative values', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 100, 100) {|g|
           g.stop(0, Color('#000'));
         };
         g.innerRadius = -10;
-      `)).toThrow(/innerRadius must be >= 0/);
+      `),
+      ).toThrow(/innerRadius must be >= 0/);
     });
 
     it('rejects non-number values', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 100, 100) {|g|
           g.stop(0, Color('#000'));
         };
         g.innerRadius = 'big';
-      `)).toThrow(/innerRadius must be a number/);
+      `),
+      ).toThrow(/innerRadius must be a number/);
     });
 
     it('propagates via inherit', () => {
@@ -1095,7 +1144,7 @@ describe('Gradients', () => {
         log(child.innerRadius)
       `);
       expect(result.logs[0].parts[0].value).toBe('20');
-      const child = result.gradients.find(g => g.id === 'c');
+      const child = result.gradients.find((g) => g.id === 'c');
       expect(child!.innerRadius).toBe(20);
     });
 
@@ -1124,8 +1173,8 @@ describe('Gradients', () => {
       `);
       const grad = result.gradients[0];
       expect(grad.innerRadius).toBe(30);
-      expect(grad.from).toBeCloseTo(135 * Math.PI / 180);
-      expect(grad.to).toBeCloseTo(405 * Math.PI / 180);
+      expect(grad.from).toBeCloseTo((135 * Math.PI) / 180);
+      expect(grad.to).toBeCloseTo((405 * Math.PI) / 180);
     });
 
     it('combined: innerRadius + spread transparent', () => {
@@ -1225,21 +1274,25 @@ describe('Gradients', () => {
     });
 
     it('rejects invalid string values', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 100, 100) {|g|
           g.stop(0, Color('#000'));
         };
         g.innerFill = 'blur';
-      `)).toThrow(/innerFill must be 'transparent', 'transparent-blend', 'center', or a Color/);
+      `),
+      ).toThrow(/innerFill must be 'transparent', 'transparent-blend', 'center', or a Color/);
     });
 
     it('rejects number values', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 100, 100) {|g|
           g.stop(0, Color('#000'));
         };
         g.innerFill = 42;
-      `)).toThrow(/innerFill must be 'transparent', 'transparent-blend', 'center', or a Color/);
+      `),
+      ).toThrow(/innerFill must be 'transparent', 'transparent-blend', 'center', or a Color/);
     });
 
     it('propagates via inherit', () => {
@@ -1303,35 +1356,32 @@ describe('Gradients', () => {
     });
 
     it('validates 5 arguments are required', () => {
-      expect(() => compile(`let g = MeshGradient('m', 200, 100, 3);`))
-        .toThrow(/MeshGradient\(\) expects 5 arguments/);
+      expect(() => compile(`let g = MeshGradient('m', 200, 100, 3);`)).toThrow(/MeshGradient\(\) expects 5 arguments/);
     });
 
     it('validates id is a string', () => {
-      expect(() => compile(`let g = MeshGradient(123, 200, 100, 3, 2);`))
-        .toThrow(/first argument must be a string/);
+      expect(() => compile(`let g = MeshGradient(123, 200, 100, 3, 2);`)).toThrow(/first argument must be a string/);
     });
 
     it('validates width/height/cols/rows are numbers', () => {
-      expect(() => compile(`let g = MeshGradient('m', 'w', 100, 3, 2);`))
-        .toThrow(/must be numbers/);
+      expect(() => compile(`let g = MeshGradient('m', 'w', 100, 3, 2);`)).toThrow(/must be numbers/);
     });
 
     it('rejects cols < 2', () => {
-      expect(() => compile(`let g = MeshGradient('m', 200, 100, 1, 2);`))
-        .toThrow(/cols and rows must be >= 2/);
+      expect(() => compile(`let g = MeshGradient('m', 200, 100, 1, 2);`)).toThrow(/cols and rows must be >= 2/);
     });
 
     it('rejects rows < 2', () => {
-      expect(() => compile(`let g = MeshGradient('m', 200, 100, 3, 1);`))
-        .toThrow(/cols and rows must be >= 2/);
+      expect(() => compile(`let g = MeshGradient('m', 200, 100, 3, 1);`)).toThrow(/cols and rows must be >= 2/);
     });
 
     it('duplicate ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let a = MeshGradient('dup', 200, 100, 3, 2) {|g| g.colorAll(Color('#000')); };
         let b = MeshGradient('dup', 200, 100, 3, 2) {|g| g.colorAll(Color('#fff')); };
-      `)).toThrow(/Duplicate defs ID 'dup'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'dup'/);
     });
   });
 
@@ -1343,8 +1393,8 @@ describe('Gradients', () => {
         };
       `);
       const grid = result.gradients[0].meshGrid!;
-      expect(grid).toHaveLength(2);       // 2 rows
-      expect(grid[0]).toHaveLength(3);    // 3 cols
+      expect(grid).toHaveLength(2); // 2 rows
+      expect(grid[0]).toHaveLength(3); // 3 cols
       expect(grid[1]).toHaveLength(3);
     });
 
@@ -1390,19 +1440,23 @@ describe('Gradients', () => {
     });
 
     it('validates ColorValue argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           g.colorAll(42);
         };
-      `)).toThrow(/must be a Color value/);
+      `),
+      ).toThrow(/must be a Color value/);
     });
 
     it('only available on mesh gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('lg', 0, 0, 1, 1) {|g|
           g.colorAll(Color('#000'));
         };
-      `)).toThrow(/colorAll\(\) is only available on MeshGradient/);
+      `),
+      ).toThrow(/colorAll\(\) is only available on MeshGradient/);
     });
   });
 
@@ -1423,35 +1477,43 @@ describe('Gradients', () => {
     });
 
     it('validates 2 arguments', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           let pt = g.getPoint(0);
         };
-      `)).toThrow(/expects 2 arguments/);
+      `),
+      ).toThrow(/expects 2 arguments/);
     });
 
     it('bounds checks row', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           let pt = g.getPoint(5, 0);
         };
-      `)).toThrow(/out of bounds/);
+      `),
+      ).toThrow(/out of bounds/);
     });
 
     it('bounds checks col', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           let pt = g.getPoint(0, 5);
         };
-      `)).toThrow(/out of bounds/);
+      `),
+      ).toThrow(/out of bounds/);
     });
 
     it('only available on mesh gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('lg', 0, 0, 1, 1) {|g|
           let pt = g.getPoint(0, 0);
         };
-      `)).toThrow(/getPoint\(\) is only available on MeshGradient/);
+      `),
+      ).toThrow(/getPoint\(\) is only available on MeshGradient/);
     });
   });
 
@@ -1475,11 +1537,13 @@ describe('Gradients', () => {
     });
 
     it('bounds checks row index', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           let row = g.getRow(5);
         };
-      `)).toThrow(/out of bounds/);
+      `),
+      ).toThrow(/out of bounds/);
     });
   });
 
@@ -1502,11 +1566,13 @@ describe('Gradients', () => {
     });
 
     it('bounds checks col index', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           let col = g.getCol(5);
         };
-      `)).toThrow(/out of bounds/);
+      `),
+      ).toThrow(/out of bounds/);
     });
   });
 
@@ -1547,12 +1613,14 @@ describe('Gradients', () => {
     });
 
     it('.color set validates ColorValue', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           let pt = g.getPoint(0, 0);
           pt.color = 'red';
         };
-      `)).toThrow(/color must be a Color value/);
+      `),
+      ).toThrow(/color must be a Color value/);
     });
 
     it('.translate() moves point position', () => {
@@ -1564,8 +1632,8 @@ describe('Gradients', () => {
         };
       `);
       const grid = result.gradients[0].meshGrid!;
-      expect(grid[0][0].x).toBe(10);    // 0 + 10
-      expect(grid[0][0].y).toBe(-5);    // 0 + (-5)
+      expect(grid[0][0].x).toBe(10); // 0 + 10
+      expect(grid[0][0].y).toBe(-5); // 0 + (-5)
     });
 
     it('mutations propagate to gradient output', () => {
@@ -1577,8 +1645,8 @@ describe('Gradients', () => {
         };
       `);
       const grid = result.gradients[0].meshGrid!;
-      expect(grid[0][1].x).toBe(105);   // 100 + 5
-      expect(grid[0][1].y).toBe(5);     // 0 + 5
+      expect(grid[0][1].x).toBe(105); // 100 + 5
+      expect(grid[0][1].y).toBe(5); // 0 + 5
       expect(grid[0][1].color).not.toMatch(/oklch\(0 0 0 \/ 0\)/);
     });
   });
@@ -1716,25 +1784,24 @@ describe('Gradients', () => {
     });
 
     it('validates 3 arguments are required', () => {
-      expect(() => compile(`let g = FreeformGradient('f', 200);`))
-        .toThrow(/FreeformGradient\(\) expects 3 arguments/);
+      expect(() => compile(`let g = FreeformGradient('f', 200);`)).toThrow(/FreeformGradient\(\) expects 3 arguments/);
     });
 
     it('validates id is a string', () => {
-      expect(() => compile(`let g = FreeformGradient(42, 200, 100);`))
-        .toThrow(/first argument must be a string/);
+      expect(() => compile(`let g = FreeformGradient(42, 200, 100);`)).toThrow(/first argument must be a string/);
     });
 
     it('validates width/height are numbers', () => {
-      expect(() => compile(`let g = FreeformGradient('f', 'w', 100);`))
-        .toThrow(/must be numbers/);
+      expect(() => compile(`let g = FreeformGradient('f', 'w', 100);`)).toThrow(/must be numbers/);
     });
 
     it('duplicate ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let a = FreeformGradient('dup', 200, 100) {|g| g.point(0, 0, Color('#000')); };
         let b = FreeformGradient('dup', 200, 100) {|g| g.point(0, 0, Color('#fff')); };
-      `)).toThrow(/Duplicate defs ID 'dup'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'dup'/);
     });
   });
 
@@ -1754,35 +1821,43 @@ describe('Gradients', () => {
     });
 
     it('validates 3 arguments', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = FreeformGradient('fg', 200, 100) {|g|
           g.point(50, 50);
         };
-      `)).toThrow(/expects 3 arguments/);
+      `),
+      ).toThrow(/expects 3 arguments/);
     });
 
     it('validates x/y are numbers', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = FreeformGradient('fg', 200, 100) {|g|
           g.point('a', 50, Color('#000'));
         };
-      `)).toThrow(/must be numbers/);
+      `),
+      ).toThrow(/must be numbers/);
     });
 
     it('validates color is ColorValue', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = FreeformGradient('fg', 200, 100) {|g|
           g.point(50, 50, '#000');
         };
-      `)).toThrow(/must be a Color value/);
+      `),
+      ).toThrow(/must be a Color value/);
     });
 
     it('only available on freeform gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('lg', 0, 0, 1, 1) {|g|
           g.point(50, 50, Color('#000'));
         };
-      `)).toThrow(/point\(\) is only available on FreeformGradient/);
+      `),
+      ).toThrow(/point\(\) is only available on FreeformGradient/);
     });
   });
 
@@ -1809,30 +1884,36 @@ describe('Gradients', () => {
     });
 
     it('rejects non-number', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = FreeformGradient('fg', 200, 100) {|g|
           g.point(50, 50, Color('#000'));
         };
         g.falloff = 'high';
-      `)).toThrow(/falloff must be a number/);
+      `),
+      ).toThrow(/falloff must be a number/);
     });
 
     it('rejects <= 0', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = FreeformGradient('fg', 200, 100) {|g|
           g.point(50, 50, Color('#000'));
         };
         g.falloff = 0;
-      `)).toThrow(/falloff must be positive/);
+      `),
+      ).toThrow(/falloff must be positive/);
     });
 
     it('only settable on freeform gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = ConicGradient('cg', 50, 50) {|g|
           g.stop(0, Color('#000'));
         };
         g.falloff = 2.5;
-      `)).toThrow(/falloff.*only available on FreeformGradient/);
+      `),
+      ).toThrow(/falloff.*only available on FreeformGradient/);
     });
   });
 
@@ -1934,8 +2015,8 @@ describe('Gradients', () => {
           g.point(50, 50, Color('#000'));
         };
       `);
-      const warningLog = result.logs.find(l =>
-        l.parts.some(p => typeof p.value === 'string' && p.value.includes('fewer than 2 points'))
+      const warningLog = result.logs.find((l) =>
+        l.parts.some((p) => typeof p.value === 'string' && p.value.includes('fewer than 2 points')),
       );
       expect(warningLog).toBeDefined();
     });
@@ -1956,17 +2037,21 @@ describe('Gradients', () => {
 
   describe('Mesh/Freeform cross-type duplicate ID checks', () => {
     it('MeshGradient cannot reuse LinearGradient ID', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let lg = LinearGradient('shared', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         let mg = MeshGradient('shared', 100, 100, 2, 2) {|g| g.colorAll(Color('#000')); };
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
 
     it('FreeformGradient cannot reuse ConicGradient ID', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let cg = ConicGradient('shared', 50, 50) {|g| g.stop(0, Color('#000')); };
         let fg = FreeformGradient('shared', 200, 100) {|g| g.point(0, 0, Color('#000')); };
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
   });
 
@@ -1988,26 +2073,25 @@ describe('Gradients', () => {
     });
 
     it('validates 3 arguments are required', () => {
-      expect(() => compile(`let g = TopoGradient('t', 200);`))
-        .toThrow(/TopoGradient\(\) expects 3 arguments/);
+      expect(() => compile(`let g = TopoGradient('t', 200);`)).toThrow(/TopoGradient\(\) expects 3 arguments/);
     });
 
     it('validates id is a string', () => {
-      expect(() => compile(`let g = TopoGradient(42, 200, 100);`))
-        .toThrow(/first argument must be a string/);
+      expect(() => compile(`let g = TopoGradient(42, 200, 100);`)).toThrow(/first argument must be a string/);
     });
 
     it('validates width/height are numbers', () => {
-      expect(() => compile(`let g = TopoGradient('t', 'w', 100);`))
-        .toThrow(/must be numbers/);
+      expect(() => compile(`let g = TopoGradient('t', 'w', 100);`)).toThrow(/must be numbers/);
     });
 
     it('duplicate ID throws error', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 50); closePath() };
         let a = TopoGradient('dup', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#000')); };
         let b = TopoGradient('dup', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#fff')); };
-      `)).toThrow(/Duplicate defs ID 'dup'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'dup'/);
     });
 
     it('defaults easing to linear and method to distance', () => {
@@ -2022,11 +2106,13 @@ describe('Gradients', () => {
     });
 
     it('TopoGradient cannot reuse existing gradient ID', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let lg = LinearGradient('shared', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         let s = @{ circle(0, 0, 50); closePath() };
         let tg = TopoGradient('shared', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#000')); };
-      `)).toThrow(/Duplicate defs ID 'shared'/);
+      `),
+      ).toThrow(/Duplicate defs ID 'shared'/);
     });
   });
 
@@ -2049,83 +2135,101 @@ describe('Gradients', () => {
     });
 
     it('validates 3 arguments', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 0.5);
         };
-      `)).toThrow(/expects 3 arguments/);
+      `),
+      ).toThrow(/expects 3 arguments/);
     });
 
     it('validates first argument is ProjectedPathValue', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore, 0.5, Color('#000'));
         };
-      `)).toThrow(/must be a ProjectedPathValue/);
+      `),
+      ).toThrow(/must be a ProjectedPathValue/);
     });
 
     it('rejects string as first argument', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour('path', 0.5, Color('#000'));
         };
-      `)).toThrow(/must be a ProjectedPathValue/);
+      `),
+      ).toThrow(/must be a ProjectedPathValue/);
     });
 
     it('validates elevation is a number', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 'high', Color('#000'));
         };
-      `)).toThrow(/elevation must be a number/);
+      `),
+      ).toThrow(/elevation must be a number/);
     });
 
     it('rejects elevation < 0', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), -0.1, Color('#000'));
         };
-      `)).toThrow(/elevation must be between 0 and 1/);
+      `),
+      ).toThrow(/elevation must be between 0 and 1/);
     });
 
     it('rejects elevation > 1', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 1.5, Color('#000'));
         };
-      `)).toThrow(/elevation must be between 0 and 1/);
+      `),
+      ).toThrow(/elevation must be between 0 and 1/);
     });
 
     it('validates third argument is Color', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 0.5, '#000');
         };
-      `)).toThrow(/must be a Color value/);
+      `),
+      ).toThrow(/must be a Color value/);
     });
 
     it('rejects open paths (not ending with closePath)', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let openPath = @{ moveTo(0, 0); lineTo(100, 0); lineTo(100, 100) };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(openPath.project(50, 50), 0.5, Color('#000'));
         };
-      `)).toThrow(/path must be closed/);
+      `),
+      ).toThrow(/path must be closed/);
     });
 
     it('only available on topo gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let shore = @{ circle(0, 0, 100); closePath() };
         let g = LinearGradient('lg', 0, 0, 1, 1) {|g|
           g.contour(shore.project(100, 50), 0.5, Color('#000'));
         };
-      `)).toThrow(/\.contour\(\) is only available on TopoGradient/);
+      `),
+      ).toThrow(/\.contour\(\) is only available on TopoGradient/);
     });
 
     it('contour path is serialized as absolute d-string', () => {
@@ -2193,20 +2297,24 @@ describe('Gradients', () => {
     });
 
     it('easing rejects invalid values', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.easing = 'cubic';
-      `)).toThrow(/easing must be one of/);
+      `),
+      ).toThrow(/easing must be one of/);
     });
 
     it('easing only settable on topo gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         lg.easing = 'smoothstep';
-      `)).toThrow(/only available on TopoGradient/);
+      `),
+      ).toThrow(/only available on TopoGradient/);
     });
 
     it('method defaults to distance', () => {
@@ -2231,10 +2339,12 @@ describe('Gradients', () => {
     });
 
     it('method only settable on topo gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         lg.method = 'distance';
-      `)).toThrow(/only available on TopoGradient/);
+      `),
+      ).toThrow(/only available on TopoGradient/);
     });
 
     it('width, height, id are readable', () => {
@@ -2275,20 +2385,24 @@ describe('Gradients', () => {
     });
 
     it('baseColor rejects non-Color values', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.baseColor = '#1a5276';
-      `)).toThrow(/must be a Color value/);
+      `),
+      ).toThrow(/must be a Color value/);
     });
 
     it('baseColor only settable on topo gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         lg.baseColor = Color('#fff');
-      `)).toThrow(/only available on TopoGradient/);
+      `),
+      ).toThrow(/only available on TopoGradient/);
     });
 
     it('iterations defaults to 200', () => {
@@ -2315,33 +2429,39 @@ describe('Gradients', () => {
     });
 
     it('iterations must be a number', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.iterations = 'many';
-      `)).toThrow(/iterations must be a number/);
+      `),
+      ).toThrow(/iterations must be a number/);
     });
 
     it('iterations rejects 0 (below range)', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.iterations = 0;
-      `)).toThrow(/iterations must be between 1 and 2000/);
+      `),
+      ).toThrow(/iterations must be between 1 and 2000/);
     });
 
     it('iterations rejects 3000 (above range)', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.iterations = 3000;
-      `)).toThrow(/iterations must be between 1 and 2000/);
+      `),
+      ).toThrow(/iterations must be between 1 and 2000/);
     });
 
     it('iterations rounds to integer', () => {
@@ -2356,10 +2476,12 @@ describe('Gradients', () => {
     });
 
     it('iterations only settable on topo gradients', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let lg = LinearGradient('lg', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
         lg.iterations = 100;
-      `)).toThrow(/only available on TopoGradient/);
+      `),
+      ).toThrow(/only available on TopoGradient/);
     });
 
     it('laplace + custom iterations both in output', () => {
@@ -2413,40 +2535,48 @@ describe('Gradients', () => {
     });
 
     it('blend must be a number', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.blend = "high";
-      `)).toThrow(/blend must be a number/);
+      `),
+      ).toThrow(/blend must be a number/);
     });
 
     it('blend range 0 to 1', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.blend = -0.1;
-      `)).toThrow(/blend must be between 0 and 1/);
-      expect(() => compile(`
+      `),
+      ).toThrow(/blend must be between 0 and 1/);
+      expect(() =>
+        compile(`
         let s = @{ circle(0, 0, 100); closePath() };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.blend = 1.5;
-      `)).toThrow(/blend must be between 0 and 1/);
+      `),
+      ).toThrow(/blend must be between 0 and 1/);
     });
 
     it('blend only on topo', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = LinearGradient('g', 0, 0, 1, 0) {|g|
           g.stop(0, Color('#000'))
           g.stop(1, Color('#fff'))
         };
         g.blend = 0.5;
-      `)).toThrow(/only available on TopoGradient/);
+      `),
+      ).toThrow(/only available on TopoGradient/);
     });
   });
 
@@ -2498,7 +2628,7 @@ describe('Gradients', () => {
       const result = compile(`
         let topo = TopoGradient('t', 400, 300) {|g| };
       `);
-      const warns = result.logs.filter(l => l.parts[0].value.includes('no contours'));
+      const warns = result.logs.filter((l) => l.parts[0].value.includes('no contours'));
       expect(warns.length).toBe(1);
     });
   });

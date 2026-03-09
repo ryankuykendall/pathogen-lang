@@ -1,8 +1,9 @@
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { basename, dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { readFileSync, existsSync, statSync, readdirSync, mkdirSync } from 'fs';
-import { join, basename, dirname, relative } from 'path';
-import { fileURLToPath } from 'url';
-import { spawnSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..');
@@ -17,9 +18,7 @@ function autoDetectDimensions(source: string): {
   height: string;
 } {
   // Pattern 1: "Set viewBox: W x H, width: W, height: H"
-  const setMatch = source.match(
-    /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i
-  );
+  const setMatch = /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i.exec(source);
   if (setMatch) {
     return {
       viewBox: `0 0 ${setMatch[1]} ${setMatch[2]}`,
@@ -29,7 +28,7 @@ function autoDetectDimensions(source: string): {
   }
 
   // Pattern 2: viewBox="x y w h"
-  const vbMatch = source.match(/viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i);
+  const vbMatch = /viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i.exec(source);
   if (vbMatch) {
     const parts = vbMatch[1].split(/\s+/);
     return { viewBox: vbMatch[1], width: parts[2], height: parts[3] };
@@ -55,19 +54,17 @@ function findSamples(postFilter?: number): string[] {
   }
 
   const dirs = readdirSync(SAMPLES_DIR, { withFileTypes: true })
-    .filter(d => d.isDirectory() && d.name.startsWith('post'))
-    .map(d => d.name)
+    .filter((d) => d.isDirectory() && d.name.startsWith('post'))
+    .map((d) => d.name)
     .sort();
 
-  const filtered = postFilter
-    ? dirs.filter(d => d === `post${postFilter}`)
-    : dirs;
+  const filtered = postFilter ? dirs.filter((d) => d === `post${postFilter}`) : dirs;
 
   const files: string[] = [];
   for (const dir of filtered) {
     const dirPath = join(SAMPLES_DIR, dir);
     const entries = readdirSync(dirPath)
-      .filter(f => f.endsWith('.pathogen'))
+      .filter((f) => f.endsWith('.pathogen'))
       .sort();
     for (const entry of entries) {
       files.push(join(dirPath, entry));

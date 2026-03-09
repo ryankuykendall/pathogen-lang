@@ -50,11 +50,13 @@ export class CssvarPanel extends HTMLElement {
   }
 
   _emitOverride(varName, value) {
-    this.dispatchEvent(new CustomEvent('cssvar-override', {
-      bubbles: true,
-      composed: true,
-      detail: { varName, value },
-    }));
+    this.dispatchEvent(
+      new CustomEvent('cssvar-override', {
+        bubbles: true,
+        composed: true,
+        detail: { varName, value },
+      }),
+    );
   }
 
   _resetAll() {
@@ -194,7 +196,7 @@ export class CssvarPanel extends HTMLElement {
 
     // Conic gradient warning: CSS vars are baked at render time for rasterized conic gradients
     const gradients = store.get('gradients') || [];
-    const hasConic = gradients.some(g => g.type === 'conic');
+    const hasConic = gradients.some((g) => g.type === 'conic');
     const existingNote = list.querySelector('.conic-warning');
     if (existingNote) existingNote.remove();
     if (hasConic && varMap.size > 0) {

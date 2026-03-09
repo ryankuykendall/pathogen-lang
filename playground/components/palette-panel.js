@@ -2,9 +2,7 @@
 
 import { store } from '../state/store.js';
 
-const COLOR_PROPERTIES = new Set([
-  'stroke', 'fill', 'color', 'stop-color', 'flood-color',
-]);
+const COLOR_PROPERTIES = new Set(['stroke', 'fill', 'color', 'stop-color', 'flood-color']);
 
 const SKIP_VALUES = new Set(['none', 'inherit', 'transparent', 'currentColor']);
 
@@ -89,16 +87,15 @@ export class PalettePanel extends HTMLElement {
         const urlMatch = entry.value.match(/^url\(#(.+?)\)$/);
         if (urlMatch) {
           const gradients = store.get('gradients') || [];
-          let grad = gradients.find(g => g.id === urlMatch[1]);
+          let grad = gradients.find((g) => g.id === urlMatch[1]);
           // Walk href chain for inherited gradients
           while (grad && grad.stops.length === 0 && grad.href) {
-            grad = gradients.find(g => g.id === grad.href) || null;
+            grad = gradients.find((g) => g.id === grad.href) || null;
           }
           if (grad && grad.stops.length > 0) {
-            const stops = grad.stops.map(s => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
-            const cssGrad = grad.type === 'radial'
-              ? `radial-gradient(circle, ${stops})`
-              : `linear-gradient(to right, ${stops})`;
+            const stops = grad.stops.map((s) => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
+            const cssGrad =
+              grad.type === 'radial' ? `radial-gradient(circle, ${stops})` : `linear-gradient(to right, ${stops})`;
             swatch.style.background = cssGrad;
             swatch.style.borderRadius = '2px';
           } else {

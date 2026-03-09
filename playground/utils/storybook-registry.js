@@ -11,19 +11,22 @@ export const componentRegistry = [
     stories: [
       {
         name: 'Default',
-        props: { code: 'let r = 50;\ncircle(100, 100, r)' }
+        props: { code: 'let r = 50;\ncircle(100, 100, r)' },
       },
       {
         name: 'Complex Example',
-        props: { code: '// Star pattern\nlet n = 5;\nlet outer = 80;\nlet inner = 30;\nstar(100, 100, outer, inner, n)' }
+        props: {
+          code: '// Star pattern\nlet n = 5;\nlet outer = 80;\nlet inner = 30;\nstar(100, 100, outer, inner, n)',
+        },
       },
       {
         name: 'Empty',
-        props: { code: '' }
+        props: { code: '' },
       },
       {
         name: 'Color Formats',
-        props: { code: `// Color formats demo
+        props: {
+          code: `// Color formats demo
 define PathLayer('hex') \${ stroke: #e63946; fill: #a8dadc; }
 define PathLayer('rgb') \${ stroke: rgb(230, 57, 70); fill: rgba(168, 218, 220, 0.8); }
 define PathLayer('hsl') \${ stroke: hsl(355, 78%, 56%); fill: hsla(184, 40%, 76%, 0.8); }
@@ -38,12 +41,11 @@ let custom = Color('oklch(0.7 0.15 180)');
 // CSSVar with color fallback
 let themed = CSSVar('--accent', '#10b981');
 
-layer('hex').apply { circle(60, 100, 40) }` }
-      }
+layer('hex').apply { circle(60, 100, 40) }`,
+        },
+      },
     ],
-    controls: [
-      { name: 'code', type: 'textarea', label: 'Code', default: 'let r = 50;\ncircle(100, 100, r)' }
-    ],
+    controls: [{ name: 'code', type: 'textarea', label: 'Code', default: 'let r = 50;\ncircle(100, 100, r)' }],
     render: (container, props, controls) => {
       const editor = document.createElement('code-editor-pane');
       editor.style.height = '300px';
@@ -56,7 +58,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
       controls.on('code', (value) => {
         editor.code = value;
       });
-    }
+    },
   },
   {
     id: 'svg-preview-pane',
@@ -66,21 +68,26 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default',
-        props: { pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100' }
+        props: { pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100' },
       },
       {
         name: 'Complex Path',
-        props: { pathData: 'M 100 10 L 40 198 L 190 78 L 10 78 L 160 198 Z' }
+        props: { pathData: 'M 100 10 L 40 198 L 190 78 L 10 78 L 160 198 Z' },
       },
       {
         name: 'Empty',
-        props: { pathData: '' }
-      }
+        props: { pathData: '' },
+      },
     ],
     controls: [
-      { name: 'pathData', type: 'textarea', label: 'Path Data', default: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100' },
+      {
+        name: 'pathData',
+        type: 'textarea',
+        label: 'Path Data',
+        default: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100',
+      },
       { name: 'width', type: 'number', label: 'Width', default: 200, min: 50, max: 1000 },
-      { name: 'height', type: 'number', label: 'Height', default: 200, min: 50, max: 1000 }
+      { name: 'height', type: 'number', label: 'Height', default: 200, min: 50, max: 1000 },
     ],
     render: (container, props, controls) => {
       // Need to import store for svg-preview-pane
@@ -88,7 +95,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
         store.update({
           width: props.width || 200,
           height: props.height || 200,
-          pathData: props.pathData || ''
+          pathData: props.pathData || '',
         });
 
         const preview = document.createElement('svg-preview-pane');
@@ -112,7 +119,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
           store.set('height', value);
         });
       });
-    }
+    },
   },
   {
     id: 'layers-panel',
@@ -126,18 +133,16 @@ layer('hex').apply { circle(60, 100, 40) }` }
           layers: [
             { name: 'grid', type: 'path', data: '', styles: { stroke: '#dddddd', 'stroke-width': '0.5' } },
             { name: 'shape', type: 'path', data: '', styles: { stroke: '#333333', 'stroke-width': '2' } },
-            { name: 'labels', type: 'text', data: '', styles: { fill: '#666666' }, textElements: [] }
-          ]
-        }
+            { name: 'labels', type: 'text', data: '', styles: { fill: '#666666' }, textElements: [] },
+          ],
+        },
       },
       {
         name: 'Single Layer (Hidden)',
         props: {
-          layers: [
-            { name: 'default', type: 'path', data: '', styles: { stroke: '#000000' } }
-          ]
-        }
-      }
+          layers: [{ name: 'default', type: 'path', data: '', styles: { stroke: '#000000' } }],
+        },
+      },
     ],
     controls: [],
     notes: 'Reads layers and layerVisibility from store. Auto-hides when <= 1 layer.',
@@ -152,7 +157,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
         panel.style.position = 'relative';
         container.appendChild(panel);
       });
-    }
+    },
   },
   {
     id: 'palette-panel',
@@ -164,29 +169,42 @@ layer('hex').apply { circle(60, 100, 40) }` }
         name: 'Multiple Layers with Colors',
         props: {
           layers: [
-            { name: 'outline', type: 'path', data: '', styles: { stroke: '#e63946', 'stroke-width': '2', fill: 'none' } },
+            {
+              name: 'outline',
+              type: 'path',
+              data: '',
+              styles: { stroke: '#e63946', 'stroke-width': '2', fill: 'none' },
+            },
             { name: 'background', type: 'path', data: '', styles: { stroke: 'none', fill: '#a8dadc' } },
-            { name: 'accent', type: 'path', data: '', styles: { stroke: 'steelblue', fill: 'rgba(70, 130, 180, 0.3)' } }
-          ]
-        }
+            {
+              name: 'accent',
+              type: 'path',
+              data: '',
+              styles: { stroke: 'steelblue', fill: 'rgba(70, 130, 180, 0.3)' },
+            },
+          ],
+        },
       },
       {
         name: 'With CSS Variables',
         props: {
           layers: [
-            { name: 'themed', type: 'path', data: '', styles: { stroke: 'var(--primary, #e63946)', fill: 'var(--bg, #f1faee)' } },
-            { name: 'static', type: 'path', data: '', styles: { stroke: '#333', fill: 'none' } }
-          ]
-        }
+            {
+              name: 'themed',
+              type: 'path',
+              data: '',
+              styles: { stroke: 'var(--primary, #e63946)', fill: 'var(--bg, #f1faee)' },
+            },
+            { name: 'static', type: 'path', data: '', styles: { stroke: '#333', fill: 'none' } },
+          ],
+        },
       },
       {
         name: 'Empty (Hidden)',
         props: {
-          layers: [
-            { name: 'default', type: 'path', data: '', styles: { 'stroke-width': '2' } }
-          ]
-        }
-      }
+          layers: [{ name: 'default', type: 'path', data: '', styles: { 'stroke-width': '2' } }],
+        },
+      },
     ],
     controls: [],
     notes: 'Reads layers from store. Shows color swatches grouped by layer. Auto-hides when no colors found.',
@@ -199,7 +217,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
         panel.style.position = 'relative';
         container.appendChild(panel);
       });
-    }
+    },
   },
   {
     id: 'cssvar-panel',
@@ -211,30 +229,39 @@ layer('hex').apply { circle(60, 100, 40) }` }
         name: 'Color Variables',
         props: {
           layers: [
-            { name: 'shape', type: 'path', data: '', styles: { stroke: 'var(--primary, #e63946)', fill: 'var(--bg, #f1faee)' } },
-            { name: 'accent', type: 'path', data: '', styles: { stroke: 'var(--accent, steelblue)', fill: 'none' } }
-          ]
-        }
+            {
+              name: 'shape',
+              type: 'path',
+              data: '',
+              styles: { stroke: 'var(--primary, #e63946)', fill: 'var(--bg, #f1faee)' },
+            },
+            { name: 'accent', type: 'path', data: '', styles: { stroke: 'var(--accent, steelblue)', fill: 'none' } },
+          ],
+        },
       },
       {
         name: 'Mixed Variables',
         props: {
           layers: [
-            { name: 'main', type: 'path', data: '', styles: { stroke: 'var(--color, #333)', 'stroke-width': 'var(--width, 2)' } }
-          ]
-        }
+            {
+              name: 'main',
+              type: 'path',
+              data: '',
+              styles: { stroke: 'var(--color, #333)', 'stroke-width': 'var(--width, 2)' },
+            },
+          ],
+        },
       },
       {
         name: 'No Variables (Hidden)',
         props: {
-          layers: [
-            { name: 'default', type: 'path', data: '', styles: { stroke: '#000', fill: 'none' } }
-          ]
-        }
-      }
+          layers: [{ name: 'default', type: 'path', data: '', styles: { stroke: '#000', fill: 'none' } }],
+        },
+      },
     ],
     controls: [],
-    notes: 'Reads layers from store. Extracts var() references and provides live override inputs. Auto-hides when no vars found.',
+    notes:
+      'Reads layers from store. Extracts var() references and provides live override inputs. Auto-hides when no vars found.',
     render: (container, props) => {
       import('../state/store.js').then(({ store }) => {
         store.set('layers', props.layers || []);
@@ -244,7 +271,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
         panel.style.position = 'relative';
         container.appendChild(panel);
       });
-    }
+    },
   },
   {
     id: 'console-pane',
@@ -259,22 +286,20 @@ layer('hex').apply { circle(60, 100, 40) }` }
           logs: [
             { line: 1, parts: [{ type: 'string', value: 'Starting render...' }] },
             { line: 3, parts: [{ type: 'value', label: 'radius', value: '50' }] },
-            { line: 5, parts: [{ type: 'value', label: 'result', value: '{"x": 100, "y": 100}' }] }
-          ]
-        }
+            { line: 5, parts: [{ type: 'value', label: 'result', value: '{"x": 100, "y": 100}' }] },
+          ],
+        },
       },
       {
         name: 'Empty',
-        props: { isOpen: true, logs: [] }
+        props: { isOpen: true, logs: [] },
       },
       {
         name: 'Collapsed',
-        props: { isOpen: false, logs: [] }
-      }
+        props: { isOpen: false, logs: [] },
+      },
     ],
-    controls: [
-      { name: 'isOpen', type: 'toggle', label: 'Open', default: true }
-    ],
+    controls: [{ name: 'isOpen', type: 'toggle', label: 'Open', default: true }],
     render: (container, props, controls) => {
       const consolePane = document.createElement('console-pane');
       consolePane.style.height = '250px';
@@ -294,7 +319,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
           consolePane.close();
         }
       });
-    }
+    },
   },
   {
     id: 'error-panel',
@@ -304,19 +329,22 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'With Error',
-        props: { message: 'SyntaxError: Unexpected token at line 5, column 12' }
+        props: { message: 'SyntaxError: Unexpected token at line 5, column 12' },
       },
       {
         name: 'Long Error',
-        props: { message: 'ReferenceError: "myVariable" is not defined. Did you mean "myVar"? Check your variable declarations and ensure all variables are properly initialized before use.' }
+        props: {
+          message:
+            'ReferenceError: "myVariable" is not defined. Did you mean "myVar"? Check your variable declarations and ensure all variables are properly initialized before use.',
+        },
       },
       {
         name: 'Hidden',
-        props: { message: '' }
-      }
+        props: { message: '' },
+      },
     ],
     controls: [
-      { name: 'message', type: 'text', label: 'Error Message', default: 'SyntaxError: Unexpected token at line 5' }
+      { name: 'message', type: 'text', label: 'Error Message', default: 'SyntaxError: Unexpected token at line 5' },
     ],
     render: (container, props, controls) => {
       const errorPanel = document.createElement('error-panel');
@@ -329,7 +357,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
       controls.on('message', (value) => {
         errorPanel.message = value;
       });
-    }
+    },
   },
 
   // === Editor Support ===
@@ -343,17 +371,18 @@ layer('hex').apply { circle(60, 100, 40) }` }
         name: 'With Content',
         props: {
           isOpen: true,
-          content: '// Generated SVG Path\nM 50 100  // Move to start\nA 50 50 0 1 1 150 100  // Arc to right\nA 50 50 0 1 1 50 100   // Arc back to start'
-        }
+          content:
+            '// Generated SVG Path\nM 50 100  // Move to start\nA 50 50 0 1 1 150 100  // Arc to right\nA 50 50 0 1 1 50 100   // Arc back to start',
+        },
       },
       {
         name: 'Empty',
-        props: { isOpen: true, content: '' }
-      }
+        props: { isOpen: true, content: '' },
+      },
     ],
     controls: [
       { name: 'isOpen', type: 'toggle', label: 'Open', default: true },
-      { name: 'content', type: 'textarea', label: 'Content', default: 'M 50 100\nL 100 50\nL 150 100\nZ' }
+      { name: 'content', type: 'textarea', label: 'Content', default: 'M 50 100\nL 100 50\nL 150 100\nZ' },
     ],
     render: (container, props, controls) => {
       const pane = document.createElement('annotated-pane');
@@ -376,7 +405,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
       controls.on('content', (value) => {
         pane.content = value;
       });
-    }
+    },
   },
   {
     id: 'playground-header',
@@ -386,26 +415,26 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default',
-        props: { fileName: null, isModified: false, annotatedOpen: false, consoleOpen: false }
+        props: { fileName: null, isModified: false, annotatedOpen: false, consoleOpen: false },
       },
       {
         name: 'With File',
-        props: { fileName: 'my-drawing.svg', isModified: false, annotatedOpen: false, consoleOpen: false }
+        props: { fileName: 'my-drawing.svg', isModified: false, annotatedOpen: false, consoleOpen: false },
       },
       {
         name: 'Modified',
-        props: { fileName: 'my-drawing.svg', isModified: true, annotatedOpen: false, consoleOpen: false }
+        props: { fileName: 'my-drawing.svg', isModified: true, annotatedOpen: false, consoleOpen: false },
       },
       {
         name: 'Panes Open',
-        props: { fileName: null, isModified: false, annotatedOpen: true, consoleOpen: true }
-      }
+        props: { fileName: null, isModified: false, annotatedOpen: true, consoleOpen: true },
+      },
     ],
     controls: [
       { name: 'fileName', type: 'text', label: 'File Name', default: '' },
       { name: 'isModified', type: 'toggle', label: 'Modified', default: false },
       { name: 'annotatedOpen', type: 'toggle', label: 'Annotated Open', default: false },
-      { name: 'consoleOpen', type: 'toggle', label: 'Console Open', default: false }
+      { name: 'consoleOpen', type: 'toggle', label: 'Console Open', default: false },
     ],
     render: (container, props, controls) => {
       import('../state/store.js').then(({ store }) => {
@@ -414,7 +443,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
           currentFileName: props.fileName || null,
           isModified: props.isModified || false,
           annotatedOpen: props.annotatedOpen || false,
-          consoleOpen: props.consoleOpen || false
+          consoleOpen: props.consoleOpen || false,
         });
 
         const header = document.createElement('playground-header');
@@ -435,7 +464,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
           store.set('consoleOpen', value);
         });
       });
-    }
+    },
   },
   {
     id: 'playground-footer',
@@ -445,8 +474,8 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default',
-        props: {}
-      }
+        props: {},
+      },
     ],
     controls: [],
     render: (container) => {
@@ -462,7 +491,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
           background: '#f5f5f5',
           gridEnabled: true,
           gridColor: '#cccccc',
-          gridSize: 20
+          gridSize: 20,
         });
 
         const footer = document.createElement('playground-footer');
@@ -470,7 +499,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
         footer.style.border = '1px solid var(--border-color, #ddd)';
         container.appendChild(footer);
       });
-    }
+    },
   },
   {
     id: 'docs-panel',
@@ -480,16 +509,14 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Open',
-        props: { isOpen: true }
+        props: { isOpen: true },
       },
       {
         name: 'Closed',
-        props: { isOpen: false }
-      }
+        props: { isOpen: false },
+      },
     ],
-    controls: [
-      { name: 'isOpen', type: 'toggle', label: 'Open', default: true }
-    ],
+    controls: [{ name: 'isOpen', type: 'toggle', label: 'Open', default: true }],
     render: (container, props, controls) => {
       // Create a relative container for the panel
       const wrapper = document.createElement('div');
@@ -516,7 +543,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
         if (value) panel.open();
         else panel.close();
       });
-    }
+    },
   },
 
   // === Navigation ===
@@ -528,8 +555,8 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default',
-        props: {}
-      }
+        props: {},
+      },
     ],
     controls: [],
     render: (container) => {
@@ -552,7 +579,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
       note.style.marginTop = '8px';
       note.textContent = 'Note: Navigation links are disabled in this demo. Active state reflects current app view.';
       container.appendChild(note);
-    }
+    },
   },
   {
     id: 'app-breadcrumb',
@@ -562,8 +589,8 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default',
-        props: {}
-      }
+        props: {},
+      },
     ],
     controls: [],
     render: (container) => {
@@ -584,9 +611,10 @@ layer('hex').apply { circle(60, 100, 40) }` }
       note.style.color = 'var(--text-secondary, #666)';
       note.style.fontStyle = 'italic';
       note.style.marginTop = '8px';
-      note.textContent = 'Note: Shows breadcrumb for current storybook view. Navigation links are disabled in this demo.';
+      note.textContent =
+        'Note: Shows breadcrumb for current storybook view. Navigation links are disabled in this demo.';
       container.appendChild(note);
-    }
+    },
   },
 
   // === Shared Components ===
@@ -598,16 +626,16 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default',
-        props: { text: 'Hello, World!', label: 'Copy' }
+        props: { text: 'Hello, World!', label: 'Copy' },
       },
       {
         name: 'Custom Label',
-        props: { text: 'Some code here', label: 'Copy Code' }
-      }
+        props: { text: 'Some code here', label: 'Copy Code' },
+      },
     ],
     controls: [
       { name: 'text', type: 'text', label: 'Text to Copy', default: 'Hello, World!' },
-      { name: 'label', type: 'text', label: 'Button Label', default: 'Copy' }
+      { name: 'label', type: 'text', label: 'Button Label', default: 'Copy' },
     ],
     render: (container, props, controls) => {
       const btn = document.createElement('copy-button');
@@ -617,7 +645,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
 
       controls.on('text', (value) => btn.setAttribute('text', value));
       controls.on('label', (value) => btn.setAttribute('label', value));
-    }
+    },
   },
   {
     id: 'log-entry',
@@ -628,41 +656,45 @@ layer('hex').apply { circle(60, 100, 40) }` }
       {
         name: 'String Output',
         props: {
-          data: { line: 1, parts: [{ type: 'string', value: 'Hello from the console!' }] }
-        }
+          data: { line: 1, parts: [{ type: 'string', value: 'Hello from the console!' }] },
+        },
       },
       {
         name: 'Labeled Value',
         props: {
-          data: { line: 5, parts: [{ type: 'value', label: 'myVar', value: '42' }] }
-        }
+          data: { line: 5, parts: [{ type: 'value', label: 'myVar', value: '42' }] },
+        },
       },
       {
         name: 'Object Value',
         props: {
           data: {
             line: 10,
-            parts: [{
-              type: 'value',
-              label: 'config',
-              value: '{"width": 200, "height": 200, "stroke": "#000"}'
-            }]
-          }
-        }
+            parts: [
+              {
+                type: 'value',
+                label: 'config',
+                value: '{"width": 200, "height": 200, "stroke": "#000"}',
+              },
+            ],
+          },
+        },
       },
       {
         name: 'Array Value',
         props: {
           data: {
             line: 15,
-            parts: [{
-              type: 'value',
-              label: 'points',
-              value: '[10, 20, 30, 40, 50]'
-            }]
-          }
-        }
-      }
+            parts: [
+              {
+                type: 'value',
+                label: 'points',
+                value: '[10, 20, 30, 40, 50]',
+              },
+            ],
+          },
+        },
+      },
     ],
     controls: [],
     render: (container, props) => {
@@ -674,7 +706,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
       const entry = document.createElement('log-entry');
       entry.data = props.data;
       container.appendChild(entry);
-    }
+    },
   },
   {
     id: 'control-group',
@@ -684,20 +716,18 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Number Input',
-        props: { label: 'Width', inputType: 'number', value: 200 }
+        props: { label: 'Width', inputType: 'number', value: 200 },
       },
       {
         name: 'Color Input',
-        props: { label: 'Stroke', inputType: 'color', value: '#000000' }
+        props: { label: 'Stroke', inputType: 'color', value: '#000000' },
       },
       {
         name: 'Checkbox',
-        props: { label: 'Grid Enabled', inputType: 'checkbox', checked: true }
-      }
+        props: { label: 'Grid Enabled', inputType: 'checkbox', checked: true },
+      },
     ],
-    controls: [
-      { name: 'label', type: 'text', label: 'Label', default: 'Width' }
-    ],
+    controls: [{ name: 'label', type: 'text', label: 'Label', default: 'Width' }],
     render: (container, props, controls) => {
       const group = document.createElement('control-group');
       group.setAttribute('label', props.label || '');
@@ -721,7 +751,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
       container.appendChild(group);
 
       controls.on('label', (value) => group.setAttribute('label', value));
-    }
+    },
   },
 
   // === UI Patterns (migrated from old storybook) ===
@@ -730,9 +760,7 @@ layer('hex').apply { circle(60, 100, 40) }` }
     name: 'Buttons',
     category: 'UI Patterns',
     description: 'Primary and secondary action buttons',
-    stories: [
-      { name: 'All Variants', props: {} }
-    ],
+    stories: [{ name: 'All Variants', props: {} }],
     controls: [],
     render: (container) => {
       container.innerHTML = `
@@ -771,16 +799,14 @@ layer('hex').apply { circle(60, 100, 40) }` }
           }
         </style>
       `;
-    }
+    },
   },
   {
     id: 'ui-inputs',
     name: 'Text Inputs',
     category: 'UI Patterns',
     description: 'Standard text input fields',
-    stories: [
-      { name: 'All Variants', props: {} }
-    ],
+    stories: [{ name: 'All Variants', props: {} }],
     controls: [],
     render: (container) => {
       container.innerHTML = `
@@ -808,16 +834,14 @@ layer('hex').apply { circle(60, 100, 40) }` }
           }
         </style>
       `;
-    }
+    },
   },
   {
     id: 'ui-toggles',
     name: 'Toggle Groups',
     category: 'UI Patterns',
     description: 'Mutually exclusive option selector',
-    stories: [
-      { name: 'Default', props: {} }
-    ],
+    stories: [{ name: 'Default', props: {} }],
     controls: [],
     render: (container) => {
       container.innerHTML = `
@@ -855,22 +879,20 @@ layer('hex').apply { circle(60, 100, 40) }` }
       `;
 
       // Add interactivity
-      container.querySelectorAll('.demo-toggle button').forEach(btn => {
+      container.querySelectorAll('.demo-toggle button').forEach((btn) => {
         btn.addEventListener('click', () => {
-          container.querySelectorAll('.demo-toggle button').forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.demo-toggle button').forEach((b) => b.classList.remove('active'));
           btn.classList.add('active');
         });
       });
-    }
+    },
   },
   {
     id: 'ui-colors',
     name: 'Color Pickers',
     category: 'UI Patterns',
     description: 'Color input with value display',
-    stories: [
-      { name: 'Default', props: {} }
-    ],
+    stories: [{ name: 'Default', props: {} }],
     controls: [],
     render: (container) => {
       container.innerHTML = `
@@ -905,21 +927,19 @@ layer('hex').apply { circle(60, 100, 40) }` }
         </style>
       `;
 
-      container.querySelectorAll('.demo-color').forEach(input => {
+      container.querySelectorAll('.demo-color').forEach((input) => {
         input.addEventListener('input', (e) => {
           e.target.nextElementSibling.textContent = e.target.value;
         });
       });
-    }
+    },
   },
   {
     id: 'ui-typography',
     name: 'Typography',
     category: 'UI Patterns',
     description: 'Text styles and hierarchy',
-    stories: [
-      { name: 'Scale', props: {} }
-    ],
+    stories: [{ name: 'Scale', props: {} }],
     controls: [],
     render: (container) => {
       container.innerHTML = `
@@ -932,16 +952,14 @@ layer('hex').apply { circle(60, 100, 40) }` }
           <div style="font-family: var(--font-mono, monospace); font-size: 0.875rem;">Monospace text</div>
         </div>
       `;
-    }
+    },
   },
   {
     id: 'ui-colors-palette',
     name: 'Color Palette',
     category: 'UI Patterns',
     description: 'Theme colors from CSS variables',
-    stories: [
-      { name: 'Default', props: {} }
-    ],
+    stories: [{ name: 'Default', props: {} }],
     controls: [],
     render: (container) => {
       const colors = [
@@ -952,29 +970,31 @@ layer('hex').apply { circle(60, 100, 40) }` }
         { name: 'bg-secondary', var: '--bg-secondary', fallback: '#f5f5f5' },
         { name: 'border', var: '--border-color', fallback: '#e0e0e0' },
         { name: 'success', var: '--success-color', fallback: '#28a745' },
-        { name: 'error', var: '--error-text', fallback: '#c00' }
+        { name: 'error', var: '--error-text', fallback: '#c00' },
       ];
 
       container.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.75rem;">
-          ${colors.map(c => `
+          ${colors
+            .map(
+              (c) => `
             <div style="text-align: center;">
               <div style="width: 50px; height: 50px; background: var(${c.var}, ${c.fallback}); border-radius: 4px; margin: 0 auto; border: 1px solid var(--border-color, #e0e0e0);"></div>
               <div style="font-size: 0.6875rem; margin-top: 0.25rem; color: var(--text-secondary, #666);">${c.name}</div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
       `;
-    }
+    },
   },
   {
     id: 'ui-spacing',
     name: 'Spacing Scale',
     category: 'UI Patterns',
     description: 'Consistent spacing units',
-    stories: [
-      { name: 'Default', props: {} }
-    ],
+    stories: [{ name: 'Default', props: {} }],
     controls: [],
     render: (container) => {
       const spacings = [
@@ -983,20 +1003,24 @@ layer('hex').apply { circle(60, 100, 40) }` }
         { label: '0.75rem (12px)', size: '12px' },
         { label: '1rem (16px)', size: '16px' },
         { label: '1.5rem (24px)', size: '24px' },
-        { label: '2rem (32px)', size: '32px' }
+        { label: '2rem (32px)', size: '32px' },
       ];
 
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-          ${spacings.map(s => `
+          ${spacings
+            .map(
+              (s) => `
             <div style="display: flex; align-items: center; gap: 0.75rem;">
               <div style="width: ${s.size}; height: 16px; background: var(--accent-color, #0066cc);"></div>
               <span style="font-size: 0.75rem; color: var(--text-secondary, #666);">${s.label}</span>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
       `;
-    }
+    },
   },
   // === Blog ===
   {
@@ -1007,20 +1031,18 @@ layer('hex').apply { circle(60, 100, 40) }` }
     stories: [
       {
         name: 'Default (code closed)',
-        props: { codeOpen: false }
+        props: { codeOpen: false },
       },
       {
         name: 'Code Open',
-        props: { codeOpen: true }
+        props: { codeOpen: true },
       },
       {
         name: 'With Caption',
-        props: { codeOpen: false, caption: 'A simple circle drawn with Pathogen' }
-      }
+        props: { codeOpen: false, caption: 'A simple circle drawn with Pathogen' },
+      },
     ],
-    controls: [
-      { name: 'codeOpen', type: 'toggle', label: 'Code Open', default: false }
-    ],
+    controls: [{ name: 'codeOpen', type: 'toggle', label: 'Code Open', default: false }],
     render: (container, props, controls) => {
       const sampleCode = `let r = 50;
 let cx = 100;
@@ -1049,16 +1071,14 @@ circle(cx, cy, r)`;
           el.removeAttribute('code-open');
         }
       });
-    }
+    },
   },
   {
     id: 'ui-cards',
     name: 'Cards',
     category: 'UI Patterns',
     description: 'Container for grouped content',
-    stories: [
-      { name: 'Default', props: {} }
-    ],
+    stories: [{ name: 'Default', props: {} }],
     controls: [],
     render: (container) => {
       container.innerHTML = `
@@ -1092,13 +1112,13 @@ circle(cx, cy, r)`;
           }
         </style>
       `;
-    }
-  }
+    },
+  },
 ];
 
 // Get component by ID
 export function getComponentById(id) {
-  return componentRegistry.find(c => c.id === id);
+  return componentRegistry.find((c) => c.id === id);
 }
 
 // Get all categories

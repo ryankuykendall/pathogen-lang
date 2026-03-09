@@ -3,27 +3,27 @@
 
 import { store } from '../state/store.js';
 import { defaultCode, examples } from '../utils/examples.js';
-import { loadFromURL, applyURLState } from '../utils/url-state.js';
-import { workspaceApi } from '../services/api.js';
-import { autosave, SaveStatus } from '../services/autosave.js';
-import { getUserId } from '../services/user-id.js';
-import { BASE_PATH, parseWorkspaceSlugId, buildWorkspaceSlugId } from '../utils/router.js';
-import compilerWorker from '../services/compiler-worker.js';
-import thumbnailService from '../services/thumbnail-service.js';
-import gpuGradientService from '../gpu/gradient-service.js';
 
 // Import all sub-components
-import './playground-main.js';
-import './playground-footer.js';
 import './code-editor-pane.js';
 import './annotated-pane.js';
 import './console-pane.js';
-import './svg-preview-pane.js';
 import './docs-panel.js';
 import './inspector-panel.js';
-import './shared/error-panel.js';
 import './export-legend-modal.js';
+import './playground-footer.js';
+import './playground-main.js';
+import './svg-preview-pane.js';
 import './thumbnail-crop-modal.js';
+import gpuGradientService from '../gpu/gradient-service.js';
+import { workspaceApi } from '../services/api.js';
+import { autosave, SaveStatus } from '../services/autosave.js';
+import compilerWorker from '../services/compiler-worker.js';
+import thumbnailService from '../services/thumbnail-service.js';
+import { getUserId } from '../services/user-id.js';
+import { BASE_PATH, buildWorkspaceSlugId, parseWorkspaceSlugId } from '../utils/router.js';
+import { applyURLState, loadFromURL } from '../utils/url-state.js';
+import './shared/error-panel.js';
 
 export class WorkspaceView extends HTMLElement {
   constructor() {
@@ -87,19 +87,19 @@ export class WorkspaceView extends HTMLElement {
 
         // Generate thumbnail if content changed since last thumbnail
         const workspaceId = this._currentWorkspaceId;
-        thumbnailService.generateIfDirty(
-          workspaceId,
-          () => this.previewPane?.shadowRoot?.querySelector('#preview'),
-          store.getAll()
-        ).then(result => {
-          if (result) {
-            document.dispatchEvent(new CustomEvent('thumbnail-updated', {
-              bubbles: true,
-              composed: true,
-              detail: { workspaceId },
-            }));
-          }
-        });
+        thumbnailService
+          .generateIfDirty(workspaceId, () => this.previewPane?.shadowRoot?.querySelector('#preview'), store.getAll())
+          .then((result) => {
+            if (result) {
+              document.dispatchEvent(
+                new CustomEvent('thumbnail-updated', {
+                  bubbles: true,
+                  composed: true,
+                  detail: { workspaceId },
+                }),
+              );
+            }
+          });
         thumbnailService.stopAutoGeneration();
       }
     }
@@ -309,7 +309,7 @@ export class WorkspaceView extends HTMLElement {
       } else if (err.status === 403) {
         this.showError('You do not have access to this workspace');
       } else {
-        this.showError('Failed to load workspace: ' + err.message);
+        this.showError(`Failed to load workspace: ${err.message}`);
       }
 
       // Fall back to default code
@@ -529,7 +529,7 @@ export class WorkspaceView extends HTMLElement {
         thumbnailService.generateIfDirty(
           this._currentWorkspaceId,
           () => this.previewPane?.shadowRoot?.querySelector('#preview'),
-          store.getAll()
+          store.getAll(),
         );
       }
     };
@@ -554,7 +554,7 @@ export class WorkspaceView extends HTMLElement {
 
   copyCode() {
     const code = this.editorPane.code;
-    navigator.clipboard.writeText(code).catch(err => {
+    navigator.clipboard.writeText(code).catch((err) => {
       console.error('Failed to copy code:', err);
     });
   }
@@ -563,7 +563,7 @@ export class WorkspaceView extends HTMLElement {
     const svgElement = this.previewPane.shadowRoot?.querySelector('#preview');
     if (svgElement) {
       const svgString = svgElement.outerHTML;
-      navigator.clipboard.writeText(svgString).catch(err => {
+      navigator.clipboard.writeText(svgString).catch((err) => {
         console.error('Failed to copy SVG:', err);
       });
     }
@@ -603,8 +603,12 @@ export class WorkspaceView extends HTMLElement {
       if (isStale(compilationId)) return;
 
       // Pre-render GPU-rendered gradients (conic, freeform, mesh)
-      let gpuGradientUrls = new Map();
-      if (result.gradients?.some(g => g.type === 'conic' || g.type === 'freeform' || g.type === 'mesh' || g.type === 'topo')) {
+      const gpuGradientUrls = new Map();
+      if (
+        result.gradients?.some(
+          (g) => g.type === 'conic' || g.type === 'freeform' || g.type === 'mesh' || g.type === 'topo',
+        )
+      ) {
         const svgW = store.get('width') || 200;
         const svgH = store.get('height') || 200;
         const [conicUrls, freeformUrls, meshUrls, topoUrls] = await Promise.all([
@@ -625,7 +629,14 @@ export class WorkspaceView extends HTMLElement {
 
       // Use timing method to measure rendering — pass layers if available
       const renderTime = result.layers
-        ? this.previewPane.setLayersWithTiming(result.layers, { masks: result.masks || [], clipPaths: result.clipPaths || [], gradients: result.gradients || [], patterns: result.patterns || [], cssProperties: result.cssProperties || [], gpuGradientUrls })
+        ? this.previewPane.setLayersWithTiming(result.layers, {
+            masks: result.masks || [],
+            clipPaths: result.clipPaths || [],
+            gradients: result.gradients || [],
+            patterns: result.patterns || [],
+            cssProperties: result.cssProperties || [],
+            gpuGradientUrls,
+          })
         : this.previewPane.setPathDataWithTiming(result.path);
       console.log(`Render time: ${renderTime.toFixed(2)}ms`);
 
@@ -644,7 +655,7 @@ export class WorkspaceView extends HTMLElement {
 
       // Clean up stale visibility entries
       const currentVisibility = store.get('layerVisibility');
-      const currentLayerNames = new Set(resultLayers.map(l => l.name));
+      const currentLayerNames = new Set(resultLayers.map((l) => l.name));
       const cleaned = {};
       for (const [name, visible] of Object.entries(currentVisibility)) {
         if (currentLayerNames.has(name)) {
@@ -739,10 +750,12 @@ export class WorkspaceView extends HTMLElement {
       if ('showSaveFilePicker' in window) {
         const options = {
           suggestedName,
-          types: [{
-            description: 'SVG Path Extended Files',
-            accept: { 'text/plain': ['.svgx'] },
-          }],
+          types: [
+            {
+              description: 'SVG Path Extended Files',
+              accept: { 'text/plain': ['.svgx'] },
+            },
+          ],
         };
 
         const handle = await window.showSaveFilePicker(options);
@@ -772,7 +785,7 @@ export class WorkspaceView extends HTMLElement {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const ch = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + ch;
+      hash = (hash << 5) - hash + ch;
       hash |= 0;
     }
     return hash.toString(36);

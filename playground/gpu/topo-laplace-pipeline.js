@@ -2,13 +2,9 @@
 // Three cached pipelines: init (compute), Jacobi iteration (compute), render (fragment).
 // Caches per-device; recreates after device loss recovery.
 
-import { getDevice } from './webgpu-device.js';
+import { TOPO_LAPLACE_INIT_WGSL, TOPO_LAPLACE_JACOBI_WGSL, TOPO_LAPLACE_RENDER_WGSL } from './topo-laplace-shader.js';
 import { TOPO_VERTEX_WGSL } from './topo-shader.js';
-import {
-  TOPO_LAPLACE_INIT_WGSL,
-  TOPO_LAPLACE_JACOBI_WGSL,
-  TOPO_LAPLACE_RENDER_WGSL,
-} from './topo-laplace-shader.js';
+import { getDevice } from './webgpu-device.js';
 
 let cached = null;
 let cachedDevice = null;
@@ -56,21 +52,23 @@ export async function getTopoLaplacePipeline() {
       fragment: {
         module: renderModule,
         entryPoint: 'fs_main',
-        targets: [{
-          format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+        targets: [
+          {
+            format,
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
             },
           },
-        }],
+        ],
       },
       primitive: {
         topology: 'triangle-list',

@@ -1,10 +1,10 @@
 // New Workspace View - Form for creating new workspaces
 // Route: /workspace/new
 
-import { store } from '../../state/store.js';
 import { workspaceApi } from '../../services/api.js';
-import { examples, defaultCode } from '../../utils/examples.js';
-import { navigateTo, buildWorkspaceSlugId } from '../../utils/router.js';
+import { store } from '../../state/store.js';
+import { defaultCode, examples } from '../../utils/examples.js';
+import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 
 const styles = `
   :host {
@@ -337,7 +337,9 @@ class NewWorkspaceView extends HTMLElement {
 
   _cleanupImport() {
     if (this._importKey) {
-      try { localStorage.removeItem(this._importKey); } catch {}
+      try {
+        localStorage.removeItem(this._importKey);
+      } catch {}
       this._importKey = null;
     }
   }
@@ -452,9 +454,7 @@ class NewWorkspaceView extends HTMLElement {
       } else if (this._sourceWorkspace) {
         code = this._sourceWorkspace.code || '';
       } else {
-        code = this.formData.template
-          ? examples[this.formData.template]
-          : '';
+        code = this.formData.template ? examples[this.formData.template] : '';
       }
 
       // Get user preferences for other settings
@@ -583,20 +583,27 @@ class NewWorkspaceView extends HTMLElement {
       return;
     }
 
-    const templateOptions = Object.keys(examples).map(key => {
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-      return `<option value="${key}" ${this.formData.template === key ? 'selected' : ''}>${label}</option>`;
-    }).join('');
+    const templateOptions = Object.keys(examples)
+      .map((key) => {
+        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+        return `<option value="${key}" ${this.formData.template === key ? 'selected' : ''}>${label}</option>`;
+      })
+      .join('');
 
     const title = isCopyMode ? 'Copy Workspace' : 'New Workspace';
-    const subtitle = isCopyMode && this._sourceWorkspace
-      ? `Creating a copy of "${this.escapeHtml(this._sourceWorkspace.name)}"`
-      : isStateMode
-        ? 'Create a workspace from imported code'
-        : 'Create a new workspace to start building SVG paths';
+    const subtitle =
+      isCopyMode && this._sourceWorkspace
+        ? `Creating a copy of "${this.escapeHtml(this._sourceWorkspace.name)}"`
+        : isStateMode
+          ? 'Create a workspace from imported code'
+          : 'Create a new workspace to start building SVG paths';
     const submitText = this._isSubmitting
-      ? (isCopyMode ? 'Creating Copy...' : 'Creating...')
-      : (isCopyMode ? 'Create Copy' : 'Create Workspace');
+      ? isCopyMode
+        ? 'Creating Copy...'
+        : 'Creating...'
+      : isCopyMode
+        ? 'Create Copy'
+        : 'Create Workspace';
 
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
@@ -670,7 +677,9 @@ class NewWorkspaceView extends HTMLElement {
             </div>
           </div>
 
-          ${!isCopyMode && !isStateMode ? `
+          ${
+            !isCopyMode && !isStateMode
+              ? `
           <div class="form-section">
             <h2>Starting Template</h2>
 
@@ -687,7 +696,9 @@ class NewWorkspaceView extends HTMLElement {
               ${this.formData.template ? this.escapeHtml(examples[this.formData.template] || '') : ''}
             </div>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <div class="form-section">
             <h2>Visibility</h2>
@@ -706,11 +717,15 @@ class NewWorkspaceView extends HTMLElement {
             </div>
           </div>
 
-          ${this.errors.submit ? `
+          ${
+            this.errors.submit
+              ? `
             <div class="error-message" style="margin-bottom: 1rem;">
               ${this.escapeHtml(this.errors.submit)}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <div class="actions">
             <button type="submit" class="primary-btn" ${this._isSubmitting ? 'disabled' : ''}>

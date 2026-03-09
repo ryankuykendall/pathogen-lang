@@ -1,7 +1,13 @@
-import type { Point } from './context';
-import { arcEndpointToCenter, arcPointFromCenter, calculateCommandLength, locateCommandAtFraction, getParametricTForCommand } from './sampling';
-import type { ArcCenterParams } from './sampling';
 import { formatNum } from './format';
+import {
+  arcEndpointToCenter,
+  arcPointFromCenter,
+  calculateCommandLength,
+  getParametricTForCommand,
+  locateCommandAtFraction,
+} from './sampling';
+
+import type { Point } from './context';
 
 /**
  * Minimal command interface — structurally compatible with PathBlockCommand
@@ -17,7 +23,7 @@ interface TransformCmd {
 
 export function commandToPathString(cmd: TransformCmd): string {
   if (cmd.args.length === 0) return cmd.command;
-  return cmd.command + ' ' + cmd.args.map(formatNum).join(' ');
+  return `${cmd.command} ${cmd.args.map(formatNum).join(' ')}`;
 }
 
 /**
@@ -41,22 +47,21 @@ function solveQuadratic(a: number, b: number, c: number): number[] {
  */
 function isAngleInArc(angle: number, startAngle: number, deltaAngle: number): boolean {
   // Normalize angle relative to startAngle into [0, 2π)
-  let a = ((angle - startAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  const a = (((angle - startAngle) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   if (deltaAngle > 0) {
     return a <= deltaAngle + 1e-9;
-  } else {
-    // Negative sweep: convert to check in negative direction
-    let aNeg = a === 0 ? 0 : a - 2 * Math.PI;
-    return aNeg >= deltaAngle - 1e-9;
   }
+  // Negative sweep: convert to check in negative direction
+  const aNeg = a === 0 ? 0 : a - 2 * Math.PI;
+  return aNeg >= deltaAngle - 1e-9;
 }
 
 // ---- resolveSmooth: convert S→C and T→Q ----
 
 export function resolveSmooth(commands: TransformCmd[]): TransformCmd[] {
   const result: TransformCmd[] = [];
-  let lastCubicCP: Point | null = null;   // last CP2 of C/S
-  let lastQuadCP: Point | null = null;    // last CP of Q/T
+  let lastCubicCP: Point | null = null; // last CP2 of C/S
+  let lastQuadCP: Point | null = null; // last CP of Q/T
 
   for (const cmd of commands) {
     const upper = cmd.command.toUpperCase();
@@ -64,12 +69,10 @@ export function resolveSmooth(commands: TransformCmd[]): TransformCmd[] {
     if (upper === 'S') {
       // S x2 y2 dx dy → C cp1x cp1y x2 y2 dx dy
       const [x2, y2, dx, dy] = cmd.args;
-      let cp1x: number, cp1y: number;
+      let cp1x: number;
+      let cp1y: number;
       if (lastCubicCP) {
-        // Reflect previous CP2 around start
-        cp1x = cmd.start.x * 2 - lastCubicCP.x - cmd.start.x;  // relative: start - lastCP2 (in absolute), then convert to relative
-        cp1y = cmd.start.y * 2 - lastCubicCP.y - cmd.start.y;
-        // Actually: reflected point = 2*start - lastCP2 (absolute)
+        // Reflected point = 2*start - lastCP2 (absolute)
         // Relative to start: (2*start - lastCP2) - start = start - lastCP2
         cp1x = cmd.start.x - lastCubicCP.x;
         cp1y = cmd.start.y - lastCubicCP.y;
@@ -90,7 +93,8 @@ export function resolveSmooth(commands: TransformCmd[]): TransformCmd[] {
     } else if (upper === 'T') {
       // T dx dy → Q cpx cpy dx dy
       const [dx, dy] = cmd.args;
-      let cpx: number, cpy: number;
+      let cpx: number;
+      let cpy: number;
       if (lastQuadCP) {
         cpx = cmd.start.x - lastQuadCP.x;
         cpy = cmd.start.y - lastQuadCP.y;
@@ -162,7 +166,7 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
   }
 
   // Skip m commands at the beginning (they don't draw)
-  const drawCommands = working.filter(c => c.command.toUpperCase() !== 'M');
+  const drawCommands = working.filter((c) => c.command.toUpperCase() !== 'M');
   if (drawCommands.length === 0) return [];
 
   // Step 3: reverse command array
@@ -171,7 +175,10 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
   // Step 4: transform each reversed command
   const result: TransformCmd[] = [];
   // The reversed path starts at the original path's last endpoint
-  let cursor: Point = { x: drawCommands[drawCommands.length - 1].end.x, y: drawCommands[drawCommands.length - 1].end.y };
+  let cursor: Point = {
+    x: drawCommands[drawCommands.length - 1].end.x,
+    y: drawCommands[drawCommands.length - 1].end.y,
+  };
 
   for (const cmd of reversedCmds) {
     // Original: went from cmd.start to cmd.end
@@ -326,8 +333,8 @@ export function computeBoundingBox(commands: TransformCmd[]): { x: number; y: nu
         for (const t of roots) {
           if (t > 0 && t < 1) {
             const mt = 1 - t;
-            const val = mt * mt * mt * p0[axis] + 3 * mt * mt * t * p1[axis] +
-              3 * mt * t * t * p2[axis] + t * t * t * p3[axis];
+            const val =
+              mt * mt * mt * p0[axis] + 3 * mt * mt * t * p1[axis] + 3 * mt * t * t * p2[axis] + t * t * t * p3[axis];
             if (axis === 'x') {
               if (val < minX) minX = val;
               if (val > maxX) maxX = val;
@@ -367,12 +374,17 @@ export function computeBoundingBox(commands: TransformCmd[]): { x: number; y: nu
     } else if (upper === 'A') {
       // Arc: find extrema
       const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
-      const phi = rotation * Math.PI / 180;
+      const phi = (rotation * Math.PI) / 180;
       const center = arcEndpointToCenter(
-        cmd.start.x, cmd.start.y,
-        rx, ry, phi,
-        largeArcFlag, sweepFlag,
-        cmd.end.x, cmd.end.y
+        cmd.start.x,
+        cmd.start.y,
+        rx,
+        ry,
+        phi,
+        largeArcFlag,
+        sweepFlag,
+        cmd.end.x,
+        cmd.end.y,
       );
 
       if (center) {
@@ -409,9 +421,9 @@ export function computeBoundingBox(commands: TransformCmd[]): { x: number; y: nu
 // ---- offset ----
 
 interface OffsetSegment {
-  startOffset: Point;  // offset applied to start point
-  endOffset: Point;    // offset applied to end point
-  cmd: TransformCmd;   // original command
+  startOffset: Point; // offset applied to start point
+  endOffset: Point; // offset applied to end point
+  cmd: TransformCmd; // original command
 }
 
 function unitNormal(dx: number, dy: number): Point {
@@ -423,9 +435,13 @@ function unitNormal(dx: number, dy: number): Point {
 }
 
 export function offsetCommands(commands: TransformCmd[], distance: number): TransformCmd[] {
-  if (commands.length === 0 || distance === 0) return commands.map(c => ({
-    command: c.command, args: [...c.args], start: { ...c.start }, end: { ...c.end }
-  }));
+  if (commands.length === 0 || distance === 0)
+    return commands.map((c) => ({
+      command: c.command,
+      args: [...c.args],
+      start: { ...c.start },
+      end: { ...c.end },
+    }));
 
   // Step 1: resolve S→C, T→Q
   const resolved = resolveSmooth(commands);
@@ -461,21 +477,27 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       const dx = cmd.end.x - cmd.start.x;
       const dy = cmd.end.y - cmd.start.y;
       // Normal at t=0: perpendicular to P1-P0 direction
-      let dx0 = cx1, dy0 = cy1;
+      let dx0 = cx1;
+      let dy0 = cy1;
       if (Math.abs(dx0) < 1e-12 && Math.abs(dy0) < 1e-12) {
         // CP1 coincides with start, use CP2 direction
-        dx0 = cx2; dy0 = cy2;
+        dx0 = cx2;
+        dy0 = cy2;
         if (Math.abs(dx0) < 1e-12 && Math.abs(dy0) < 1e-12) {
-          dx0 = dx; dy0 = dy;
+          dx0 = dx;
+          dy0 = dy;
         }
       }
       const n0 = unitNormal(dx0, dy0);
       // Normal at t=1: perpendicular to P3-P2 direction
-      let dx1 = dx - cx2, dy1 = dy - cy2;
+      let dx1 = dx - cx2;
+      let dy1 = dy - cy2;
       if (Math.abs(dx1) < 1e-12 && Math.abs(dy1) < 1e-12) {
-        dx1 = dx - cx1; dy1 = dy - cy1;
+        dx1 = dx - cx1;
+        dy1 = dy - cy1;
         if (Math.abs(dx1) < 1e-12 && Math.abs(dy1) < 1e-12) {
-          dx1 = dx; dy1 = dy;
+          dx1 = dx;
+          dy1 = dy;
         }
       }
       const n1 = unitNormal(dx1, dy1);
@@ -489,15 +511,19 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       const dx = cmd.end.x - cmd.start.x;
       const dy = cmd.end.y - cmd.start.y;
       // Normal at t=0: perpendicular to CP-P0
-      let dx0 = qx1, dy0 = qy1;
+      let dx0 = qx1;
+      let dy0 = qy1;
       if (Math.abs(dx0) < 1e-12 && Math.abs(dy0) < 1e-12) {
-        dx0 = dx; dy0 = dy;
+        dx0 = dx;
+        dy0 = dy;
       }
       const n0 = unitNormal(dx0, dy0);
       // Normal at t=1: perpendicular to P2-CP
-      let dx1 = dx - qx1, dy1 = dy - qy1;
+      let dx1 = dx - qx1;
+      let dy1 = dy - qy1;
       if (Math.abs(dx1) < 1e-12 && Math.abs(dy1) < 1e-12) {
-        dx1 = dx; dy1 = dy;
+        dx1 = dx;
+        dy1 = dy;
       }
       const n1 = unitNormal(dx1, dy1);
       segments.push({
@@ -507,12 +533,17 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       });
     } else if (upper === 'A') {
       const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
-      const phi = rotation * Math.PI / 180;
+      const phi = (rotation * Math.PI) / 180;
       const center = arcEndpointToCenter(
-        cmd.start.x, cmd.start.y,
-        rx, ry, phi,
-        largeArcFlag, sweepFlag,
-        cmd.end.x, cmd.end.y
+        cmd.start.x,
+        cmd.start.y,
+        rx,
+        ry,
+        phi,
+        largeArcFlag,
+        sweepFlag,
+        cmd.end.x,
+        cmd.end.y,
       );
 
       if (center) {
@@ -522,12 +553,15 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
         const sinPhi = Math.sin(center.phi);
 
         // Tangent at t=0
-        const startAngle = center.startAngle;
+        const { startAngle } = center;
         const dex0 = -center.rx * Math.sin(startAngle);
         const dey0 = center.ry * Math.cos(startAngle);
         let tx0 = cosPhi * dex0 - sinPhi * dey0;
         let ty0 = sinPhi * dex0 + cosPhi * dey0;
-        if (center.deltaAngle < 0) { tx0 = -tx0; ty0 = -ty0; }
+        if (center.deltaAngle < 0) {
+          tx0 = -tx0;
+          ty0 = -ty0;
+        }
         const n0 = unitNormal(tx0, ty0);
 
         // Tangent at t=1
@@ -536,7 +570,10 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
         const dey1 = center.ry * Math.cos(endAngle);
         let tx1 = cosPhi * dex1 - sinPhi * dey1;
         let ty1 = sinPhi * dex1 + cosPhi * dey1;
-        if (center.deltaAngle < 0) { tx1 = -tx1; ty1 = -ty1; }
+        if (center.deltaAngle < 0) {
+          tx1 = -tx1;
+          ty1 = -ty1;
+        }
         const n1 = unitNormal(tx1, ty1);
 
         const startN = { x: n0.x * distance, y: n0.y * distance };
@@ -606,9 +643,7 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
     let actualStartOffset = seg.startOffset;
     if (i > 0 && segments[i - 1].cmd.command.toUpperCase() !== 'M') {
       const prevEndOffset = segments[i - 1].endOffset;
-      actualStartOffset = computeMiterJoin(
-        segments[i - 1].cmd, seg.cmd, prevEndOffset, seg.startOffset, distance
-      );
+      actualStartOffset = computeMiterJoin(segments[i - 1].cmd, seg.cmd, prevEndOffset, seg.startOffset, distance);
     }
 
     const newStart = { x: seg.cmd.start.x + actualStartOffset.x, y: seg.cmd.start.y + actualStartOffset.y };
@@ -623,21 +658,20 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       });
     } else if (upper === 'H') {
       result.push({
-        command: 'l',  // Convert to l since offset may introduce y component
+        command: 'l', // Convert to l since offset may introduce y component
         args: [newEnd.x - newStart.x, newEnd.y - newStart.y],
         start: newStart,
         end: newEnd,
       });
     } else if (upper === 'V') {
       result.push({
-        command: 'l',  // Convert to l since offset may introduce x component
+        command: 'l', // Convert to l since offset may introduce x component
         args: [newEnd.x - newStart.x, newEnd.y - newStart.y],
         start: newStart,
         end: newEnd,
       });
     } else if (upper === 'C') {
       const [cx1, cy1, cx2, cy2] = seg.cmd.args;
-      const p1 = { x: seg.cmd.start.x + cx1 + seg.startOffset.x, y: seg.cmd.start.y + cy1 + seg.startOffset.y };
       const p2 = { x: seg.cmd.start.x + cx2 + seg.endOffset.x, y: seg.cmd.start.y + cy2 + seg.endOffset.y };
       // Adjust CP1 relative to actual start (considering miter join)
       // CP1 keeps the same offset as the start normal for consistency
@@ -645,9 +679,12 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       result.push({
         command: 'c',
         args: [
-          adjP1.x - newStart.x, adjP1.y - newStart.y,
-          p2.x - newStart.x, p2.y - newStart.y,
-          newEnd.x - newStart.x, newEnd.y - newStart.y,
+          adjP1.x - newStart.x,
+          adjP1.y - newStart.y,
+          p2.x - newStart.x,
+          p2.y - newStart.y,
+          newEnd.x - newStart.x,
+          newEnd.y - newStart.y,
         ],
         start: newStart,
         end: newEnd,
@@ -662,21 +699,23 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       const cp = { x: seg.cmd.start.x + qx1 + avgOffset.x, y: seg.cmd.start.y + qy1 + avgOffset.y };
       result.push({
         command: 'q',
-        args: [
-          cp.x - newStart.x, cp.y - newStart.y,
-          newEnd.x - newStart.x, newEnd.y - newStart.y,
-        ],
+        args: [cp.x - newStart.x, cp.y - newStart.y, newEnd.x - newStart.x, newEnd.y - newStart.y],
         start: newStart,
         end: newEnd,
       });
     } else if (upper === 'A') {
       const [rx, ry, rotation, largeArcFlag, sweepFlag] = seg.cmd.args;
-      const phi = rotation * Math.PI / 180;
+      const phi = (rotation * Math.PI) / 180;
       const center = arcEndpointToCenter(
-        seg.cmd.start.x, seg.cmd.start.y,
-        rx, ry, phi,
-        largeArcFlag, sweepFlag,
-        seg.cmd.end.x, seg.cmd.end.y
+        seg.cmd.start.x,
+        seg.cmd.start.y,
+        rx,
+        ry,
+        phi,
+        largeArcFlag,
+        sweepFlag,
+        seg.cmd.end.x,
+        seg.cmd.end.y,
       );
 
       if (center) {
@@ -685,8 +724,7 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
         const newRy = Math.max(0.001, center.ry + sign * distance);
         result.push({
           command: 'a',
-          args: [newRx, newRy, rotation, largeArcFlag, sweepFlag,
-            newEnd.x - newStart.x, newEnd.y - newStart.y],
+          args: [newRx, newRy, rotation, largeArcFlag, sweepFlag, newEnd.x - newStart.x, newEnd.y - newStart.y],
           start: newStart,
           end: newEnd,
         });
@@ -728,7 +766,7 @@ function computeMiterJoin(
   nextCmd: TransformCmd,
   prevEndOffset: Point,
   nextStartOffset: Point,
-  distance: number
+  distance: number,
 ): Point {
   // Get tangent directions at the junction
   const prevDir = getEndTangent(prevCmd);
@@ -769,20 +807,21 @@ function computeMiterJoin(
 
 function getEndTangent(cmd: TransformCmd): Point {
   const upper = cmd.command.toUpperCase();
-  let dx: number, dy: number;
+  let dx: number;
+  let dy: number;
 
   if (upper === 'C') {
     const [, , cx2, cy2] = cmd.args;
-    dx = (cmd.end.x - cmd.start.x) - cx2;
-    dy = (cmd.end.y - cmd.start.y) - cy2;
+    dx = cmd.end.x - cmd.start.x - cx2;
+    dy = cmd.end.y - cmd.start.y - cy2;
     if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) {
       dx = cmd.end.x - cmd.start.x;
       dy = cmd.end.y - cmd.start.y;
     }
   } else if (upper === 'Q') {
     const [qx1, qy1] = cmd.args;
-    dx = (cmd.end.x - cmd.start.x) - qx1;
-    dy = (cmd.end.y - cmd.start.y) - qy1;
+    dx = cmd.end.x - cmd.start.x - qx1;
+    dy = cmd.end.y - cmd.start.y - qy1;
     if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) {
       dx = cmd.end.x - cmd.start.x;
       dy = cmd.end.y - cmd.start.y;
@@ -799,7 +838,8 @@ function getEndTangent(cmd: TransformCmd): Point {
 
 function getStartTangent(cmd: TransformCmd): Point {
   const upper = cmd.command.toUpperCase();
-  let dx: number, dy: number;
+  let dx: number;
+  let dy: number;
 
   if (upper === 'C') {
     const [cx1, cy1] = cmd.args;
@@ -833,10 +873,7 @@ function getStartTangent(cmd: TransformCmd): Point {
  * Apply a point transform to every coordinate in the path, then recompute relative args.
  * Does NOT touch arc rotation or sweep — those are handled by callers.
  */
-function transformPathPoints(
-  commands: TransformCmd[],
-  transformPoint: (p: Point) => Point
-): TransformCmd[] {
+function transformPathPoints(commands: TransformCmd[], transformPoint: (p: Point) => Point): TransformCmd[] {
   const result: TransformCmd[] = [];
 
   for (const cmd of commands) {
@@ -867,9 +904,12 @@ function transformPathPoints(
         result.push({
           command: 'c',
           args: [
-            newCp1.x - newStart.x, newCp1.y - newStart.y,
-            newCp2.x - newStart.x, newCp2.y - newStart.y,
-            newEnd.x - newStart.x, newEnd.y - newStart.y,
+            newCp1.x - newStart.x,
+            newCp1.y - newStart.y,
+            newCp2.x - newStart.x,
+            newCp2.y - newStart.y,
+            newEnd.x - newStart.x,
+            newEnd.y - newStart.y,
           ],
           start: newStart,
           end: newEnd,
@@ -883,10 +923,7 @@ function transformPathPoints(
         const newCp = transformPoint(cpAbs);
         result.push({
           command: 'q',
-          args: [
-            newCp.x - newStart.x, newCp.y - newStart.y,
-            newEnd.x - newStart.x, newEnd.y - newStart.y,
-          ],
+          args: [newCp.x - newStart.x, newCp.y - newStart.y, newEnd.x - newStart.x, newEnd.y - newStart.y],
           start: newStart,
           end: newEnd,
         });
@@ -899,10 +936,7 @@ function transformPathPoints(
         const newCp2 = transformPoint(cp2Abs);
         result.push({
           command: 's',
-          args: [
-            newCp2.x - newStart.x, newCp2.y - newStart.y,
-            newEnd.x - newStart.x, newEnd.y - newStart.y,
-          ],
+          args: [newCp2.x - newStart.x, newCp2.y - newStart.y, newEnd.x - newStart.x, newEnd.y - newStart.y],
           start: newStart,
           end: newEnd,
         });
@@ -996,11 +1030,7 @@ export function extractVerticesFromCommands(commands: TransformCmd[]): Point[] {
  * Reflect path across a line through `center` at angle `angle` (radians).
  * Reflection formula: P' = C + (dx·cos2θ + dy·sin2θ, dx·sin2θ - dy·cos2θ)
  */
-export function mirrorCommands(
-  commands: TransformCmd[],
-  angle: number,
-  center: Point
-): TransformCmd[] {
+export function mirrorCommands(commands: TransformCmd[], angle: number, center: Point): TransformCmd[] {
   const cos2a = Math.cos(2 * angle);
   const sin2a = Math.sin(2 * angle);
 
@@ -1016,11 +1046,11 @@ export function mirrorCommands(
   const result = transformPathPoints(commands, transformPoint);
 
   // Post-process arc commands: flip sweep, adjust rotation
-  const angleDeg = angle * 180 / Math.PI;
+  const angleDeg = (angle * 180) / Math.PI;
   for (const cmd of result) {
     if (cmd.command.toUpperCase() === 'A') {
-      cmd.args[4] = 1 - cmd.args[4];              // flip sweep flag
-      cmd.args[2] = 2 * angleDeg - cmd.args[2];   // adjust rotation
+      cmd.args[4] = 1 - cmd.args[4]; // flip sweep flag
+      cmd.args[2] = 2 * angleDeg - cmd.args[2]; // adjust rotation
     }
   }
 
@@ -1040,15 +1070,19 @@ export function mirrorCommands(
  * Uses eigendecomposition of the transformed ellipse shape matrix.
  */
 export function scaleArcParams(
-  rx: number, ry: number, rotation: number, sweep: number,
-  sx: number, sy: number
+  rx: number,
+  ry: number,
+  rotation: number,
+  sweep: number,
+  sx: number,
+  sy: number,
 ): { rx: number; ry: number; rotation: number; sweep: number } {
   const absSx = Math.abs(sx);
   const absSy = Math.abs(sy);
 
   // Flip sweep when exactly one of sx, sy is negative (reflection reverses chirality)
   let newSweep = sweep;
-  if ((sx < 0) !== (sy < 0)) {
+  if (sx < 0 !== sy < 0) {
     newSweep = 1 - sweep;
   }
 
@@ -1058,7 +1092,7 @@ export function scaleArcParams(
   }
 
   // Non-uniform: eigendecompose the transformed ellipse shape matrix
-  const theta = rotation * Math.PI / 180;
+  const theta = (rotation * Math.PI) / 180;
   const cosT = Math.cos(theta);
   const sinT = Math.sin(theta);
   const rx2 = rx * rx;
@@ -1079,15 +1113,16 @@ export function scaleArcParams(
   // Eigendecompose M' to get new radii and rotation
   const trace = ap + dp;
   const det = ap * dp - bp * bp;
-  const disc = Math.sqrt(Math.max(0, trace * trace / 4 - det));
+  const disc = Math.sqrt(Math.max(0, (trace * trace) / 4 - det));
   const lambda1 = trace / 2 + disc;
   const lambda2 = trace / 2 - disc;
 
   const newRx = Math.sqrt(Math.max(0, lambda1));
   const newRy = Math.sqrt(Math.max(0, lambda2));
-  const newRotation = Math.abs(bp) < 1e-12 && Math.abs(ap - dp) < 1e-12
-    ? rotation  // symmetric case — rotation unchanged
-    : Math.atan2(2 * bp, ap - dp) / 2 * (180 / Math.PI);
+  const newRotation =
+    Math.abs(bp) < 1e-12 && Math.abs(ap - dp) < 1e-12
+      ? rotation // symmetric case — rotation unchanged
+      : (Math.atan2(2 * bp, ap - dp) / 2) * (180 / Math.PI);
 
   return { rx: newRx, ry: newRy, rotation: newRotation, sweep: newSweep };
 }
@@ -1096,11 +1131,7 @@ export function scaleArcParams(
  * Scale path commands from a center point by (sx, sy).
  * Uses transformPathPoints for point coordinates, then post-processes arcs.
  */
-export function scaleCommands(
-  commands: TransformCmd[],
-  sx: number, sy: number,
-  center: Point
-): TransformCmd[] {
+export function scaleCommands(commands: TransformCmd[], sx: number, sy: number, center: Point): TransformCmd[] {
   const transformPoint = (p: Point): Point => ({
     x: center.x + (p.x - center.x) * sx,
     y: center.y + (p.y - center.y) * sy,
@@ -1131,26 +1162,32 @@ export function scaleCommands(
 export function concatenateCommands(
   leftCmds: TransformCmd[],
   leftEndPoint: Point,
-  rightCmds: TransformCmd[]
+  rightCmds: TransformCmd[],
 ): TransformCmd[] {
   if (leftCmds.length === 0 && rightCmds.length === 0) return [];
   if (leftCmds.length === 0) {
-    return rightCmds.map(cmd => ({
-      command: cmd.command, args: [...cmd.args],
-      start: { ...cmd.start }, end: { ...cmd.end },
+    return rightCmds.map((cmd) => ({
+      command: cmd.command,
+      args: [...cmd.args],
+      start: { ...cmd.start },
+      end: { ...cmd.end },
     }));
   }
   if (rightCmds.length === 0) {
-    return leftCmds.map(cmd => ({
-      command: cmd.command, args: [...cmd.args],
-      start: { ...cmd.start }, end: { ...cmd.end },
+    return leftCmds.map((cmd) => ({
+      command: cmd.command,
+      args: [...cmd.args],
+      start: { ...cmd.start },
+      end: { ...cmd.end },
     }));
   }
 
   // Deep-copy left commands (unchanged)
-  const result: TransformCmd[] = leftCmds.map(cmd => ({
-    command: cmd.command, args: [...cmd.args],
-    start: { ...cmd.start }, end: { ...cmd.end },
+  const result: TransformCmd[] = leftCmds.map((cmd) => ({
+    command: cmd.command,
+    args: [...cmd.args],
+    start: { ...cmd.start },
+    end: { ...cmd.end },
   }));
 
   // Deep-copy right commands, offset start/end by leftEndPoint
@@ -1166,11 +1203,7 @@ export function concatenateCommands(
   return result;
 }
 
-export function rotateAtVertexCommands(
-  commands: TransformCmd[],
-  vertexIndex: number,
-  angle: number
-): TransformCmd[] {
+export function rotateAtVertexCommands(commands: TransformCmd[], vertexIndex: number, angle: number): TransformCmd[] {
   const vertices = extractVerticesFromCommands(commands);
 
   if (vertexIndex < 0 || vertexIndex >= vertices.length) {
@@ -1193,10 +1226,10 @@ export function rotateAtVertexCommands(
   const result = transformPathPoints(commands, transformPoint);
 
   // Post-process arc commands: adjust rotation (sweep unchanged)
-  const angleDeg = angle * 180 / Math.PI;
+  const angleDeg = (angle * 180) / Math.PI;
   for (const cmd of result) {
     if (cmd.command.toUpperCase() === 'A') {
-      cmd.args[2] = cmd.args[2] + angleDeg;   // adjust rotation
+      cmd.args[2] += angleDeg; // adjust rotation
     }
   }
 
@@ -1226,7 +1259,10 @@ export function splitCommandAtParametricT(cmd: TransformCmd, t: number): [Transf
   const upper = cmd.command.toUpperCase();
 
   switch (upper) {
-    case 'L': case 'H': case 'V': case 'Z': {
+    case 'L':
+    case 'H':
+    case 'V':
+    case 'Z': {
       // Linear interpolation
       const dx = cmd.end.x - cmd.start.x;
       const dy = cmd.end.y - cmd.start.y;
@@ -1307,12 +1343,17 @@ export function splitCommandAtParametricT(cmd: TransformCmd, t: number): [Transf
 
     case 'A': {
       const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
-      const phi = rotation * Math.PI / 180;
+      const phi = (rotation * Math.PI) / 180;
       const center = arcEndpointToCenter(
-        cmd.start.x, cmd.start.y,
-        rx, ry, phi,
-        largeArcFlag, sweepFlag,
-        cmd.end.x, cmd.end.y
+        cmd.start.x,
+        cmd.start.y,
+        rx,
+        ry,
+        phi,
+        largeArcFlag,
+        sweepFlag,
+        cmd.end.x,
+        cmd.end.y,
       );
 
       if (!center) {
@@ -1327,7 +1368,6 @@ export function splitCommandAtParametricT(cmd: TransformCmd, t: number): [Transf
       }
 
       // Split angle range
-      const midAngle = center.startAngle + t * center.deltaAngle;
       const mid = arcPointFromCenter(center, t);
 
       const delta1 = t * center.deltaAngle;
@@ -1389,7 +1429,7 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
   const resolved = resolveSmooth(commands);
 
   // Filter to drawing commands (skip M) and compute lengths
-  const drawCmds = resolved.filter(c => c.command.toUpperCase() !== 'M');
+  const drawCmds = resolved.filter((c) => c.command.toUpperCase() !== 'M');
   if (drawCmds.length === 0) return [];
 
   const cmdLengths: number[] = [];

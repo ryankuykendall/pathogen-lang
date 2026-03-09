@@ -234,11 +234,13 @@ class BlogPostView extends HTMLElement {
       const backLink = e.target.closest('.back-link');
       if (backLink) {
         e.preventDefault();
-        this.dispatchEvent(new CustomEvent('navigate', {
-          bubbles: true,
-          composed: true,
-          detail: { path: '/blog' }
-        }));
+        this.dispatchEvent(
+          new CustomEvent('navigate', {
+            bubbles: true,
+            composed: true,
+            detail: { path: '/blog' },
+          }),
+        );
       }
     });
   }
@@ -248,7 +250,7 @@ class BlogPostView extends HTMLElement {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -256,7 +258,7 @@ class BlogPostView extends HTMLElement {
     const routeParams = store.get('routeParams') || {};
     const slug = routeParams.slug;
     const postContent = posts[slug];
-    const postMeta = blogIndex.find(p => p.slug === slug);
+    const postMeta = blogIndex.find((p) => p.slug === slug);
 
     if (!postContent || !postMeta) {
       this.shadowRoot.innerHTML = `

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compile } from '../src';
 import { compilePath } from './helpers';
 
@@ -158,7 +159,7 @@ describe('Color type', () => {
     });
 
     it('throws on unknown property', () => {
-      expect(() => compile('let c = Color("#ff0000"); log(c.foo);')).toThrow("does not exist on Color");
+      expect(() => compile('let c = Color("#ff0000"); log(c.foo);')).toThrow('does not exist on Color');
     });
   });
 
@@ -380,20 +381,20 @@ describe('Color type', () => {
     it('auto-converts Color in style block', () => {
       const result = compile(
         "let primary = Color('#e63946');\n" +
-        "define PathLayer('main') ${ stroke: primary; }\n" +
-        "layer('main').apply { M 0 0 L 100 100 }"
+          "define PathLayer('main') ${ stroke: primary; }\n" +
+          "layer('main').apply { M 0 0 L 100 100 }",
       );
-      const mainLayer = result.layers.find(l => l.name === 'main');
+      const mainLayer = result.layers.find((l) => l.name === 'main');
       expect(mainLayer?.styles?.stroke).toBe('#e63946');
     });
 
     it('auto-converts manipulated Color in style block', () => {
       const result = compile(
         "let c = Color('#ff0000').alpha(0.5);\n" +
-        "define PathLayer('main') ${ stroke: c; }\n" +
-        "layer('main').apply { M 0 0 L 100 100 }"
+          "define PathLayer('main') ${ stroke: c; }\n" +
+          "layer('main').apply { M 0 0 L 100 100 }",
       );
-      const mainLayer = result.layers.find(l => l.name === 'main');
+      const mainLayer = result.layers.find((l) => l.name === 'main');
       expect(mainLayer?.styles?.stroke).toBe('rgba(255, 0, 0, 0.5)');
     });
   });
@@ -780,7 +781,9 @@ describe('Color type', () => {
       });
 
       it('throws on n < 2', () => {
-        expect(() => compile('let a = Color("#ff0000"); let b = Color("#0000ff"); Color.palette(a, b, 1);')).toThrow('must be an integer >= 2');
+        expect(() => compile('let a = Color("#ff0000"); let b = Color("#0000ff"); Color.palette(a, b, 1);')).toThrow(
+          'must be an integer >= 2',
+        );
       });
     });
 
@@ -823,7 +826,7 @@ describe('Color type', () => {
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('light-dark(#333333, #eeeeee)');
+      expect(result.layers[0].styles.fill).toBe('light-dark(#333333, #eeeeee)');
     });
 
     it('works with CSSVar-backed variants', () => {
@@ -835,7 +838,7 @@ describe('Color type', () => {
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('light-dark(var(--fg-light, #333), var(--fg-dark, #eee))');
+      expect(result.layers[0].styles.fill).toBe('light-dark(var(--fg-light, #333), var(--fg-dark, #eee))');
     });
 
     it('works with mixed variants (one CSSVar, one plain)', () => {
@@ -847,7 +850,7 @@ describe('Color type', () => {
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }
       `);
-      expect(result.layers[0].styles['fill']).toBe('light-dark(var(--fg-light, #333), #eeeeee)');
+      expect(result.layers[0].styles.fill).toBe('light-dark(var(--fg-light, #333), #eeeeee)');
     });
 
     it('method calls on lightDark color operate on light variant', () => {
@@ -882,7 +885,9 @@ describe('Color type', () => {
     });
 
     it('throws on too many arguments', () => {
-      expect(() => compile('Color.lightDark(Color("#333"), Color("#eee"), Color("#fff"));')).toThrow('expects 2 arguments');
+      expect(() => compile('Color.lightDark(Color("#333"), Color("#eee"), Color("#fff"));')).toThrow(
+        'expects 2 arguments',
+      );
     });
   });
 });

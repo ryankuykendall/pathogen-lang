@@ -5,8 +5,8 @@ import { workspaceApi } from './api.js';
 import { store } from '../state/store.js';
 
 // Autosave configuration
-const DEBOUNCE_MS = 5000;       // 5 seconds after last change
-const MIN_INTERVAL_MS = 30000;  // 30 seconds minimum between saves
+const DEBOUNCE_MS = 5000; // 5 seconds after last change
+const MIN_INTERVAL_MS = 30000; // 30 seconds minimum between saves
 
 // Save status enum
 export const SaveStatus = {
@@ -23,7 +23,10 @@ async function hashContent(content) {
   const data = encoder.encode(content);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray
+    .slice(0, 8)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 // Autosave manager class

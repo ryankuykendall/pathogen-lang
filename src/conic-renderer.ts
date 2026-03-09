@@ -4,6 +4,7 @@
  */
 
 import { mixColors, oklchToCSS } from './color.js';
+
 import type { OKLCH } from './color.js';
 
 export interface ConicWedge {
@@ -15,10 +16,7 @@ export interface ConicWedge {
  * Interpolate color between two stops at parameter t ∈ [0,1].
  * Uses OKLCh if both stops have oklch data, otherwise picks nearest.
  */
-function interpolateColor(
-  stops: Array<{ offset: number; color: string; oklch?: OKLCH }>,
-  t: number,
-): string {
+function interpolateColor(stops: { offset: number; color: string; oklch?: OKLCH }[], t: number): string {
   if (stops.length === 0) return '#000000';
   if (stops.length === 1) return stops[0].color;
 
@@ -69,32 +67,37 @@ function interpolateColor(
  * @param resolution - Radians per wedge (default ~1 degree)
  */
 export function renderConicToWedges(
-  cx: number, cy: number,
-  fromRad: number, toRad: number,
+  cx: number,
+  cy: number,
+  fromRad: number,
+  toRad: number,
   direction: 'cw' | 'ccw',
-  spread: string,
-  stops: Array<{ offset: number; color: string; oklch?: OKLCH }>,
-  viewWidth: number, viewHeight: number,
+  _spread: string,
+  stops: { offset: number; color: string; oklch?: OKLCH }[],
+  viewWidth: number,
+  viewHeight: number,
   resolution?: number,
 ): ConicWedge[] {
   if (stops.length === 0) return [];
 
-  const res = resolution ?? (Math.PI / 180); // ~1 degree per wedge
+  const res = resolution ?? Math.PI / 180; // ~1 degree per wedge
   const sweep = toRad - fromRad;
   if (Math.abs(sweep) < 1e-10) return [];
 
   // Radius: max distance from center to any viewport corner, with a small margin
-  const r = Math.max(
-    Math.hypot(cx, cy),
-    Math.hypot(cx - viewWidth, cy),
-    Math.hypot(cx, cy - viewHeight),
-    Math.hypot(cx - viewWidth, cy - viewHeight),
-  ) + 2;
+  const r =
+    Math.max(
+      Math.hypot(cx, cy),
+      Math.hypot(cx - viewWidth, cy),
+      Math.hypot(cx, cy - viewHeight),
+      Math.hypot(cx - viewWidth, cy - viewHeight),
+    ) + 2;
 
   // Process stops — if direction is ccw, reverse offsets
-  const processedStops = direction === 'ccw'
-    ? stops.map(s => ({ ...s, offset: 1 - s.offset })).sort((a, b) => a.offset - b.offset)
-    : [...stops].sort((a, b) => a.offset - b.offset);
+  const processedStops =
+    direction === 'ccw'
+      ? stops.map((s) => ({ ...s, offset: 1 - s.offset })).sort((a, b) => a.offset - b.offset)
+      : [...stops].sort((a, b) => a.offset - b.offset);
 
   const wedgeCount = Math.max(1, Math.ceil(Math.abs(sweep) / res));
   const wedges: ConicWedge[] = [];

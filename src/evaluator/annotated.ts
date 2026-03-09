@@ -1,40 +1,61 @@
 // Annotated evaluator - produces human-readable output with comments and annotations
-import type {
-  Program,
-  Statement,
-  Expression,
-  PathArg,
-  PathCommand,
-  LetDeclaration,
-  ForLoop,
-  ForEachLoop,
-  IfStatement,
-  FunctionDefinition,
-  ReturnStatement,
-  FunctionCall,
-  MemberExpression,
-  IndexExpression,
-  IndexedAssignmentStatement,
-  MemberAssignmentStatement,
-  ExpressionStatement,
-  MethodCallExpression,
-  Comment,
-  LayerDefinition,
-  LayerApplyBlock,
-  LayerConstructorExpression,
-  TemplateLiteral,
-  TextStatement,
-  TspanStatement,
-  StyleBlockLiteral,
-  PathBlockExpression,
-} from '../parser/ast';
-import { stdlib, contextAwareFunctions } from '../stdlib';
-import { createPathContext, contextToObject, updateContextForCommand, setLastTangent, type PathContext } from './context';
+import { contextAwareFunctions, stdlib } from '../stdlib';
+import { contextToObject, createPathContext, setLastTangent, updateContextForCommand } from './context';
+import {
+  commandToPathString,
+  computeBoundingBox,
+  concatenateCommands,
+  mirrorCommands,
+  offsetCommands,
+  reverseCommands,
+  rotateAtVertexCommands,
+  scaleCommands,
+  subPathCommands,
+} from './path-transforms';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
-import { samplePathAtFraction, partitionPath } from './sampling';
-import { reverseCommands, computeBoundingBox, offsetCommands, commandToPathString, mirrorCommands, rotateAtVertexCommands, scaleCommands, concatenateCommands, subPathCommands } from './path-transforms';
-import { type OKLCH, parseColor, oklchToCSS, oklchToHex, oklchToRGBString, oklchToHSLString, oklchToOKLCHString, lighten, darken, saturate, desaturate, setAlpha, hueShift, mixColors, cssSourceExpr, lightenCSS, darkenCSS, saturateCSS, desaturateCSS, setAlphaCSS, hueShiftCSS, mixCSS, setLightnessCSS } from '../color';
+import { partitionPath, samplePathAtFraction } from './sampling';
+import {
+  cssSourceExpr,
+  darken,
+  darkenCSS,
+  desaturate,
+  desaturateCSS,
+  hueShift,
+  hueShiftCSS,
+  lighten,
+  lightenCSS,
+  mixColors,
+  mixCSS,
+  oklchToCSS,
+  oklchToHex,
+  oklchToHSLString,
+  oklchToOKLCHString,
+  oklchToRGBString,
+  parseColor,
+  saturate,
+  saturateCSS,
+  setAlpha,
+  setAlphaCSS,
+  setLightnessCSS,
+} from '../color';
+
+import type { PathContext } from './context';
+import type { OKLCH } from '../color';
+import type { PathBlockCommand, Point } from './types';
+import type {
+  Comment,
+  Expression,
+  FunctionCall,
+  IndexExpression,
+  MemberExpression,
+  MethodCallExpression,
+  PathArg,
+  PathBlockExpression,
+  Program,
+  Statement,
+  StyleBlockLiteral,
+} from '../parser/ast';
 
 // Types for annotated output
 export type AnnotatedLine =
@@ -53,7 +74,27 @@ export interface AnnotatedOutput {
 }
 
 // Value types (same as main evaluator)
-export type Value = number | string | null | PathSegment | UserFunction | ContextObject | PathWithResult | AnnotatedLayerRef | StyleBlockValue | ArrayValue | ObjectValue | ObjectNamespace | PathBlockValue | ProjectedPathValue | SVGFragmentValue | GradientValue | PatternValue | ColorValue | ColorNamespace | CSSVarValue;
+export type Value =
+  | number
+  | string
+  | null
+  | PathSegment
+  | UserFunction
+  | ContextObject
+  | PathWithResult
+  | AnnotatedLayerRef
+  | StyleBlockValue
+  | ArrayValue
+  | ObjectValue
+  | ObjectNamespace
+  | PathBlockValue
+  | ProjectedPathValue
+  | SVGFragmentValue
+  | GradientValue
+  | PatternValue
+  | ColorValue
+  | ColorNamespace
+  | CSSVarValue;
 
 export interface SVGFragmentValue {
   type: 'SVGFragmentValue';
@@ -71,7 +112,7 @@ export interface GradientValue {
   gradientType: 'linear' | 'radial' | 'conic';
   id: string;
   attrs: Record<string, string>;
-  stops: Array<{ offset: number; color: string }>;
+  stops: { offset: number; color: string }[];
   spreadMethod?: string;
   gradientUnits?: string;
   gradientTransform?: string;
@@ -91,9 +132,11 @@ function isGradientValue(value: Value): value is GradientValue {
 export interface PatternValue {
   type: 'PatternValue';
   id: string;
-  x: number; y: number;
-  width: number; height: number;
-  paths: Array<{ d: string; styles: Record<string, string> }>;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  paths: { d: string; styles: Record<string, string> }[];
   patternUnits?: string;
   patternTransform?: string;
   patternContentUnits?: string;
@@ -151,18 +194,6 @@ export interface ObjectNamespace {
   type: 'ObjectNamespace';
 }
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-export interface PathBlockCommand {
-  command: string;
-  args: number[];
-  start: Point;
-  end: Point;
-}
-
 export interface PathBlockValue {
   type: 'PathBlockValue';
   commands: PathBlockCommand[];
@@ -187,7 +218,7 @@ function isProjectedPathValue(value: Value): value is ProjectedPathValue {
 }
 
 function projectCommands(commands: PathBlockCommand[], originX: number, originY: number): PathBlockCommand[] {
-  return commands.map(cmd => ({
+  return commands.map((cmd) => ({
     command: cmd.command,
     args: [...cmd.args],
     start: { x: cmd.start.x + originX, y: cmd.start.y + originY },
@@ -196,7 +227,7 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
 }
 
 function commandsToRelativeD(commands: PathBlockCommand[]): string {
-  const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
   const parts: string[] = [];
   for (const cmd of commands) {
     const c = cmd.command;
@@ -255,8 +286,8 @@ export interface ContextObject {
  */
 export interface PathWithResult {
   type: 'PathWithResult';
-  path: string;      // The path string to emit
-  result: ContextObject;  // The result value (for assignments)
+  path: string; // The path string to emit
+  result: ContextObject; // The result value (for assignments)
 }
 
 export interface UserFunction {
@@ -283,14 +314,14 @@ export interface EvaluationState {
 export interface Scope {
   variables: Map<string, Value>;
   parent: Scope | null;
-  evalState?: EvaluationState;  // Shared across all scopes during evaluation
+  evalState?: EvaluationState; // Shared across all scopes during evaluation
 }
 
 function createScope(parent: Scope | null = null): Scope {
   return {
     variables: new Map(),
     parent,
-    evalState: parent?.evalState,  // Inherit evaluation state from parent
+    evalState: parent?.evalState, // Inherit evaluation state from parent
   };
 }
 
@@ -324,7 +355,7 @@ function setVariable(scope: Scope, name: string, value: Value): void {
  */
 function convertAngleUnit(value: number, unit?: 'deg' | 'rad' | 'pi'): number {
   if (unit === 'deg') {
-    return value * Math.PI / 180;
+    return (value * Math.PI) / 180;
   }
   if (unit === 'pi') {
     return value * Math.PI;
@@ -428,7 +459,12 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
 /**
  * Evaluate a context-aware function that needs access to path context
  */
-function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope, loc?: { line?: number; column?: number }): Value {
+function evaluateContextAwareFunction(
+  name: string,
+  args: Value[],
+  scope: Scope,
+  loc?: { line?: number; column?: number },
+): Value {
   const ctx = scope.evalState!.pathContext;
   const inPathBlock = !!(scope.evalState as EvaluationState & { _insidePathBlock?: boolean })._insidePathBlock;
 
@@ -467,7 +503,7 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       const command = isMoveTo ? 'M' : 'L';
 
       updateContextForCommand(ctx, command, [x, y]);
-      setLastTangent(ctx, angle);  // Set tangent to movement direction
+      setLastTangent(ctx, angle); // Set tangent to movement direction
       updateCtxVariable(scope);
 
       if (inPathBlock) {
@@ -526,8 +562,7 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       // Check if current position matches arc start (within tolerance)
       const tolerance = 1e-10;
       const positionMatches =
-        Math.abs(ctx.position.x - startX) < tolerance &&
-        Math.abs(ctx.position.y - startY) < tolerance;
+        Math.abs(ctx.position.x - startX) < tolerance && Math.abs(ctx.position.y - startY) < tolerance;
 
       // Generate path string - use L instead of M to keep path continuous
       let pathStr: string;
@@ -640,7 +675,13 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       const [length] = args as [number];
 
       if (ctx.lastTangent === undefined) {
-        throw new Error(formatError('tangentLine requires a previous path command that establishes direction', loc?.line, loc?.column));
+        throw new Error(
+          formatError(
+            'tangentLine requires a previous path command that establishes direction',
+            loc?.line,
+            loc?.column,
+          ),
+        );
       }
 
       const savedTangent = ctx.lastTangent;
@@ -664,7 +705,9 @@ function evaluateContextAwareFunction(name: string, args: Value[], scope: Scope,
       const [radius, sweepAngle] = args as [number, number];
 
       if (ctx.lastTangent === undefined) {
-        throw new Error(formatError('tangentArc requires a previous path command that establishes direction', loc?.line, loc?.column));
+        throw new Error(
+          formatError('tangentArc requires a previous path command that establishes direction', loc?.line, loc?.column),
+        );
       }
 
       // Center is perpendicular to tangent direction
@@ -759,18 +802,7 @@ function isAnnotatedLayerRef(value: Value): value is AnnotatedLayerRef {
 }
 
 function camelToKebab(name: string): string {
-  return name.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
-}
-
-function hasAngleUnit(expr: Expression): boolean {
-  if (expr.type === 'NumberLiteral') {
-    return expr.unit !== undefined;
-  }
-  // For unary minus on a number with unit: -45deg
-  if (expr.type === 'UnaryExpression' && expr.operator === '-') {
-    return hasAngleUnit(expr.argument);
-  }
-  return false;
+  return name.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
@@ -796,7 +828,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
             resolvedValue = oklchToCSS(evaluated.oklch);
           }
         } else if (isCSSVarValue(evaluated)) {
-          resolvedValue = evaluated.fallback ? `var(${evaluated.varName}, ${evaluated.fallback})` : `var(${evaluated.varName})`;
+          resolvedValue = evaluated.fallback
+            ? `var(${evaluated.varName}, ${evaluated.fallback})`
+            : `var(${evaluated.varName})`;
         } else if (isGradientValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
         } else if (isPatternValue(evaluated)) {
@@ -836,7 +870,7 @@ interface SamplingCmd {
 function evaluateAnnotatedPathSampling(
   commands: SamplingCmd[],
   expr: MethodCallExpression,
-  scope: Scope
+  scope: Scope,
 ): Value | null {
   switch (expr.method) {
     case 'get': {
@@ -856,7 +890,10 @@ function evaluateAnnotatedPathSampling(
       return {
         type: 'ObjectValue' as const,
         properties: new Map<string, Value>([
-          ['point', { type: 'ContextObject' as const, value: { x: result.point.x, y: result.point.y } } as unknown as Value],
+          [
+            'point',
+            { type: 'ContextObject' as const, value: { x: result.point.x, y: result.point.y } } as unknown as Value,
+          ],
           ['angle', result.tangent],
         ]),
       };
@@ -870,7 +907,10 @@ function evaluateAnnotatedPathSampling(
       return {
         type: 'ObjectValue' as const,
         properties: new Map<string, Value>([
-          ['point', { type: 'ContextObject' as const, value: { x: result.point.x, y: result.point.y } } as unknown as Value],
+          [
+            'point',
+            { type: 'ContextObject' as const, value: { x: result.point.x, y: result.point.y } } as unknown as Value,
+          ],
           ['angle', result.tangent - Math.PI / 2],
         ]),
       };
@@ -901,7 +941,7 @@ function evaluateAnnotatedPathSampling(
 function evaluateAnnotatedPathTransforms(
   obj: PathBlockValue | ProjectedPathValue,
   expr: MethodCallExpression,
-  scope: Scope
+  scope: Scope,
 ): Value | null {
   const isBlock = obj.type === 'PathBlockValue';
 
@@ -911,12 +951,19 @@ function evaluateAnnotatedPathTransforms(
       const reversed = reverseCommands(obj.commands);
       if (isBlock) {
         if (reversed.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
         }
         const originX = reversed[0].start.x;
         const originY = reversed[0].start.y;
-        const normalizedCmds = reversed.map(cmd => ({
-          command: cmd.command, args: [...cmd.args],
+        const normalizedCmds = reversed.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
           start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
           end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
         }));
@@ -924,20 +971,19 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: normalizedCmds,
-          pathStrings: normalizedCmds.map(c => commandToPathString(c)),
+          pathStrings: normalizedCmds.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
         };
-      } else {
-        const projStartPoint = obj.endPoint;
-        const projEndPoint = reversed.length > 0 ? reversed[reversed.length - 1].end : obj.startPoint;
-        return {
-          type: 'ProjectedPathValue' as const,
-          commands: reversed,
-          startPoint: { x: projStartPoint.x, y: projStartPoint.y },
-          endPoint: { x: projEndPoint.x, y: projEndPoint.y },
-        };
       }
+      const projStartPoint = obj.endPoint;
+      const projEndPoint = reversed.length > 0 ? reversed[reversed.length - 1].end : obj.startPoint;
+      return {
+        type: 'ProjectedPathValue' as const,
+        commands: reversed,
+        startPoint: { x: projStartPoint.x, y: projStartPoint.y },
+        endPoint: { x: projEndPoint.x, y: projEndPoint.y },
+      };
     }
 
     case 'boundingBox': {
@@ -946,7 +992,10 @@ function evaluateAnnotatedPathTransforms(
       return {
         type: 'ObjectValue' as const,
         properties: new Map<string, Value>([
-          ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+          ['x', bb.x],
+          ['y', bb.y],
+          ['width', bb.width],
+          ['height', bb.height],
         ]),
       };
     }
@@ -958,12 +1007,19 @@ function evaluateAnnotatedPathTransforms(
       const offsetResult = offsetCommands(obj.commands, dist);
       if (isBlock) {
         if (offsetResult.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
         }
         const oOriginX = offsetResult[0].start.x;
         const oOriginY = offsetResult[0].start.y;
-        const oNormalized = offsetResult.map(cmd => ({
-          command: cmd.command, args: [...cmd.args],
+        const oNormalized = offsetResult.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
           start: { x: cmd.start.x - oOriginX, y: cmd.start.y - oOriginY },
           end: { x: cmd.end.x - oOriginX, y: cmd.end.y - oOriginY },
         }));
@@ -971,20 +1027,19 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: oNormalized,
-          pathStrings: oNormalized.map(c => commandToPathString(c)),
+          pathStrings: oNormalized.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: oLast.end.x, y: oLast.end.y },
         };
-      } else {
-        const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
-        const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
-        return {
-          type: 'ProjectedPathValue' as const,
-          commands: offsetResult,
-          startPoint: { x: oStart.x, y: oStart.y },
-          endPoint: { x: oEnd.x, y: oEnd.y },
-        };
       }
+      const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
+      const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
+      return {
+        type: 'ProjectedPathValue' as const,
+        commands: offsetResult,
+        startPoint: { x: oStart.x, y: oStart.y },
+        endPoint: { x: oEnd.x, y: oEnd.y },
+      };
     }
 
     case 'mirror': {
@@ -994,12 +1049,19 @@ function evaluateAnnotatedPathTransforms(
       if (isBlock) {
         const mirrored = mirrorCommands(obj.commands, mAngle, { x: 0, y: 0 });
         if (mirrored.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
         }
         const mOriginX = mirrored[0].start.x;
         const mOriginY = mirrored[0].start.y;
-        const mNormalized = mirrored.map(cmd => ({
-          command: cmd.command, args: [...cmd.args],
+        const mNormalized = mirrored.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
           start: { x: cmd.start.x - mOriginX, y: cmd.start.y - mOriginY },
           end: { x: cmd.end.x - mOriginX, y: cmd.end.y - mOriginY },
         }));
@@ -1007,21 +1069,20 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: mNormalized,
-          pathStrings: mNormalized.map(c => commandToPathString(c)),
+          pathStrings: mNormalized.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: mLast.end.x, y: mLast.end.y },
         };
-      } else {
-        const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
-        const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
-        const mEnd = mirrored.length > 0 ? mirrored[mirrored.length - 1].end : obj.endPoint;
-        return {
-          type: 'ProjectedPathValue' as const,
-          commands: mirrored,
-          startPoint: { x: mStart.x, y: mStart.y },
-          endPoint: { x: mEnd.x, y: mEnd.y },
-        };
       }
+      const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
+      const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
+      const mEnd = mirrored.length > 0 ? mirrored[mirrored.length - 1].end : obj.endPoint;
+      return {
+        type: 'ProjectedPathValue' as const,
+        commands: mirrored,
+        startPoint: { x: mStart.x, y: mStart.y },
+        endPoint: { x: mEnd.x, y: mEnd.y },
+      };
     }
 
     case 'rotateAtVertexIndex': {
@@ -1034,12 +1095,19 @@ function evaluateAnnotatedPathTransforms(
       if (isBlock) {
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
         if (rotated.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
         }
         const rOriginX = rotated[0].start.x;
         const rOriginY = rotated[0].start.y;
-        const rNormalized = rotated.map(cmd => ({
-          command: cmd.command, args: [...cmd.args],
+        const rNormalized = rotated.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
           start: { x: cmd.start.x - rOriginX, y: cmd.start.y - rOriginY },
           end: { x: cmd.end.x - rOriginX, y: cmd.end.y - rOriginY },
         }));
@@ -1047,21 +1115,20 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: rNormalized,
-          pathStrings: rNormalized.map(c => commandToPathString(c)),
+          pathStrings: rNormalized.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: rLast.end.x, y: rLast.end.y },
         };
-      } else {
-        const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
-        const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
-        const rEnd = rotated.length > 0 ? rotated[rotated.length - 1].end : obj.endPoint;
-        return {
-          type: 'ProjectedPathValue' as const,
-          commands: rotated,
-          startPoint: { x: rStart.x, y: rStart.y },
-          endPoint: { x: rEnd.x, y: rEnd.y },
-        };
       }
+      const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
+      const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
+      const rEnd = rotated.length > 0 ? rotated[rotated.length - 1].end : obj.endPoint;
+      return {
+        type: 'ProjectedPathValue' as const,
+        commands: rotated,
+        startPoint: { x: rStart.x, y: rStart.y },
+        endPoint: { x: rEnd.x, y: rEnd.y },
+      };
     }
 
     case 'scale': {
@@ -1073,27 +1140,32 @@ function evaluateAnnotatedPathTransforms(
       if (isBlock) {
         const scaled = scaleCommands(obj.commands, sSx, sSy, { x: 0, y: 0 });
         if (scaled.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
         }
         const sLast = scaled[scaled.length - 1];
         return {
           type: 'PathBlockValue' as const,
           commands: scaled,
-          pathStrings: scaled.map(c => commandToPathString(c)),
+          pathStrings: scaled.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: sLast.end.x, y: sLast.end.y },
         };
-      } else {
-        const scaled = scaleCommands(obj.commands, sSx, sSy, obj.startPoint);
-        const sStart = scaled.length > 0 ? scaled[0].start : obj.startPoint;
-        const sEnd = scaled.length > 0 ? scaled[scaled.length - 1].end : obj.endPoint;
-        return {
-          type: 'ProjectedPathValue' as const,
-          commands: scaled,
-          startPoint: { x: sStart.x, y: sStart.y },
-          endPoint: { x: sEnd.x, y: sEnd.y },
-        };
       }
+      const scaled = scaleCommands(obj.commands, sSx, sSy, obj.startPoint);
+      const sStart = scaled.length > 0 ? scaled[0].start : obj.startPoint;
+      const sEnd = scaled.length > 0 ? scaled[scaled.length - 1].end : obj.endPoint;
+      return {
+        type: 'ProjectedPathValue' as const,
+        commands: scaled,
+        startPoint: { x: sStart.x, y: sStart.y },
+        endPoint: { x: sEnd.x, y: sEnd.y },
+      };
     }
 
     case 'subPath': {
@@ -1107,12 +1179,19 @@ function evaluateAnnotatedPathTransforms(
       const subResult = subPathCommands(obj.commands, spStart, spEnd);
       if (isBlock) {
         if (subResult.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
         }
         const spOriginX = subResult[0].start.x;
         const spOriginY = subResult[0].start.y;
-        const spNormalized = subResult.map(cmd => ({
-          command: cmd.command, args: [...cmd.args],
+        const spNormalized = subResult.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
           start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
           end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
         }));
@@ -1120,31 +1199,37 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: spNormalized,
-          pathStrings: spNormalized.map(c => commandToPathString(c)),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: spLast.end.x, y: spLast.end.y },
-        };
-      } else {
-        // Return PathBlockValue (normalized to 0,0) so result is drawable
-        if (subResult.length === 0) {
-          return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
-        }
-        const spOriginX = subResult[0].start.x;
-        const spOriginY = subResult[0].start.y;
-        const spNormalized = subResult.map(cmd => ({
-          command: cmd.command, args: [...cmd.args],
-          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
-          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
-        }));
-        const spLast = spNormalized[spNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: spNormalized,
-          pathStrings: spNormalized.map(c => commandToPathString(c)),
+          pathStrings: spNormalized.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
       }
+      // Return PathBlockValue (normalized to 0,0) so result is drawable
+      if (subResult.length === 0) {
+        return {
+          type: 'PathBlockValue' as const,
+          commands: [],
+          pathStrings: [],
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: 0, y: 0 },
+        };
+      }
+      const spOriginX = subResult[0].start.x;
+      const spOriginY = subResult[0].start.y;
+      const spNormalized = subResult.map((cmd) => ({
+        command: cmd.command,
+        args: [...cmd.args],
+        start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
+        end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
+      }));
+      const spLast = spNormalized[spNormalized.length - 1];
+      return {
+        type: 'PathBlockValue' as const,
+        commands: spNormalized,
+        pathStrings: spNormalized.map((c) => commandToPathString(c)),
+        startPoint: { x: 0, y: 0 },
+        endPoint: { x: spLast.end.x, y: spLast.end.y },
+      };
     }
 
     default:
@@ -1193,12 +1278,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       };
     }
     if (expr.method === 'project') {
-      const args = expr.args.map(a => evaluateExpression(a, scope));
+      const args = expr.args.map((a) => evaluateExpression(a, scope));
       const x = typeof args[0] === 'number' ? args[0] : 0;
       const y = typeof args[1] === 'number' ? args[1] : 0;
       return {
         type: 'ProjectedPathValue' as const,
-        commands: obj.commands.map(cmd => ({
+        commands: obj.commands.map((cmd) => ({
           command: cmd.command,
           args: [...cmd.args],
           start: { x: cmd.start.x + x, y: cmd.start.y + y },
@@ -1231,13 +1316,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   if (isPatternValue(obj)) {
     switch (expr.method) {
       case 'append': {
-        if (expr.args.length < 1 || expr.args.length > 2) throw mError('Pattern.append() expects 1-2 arguments (path, styles?)');
+        if (expr.args.length < 1 || expr.args.length > 2)
+          throw mError('Pattern.append() expects 1-2 arguments (path, styles?)');
         const pathArg = evaluateExpression(expr.args[0], scope);
         let commands: PathBlockCommand[];
         if (isProjectedPathValue(pathArg)) {
           commands = pathArg.commands;
         } else if (isPathBlockValue(pathArg)) {
-          commands = pathArg.commands.map(cmd => ({
+          commands = pathArg.commands.map((cmd) => ({
             command: cmd.command,
             args: [...cmd.args],
             start: { x: cmd.start.x, y: cmd.start.y },
@@ -1246,7 +1332,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         } else {
           throw mError('Pattern.append() first argument must be a PathBlock or ProjectedPath');
         }
-        const d = commands.map(c => commandToPathString(c)).join(' ');
+        const d = commands.map((c) => commandToPathString(c)).join(' ');
         let styles: Record<string, string> = {};
         if (expr.args.length === 2) {
           const styleArg = evaluateExpression(expr.args[1], scope);
@@ -1283,13 +1369,19 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const newId = evaluateExpression(expr.args[0], scope);
         if (typeof newId !== 'string') throw mError('Gradient.inherit() argument must be a string');
         return {
-          type: 'GradientValue' as const, gradientType: obj.gradientType, id: newId,
-          attrs: { ...obj.attrs }, stops: [], href: obj.id,
+          type: 'GradientValue' as const,
+          gradientType: obj.gradientType,
+          id: newId,
+          attrs: { ...obj.attrs },
+          stops: [],
+          href: obj.id,
           interpolation: obj.interpolation,
           steps: obj.steps,
           // Propagate conic fields
-          from: obj.from, to: obj.to,
-          direction: obj.direction, spread: obj.spread,
+          from: obj.from,
+          to: obj.to,
+          direction: obj.direction,
+          spread: obj.spread,
         };
       }
       default:
@@ -1305,28 +1397,44 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const amount = evaluateExpression(expr.args[0], scope);
         if (typeof amount !== 'number') throw mError('lighten() amount must be a number');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
-        return { type: 'ColorValue', oklch: lighten(obj.oklch, amount), cssExpr: src ? lightenCSS(src, amount) : undefined };
+        return {
+          type: 'ColorValue',
+          oklch: lighten(obj.oklch, amount),
+          cssExpr: src ? lightenCSS(src, amount) : undefined,
+        };
       }
       case 'darken': {
         if (expr.args.length !== 1) throw mError('darken() expects 1 argument');
         const amount = evaluateExpression(expr.args[0], scope);
         if (typeof amount !== 'number') throw mError('darken() amount must be a number');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
-        return { type: 'ColorValue', oklch: darken(obj.oklch, amount), cssExpr: src ? darkenCSS(src, amount) : undefined };
+        return {
+          type: 'ColorValue',
+          oklch: darken(obj.oklch, amount),
+          cssExpr: src ? darkenCSS(src, amount) : undefined,
+        };
       }
       case 'saturate': {
         if (expr.args.length !== 1) throw mError('saturate() expects 1 argument');
         const factor = evaluateExpression(expr.args[0], scope);
         if (typeof factor !== 'number') throw mError('saturate() factor must be a number');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
-        return { type: 'ColorValue', oklch: saturate(obj.oklch, factor), cssExpr: src ? saturateCSS(src, factor) : undefined };
+        return {
+          type: 'ColorValue',
+          oklch: saturate(obj.oklch, factor),
+          cssExpr: src ? saturateCSS(src, factor) : undefined,
+        };
       }
       case 'desaturate': {
         if (expr.args.length !== 1) throw mError('desaturate() expects 1 argument');
         const factor = evaluateExpression(expr.args[0], scope);
         if (typeof factor !== 'number') throw mError('desaturate() factor must be a number');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
-        return { type: 'ColorValue', oklch: desaturate(obj.oklch, factor), cssExpr: src ? desaturateCSS(src, factor) : undefined };
+        return {
+          type: 'ColorValue',
+          oklch: desaturate(obj.oklch, factor),
+          cssExpr: src ? desaturateCSS(src, factor) : undefined,
+        };
       }
       case 'alpha': {
         if (expr.args.length !== 1) throw mError('alpha() expects 1 argument');
@@ -1340,12 +1448,20 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const degrees = evaluateExpression(expr.args[0], scope);
         if (typeof degrees !== 'number') throw mError('hueShift() degrees must be a number');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
-        return { type: 'ColorValue', oklch: hueShift(obj.oklch, degrees), cssExpr: src ? hueShiftCSS(src, degrees) : undefined };
+        return {
+          type: 'ColorValue',
+          oklch: hueShift(obj.oklch, degrees),
+          cssExpr: src ? hueShiftCSS(src, degrees) : undefined,
+        };
       }
       case 'complement': {
         if (expr.args.length !== 0) throw mError('complement() expects 0 arguments');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
-        return { type: 'ColorValue', oklch: hueShift(obj.oklch, 180), cssExpr: src ? hueShiftCSS(src, 180) : undefined };
+        return {
+          type: 'ColorValue',
+          oklch: hueShift(obj.oklch, 180),
+          cssExpr: src ? hueShiftCSS(src, 180) : undefined,
+        };
       }
       case 'mix': {
         if (expr.args.length !== 2) throw mError('mix() expects 2 arguments');
@@ -1368,7 +1484,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
-          { type: 'ColorValue', oklch: hueShift(obj.oklch, -angle), cssExpr: src ? hueShiftCSS(src, -angle) : undefined },
+          {
+            type: 'ColorValue',
+            oklch: hueShift(obj.oklch, -angle),
+            cssExpr: src ? hueShiftCSS(src, -angle) : undefined,
+          },
           { type: 'ColorValue', oklch: obj.oklch, cssVar: obj.cssVar, cssExpr: obj.cssExpr },
           { type: 'ColorValue', oklch: hueShift(obj.oklch, angle), cssExpr: src ? hueShiftCSS(src, angle) : undefined },
         ];
@@ -1406,8 +1526,16 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
           { type: 'ColorValue', oklch: obj.oklch, cssVar: obj.cssVar, cssExpr: obj.cssExpr },
-          { type: 'ColorValue', oklch: hueShift(obj.oklch, 180 - angle), cssExpr: src ? hueShiftCSS(src, 180 - angle) : undefined },
-          { type: 'ColorValue', oklch: hueShift(obj.oklch, 180 + angle), cssExpr: src ? hueShiftCSS(src, 180 + angle) : undefined },
+          {
+            type: 'ColorValue',
+            oklch: hueShift(obj.oklch, 180 - angle),
+            cssExpr: src ? hueShiftCSS(src, 180 - angle) : undefined,
+          },
+          {
+            type: 'ColorValue',
+            oklch: hueShift(obj.oklch, 180 + angle),
+            cssExpr: src ? hueShiftCSS(src, 180 + angle) : undefined,
+          },
         ];
         return { type: 'ArrayValue', elements: colors };
       }
@@ -1429,7 +1557,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof t !== 'number') throw mError('Color.mix() third argument (ratio) must be a number');
         const src1 = cssSourceExpr(c1.cssVar, c1.cssExpr);
         const src2 = cssSourceExpr(c2.cssVar, c2.cssExpr);
-        const cssExpr = (src1 || src2) ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
+        const cssExpr =
+          src1 || src2 ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
         return { type: 'ColorValue', oklch: mixColors(c1.oklch, c2.oklch, t), cssExpr };
       }
       case 'palette': {
@@ -1438,7 +1567,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           const c = evaluateExpression(expr.args[0], scope);
           const n = evaluateExpression(expr.args[1], scope);
           if (!isColorValue(c)) throw mError('Color.palette() first argument must be a Color');
-          if (typeof n !== 'number' || !Number.isInteger(n) || n < 2) throw mError('Color.palette() count must be an integer >= 2');
+          if (typeof n !== 'number' || !Number.isInteger(n) || n < 2)
+            throw mError('Color.palette() count must be an integer >= 2');
           const src = cssSourceExpr(c.cssVar, c.cssExpr);
           const colors: ColorValue[] = [];
           for (let i = 0; i < n; i++) {
@@ -1450,20 +1580,23 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             });
           }
           return { type: 'ArrayValue', elements: colors };
-        } else if (expr.args.length === 3) {
+        }
+        if (expr.args.length === 3) {
           // Interpolation: Color.palette(c1, c2, n)
           const c1 = evaluateExpression(expr.args[0], scope);
           const c2 = evaluateExpression(expr.args[1], scope);
           const n = evaluateExpression(expr.args[2], scope);
           if (!isColorValue(c1)) throw mError('Color.palette() first argument must be a Color');
           if (!isColorValue(c2)) throw mError('Color.palette() second argument must be a Color');
-          if (typeof n !== 'number' || !Number.isInteger(n) || n < 2) throw mError('Color.palette() count must be an integer >= 2');
+          if (typeof n !== 'number' || !Number.isInteger(n) || n < 2)
+            throw mError('Color.palette() count must be an integer >= 2');
           const src1 = cssSourceExpr(c1.cssVar, c1.cssExpr);
           const src2 = cssSourceExpr(c2.cssVar, c2.cssExpr);
           const colors: ColorValue[] = [];
           for (let i = 0; i < n; i++) {
             const t = i / (n - 1);
-            const cssExpr = (src1 || src2) ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
+            const cssExpr =
+              src1 || src2 ? mixCSS(src1 || oklchToCSS(c1.oklch), src2 || oklchToCSS(c2.oklch), t) : undefined;
             colors.push({
               type: 'ColorValue',
               oklch: mixColors(c1.oklch, c2.oklch, t),
@@ -1471,9 +1604,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             });
           }
           return { type: 'ArrayValue', elements: colors };
-        } else {
-          throw mError('Color.palette() expects 2 or 3 arguments');
         }
+        throw mError('Color.palette() expects 2 or 3 arguments');
       }
       case 'lightDark': {
         if (expr.args.length !== 2) throw mError('Color.lightDark() expects 2 arguments');
@@ -1492,7 +1624,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
   // ObjectNamespace methods
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ObjectNamespace') {
-    const args = expr.args.map(a => evaluateExpression(a, scope));
+    const args = expr.args.map((a) => evaluateExpression(a, scope));
     switch (expr.method) {
       case 'keys': {
         if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.keys() expects 1 object argument');
@@ -1504,13 +1636,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       case 'entries': {
         if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.entries() expects 1 object argument');
-        const entries = Array.from(args[0].properties.entries()).map(
-          ([k, v]) => ({ type: 'ArrayValue' as const, elements: [k, v] as Value[] })
-        );
+        const entries = Array.from(args[0].properties.entries()).map(([k, v]) => ({
+          type: 'ArrayValue' as const,
+          elements: [k, v] as Value[],
+        }));
         return { type: 'ArrayValue', elements: entries };
       }
       case 'delete': {
-        if (args.length !== 2 || !isObjectValue(args[0])) throw mError('Object.delete() expects 2 arguments (object, key)');
+        if (args.length !== 2 || !isObjectValue(args[0]))
+          throw mError('Object.delete() expects 2 arguments (object, key)');
         const key = args[1];
         if (typeof key !== 'string') throw mError('Object.delete() key must be a string');
         const val = args[0].properties.get(key) ?? null;
@@ -1618,13 +1752,19 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         if (isPathBlockValue(left) && isPathBlockValue(right)) {
           const concatCmds = concatenateCommands(left.commands, left.endPoint, right.commands);
           if (concatCmds.length === 0) {
-            return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+            return {
+              type: 'PathBlockValue' as const,
+              commands: [],
+              pathStrings: [],
+              startPoint: { x: 0, y: 0 },
+              endPoint: { x: 0, y: 0 },
+            };
           }
           const lastCmd = concatCmds[concatCmds.length - 1];
           return {
             type: 'PathBlockValue' as const,
             commands: concatCmds,
-            pathStrings: concatCmds.map(c => commandToPathString(c)),
+            pathStrings: concatCmds.map((c) => commandToPathString(c)),
             startPoint: { x: 0, y: 0 },
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
@@ -1633,22 +1773,23 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
         if (isAnnotatedLayerRef(left) && isStyleBlock(right)) {
-          return left;  // Return same ref, no real layer state in annotated mode
+          return left; // Return same ref, no real layer state in annotated mode
         }
-        throw new Error(formatError('Operator << requires matching operand types (both style blocks or both path blocks)', line));
+        throw new Error(
+          formatError('Operator << requires matching operand types (both style blocks or both path blocks)', line),
+        );
       }
 
       // Null equality checks
       if (expr.operator === '==' || expr.operator === '!=') {
         if (left === null || right === null) {
-          if (expr.operator === '==') return (left === null && right === null) ? 1 : 0;
-          return (left === null && right === null) ? 0 : 1;
+          if (expr.operator === '==') return left === null && right === null ? 1 : 0;
+          return left === null && right === null ? 0 : 1;
         }
       }
 
       // String equality: == and != work for strings
-      if ((expr.operator === '==' || expr.operator === '!=') &&
-          typeof left === 'string' && typeof right === 'string') {
+      if ((expr.operator === '==' || expr.operator === '!=') && typeof left === 'string' && typeof right === 'string') {
         if (expr.operator === '==') return left === right ? 1 : 0;
         return left !== right ? 1 : 0;
       }
@@ -1663,21 +1804,35 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       }
 
       switch (expr.operator) {
-        case '+': return left + right;
-        case '-': return left - right;
-        case '*': return left * right;
-        case '/': return left / right;
-        case '%': return left % right;
-        case '<': return left < right ? 1 : 0;
-        case '>': return left > right ? 1 : 0;
-        case '<=': return left <= right ? 1 : 0;
-        case '>=': return left >= right ? 1 : 0;
-        case '==': return left === right ? 1 : 0;
-        case '!=': return left !== right ? 1 : 0;
-        case '&&': return left && right ? 1 : 0;
-        case '||': return left || right ? 1 : 0;
+        case '+':
+          return left + right;
+        case '-':
+          return left - right;
+        case '*':
+          return left * right;
+        case '/':
+          return left / right;
+        case '%':
+          return left % right;
+        case '<':
+          return left < right ? 1 : 0;
+        case '>':
+          return left > right ? 1 : 0;
+        case '<=':
+          return left <= right ? 1 : 0;
+        case '>=':
+          return left >= right ? 1 : 0;
+        case '==':
+          return left === right ? 1 : 0;
+        case '!=':
+          return left !== right ? 1 : 0;
+        case '&&':
+          return left && right ? 1 : 0;
+        case '||':
+          return left || right ? 1 : 0;
       }
     }
+    // falls through
 
     case 'UnaryExpression': {
       const arg = evaluateExpression(expr.argument, scope);
@@ -1688,10 +1843,13 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         throw new Error(formatError(`Unary operator ${expr.operator} requires numeric operand`, line));
       }
       switch (expr.operator) {
-        case '-': return -arg;
-        case '!': return arg ? 0 : 1;
+        case '-':
+          return -arg;
+        case '!':
+          return arg ? 0 : 1;
       }
     }
+    // falls through
 
     case 'CalcExpression':
       return evaluateExpression(expr.expression, scope);
@@ -1706,31 +1864,37 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       return evaluateMemberExpression(expr, scope);
 
     case 'TemplateLiteral':
-      return expr.parts.map(part => {
-        if (typeof part === 'string') return part;
-        const val = evaluateExpression(part, scope);
-        if (val === null) return 'null';
-        if (typeof val === 'number') return String(val);
-        if (typeof val === 'string') return val;
-        if (isObjectValue(val)) {
-          const entries = Array.from(val.properties.entries())
-            .map(([k, v]) => `${k}: ${v === null ? 'null' : String(v)}`);
-          return '{' + entries.join(', ') + '}';
-        }
-        if (isArrayValue(val)) return '[' + val.elements.map(e => {
-          if (e === null) return 'null';
-          if (typeof e === 'number') return String(e);
-          if (typeof e === 'string') return e;
-          return String(e);
-        }).join(', ') + ']';
-        return String(val);
-      }).join('');
+      return expr.parts
+        .map((part) => {
+          if (typeof part === 'string') return part;
+          const val = evaluateExpression(part, scope);
+          if (val === null) return 'null';
+          if (typeof val === 'number') return String(val);
+          if (typeof val === 'string') return val;
+          if (isObjectValue(val)) {
+            const entries = Array.from(val.properties.entries()).map(
+              ([k, v]) => `${k}: ${v === null ? 'null' : String(v)}`,
+            );
+            return `{${entries.join(', ')}}`;
+          }
+          if (isArrayValue(val))
+            return `[${val.elements
+              .map((e) => {
+                if (e === null) return 'null';
+                if (typeof e === 'number') return String(e);
+                if (typeof e === 'string') return e;
+                return String(e);
+              })
+              .join(', ')}]`;
+          return String(val);
+        })
+        .join('');
 
     case 'StyleBlockLiteral':
       return evaluateStyleBlockLiteral(expr, scope);
 
     case 'PathBlockExpression':
-      return evaluatePathBlockExpression(expr as PathBlockExpression, scope);
+      return evaluatePathBlockExpression(expr, scope);
 
     case 'LayerConstructorExpression':
       // In annotated mode, return a dummy LayerReference
@@ -1773,7 +1937,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     if (result) accum.push(result);
   }
 
-  const commands: PathBlockCommand[] = blockContext.commands.map(entry => ({
+  const commands: PathBlockCommand[] = blockContext.commands.map((entry) => ({
     command: entry.command.toLowerCase(),
     args: [...entry.args],
     start: { x: entry.start.x, y: entry.start.y },
@@ -1783,7 +1947,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   return {
     type: 'PathBlockValue',
     commands,
-    pathStrings: accum.filter(s => s.length > 0),
+    pathStrings: accum.filter((s) => s.length > 0),
     startPoint: { x: 0, y: 0 },
     endPoint: { x: blockContext.position.x, y: blockContext.position.y },
   };
@@ -1807,8 +1971,10 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         }
         return total;
       }
-      case 'startPoint': return { type: 'ContextObject' as const, value: { x: obj.startPoint.x, y: obj.startPoint.y } };
-      case 'endPoint': return { type: 'ContextObject' as const, value: { x: obj.endPoint.x, y: obj.endPoint.y } };
+      case 'startPoint':
+        return { type: 'ContextObject' as const, value: { x: obj.startPoint.x, y: obj.startPoint.y } };
+      case 'endPoint':
+        return { type: 'ContextObject' as const, value: { x: obj.endPoint.x, y: obj.endPoint.y } };
       case 'subPathCount': {
         if (obj.commands.length === 0) return 0;
         let count = 1;
@@ -1817,8 +1983,10 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         }
         return count;
       }
-      case 'vertices': return { type: 'ArrayValue' as const, elements: [] };
-      case 'subPathCommands': return { type: 'ArrayValue' as const, elements: [] };
+      case 'vertices':
+        return { type: 'ArrayValue' as const, elements: [] };
+      case 'subPathCommands':
+        return { type: 'ArrayValue' as const, elements: [] };
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on PathBlock`, line));
     }
@@ -1827,8 +1995,10 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // Handle ProjectedPathValue property access
   if (isProjectedPathValue(obj)) {
     switch (expr.property) {
-      case 'startPoint': return { type: 'ContextObject' as const, value: { x: obj.startPoint.x, y: obj.startPoint.y } };
-      case 'endPoint': return { type: 'ContextObject' as const, value: { x: obj.endPoint.x, y: obj.endPoint.y } };
+      case 'startPoint':
+        return { type: 'ContextObject' as const, value: { x: obj.startPoint.x, y: obj.startPoint.y } };
+      case 'endPoint':
+        return { type: 'ContextObject' as const, value: { x: obj.endPoint.x, y: obj.endPoint.y } };
       case 'length': {
         let total = 0;
         for (const cmd of obj.commands) {
@@ -1840,8 +2010,10 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         }
         return total;
       }
-      case 'vertices': return { type: 'ArrayValue' as const, elements: [] };
-      case 'subPathCommands': return { type: 'ArrayValue' as const, elements: [] };
+      case 'vertices':
+        return { type: 'ArrayValue' as const, elements: [] };
+      case 'subPathCommands':
+        return { type: 'ArrayValue' as const, elements: [] };
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on ProjectedPath`, line));
     }
@@ -1850,10 +2022,14 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // Handle PatternValue property access
   if (isPatternValue(obj)) {
     switch (expr.property) {
-      case 'id': return obj.id;
-      case 'patternUnits': return obj.patternUnits ?? null;
-      case 'patternTransform': return obj.patternTransform ?? null;
-      case 'patternContentUnits': return obj.patternContentUnits ?? null;
+      case 'id':
+        return obj.id;
+      case 'patternUnits':
+        return obj.patternUnits ?? null;
+      case 'patternTransform':
+        return obj.patternTransform ?? null;
+      case 'patternContentUnits':
+        return obj.patternContentUnits ?? null;
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on Pattern`, line));
     }
@@ -1862,17 +2038,27 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
-      case 'id': return obj.id;
-      case 'spreadMethod': return obj.spreadMethod ?? null;
-      case 'gradientUnits': return obj.gradientUnits ?? null;
-      case 'gradientTransform': return obj.gradientTransform ?? null;
-      case 'interpolation': return obj.interpolation ?? null;
-      case 'steps': return obj.steps ?? null;
+      case 'id':
+        return obj.id;
+      case 'spreadMethod':
+        return obj.spreadMethod ?? null;
+      case 'gradientUnits':
+        return obj.gradientUnits ?? null;
+      case 'gradientTransform':
+        return obj.gradientTransform ?? null;
+      case 'interpolation':
+        return obj.interpolation ?? null;
+      case 'steps':
+        return obj.steps ?? null;
       // Conic-specific properties
-      case 'from': return obj.from ?? 0;
-      case 'to': return obj.to ?? (2 * Math.PI);
-      case 'direction': return obj.direction ?? 'cw';
-      case 'spread': return obj.spread ?? 'clamp';
+      case 'from':
+        return obj.from ?? 0;
+      case 'to':
+        return obj.to ?? 2 * Math.PI;
+      case 'direction':
+        return obj.direction ?? 'cw';
+      case 'spread':
+        return obj.spread ?? 'clamp';
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on Gradient`, line));
     }
@@ -1881,15 +2067,24 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // Handle ColorValue property access
   if (isColorValue(obj)) {
     switch (expr.property) {
-      case 'css': return oklchToCSS(obj.oklch);
-      case 'hex': return oklchToHex(obj.oklch);
-      case 'oklch': return oklchToOKLCHString(obj.oklch);
-      case 'hsl': return oklchToHSLString(obj.oklch);
-      case 'rgb': return oklchToRGBString(obj.oklch);
-      case 'lightness': return obj.oklch.L;
-      case 'chroma': return obj.oklch.C;
-      case 'hue': return obj.oklch.H;
-      case 'a': return obj.oklch.alpha;
+      case 'css':
+        return oklchToCSS(obj.oklch);
+      case 'hex':
+        return oklchToHex(obj.oklch);
+      case 'oklch':
+        return oklchToOKLCHString(obj.oklch);
+      case 'hsl':
+        return oklchToHSLString(obj.oklch);
+      case 'rgb':
+        return oklchToRGBString(obj.oklch);
+      case 'lightness':
+        return obj.oklch.L;
+      case 'chroma':
+        return obj.oklch.C;
+      case 'hue':
+        return obj.oklch.H;
+      case 'a':
+        return obj.oklch.alpha;
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on Color`, line));
     }
@@ -1898,9 +2093,12 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // Handle CSSVarValue property access
   if (isCSSVarValue(obj)) {
     switch (expr.property) {
-      case 'var': return obj.varName;
-      case 'fallback': return obj.fallback;
-      case 'css': return obj.fallback ? `var(${obj.varName}, ${obj.fallback})` : `var(${obj.varName})`;
+      case 'var':
+        return obj.varName;
+      case 'fallback':
+        return obj.fallback;
+      case 'css':
+        return obj.fallback ? `var(${obj.varName}, ${obj.fallback})` : `var(${obj.varName})`;
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on CSSVar`, line));
     }
@@ -1918,7 +2116,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
 
   // Handle ContextObject property access
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ContextObject') {
-    const contextObj = obj as ContextObject;
+    const contextObj = obj;
     const propValue = contextObj.value[expr.property];
 
     if (propValue === undefined) {
@@ -1959,7 +2157,11 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   if (isAnnotatedLayerRef(obj)) {
     // In annotated mode, return dummy values
     if (expr.property === 'name') return '';
-    if (expr.property === 'ctx') return { type: 'ContextObject' as const, value: { position: { x: 0, y: 0 }, start: { x: 0, y: 0 }, commands: [] } };
+    if (expr.property === 'ctx')
+      return {
+        type: 'ContextObject' as const,
+        value: { position: { x: 0, y: 0 }, start: { x: 0, y: 0 }, commands: [] },
+      };
     if (expr.property === 'styles') return { type: 'StyleBlockValue' as const, properties: {} };
     throw new Error(formatError(`Property '${expr.property}' does not exist on layer reference`, line));
   }
@@ -1988,12 +2190,19 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     if (call.args.length === 1) {
       const arg = evaluateExpression(call.args[0], scope);
       if (isCSSVarValue(arg)) {
-        if (!arg.fallback) throw new Error(formatError('Color(CSSVar(...)) requires a CSSVar with a fallback color', cLine, cCol));
-        return { type: 'ColorValue' as const, oklch: parseColor(arg.fallback), cssVar: { varName: arg.varName, fallback: arg.fallback } };
+        if (!arg.fallback)
+          throw new Error(formatError('Color(CSSVar(...)) requires a CSSVar with a fallback color', cLine, cCol));
+        return {
+          type: 'ColorValue' as const,
+          oklch: parseColor(arg.fallback),
+          cssVar: { varName: arg.varName, fallback: arg.fallback },
+        };
       }
-      if (typeof arg !== 'string') throw new Error(formatError('Color() with 1 argument expects a color string or CSSVar', cLine, cCol));
+      if (typeof arg !== 'string')
+        throw new Error(formatError('Color() with 1 argument expects a color string or CSSVar', cLine, cCol));
       return { type: 'ColorValue' as const, oklch: parseColor(arg) };
-    } else if (call.args.length === 3 || call.args.length === 4) {
+    }
+    if (call.args.length === 3 || call.args.length === 4) {
       const L = evaluateExpression(call.args[0], scope);
       const C = evaluateExpression(call.args[1], scope);
       const H = evaluateExpression(call.args[2], scope);
@@ -2007,9 +2216,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
         alpha = a;
       }
       return { type: 'ColorValue' as const, oklch: { L, C, H, alpha } };
-    } else {
-      throw new Error(formatError(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`, cLine, cCol));
     }
+    throw new Error(formatError(`Color() expects 1, 3, or 4 arguments, got ${call.args.length}`, cLine, cCol));
   }
 
   // Handle CSSVar() constructor
@@ -2020,8 +2228,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(formatError(`CSSVar() expects 1 or 2 arguments, got ${call.args.length}`, cvLine, cvCol));
     }
     const name = evaluateExpression(call.args[0], scope);
-    if (typeof name !== 'string') throw new Error(formatError('CSSVar() first argument must be a string', cvLine, cvCol));
-    if (!name.startsWith('--')) throw new Error(formatError("CSSVar() variable name must start with '--'", cvLine, cvCol));
+    if (typeof name !== 'string')
+      throw new Error(formatError('CSSVar() first argument must be a string', cvLine, cvCol));
+    if (!name.startsWith('--'))
+      throw new Error(formatError("CSSVar() variable name must start with '--'", cvLine, cvCol));
     let fallback: string | null = null;
     if (call.args.length === 2) {
       const fb = evaluateExpression(call.args[1], scope);
@@ -2041,16 +2251,27 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   // Handle LinearGradient() constructor
   if (call.name === 'LinearGradient') {
     if (call.args.length !== 5) {
-      throw new Error(formatError(`LinearGradient() expects 5 arguments (id, x1, y1, x2, y2), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError(
+          `LinearGradient() expects 5 arguments (id, x1, y1, x2, y2), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
     }
     const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string') throw new Error(formatError('LinearGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    if (typeof id !== 'string')
+      throw new Error(
+        formatError('LinearGradient() first argument must be a string', call.loc?.line, call.loc?.column),
+      );
     const x1 = evaluateExpression(call.args[1], scope);
     const y1 = evaluateExpression(call.args[2], scope);
     const x2 = evaluateExpression(call.args[3], scope);
     const y2 = evaluateExpression(call.args[4], scope);
     const gradient: GradientValue = {
-      type: 'GradientValue', gradientType: 'linear', id,
+      type: 'GradientValue',
+      gradientType: 'linear',
+      id,
       attrs: { x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2) },
       stops: [],
     };
@@ -2067,10 +2288,19 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   // Handle RadialGradient() constructor
   if (call.name === 'RadialGradient') {
     if (call.args.length < 4 || call.args.length > 6) {
-      throw new Error(formatError(`RadialGradient() expects 4-6 arguments (id, cx, cy, r [, fx, fy]), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError(
+          `RadialGradient() expects 4-6 arguments (id, cx, cy, r [, fx, fy]), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
     }
     const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string') throw new Error(formatError('RadialGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    if (typeof id !== 'string')
+      throw new Error(
+        formatError('RadialGradient() first argument must be a string', call.loc?.line, call.loc?.column),
+      );
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     const r = evaluateExpression(call.args[3], scope);
@@ -2078,7 +2308,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     if (call.args.length >= 5) attrs.fx = String(evaluateExpression(call.args[4], scope));
     if (call.args.length === 6) attrs.fy = String(evaluateExpression(call.args[5], scope));
     const gradient: GradientValue = {
-      type: 'GradientValue', gradientType: 'radial', id, attrs, stops: [],
+      type: 'GradientValue',
+      gradientType: 'radial',
+      id,
+      attrs,
+      stops: [],
     };
     if (call.block) {
       const blockScope = createScope(scope);
@@ -2093,20 +2327,34 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   // Handle ConicGradient() constructor
   if (call.name === 'ConicGradient') {
     if (call.args.length !== 3) {
-      throw new Error(formatError(`ConicGradient() expects 3 arguments (id, cx, cy), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError(
+          `ConicGradient() expects 3 arguments (id, cx, cy), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
     }
     const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string') throw new Error(formatError('ConicGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    if (typeof id !== 'string')
+      throw new Error(formatError('ConicGradient() first argument must be a string', call.loc?.line, call.loc?.column));
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     if (typeof cx !== 'number' || typeof cy !== 'number') {
-      throw new Error(formatError('ConicGradient() coordinate arguments must be numbers', call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError('ConicGradient() coordinate arguments must be numbers', call.loc?.line, call.loc?.column),
+      );
     }
     const gradient: GradientValue = {
-      type: 'GradientValue', gradientType: 'conic', id,
+      type: 'GradientValue',
+      gradientType: 'conic',
+      id,
       attrs: { cx: String(cx), cy: String(cy) },
       stops: [],
-      from: 0, to: 2 * Math.PI, direction: 'cw', spread: 'clamp',
+      from: 0,
+      to: 2 * Math.PI,
+      direction: 'cw',
+      spread: 'clamp',
     };
     if (call.block) {
       const blockScope = createScope(scope);
@@ -2121,10 +2369,17 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   // Handle Pattern() constructor
   if (call.name === 'Pattern') {
     if (call.args.length !== 5) {
-      throw new Error(formatError(`Pattern() expects 5 arguments (id, x, y, width, height), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError(
+          `Pattern() expects 5 arguments (id, x, y, width, height), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
     }
     const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string') throw new Error(formatError('Pattern() first argument must be a string', call.loc?.line, call.loc?.column));
+    if (typeof id !== 'string')
+      throw new Error(formatError('Pattern() first argument must be a string', call.loc?.line, call.loc?.column));
     const x = evaluateExpression(call.args[1], scope);
     const y = evaluateExpression(call.args[2], scope);
     const w = evaluateExpression(call.args[3], scope);
@@ -2133,7 +2388,13 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(formatError('Pattern() coordinate arguments must be numbers', call.loc?.line, call.loc?.column));
     }
     const pattern: PatternValue = {
-      type: 'PatternValue', id, x, y, width: w, height: h, paths: [],
+      type: 'PatternValue',
+      id,
+      x,
+      y,
+      width: w,
+      height: h,
+      paths: [],
     };
     if (call.block) {
       const blockScope = createScope(scope);
@@ -2176,17 +2437,15 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
 
   if (typeof fn === 'function') {
     const args = call.args.map((arg) => evaluateExpression(arg, scope));
-    return (fn as (...args: number[]) => number)(...args as number[]);
+    return (fn as (...args: number[]) => number)(...(args as number[]));
   }
 
   if (typeof fn === 'object' && fn !== null && 'type' in fn && fn.type === 'UserFunction') {
-    const userFn = fn as UserFunction;
+    const userFn = fn;
     const args = call.args.map((arg) => evaluateExpression(arg, scope));
 
     if (args.length !== userFn.params.length) {
-      throw new Error(
-        `Function ${call.name} expects ${userFn.params.length} arguments, got ${args.length}`
-      );
+      throw new Error(`Function ${call.name} expects ${userFn.params.length} arguments, got ${args.length}`);
     }
 
     const fnScope = createScope(scope);
@@ -2196,7 +2455,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
 
     // For annotated output, evaluate with context if available
     if (ctx) {
-      const argsStr = args.map(a => String(a)).join(', ');
+      const argsStr = args.map((a) => String(a)).join(', ');
       ctx.output.push({
         type: 'function_call',
         name: call.name,
@@ -2283,7 +2542,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
           return value.value;
         }
         if (value.type === 'PathWithResult') {
-          return (value as PathWithResult).path;
+          return value.path;
         }
       }
       throw new Error(`Function ${arg.name} did not return a valid path value`);
@@ -2313,8 +2572,8 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       }
       if (typeof value === 'number') return String(value);
       if (typeof value === 'object' && value !== null && 'type' in value) {
-        if (value.type === 'PathSegment') return (value as PathSegment).value;
-        if (value.type === 'PathWithResult') return (value as PathWithResult).path;
+        if (value.type === 'PathSegment') return value.value;
+        if (value.type === 'PathWithResult') return value.path;
       }
       throw new Error('Method call did not return a valid path value');
     }
@@ -2334,9 +2593,9 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       const value = evaluateExpression(stmt.value, scope);
       // Handle PathWithResult: assign the result to variable, emit the path
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
-        const pwr = value as PathWithResult;
+        const pwr = value;
         setVariable(scope, stmt.name, pwr.result);
-        return pwr.path;  // Emit the path
+        return pwr.path; // Emit the path
       }
       setVariable(scope, stmt.name, value);
       return '';
@@ -2356,7 +2615,7 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
       const MAX_ITERATIONS = 10000;
       const ascending = start <= end;
-      const iterations = ascending ? (end - start + 1) : (start - end + 1);
+      const iterations = ascending ? end - start + 1 : start - end + 1;
       if (iterations > MAX_ITERATIONS) {
         throw new Error(`for loop would run ${iterations} iterations (max ${MAX_ITERATIONS})`);
       }
@@ -2395,7 +2654,8 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
           if (result) results.push(result);
         }
         return results.join(' ');
-      } else if (stmt.alternate) {
+      }
+      if (stmt.alternate) {
         const results: string[] = [];
         for (const bodyStmt of stmt.alternate) {
           const result = evaluateStatementPlain(bodyStmt, createScope(scope));
@@ -2475,9 +2735,14 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
     case 'PathCommand': {
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
-        const methodResult = evaluateMethodCall(stmt.args[0] as MethodCallExpression, scope);
-        if (typeof methodResult === 'object' && methodResult !== null && 'type' in methodResult && methodResult.type === 'PathWithResult') {
-          return (methodResult as PathWithResult).path;
+        const methodResult = evaluateMethodCall(stmt.args[0], scope);
+        if (
+          typeof methodResult === 'object' &&
+          methodResult !== null &&
+          'type' in methodResult &&
+          methodResult.type === 'PathWithResult'
+        ) {
+          return methodResult.path;
         }
         return '';
       }
@@ -2487,7 +2752,7 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         return args.join(' ');
       }
       const args = stmt.args.map((arg) => evaluatePathArg(arg, scope));
-      const result = stmt.command + (args.length > 0 ? ' ' + args.join(' ') : '');
+      const result = stmt.command + (args.length > 0 ? ` ${args.join(' ')}` : '');
 
       // Update path context if tracking is enabled
       if (scope.evalState && stmt.command !== '') {
@@ -2524,9 +2789,15 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       if (isPatternValue(obj)) {
         if (typeof value === 'string') {
           switch (stmt.property) {
-            case 'patternUnits': obj.patternUnits = value; break;
-            case 'patternTransform': obj.patternTransform = value; break;
-            case 'patternContentUnits': obj.patternContentUnits = value; break;
+            case 'patternUnits':
+              obj.patternUnits = value;
+              break;
+            case 'patternTransform':
+              obj.patternTransform = value;
+              break;
+            case 'patternContentUnits':
+              obj.patternContentUnits = value;
+              break;
           }
         }
       }
@@ -2545,7 +2816,7 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
           }
           case 'interpolation': {
             if (typeof value === 'string' && (value === 'srgb' || value === 'oklch' || value === 'linearRGB')) {
-              obj.interpolation = value as 'srgb' | 'oklch' | 'linearRGB';
+              obj.interpolation = value;
             }
             break;
           }
@@ -2553,12 +2824,13 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
             if (typeof value === 'number') obj.steps = value;
             break;
           }
-          case 'from': case 'to': {
+          case 'from':
+          case 'to': {
             if (typeof value === 'number') obj[stmt.property] = value;
             break;
           }
           case 'direction': {
-            if (value === 'cw' || value === 'ccw') obj.direction = value as 'cw' | 'ccw';
+            if (value === 'cw' || value === 'ccw') obj.direction = value;
             break;
           }
           case 'spread': {
@@ -2601,13 +2873,13 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const value = evaluateExpression(stmt.value, scope);
       // Handle PathWithResult: assign the result to variable, emit the path
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
-        const pwr = value as PathWithResult;
+        const pwr = value;
         setVariable(scope, stmt.name, pwr.result);
         // Emit annotated draw() call if the value came from a method call
         if (stmt.value.type === 'MethodCallExpression') {
-          const methodExpr = stmt.value as MethodCallExpression;
+          const methodExpr = stmt.value;
           const callName = `${exprSourceName(methodExpr.object)}.${methodExpr.method}`;
-          const argsStr = methodExpr.args.map(a => String(evaluateExpression(a, scope))).join(', ');
+          const argsStr = methodExpr.args.map((a) => String(evaluateExpression(a, scope))).join(', ');
           const methodLine = (methodExpr.object as { loc?: { line: number } }).loc?.line ?? stmt.loc?.line ?? 0;
           ctx.output.push({
             type: 'function_call',
@@ -2642,7 +2914,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
       const MAX_ITERATIONS = 10000;
       const ascending = start <= end;
-      const totalIterations = ascending ? (end - start + 1) : (start - end + 1);
+      const totalIterations = ascending ? end - start + 1 : start - end + 1;
       if (totalIterations > MAX_ITERATIONS) {
         throw new Error(`for loop would run ${totalIterations} iterations (max ${MAX_ITERATIONS})`);
       }
@@ -2650,8 +2922,8 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       ctx.output.push({
         type: 'loop_start',
         variable: stmt.variable,
-        start: start,
-        end: end,
+        start,
+        end,
         line: stmt.loc?.line ?? 0,
       });
 
@@ -2679,7 +2951,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
         // Emit skip message when transitioning
         if (totalIterations > TRUNCATE_THRESHOLD && iterIndex === SHOW_COUNT) {
-          const skipCount = totalIterations - (SHOW_COUNT * 2);
+          const skipCount = totalIterations - SHOW_COUNT * 2;
           ctx.output.push({ type: 'iteration_skip', count: skipCount });
         }
 
@@ -2792,7 +3064,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         const shouldShow = totalIterations <= TRUNCATE_THRESHOLD || isFirstFew || isLastFew;
 
         if (totalIterations > TRUNCATE_THRESHOLD && i === SHOW_COUNT) {
-          const skipCount = totalIterations - (SHOW_COUNT * 2);
+          const skipCount = totalIterations - SHOW_COUNT * 2;
           ctx.output.push({ type: 'iteration_skip', count: skipCount });
         }
 
@@ -2845,13 +3117,18 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
     case 'PathCommand': {
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
-        const methodExpr = stmt.args[0] as MethodCallExpression;
+        const methodExpr = stmt.args[0];
         const methodResult = evaluateMethodCall(methodExpr, scope);
-        if (typeof methodResult === 'object' && methodResult !== null && 'type' in methodResult && methodResult.type === 'PathWithResult') {
-          const pwr = methodResult as PathWithResult;
+        if (
+          typeof methodResult === 'object' &&
+          methodResult !== null &&
+          'type' in methodResult &&
+          methodResult.type === 'PathWithResult'
+        ) {
+          const pwr = methodResult;
           if (pwr.path) {
             const callName = `${exprSourceName(methodExpr.object)}.${methodExpr.method}`;
-            const argsStr = methodExpr.args.map(a => String(evaluateExpression(a, scope))).join(', ');
+            const argsStr = methodExpr.args.map((a) => String(evaluateExpression(a, scope))).join(', ');
             const methodLine = (methodExpr.object as { loc?: { line: number } }).loc?.line ?? stmt.loc?.line ?? 0;
             ctx.output.push({
               type: 'function_call',
@@ -2879,7 +3156,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           }
           const args = funcCall.args.map((arg) => evaluateExpression(arg, scope));
           const result = evaluateContextAwareFunction(funcCall.name, args, scope, funcCall.loc);
-          const argsStr = args.map(a => String(a)).join(', ');
+          const argsStr = args.map((a) => String(a)).join(', ');
           ctx.output.push({
             type: 'function_call',
             name: funcCall.name,
@@ -2891,9 +3168,9 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           let pathStr = '';
           if (typeof result === 'object' && result !== null && 'type' in result) {
             if (result.type === 'PathSegment') {
-              pathStr = (result as PathSegment).value;
+              pathStr = result.value;
             } else if (result.type === 'PathWithResult') {
-              pathStr = (result as PathWithResult).path;
+              pathStr = result.path;
             }
           }
           if (pathStr) {
@@ -2909,11 +3186,16 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         if (typeof fn === 'function') {
           // Stdlib function - evaluate and emit result
           const args = funcCall.args.map((arg) => evaluateExpression(arg, scope));
-          const result = (fn as (...args: number[]) => number)(...args as number[]);
-          if (typeof result === 'object' && result !== null && 'type' in result && (result as PathSegment).type === 'PathSegment') {
+          const result = (fn as (...args: number[]) => number)(...(args as number[]));
+          if (
+            typeof result === 'object' &&
+            result !== null &&
+            'type' in result &&
+            (result as PathSegment).type === 'PathSegment'
+          ) {
             // Split path segment into individual commands for better formatting
             const pathStr = (result as PathSegment).value;
-            const argsStr = args.map(a => String(a)).join(', ');
+            const argsStr = args.map((a) => String(a)).join(', ');
             ctx.output.push({
               type: 'function_call',
               name: funcCall.name,
@@ -2926,7 +3208,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
             ctx.indentLevel--;
             ctx.output.push({ type: 'function_call_end' });
           } else if (typeof result === 'string') {
-            const argsStr = args.map(a => String(a)).join(', ');
+            const argsStr = args.map((a) => String(a)).join(', ');
             ctx.output.push({
               type: 'function_call',
               name: funcCall.name,
@@ -2949,10 +3231,15 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
         for (const arg of stmt.args) {
           if (arg.type === 'MethodCallExpression') {
-            const methodExpr = arg as MethodCallExpression;
+            const methodExpr = arg;
             const methodResult = evaluateMethodCall(methodExpr, scope);
-            if (typeof methodResult === 'object' && methodResult !== null && 'type' in methodResult && methodResult.type === 'PathWithResult') {
-              const pwr = methodResult as PathWithResult;
+            if (
+              typeof methodResult === 'object' &&
+              methodResult !== null &&
+              'type' in methodResult &&
+              methodResult.type === 'PathWithResult'
+            ) {
+              const pwr = methodResult;
               // Emit leading path command with its args first
               if (stmt.command && leadingArgs.length > 0) {
                 ctx.output.push({
@@ -2972,7 +3259,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
               // Emit annotated draw() call
               if (pwr.path) {
                 const callName = `${exprSourceName(methodExpr.object)}.${methodExpr.method}`;
-                const argsStr = methodExpr.args.map(a => String(evaluateExpression(a, scope))).join(', ');
+                const argsStr = methodExpr.args.map((a) => String(evaluateExpression(a, scope))).join(', ');
                 const methodLine = (methodExpr.object as { loc?: { line: number } }).loc?.line ?? stmt.loc?.line ?? 0;
                 ctx.output.push({
                   type: 'function_call',
@@ -2988,13 +3275,15 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
               drawMethodFound = true;
               // Clear leading args since we already emitted the command
               leadingArgs.length = 0;
-            } else {
-              // Non-draw method call, just get string value
-              if (typeof methodResult === 'number') {
-                leadingArgs.push(String(methodResult));
-              } else if (typeof methodResult === 'object' && methodResult !== null && 'type' in methodResult) {
-                if ((methodResult as PathSegment).type === 'PathSegment') leadingArgs.push((methodResult as PathSegment).value);
-              }
+            } else if (typeof methodResult === 'number') {
+              leadingArgs.push(String(methodResult));
+            } else if (
+              typeof methodResult === 'object' &&
+              methodResult !== null &&
+              'type' in methodResult &&
+              (methodResult as PathSegment).type === 'PathSegment'
+            ) {
+              leadingArgs.push((methodResult as PathSegment).value);
             }
           } else {
             leadingArgs.push(evaluatePathArg(arg, scope));
@@ -3044,9 +3333,15 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       if (isPatternValue(maObj)) {
         if (typeof maValue === 'string') {
           switch (stmt.property) {
-            case 'patternUnits': maObj.patternUnits = maValue; break;
-            case 'patternTransform': maObj.patternTransform = maValue; break;
-            case 'patternContentUnits': maObj.patternContentUnits = maValue; break;
+            case 'patternUnits':
+              maObj.patternUnits = maValue;
+              break;
+            case 'patternTransform':
+              maObj.patternTransform = maValue;
+              break;
+            case 'patternContentUnits':
+              maObj.patternContentUnits = maValue;
+              break;
           }
         }
       }
@@ -3065,7 +3360,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           }
           case 'interpolation': {
             if (typeof maValue === 'string' && (maValue === 'srgb' || maValue === 'oklch' || maValue === 'linearRGB')) {
-              maObj.interpolation = maValue as 'srgb' | 'oklch' | 'linearRGB';
+              maObj.interpolation = maValue;
             }
             break;
           }
@@ -3073,12 +3368,13 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
             if (typeof maValue === 'number') maObj.steps = maValue;
             break;
           }
-          case 'from': case 'to': {
+          case 'from':
+          case 'to': {
             if (typeof maValue === 'number') maObj[stmt.property] = maValue;
             break;
           }
           case 'direction': {
-            if (maValue === 'cw' || maValue === 'ccw') maObj.direction = maValue as 'cw' | 'ccw';
+            if (maValue === 'cw' || maValue === 'ccw') maObj.direction = maValue;
             break;
           }
           case 'spread': {

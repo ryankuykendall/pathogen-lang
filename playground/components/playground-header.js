@@ -1,9 +1,9 @@
 // Header component with controls, toggles, and save status
 
-import { store } from '../state/store.js';
-import { copyURL } from '../utils/url-state.js';
 import { workspaceApi } from '../services/api.js';
-import { navigateTo, buildWorkspaceSlugId } from '../utils/router.js';
+import { store } from '../state/store.js';
+import { buildWorkspaceSlugId, navigateTo } from '../utils/router.js';
+import { copyURL } from '../utils/url-state.js';
 
 export class PlaygroundHeader extends HTMLElement {
   constructor() {
@@ -33,7 +33,7 @@ export class PlaygroundHeader extends HTMLElement {
         this.updateSaveStatus();
         this.updateCopyButton();
         this.updateCompilationStatus();
-      }
+      },
     );
   }
 

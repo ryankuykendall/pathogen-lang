@@ -2,41 +2,167 @@
 // Scans define ... { } blocks for color-accepting properties and renders colored chips
 
 const CSS_NAMED_COLORS = new Set([
-  'aliceblue','antiquewhite','aqua','aquamarine','azure','beige','bisque','black',
-  'blanchedalmond','blue','blueviolet','brown','burlywood','cadetblue','chartreuse',
-  'chocolate','coral','cornflowerblue','cornsilk','crimson','cyan','darkblue',
-  'darkcyan','darkgoldenrod','darkgray','darkgreen','darkgrey','darkkhaki',
-  'darkmagenta','darkolivegreen','darkorange','darkorchid','darkred','darksalmon',
-  'darkseagreen','darkslateblue','darkslategray','darkslategrey','darkturquoise',
-  'darkviolet','deeppink','deepskyblue','dimgray','dimgrey','dodgerblue','firebrick',
-  'floralwhite','forestgreen','fuchsia','gainsboro','ghostwhite','gold','goldenrod',
-  'gray','green','greenyellow','grey','honeydew','hotpink','indianred','indigo',
-  'ivory','khaki','lavender','lavenderblush','lawngreen','lemonchiffon','lightblue',
-  'lightcoral','lightcyan','lightgoldenrodyellow','lightgray','lightgreen','lightgrey',
-  'lightpink','lightsalmon','lightseagreen','lightskyblue','lightslategray',
-  'lightslategrey','lightsteelblue','lightyellow','lime','limegreen','linen','magenta',
-  'maroon','mediumaquamarine','mediumblue','mediumorchid','mediumpurple',
-  'mediumseagreen','mediumslateblue','mediumspringgreen','mediumturquoise',
-  'mediumvioletred','midnightblue','mintcream','mistyrose','moccasin','navajowhite',
-  'navy','oldlace','olive','olivedrab','orange','orangered','orchid','palegoldenrod',
-  'palegreen','paleturquoise','palevioletred','papayawhip','peachpuff','peru','pink',
-  'plum','powderblue','purple','rebeccapurple','red','rosybrown','royalblue',
-  'saddlebrown','salmon','sandybrown','seagreen','seashell','sienna','silver',
-  'skyblue','slateblue','slategray','slategrey','snow','springgreen','steelblue',
-  'tan','teal','thistle','tomato','turquoise','violet','wheat','white','whitesmoke',
-  'yellow','yellowgreen',
+  'aliceblue',
+  'antiquewhite',
+  'aqua',
+  'aquamarine',
+  'azure',
+  'beige',
+  'bisque',
+  'black',
+  'blanchedalmond',
+  'blue',
+  'blueviolet',
+  'brown',
+  'burlywood',
+  'cadetblue',
+  'chartreuse',
+  'chocolate',
+  'coral',
+  'cornflowerblue',
+  'cornsilk',
+  'crimson',
+  'cyan',
+  'darkblue',
+  'darkcyan',
+  'darkgoldenrod',
+  'darkgray',
+  'darkgreen',
+  'darkgrey',
+  'darkkhaki',
+  'darkmagenta',
+  'darkolivegreen',
+  'darkorange',
+  'darkorchid',
+  'darkred',
+  'darksalmon',
+  'darkseagreen',
+  'darkslateblue',
+  'darkslategray',
+  'darkslategrey',
+  'darkturquoise',
+  'darkviolet',
+  'deeppink',
+  'deepskyblue',
+  'dimgray',
+  'dimgrey',
+  'dodgerblue',
+  'firebrick',
+  'floralwhite',
+  'forestgreen',
+  'fuchsia',
+  'gainsboro',
+  'ghostwhite',
+  'gold',
+  'goldenrod',
+  'gray',
+  'green',
+  'greenyellow',
+  'grey',
+  'honeydew',
+  'hotpink',
+  'indianred',
+  'indigo',
+  'ivory',
+  'khaki',
+  'lavender',
+  'lavenderblush',
+  'lawngreen',
+  'lemonchiffon',
+  'lightblue',
+  'lightcoral',
+  'lightcyan',
+  'lightgoldenrodyellow',
+  'lightgray',
+  'lightgreen',
+  'lightgrey',
+  'lightpink',
+  'lightsalmon',
+  'lightseagreen',
+  'lightskyblue',
+  'lightslategray',
+  'lightslategrey',
+  'lightsteelblue',
+  'lightyellow',
+  'lime',
+  'limegreen',
+  'linen',
+  'magenta',
+  'maroon',
+  'mediumaquamarine',
+  'mediumblue',
+  'mediumorchid',
+  'mediumpurple',
+  'mediumseagreen',
+  'mediumslateblue',
+  'mediumspringgreen',
+  'mediumturquoise',
+  'mediumvioletred',
+  'midnightblue',
+  'mintcream',
+  'mistyrose',
+  'moccasin',
+  'navajowhite',
+  'navy',
+  'oldlace',
+  'olive',
+  'olivedrab',
+  'orange',
+  'orangered',
+  'orchid',
+  'palegoldenrod',
+  'palegreen',
+  'paleturquoise',
+  'palevioletred',
+  'papayawhip',
+  'peachpuff',
+  'peru',
+  'pink',
+  'plum',
+  'powderblue',
+  'purple',
+  'rebeccapurple',
+  'red',
+  'rosybrown',
+  'royalblue',
+  'saddlebrown',
+  'salmon',
+  'sandybrown',
+  'seagreen',
+  'seashell',
+  'sienna',
+  'silver',
+  'skyblue',
+  'slateblue',
+  'slategray',
+  'slategrey',
+  'snow',
+  'springgreen',
+  'steelblue',
+  'tan',
+  'teal',
+  'thistle',
+  'tomato',
+  'turquoise',
+  'violet',
+  'wheat',
+  'white',
+  'whitesmoke',
+  'yellow',
+  'yellowgreen',
 ]);
 
 // Properties that accept color values
-const COLOR_PROPERTIES = new Set([
-  'stroke', 'fill', 'color', 'stop-color', 'flood-color', 'lighting-color',
-]);
+const COLOR_PROPERTIES = new Set(['stroke', 'fill', 'color', 'stop-color', 'flood-color', 'lighting-color']);
 
 // ─── Color Conversion Utilities ─────────────────────────────────────────────
 
 function rgbToHsl(r, g, b) {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
   const l = (max + min) / 2;
   if (max === min) return [0, 0, l];
   const d = max - min;
@@ -49,20 +175,24 @@ function rgbToHsl(r, g, b) {
 }
 
 function hslToRgb(h, s, l) {
-  if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+  if (s === 0) {
+    const v = Math.round(l * 255);
+    return [v, v, v];
+  }
   const hue2rgb = (p, q, t) => {
-    if (t < 0) t += 1; if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p) * 6 * t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
     return p;
   };
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
   const p = 2 * l - q;
   return [
-    Math.round(hue2rgb(p, q, h + 1/3) * 255),
+    Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
     Math.round(hue2rgb(p, q, h) * 255),
-    Math.round(hue2rgb(p, q, h - 1/3) * 255),
+    Math.round(hue2rgb(p, q, h - 1 / 3) * 255),
   ];
 }
 
@@ -70,11 +200,11 @@ function hslToRgb(h, s, l) {
 // Ported from src/color.ts — Ottosson's matrices for perceptually uniform color
 
 function srgbToLinear(c) {
-  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
 
 function linearToSRGB(c) {
-  return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055;
 }
 
 /** Convert 0–255 RGB to OKLab {L, a, b} */
@@ -92,9 +222,9 @@ function rgbToOKLab(r, g, b) {
   const s_ = Math.cbrt(s);
 
   return {
-    L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
-    a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
-    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+    L: 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
   };
 }
 
@@ -102,7 +232,7 @@ function rgbToOKLab(r, g, b) {
 function oklabToRgb(L, a, b) {
   const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
   const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
-  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
 
   const l = l_ * l_ * l_;
   const m = m_ * m_ * m_;
@@ -110,7 +240,7 @@ function oklabToRgb(L, a, b) {
 
   const lr = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
   const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
-  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
 
   return [
     Math.round(Math.max(0, Math.min(1, linearToSRGB(lr))) * 255),
@@ -123,14 +253,14 @@ function oklabToRgb(L, a, b) {
 function rgbToOKLCH(r, g, b) {
   const lab = rgbToOKLab(r, g, b);
   const C = Math.sqrt(lab.a * lab.a + lab.b * lab.b);
-  let H = Math.atan2(lab.b, lab.a) * 180 / Math.PI;
+  let H = (Math.atan2(lab.b, lab.a) * 180) / Math.PI;
   if (H < 0) H += 360;
   return { L: lab.L, C, H };
 }
 
 /** Convert OKLCH {L, C, H} to 0–255 RGB */
 function oklchToRgb(L, C, H) {
-  const hRad = H * Math.PI / 180;
+  const hRad = (H * Math.PI) / 180;
   const a = C * Math.cos(hRad);
   const b = C * Math.sin(hRad);
   return oklabToRgb(L, a, b);
@@ -146,19 +276,40 @@ export function parseColor(str) {
 
   // 8-digit hex: #rrggbbaa
   let m = str.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/);
-  if (m) return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16), a: +(parseInt(m[4],16)/255).toFixed(2), format: 'hex' };
+  if (m)
+    return {
+      r: parseInt(m[1], 16),
+      g: parseInt(m[2], 16),
+      b: parseInt(m[3], 16),
+      a: +(parseInt(m[4], 16) / 255).toFixed(2),
+      format: 'hex',
+    };
 
   // 6-digit hex
   m = str.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/);
-  if (m) return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16), a: 1, format: 'hex' };
+  if (m) return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16), a: 1, format: 'hex' };
 
   // 4-digit hex: #rgba
   m = str.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/);
-  if (m) return { r: parseInt(m[1]+m[1],16), g: parseInt(m[2]+m[2],16), b: parseInt(m[3]+m[3],16), a: +(parseInt(m[4]+m[4],16)/255).toFixed(2), format: 'hex' };
+  if (m)
+    return {
+      r: parseInt(m[1] + m[1], 16),
+      g: parseInt(m[2] + m[2], 16),
+      b: parseInt(m[3] + m[3], 16),
+      a: +(parseInt(m[4] + m[4], 16) / 255).toFixed(2),
+      format: 'hex',
+    };
 
   // 3-digit hex
   m = str.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/);
-  if (m) return { r: parseInt(m[1]+m[1],16), g: parseInt(m[2]+m[2],16), b: parseInt(m[3]+m[3],16), a: 1, format: 'hex' };
+  if (m)
+    return {
+      r: parseInt(m[1] + m[1], 16),
+      g: parseInt(m[2] + m[2], 16),
+      b: parseInt(m[3] + m[3], 16),
+      a: 1,
+      format: 'hex',
+    };
 
   // rgba(r, g, b, a)
   m = str.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/);
@@ -171,14 +322,14 @@ export function parseColor(str) {
   // hsla(h, s%, l%, a)
   m = str.match(/^hsla\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*,\s*([\d.]+)\s*\)$/);
   if (m) {
-    const [r, g, b] = hslToRgb(+m[1]/360, +m[2]/100, +m[3]/100);
+    const [r, g, b] = hslToRgb(+m[1] / 360, +m[2] / 100, +m[3] / 100);
     return { r, g, b, a: +m[4], format: 'hsla' };
   }
 
   // hsl(h, s%, l%)
   m = str.match(/^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/);
   if (m) {
-    const [r, g, b] = hslToRgb(+m[1]/360, +m[2]/100, +m[3]/100);
+    const [r, g, b] = hslToRgb(+m[1] / 360, +m[2] / 100, +m[3] / 100);
     return { r, g, b, a: 1, format: 'hsl' };
   }
 
@@ -216,7 +367,7 @@ export function parseColor(str) {
 export function formatColor({ r, g, b, a }, format) {
   const hasAlpha = a < 1;
   const hex2 = (n) => Math.round(n).toString(16).padStart(2, '0');
-  const rd = (n, d=2) => +n.toFixed(d);
+  const rd = (n, d = 2) => +n.toFixed(d);
 
   switch (format) {
     case 'hex':
@@ -230,12 +381,12 @@ export function formatColor({ r, g, b, a }, format) {
       return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${rd(a)})`;
     case 'hsl': {
       const [h, s, l] = rgbToHsl(r, g, b);
-      if (hasAlpha) return `hsla(${Math.round(h*360)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%, ${rd(a)})`;
-      return `hsl(${Math.round(h*360)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%)`;
+      if (hasAlpha) return `hsla(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, ${rd(a)})`;
+      return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
     }
     case 'hsla': {
       const [h, s, l] = rgbToHsl(r, g, b);
-      return `hsla(${Math.round(h*360)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%, ${rd(a)})`;
+      return `hsla(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, ${rd(a)})`;
     }
     case 'oklch': {
       const lch = rgbToOKLCH(r, g, b);
@@ -283,7 +434,7 @@ function closeActiveColorPopup() {
  */
 export function createColorChip({ color, container, onChange, className, title }) {
   const chip = document.createElement('span');
-  chip.className = 'cm-color-chip' + (className ? ' ' + className : '');
+  chip.className = `cm-color-chip${className ? ` ${className}` : ''}`;
   if (title) chip.title = title;
 
   let parsed = parseColor(color);
@@ -353,9 +504,9 @@ export function createColorChip({ color, container, onChange, className, title }
     swatch.value = `#${hex2(r)}${hex2(g)}${hex2(b)}`;
     swatch.addEventListener('input', () => {
       const v = swatch.value;
-      r = parseInt(v.slice(1,3),16);
-      g = parseInt(v.slice(3,5),16);
-      b = parseInt(v.slice(5,7),16);
+      r = parseInt(v.slice(1, 3), 16);
+      g = parseInt(v.slice(3, 5), 16);
+      b = parseInt(v.slice(5, 7), 16);
       emit();
     });
     row1.appendChild(swatch);
@@ -408,7 +559,10 @@ export function createColorChip({ color, container, onChange, className, title }
     textInput.value = color;
     textInput.addEventListener('change', () => {
       const newParsed = parseColor(textInput.value.trim());
-      r = newParsed.r; g = newParsed.g; b = newParsed.b; a = newParsed.a;
+      r = newParsed.r;
+      g = newParsed.g;
+      b = newParsed.b;
+      a = newParsed.a;
       if (newParsed.format !== 'named') {
         activeFormat = newParsed.format;
         if (activeFormat === 'rgba') activeFormat = 'rgb';
@@ -448,7 +602,10 @@ export function createColorChip({ color, container, onChange, className, title }
       }
     };
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); dismiss(); }
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        dismiss();
+      }
     };
     const dismiss = () => {
       document.removeEventListener('mousedown', onClickOutside, true);
@@ -614,7 +771,13 @@ function findColorRanges(docText) {
     let closeBrace = -1;
     for (let i = openBrace + 1; i < docText.length; i++) {
       if (docText[i] === '{') depth++;
-      else if (docText[i] === '}') { depth--; if (depth === 0) { closeBrace = i; break; } }
+      else if (docText[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          closeBrace = i;
+          break;
+        }
+      }
     }
     if (closeBrace === -1) continue;
 
@@ -631,14 +794,13 @@ function findColorRanges(docText) {
       if (!COLOR_PROPERTIES.has(prop)) continue;
       if (value === 'none' || value === 'inherit' || value === 'currentColor') continue;
 
-      const isColor = (
+      const isColor =
         /^#[0-9a-fA-F]{3,8}$/.test(value) ||
         /^rgba?\(/.test(value) ||
         /^hsla?\(/.test(value) ||
         /^oklch\(/.test(value) ||
         /^oklab\(/.test(value) ||
-        CSS_NAMED_COLORS.has(value.toLowerCase())
-      );
+        CSS_NAMED_COLORS.has(value.toLowerCase());
 
       if (!isColor) continue;
 
@@ -656,7 +818,12 @@ function findColorRanges(docText) {
     const colorStr = colorCallMatch[2];
     // Validate it's a recognized color format
     const parsed = parseColor(colorStr);
-    if (parsed.format === 'hex' && colorStr !== 'none' && !colorStr.startsWith('#') && !CSS_NAMED_COLORS.has(colorStr.toLowerCase())) {
+    if (
+      parsed.format === 'hex' &&
+      colorStr !== 'none' &&
+      !colorStr.startsWith('#') &&
+      !CSS_NAMED_COLORS.has(colorStr.toLowerCase())
+    ) {
       continue; // parseColor returned default — not a real color
     }
     // Position chip on the string argument (including quotes)
@@ -703,7 +870,7 @@ export function colorPickerExtension(cmViewModule) {
     }
 
     toDOM(view) {
-      let currentFrom = this.from;
+      const currentFrom = this.from;
       let currentTo = this.to;
       const editorRoot = view.dom.closest('.cm-editor') || view.dom;
 
@@ -757,7 +924,7 @@ export function colorPickerExtension(cmViewModule) {
     },
     {
       decorations: (v) => v.decorations,
-    }
+    },
   );
 
   const baseTheme = EditorView.baseTheme({

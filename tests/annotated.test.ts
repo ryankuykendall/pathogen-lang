@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compileAnnotated } from '../src';
 
 describe('Annotated Output', () => {
   describe('basic path commands', () => {
     it('outputs each path command on its own line', () => {
       const result = compileAnnotated('M 0 0 L 10 20 Z');
-      const lines = result.split('\n').filter(l => l.trim());
+      const lines = result.split('\n').filter((l) => l.trim());
       expect(lines).toContain('M 0 0');
       expect(lines).toContain('L 10 20');
       expect(lines).toContain('Z');

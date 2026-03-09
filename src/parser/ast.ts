@@ -138,7 +138,14 @@ export interface PathCommand {
   loc?: SourceLocation;
 }
 
-export type PathArg = NumberLiteral | Identifier | CalcExpression | FunctionCall | MemberExpression | IndexExpression | MethodCallExpression;
+export type PathArg =
+  | NumberLiteral
+  | Identifier
+  | CalcExpression
+  | FunctionCall
+  | MemberExpression
+  | IndexExpression
+  | MethodCallExpression;
 
 // calc(x + 10)
 export interface CalcExpression {
@@ -151,7 +158,7 @@ export interface FunctionCall {
   type: 'FunctionCall';
   name: string;
   args: Expression[];
-  block?: { param: string; body: Statement[] };  // Trailing block: {|param| statements}
+  block?: { param: string; body: Statement[] }; // Trailing block: {|param| statements}
   loc?: SourceLocation;
 }
 
@@ -188,7 +195,7 @@ export interface Identifier {
 export interface NumberLiteral {
   type: 'NumberLiteral';
   value: number;
-  unit?: 'deg' | 'rad' | 'pi';  // Optional angle unit
+  unit?: 'deg' | 'rad' | 'pi'; // Optional angle unit
 }
 
 // String literal (for log messages)
@@ -200,7 +207,7 @@ export interface StringLiteral {
 // Template literal: `hello ${name}!`
 export interface TemplateLiteral {
   type: 'TemplateLiteral';
-  parts: (string | Expression)[];  // Alternating strings and expressions
+  parts: (string | Expression)[]; // Alternating strings and expressions
 }
 
 // null literal
@@ -260,8 +267,8 @@ export interface TextStatement {
   y: Expression;
   rotation?: Expression;
   styles?: Expression;
-  content?: TemplateLiteral;   // Inline form: text(x, y)`content`
-  body?: TextBodyItem[];       // Block form: text(x, y) { `text` tspan()... }
+  content?: TemplateLiteral; // Inline form: text(x, y)`content`
+  body?: TextBodyItem[]; // Block form: text(x, y) { `text` tspan()... }
   loc?: SourceLocation;
 }
 
@@ -279,8 +286,8 @@ export interface TspanStatement {
 // Style property in a layer definition: stroke: #cc0000;
 export interface StyleProperty {
   type: 'StyleProperty';
-  name: string;      // e.g. 'stroke', 'stroke-width'
-  value: string;     // raw string e.g. '#cc0000', '4 1 2 3'
+  name: string; // e.g. 'stroke', 'stroke-width'
+  value: string; // raw string e.g. '#cc0000', '4 1 2 3'
 }
 
 // define [default] PathLayer('name') ${ style declarations }
@@ -298,7 +305,7 @@ export interface LayerConstructorExpression {
   type: 'LayerConstructorExpression';
   layerType: 'PathLayer' | 'TextLayer' | 'GroupLayer';
   name: Expression;
-  styleExpr?: Expression;  // Optional trailing style block
+  styleExpr?: Expression; // Optional trailing style block
   loc?: SourceLocation;
 }
 

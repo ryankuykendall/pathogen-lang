@@ -102,9 +102,9 @@ class ThemeManager {
   _notifyListeners() {
     const state = {
       preference: this.getPreference(),
-      active: this.getActiveTheme()
+      active: this.getActiveTheme(),
     };
-    this._listeners.forEach(fn => fn(state));
+    this._listeners.forEach((fn) => fn(state));
   }
 }
 

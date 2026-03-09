@@ -2,7 +2,7 @@
 // Simple pub/sub pattern - no framework needed
 
 function createStore(initialState) {
-  let state = { ...initialState };
+  const state = { ...initialState };
   const listeners = new Map(); // key -> Set of callbacks
 
   return {
@@ -29,12 +29,12 @@ function createStore(initialState) {
           changedKeys.push(key);
         }
       }
-      changedKeys.forEach(key => this.notify(key));
+      changedKeys.forEach((key) => this.notify(key));
     },
 
     subscribe(keys, callback) {
       const keyArray = Array.isArray(keys) ? keys : [keys];
-      keyArray.forEach(key => {
+      keyArray.forEach((key) => {
         if (!listeners.has(key)) {
           listeners.set(key, new Set());
         }
@@ -43,23 +43,23 @@ function createStore(initialState) {
 
       // Return unsubscribe function
       return () => {
-        keyArray.forEach(key => {
+        keyArray.forEach((key) => {
           listeners.get(key)?.delete(callback);
         });
       };
     },
 
     notify(key) {
-      listeners.get(key)?.forEach(callback => callback(state[key], key));
+      listeners.get(key)?.forEach((callback) => callback(state[key], key));
     },
 
     // Batch updates without intermediate notifications
     batch(fn) {
       const oldState = { ...state };
       fn(state);
-      const changedKeys = Object.keys(state).filter(k => state[k] !== oldState[k]);
-      changedKeys.forEach(key => this.notify(key));
-    }
+      const changedKeys = Object.keys(state).filter((k) => state[k] !== oldState[k]);
+      changedKeys.forEach((key) => this.notify(key));
+    },
   };
 }
 
@@ -68,25 +68,25 @@ export const store = createStore({
   // Routing
   currentRoute: '/',
   currentView: 'landing',
-  routeParams: {},        // e.g., { id: 'workspace-123' }
-  routeQuery: {},         // e.g., { state: 'base64...' }
+  routeParams: {}, // e.g., { id: 'workspace-123' }
+  routeQuery: {}, // e.g., { state: 'base64...' }
 
   // Workspaces
-  workspaces: [],         // Array of saved workspace metadata
+  workspaces: [], // Array of saved workspace metadata
   workspacesLoading: false,
   workspacesError: null,
 
   // Current workspace (loaded from API)
-  workspaceId: null,              // ID of current workspace (null = unsaved)
-  workspaceName: null,            // Name of current workspace
-  workspaceDescription: null,     // Description
-  workspaceIsPublic: false,       // Visibility
-  workspaceOwnerId: null,         // Owner user ID
-  workspaceUpdatedAt: null,       // Last update timestamp
+  workspaceId: null, // ID of current workspace (null = unsaved)
+  workspaceName: null, // Name of current workspace
+  workspaceDescription: null, // Description
+  workspaceIsPublic: false, // Visibility
+  workspaceOwnerId: null, // Owner user ID
+  workspaceUpdatedAt: null, // Last update timestamp
 
   // Save status for autosave
-  saveStatus: 'idle',     // 'idle', 'modified', 'saving', 'saved', 'error'
-  saveError: null,        // Error message if save failed
+  saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'
+  saveError: null, // Error message if save failed
 
   // User preferences (defaults for new workspaces)
   preferences: {
@@ -108,20 +108,20 @@ export const store = createStore({
   annotatedOutput: '',
   logs: [],
   error: null,
-  layers: [],              // Array of LayerOutput from last compilation
-  masks: [],               // Array of MaskOutput from last compilation
-  clipPaths: [],           // Array of ClipPathOutput from last compilation
-  gradients: [],           // Array of GradientOutput from last compilation
-  patterns: [],            // Array of PatternOutput from last compilation
-  cssProperties: [],       // Array of CSSPropertyDeclaration from last compilation
-  layerVisibility: {},     // { [layerName]: boolean } — true = visible (default)
-  defsVisibility: {},      // { ['mask:id'|'clip-path:id']: boolean } — true = visible (default)
+  layers: [], // Array of LayerOutput from last compilation
+  masks: [], // Array of MaskOutput from last compilation
+  clipPaths: [], // Array of ClipPathOutput from last compilation
+  gradients: [], // Array of GradientOutput from last compilation
+  patterns: [], // Array of PatternOutput from last compilation
+  cssProperties: [], // Array of CSSPropertyDeclaration from last compilation
+  layerVisibility: {}, // { [layerName]: boolean } — true = visible (default)
+  defsVisibility: {}, // { ['mask:id'|'clip-path:id']: boolean } — true = visible (default)
 
   // Compilation status (for async worker)
-  compilationStatus: 'idle',    // 'idle', 'compiling', 'rendering', 'completed', 'error'
+  compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error'
   compilationError: null,
-  compilationId: 0,             // Tracks current compilation for staleness detection
-  calledStdlibFunctions: [],    // Stdlib function names invoked during last compilation
+  compilationId: 0, // Tracks current compilation for staleness detection
+  calledStdlibFunctions: [], // Stdlib function names invoked during last compilation
 
   // SVG styles
   width: 200,

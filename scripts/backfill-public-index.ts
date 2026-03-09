@@ -1,5 +1,6 @@
+import { execSync } from 'node:child_process';
+
 import { Command } from 'commander';
-import { execSync } from 'child_process';
 
 const program = new Command();
 program
@@ -53,10 +54,7 @@ program
 
     for (const key of allKeys) {
       try {
-        const raw = execSync(
-          `wrangler kv key get --namespace-id ${namespaceId} "${key}"`,
-          { encoding: 'utf-8' }
-        );
+        const raw = execSync(`wrangler kv key get --namespace-id ${namespaceId} "${key}"`, { encoding: 'utf-8' });
         const ws = JSON.parse(raw);
 
         if (ws.isPublic) {
@@ -77,9 +75,7 @@ program
     }
 
     // Sort by updatedAt descending
-    publicWorkspaces.sort((a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    publicWorkspaces.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
     console.log(`\nFound ${publicWorkspaces.length} public workspaces`);
 
@@ -93,7 +89,7 @@ program
     const value = JSON.stringify(publicWorkspaces);
     execSync(
       `echo '${value.replace(/'/g, "'\\''")}' | wrangler kv key put --namespace-id ${namespaceId} "public:workspaces" --path -`,
-      { encoding: 'utf-8' }
+      { encoding: 'utf-8' },
     );
 
     console.log('\nWrote public:workspaces index to KV');

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { spawnSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const CLI_PATH = join(__dirname, '..', 'src', 'cli.ts');
 const TMP_DIR = join(__dirname, 'tmp');
@@ -221,7 +222,15 @@ describe('CLI', () => {
     });
 
     it('applies multiple styling options', () => {
-      runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`, '--stroke=green', '--fill=yellow', '--stroke-width=3', '--viewBox=0 0 500 500']);
+      runCli([
+        '-e',
+        'M 0 0',
+        `--output-svg-file=${outputSvg}`,
+        '--stroke=green',
+        '--fill=yellow',
+        '--stroke-width=3',
+        '--viewBox=0 0 500 500',
+      ]);
       const content = readFileSync(outputSvg, 'utf-8');
       expect(content).toContain('stroke="green"');
       expect(content).toContain('fill="yellow"');
@@ -361,7 +370,10 @@ describe('CLI', () => {
     it('generates <text> elements in SVG output', () => {
       const inputFile = join(TMP_DIR, 'text-test.svgx');
       const outputFile = join(TMP_DIR, 'text-test.svg');
-      writeFileSync(inputFile, "define TextLayer('labels') ${ font-size: 14; fill: #333; }\nlayer('labels').apply {\n  text(50, 45)`Hello`\n}");
+      writeFileSync(
+        inputFile,
+        "define TextLayer('labels') ${ font-size: 14; fill: #333; }\nlayer('labels').apply {\n  text(50, 45)`Hello`\n}",
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
       const content = readFileSync(outputFile, 'utf-8');
@@ -390,7 +402,10 @@ describe('CLI', () => {
     it('generates <tspan> elements', () => {
       const inputFile = join(TMP_DIR, 'text-tspan.svgx');
       const outputFile = join(TMP_DIR, 'text-tspan.svg');
-      writeFileSync(inputFile, "define TextLayer('t') ${}\nlayer('t').apply {\n  text(10, 20) {\n    tspan()`first`\n    tspan(0, 16)`second`\n  }\n}");
+      writeFileSync(
+        inputFile,
+        "define TextLayer('t') ${}\nlayer('t').apply {\n  text(10, 20) {\n    tspan()`first`\n    tspan(0, 16)`second`\n  }\n}",
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
       const content = readFileSync(outputFile, 'utf-8');
@@ -424,11 +439,14 @@ describe('CLI', () => {
 
     it('includes <style> with @property for Color(CSSVar(...))', () => {
       const inputFile = join(TMP_DIR, 'css-prop-test.svgx');
-      writeFileSync(inputFile, `
+      writeFileSync(
+        inputFile,
+        `
         let c = Color(CSSVar('--base-color', '#e63946'));
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 L 100 100 }
-      `);
+      `,
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
 
       const content = readFileSync(outputSvg, 'utf-8');
@@ -443,12 +461,15 @@ describe('CLI', () => {
 
     it('includes multiple @property declarations', () => {
       const inputFile = join(TMP_DIR, 'css-prop-multi.svgx');
-      writeFileSync(inputFile, `
+      writeFileSync(
+        inputFile,
+        `
         let c1 = Color(CSSVar('--base', '#e63946'));
         let c2 = Color(CSSVar('--accent', '#457b9d'));
         define PathLayer('a') \${ fill: c1; stroke: c2; }
         layer('a').apply { M 0 0 L 100 100 }
-      `);
+      `,
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
 
       const content = readFileSync(outputSvg, 'utf-8');
@@ -460,11 +481,14 @@ describe('CLI', () => {
 
     it('omits <style> when no Color(CSSVar(...)) used', () => {
       const inputFile = join(TMP_DIR, 'css-prop-none.svgx');
-      writeFileSync(inputFile, `
+      writeFileSync(
+        inputFile,
+        `
         let c = Color('#e63946');
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }
-      `);
+      `,
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
 
       const content = readFileSync(outputSvg, 'utf-8');
@@ -544,13 +568,16 @@ describe('CLI', () => {
       if (existsSync(outputSvg)) unlinkSync(outputSvg);
 
       const inputFile = join(TMP_DIR, 'conic-test.svgx');
-      writeFileSync(inputFile, `
+      writeFileSync(
+        inputFile,
+        `
         let g = ConicGradient('cg', 100, 100);
         g.stop(0, Color('red'));
         g.stop(1, Color('blue'));
         define PathLayer('p') \${ fill: url(#cg); }
         layer('p').apply { rect(0, 0, 200, 200) }
-      `);
+      `,
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
       expect(existsSync(outputSvg)).toBe(true);
       const content = readFileSync(outputSvg, 'utf-8');
@@ -569,13 +596,16 @@ describe('CLI', () => {
       if (existsSync(outputSvg)) unlinkSync(outputSvg);
 
       const inputFile = join(TMP_DIR, 'linear-test.svgx');
-      writeFileSync(inputFile, `
+      writeFileSync(
+        inputFile,
+        `
         let g = LinearGradient('lg', 0, 0, 200, 200);
         g.stop(0, Color('red'));
         g.stop(1, Color('blue'));
         define PathLayer('p') \${ fill: url(#lg); }
         layer('p').apply { rect(0, 0, 200, 200) }
-      `);
+      `,
+      );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
       expect(existsSync(outputSvg)).toBe(true);
       const content = readFileSync(outputSvg, 'utf-8');

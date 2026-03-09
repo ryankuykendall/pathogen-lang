@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { compile, parse, compileAnnotated } from '../src';
+import { describe, expect, it } from 'vitest';
+
+import { compile, compileAnnotated, parse } from '../src';
 import { compilePath } from './helpers';
 
 describe('Path Blocks', () => {
@@ -204,9 +205,9 @@ describe('Path Blocks', () => {
     it('works with layers', () => {
       const result = compile(
         "define default PathLayer('main') ${ stroke: black; }\n" +
-        'let p = @{ v 20 h 20 };\n' +
-        'M 10 10\n' +
-        'p.draw()'
+          'let p = @{ v 20 h 20 };\n' +
+          'M 10 10\n' +
+          'p.draw()',
       );
       expect(result.layers[0].data).toBe('M 10 10 v 20 h 20');
     });
@@ -272,21 +273,19 @@ describe('Path Blocks', () => {
     });
 
     it('rejects layer definitions inside path block', () => {
-      expect(() => compilePath("let p = @{ define PathLayer('x') ${ stroke: red; } };"))
-        .toThrow(/Layer definitions.*not allowed.*path blocks/);
+      expect(() => compilePath("let p = @{ define PathLayer('x') ${ stroke: red; } };")).toThrow(
+        /Layer definitions.*not allowed.*path blocks/,
+      );
     });
 
     it('rejects layer apply blocks inside path block', () => {
-      expect(() => compilePath(
-        "define PathLayer('x') ${ stroke: red; }\n" +
-        "let p = @{ layer('x').apply { v 10 } };"
-      )).toThrow(/Layer apply blocks.*not allowed.*path blocks/);
+      expect(() =>
+        compilePath("define PathLayer('x') ${ stroke: red; }\nlet p = @{ layer('x').apply { v 10 } };"),
+      ).toThrow(/Layer apply blocks.*not allowed.*path blocks/);
     });
 
     it('rejects text statements inside path block', () => {
-      expect(() => compilePath(
-        'let p = @{ text(0, 0)`hello` };'
-      )).toThrow(/Text statements.*not allowed.*path blocks/);
+      expect(() => compilePath('let p = @{ text(0, 0)`hello` };')).toThrow(/Text statements.*not allowed.*path blocks/);
     });
 
     it('rejects nested path blocks', () => {
@@ -294,17 +293,21 @@ describe('Path Blocks', () => {
     });
 
     it('rejects draw() inside path block', () => {
-      expect(() => compilePath(`
+      expect(() =>
+        compilePath(`
         let p = @{ v 20 };
         let q = @{ p.draw() };
-      `)).toThrow(/Cannot call .draw\(\) inside a path block/);
+      `),
+      ).toThrow(/Cannot call .draw\(\) inside a path block/);
     });
 
     it('rejects project() inside path block', () => {
-      expect(() => compilePath(`
+      expect(() =>
+        compilePath(`
         let p = @{ v 20 };
         let q = @{ p.project(0, 0); };
-      `)).toThrow(/Cannot call .project\(\) inside a path block/);
+      `),
+      ).toThrow(/Cannot call .project\(\) inside a path block/);
     });
 
     it('allows z (closePath)', () => {
@@ -652,38 +655,31 @@ describe('Path Blocks', () => {
 
     describe('errors', () => {
       it('get() with t < 0 throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.get(-0.1);'))
-          .toThrow(/between 0 and 1/);
+        expect(() => compile('let p = @{ h 100 }; p.get(-0.1);')).toThrow(/between 0 and 1/);
       });
 
       it('get() with t > 1 throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.get(1.5);'))
-          .toThrow(/between 0 and 1/);
+        expect(() => compile('let p = @{ h 100 }; p.get(1.5);')).toThrow(/between 0 and 1/);
       });
 
       it('tangent() with out-of-range t throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.tangent(-0.1);'))
-          .toThrow(/between 0 and 1/);
+        expect(() => compile('let p = @{ h 100 }; p.tangent(-0.1);')).toThrow(/between 0 and 1/);
       });
 
       it('normal() with out-of-range t throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.normal(2);'))
-          .toThrow(/between 0 and 1/);
+        expect(() => compile('let p = @{ h 100 }; p.normal(2);')).toThrow(/between 0 and 1/);
       });
 
       it('partition() with 0 throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.partition(0);'))
-          .toThrow(/positive integer/);
+        expect(() => compile('let p = @{ h 100 }; p.partition(0);')).toThrow(/positive integer/);
       });
 
       it('partition() with negative throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.partition(-1);'))
-          .toThrow(/positive integer/);
+        expect(() => compile('let p = @{ h 100 }; p.partition(-1);')).toThrow(/positive integer/);
       });
 
       it('partition() with non-integer throws', () => {
-        expect(() => compile('let p = @{ h 100 }; p.partition(2.5);'))
-          .toThrow(/positive integer/);
+        expect(() => compile('let p = @{ h 100 }; p.partition(2.5);')).toThrow(/positive integer/);
       });
     });
 
@@ -850,8 +846,7 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with arguments', () => {
-        expect(() => compile('let p = @{ h 50 }; p.reverse(1);'))
-          .toThrow(/0 arguments/);
+        expect(() => compile('let p = @{ h 50 }; p.reverse(1);')).toThrow(/0 arguments/);
       });
     });
 
@@ -928,8 +923,7 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with arguments', () => {
-        expect(() => compile('let p = @{ h 50 }; p.boundingBox(1);'))
-          .toThrow(/0 arguments/);
+        expect(() => compile('let p = @{ h 50 }; p.boundingBox(1);')).toThrow(/0 arguments/);
       });
     });
 
@@ -994,13 +988,11 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with 0 arguments', () => {
-        expect(() => compile('let p = @{ h 50 }; p.offset();'))
-          .toThrow(/1 argument/);
+        expect(() => compile('let p = @{ h 50 }; p.offset();')).toThrow(/1 argument/);
       });
 
       it('throws error with non-number argument', () => {
-        expect(() => compile('let p = @{ h 50 }; p.offset("abc");'))
-          .toThrow(/must be a number/);
+        expect(() => compile('let p = @{ h 50 }; p.offset("abc");')).toThrow(/must be a number/);
       });
     });
 
@@ -1094,13 +1086,11 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with 0 arguments', () => {
-        expect(() => compile('let p = @{ h 50 }; p.mirror();'))
-          .toThrow(/1 argument/);
+        expect(() => compile('let p = @{ h 50 }; p.mirror();')).toThrow(/1 argument/);
       });
 
       it('throws error with non-number argument', () => {
-        expect(() => compile('let p = @{ h 50 }; p.mirror("abc");'))
-          .toThrow(/must be a number/);
+        expect(() => compile('let p = @{ h 50 }; p.mirror("abc");')).toThrow(/must be a number/);
       });
     });
 
@@ -1195,28 +1185,23 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with negative index', () => {
-        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(-1, 0);'))
-          .toThrow(/out of range/);
+        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(-1, 0);')).toThrow(/out of range/);
       });
 
       it('throws error with out-of-range index', () => {
-        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(5, 0);'))
-          .toThrow(/out of range/);
+        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(5, 0);')).toThrow(/out of range/);
       });
 
       it('throws error with non-integer index', () => {
-        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(1.5, 0);'))
-          .toThrow(/must be an integer/);
+        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(1.5, 0);')).toThrow(/must be an integer/);
       });
 
       it('throws error with wrong arg count', () => {
-        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(0);'))
-          .toThrow(/2 arguments/);
+        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(0);')).toThrow(/2 arguments/);
       });
 
       it('throws error with non-number angle', () => {
-        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(0, "abc");'))
-          .toThrow(/must be a number/);
+        expect(() => compile('let p = @{ h 50 }; p.rotateAtVertexIndex(0, "abc");')).toThrow(/must be a number/);
       });
     });
 
@@ -1350,18 +1335,15 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with 0 args', () => {
-        expect(() => compile('let p = @{ h 50 }; p.scale();'))
-          .toThrow(/2 arguments/);
+        expect(() => compile('let p = @{ h 50 }; p.scale();')).toThrow(/2 arguments/);
       });
 
       it('throws error with 1 arg', () => {
-        expect(() => compile('let p = @{ h 50 }; p.scale(2);'))
-          .toThrow(/2 arguments/);
+        expect(() => compile('let p = @{ h 50 }; p.scale(2);')).toThrow(/2 arguments/);
       });
 
       it('throws error with non-number arg', () => {
-        expect(() => compile('let p = @{ h 50 }; p.scale("a", 1);'))
-          .toThrow(/must be a number/);
+        expect(() => compile('let p = @{ h 50 }; p.scale("a", 1);')).toThrow(/must be a number/);
       });
     });
 
@@ -1483,11 +1465,13 @@ describe('Path Blocks', () => {
       });
 
       it('throws error for mixed PathBlock/StyleBlock types', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let p = @{ h 50 };
           let s = \${ stroke: red; };
           let x = calc(p << s);
-        `)).toThrow(/matching operand types/);
+        `),
+        ).toThrow(/matching operand types/);
       });
     });
   });
@@ -1873,7 +1857,9 @@ describe('Path Blocks', () => {
     });
 
     it('subPath error: out of range startT', () => {
-      expect(() => compile('let p = @{ h 100 }; p.subPath(-0.5, 1);')).toThrow('subPath() startT must be between 0 and 1');
+      expect(() => compile('let p = @{ h 100 }; p.subPath(-0.5, 1);')).toThrow(
+        'subPath() startT must be between 0 and 1',
+      );
     });
 
     it('subPath error: out of range endT', () => {
@@ -1895,7 +1881,7 @@ describe('Path Blocks', () => {
       // Two halves should have equal lengths
       expect(aLen).toBeCloseTo(bLen, 1);
       // Each half covers a quarter-circle (r=25), so arc length ≈ π*25/2 ≈ 39.27
-      expect(aLen).toBeCloseTo(Math.PI * 25 / 2, 0);
+      expect(aLen).toBeCloseTo((Math.PI * 25) / 2, 0);
       // First half endpoint should be at the top of the semicircle
       const endX = parseFloat(result.logs[2].parts[0].value);
       const endY = parseFloat(result.logs[3].parts[0].value);

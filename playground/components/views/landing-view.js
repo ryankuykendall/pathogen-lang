@@ -1,9 +1,9 @@
 // Landing View - Workspace list with list/grid toggle
 // Route: /
 
+import { thumbnailApi, workspaceApi } from '../../services/api.js';
 import { store } from '../../state/store.js';
-import { workspaceApi, thumbnailApi } from '../../services/api.js';
-import { navigateTo, buildWorkspaceSlugId } from '../../utils/router.js';
+import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 
 const styles = `
   :host {
@@ -475,14 +475,14 @@ class LandingView extends HTMLElement {
         // Update the specific card's thumbnail (bust cache with timestamp)
         const imgs = this.shadowRoot.querySelectorAll(`[data-id="${workspaceId}"] img`);
         const timestamp = Date.now();
-        imgs.forEach(img => {
+        imgs.forEach((img) => {
           const base = img.src.split('?')[0];
           img.src = `${base}?v=${timestamp}`;
         });
 
         // Also update the workspace data in store so re-renders show the thumbnail
         const workspaces = store.get('workspaces') || [];
-        const ws = workspaces.find(w => w.id === workspaceId);
+        const ws = workspaces.find((w) => w.id === workspaceId);
         if (ws && !ws.thumbnailAt) {
           ws.thumbnailAt = new Date().toISOString();
           store.set('workspaces', [...workspaces]);
@@ -510,8 +510,8 @@ class LandingView extends HTMLElement {
 
     // Use composedPath to check clicks across shadow DOM boundaries
     const path = e.composedPath();
-    const isMenuClick = path.some(el =>
-      el.classList && (el.classList.contains('menu-btn') || el.classList.contains('menu-dropdown'))
+    const isMenuClick = path.some(
+      (el) => el.classList && (el.classList.contains('menu-btn') || el.classList.contains('menu-dropdown')),
     );
 
     if (!isMenuClick) {
@@ -563,7 +563,9 @@ class LandingView extends HTMLElement {
 
         // Close any currently open menu
         if (this._openMenuId && this._openMenuId !== id) {
-          const oldDropdown = this.shadowRoot.querySelector(`.workspace-item[data-id="${this._openMenuId}"] .menu-dropdown`);
+          const oldDropdown = this.shadowRoot.querySelector(
+            `.workspace-item[data-id="${this._openMenuId}"] .menu-dropdown`,
+          );
           if (oldDropdown) oldDropdown.classList.remove('open');
         }
 
@@ -599,7 +601,6 @@ class LandingView extends HTMLElement {
       // Retry button
       if (e.target.closest('.retry-btn')) {
         this.loadWorkspaces();
-        return;
       }
     });
   }
@@ -618,7 +619,7 @@ class LandingView extends HTMLElement {
       case 'toggle-publish':
         try {
           const workspaces = store.get('workspaces') || [];
-          const workspace = workspaces.find(w => w.id === id);
+          const workspace = workspaces.find((w) => w.id === id);
           if (!workspace) return;
 
           const newIsPublic = !workspace.isPublic;
@@ -630,7 +631,7 @@ class LandingView extends HTMLElement {
           this.render();
         } catch (err) {
           console.error('Failed to update workspace visibility:', err);
-          alert('Failed to update visibility: ' + err.message);
+          alert(`Failed to update visibility: ${err.message}`);
         }
         break;
 
@@ -640,11 +641,14 @@ class LandingView extends HTMLElement {
             await workspaceApi.delete(id);
             // Remove from local state
             const workspaces = store.get('workspaces') || [];
-            store.set('workspaces', workspaces.filter(w => w.id !== id));
+            store.set(
+              'workspaces',
+              workspaces.filter((w) => w.id !== id),
+            );
             this.render();
           } catch (err) {
             console.error('Failed to delete workspace:', err);
-            alert('Failed to delete workspace: ' + err.message);
+            alert(`Failed to delete workspace: ${err.message}`);
           }
         }
         break;
@@ -694,16 +698,18 @@ class LandingView extends HTMLElement {
     } else {
       content = `
         <div class="workspace-list ${this.viewMode}">
-          ${workspaces.map(ws => {
-            const initial = (ws.name || '?')[0];
-            const color = this.generateColor(ws.id);
-            if (this.viewMode === 'grid') {
-              return `
+          ${workspaces
+            .map((ws) => {
+              const initial = (ws.name || '?')[0];
+              const color = this.generateColor(ws.id);
+              if (this.viewMode === 'grid') {
+                return `
               <div class="workspace-item" data-id="${ws.id}" data-slug="${ws.slug || ''}">
                 <div class="workspace-thumb">
-                  ${ws.thumbnailAt
-                    ? `<img src="${thumbnailApi.url(ws.id, 512)}" alt="" loading="lazy" />`
-                    : `<div class="thumb-placeholder" style="background:${color}">${this.escapeHtml(initial)}</div>`
+                  ${
+                    ws.thumbnailAt
+                      ? `<img src="${thumbnailApi.url(ws.id, 512)}" alt="" loading="lazy" />`
+                      : `<div class="thumb-placeholder" style="background:${color}">${this.escapeHtml(initial)}</div>`
                   }
                 </div>
                 <div class="workspace-info">
@@ -727,13 +733,14 @@ class LandingView extends HTMLElement {
                   </div>
                 </div>
               </div>`;
-            } else {
+              }
               return `
               <div class="workspace-item" data-id="${ws.id}" data-slug="${ws.slug || ''}">
                 <div class="workspace-thumb-sm">
-                  ${ws.thumbnailAt
-                    ? `<img src="${thumbnailApi.url(ws.id, 256)}" alt="" loading="lazy" />`
-                    : `<div class="thumb-placeholder-sm" style="background:${color}">${this.escapeHtml(initial)}</div>`
+                  ${
+                    ws.thumbnailAt
+                      ? `<img src="${thumbnailApi.url(ws.id, 256)}" alt="" loading="lazy" />`
+                      : `<div class="thumb-placeholder-sm" style="background:${color}">${this.escapeHtml(initial)}</div>`
                   }
                 </div>
                 <div class="workspace-info">
@@ -757,8 +764,8 @@ class LandingView extends HTMLElement {
                   </div>
                 </div>
               </div>`;
-            }
-          }).join('')}
+            })
+            .join('')}
         </div>
       `;
     }

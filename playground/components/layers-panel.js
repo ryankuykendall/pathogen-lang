@@ -23,9 +23,12 @@ export class LayersPanel extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this._unsubscribe = store.subscribe(['layers', 'layerVisibility', 'masks', 'clipPaths', 'gradients', 'defsVisibility'], () => {
-      this.updateList();
-    });
+    this._unsubscribe = store.subscribe(
+      ['layers', 'layerVisibility', 'masks', 'clipPaths', 'gradients', 'defsVisibility'],
+      () => {
+        this.updateList();
+      },
+    );
     this.updateList();
   }
 
@@ -39,7 +42,7 @@ export class LayersPanel extends HTMLElement {
   /** Convert a GradientOutput to a CSS background value */
   gradientToCSS(grad) {
     if (!grad || grad.stops.length === 0) return null;
-    const stops = grad.stops.map(s => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
+    const stops = grad.stops.map((s) => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
     if (grad.type === 'radial') return `radial-gradient(circle, ${stops})`;
     return `linear-gradient(to right, ${stops})`;
   }
@@ -50,12 +53,12 @@ export class LayersPanel extends HTMLElement {
     const urlMatch = value.match(/^url\(#(.+?)\)$/);
     if (urlMatch) {
       const gradients = store.get('gradients') || [];
-      const grad = gradients.find(g => g.id === urlMatch[1]);
+      const grad = gradients.find((g) => g.id === urlMatch[1]);
       if (grad) {
         // For inherited gradients with no stops, walk the href chain
         let resolved = grad;
         while (resolved.stops.length === 0 && resolved.href) {
-          resolved = gradients.find(g => g.id === resolved.href) || resolved;
+          resolved = gradients.find((g) => g.id === resolved.href) || resolved;
           if (resolved.stops.length === 0 && !resolved.href) break;
         }
         const css = this.gradientToCSS(resolved);
@@ -68,10 +71,10 @@ export class LayersPanel extends HTMLElement {
 
   getLayerColor(layer) {
     if (layer.type === 'text') {
-      return layer.styles?.['fill'] || '#333';
+      return layer.styles?.fill || '#333';
     }
-    const stroke = layer.styles?.['stroke'];
-    const fill = layer.styles?.['fill'];
+    const stroke = layer.styles?.stroke;
+    const fill = layer.styles?.fill;
     // Prefer stroke, but fall back to fill if stroke is missing or 'none'
     if (stroke && stroke !== 'none') return stroke;
     if (fill && fill !== 'none') return fill;
@@ -80,18 +83,20 @@ export class LayersPanel extends HTMLElement {
 
   toggleVisibility(name) {
     const visibility = { ...store.get('layerVisibility') };
-    visibility[name] = visibility[name] === false ? true : false;
+    visibility[name] = visibility[name] === false;
     store.set('layerVisibility', visibility);
-    this.dispatchEvent(new CustomEvent('layer-visibility-change', {
-      bubbles: true,
-      composed: true,
-      detail: { name, visible: visibility[name] }
-    }));
+    this.dispatchEvent(
+      new CustomEvent('layer-visibility-change', {
+        bubbles: true,
+        composed: true,
+        detail: { name, visible: visibility[name] },
+      }),
+    );
   }
 
   toggleDefsVisibility(key) {
     const visibility = { ...store.get('defsVisibility') };
-    visibility[key] = visibility[key] === false ? true : false;
+    visibility[key] = visibility[key] === false;
     store.set('defsVisibility', visibility);
   }
 
@@ -100,13 +105,11 @@ export class LayersPanel extends HTMLElement {
     const color = this.getLayerColor(layer);
 
     // Resolve fill/stroke for gradient-aware swatch
-    const fillResolved = this.resolveStyleColor(layer.styles?.['fill']);
-    const strokeResolved = this.resolveStyleColor(layer.styles?.['stroke']);
-    const dotResolved = (strokeResolved && !fillResolved) ? strokeResolved
-      : fillResolved ? fillResolved
-      : strokeResolved ? strokeResolved : null;
+    const fillResolved = this.resolveStyleColor(layer.styles?.fill);
+    const strokeResolved = this.resolveStyleColor(layer.styles?.stroke);
+    const dotResolved = strokeResolved && !fillResolved ? strokeResolved : fillResolved || strokeResolved || null;
     const dotStyle = dotResolved
-      ? `background: ${dotResolved.css}` + (dotResolved.isGradient ? '; border-radius: 2px' : '')
+      ? `background: ${dotResolved.css}${dotResolved.isGradient ? '; border-radius: 2px' : ''}`
       : `background: ${color}`;
 
     const row = document.createElement('div');
@@ -206,9 +209,7 @@ export class LayersPanel extends HTMLElement {
     const isEmbedded = this.hasAttribute('embedded');
     // Standalone: hide when single default layer and no defs
     // Embedded: only treat as empty when literally 0 layers and no defs
-    const isEmpty = isEmbedded
-      ? layers.length === 0 && !hasDefs
-      : layers.length <= 1 && !hasDefs;
+    const isEmpty = isEmbedded ? layers.length === 0 && !hasDefs : layers.length <= 1 && !hasDefs;
     if (!isEmbedded) {
       this.style.display = isEmpty ? 'none' : '';
     }
@@ -238,9 +239,9 @@ export class LayersPanel extends HTMLElement {
         if (match) {
           const refId = match[1];
           // Check if it's a mask or clip-path
-          if (masks.some(m => m.id === refId)) {
+          if (masks.some((m) => m.id === refId)) {
             refs.push({ type: 'mask', id: refId });
-          } else if (clipPaths.some(c => c.id === refId)) {
+          } else if (clipPaths.some((c) => c.id === refId)) {
             refs.push({ type: 'clip-path', id: refId });
           }
         }

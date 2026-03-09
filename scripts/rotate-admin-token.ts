@@ -1,6 +1,7 @@
+import { execSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+
 import { Command } from 'commander';
-import { execSync } from 'child_process';
-import { randomBytes } from 'crypto';
 
 const PROJECT_NAME = 'svg-path-extended';
 const ADMIN_PATH = '/pathogen/admin/thumbnails';
@@ -17,10 +18,9 @@ program
     console.log('Setting ADMIN_TOKEN via wrangler...\n');
 
     try {
-      execSync(
-        `printf '%s' "${token}" | npx wrangler pages secret put ADMIN_TOKEN --project-name ${PROJECT_NAME}`,
-        { stdio: ['pipe', 'inherit', 'inherit'] }
-      );
+      execSync(`printf '%s' "${token}" | npx wrangler pages secret put ADMIN_TOKEN --project-name ${PROJECT_NAME}`, {
+        stdio: ['pipe', 'inherit', 'inherit'],
+      });
     } catch {
       console.error('\nFailed to set secret. Is wrangler authenticated?');
       process.exit(1);
@@ -29,10 +29,7 @@ program
     console.log('\nRedeploying to pick up new secret...\n');
 
     try {
-      execSync(
-        `npx wrangler pages deploy public --project-name ${PROJECT_NAME}`,
-        { stdio: 'inherit' }
-      );
+      execSync(`npx wrangler pages deploy public --project-name ${PROJECT_NAME}`, { stdio: 'inherit' });
     } catch {
       console.error('\nDeploy failed. The secret was set — redeploy manually or push a commit.');
       process.exit(1);

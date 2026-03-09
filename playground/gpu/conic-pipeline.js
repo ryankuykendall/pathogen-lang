@@ -1,8 +1,8 @@
 // Conic gradient WebGPU render pipeline
 // Caches per-device; recreates after device loss recovery.
 
+import { CONIC_FRAGMENT_WGSL, CONIC_VERTEX_WGSL } from './conic-shader.js';
 import { getDevice } from './webgpu-device.js';
-import { CONIC_VERTEX_WGSL, CONIC_FRAGMENT_WGSL } from './conic-shader.js';
 
 let cachedPipeline = null;
 let pipelineDevice = null;
@@ -38,21 +38,23 @@ export async function getConicPipeline() {
       fragment: {
         module: fragmentModule,
         entryPoint: 'fs_main',
-        targets: [{
-          format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+        targets: [
+          {
+            format,
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
             },
           },
-        }],
+        ],
       },
       primitive: {
         topology: 'triangle-list',

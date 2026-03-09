@@ -15,7 +15,8 @@ interface SamplingCmd {
 function approximateCubicBezierLength(p0: Point, p1: Point, p2: Point, p3: Point): number {
   const steps = 16;
   let length = 0;
-  let prevX = p0.x, prevY = p0.y;
+  let prevX = p0.x;
+  let prevY = p0.y;
 
   for (let i = 1; i <= steps; i++) {
     const t = i / steps;
@@ -41,7 +42,8 @@ function approximateCubicBezierLength(p0: Point, p1: Point, p2: Point, p3: Point
 function approximateQuadraticBezierLength(p0: Point, p1: Point, p2: Point): number {
   const steps = 16;
   let length = 0;
-  let prevX = p0.x, prevY = p0.y;
+  let prevX = p0.x;
+  let prevY = p0.y;
 
   for (let i = 1; i <= steps; i++) {
     const t = i / steps;
@@ -102,24 +104,21 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
     case 'C': {
       const [x1, y1, x2, y2] = cmd.args;
       return approximateCubicBezierLength(
-        cmd.start, { x: cmd.start.x + x1, y: cmd.start.y + y1 },
-        { x: cmd.start.x + x2, y: cmd.start.y + y2 }, cmd.end
+        cmd.start,
+        { x: cmd.start.x + x1, y: cmd.start.y + y1 },
+        { x: cmd.start.x + x2, y: cmd.start.y + y2 },
+        cmd.end,
       );
     }
 
     case 'S': {
       const [x2, y2] = cmd.args;
-      return approximateCubicBezierLength(
-        cmd.start, cmd.start,
-        { x: cmd.start.x + x2, y: cmd.start.y + y2 }, cmd.end
-      );
+      return approximateCubicBezierLength(cmd.start, cmd.start, { x: cmd.start.x + x2, y: cmd.start.y + y2 }, cmd.end);
     }
 
     case 'Q': {
       const [x1, y1] = cmd.args;
-      return approximateQuadraticBezierLength(
-        cmd.start, { x: cmd.start.x + x1, y: cmd.start.y + y1 }, cmd.end
-      );
+      return approximateQuadraticBezierLength(cmd.start, { x: cmd.start.x + x1, y: cmd.start.y + y1 }, cmd.end);
     }
 
     case 'A': {
@@ -191,11 +190,15 @@ export interface ArcCenterParams {
 }
 
 export function arcEndpointToCenter(
-  x1: number, y1: number,
-  rx: number, ry: number,
+  x1: number,
+  y1: number,
+  rx: number,
+  ry: number,
   phi: number,
-  largeArcFlag: number, sweepFlag: number,
-  x2: number, y2: number
+  largeArcFlag: number,
+  sweepFlag: number,
+  x2: number,
+  y2: number,
 ): ArcCenterParams | null {
   if (x1 === x2 && y1 === y2) return null;
   if (rx === 0 || ry === 0) return null;
@@ -227,10 +230,10 @@ export function arcEndpointToCenter(
 
   const num = rxSq * rySq - rxSq * y1pSq - rySq * x1pSq;
   const denom = rxSq * y1pSq + rySq * x1pSq;
-  const sign = (largeArcFlag !== sweepFlag) ? 1 : -1;
+  const sign = largeArcFlag !== sweepFlag ? 1 : -1;
   const sq = sign * Math.sqrt(Math.max(num / denom, 0));
-  const cxp = sq * rx * y1p / ry;
-  const cyp = -sq * ry * x1p / rx;
+  const cxp = (sq * rx * y1p) / ry;
+  const cyp = (-sq * ry * x1p) / rx;
 
   const cx = cosPhi * cxp - sinPhi * cyp + (x1 + x2) / 2;
   const cy = sinPhi * cxp + cosPhi * cyp + (y1 + y2) / 2;
@@ -245,10 +248,7 @@ export function arcEndpointToCenter(
   }
 
   const startAngle = vectorAngle(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
-  let deltaAngle = vectorAngle(
-    (x1p - cxp) / rx, (y1p - cyp) / ry,
-    (-x1p - cxp) / rx, (-y1p - cyp) / ry
-  );
+  let deltaAngle = vectorAngle((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
 
   if (sweepFlag === 0 && deltaAngle > 0) deltaAngle -= 2 * Math.PI;
   if (sweepFlag !== 0 && deltaAngle < 0) deltaAngle += 2 * Math.PI;
@@ -276,7 +276,10 @@ export function arcTangentFromCenter(p: ArcCenterParams, t: number): number {
   const dey = p.ry * Math.cos(angle);
   let tx = cosPhi * dex - sinPhi * dey;
   let ty = sinPhi * dex + cosPhi * dey;
-  if (p.deltaAngle < 0) { tx = -tx; ty = -ty; }
+  if (p.deltaAngle < 0) {
+    tx = -tx;
+    ty = -ty;
+  }
   return Math.atan2(ty, tx);
 }
 
@@ -301,7 +304,8 @@ function lookupArcLengthT(lengths: number[], fraction: number): number {
   if (totalLength === 0) return 0;
   const targetLength = fraction * totalLength;
 
-  let lo = 0, hi = lengths.length - 1;
+  let lo = 0;
+  let hi = lengths.length - 1;
   while (lo < hi - 1) {
     const mid = (lo + hi) >> 1;
     if (lengths[mid] < targetLength) lo = mid;
@@ -328,7 +332,11 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
     case 'M':
       return { point: { x: cmd.start.x, y: cmd.start.y }, tangent: 0 };
 
-    case 'L': case 'H': case 'V': case 'Z': case 'T': {
+    case 'L':
+    case 'H':
+    case 'V':
+    case 'Z':
+    case 'T': {
       const dx = cmd.end.x - cmd.start.x;
       const dy = cmd.end.y - cmd.start.y;
       return {
@@ -336,7 +344,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
           x: cmd.start.x + dx * tLocal,
           y: cmd.start.y + dy * tLocal,
         },
-        tangent: (dx === 0 && dy === 0) ? 0 : Math.atan2(dy, dx),
+        tangent: dx === 0 && dy === 0 ? 0 : Math.atan2(dy, dx),
       };
     }
 
@@ -347,7 +355,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
       const p2 = { x: p0.x + cx2, y: p0.y + cy2 };
       const p3 = cmd.end;
 
-      const table = buildArcLengthLookup(t => cubicBezierAt(p0, p1, p2, p3, t), 64);
+      const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
       const ct = lookupArcLengthT(table, tLocal);
       const point = cubicBezierAt(p0, p1, p2, p3, ct);
       const deriv = cubicBezierDerivativeAt(p0, p1, p2, p3, ct);
@@ -361,7 +369,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
       const p2 = { x: p0.x + sx2, y: p0.y + sy2 };
       const p3 = cmd.end;
 
-      const table = buildArcLengthLookup(t => cubicBezierAt(p0, p1, p2, p3, t), 64);
+      const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
       const ct = lookupArcLengthT(table, tLocal);
       const point = cubicBezierAt(p0, p1, p2, p3, ct);
       const deriv = cubicBezierDerivativeAt(p0, p1, p2, p3, ct);
@@ -374,7 +382,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
       const p1 = { x: p0.x + qx1, y: p0.y + qy1 };
       const p2 = cmd.end;
 
-      const table = buildArcLengthLookup(t => quadBezierAt(p0, p1, p2, t), 64);
+      const table = buildArcLengthLookup((t) => quadBezierAt(p0, p1, p2, t), 64);
       const ct = lookupArcLengthT(table, tLocal);
       const point = quadBezierAt(p0, p1, p2, ct);
       const deriv = quadBezierDerivativeAt(p0, p1, p2, ct);
@@ -383,12 +391,17 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
 
     case 'A': {
       const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
-      const phi = rotation * Math.PI / 180;
+      const phi = (rotation * Math.PI) / 180;
       const center = arcEndpointToCenter(
-        cmd.start.x, cmd.start.y,
-        rx, ry, phi,
-        largeArcFlag, sweepFlag,
-        cmd.end.x, cmd.end.y
+        cmd.start.x,
+        cmd.start.y,
+        rx,
+        ry,
+        phi,
+        largeArcFlag,
+        sweepFlag,
+        cmd.end.x,
+        cmd.end.y,
       );
 
       if (!center) {
@@ -396,13 +409,13 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
         const dy = cmd.end.y - cmd.start.y;
         return {
           point: { x: cmd.start.x + dx * tLocal, y: cmd.start.y + dy * tLocal },
-          tangent: (dx === 0 && dy === 0) ? 0 : Math.atan2(dy, dx),
+          tangent: dx === 0 && dy === 0 ? 0 : Math.atan2(dy, dx),
         };
       }
 
       const needsCorrection = Math.abs(center.rx - center.ry) > 1e-10;
       if (needsCorrection) {
-        const table = buildArcLengthLookup(t => arcPointFromCenter(center, t), 64);
+        const table = buildArcLengthLookup((t) => arcPointFromCenter(center, t), 64);
         const ct = lookupArcLengthT(table, tLocal);
         return { point: arcPointFromCenter(center, ct), tangent: arcTangentFromCenter(center, ct) };
       }
@@ -415,7 +428,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
       const dy = cmd.end.y - cmd.start.y;
       return {
         point: { x: cmd.start.x + dx * tLocal, y: cmd.start.y + dy * tLocal },
-        tangent: (dx === 0 && dy === 0) ? 0 : Math.atan2(dy, dx),
+        tangent: dx === 0 && dy === 0 ? 0 : Math.atan2(dy, dx),
       };
     }
   }
@@ -436,7 +449,7 @@ export function locateCommandAtFraction(
   commands: SamplingCmd[],
   cmdLengths: number[],
   totalLength: number,
-  t: number
+  t: number,
 ): CommandLocation {
   if (totalLength === 0 || commands.length === 0) {
     return { cmdIndex: 0, localT: 0 };
@@ -479,7 +492,11 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
   const upperCmd = cmd.command.toUpperCase();
 
   switch (upperCmd) {
-    case 'L': case 'H': case 'V': case 'Z': case 'M':
+    case 'L':
+    case 'H':
+    case 'V':
+    case 'Z':
+    case 'M':
       // Linear: parametric t === arc-length fraction
       return arcLengthFraction;
 
@@ -489,7 +506,7 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
       const p1 = { x: p0.x + cx1, y: p0.y + cy1 };
       const p2 = { x: p0.x + cx2, y: p0.y + cy2 };
       const p3 = cmd.end;
-      const table = buildArcLengthLookup(t => cubicBezierAt(p0, p1, p2, p3, t), 64);
+      const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
       return lookupArcLengthT(table, arcLengthFraction);
     }
 
@@ -499,7 +516,7 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
       const p1 = p0;
       const p2 = { x: p0.x + sx2, y: p0.y + sy2 };
       const p3 = cmd.end;
-      const table = buildArcLengthLookup(t => cubicBezierAt(p0, p1, p2, p3, t), 64);
+      const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
       return lookupArcLengthT(table, arcLengthFraction);
     }
 
@@ -508,7 +525,7 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
       const p0 = cmd.start;
       const p1 = { x: p0.x + qx1, y: p0.y + qy1 };
       const p2 = cmd.end;
-      const table = buildArcLengthLookup(t => quadBezierAt(p0, p1, p2, t), 64);
+      const table = buildArcLengthLookup((t) => quadBezierAt(p0, p1, p2, t), 64);
       return lookupArcLengthT(table, arcLengthFraction);
     }
 
@@ -518,19 +535,24 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
 
     case 'A': {
       const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
-      const phi = rotation * Math.PI / 180;
+      const phi = (rotation * Math.PI) / 180;
       const center = arcEndpointToCenter(
-        cmd.start.x, cmd.start.y,
-        rx, ry, phi,
-        largeArcFlag, sweepFlag,
-        cmd.end.x, cmd.end.y
+        cmd.start.x,
+        cmd.start.y,
+        rx,
+        ry,
+        phi,
+        largeArcFlag,
+        sweepFlag,
+        cmd.end.x,
+        cmd.end.y,
       );
 
       if (!center) return arcLengthFraction;
 
       const needsCorrection = Math.abs(center.rx - center.ry) > 1e-10;
       if (needsCorrection) {
-        const table = buildArcLengthLookup(t => arcPointFromCenter(center, t), 64);
+        const table = buildArcLengthLookup((t) => arcPointFromCenter(center, t), 64);
         return lookupArcLengthT(table, arcLengthFraction);
       }
 

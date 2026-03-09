@@ -1,5 +1,5 @@
 // Documentation slide-out panel component
-import { syntax, stdlib, layers, pathBlocks, debug, cli, hljsThemeDark } from '../utils/docs-content.js';
+import { cli, debug, hljsThemeDark, layers, pathBlocks, stdlib, syntax } from '../utils/docs-content.js';
 
 export class DocsPanel extends HTMLElement {
   constructor() {
@@ -36,7 +36,7 @@ export class DocsPanel extends HTMLElement {
     this.shadowRoot.querySelector('#close-btn').addEventListener('click', () => this.close());
 
     // Tab switching
-    this.shadowRoot.querySelectorAll('.tab').forEach(tab => {
+    this.shadowRoot.querySelectorAll('.tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         const tabName = tab.dataset.tab;
         this.switchTab(tabName);
@@ -55,12 +55,12 @@ export class DocsPanel extends HTMLElement {
     this._activeTab = tabName;
 
     // Update tab buttons
-    this.shadowRoot.querySelectorAll('.tab').forEach(tab => {
+    this.shadowRoot.querySelectorAll('.tab').forEach((tab) => {
       tab.classList.toggle('active', tab.dataset.tab === tabName);
     });
 
     // Update sections
-    this.shadowRoot.querySelectorAll('.section').forEach(section => {
+    this.shadowRoot.querySelectorAll('.section').forEach((section) => {
       section.classList.toggle('active', section.id === `doc-${tabName}`);
     });
   }

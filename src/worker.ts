@@ -1,8 +1,9 @@
 // Web Worker entry point for async compilation
 // Offloads interpreter execution from main thread
 
-import { compile, compileAnnotated, compileWithContext } from './index';
-import type { CompileOptions } from './index';
+import { compile, compileAnnotated, compileWithContext } from '.';
+
+import type { CompileOptions } from '.';
 
 export interface WorkerRequest {
   id: number;

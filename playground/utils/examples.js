@@ -143,7 +143,7 @@ let pt3 = polarPoint(225deg, 30);
 circle(pt3.x, pt3.y, 5)
 let pt4 = polarPoint(315deg, 30);
 circle(pt4.x, pt4.y, 5)
-circle(100, 50, 3)`
+circle(100, 50, 3)`,
 };
 
 export const defaultCode = `// Welcome to svg-path-extended!

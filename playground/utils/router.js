@@ -10,8 +10,8 @@ export const BASE_PATH = '/pathogen';
 // Workspace URLs use format: /workspace/slug--id (e.g., /workspace/my-project--abc123)
 export const routes = [
   { path: '/', view: 'landing' },
-  { path: '/workspace/new', view: 'new-workspace' },  // Must be before :slugId route
-  { path: '/workspace/:slugId', view: 'workspace' },  // Format: slug--id or just id
+  { path: '/workspace/new', view: 'new-workspace' }, // Must be before :slugId route
+  { path: '/workspace/:slugId', view: 'workspace' }, // Format: slug--id or just id
   { path: '/preferences', view: 'preferences' },
   // /docs is now a static SEO page served by the worker — no SPA route needed
   { path: '/storybook', view: 'storybook-detail' },
@@ -38,7 +38,7 @@ export function parseWorkspaceSlugId(slugId) {
   if (lastDelimiter > 0) {
     return {
       slug: slugId.substring(0, lastDelimiter),
-      id: slugId.substring(lastDelimiter + 2)
+      id: slugId.substring(lastDelimiter + 2),
     };
   }
   // No delimiter, treat entire string as id (backward compatibility)
@@ -57,7 +57,7 @@ export function parseLocation() {
 
   // Ensure path starts with /
   if (!path.startsWith('/')) {
-    path = '/' + path;
+    path = `/${path}`;
   }
 
   // Parse query params
@@ -126,7 +126,7 @@ export function getCurrentRoute() {
     fullPath: location.pathname,
     view: matched.view,
     params: matched.params,
-    query
+    query,
   };
 }
 
@@ -149,7 +149,7 @@ export function navigateTo(path, options = {}) {
   // Build query string
   const queryEntries = Object.entries(query).filter(([_, v]) => v != null);
   if (queryEntries.length > 0) {
-    fullPath += '?' + new URLSearchParams(queryEntries).toString();
+    fullPath += `?${new URLSearchParams(queryEntries).toString()}`;
   }
 
   if (replace) {
@@ -170,7 +170,7 @@ function handleRouteChange() {
     currentRoute: route.path,
     currentView: route.view,
     routeParams: route.params,
-    routeQuery: route.query
+    routeQuery: route.query,
   });
 }
 
@@ -202,7 +202,7 @@ export function routeUrl(path, options = {}) {
 
   const queryEntries = Object.entries(query).filter(([_, v]) => v != null);
   if (queryEntries.length > 0) {
-    fullPath += '?' + new URLSearchParams(queryEntries).toString();
+    fullPath += `?${new URLSearchParams(queryEntries).toString()}`;
   }
 
   return fullPath;

@@ -1,8 +1,9 @@
+import { promises as fs } from 'node:fs';
+import { dirname, join } from 'node:path';
+import readline from 'node:readline';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import * as readline from 'readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BLOG_DIR = join(__dirname, '..', 'website', 'blog');
@@ -18,10 +19,10 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-function prompt(rl: readline.Interface, question: string, defaultValue = ''): Promise<string> {
-  return new Promise(resolve => {
+async function prompt(rl: readline.Interface, question: string, defaultValue = ''): Promise<string> {
+  return new Promise((resolve) => {
     const defaultHint = defaultValue ? ` (${defaultValue})` : '';
-    rl.question(`${question}${defaultHint}: `, answer => {
+    rl.question(`${question}${defaultHint}: `, (answer) => {
       resolve(answer.trim() || defaultValue);
     });
   });
@@ -48,7 +49,7 @@ program
 
     const rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
 
     try {
@@ -56,7 +57,7 @@ program
       const nonInteractive = opts.title && opts.slug;
 
       // Get title
-      const title = opts.title || await prompt(rl, 'Title');
+      const title = opts.title || (await prompt(rl, 'Title'));
       if (!title) {
         console.error('Error: Title is required');
         process.exit(1);
@@ -67,7 +68,7 @@ program
       const defaultDate = getToday();
 
       // Get other fields
-      const slug = opts.slug || await prompt(rl, 'Slug', defaultSlug);
+      const slug = opts.slug || (await prompt(rl, 'Slug', defaultSlug));
       const date = opts.date || (nonInteractive ? defaultDate : await prompt(rl, 'Date', defaultDate));
       const description = opts.description || (nonInteractive ? '' : await prompt(rl, 'Description (optional)'));
 
@@ -103,7 +104,6 @@ description: "${description}"
       console.log(`  1. Edit website/blog/${filename}`);
       console.log('  2. Run: npm run build:blog');
       console.log('  3. Run: npm run dev:website');
-
     } finally {
       rl.close();
     }

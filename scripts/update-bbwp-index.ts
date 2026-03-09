@@ -1,7 +1,8 @@
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BBWP_DIR = join(__dirname, '..', 'website', 'bbwp');
@@ -17,7 +18,7 @@ interface ParsedFile {
 
 function parseFilename(filename: string): ParsedFile | null {
   // Expected: YYYY-MM-DD-HH:MM:SS--roadmapName--featureName.(bbwp|mw).html
-  const match = filename.match(/^(\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2})--(.+?)--(.+?)\.(bbwp|mw)\.html$/);
+  const match = /^(\d{4}-\d{2}-\d{2}-\d{2}:\d{2}:\d{2})--(.+?)--(.+?)\.(bbwp|mw)\.html$/.exec(filename);
   if (!match) return null;
   return {
     date: match[1].replace(/-(\d{2}:\d{2}:\d{2})$/, ' $1'),
@@ -40,7 +41,7 @@ program
   .action(async () => {
     // Scan for .bbwp.html and .mw.html files (excluding index.html)
     const files = readdirSync(BBWP_DIR)
-      .filter(f => /\.(bbwp|mw)\.html$/.test(f))
+      .filter((f) => /\.(bbwp|mw)\.html$/.test(f))
       .sort()
       .reverse(); // Descending (newest first)
 
@@ -59,13 +60,15 @@ program
     if (groupCount === 0) {
       listHtml = '  <p class="empty">No BBWP files yet.</p>';
     } else {
-      const items = Array.from(groups.entries()).map(([, group]) => {
-        const ref = group.bbwp || group.mw!;
-        const links: string[] = [];
-        if (group.bbwp) links.push(`<a href="./${group.bbwp.filename}">bbwp</a>`);
-        if (group.mw) links.push(`<a href="./${group.mw.filename}">mw</a>`);
-        return `    <li><span class="date">${ref.date}</span><span class="links">${links.join(' <span class="sep">|</span> ')}</span><span class="meta">${ref.roadmap} / ${ref.feature}</span></li>`;
-      }).join('\n');
+      const items = Array.from(groups.entries())
+        .map(([, group]) => {
+          const ref = group.bbwp || group.mw!;
+          const links: string[] = [];
+          if (group.bbwp) links.push(`<a href="./${group.bbwp.filename}">bbwp</a>`);
+          if (group.mw) links.push(`<a href="./${group.mw.filename}">mw</a>`);
+          return `    <li><span class="date">${ref.date}</span><span class="links">${links.join(' <span class="sep">|</span> ')}</span><span class="meta">${ref.roadmap} / ${ref.feature}</span></li>`;
+        })
+        .join('\n');
       listHtml = `  <p class="count">${groupCount} artifact${groupCount !== 1 ? 's' : ''}</p>\n  <ul>\n${items}\n  </ul>`;
     }
 

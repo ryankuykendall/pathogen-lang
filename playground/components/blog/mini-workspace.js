@@ -137,13 +137,17 @@ export class MiniWorkspace extends HTMLElement {
   }
 
   _parseVarsAttribute(raw) {
-    return raw.split(';').filter(Boolean).map(pair => {
-      const colonIdx = pair.indexOf(':');
-      if (colonIdx === -1) return null;
-      const name = pair.slice(0, colonIdx).trim();
-      const defaultValue = pair.slice(colonIdx + 1).trim();
-      return { name, defaultValue };
-    }).filter(Boolean);
+    return raw
+      .split(';')
+      .filter(Boolean)
+      .map((pair) => {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx === -1) return null;
+        const name = pair.slice(0, colonIdx).trim();
+        const defaultValue = pair.slice(colonIdx + 1).trim();
+        return { name, defaultValue };
+      })
+      .filter(Boolean);
   }
 
   _detectCssVarsFromSvg(svgContent) {
@@ -188,9 +192,8 @@ export class MiniWorkspace extends HTMLElement {
 
     if (isDark) {
       return [githubTheme.githubDark];
-    } else {
-      return [githubTheme.githubLight];
     }
+    return [githubTheme.githubLight];
   }
 
   async _createEditor() {
@@ -257,10 +260,11 @@ export class MiniWorkspace extends HTMLElement {
 
   _getImportState() {
     // Extract title from source comment headers (first non-viewBox comment line)
-    const commentLines = this._sourceCode.split('\n')
-      .filter(l => l.trim().startsWith('//'))
-      .map(l => l.replace(/^\/\/\s*/, '').trim())
-      .filter(l => l && !l.startsWith('viewBox'));
+    const commentLines = this._sourceCode
+      .split('\n')
+      .filter((l) => l.trim().startsWith('//'))
+      .map((l) => l.replace(/^\/\/\s*/, '').trim())
+      .filter((l) => l && !l.startsWith('viewBox'));
     return {
       code: this._sourceCode,
       w: this._width,
@@ -275,10 +279,12 @@ export class MiniWorkspace extends HTMLElement {
   _handlePlaygroundClick(e) {
     e.preventDefault();
     const state = this._getImportState();
-    const key = 'mw-import-' + Date.now();
+    const key = `mw-import-${Date.now()}`;
     try {
       localStorage.setItem(key, JSON.stringify(state));
-    } catch { /* storage full */ }
+    } catch {
+      /* storage full */
+    }
     window.open(`/pathogen/workspace/new?import=${encodeURIComponent(key)}`, '_blank');
   }
 
@@ -350,10 +356,7 @@ export class MiniWorkspace extends HTMLElement {
     const caption = this.getAttribute('caption') || '';
 
     // Static fallback code for display before CodeMirror loads
-    const escapedCode = this._sourceCode
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const escapedCode = this._sourceCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -660,17 +663,25 @@ export class MiniWorkspace extends HTMLElement {
         </div>
       </div>
 
-      ${this._cssVars.length > 0 ? `
+      ${
+        this._cssVars.length > 0
+          ? `
       <div class="var-controls">
-        ${this._cssVars.map(v => `
+        ${this._cssVars
+          .map(
+            (v) => `
           <label class="var-control">
             <input type="color" value="${v.defaultValue}" data-var="${v.name}">
             <span class="var-label">${v.name}</span>
           </label>
-        `).join('')}
+        `,
+          )
+          .join('')}
         <button id="vars-reset" title="Reset colors to defaults">Reset</button>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div class="content-area">
         <div class="code-panel">

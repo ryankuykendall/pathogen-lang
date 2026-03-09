@@ -1,15 +1,16 @@
+import { promises as fs } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { Command } from 'commander';
-import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { marked } from 'marked';
-import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/core';
 
 // Register languages we need
-import javascript from 'highlight.js/lib/languages/javascript';
 import bash from 'highlight.js/lib/languages/bash';
+import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
+import { marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
 
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('js', javascript);
@@ -47,8 +48,8 @@ marked.use(
       }
       // Fallback to auto-detection
       return hljs.highlightAuto(code).value;
-    }
-  })
+    },
+  }),
 );
 
 marked.setOptions({
@@ -70,12 +71,12 @@ function decodeEntities(text: string): string {
 function slugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/<[^>]*>/g, '')      // strip HTML tags
-    .replace(/&[^;]+;/g, '')      // strip HTML entities
-    .replace(/[^\w\s-]/g, '')     // strip special chars
-    .replace(/\s+/g, '-')         // spaces to hyphens
-    .replace(/-+/g, '-')          // dedupe hyphens
-    .replace(/^-|-$/g, '');       // trim leading/trailing hyphens
+    .replace(/<[^>]*>/g, '') // strip HTML tags
+    .replace(/&[^;]+;/g, '') // strip HTML entities
+    .replace(/[^\w\s-]/g, '') // strip special chars
+    .replace(/\s+/g, '-') // spaces to hyphens
+    .replace(/-+/g, '-') // dedupe hyphens
+    .replace(/^-|-$/g, ''); // trim leading/trailing hyphens
 }
 
 // Mapping from markdown filenames to export names
@@ -92,7 +93,10 @@ const DOC_FILES: Record<string, string> = {
 
 // Fallback title from filename
 function plainTitle(filename: string): string {
-  return filename.replace('.md', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return filename
+    .replace('.md', '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 interface Heading {
@@ -143,18 +147,18 @@ async function buildDocs(): Promise<void> {
 
           headings.push({ id: slug, title: decodeEntities(plainText), level: depth });
           return `<h${depth} id="${slug}">${text}</h${depth}>\n`;
-        }
+        },
       };
 
       const html = marked.use({ renderer }).parse(markdown) as string;
       exports[exportName] = html;
 
       // Extract section title from the first h1 heading
-      const sectionTitle = headings.find(h => h.level === 1)?.title || plainTitle(filename);
+      const sectionTitle = headings.find((h) => h.level === 1)?.title || plainTitle(filename);
       tocData.push({
         key: exportName,
         title: sectionTitle,
-        headings: headings.filter(h => h.level >= 2),
+        headings: headings.filter((h) => h.level >= 2),
       });
 
       console.log(`  ✓ ${filename} → ${exportName} (${headings.length} headings)`);
@@ -171,7 +175,7 @@ async function buildDocs(): Promise<void> {
   if (missing.length > 0) {
     console.log(`\nWarning: ${missing.length} documentation file(s) not found.`);
     console.log('Create these files to complete the documentation:');
-    missing.forEach(f => console.log(`  - docs/${f}`));
+    missing.forEach((f) => console.log(`  - docs/${f}`));
     console.log('');
   }
 
@@ -190,16 +194,13 @@ async function buildDocs(): Promise<void> {
 
   for (const [name, html] of Object.entries(exports)) {
     // Escape backticks and ${} for template literals
-    const escaped = html
-      .replace(/\\/g, '\\\\')
-      .replace(/`/g, '\\`')
-      .replace(/\$\{/g, '\\${');
+    const escaped = html.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 
     output += `export const ${name} = \`${escaped}\`;\n\n`;
   }
 
   // Add a list of all available content for convenience
-  const exportNames = Object.values(DOC_FILES).filter(name => exports[name]);
+  const exportNames = Object.values(DOC_FILES).filter((name) => exports[name]);
   output += `// All available documentation sections\n`;
   output += `export const sections = {\n`;
   for (const name of exportNames) {
@@ -216,10 +217,7 @@ async function buildDocs(): Promise<void> {
   output += `export const tocData = JSON.parse(\`${escapeTocJSON}\`);\n\n`;
 
   // Add syntax highlighting theme CSS
-  const escapeCSS = (css: string): string => css
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${');
+  const escapeCSS = (css: string): string => css.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 
   output += `// Syntax highlighting themes (GitHub light/dark)\n`;
   output += `export const hljsThemeLight = \`${escapeCSS(githubLight)}\`;\n\n`;
@@ -234,11 +232,15 @@ async function buildDocs(): Promise<void> {
   console.log('\nGenerating static docs HTML page...');
 
   // Build sidebar HTML
-  const sidebarHtml = tocData.map((section: TocEntry) => {
-    const headingsHtml = section.headings.map((h: Heading) =>
-      `<a class="sidebar-heading${h.level === 3 ? ' level-3' : ''}" href="#${h.id}">${decodeEntities(h.title)}</a>`
-    ).join('\n              ');
-    return `
+  const sidebarHtml = tocData
+    .map((section: TocEntry) => {
+      const headingsHtml = section.headings
+        .map(
+          (h: Heading) =>
+            `<a class="sidebar-heading${h.level === 3 ? ' level-3' : ''}" href="#${h.id}">${decodeEntities(h.title)}</a>`,
+        )
+        .join('\n              ');
+      return `
           <div class="sidebar-section expanded" data-section="${section.key}">
             <button class="section-toggle" data-section-toggle="${section.key}">
               <span class="chevron">&#9654;</span>
@@ -248,13 +250,14 @@ async function buildDocs(): Promise<void> {
               ${headingsHtml}
             </div>
           </div>`;
-  }).join('');
+    })
+    .join('');
 
   // Build content HTML (all sections concatenated)
-  const sectionKeys = Object.values(DOC_FILES).filter(name => exports[name]);
-  const contentHtml = sectionKeys.map(key =>
-    `<section class="doc-section" data-section-key="${key}">${exports[key]}</section>`
-  ).join('\n');
+  const sectionKeys = Object.values(DOC_FILES).filter((name) => exports[name]);
+  const contentHtml = sectionKeys
+    .map((key) => `<section class="doc-section" data-section-key="${key}">${exports[key]}</section>`)
+    .join('\n');
 
   const staticPage = `<!DOCTYPE html>
 <html lang="en">
@@ -603,7 +606,7 @@ async function buildDocs(): Promise<void> {
     mdParts.pop();
   }
 
-  await fs.writeFile(join(STATIC_DOCS_DIR, 'docs.md'), mdParts.join('\n') + '\n');
+  await fs.writeFile(join(STATIC_DOCS_DIR, 'docs.md'), `${mdParts.join('\n')}\n`);
   console.log(`Generated: website/docs-static/docs.md`);
 }
 

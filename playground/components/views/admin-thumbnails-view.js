@@ -1,11 +1,11 @@
 // Admin Thumbnails View - Backfill screen for generating missing thumbnails
 // Route: /admin/thumbnails?token=<admin_token>
 
-import { store } from '../../state/store.js';
-import { workspaceApi, thumbnailApi } from '../../services/api.js';
-import { BASE_PATH, navigateTo, buildWorkspaceSlugId } from '../../utils/router.js';
-import thumbnailService from '../../services/thumbnail-service.js';
+import { thumbnailApi, workspaceApi } from '../../services/api.js';
 import compilerWorker from '../../services/compiler-worker.js';
+import thumbnailService from '../../services/thumbnail-service.js';
+import { store } from '../../state/store.js';
+import { BASE_PATH, buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 
 const API_BASE = `${BASE_PATH}/api`;
 
@@ -256,7 +256,9 @@ class AdminThumbnailsView extends HTMLElement {
     this._renderContent();
 
     try {
-      const response = await fetch(`${API_BASE}/admin/workspaces-without-thumbnails?token=${encodeURIComponent(this._token)}`);
+      const response = await fetch(
+        `${API_BASE}/admin/workspaces-without-thumbnails?token=${encodeURIComponent(this._token)}`,
+      );
       if (response.status === 401) {
         this._unauthorized = true;
         this._loading = false;
@@ -348,9 +350,7 @@ class AdminThumbnailsView extends HTMLElement {
     const fill = state.fillEnabled ? state.fill : 'none';
 
     // Escape path data for XML attribute (only & and " need escaping in path data)
-    const d = (state.pathData || '')
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;');
+    const d = (state.pathData || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${rasterSize}" height="${rasterSize}" viewBox="${cropX} ${cropY} ${cropSize} ${cropSize}"><rect width="${w}" height="${h}" fill="${state.background}"/><path d="${d}" stroke="${state.stroke}" stroke-width="${state.strokeWidth}" fill="${fill}"/></svg>`;
   }
@@ -359,7 +359,7 @@ class AdminThumbnailsView extends HTMLElement {
     if (this._bulkRunning) return;
     this._bulkRunning = true;
 
-    const remaining = this._workspaces.filter(ws => this._statuses[ws.id] !== 'done');
+    const remaining = this._workspaces.filter((ws) => this._statuses[ws.id] !== 'done');
     this._bulkTotal = remaining.length;
     this._bulkProgress = 0;
     this._renderContent();
@@ -387,7 +387,7 @@ class AdminThumbnailsView extends HTMLElement {
       } else if (action === 'generate-all') {
         this._autoGenerateAll();
       } else if (action === 'open' && id) {
-        const ws = this._workspaces.find(w => w.id === id);
+        const ws = this._workspaces.find((w) => w.id === id);
         const slugId = buildWorkspaceSlugId(ws?.slug, id);
         navigateTo('/workspace/:slugId', { params: { slugId } });
       }
@@ -413,7 +413,7 @@ class AdminThumbnailsView extends HTMLElement {
       return;
     }
 
-    const progressPercent = this._bulkTotal > 0 ? (this._bulkProgress / this._bulkTotal * 100) : 0;
+    const progressPercent = this._bulkTotal > 0 ? (this._bulkProgress / this._bulkTotal) * 100 : 0;
 
     container.innerHTML = `
       <div class="progress-bar ${this._bulkRunning ? 'visible' : ''}">
@@ -431,9 +431,10 @@ class AdminThumbnailsView extends HTMLElement {
       </div>
 
       <div class="workspace-list">
-        ${this._workspaces.map(ws => {
-          const status = this._statuses[ws.id];
-          return `
+        ${this._workspaces
+          .map((ws) => {
+            const status = this._statuses[ws.id];
+            return `
             <div class="workspace-row">
               <div class="ws-info">
                 <div class="ws-name">${this._escapeHtml(ws.name)}</div>
@@ -443,14 +444,19 @@ class AdminThumbnailsView extends HTMLElement {
                 ${status === 'generating' ? '<span class="status generating">Generating...</span>' : ''}
                 ${status === 'done' ? '<span class="status done">Done</span>' : ''}
                 ${status === 'error' ? '<span class="status error">Failed</span>' : ''}
-                ${!status || status === 'error' ? `
+                ${
+                  !status || status === 'error'
+                    ? `
                   <button class="btn" data-action="generate" data-id="${ws.id}" ${this._bulkRunning ? 'disabled' : ''}>Auto-generate</button>
-                ` : ''}
+                `
+                    : ''
+                }
                 <button class="btn" data-action="open" data-id="${ws.id}">Open</button>
               </div>
             </div>
           `;
-        }).join('')}
+          })
+          .join('')}
       </div>
     `;
   }

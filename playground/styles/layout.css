@@ -27,7 +27,9 @@ main {
 }
 
 /* Common form elements */
-select, input, button {
+select,
+input,
+button {
   font-family: inherit;
   font-size: 0.875rem;
 }
@@ -52,8 +54,8 @@ select:focus {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-input[type="text"],
-input[type="number"] {
+input[type='text'],
+input[type='number'] {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md, 8px);
@@ -62,18 +64,18 @@ input[type="number"] {
   transition: all var(--transition-base, 0.15s ease);
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus {
+input[type='text']:focus,
+input[type='number']:focus {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-input[type="number"] {
+input[type='number'] {
   width: 70px;
 }
 
-input[type="color"] {
+input[type='color'] {
   width: 40px;
   height: 36px;
   padding: 4px;
@@ -84,17 +86,17 @@ input[type="color"] {
   transition: all var(--transition-base, 0.15s ease);
 }
 
-input[type="color"]:hover {
+input[type='color']:hover {
   border-color: var(--border-strong);
 }
 
-input[type="color"]:focus {
+input[type='color']:focus {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;

@@ -5,15 +5,15 @@ import { store } from '../state/store.js';
 import { initRouter, navigateTo } from '../utils/router.js';
 import './app-header.js';
 import './app-breadcrumb.js';
+import './views/admin-thumbnails-view.js';
+import './views/blog-post-view.js';
+import './views/blog-view.js';
+import './views/docs-view.js';
 import './views/landing-view.js';
 import './views/new-workspace-view.js';
 import './views/preferences-view.js';
-import './views/docs-view.js';
 import './views/storybook-view.js';
 import './views/storybook-detail-view.js';
-import './views/blog-view.js';
-import './views/blog-post-view.js';
-import './views/admin-thumbnails-view.js';
 import './workspace-view.js';
 
 const styles = `
@@ -107,7 +107,7 @@ class AppShell extends HTMLElement {
     if (href.startsWith('#')) return false;
     // SEO pages are full page loads, not SPA-routed
     const seoPages = ['/pathogen/docs', '/pathogen/explore', '/pathogen/featured'];
-    if (seoPages.some(p => href === p || href.startsWith(p + '/'))) return false;
+    if (seoPages.some((p) => href === p || href.startsWith(`${p}/`))) return false;
     return true;
   }
 
@@ -119,7 +119,7 @@ class AppShell extends HTMLElement {
 
     // Update active class on view components
     const views = main.querySelectorAll(':scope > *');
-    views.forEach(el => {
+    views.forEach((el) => {
       const tagName = el.tagName.toLowerCase();
       const isActive = this.isViewActive(tagName, view);
       el.classList.toggle('active', isActive);
@@ -138,7 +138,7 @@ class AppShell extends HTMLElement {
       'storybook-detail-view': 'storybook-detail',
       'blog-view': 'blog',
       'blog-post-view': 'blog-post',
-      'admin-thumbnails-view': 'admin-thumbnails'
+      'admin-thumbnails-view': 'admin-thumbnails',
     };
     return mappings[tagName] === currentView;
   }

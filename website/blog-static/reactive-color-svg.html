@@ -1,143 +1,347 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Reactive Color in SVG: From Static Paths to Dynamic Themes — Pathogen</title>
-  <meta name="description" content="How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.">
-  <link rel="canonical" href="https://pedestal.design/pathogen/blog/reactive-color-svg">
-  <meta property="og:title" content="Reactive Color in SVG: From Static Paths to Dynamic Themes — Pathogen">
-  <meta property="og:description" content="How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.">
-  <meta property="og:url" content="https://pedestal.design/pathogen/blog/reactive-color-svg">
-  <meta property="og:type" content="article">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
-  <script>
-    // Flash prevention — apply saved theme before paint
-    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
-  </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Reactive Color in SVG: From Static Paths to Dynamic Themes","description":"How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.","datePublished":"2026-02-27","url":"https://pedestal.design/pathogen/blog/reactive-color-svg","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pedestal.design"}}</script>
-  <style>
-    /* Reset */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reactive Color in SVG: From Static Paths to Dynamic Themes — Pathogen</title>
+    <meta
+      name="description"
+      content="How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime."
+    />
+    <link rel="canonical" href="https://pedestal.design/pathogen/blog/reactive-color-svg" />
+    <meta property="og:title" content="Reactive Color in SVG: From Static Paths to Dynamic Themes — Pathogen" />
+    <meta
+      property="og:description"
+      content="How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime."
+    />
+    <meta property="og:url" content="https://pedestal.design/pathogen/blog/reactive-color-svg" />
+    <meta property="og:type" content="article" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/pathogen/styles/theme.css" />
+    <script>
+      // Flash prevention — apply saved theme before paint
+      (function () {
+        var t = localStorage.getItem('pathogen-theme');
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.setAttribute('data-active-theme', t);
+        } else {
+          document.documentElement.setAttribute(
+            'data-active-theme',
+            window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light',
+          );
+        }
+      })();
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Reactive Color in SVG: From Static Paths to Dynamic Themes",
+        "description": "How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.",
+        "datePublished": "2026-02-27",
+        "url": "https://pedestal.design/pathogen/blog/reactive-color-svg",
+        "author": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+      }
+    </script>
+    <style>
+      /* Reset */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        background: var(--bg-primary, #f8f9fa);
+        color: var(--text-primary, #1a1a2e);
+      }
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+      /* Nav bar */
+      .site-header {
+        background: var(--bg-secondary, #ffffff);
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .site-header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+        height: 56px;
+        gap: 1rem;
+      }
+      .logo {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        line-height: 1.1;
+        flex-shrink: 0;
+      }
+      .logo:hover .logo-main {
+        color: var(--accent-color, #10b981);
+      }
+      .logo-main {
+        font-family: 'Baumans', cursive;
+        font-size: 1.5rem;
+        font-weight: 400;
+        color: var(--text-primary, #1a1a2e);
+        transition: color 0.15s ease;
+      }
+      .logo-sub {
+        font-family: 'Inconsolata', monospace;
+        font-size: 0.6rem;
+        color: var(--text-secondary, #64748b);
+        white-space: nowrap;
+      }
+      .site-nav {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        flex: 1;
+        justify-content: center;
+      }
+      .nav-link {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-secondary, #64748b);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease;
+      }
+      .nav-link:hover {
+        background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+        color: var(--text-primary, #1a1a2e);
+      }
+      .nav-link.active {
+        background: var(--accent-color, #10b981);
+        color: var(--accent-text, #ffffff);
+      }
 
-    /* Breadcrumb */
-    .breadcrumb-bar {
-      background: var(--bg-primary, #f8f9fa);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      padding: 0.625rem 1rem;
-      min-height: 32px;
-      position: sticky; top: 56px; z-index: 40;
-    }
-    .breadcrumb {
-      display: flex; align-items: center;
-      font-size: 0.8125rem; color: var(--text-secondary, #666);
-      max-width: 800px; margin: 0 auto;
-    }
-    .breadcrumb-link {
-      color: var(--text-secondary, #666); text-decoration: none;
-      transition: color 0.15s ease;
-    }
-    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
-    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
-    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+      /* Breadcrumb */
+      .breadcrumb-bar {
+        background: var(--bg-primary, #f8f9fa);
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        padding: 0.625rem 1rem;
+        min-height: 32px;
+        position: sticky;
+        top: 56px;
+        z-index: 40;
+      }
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        font-size: 0.8125rem;
+        color: var(--text-secondary, #666);
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .breadcrumb-link {
+        color: var(--text-secondary, #666);
+        text-decoration: none;
+        transition: color 0.15s ease;
+      }
+      .breadcrumb-link:hover {
+        color: var(--accent-color, #10b981);
+        text-decoration: underline;
+      }
+      .breadcrumb-current {
+        color: var(--text-primary, #1a1a2e);
+        font-weight: 500;
+      }
+      .breadcrumb .separator {
+        margin: 0 0.5rem;
+        color: var(--text-tertiary, #94a3b8);
+      }
 
-    /* Blog content area */
-    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+      /* Blog content area */
+      .blog-main {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+      }
 
-    /* Content styling — mirrors docs content area */
-    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
-    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
-    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
-    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
-    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
-    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
-    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
-    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
-    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
-    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
-    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
-    th { font-weight: 600; background: var(--bg-secondary, #fff); }
-    td code { white-space: nowrap; }
-    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
-    .blog-content a { color: var(--accent-color, #10b981); }
-    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
-    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
-    reactive-svg { display: block; margin: 1.5rem 0; }
+      /* Content styling — mirrors docs content area */
+      .blog-content h2 {
+        margin: 1.5rem 0 1rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+      }
+      .blog-content h3 {
+        margin: 1.5rem 0 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .blog-content h4 {
+        margin: 1rem 0 0.5rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+      .blog-content p {
+        margin: 0 0 1rem;
+        line-height: 1.6;
+      }
+      code {
+        font-family: 'Inconsolata', monospace;
+        font-size: 0.875em;
+        background: var(--bg-tertiary, #f0f1f2);
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+      }
+      pre {
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin: 0 0 1rem;
+      }
+      pre code {
+        background: none;
+        padding: 1rem;
+        display: block;
+        font-size: inherit;
+        font-family: inherit;
+      }
+      .blog-content ul,
+      .blog-content ol {
+        margin: 0 0 1rem;
+        padding-left: 1.5rem;
+      }
+      .blog-content li {
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1rem;
+        font-size: 0.875rem;
+      }
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+      }
+      th {
+        font-weight: 600;
+        background: var(--bg-secondary, #fff);
+      }
+      td code {
+        white-space: nowrap;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid var(--border-color, #e2e8f0);
+        margin: 2rem 0;
+      }
+      .blog-content a {
+        color: var(--accent-color, #10b981);
+      }
+      .blog-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+      }
+      .blog-content blockquote {
+        border-left: 3px solid var(--accent-color, #10b981);
+        padding-left: 1rem;
+        margin: 0 0 1rem;
+        color: var(--text-secondary, #64748b);
+      }
+      reactive-svg {
+        display: block;
+        margin: 1.5rem 0;
+      }
 
-    /* Blog index cards */
-    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
-    .blog-card {
-      display: block; padding: 1.5rem; border-radius: 12px;
-      border: 1px solid var(--border-color, #e2e8f0);
-      background: var(--bg-secondary, #fff);
-      text-decoration: none; color: inherit;
-      transition: box-shadow 0.15s ease, border-color 0.15s ease;
-    }
-    .blog-card:hover {
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
-      border-color: var(--accent-color, #10b981);
-    }
-    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
-    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
-    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+      /* Blog index cards */
+      .blog-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .blog-card {
+        display: block;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border-color, #e2e8f0);
+        background: var(--bg-secondary, #fff);
+        text-decoration: none;
+        color: inherit;
+        transition:
+          box-shadow 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .blog-card:hover {
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.07),
+          0 2px 4px -1px rgba(0, 0, 0, 0.04);
+        border-color: var(--accent-color, #10b981);
+      }
+      .blog-card h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        border: none;
+        padding: 0;
+      }
+      .blog-card time {
+        font-size: 0.8125rem;
+        color: var(--text-tertiary, #94a3b8);
+      }
+      .blog-card p {
+        margin: 0.5rem 0 0;
+        font-size: 0.9375rem;
+        color: var(--text-secondary, #64748b);
+        line-height: 1.5;
+      }
 
-    /* Post header */
-    .post-header { margin-bottom: 2rem; }
-    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
-    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
-    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
-    .back-link:hover { text-decoration: underline; }
+      /* Post header */
+      .post-header {
+        margin-bottom: 2rem;
+      }
+      .post-header h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .post-meta {
+        font-size: 0.875rem;
+        color: var(--text-secondary, #64748b);
+      }
+      .back-link {
+        display: inline-block;
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+        color: var(--accent-color, #10b981);
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
 
-    /* Syntax highlighting */
-    pre code.hljs {
-  display: block;
-  overflow-x: auto;
-  padding: 1em
-}
-code.hljs {
-  padding: 3px 5px
-}
-/*!
+      /* Syntax highlighting */
+      pre code.hljs {
+        display: block;
+        overflow-x: auto;
+        padding: 1em;
+      }
+      code.hljs {
+        padding: 3px 5px;
+      }
+      /*!
   Theme: GitHub Dark
   Description: Dark theme as seen on github.com
   Author: github.com
@@ -147,155 +351,199 @@ code.hljs {
   Outdated base version: https://github.com/primer/github-syntax-dark
   Current colors taken from GitHub's CSS
 */
-.hljs {
-  color: #c9d1d9;
-  background: #0d1117
-}
-.hljs-doctag,
-.hljs-keyword,
-.hljs-meta .hljs-keyword,
-.hljs-template-tag,
-.hljs-template-variable,
-.hljs-type,
-.hljs-variable.language_ {
-  /* prettylights-syntax-keyword */
-  color: #ff7b72
-}
-.hljs-title,
-.hljs-title.class_,
-.hljs-title.class_.inherited__,
-.hljs-title.function_ {
-  /* prettylights-syntax-entity */
-  color: #d2a8ff
-}
-.hljs-attr,
-.hljs-attribute,
-.hljs-literal,
-.hljs-meta,
-.hljs-number,
-.hljs-operator,
-.hljs-variable,
-.hljs-selector-attr,
-.hljs-selector-class,
-.hljs-selector-id {
-  /* prettylights-syntax-constant */
-  color: #79c0ff
-}
-.hljs-regexp,
-.hljs-string,
-.hljs-meta .hljs-string {
-  /* prettylights-syntax-string */
-  color: #a5d6ff
-}
-.hljs-built_in,
-.hljs-symbol {
-  /* prettylights-syntax-variable */
-  color: #ffa657
-}
-.hljs-comment,
-.hljs-code,
-.hljs-formula {
-  /* prettylights-syntax-comment */
-  color: #8b949e
-}
-.hljs-name,
-.hljs-quote,
-.hljs-selector-tag,
-.hljs-selector-pseudo {
-  /* prettylights-syntax-entity-tag */
-  color: #7ee787
-}
-.hljs-subst {
-  /* prettylights-syntax-storage-modifier-import */
-  color: #c9d1d9
-}
-.hljs-section {
-  /* prettylights-syntax-markup-heading */
-  color: #1f6feb;
-  font-weight: bold
-}
-.hljs-bullet {
-  /* prettylights-syntax-markup-list */
-  color: #f2cc60
-}
-.hljs-emphasis {
-  /* prettylights-syntax-markup-italic */
-  color: #c9d1d9;
-  font-style: italic
-}
-.hljs-strong {
-  /* prettylights-syntax-markup-bold */
-  color: #c9d1d9;
-  font-weight: bold
-}
-.hljs-addition {
-  /* prettylights-syntax-markup-inserted */
-  color: #aff5b4;
-  background-color: #033a16
-}
-.hljs-deletion {
-  /* prettylights-syntax-markup-deleted */
-  color: #ffdcd7;
-  background-color: #67060c
-}
-.hljs-char.escape_,
-.hljs-link,
-.hljs-params,
-.hljs-property,
-.hljs-punctuation,
-.hljs-tag {
-  /* purposely ignored */
-  
-}
+      .hljs {
+        color: #c9d1d9;
+        background: #0d1117;
+      }
+      .hljs-doctag,
+      .hljs-keyword,
+      .hljs-meta .hljs-keyword,
+      .hljs-template-tag,
+      .hljs-template-variable,
+      .hljs-type,
+      .hljs-variable.language_ {
+        /* prettylights-syntax-keyword */
+        color: #ff7b72;
+      }
+      .hljs-title,
+      .hljs-title.class_,
+      .hljs-title.class_.inherited__,
+      .hljs-title.function_ {
+        /* prettylights-syntax-entity */
+        color: #d2a8ff;
+      }
+      .hljs-attr,
+      .hljs-attribute,
+      .hljs-literal,
+      .hljs-meta,
+      .hljs-number,
+      .hljs-operator,
+      .hljs-variable,
+      .hljs-selector-attr,
+      .hljs-selector-class,
+      .hljs-selector-id {
+        /* prettylights-syntax-constant */
+        color: #79c0ff;
+      }
+      .hljs-regexp,
+      .hljs-string,
+      .hljs-meta .hljs-string {
+        /* prettylights-syntax-string */
+        color: #a5d6ff;
+      }
+      .hljs-built_in,
+      .hljs-symbol {
+        /* prettylights-syntax-variable */
+        color: #ffa657;
+      }
+      .hljs-comment,
+      .hljs-code,
+      .hljs-formula {
+        /* prettylights-syntax-comment */
+        color: #8b949e;
+      }
+      .hljs-name,
+      .hljs-quote,
+      .hljs-selector-tag,
+      .hljs-selector-pseudo {
+        /* prettylights-syntax-entity-tag */
+        color: #7ee787;
+      }
+      .hljs-subst {
+        /* prettylights-syntax-storage-modifier-import */
+        color: #c9d1d9;
+      }
+      .hljs-section {
+        /* prettylights-syntax-markup-heading */
+        color: #1f6feb;
+        font-weight: bold;
+      }
+      .hljs-bullet {
+        /* prettylights-syntax-markup-list */
+        color: #f2cc60;
+      }
+      .hljs-emphasis {
+        /* prettylights-syntax-markup-italic */
+        color: #c9d1d9;
+        font-style: italic;
+      }
+      .hljs-strong {
+        /* prettylights-syntax-markup-bold */
+        color: #c9d1d9;
+        font-weight: bold;
+      }
+      .hljs-addition {
+        /* prettylights-syntax-markup-inserted */
+        color: #aff5b4;
+        background-color: #033a16;
+      }
+      .hljs-deletion {
+        /* prettylights-syntax-markup-deleted */
+        color: #ffdcd7;
+        background-color: #67060c;
+      }
+      .hljs-char.escape_,
+      .hljs-link,
+      .hljs-params,
+      .hljs-property,
+      .hljs-punctuation,
+      .hljs-tag {
+        /* purposely ignored */
+      }
 
-    @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
-      .blog-main { padding: 1.5rem 0.75rem; }
-      .blog-content pre { font-size: 0.8125rem; }
-      .blog-content table { display: block; overflow-x: auto; }
-    }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
-  </style>
-</head>
-<body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+      @media (max-width: 768px) {
+        .site-header-inner {
+          padding: 0 0.75rem;
+          height: 52px;
+        }
+        .breadcrumb-bar {
+          top: 52px;
+        }
+        .logo-sub {
+          display: none;
+        }
+        .site-nav {
+          gap: 0;
+        }
+        .nav-link {
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8125rem;
+        }
+        .blog-main {
+          padding: 1.5rem 0.75rem;
+        }
+        .blog-content pre {
+          font-size: 0.8125rem;
+        }
+        .blog-content table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+      @media (max-width: 600px) {
+        .site-nav {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="logo" href="/pathogen/">
+          <span class="logo-main">Pathogen</span>
+          <span class="logo-sub">built on svg-path-extended v1.0</span>
+        </a>
+        <nav class="site-nav">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+        </nav>
+        <theme-toggle></theme-toggle>
+      </div>
+    </header>
+    <div class="breadcrumb-bar">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span
+        ><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span
+        ><span class="breadcrumb-current">Reactive Color in SVG: From Static Paths to Dynamic Themes</span>
       </nav>
-      <theme-toggle></theme-toggle>
     </div>
-  </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Reactive Color in SVG: From Static Paths to Dynamic Themes</span></nav></div>
-  <main class="blog-main">
-    <article>
-      <header class="post-header">
-        <h1>Reactive Color in SVG: From Static Paths to Dynamic Themes</h1>
-        <p class="post-meta"><time datetime="2026-02-27">February 26, 2026</time></p>
-      </header>
-      <div class="blog-content">
-        <p>SVG is the web&#39;s vector format. It lives in the DOM, responds to CSS, and can be styled with custom properties. Yet most tools treat SVG as a static export — a snapshot frozen at build time. Colors baked in. Themes impossible without regeneration.</p>
-<p>Pathogen&#39;s Color system changes this. By combining a first-class <code>Color</code> type with CSS custom properties, Pathogen compiles SVG illustrations that are <em>reactive</em> — change a CSS variable at runtime and every derived color updates instantly. No JavaScript. No recompilation. Just CSS doing what CSS does best.</p>
-<p>This post walks through the system from first principles, building up from a single color to full light/dark adaptive themes. The demos below are live — pick a color and watch the SVG respond.</p>
-<h2>Starting with Color</h2>
-<p>Color in Pathogen is a first-class type backed by the OKLCH color space. OKLCH stands for <strong>O</strong>kay <strong>L</strong>ightness, <strong>C</strong>hroma, <strong>H</strong>ue — a perceptually uniform color model where equal numeric steps produce equal visual differences. This matters: lightening a red by 0.15 and lightening a blue by 0.15 should look like the same amount of change. In sRGB hex they don&#39;t. In OKLCH they do.</p>
-<p>Creating a color is straightforward:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+    <main class="blog-main">
+      <article>
+        <header class="post-header">
+          <h1>Reactive Color in SVG: From Static Paths to Dynamic Themes</h1>
+          <p class="post-meta"><time datetime="2026-02-27">February 26, 2026</time></p>
+        </header>
+        <div class="blog-content">
+          <p>
+            SVG is the web&#39;s vector format. It lives in the DOM, responds to CSS, and can be styled with custom
+            properties. Yet most tools treat SVG as a static export — a snapshot frozen at build time. Colors baked in.
+            Themes impossible without regeneration.
+          </p>
+          <p>
+            Pathogen&#39;s Color system changes this. By combining a first-class <code>Color</code> type with CSS custom
+            properties, Pathogen compiles SVG illustrations that are <em>reactive</em> — change a CSS variable at
+            runtime and every derived color updates instantly. No JavaScript. No recompilation. Just CSS doing what CSS
+            does best.
+          </p>
+          <p>
+            This post walks through the system from first principles, building up from a single color to full light/dark
+            adaptive themes. The demos below are live — pick a color and watch the SVG respond.
+          </p>
+          <h2>Starting with Color</h2>
+          <p>
+            Color in Pathogen is a first-class type backed by the OKLCH color space. OKLCH stands for
+            <strong>O</strong>kay <strong>L</strong>ightness, <strong>C</strong>hroma, <strong>H</strong>ue — a
+            perceptually uniform color model where equal numeric steps produce equal visual differences. This matters:
+            lightening a red by 0.15 and lightening a blue by 0.15 should look like the same amount of change. In sRGB
+            hex they don&#39;t. In OKLCH they do.
+          </p>
+          <p>Creating a color is straightforward:</p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
 
 <span class="hljs-comment">// Access OKLCH components</span>
 <span class="hljs-title function_">log</span>(c.<span class="hljs-property">lightness</span>);  <span class="hljs-comment">// ~0.52</span>
@@ -306,12 +554,20 @@ code.hljs {
 <span class="hljs-title function_">log</span>(c.<span class="hljs-property">hex</span>);   <span class="hljs-comment">// #e63946</span>
 <span class="hljs-title function_">log</span>(c.<span class="hljs-property">oklch</span>); <span class="hljs-comment">// oklch(0.52 0.19 27)</span>
 <span class="hljs-title function_">log</span>(c.<span class="hljs-property">hsl</span>);   <span class="hljs-comment">// hsl(355, 78%, 56%)</span>
-</code></pre><p>Pathogen accepts any CSS color format as input — hex, <code>rgb()</code>, <code>hsl()</code>, named colors — and immediately converts to OKLCH internally. From there, all manipulation happens in perceptual space.</p>
-<p>You can also construct colors directly in OKLCH:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> sky = <span class="hljs-title class_">Color</span>(<span class="hljs-number">0.75</span>, <span class="hljs-number">0.12</span>, <span class="hljs-number">230</span>); <span class="hljs-comment">// L, C, H</span>
-</code></pre><h2>Color Manipulation</h2>
-<p>Every <code>Color</code> value exposes a set of manipulation methods. Each returns a new Color — nothing mutates.</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+</code></pre>
+          <p>
+            Pathogen accepts any CSS color format as input — hex, <code>rgb()</code>, <code>hsl()</code>, named colors —
+            and immediately converts to OKLCH internally. From there, all manipulation happens in perceptual space.
+          </p>
+          <p>You can also construct colors directly in OKLCH:</p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> sky = <span class="hljs-title class_">Color</span>(<span class="hljs-number">0.75</span>, <span class="hljs-number">0.12</span>, <span class="hljs-number">230</span>); <span class="hljs-comment">// L, C, H</span>
+</code></pre>
+          <h2>Color Manipulation</h2>
+          <p>
+            Every <code>Color</code> value exposes a set of manipulation methods. Each returns a new Color — nothing
+            mutates.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
 
 <span class="hljs-keyword">let</span> lighter = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.18</span>);    <span class="hljs-comment">// bump lightness</span>
 <span class="hljs-keyword">let</span> darker  = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.18</span>);     <span class="hljs-comment">// reduce lightness</span>
@@ -321,126 +577,361 @@ code.hljs {
 <span class="hljs-keyword">let</span> comp    = base.<span class="hljs-title function_">complement</span>();     <span class="hljs-comment">// hue + 180</span>
 <span class="hljs-keyword">let</span> semi    = base.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.5</span>);       <span class="hljs-comment">// set transparency</span>
 <span class="hljs-keyword">let</span> blended = base.<span class="hljs-title function_">mix</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>), <span class="hljs-number">0.5</span>); <span class="hljs-comment">// interpolate</span>
-</code></pre><p>All of this operates in OKLCH, so a <code>.lighten(0.18)</code> on a deeply saturated red doesn&#39;t accidentally desaturate it — it shifts only lightness while preserving chroma and hue. Try it: pick a color below and watch each method derive its swatch.</p>
-<reactive-svg vars="--demo-color:#e63946" caption="Pick a color to see 8 manipulation methods applied in real time.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 210" width="350" height="210">
-  <style>
-    @property --demo-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <text x="55" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">base</text>
-  <text x="119" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">lighten</text>
-  <text x="183" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">darken</text>
-  <text x="247" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">saturate</text>
-  <text x="311" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">desaturate</text>
-  <text x="55" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">hueShift</text>
-  <text x="119" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">complement</text>
-  <text x="183" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">alpha(0.5)</text>
-  <text x="247" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">mix</text>
-  <path d="M 38 40 L 72 40 Q 80 40 80 48 L 80 82 Q 80 90 72 90 L 38 90 Q 30 90 30 82 L 30 48 Q 30 40 38 40 Z" fill="var(--demo-color, #e63946)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 102 40 L 136 40 Q 144 40 144 48 L 144 82 Q 144 90 136 90 L 102 90 Q 94 90 94 82 L 94 48 Q 94 40 102 40 Z" fill="oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 166 40 L 200 40 Q 208 40 208 48 L 208 82 Q 208 90 200 90 L 166 90 Q 158 90 158 82 L 158 48 Q 158 40 166 40 Z" fill="oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 230 40 L 264 40 Q 272 40 272 48 L 272 82 Q 272 90 264 90 L 230 90 Q 222 90 222 82 L 222 48 Q 222 40 230 40 Z" fill="oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 294 40 L 328 40 Q 336 40 336 48 L 336 82 Q 336 90 328 90 L 294 90 Q 286 90 286 82 L 286 48 Q 286 40 294 40 Z" fill="oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 38 130 L 72 130 Q 80 130 80 138 L 80 172 Q 80 180 72 180 L 38 180 Q 30 180 30 172 L 30 138 Q 30 130 38 130 Z" fill="oklch(from var(--demo-color, #e63946) l c calc(h + 90))" stroke="#ddd" stroke-width="1"/>
-  <path d="M 102 130 L 136 130 Q 144 130 144 138 L 144 172 Q 144 180 136 180 L 102 180 Q 94 180 94 172 L 94 138 Q 94 130 102 130 Z" fill="oklch(from var(--demo-color, #e63946) l c calc(h + 180))" stroke="#ddd" stroke-width="1"/>
-  <path d="M 166 130 L 200 130 Q 208 130 208 138 L 208 172 Q 208 180 200 180 L 166 180 Q 158 180 158 172 L 158 138 Q 158 130 166 130 Z" fill="oklch(from var(--demo-color, #e63946) l c h / 0.5)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 230 130 L 264 130 Q 272 130 272 138 L 272 172 Q 272 180 264 180 L 230 180 Q 222 180 222 172 L 222 138 Q 222 130 230 130 Z" fill="color-mix(in oklch, var(--demo-color, #e63946), #457b9d 50%)" stroke="#ddd" stroke-width="1"/>
-</svg>
-</reactive-svg>
+</code></pre>
+          <p>
+            All of this operates in OKLCH, so a <code>.lighten(0.18)</code> on a deeply saturated red doesn&#39;t
+            accidentally desaturate it — it shifts only lightness while preserving chroma and hue. Try it: pick a color
+            below and watch each method derive its swatch.
+          </p>
+          <reactive-svg
+            vars="--demo-color:#e63946"
+            caption="Pick a color to see 8 manipulation methods applied in real time."
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 210" width="350" height="210">
+              <style>
+                @property --demo-color {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #e63946;
+                }
+              </style>
+              <rect width="100%" height="100%" fill="#f5f5f5" />
+              <text x="55" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                base
+              </text>
+              <text x="119" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                lighten
+              </text>
+              <text x="183" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                darken
+              </text>
+              <text x="247" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                saturate
+              </text>
+              <text x="311" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                desaturate
+              </text>
+              <text x="55" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                hueShift
+              </text>
+              <text x="119" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                complement
+              </text>
+              <text x="183" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                alpha(0.5)
+              </text>
+              <text x="247" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">
+                mix
+              </text>
+              <path
+                d="M 38 40 L 72 40 Q 80 40 80 48 L 80 82 Q 80 90 72 90 L 38 90 Q 30 90 30 82 L 30 48 Q 30 40 38 40 Z"
+                fill="var(--demo-color, #e63946)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 102 40 L 136 40 Q 144 40 144 48 L 144 82 Q 144 90 136 90 L 102 90 Q 94 90 94 82 L 94 48 Q 94 40 102 40 Z"
+                fill="oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 166 40 L 200 40 Q 208 40 208 48 L 208 82 Q 208 90 200 90 L 166 90 Q 158 90 158 82 L 158 48 Q 158 40 166 40 Z"
+                fill="oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 230 40 L 264 40 Q 272 40 272 48 L 272 82 Q 272 90 264 90 L 230 90 Q 222 90 222 82 L 222 48 Q 222 40 230 40 Z"
+                fill="oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 294 40 L 328 40 Q 336 40 336 48 L 336 82 Q 336 90 328 90 L 294 90 Q 286 90 286 82 L 286 48 Q 286 40 294 40 Z"
+                fill="oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 38 130 L 72 130 Q 80 130 80 138 L 80 172 Q 80 180 72 180 L 38 180 Q 30 180 30 172 L 30 138 Q 30 130 38 130 Z"
+                fill="oklch(from var(--demo-color, #e63946) l c calc(h + 90))"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 102 130 L 136 130 Q 144 130 144 138 L 144 172 Q 144 180 136 180 L 102 180 Q 94 180 94 172 L 94 138 Q 94 130 102 130 Z"
+                fill="oklch(from var(--demo-color, #e63946) l c calc(h + 180))"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 166 130 L 200 130 Q 208 130 208 138 L 208 172 Q 208 180 200 180 L 166 180 Q 158 180 158 172 L 158 138 Q 158 130 166 130 Z"
+                fill="oklch(from var(--demo-color, #e63946) l c h / 0.5)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <path
+                d="M 230 130 L 264 130 Q 272 130 272 138 L 272 172 Q 272 180 264 180 L 230 180 Q 222 180 222 172 L 222 138 Q 222 130 230 130 Z"
+                fill="color-mix(in oklch, var(--demo-color, #e63946), #457b9d 50%)"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+            </svg>
+          </reactive-svg>
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-color-methods"><em>view full source</em></a></p>
+          <p style="text-align: right; margin-top: -0.5rem; font-size: 0.8125rem">
+            <a href="#src-color-methods"><em>view full source</em></a>
+          </p>
 
-<p>What makes this reactive? The SVG above was compiled <em>once</em>. There is no JavaScript updating colors. The fill values use CSS relative color syntax:</p>
-<pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)&quot;</span>
-</code></pre><p>The browser resolves <code>var(--demo-color)</code>, extracts its OKLCH components, applies <code>calc(l + 0.18)</code>, and renders. When the color picker updates <code>--demo-color</code>, the browser recalculates everything automatically.</p>
-<h2>Harmonies and Palettes</h2>
-<p>Color theory provides recipes for colors that work well together. Pathogen generates these directly:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+          <p>
+            What makes this reactive? The SVG above was compiled <em>once</em>. There is no JavaScript updating colors.
+            The fill values use CSS relative color syntax:
+          </p>
+          <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)&quot;</span>
+</code></pre>
+          <p>
+            The browser resolves <code>var(--demo-color)</code>, extracts its OKLCH components, applies
+            <code>calc(l + 0.18)</code>, and renders. When the color picker updates <code>--demo-color</code>, the
+            browser recalculates everything automatically.
+          </p>
+          <h2>Harmonies and Palettes</h2>
+          <p>Color theory provides recipes for colors that work well together. Pathogen generates these directly:</p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
 
 <span class="hljs-comment">// Harmony groups</span>
 <span class="hljs-keyword">let</span> analog = base.<span class="hljs-title function_">analogous</span>();         <span class="hljs-comment">// 3 colors: hue -30, 0, +30</span>
 <span class="hljs-keyword">let</span> triad  = base.<span class="hljs-title function_">triadic</span>();           <span class="hljs-comment">// 3 colors: hue 0, +120, +240</span>
 <span class="hljs-keyword">let</span> tetrad = base.<span class="hljs-title function_">tetradic</span>();          <span class="hljs-comment">// 4 colors: hue 0, +90, +180, +270</span>
 <span class="hljs-keyword">let</span> split  = base.<span class="hljs-title function_">splitComplementary</span>(); <span class="hljs-comment">// 3 colors: hue 0, +150, +210</span>
-</code></pre><p>Each harmony method returns an array of Colors you can iterate:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> base.<span class="hljs-title function_">triadic</span>()) {
+</code></pre>
+          <p>Each harmony method returns an array of Colors you can iterate:</p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> base.<span class="hljs-title function_">triadic</span>()) {
   define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`swatch-<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; }
   <span class="hljs-title function_">layer</span>(<span class="hljs-string">`swatch-<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, y, <span class="hljs-number">40</span>, <span class="hljs-number">40</span>, <span class="hljs-number">6</span>) }
 }
-</code></pre><p>Palettes go further. <code>Color.palette()</code> generates lightness ramps or interpolation sequences:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> ramp  = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, <span class="hljs-number">5</span>);          <span class="hljs-comment">// 5-step lightness ramp</span>
+</code></pre>
+          <p>Palettes go further. <code>Color.palette()</code> generates lightness ramps or interpolation sequences:</p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> ramp  = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, <span class="hljs-number">5</span>);          <span class="hljs-comment">// 5-step lightness ramp</span>
 <span class="hljs-keyword">let</span> blend = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);  <span class="hljs-comment">// 5-step interpolation</span>
-</code></pre><p>The lightness ramp spreads evenly from dark (L=0.15) to light (L=0.95). The interpolation variant uses <code>color-mix()</code> when backed by CSS variables, so the browser handles the blending at render time.</p>
-<reactive-svg vars="--harmony-color:#e63946" caption="Pick a base color to generate harmonies and palettes.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 450" width="460" height="450">
-  <style>
-    @property --harmony-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <text x="20" y="74" font-family="system-ui, sans-serif" font-size="11" fill="#777">analogous</text>
-  <text x="20" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#777">triadic</text>
-  <text x="20" y="190" font-family="system-ui, sans-serif" font-size="11" fill="#777">tetradic</text>
-  <text x="20" y="248" font-family="system-ui, sans-serif" font-size="11" fill="#777">splitComp</text>
-  <text x="20" y="354" font-family="system-ui, sans-serif" font-size="11" fill="#777">lightness</text>
-  <text x="20" y="412" font-family="system-ui, sans-serif" font-size="11" fill="#777">interpolate</text>
-  <text x="20" y="28" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Harmonies</text>
-  <text x="20" y="306" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Palettes</text>
-  <path d="M 146 50 L 174 50 Q 180 50 180 56 L 180 84 Q 180 90 174 90 L 146 90 Q 140 90 140 84 L 140 56 Q 140 50 146 50 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + -30))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 50 L 226 50 Q 232 50 232 56 L 232 84 Q 232 90 226 90 L 198 90 Q 192 90 192 84 L 192 56 Q 192 50 198 50 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 50 L 278 50 Q 284 50 284 56 L 284 84 Q 284 90 278 90 L 250 90 Q 244 90 244 84 L 244 56 Q 244 50 250 50 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 30))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 108 L 174 108 Q 180 108 180 114 L 180 142 Q 180 148 174 148 L 146 148 Q 140 148 140 142 L 140 114 Q 140 108 146 108 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 108 L 226 108 Q 232 108 232 114 L 232 142 Q 232 148 226 148 L 198 148 Q 192 148 192 142 L 192 114 Q 192 108 198 108 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 120))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 108 L 278 108 Q 284 108 284 114 L 284 142 Q 284 148 278 148 L 250 148 Q 244 148 244 142 L 244 114 Q 244 108 250 108 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 240))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 166 L 174 166 Q 180 166 180 172 L 180 200 Q 180 206 174 206 L 146 206 Q 140 206 140 200 L 140 172 Q 140 166 146 166 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 166 L 226 166 Q 232 166 232 172 L 232 200 Q 232 206 226 206 L 198 206 Q 192 206 192 200 L 192 172 Q 192 166 198 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 90))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 166 L 278 166 Q 284 166 284 172 L 284 200 Q 284 206 278 206 L 250 206 Q 244 206 244 200 L 244 172 Q 244 166 250 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 180))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 302 166 L 330 166 Q 336 166 336 172 L 336 200 Q 336 206 330 206 L 302 206 Q 296 206 296 200 L 296 172 Q 296 166 302 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 270))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 224 L 174 224 Q 180 224 180 230 L 180 258 Q 180 264 174 264 L 146 264 Q 140 264 140 258 L 140 230 Q 140 224 146 224 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 224 L 226 224 Q 232 224 232 230 L 232 258 Q 232 264 226 264 L 198 264 Q 192 264 192 258 L 192 230 Q 192 224 198 224 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 150))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 224 L 278 224 Q 284 224 284 230 L 284 258 Q 284 264 278 264 L 250 264 Q 244 264 244 258 L 244 230 Q 244 224 250 224 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 210))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 20 282 L 440 282" fill="none" stroke="#e0e0e0" stroke-width="1"/>
-  <path d="M 146 330 L 174 330 Q 180 330 180 336 L 180 364 Q 180 370 174 370 L 146 370 Q 140 370 140 364 L 140 336 Q 140 330 146 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.15 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 330 L 226 330 Q 232 330 232 336 L 232 364 Q 232 370 226 370 L 198 370 Q 192 370 192 364 L 192 336 Q 192 330 198 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.35 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 330 L 278 330 Q 284 330 284 336 L 284 364 Q 284 370 278 370 L 250 370 Q 244 370 244 364 L 244 336 Q 244 330 250 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.55 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 302 330 L 330 330 Q 336 330 336 336 L 336 364 Q 336 370 330 370 L 302 370 Q 296 370 296 364 L 296 336 Q 296 330 302 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.75 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 354 330 L 382 330 Q 388 330 388 336 L 388 364 Q 388 370 382 370 L 354 370 Q 348 370 348 364 L 348 336 Q 348 330 354 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.95 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 388 L 174 388 Q 180 388 180 394 L 180 422 Q 180 428 174 428 L 146 428 Q 140 428 140 422 L 140 394 Q 140 388 146 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 0%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 388 L 226 388 Q 232 388 232 394 L 232 422 Q 232 428 226 428 L 198 428 Q 192 428 192 422 L 192 394 Q 192 388 198 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 388 L 278 388 Q 284 388 284 394 L 284 422 Q 284 428 278 428 L 250 428 Q 244 428 244 422 L 244 394 Q 244 388 250 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 302 388 L 330 388 Q 336 388 336 394 L 336 422 Q 336 428 330 428 L 302 428 Q 296 428 296 422 L 296 394 Q 296 388 302 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 354 388 L 382 388 Q 388 388 388 394 L 388 422 Q 388 428 382 428 L 354 428 Q 348 428 348 422 L 348 394 Q 348 388 354 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 100%)" stroke="#ddd" stroke-width="0.5"/>
-</svg>
-</reactive-svg>
+</code></pre>
+          <p>
+            The lightness ramp spreads evenly from dark (L=0.15) to light (L=0.95). The interpolation variant uses
+            <code>color-mix()</code> when backed by CSS variables, so the browser handles the blending at render time.
+          </p>
+          <reactive-svg vars="--harmony-color:#e63946" caption="Pick a base color to generate harmonies and palettes.">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 450" width="460" height="450">
+              <style>
+                @property --harmony-color {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #e63946;
+                }
+              </style>
+              <rect width="100%" height="100%" fill="#f5f5f5" />
+              <text x="20" y="74" font-family="system-ui, sans-serif" font-size="11" fill="#777">analogous</text>
+              <text x="20" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#777">triadic</text>
+              <text x="20" y="190" font-family="system-ui, sans-serif" font-size="11" fill="#777">tetradic</text>
+              <text x="20" y="248" font-family="system-ui, sans-serif" font-size="11" fill="#777">splitComp</text>
+              <text x="20" y="354" font-family="system-ui, sans-serif" font-size="11" fill="#777">lightness</text>
+              <text x="20" y="412" font-family="system-ui, sans-serif" font-size="11" fill="#777">interpolate</text>
+              <text x="20" y="28" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">
+                Harmonies
+              </text>
+              <text x="20" y="306" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">
+                Palettes
+              </text>
+              <path
+                d="M 146 50 L 174 50 Q 180 50 180 56 L 180 84 Q 180 90 174 90 L 146 90 Q 140 90 140 84 L 140 56 Q 140 50 146 50 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + -30))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 198 50 L 226 50 Q 232 50 232 56 L 232 84 Q 232 90 226 90 L 198 90 Q 192 90 192 84 L 192 56 Q 192 50 198 50 Z"
+                fill="var(--harmony-color, #e63946)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 250 50 L 278 50 Q 284 50 284 56 L 284 84 Q 284 90 278 90 L 250 90 Q 244 90 244 84 L 244 56 Q 244 50 250 50 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 30))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 146 108 L 174 108 Q 180 108 180 114 L 180 142 Q 180 148 174 148 L 146 148 Q 140 148 140 142 L 140 114 Q 140 108 146 108 Z"
+                fill="var(--harmony-color, #e63946)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 198 108 L 226 108 Q 232 108 232 114 L 232 142 Q 232 148 226 148 L 198 148 Q 192 148 192 142 L 192 114 Q 192 108 198 108 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 120))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 250 108 L 278 108 Q 284 108 284 114 L 284 142 Q 284 148 278 148 L 250 148 Q 244 148 244 142 L 244 114 Q 244 108 250 108 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 240))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 146 166 L 174 166 Q 180 166 180 172 L 180 200 Q 180 206 174 206 L 146 206 Q 140 206 140 200 L 140 172 Q 140 166 146 166 Z"
+                fill="var(--harmony-color, #e63946)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 198 166 L 226 166 Q 232 166 232 172 L 232 200 Q 232 206 226 206 L 198 206 Q 192 206 192 200 L 192 172 Q 192 166 198 166 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 90))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 250 166 L 278 166 Q 284 166 284 172 L 284 200 Q 284 206 278 206 L 250 206 Q 244 206 244 200 L 244 172 Q 244 166 250 166 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 180))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 302 166 L 330 166 Q 336 166 336 172 L 336 200 Q 336 206 330 206 L 302 206 Q 296 206 296 200 L 296 172 Q 296 166 302 166 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 270))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 146 224 L 174 224 Q 180 224 180 230 L 180 258 Q 180 264 174 264 L 146 264 Q 140 264 140 258 L 140 230 Q 140 224 146 224 Z"
+                fill="var(--harmony-color, #e63946)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 198 224 L 226 224 Q 232 224 232 230 L 232 258 Q 232 264 226 264 L 198 264 Q 192 264 192 258 L 192 230 Q 192 224 198 224 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 150))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 250 224 L 278 224 Q 284 224 284 230 L 284 258 Q 284 264 278 264 L 250 264 Q 244 264 244 258 L 244 230 Q 244 224 250 224 Z"
+                fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 210))"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path d="M 20 282 L 440 282" fill="none" stroke="#e0e0e0" stroke-width="1" />
+              <path
+                d="M 146 330 L 174 330 Q 180 330 180 336 L 180 364 Q 180 370 174 370 L 146 370 Q 140 370 140 364 L 140 336 Q 140 330 146 330 Z"
+                fill="oklch(from var(--harmony-color, #e63946) 0.15 c h)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 198 330 L 226 330 Q 232 330 232 336 L 232 364 Q 232 370 226 370 L 198 370 Q 192 370 192 364 L 192 336 Q 192 330 198 330 Z"
+                fill="oklch(from var(--harmony-color, #e63946) 0.35 c h)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 250 330 L 278 330 Q 284 330 284 336 L 284 364 Q 284 370 278 370 L 250 370 Q 244 370 244 364 L 244 336 Q 244 330 250 330 Z"
+                fill="oklch(from var(--harmony-color, #e63946) 0.55 c h)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 302 330 L 330 330 Q 336 330 336 336 L 336 364 Q 336 370 330 370 L 302 370 Q 296 370 296 364 L 296 336 Q 296 330 302 330 Z"
+                fill="oklch(from var(--harmony-color, #e63946) 0.75 c h)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 354 330 L 382 330 Q 388 330 388 336 L 388 364 Q 388 370 382 370 L 354 370 Q 348 370 348 364 L 348 336 Q 348 330 354 330 Z"
+                fill="oklch(from var(--harmony-color, #e63946) 0.95 c h)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 146 388 L 174 388 Q 180 388 180 394 L 180 422 Q 180 428 174 428 L 146 428 Q 140 428 140 422 L 140 394 Q 140 388 146 388 Z"
+                fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 0%)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 198 388 L 226 388 Q 232 388 232 394 L 232 422 Q 232 428 226 428 L 198 428 Q 192 428 192 422 L 192 394 Q 192 388 198 388 Z"
+                fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 250 388 L 278 388 Q 284 388 284 394 L 284 422 Q 284 428 278 428 L 250 428 Q 244 428 244 422 L 244 394 Q 244 388 250 388 Z"
+                fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 302 388 L 330 388 Q 336 388 336 394 L 336 422 Q 336 428 330 428 L 302 428 Q 296 428 296 422 L 296 394 Q 296 388 302 388 Z"
+                fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 354 388 L 382 388 Q 388 388 388 394 L 388 422 Q 388 428 382 428 L 354 428 Q 348 428 348 422 L 348 394 Q 348 388 354 388 Z"
+                fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 100%)"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+            </svg>
+          </reactive-svg>
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-harmonies"><em>view full source</em></a></p>
+          <p style="text-align: right; margin-top: -0.5rem; font-size: 0.8125rem">
+            <a href="#src-harmonies"><em>view full source</em></a>
+          </p>
 
-<p>Notice the palette rows. The lightness ramp uses CSS relative color syntax to override the <code>l</code> component at fixed steps:</p>
-<pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--harmony-color) 0.35 c h)&quot;</span>
-</code></pre><p>The interpolation row uses <code>color-mix()</code>:</p>
-<pre><code class="hljs">fill=<span class="hljs-string">&quot;color-mix(in oklch, var(--harmony-color), #457b9d 50%)&quot;</span>
-</code></pre><p>Both are resolved by the browser at render time. Change the base color and five lightness steps and five interpolation steps recalculate instantly.</p>
-<h2>CSSVar: The Reactive Layer</h2>
-<p>The magic behind these live demos is <code>CSSVar()</code> — Pathogen&#39;s bridge between compile-time computation and runtime CSS.</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
-</code></pre><p>This does two things. At compile time, <code>Color(&#39;#e63946&#39;)</code> resolves to an OKLCH value for use in any computation that needs concrete color data. At render time, the SVG references <code>var(--base-color, #e63946)</code> — a CSS custom property with a fallback.</p>
-<p>When you call methods on a CSSVar-backed Color, Pathogen emits CSS relative color expressions instead of baking the result:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> lighter = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
+          <p>
+            Notice the palette rows. The lightness ramp uses CSS relative color syntax to override the
+            <code>l</code> component at fixed steps:
+          </p>
+          <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--harmony-color) 0.35 c h)&quot;</span>
+</code></pre>
+          <p>The interpolation row uses <code>color-mix()</code>:</p>
+          <pre><code class="hljs">fill=<span class="hljs-string">&quot;color-mix(in oklch, var(--harmony-color), #457b9d 50%)&quot;</span>
+</code></pre>
+          <p>
+            Both are resolved by the browser at render time. Change the base color and five lightness steps and five
+            interpolation steps recalculate instantly.
+          </p>
+          <h2>CSSVar: The Reactive Layer</h2>
+          <p>
+            The magic behind these live demos is <code>CSSVar()</code> — Pathogen&#39;s bridge between compile-time
+            computation and runtime CSS.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
+</code></pre>
+          <p>
+            This does two things. At compile time, <code>Color(&#39;#e63946&#39;)</code> resolves to an OKLCH value for
+            use in any computation that needs concrete color data. At render time, the SVG references
+            <code>var(--base-color, #e63946)</code> — a CSS custom property with a fallback.
+          </p>
+          <p>
+            When you call methods on a CSSVar-backed Color, Pathogen emits CSS relative color expressions instead of
+            baking the result:
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> lighter = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
 <span class="hljs-comment">// Compiled output: oklch(from var(--base-color, #e63946) calc(l + 0.15) c h)</span>
 
 <span class="hljs-keyword">let</span> blended = base.<span class="hljs-title function_">mix</span>(accent, <span class="hljs-number">0.5</span>);
 <span class="hljs-comment">// Compiled output: color-mix(in oklch, var(--base-color), var(--accent-color) 50%)</span>
-</code></pre><p>This is the key insight: <strong>compile once, theme at runtime</strong>. A Pathogen source file is compiled to a static SVG that contains no JavaScript. But because colors are expressed as CSS functions referencing custom properties, any container that sets those properties will see the SVG adapt.</p>
-<p>The pattern works for entire illustrations. Define a few CSSVar-backed colors, derive everything from them, and the compiled SVG becomes a themeable asset:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> bg      = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg&#x27;</span>, <span class="hljs-string">&#x27;#f5f5f5&#x27;</span>));
+</code></pre>
+          <p>
+            This is the key insight: <strong>compile once, theme at runtime</strong>. A Pathogen source file is compiled
+            to a static SVG that contains no JavaScript. But because colors are expressed as CSS functions referencing
+            custom properties, any container that sets those properties will see the SVG adapt.
+          </p>
+          <p>
+            The pattern works for entire illustrations. Define a few CSSVar-backed colors, derive everything from them,
+            and the compiled SVG becomes a themeable asset:
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> bg      = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg&#x27;</span>, <span class="hljs-string">&#x27;#f5f5f5&#x27;</span>));
 <span class="hljs-keyword">let</span> primary = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
 <span class="hljs-keyword">let</span> secondary = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--secondary&#x27;</span>, <span class="hljs-string">&#x27;#457b9d&#x27;</span>));
 <span class="hljs-keyword">let</span> accent  = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent&#x27;</span>, <span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
@@ -450,71 +941,144 @@ code.hljs {
 <span class="hljs-keyword">let</span> primaryDark   = primary.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
 <span class="hljs-keyword">let</span> secondaryMuted = secondary.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-keyword">let</span> accentShift   = accent.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
-</code></pre><reactive-svg vars="--bg:#f5f5f5;--primary:#e63946;--secondary:#457b9d;--accent:#2a9d8f" caption="Four color pickers control an entire illustration. Derived colors update automatically.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 260" width="500" height="260">
-  <style>
-    @property --bg {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #f5f5f5;
-    }
-    @property --primary {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-    @property --secondary {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #457b9d;
-    }
-    @property --accent {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #2a9d8f;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <path d="M 0 0 L 500 0 L 500 260 L 0 260 Z" fill="var(--bg, #f5f5f5)" stroke="none" stroke-width="2"/>
-  <path d="M 250 75 L 266.45798706418924 107.34752415750147 L 302.3081083962334 113.00406530937789 L 276.6295824562643 138.65247584249852 L 282.328188876086 174.4959346906221 L 250 158 L 217.67181112391398 174.4959346906221 L 223.3704175437357 138.65247584249852 L 197.69189160376655 113.00406530937789 L 233.54201293581076 107.34752415750148 Z" fill="oklch(from var(--primary, #e63946) calc(l + 0.2) c h)" stroke="var(--primary, #e63946)" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M 336 130 A 14 14 0 1 1 364 130 A 14 14 0 1 1 336 130 M 236 200 A 14 14 0 1 1 264 200 A 14 14 0 1 1 236 200 M 136 130 A 14 14 0 1 1 164 130 A 14 14 0 1 1 136 130 M 235.99999999999997 60 A 14 14 0 1 1 264 60 A 14 14 0 1 1 235.99999999999997 60 M 336 129.99999999999997 A 14 14 0 1 1 364 129.99999999999997 A 14 14 0 1 1 336 129.99999999999997" fill="oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)" stroke="var(--secondary, #457b9d)" stroke-width="1.5"/>
-  <path d="M 40 22 L 58 40 L 40 58 L 22 40 Z M 460 22 L 478 40 L 460 58 L 442 40 Z M 40 202 L 58 220 L 40 238 L 22 220 Z M 460 202 L 478 220 L 460 238 L 442 220 Z" fill="oklch(from var(--accent, #2a9d8f) l c calc(h + 60))" stroke="var(--accent, #2a9d8f)" stroke-width="1"/>
-  <path d="M 70 130 A 40 40 0 0 1 110 130 M 390 130 A 40 40 0 0 1 430 130" fill="none" stroke="oklch(from var(--primary, #e63946) calc(l - 0.15) c h)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M 208 130 A 42 42 0 1 1 292 130 A 42 42 0 1 1 208 130" fill="none" stroke="var(--accent, #2a9d8f)" stroke-width="1" stroke-dasharray="4 3"/>
-</svg>
-</reactive-svg>
+</code></pre>
+          <reactive-svg
+            vars="--bg:#f5f5f5;--primary:#e63946;--secondary:#457b9d;--accent:#2a9d8f"
+            caption="Four color pickers control an entire illustration. Derived colors update automatically."
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 260" width="500" height="260">
+              <style>
+                @property --bg {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #f5f5f5;
+                }
+                @property --primary {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #e63946;
+                }
+                @property --secondary {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #457b9d;
+                }
+                @property --accent {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #2a9d8f;
+                }
+              </style>
+              <rect width="100%" height="100%" fill="#f5f5f5" />
+              <path d="M 0 0 L 500 0 L 500 260 L 0 260 Z" fill="var(--bg, #f5f5f5)" stroke="none" stroke-width="2" />
+              <path
+                d="M 250 75 L 266.45798706418924 107.34752415750147 L 302.3081083962334 113.00406530937789 L 276.6295824562643 138.65247584249852 L 282.328188876086 174.4959346906221 L 250 158 L 217.67181112391398 174.4959346906221 L 223.3704175437357 138.65247584249852 L 197.69189160376655 113.00406530937789 L 233.54201293581076 107.34752415750148 Z"
+                fill="oklch(from var(--primary, #e63946) calc(l + 0.2) c h)"
+                stroke="var(--primary, #e63946)"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M 336 130 A 14 14 0 1 1 364 130 A 14 14 0 1 1 336 130 M 236 200 A 14 14 0 1 1 264 200 A 14 14 0 1 1 236 200 M 136 130 A 14 14 0 1 1 164 130 A 14 14 0 1 1 136 130 M 235.99999999999997 60 A 14 14 0 1 1 264 60 A 14 14 0 1 1 235.99999999999997 60 M 336 129.99999999999997 A 14 14 0 1 1 364 129.99999999999997 A 14 14 0 1 1 336 129.99999999999997"
+                fill="oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)"
+                stroke="var(--secondary, #457b9d)"
+                stroke-width="1.5"
+              />
+              <path
+                d="M 40 22 L 58 40 L 40 58 L 22 40 Z M 460 22 L 478 40 L 460 58 L 442 40 Z M 40 202 L 58 220 L 40 238 L 22 220 Z M 460 202 L 478 220 L 460 238 L 442 220 Z"
+                fill="oklch(from var(--accent, #2a9d8f) l c calc(h + 60))"
+                stroke="var(--accent, #2a9d8f)"
+                stroke-width="1"
+              />
+              <path
+                d="M 70 130 A 40 40 0 0 1 110 130 M 390 130 A 40 40 0 0 1 430 130"
+                fill="none"
+                stroke="oklch(from var(--primary, #e63946) calc(l - 0.15) c h)"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M 208 130 A 42 42 0 1 1 292 130 A 42 42 0 1 1 208 130"
+                fill="none"
+                stroke="var(--accent, #2a9d8f)"
+                stroke-width="1"
+                stroke-dasharray="4 3"
+              />
+            </svg>
+          </reactive-svg>
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-theme"><em>view full source</em></a></p>
+          <p style="text-align: right; margin-top: -0.5rem; font-size: 0.8125rem">
+            <a href="#src-theme"><em>view full source</em></a>
+          </p>
 
-<p>This SVG has a central star (primary), orbiting circles (secondary), corner diamonds (accent), and a background — all themeable from four CSS variables. The star fill uses <code>oklch(from var(--primary) calc(l + 0.2) c h)</code> for a lighter shade, the corner diamond fills use <code>oklch(from var(--accent) l c calc(h + 60))</code> for a hue-shifted variation. One source file, infinite themes.</p>
-<h2>@property: Enabling Transitions</h2>
-<p>When using CSSVar-backed colors, the compiler automatically generates CSS <code>@property</code> declarations:</p>
-<pre><code class="hljs language-css">@property --base-color {
+          <p>
+            This SVG has a central star (primary), orbiting circles (secondary), corner diamonds (accent), and a
+            background — all themeable from four CSS variables. The star fill uses
+            <code>oklch(from var(--primary) calc(l + 0.2) c h)</code> for a lighter shade, the corner diamond fills use
+            <code>oklch(from var(--accent) l c calc(h + 60))</code> for a hue-shifted variation. One source file,
+            infinite themes.
+          </p>
+          <h2>@property: Enabling Transitions</h2>
+          <p>
+            When using CSSVar-backed colors, the compiler automatically generates CSS
+            <code>@property</code> declarations:
+          </p>
+          <pre><code class="hljs language-css">@property --base-color {
   syntax: <span class="hljs-string">&quot;&lt;color&gt;&quot;</span>;
   inherits: <span class="hljs-literal">true</span>;
   initial-value: <span class="hljs-comment">#e63946;</span>
 }
-</code></pre><p>This tells the browser that <code>--base-color</code> is a color, not an arbitrary string. Without <code>@property</code>, CSS custom properties are opaque tokens — the browser can&#39;t interpolate between <code>#e63946</code> and <code>#457b9d</code> because it doesn&#39;t know they&#39;re colors. With <code>@property</code>, CSS transitions and animations work on custom properties, meaning you can smoothly animate theme changes:</p>
-<pre><code class="hljs language-css">.svg-container {
+</code></pre>
+          <p>
+            This tells the browser that <code>--base-color</code> is a color, not an arbitrary string. Without
+            <code>@property</code>, CSS custom properties are opaque tokens — the browser can&#39;t interpolate between
+            <code>#e63946</code> and <code>#457b9d</code> because it doesn&#39;t know they&#39;re colors. With
+            <code>@property</code>, CSS transitions and animations work on custom properties, meaning you can smoothly
+            animate theme changes:
+          </p>
+          <pre><code class="hljs language-css">.svg-container {
   transition: --primary 0.3s ease;
 }
-</code></pre><p>Pathogen collects these declarations during compilation and embeds them in the SVG&#39;s <code>&lt;style&gt;</code> block. Each <code>Color(CSSVar(&#39;--name&#39;, fallback))</code> call registers one <code>@property</code> rule — first occurrence wins, duplicates are skipped.</p>
-<h2>Light/Dark: Adaptive SVGs</h2>
-<p>Modern CSS has <code>light-dark()</code>, a function that resolves to one of two values depending on the document&#39;s color scheme. Pathogen exposes this through <code>Color.lightDark()</code>:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> fg      = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#333&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eee&#x27;</span>));
+</code></pre>
+          <p>
+            Pathogen collects these declarations during compilation and embeds them in the SVG&#39;s
+            <code>&lt;style&gt;</code> block. Each <code>Color(CSSVar(&#39;--name&#39;, fallback))</code> call registers
+            one <code>@property</code> rule — first occurrence wins, duplicates are skipped.
+          </p>
+          <h2>Light/Dark: Adaptive SVGs</h2>
+          <p>
+            Modern CSS has <code>light-dark()</code>, a function that resolves to one of two values depending on the
+            document&#39;s color scheme. Pathogen exposes this through <code>Color.lightDark()</code>:
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> fg      = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#333&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eee&#x27;</span>));
 <span class="hljs-keyword">let</span> accent  = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(accent, darkAccent);
-</code></pre><p>In the compiled SVG, the fill becomes:</p>
-<pre><code class="hljs">fill=<span class="hljs-string">&quot;light-dark(#333333, #eeeeee)&quot;</span>
-</code></pre><p>At compile time, properties like <code>.hex</code> and <code>.lightness</code> resolve against the light variant so your code can do concrete math. At render time, the browser picks the appropriate value based on the user&#39;s <code>prefers-color-scheme</code> setting. You can also combine <code>lightDark()</code> with <code>CSSVar()</code>:</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> themed = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(
+</code></pre>
+          <p>In the compiled SVG, the fill becomes:</p>
+          <pre><code class="hljs">fill=<span class="hljs-string">&quot;light-dark(#333333, #eeeeee)&quot;</span>
+</code></pre>
+          <p>
+            At compile time, properties like <code>.hex</code> and <code>.lightness</code> resolve against the light
+            variant so your code can do concrete math. At render time, the browser picks the appropriate value based on
+            the user&#39;s <code>prefers-color-scheme</code> setting. You can also combine <code>lightDark()</code> with
+            <code>CSSVar()</code>:
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> themed = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(
   <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--fg-light&#x27;</span>, <span class="hljs-string">&#x27;#333&#x27;</span>)),
   <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--fg-dark&#x27;</span>, <span class="hljs-string">&#x27;#eee&#x27;</span>))
 );
 <span class="hljs-comment">// Output: light-dark(var(--fg-light, #333), var(--fg-dark, #eee))</span>
-</code></pre><p>This gives you theme-aware SVGs that respond to both system preferences and runtime CSS variable overrides — two axes of customization from a single compiled file.</p>
-<h2>The Full Picture</h2>
-<p>Everything comes together in a comprehensive swatch showcase. Three CSSVar-backed colors generate an entire dual-panel visualization: methods, harmonies, palettes, and theme-aware colors, rendered side by side for light and dark contexts.</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base       = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
+</code></pre>
+          <p>
+            This gives you theme-aware SVGs that respond to both system preferences and runtime CSS variable overrides —
+            two axes of customization from a single compiled file.
+          </p>
+          <h2>The Full Picture</h2>
+          <p>
+            Everything comes together in a comprehensive swatch showcase. Three CSSVar-backed colors generate an entire
+            dual-panel visualization: methods, harmonies, palettes, and theme-aware colors, rendered side by side for
+            light and dark contexts.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base       = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
 <span class="hljs-keyword">let</span> accent     = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent-color&#x27;</span>, <span class="hljs-string">&#x27;#457b9d&#x27;</span>));
 <span class="hljs-keyword">let</span> darkAccent = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--dark-accent&#x27;</span>, <span class="hljs-string">&#x27;#f4a261&#x27;</span>));
 
@@ -531,110 +1095,405 @@ code.hljs {
 <span class="hljs-comment">// Theme-aware colors</span>
 <span class="hljs-keyword">let</span> themeFg     = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#333&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eee&#x27;</span>));
 <span class="hljs-keyword">let</span> themeAccent = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(accent, darkAccent);
-</code></pre><reactive-svg vars="--base-color:#e63946;--accent-color:#457b9d;--dark-accent:#f4a261" caption="Three colors drive a dual-panel showcase: methods, harmonies, palettes, and light-dark adaptive colors.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 570 340" width="570" height="340">
-  <style>
-    @property --base-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-    @property --accent-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #457b9d;
-    }
-    @property --dark-accent {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #f4a261;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <path d="M 0 0 L 280 0 Q 280 0 280 0 L 280 340 Q 280 340 280 340 L 0 340 Q 0 340 0 340 L 0 0 Q 0 0 0 0 Z" fill="#f5f5f5" stroke="none" stroke-width="2"/>
-  <path d="M 290 0 L 570 0 Q 570 0 570 0 L 570 340 Q 570 340 570 340 L 290 340 Q 290 340 290 340 L 290 0 Q 290 0 290 0 Z" fill="#222266" stroke="none" stroke-width="2"/>
-  <text x="8" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Methods</text>
-  <text x="8" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Triadic</text>
-  <text x="8" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Palette</text>
-  <text x="8" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">lightDark()</text>
-  <text x="26" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">base</text>
-  <text x="55" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">light</text>
-  <text x="84" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">dark</text>
-  <text x="113" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">vivid</text>
-  <text x="142" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">muted</text>
-  <text x="171" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">shift</text>
-  <text x="200" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">compl</text>
-  <text x="26" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">fg</text>
-  <text x="55" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">accent</text>
-  <text x="298" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Methods</text>
-  <text x="298" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Triadic</text>
-  <text x="298" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Palette</text>
-  <text x="298" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">lightDark()</text>
-  <text x="316" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">base</text>
-  <text x="345" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">light</text>
-  <text x="374" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">dark</text>
-  <text x="403" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">vivid</text>
-  <text x="432" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">muted</text>
-  <text x="461" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">shift</text>
-  <text x="490" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">compl</text>
-  <text x="316" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">fg</text>
-  <text x="345" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">accent</text>
-  <path d="M 17 24 L 35 24 Q 38 24 38 27 L 38 43 Q 38 46 35 46 L 17 46 Q 14 46 14 43 L 14 27 Q 14 24 17 24 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 24 L 64 24 Q 67 24 67 27 L 67 43 Q 67 46 64 46 L 46 46 Q 43 46 43 43 L 43 27 Q 43 24 46 24 Z" fill="oklch(from var(--base-color, #e63946) calc(l + 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 75 24 L 93 24 Q 96 24 96 27 L 96 43 Q 96 46 93 46 L 75 46 Q 72 46 72 43 L 72 27 Q 72 24 75 24 Z" fill="oklch(from var(--base-color, #e63946) calc(l - 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 104 24 L 122 24 Q 125 24 125 27 L 125 43 Q 125 46 122 46 L 104 46 Q 101 46 101 43 L 101 27 Q 101 24 104 24 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 1.4) h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 133 24 L 151 24 Q 154 24 154 27 L 154 43 Q 154 46 151 46 L 133 46 Q 130 46 130 43 L 130 27 Q 130 24 133 24 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 0.5) h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 162 24 L 180 24 Q 183 24 183 27 L 183 43 Q 183 46 180 46 L 162 46 Q 159 46 159 43 L 159 27 Q 159 24 162 24 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 60))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 191 24 L 209 24 Q 212 24 212 27 L 212 43 Q 212 46 209 46 L 191 46 Q 188 46 188 43 L 188 27 Q 188 24 191 24 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 180))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 8 70 L 272 70 M 8 130 L 272 130 M 8 194 L 272 194" fill="none" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 17 92 L 35 92 Q 38 92 38 95 L 38 111 Q 38 114 35 114 L 17 114 Q 14 114 14 111 L 14 95 Q 14 92 17 92 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 92 L 64 92 Q 67 92 67 95 L 67 111 Q 67 114 64 114 L 46 114 Q 43 114 43 111 L 43 95 Q 43 92 46 92 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 120))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 75 92 L 93 92 Q 96 92 96 95 L 96 111 Q 96 114 93 114 L 75 114 Q 72 114 72 111 L 72 95 Q 72 92 75 92 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 240))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 17 152 L 35 152 Q 38 152 38 155 L 38 171 Q 38 174 35 174 L 17 174 Q 14 174 14 171 L 14 155 Q 14 152 17 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 0%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 152 L 64 152 Q 67 152 67 155 L 67 171 Q 67 174 64 174 L 46 174 Q 43 174 43 171 L 43 155 Q 43 152 46 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 25%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 75 152 L 93 152 Q 96 152 96 155 L 96 171 Q 96 174 93 174 L 75 174 Q 72 174 72 171 L 72 155 Q 72 152 75 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 50%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 104 152 L 122 152 Q 125 152 125 155 L 125 171 Q 125 174 122 174 L 104 174 Q 101 174 101 171 L 101 155 Q 101 152 104 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 75%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 133 152 L 151 152 Q 154 152 154 155 L 154 171 Q 154 174 151 174 L 133 174 Q 130 174 130 171 L 130 155 Q 130 152 133 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 100%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 17 216 L 35 216 Q 38 216 38 219 L 38 235 Q 38 238 35 238 L 17 238 Q 14 238 14 235 L 14 219 Q 14 216 17 216 Z" fill="light-dark(#333333, #eeeeee)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 216 L 64 216 Q 67 216 67 219 L 67 235 Q 67 238 64 238 L 46 238 Q 43 238 43 235 L 43 219 Q 43 216 46 216 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 307 24 L 325 24 Q 328 24 328 27 L 328 43 Q 328 46 325 46 L 307 46 Q 304 46 304 43 L 304 27 Q 304 24 307 24 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 336 24 L 354 24 Q 357 24 357 27 L 357 43 Q 357 46 354 46 L 336 46 Q 333 46 333 43 L 333 27 Q 333 24 336 24 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l + 0.15) c h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 365 24 L 383 24 Q 386 24 386 27 L 386 43 Q 386 46 383 46 L 365 46 Q 362 46 362 43 L 362 27 Q 362 24 365 24 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l - 0.15) c h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 394 24 L 412 24 Q 415 24 415 27 L 415 43 Q 415 46 412 46 L 394 46 Q 391 46 391 43 L 391 27 Q 391 24 394 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 1.4) h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 423 24 L 441 24 Q 444 24 444 27 L 444 43 Q 444 46 441 46 L 423 46 Q 420 46 420 43 L 420 27 Q 420 24 423 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 0.5) h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 452 24 L 470 24 Q 473 24 473 27 L 473 43 Q 473 46 470 46 L 452 46 Q 449 46 449 43 L 449 27 Q 449 24 452 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 60))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 481 24 L 499 24 Q 502 24 502 27 L 502 43 Q 502 46 499 46 L 481 46 Q 478 46 478 43 L 478 27 Q 478 24 481 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 180))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 298 70 L 562 70 M 298 130 L 562 130 M 298 194 L 562 194" fill="none" stroke="#445" stroke-width="0.5"/>
-  <path d="M 307 92 L 325 92 Q 328 92 328 95 L 328 111 Q 328 114 325 114 L 307 114 Q 304 114 304 111 L 304 95 Q 304 92 307 92 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 336 92 L 354 92 Q 357 92 357 95 L 357 111 Q 357 114 354 114 L 336 114 Q 333 114 333 111 L 333 95 Q 333 92 336 92 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 120))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 365 92 L 383 92 Q 386 92 386 95 L 386 111 Q 386 114 383 114 L 365 114 Q 362 114 362 111 L 362 95 Q 362 92 365 92 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 240))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 307 152 L 325 152 Q 328 152 328 155 L 328 171 Q 328 174 325 174 L 307 174 Q 304 174 304 171 L 304 155 Q 304 152 307 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 0%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 336 152 L 354 152 Q 357 152 357 155 L 357 171 Q 357 174 354 174 L 336 174 Q 333 174 333 171 L 333 155 Q 333 152 336 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 25%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 365 152 L 383 152 Q 386 152 386 155 L 386 171 Q 386 174 383 174 L 365 174 Q 362 174 362 171 L 362 155 Q 362 152 365 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 50%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 394 152 L 412 152 Q 415 152 415 155 L 415 171 Q 415 174 412 174 L 394 174 Q 391 174 391 171 L 391 155 Q 391 152 394 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 75%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 423 152 L 441 152 Q 444 152 444 155 L 444 171 Q 444 174 441 174 L 423 174 Q 420 174 420 171 L 420 155 Q 420 152 423 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 100%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 307 216 L 325 216 Q 328 216 328 219 L 328 235 Q 328 238 325 238 L 307 238 Q 304 238 304 235 L 304 219 Q 304 216 307 216 Z" fill="light-dark(#333333, #eeeeee)" stroke="#555" stroke-width="0.5"/>
-  <path d="M 336 216 L 354 216 Q 357 216 357 219 L 357 235 Q 357 238 354 238 L 336 238 Q 333 238 333 235 L 333 219 Q 333 216 336 216 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#555" stroke-width="0.5"/>
-  <text x="140" y="330" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#bbb" text-anchor="middle">LIGHT</text>
-  <text x="430" y="330" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#557" text-anchor="middle">DARK</text>
-</svg>
-</reactive-svg>
+</code></pre>
+          <reactive-svg
+            vars="--base-color:#e63946;--accent-color:#457b9d;--dark-accent:#f4a261"
+            caption="Three colors drive a dual-panel showcase: methods, harmonies, palettes, and light-dark adaptive colors."
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 570 340" width="570" height="340">
+              <style>
+                @property --base-color {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #e63946;
+                }
+                @property --accent-color {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #457b9d;
+                }
+                @property --dark-accent {
+                  syntax: '<color>';
+                  inherits: true;
+                  initial-value: #f4a261;
+                }
+              </style>
+              <rect width="100%" height="100%" fill="#f5f5f5" />
+              <path
+                d="M 0 0 L 280 0 Q 280 0 280 0 L 280 340 Q 280 340 280 340 L 0 340 Q 0 340 0 340 L 0 0 Q 0 0 0 0 Z"
+                fill="#f5f5f5"
+                stroke="none"
+                stroke-width="2"
+              />
+              <path
+                d="M 290 0 L 570 0 Q 570 0 570 0 L 570 340 Q 570 340 570 340 L 290 340 Q 290 340 290 340 L 290 0 Q 290 0 290 0 Z"
+                fill="#222266"
+                stroke="none"
+                stroke-width="2"
+              />
+              <text x="8" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">
+                Methods
+              </text>
+              <text x="8" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">
+                Triadic
+              </text>
+              <text x="8" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">
+                Palette
+              </text>
+              <text x="8" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">
+                lightDark()
+              </text>
+              <text x="26" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                base
+              </text>
+              <text x="55" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                light
+              </text>
+              <text x="84" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                dark
+              </text>
+              <text x="113" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                vivid
+              </text>
+              <text x="142" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                muted
+              </text>
+              <text x="171" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                shift
+              </text>
+              <text x="200" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                compl
+              </text>
+              <text x="26" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                fg
+              </text>
+              <text x="55" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">
+                accent
+              </text>
+              <text x="298" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">
+                Methods
+              </text>
+              <text x="298" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">
+                Triadic
+              </text>
+              <text x="298" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">
+                Palette
+              </text>
+              <text x="298" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">
+                lightDark()
+              </text>
+              <text x="316" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                base
+              </text>
+              <text x="345" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                light
+              </text>
+              <text x="374" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                dark
+              </text>
+              <text x="403" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                vivid
+              </text>
+              <text x="432" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                muted
+              </text>
+              <text x="461" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                shift
+              </text>
+              <text x="490" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                compl
+              </text>
+              <text x="316" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                fg
+              </text>
+              <text x="345" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">
+                accent
+              </text>
+              <path
+                d="M 17 24 L 35 24 Q 38 24 38 27 L 38 43 Q 38 46 35 46 L 17 46 Q 14 46 14 43 L 14 27 Q 14 24 17 24 Z"
+                fill="var(--base-color, #e63946)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 46 24 L 64 24 Q 67 24 67 27 L 67 43 Q 67 46 64 46 L 46 46 Q 43 46 43 43 L 43 27 Q 43 24 46 24 Z"
+                fill="oklch(from var(--base-color, #e63946) calc(l + 0.15) c h)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 75 24 L 93 24 Q 96 24 96 27 L 96 43 Q 96 46 93 46 L 75 46 Q 72 46 72 43 L 72 27 Q 72 24 75 24 Z"
+                fill="oklch(from var(--base-color, #e63946) calc(l - 0.15) c h)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 104 24 L 122 24 Q 125 24 125 27 L 125 43 Q 125 46 122 46 L 104 46 Q 101 46 101 43 L 101 27 Q 101 24 104 24 Z"
+                fill="oklch(from var(--base-color, #e63946) l calc(c * 1.4) h)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 133 24 L 151 24 Q 154 24 154 27 L 154 43 Q 154 46 151 46 L 133 46 Q 130 46 130 43 L 130 27 Q 130 24 133 24 Z"
+                fill="oklch(from var(--base-color, #e63946) l calc(c * 0.5) h)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 162 24 L 180 24 Q 183 24 183 27 L 183 43 Q 183 46 180 46 L 162 46 Q 159 46 159 43 L 159 27 Q 159 24 162 24 Z"
+                fill="oklch(from var(--base-color, #e63946) l c calc(h + 60))"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 191 24 L 209 24 Q 212 24 212 27 L 212 43 Q 212 46 209 46 L 191 46 Q 188 46 188 43 L 188 27 Q 188 24 191 24 Z"
+                fill="oklch(from var(--base-color, #e63946) l c calc(h + 180))"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 8 70 L 272 70 M 8 130 L 272 130 M 8 194 L 272 194"
+                fill="none"
+                stroke="#ddd"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 17 92 L 35 92 Q 38 92 38 95 L 38 111 Q 38 114 35 114 L 17 114 Q 14 114 14 111 L 14 95 Q 14 92 17 92 Z"
+                fill="var(--base-color, #e63946)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 46 92 L 64 92 Q 67 92 67 95 L 67 111 Q 67 114 64 114 L 46 114 Q 43 114 43 111 L 43 95 Q 43 92 46 92 Z"
+                fill="oklch(from var(--base-color, #e63946) l c calc(h + 120))"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 75 92 L 93 92 Q 96 92 96 95 L 96 111 Q 96 114 93 114 L 75 114 Q 72 114 72 111 L 72 95 Q 72 92 75 92 Z"
+                fill="oklch(from var(--base-color, #e63946) l c calc(h + 240))"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 17 152 L 35 152 Q 38 152 38 155 L 38 171 Q 38 174 35 174 L 17 174 Q 14 174 14 171 L 14 155 Q 14 152 17 152 Z"
+                fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 0%)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 46 152 L 64 152 Q 67 152 67 155 L 67 171 Q 67 174 64 174 L 46 174 Q 43 174 43 171 L 43 155 Q 43 152 46 152 Z"
+                fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 25%)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 75 152 L 93 152 Q 96 152 96 155 L 96 171 Q 96 174 93 174 L 75 174 Q 72 174 72 171 L 72 155 Q 72 152 75 152 Z"
+                fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 50%)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 104 152 L 122 152 Q 125 152 125 155 L 125 171 Q 125 174 122 174 L 104 174 Q 101 174 101 171 L 101 155 Q 101 152 104 152 Z"
+                fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 75%)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 133 152 L 151 152 Q 154 152 154 155 L 154 171 Q 154 174 151 174 L 133 174 Q 130 174 130 171 L 130 155 Q 130 152 133 152 Z"
+                fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 100%)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 17 216 L 35 216 Q 38 216 38 219 L 38 235 Q 38 238 35 238 L 17 238 Q 14 238 14 235 L 14 219 Q 14 216 17 216 Z"
+                fill="light-dark(#333333, #eeeeee)"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 46 216 L 64 216 Q 67 216 67 219 L 67 235 Q 67 238 64 238 L 46 238 Q 43 238 43 235 L 43 219 Q 43 216 46 216 Z"
+                fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))"
+                stroke="#ccc"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 307 24 L 325 24 Q 328 24 328 27 L 328 43 Q 328 46 325 46 L 307 46 Q 304 46 304 43 L 304 27 Q 304 24 307 24 Z"
+                fill="var(--dark-accent, #f4a261)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 336 24 L 354 24 Q 357 24 357 27 L 357 43 Q 357 46 354 46 L 336 46 Q 333 46 333 43 L 333 27 Q 333 24 336 24 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) calc(l + 0.15) c h)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 365 24 L 383 24 Q 386 24 386 27 L 386 43 Q 386 46 383 46 L 365 46 Q 362 46 362 43 L 362 27 Q 362 24 365 24 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) calc(l - 0.15) c h)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 394 24 L 412 24 Q 415 24 415 27 L 415 43 Q 415 46 412 46 L 394 46 Q 391 46 391 43 L 391 27 Q 391 24 394 24 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 1.4) h)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 423 24 L 441 24 Q 444 24 444 27 L 444 43 Q 444 46 441 46 L 423 46 Q 420 46 420 43 L 420 27 Q 420 24 423 24 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 0.5) h)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 452 24 L 470 24 Q 473 24 473 27 L 473 43 Q 473 46 470 46 L 452 46 Q 449 46 449 43 L 449 27 Q 449 24 452 24 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 60))"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 481 24 L 499 24 Q 502 24 502 27 L 502 43 Q 502 46 499 46 L 481 46 Q 478 46 478 43 L 478 27 Q 478 24 481 24 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 180))"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 298 70 L 562 70 M 298 130 L 562 130 M 298 194 L 562 194"
+                fill="none"
+                stroke="#445"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 307 92 L 325 92 Q 328 92 328 95 L 328 111 Q 328 114 325 114 L 307 114 Q 304 114 304 111 L 304 95 Q 304 92 307 92 Z"
+                fill="var(--dark-accent, #f4a261)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 336 92 L 354 92 Q 357 92 357 95 L 357 111 Q 357 114 354 114 L 336 114 Q 333 114 333 111 L 333 95 Q 333 92 336 92 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 120))"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 365 92 L 383 92 Q 386 92 386 95 L 386 111 Q 386 114 383 114 L 365 114 Q 362 114 362 111 L 362 95 Q 362 92 365 92 Z"
+                fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 240))"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 307 152 L 325 152 Q 328 152 328 155 L 328 171 Q 328 174 325 174 L 307 174 Q 304 174 304 171 L 304 155 Q 304 152 307 152 Z"
+                fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 0%)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 336 152 L 354 152 Q 357 152 357 155 L 357 171 Q 357 174 354 174 L 336 174 Q 333 174 333 171 L 333 155 Q 333 152 336 152 Z"
+                fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 25%)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 365 152 L 383 152 Q 386 152 386 155 L 386 171 Q 386 174 383 174 L 365 174 Q 362 174 362 171 L 362 155 Q 362 152 365 152 Z"
+                fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 50%)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 394 152 L 412 152 Q 415 152 415 155 L 415 171 Q 415 174 412 174 L 394 174 Q 391 174 391 171 L 391 155 Q 391 152 394 152 Z"
+                fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 75%)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 423 152 L 441 152 Q 444 152 444 155 L 444 171 Q 444 174 441 174 L 423 174 Q 420 174 420 171 L 420 155 Q 420 152 423 152 Z"
+                fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 100%)"
+                stroke="#444"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 307 216 L 325 216 Q 328 216 328 219 L 328 235 Q 328 238 325 238 L 307 238 Q 304 238 304 235 L 304 219 Q 304 216 307 216 Z"
+                fill="light-dark(#333333, #eeeeee)"
+                stroke="#555"
+                stroke-width="0.5"
+              />
+              <path
+                d="M 336 216 L 354 216 Q 357 216 357 219 L 357 235 Q 357 238 354 238 L 336 238 Q 333 238 333 235 L 333 219 Q 333 216 336 216 Z"
+                fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))"
+                stroke="#555"
+                stroke-width="0.5"
+              />
+              <text
+                x="140"
+                y="330"
+                font-family="system-ui, sans-serif"
+                font-size="9"
+                font-weight="bold"
+                fill="#bbb"
+                text-anchor="middle"
+              >
+                LIGHT
+              </text>
+              <text
+                x="430"
+                y="330"
+                font-family="system-ui, sans-serif"
+                font-size="9"
+                font-weight="bold"
+                fill="#557"
+                text-anchor="middle"
+              >
+                DARK
+              </text>
+            </svg>
+          </reactive-svg>
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-swatches"><em>view full source</em></a></p>
+          <p style="text-align: right; margin-top: -0.5rem; font-size: 0.8125rem">
+            <a href="#src-swatches"><em>view full source</em></a>
+          </p>
 
-<p>The light panel derives from <code>--base-color</code>, the dark panel from <code>--dark-accent</code>. The palette rows use <code>color-mix()</code> to interpolate between the panel&#39;s base and the other panel&#39;s color. The <code>lightDark()</code> row shows theme-aware colors that automatically switch based on system color scheme preference.</p>
-<p>Three CSS variables. Two panels. Seven method variants, three harmony colors, five palette steps, and two theme-adaptive colors per panel. All compiled from a single Pathogen source file, all reactive at runtime.</p>
-<h2>What This Means</h2>
-<p>The traditional workflow for themeable SVG is painful: generate variants, swap files, or embed JavaScript to manipulate the DOM. Pathogen&#39;s approach eliminates all of that. You write color logic at a high level — harmonies, palettes, lightness ramps — and the compiler translates it into CSS that browsers already know how to execute.</p>
-<p>The result is SVG illustration that participates in the web platform&#39;s theming infrastructure. Set CSS custom properties from your design system. Let <code>prefers-color-scheme</code> drive light and dark variants. Animate color transitions with CSS. No runtime JavaScript needed, no asset pipeline for variants.</p>
-<p>SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to express what it was designed for.</p>
-<hr>
-<h2>View All Sources</h2>
-<p>The Pathogen source files that produce the interactive demos above. Each is compiled once to a static SVG containing CSS <code>var()</code> references — the color pickers simply set CSS custom properties on the container.</p>
-<h3 id="src-color-methods">Color Methods Demo</h3>
+          <p>
+            The light panel derives from <code>--base-color</code>, the dark panel from <code>--dark-accent</code>. The
+            palette rows use <code>color-mix()</code> to interpolate between the panel&#39;s base and the other
+            panel&#39;s color. The <code>lightDark()</code> row shows theme-aware colors that automatically switch based
+            on system color scheme preference.
+          </p>
+          <p>
+            Three CSS variables. Two panels. Seven method variants, three harmony colors, five palette steps, and two
+            theme-adaptive colors per panel. All compiled from a single Pathogen source file, all reactive at runtime.
+          </p>
+          <h2>What This Means</h2>
+          <p>
+            The traditional workflow for themeable SVG is painful: generate variants, swap files, or embed JavaScript to
+            manipulate the DOM. Pathogen&#39;s approach eliminates all of that. You write color logic at a high level —
+            harmonies, palettes, lightness ramps — and the compiler translates it into CSS that browsers already know
+            how to execute.
+          </p>
+          <p>
+            The result is SVG illustration that participates in the web platform&#39;s theming infrastructure. Set CSS
+            custom properties from your design system. Let <code>prefers-color-scheme</code> drive light and dark
+            variants. Animate color transitions with CSS. No runtime JavaScript needed, no asset pipeline for variants.
+          </p>
+          <p>
+            SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to
+            express what it was designed for.
+          </p>
+          <hr />
+          <h2>View All Sources</h2>
+          <p>
+            The Pathogen source files that produce the interactive demos above. Each is compiled once to a static SVG
+            containing CSS <code>var()</code> references — the color pickers simply set CSS custom properties on the
+            container.
+          </p>
+          <h3 id="src-color-methods">Color Methods Demo</h3>
 
-<p>Produces the <a href="#color-manipulation">manipulation swatches</a> — one CSSVar-backed color, eight derived swatches.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Color Methods Demo — base color → 8 derived swatches</span>
+          <p>
+            Produces the <a href="#color-manipulation">manipulation swatches</a> — one CSSVar-backed color, eight
+            derived swatches.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-comment">// Color Methods Demo — base color → 8 derived swatches</span>
 <span class="hljs-comment">// CSSVar-backed for reactive color picker updates</span>
 
 <span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--demo-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
@@ -695,10 +1554,14 @@ define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string
     <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(startX + i * (sw + gap) + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(row2Y + sh + <span class="hljs-number">16</span>))<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span>
   }
 }
-</code></pre><h3 id="src-harmonies">Harmonies and Palettes Demo</h3>
+</code></pre>
+          <h3 id="src-harmonies">Harmonies and Palettes Demo</h3>
 
-<p>Produces the <a href="#harmonies-and-palettes">harmony and palette rows</a> — four harmony types plus lightness ramp and color interpolation.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Harmonies Demo — base color → harmony rows + palette rows</span>
+          <p>
+            Produces the <a href="#harmonies-and-palettes">harmony and palette rows</a> — four harmony types plus
+            lightness ramp and color interpolation.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-comment">// Harmonies Demo — base color → harmony rows + palette rows</span>
 <span class="hljs-comment">// CSSVar-backed for reactive color picker updates</span>
 
 <span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--harmony-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
@@ -771,10 +1634,14 @@ define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string
   define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`interp_<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
   <span class="hljs-title function_">layer</span>(<span class="hljs-string">`interp_<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">388</span>, sw, sh, sr) }
 }
-</code></pre><h3 id="src-theme">Theme Demo</h3>
+</code></pre>
+          <h3 id="src-theme">Theme Demo</h3>
 
-<p>Produces the <a href="#cssvar-the-reactive-layer">themeable geometric illustration</a> — four CSSVar-backed colors drive a star, orbiting circles, corner diamonds, and decorative arcs.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Theme Demo — geometric composition with CSSVar theming</span>
+          <p>
+            Produces the <a href="#cssvar-the-reactive-layer">themeable geometric illustration</a> — four CSSVar-backed
+            colors drive a star, orbiting circles, corner diamonds, and decorative arcs.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-comment">// Theme Demo — geometric composition with CSSVar theming</span>
 <span class="hljs-comment">// Multiple CSS variables drive the entire illustration</span>
 
 <span class="hljs-keyword">let</span> bg      = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg&#x27;</span>, <span class="hljs-string">&#x27;#f5f5f5&#x27;</span>));
@@ -828,10 +1695,14 @@ define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string
 <span class="hljs-comment">// Inner ring — accent</span>
 define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ring&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: accent; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">4</span> <span class="hljs-number">3</span>; }
 <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;ring&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">250</span>, <span class="hljs-number">130</span>, <span class="hljs-number">42</span>) }
-</code></pre><h3 id="src-swatches">Dual-Panel Swatch Showcase</h3>
+</code></pre>
+          <h3 id="src-swatches">Dual-Panel Swatch Showcase</h3>
 
-<p>Produces the <a href="#the-full-picture">full picture</a> — light and dark panels side by side, featuring methods, harmonies, palettes, and <code>Color.lightDark()</code> theme-aware colors.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Swatches Demo — simplified version of the full swatch showcase</span>
+          <p>
+            Produces the <a href="#the-full-picture">full picture</a> — light and dark panels side by side, featuring
+            methods, harmonies, palettes, and <code>Color.lightDark()</code> theme-aware colors.
+          </p>
+          <pre><code class="hljs language-js"><span class="hljs-comment">// Swatches Demo — simplified version of the full swatch showcase</span>
 <span class="hljs-comment">// Light panel on left, dark panel on right</span>
 <span class="hljs-comment">// CSSVar-backed for reactive color picker updates</span>
 
@@ -1039,12 +1910,12 @@ define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string
 }
 <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;panel-dark&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + panelW / <span class="hljs-number">2</span>), <span class="hljs-number">330</span>)<span class="hljs-string">`DARK`</span> }
 </code></pre>
-      </div>
-    </article>
-  </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
-</body>
+        </div>
+      </article>
+    </main>
+    <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+    <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
+    <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
+    <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  </body>
 </html>

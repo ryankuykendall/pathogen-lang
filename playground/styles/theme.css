@@ -85,7 +85,7 @@
 }
 
 /* ===== Dark Theme ===== */
-[data-theme="dark"] {
+[data-theme='dark'] {
   /* Backgrounds - warm dark grays */
   --bg-primary: #242220;
   --bg-secondary: #1f1e1c;
@@ -146,7 +146,7 @@
 
 /* Auto dark mode based on system preference (when no explicit theme set) */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme='light']) {
     /* Backgrounds - warm dark grays */
     --bg-primary: #242220;
     --bg-secondary: #1f1e1c;
@@ -215,7 +215,9 @@
 
 /* Smooth theme transitions */
 body {
-  transition: background-color var(--transition-slow), color var(--transition-slow);
+  transition:
+    background-color var(--transition-slow),
+    color var(--transition-slow);
 }
 
 /* Prevent CLS before custom element upgrade */

@@ -1,8 +1,8 @@
 // Preferences View - Default SVG styling settings
 // Route: /preferences
 
-import { store } from '../../state/store.js';
 import { preferencesApi } from '../../services/api.js';
+import { store } from '../../state/store.js';
 
 const styles = `
   :host {
@@ -223,7 +223,7 @@ const DEFAULTS = {
   background: '#f5f5f5',
   gridEnabled: true,
   gridColor: '#cccccc',
-  gridSize: 20
+  gridSize: 20,
 };
 
 class PreferencesView extends HTMLElement {

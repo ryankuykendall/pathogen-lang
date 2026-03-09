@@ -324,48 +324,48 @@ const viewConfig = {
   landing: {
     label: 'Workspaces',
     parent: null,
-    showBreadcrumb: false
+    showBreadcrumb: false,
   },
   'new-workspace': {
     label: 'New Workspace',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   workspace: {
     label: 'Workspace',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   preferences: {
     label: 'Preferences',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   docs: {
     label: 'Documentation',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   storybook: {
     label: 'Component Storybook',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   'storybook-detail': {
     label: 'Storybook',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   blog: {
     label: 'Blog',
     parent: 'landing',
-    showBreadcrumb: true
+    showBreadcrumb: true,
   },
   'blog-post': {
     label: 'Blog Post',
     parent: 'blog',
-    showBreadcrumb: true
-  }
+    showBreadcrumb: true,
+  },
 };
 
 class AppBreadcrumb extends HTMLElement {
@@ -380,8 +380,22 @@ class AppBreadcrumb extends HTMLElement {
 
     // Subscribe to route and workspace changes
     this.unsubscribe = store.subscribe(
-      ['currentView', 'routeParams', 'currentFileName', 'workspaces', 'workspaceName', 'workspaceId', 'annotatedOpen', 'consoleOpen', 'inspectorOpen', 'saveStatus', 'saveError', 'compilationStatus', 'calledStdlibFunctions'],
-      () => this.render()
+      [
+        'currentView',
+        'routeParams',
+        'currentFileName',
+        'workspaces',
+        'workspaceName',
+        'workspaceId',
+        'annotatedOpen',
+        'consoleOpen',
+        'inspectorOpen',
+        'saveStatus',
+        'saveError',
+        'compilationStatus',
+        'calledStdlibFunctions',
+      ],
+      () => this.render(),
     );
   }
 
@@ -405,7 +419,7 @@ class AppBreadcrumb extends HTMLElement {
     crumbs.push({
       label: 'Workspaces',
       route: '/',
-      isCurrent: currentView === 'landing'
+      isCurrent: currentView === 'landing',
     });
 
     // Add current view if not landing
@@ -415,20 +429,21 @@ class AppBreadcrumb extends HTMLElement {
         crumbs.push({
           label: 'Blog',
           route: '/blog',
-          isCurrent: false
+          isCurrent: false,
         });
 
         // Get post title from slug (we'll show a readable version)
         const slug = routeParams.slug || 'Post';
         // Convert slug to title case (e.g., "my-post" -> "My Post")
-        const label = slug.split('-').map(word =>
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
+        const label = slug
+          .split('-')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
 
         crumbs.push({
           label,
           route: null,
-          isCurrent: true
+          isCurrent: true,
         });
       } else {
         let label = config.label;
@@ -446,7 +461,7 @@ class AppBreadcrumb extends HTMLElement {
             if (parsed.id) {
               // Workspace still loading - try to find from workspaces list
               const workspaces = store.get('workspaces') || [];
-              const workspace = workspaces.find(w => w.id === parsed.id);
+              const workspace = workspaces.find((w) => w.id === parsed.id);
               if (workspace) {
                 label = workspace.name;
                 id = workspace.id;
@@ -466,7 +481,7 @@ class AppBreadcrumb extends HTMLElement {
           label,
           id,
           route: null, // Current page, no link
-          isCurrent: true
+          isCurrent: true,
         });
       }
     }
@@ -552,27 +567,38 @@ class AppBreadcrumb extends HTMLElement {
 
       <div class="breadcrumb-bar">
         <nav class="breadcrumb" aria-label="Breadcrumb">
-          ${crumbs.map((crumb, index) => `
+          ${crumbs
+            .map(
+              (crumb, index) => `
             <span class="breadcrumb-item">
               ${index > 0 ? '<span class="separator">/</span>' : ''}
-              ${crumb.isCurrent
-                ? `<span class="breadcrumb-current ${crumb.route === null ? 'workspace-name' : ''}">${crumb.label}${crumb.id ? `<span class="workspace-id">(${crumb.id})</span>` : ''}</span>`
-                : `<button class="breadcrumb-link" data-route="${crumb.route}">${crumb.label}</button>`
+              ${
+                crumb.isCurrent
+                  ? `<span class="breadcrumb-current ${crumb.route === null ? 'workspace-name' : ''}">${crumb.label}${crumb.id ? `<span class="workspace-id">(${crumb.id})</span>` : ''}</span>`
+                  : `<button class="breadcrumb-link" data-route="${crumb.route}">${crumb.label}</button>`
               }
             </span>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </nav>
 
-        ${isWorkspaceView ? `
+        ${
+          isWorkspaceView
+            ? `
           <div class="workspace-controls-wrapper">
             <div class="controls-left">
               ${this.getCompilationStatusHtml()}
-              ${usesRandom ? `
+              ${
+                usesRandom
+                  ? `
                 <button id="refresh-btn" class="refresh-btn" title="Generate new random values">
                   <span class="refresh-icon">&#8635;</span>
                   Refresh
                 </button>
-              ` : ''}
+              `
+                  : ''
+              }
               <div class="toggle-bar">
                 <button id="annotated-toggle" class="toggle-btn ${annotatedOpen ? 'active' : ''}" title="Show annotated output">Annotated</button>
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">Console</button>
@@ -587,7 +613,9 @@ class AppBreadcrumb extends HTMLElement {
               ${this.getSaveStatusHtml()}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
 
@@ -596,15 +624,17 @@ class AppBreadcrumb extends HTMLElement {
 
   setupEventListeners() {
     // Navigation links
-    this.shadowRoot.querySelectorAll('[data-route]').forEach(link => {
+    this.shadowRoot.querySelectorAll('[data-route]').forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const path = link.dataset.route;
-        this.dispatchEvent(new CustomEvent('navigate', {
-          bubbles: true,
-          composed: true,
-          detail: { path }
-        }));
+        this.dispatchEvent(
+          new CustomEvent('navigate', {
+            bubbles: true,
+            composed: true,
+            detail: { path },
+          }),
+        );
       });
     });
 

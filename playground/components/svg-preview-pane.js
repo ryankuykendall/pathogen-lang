@@ -36,9 +36,23 @@ export class SvgPreviewPane extends HTMLElement {
   }
 
   subscribeToStore() {
-    store.subscribe(['width', 'height', 'background', 'gridEnabled', 'gridColor', 'gridSize', 'zoomLevel', 'panX', 'panY', 'pathData'], () => {
-      this.updateSvgStyles();
-    });
+    store.subscribe(
+      [
+        'width',
+        'height',
+        'background',
+        'gridEnabled',
+        'gridColor',
+        'gridSize',
+        'zoomLevel',
+        'panX',
+        'panY',
+        'pathData',
+      ],
+      () => {
+        this.updateSvgStyles();
+      },
+    );
     store.subscribe('layerVisibility', () => {
       this.applyLayerVisibility();
       this.updateNavigatorContent();
@@ -113,7 +127,9 @@ export class SvgPreviewPane extends HTMLElement {
       // Clean up previous fragment defs and mask/clipPath defs
       const defsEl = this.shadowRoot.querySelector('#preview defs');
       if (defsEl) {
-        for (const old of defsEl.querySelectorAll('[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def]')) {
+        for (const old of defsEl.querySelectorAll(
+          '[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def]',
+        )) {
           old.remove();
         }
       }
@@ -186,7 +202,7 @@ export class SvgPreviewPane extends HTMLElement {
                 const ctx2d = canvas.getContext('2d');
                 if (ctx2d) {
                   const fromAngle = grad.from ?? 0;
-                  const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
+                  const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
                   const cx = (grad.cx ?? 0) * scale;
                   const cy = (grad.cy ?? 0) * scale;
                   const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
@@ -293,9 +309,12 @@ export class SvgPreviewPane extends HTMLElement {
       if (defsData.cssProperties && defsData.cssProperties.length > 0) {
         const styleEl = document.createElementNS(SVG_NS_DEFS, 'style');
         styleEl.setAttribute('data-css-properties', '');
-        const rules = defsData.cssProperties.map(prop =>
-          `@property ${prop.name} {\n  syntax: "${prop.syntax}";\n  inherits: ${prop.inherits};\n  initial-value: ${prop.initialValue};\n}`
-        ).join('\n');
+        const rules = defsData.cssProperties
+          .map(
+            (prop) =>
+              `@property ${prop.name} {\n  syntax: "${prop.syntax}";\n  inherits: ${prop.inherits};\n  initial-value: ${prop.initialValue};\n}`,
+          )
+          .join('\n');
         styleEl.textContent = rules;
         svgEl.insertBefore(styleEl, svgEl.firstChild);
       }
@@ -309,7 +328,7 @@ export class SvgPreviewPane extends HTMLElement {
           if (layer.fragmentDefs && defsEl) {
             const defsDoc = new DOMParser().parseFromString(
               `<svg xmlns="http://www.w3.org/2000/svg"><defs>${layer.fragmentDefs}</defs></svg>`,
-              'image/svg+xml'
+              'image/svg+xml',
             );
             const parsedDefs = defsDoc.querySelector('defs');
             if (parsedDefs) {
@@ -323,7 +342,7 @@ export class SvgPreviewPane extends HTMLElement {
           if (layer.fragmentVisuals) {
             const visualDoc = new DOMParser().parseFromString(
               `<svg xmlns="http://www.w3.org/2000/svg">${layer.fragmentVisuals}</svg>`,
-              'image/svg+xml'
+              'image/svg+xml',
             );
             const visualRoot = visualDoc.documentElement;
             const wrapper = document.createElementNS(SVG_NS, 'g');
@@ -362,7 +381,7 @@ export class SvgPreviewPane extends HTMLElement {
             textEl.setAttribute('x', String(te.x));
             textEl.setAttribute('y', String(te.y));
             if (te.rotation != null) {
-              const deg = te.rotation * 180 / Math.PI;
+              const deg = (te.rotation * 180) / Math.PI;
               textEl.setAttribute('transform', `rotate(${deg}, ${te.x}, ${te.y})`);
             }
             for (const [key, value] of Object.entries(layer.styles)) {
@@ -382,7 +401,7 @@ export class SvgPreviewPane extends HTMLElement {
                 tspan.textContent = child.text;
                 if (child.dx != null) tspan.setAttribute('dx', String(child.dx));
                 if (child.dy != null) tspan.setAttribute('dy', String(child.dy));
-                if (child.rotation != null) tspan.setAttribute('rotate', String(child.rotation * 180 / Math.PI));
+                if (child.rotation != null) tspan.setAttribute('rotate', String((child.rotation * 180) / Math.PI));
                 // Apply per-tspan styles
                 if (child.styles) {
                   for (const [key, value] of Object.entries(child.styles)) {
@@ -409,14 +428,14 @@ export class SvgPreviewPane extends HTMLElement {
         }
 
         // Apply per-layer styles, fall back to hardcoded defaults
-        const hasCustomStroke = !!layer.styles['stroke'];
+        const hasCustomStroke = !!layer.styles.stroke;
         const hasCustomStrokeWidth = !!layer.styles['stroke-width'];
-        path.setAttribute('stroke', layer.styles['stroke'] || DEFAULT_STROKE);
+        path.setAttribute('stroke', layer.styles.stroke || DEFAULT_STROKE);
         path.setAttribute('stroke-width', layer.styles['stroke-width'] || DEFAULT_STROKE_WIDTH);
         // Mark per-layer styles so updateSvgStyles() won't overwrite them
         if (hasCustomStroke) path.dataset.hasLayerStroke = 'true';
         if (hasCustomStrokeWidth) path.dataset.hasLayerStrokeWidth = 'true';
-        path.setAttribute('fill', layer.styles['fill'] || 'none');
+        path.setAttribute('fill', layer.styles.fill || 'none');
         // Apply any additional style attributes
         for (const [key, value] of Object.entries(layer.styles)) {
           if (key !== 'stroke' && key !== 'stroke-width' && key !== 'fill') {
@@ -532,7 +551,7 @@ export class SvgPreviewPane extends HTMLElement {
   updateViewBox() {
     const width = store.get('width');
     const height = store.get('height');
-    let zoomLevel = store.get('zoomLevel');
+    const zoomLevel = store.get('zoomLevel');
     let panX = store.get('panX');
     let panY = store.get('panY');
 
@@ -572,8 +591,8 @@ export class SvgPreviewPane extends HTMLElement {
   adjustPanForZoom(oldZoom, newZoom) {
     const width = store.get('width');
     const height = store.get('height');
-    let panX = store.get('panX');
-    let panY = store.get('panY');
+    const panX = store.get('panX');
+    const panY = store.get('panY');
 
     const oldViewWidth = width / oldZoom;
     const oldViewHeight = height / oldZoom;
@@ -585,7 +604,7 @@ export class SvgPreviewPane extends HTMLElement {
 
     store.update({
       panX: centerX - newViewWidth / 2,
-      panY: centerY - newViewHeight / 2
+      panY: centerY - newViewHeight / 2,
     });
   }
 
@@ -631,7 +650,7 @@ export class SvgPreviewPane extends HTMLElement {
 
     store.update({
       panX: store.get('panX') + dx,
-      panY: store.get('panY') + dy
+      panY: store.get('panY') + dy,
     });
 
     this.panStartX = e.clientX;
@@ -676,7 +695,7 @@ export class SvgPreviewPane extends HTMLElement {
     // Walk all descendants (not just direct children) to find paths/text inside <g> groups
     const layersGroup = this.shadowRoot.querySelector('#preview-layers');
     const visibleElements = layersGroup
-      ? Array.from(layersGroup.querySelectorAll('path, text, g')).filter(el => {
+      ? Array.from(layersGroup.querySelectorAll('path, text, g')).filter((el) => {
           // Skip elements whose ancestor (up to layersGroup) is hidden
           let node = el;
           while (node && node !== layersGroup) {
@@ -688,7 +707,7 @@ export class SvgPreviewPane extends HTMLElement {
       : [];
 
     // Only process leaf elements (path/text), skip <g> containers
-    const leafElements = visibleElements.filter(el => el.tagName === 'path' || el.tagName === 'text');
+    const leafElements = visibleElements.filter((el) => el.tagName === 'path' || el.tagName === 'text');
 
     if (leafElements.length > 0) {
       for (const el of leafElements) {
@@ -696,7 +715,10 @@ export class SvgPreviewPane extends HTMLElement {
           const navPath = document.createElementNS(SVG_NS, 'path');
           navPath.setAttribute('d', el.getAttribute('d') || '');
           navPath.setAttribute('stroke', el.getAttribute('stroke') || DEFAULT_STROKE);
-          navPath.setAttribute('stroke-width', Math.max(parseFloat(el.getAttribute('stroke-width')) || DEFAULT_STROKE_WIDTH, 1));
+          navPath.setAttribute(
+            'stroke-width',
+            Math.max(parseFloat(el.getAttribute('stroke-width')) || DEFAULT_STROKE_WIDTH, 1),
+          );
           navPath.setAttribute('fill', el.getAttribute('fill') || 'none');
           // Copy additional style attributes (dasharray scaled to screen pixels)
           // Accumulate transforms from ancestor <g> elements
@@ -711,7 +733,15 @@ export class SvgPreviewPane extends HTMLElement {
           if (ownTransform) transforms.push(ownTransform);
           if (transforms.length > 0) navPath.setAttribute('transform', transforms.join(' '));
 
-          for (const attr of ['stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'fill-rule']) {
+          for (const attr of [
+            'stroke-dasharray',
+            'stroke-linecap',
+            'stroke-linejoin',
+            'stroke-opacity',
+            'fill-opacity',
+            'opacity',
+            'fill-rule',
+          ]) {
             const val = el.getAttribute(attr);
             if (val) navPath.setAttribute(attr, val);
           }
@@ -774,8 +804,7 @@ export class SvgPreviewPane extends HTMLElement {
 
     const viewWidth = width / zoomLevel;
     const viewHeight = height / zoomLevel;
-    const inViewport = svgX >= panX && svgX <= panX + viewWidth &&
-                       svgY >= panY && svgY <= panY + viewHeight;
+    const inViewport = svgX >= panX && svgX <= panX + viewWidth && svgY >= panY && svgY <= panY + viewHeight;
 
     if (inViewport) {
       this.isNavigatorDragging = true;
@@ -786,7 +815,7 @@ export class SvgPreviewPane extends HTMLElement {
     } else {
       store.update({
         panX: svgX - viewWidth / 2,
-        panY: svgY - viewHeight / 2
+        panY: svgY - viewHeight / 2,
       });
       this.updateViewBox();
     }
@@ -799,7 +828,7 @@ export class SvgPreviewPane extends HTMLElement {
 
     store.update({
       panX: this.navDragStartPanX + (svgX - this.navDragStartX),
-      panY: this.navDragStartPanY + (svgY - this.navDragStartY)
+      panY: this.navDragStartPanY + (svgY - this.navDragStartY),
     });
 
     this.updateViewBox();
@@ -821,7 +850,7 @@ export class SvgPreviewPane extends HTMLElement {
 
     store.update({
       panX: svgX - viewWidth / 2,
-      panY: svgY - viewHeight / 2
+      panY: svgY - viewHeight / 2,
     });
 
     this.updateViewBox();
@@ -878,7 +907,6 @@ export class SvgPreviewPane extends HTMLElement {
   }
 
   setupEventListeners() {
-
     // Zoom controls
     this.shadowRoot.querySelector('#zoom-in').addEventListener('click', () => this.zoomIn());
     this.shadowRoot.querySelector('#zoom-out').addEventListener('click', () => this.zoomOut());
@@ -906,7 +934,7 @@ export class SvgPreviewPane extends HTMLElement {
         const direction = e.key === 'ArrowUp' ? 1 : -1;
 
         const oldZoom = store.get('zoomLevel');
-        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom + (step * direction)));
+        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom + step * direction));
         this.adjustPanForZoom(oldZoom, newZoom);
         store.set('zoomLevel', newZoom);
         this.updateViewBox();
@@ -914,18 +942,22 @@ export class SvgPreviewPane extends HTMLElement {
     });
 
     // Mouse wheel zoom
-    this.previewContainer.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const dampening = 0.002;
-      const delta = -e.deltaY * dampening;
+    this.previewContainer.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const dampening = 0.002;
+        const delta = -e.deltaY * dampening;
 
-      const oldZoom = store.get('zoomLevel');
-      const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
+        const oldZoom = store.get('zoomLevel');
+        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
 
-      this.adjustPanForZoom(oldZoom, newZoom);
-      store.set('zoomLevel', newZoom);
-      this.updateViewBox();
-    }, { passive: false });
+        this.adjustPanForZoom(oldZoom, newZoom);
+        store.set('zoomLevel', newZoom);
+        this.updateViewBox();
+      },
+      { passive: false },
+    );
 
     // Pan via drag
     this.previewContainer.addEventListener('mousedown', (e) => this.startPan(e));

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { compile } from '../src';
 import { compilePath } from './helpers';
 
@@ -30,7 +31,7 @@ describe('Objects', () => {
     });
 
     it('supports arrays as values', () => {
-      const result = compile("let obj = { items: [1, 2, 3] }; log(obj.items);");
+      const result = compile('let obj = { items: [1, 2, 3] }; log(obj.items);');
       expect(result.logs[0].parts[0].value).toBe('[1, 2, 3]');
     });
 
@@ -137,7 +138,9 @@ describe('Objects', () => {
     });
 
     it('Object.delete removes a key and returns value', () => {
-      const result = compile("let obj = { x: 10, y: 20 }; let deleted = Object.delete(obj, 'x'); log(deleted); log(obj);");
+      const result = compile(
+        "let obj = { x: 10, y: 20 }; let deleted = Object.delete(obj, 'x'); log(deleted); log(obj);",
+      );
       expect(result.logs[0].parts[0].value).toBe('10');
       expect(result.logs[1].parts[0].value).toBe('{y: 20}');
     });
@@ -154,7 +157,9 @@ describe('Objects', () => {
     });
 
     it('iterates Object.entries with element and index', () => {
-      const result = compile('let obj = { a: 1, b: 2 }; for ([entry, i] in Object.entries(obj)) { log(entry[0], entry[1], i); }');
+      const result = compile(
+        'let obj = { a: 1, b: 2 }; for ([entry, i] in Object.entries(obj)) { log(entry[0], entry[1], i); }',
+      );
       expect(result.logs[0].parts[0].value).toBe('a');
       expect(result.logs[0].parts[1].value).toBe('1');
       expect(result.logs[0].parts[2].value).toBe('0');

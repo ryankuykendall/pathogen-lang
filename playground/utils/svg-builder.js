@@ -55,9 +55,12 @@ export function buildSvg(params, svgOptions = {}) {
   // CSS @property declarations
   if (cssProperties.length > 0) {
     const styleEl = document.createElementNS(SVG_NS, 'style');
-    const rules = cssProperties.map(prop =>
-      `@property ${prop.name} {\n  syntax: "${prop.syntax}";\n  inherits: ${prop.inherits};\n  initial-value: ${prop.initialValue};\n}`
-    ).join('\n');
+    const rules = cssProperties
+      .map(
+        (prop) =>
+          `@property ${prop.name} {\n  syntax: "${prop.syntax}";\n  inherits: ${prop.inherits};\n  initial-value: ${prop.initialValue};\n}`,
+      )
+      .join('\n');
     styleEl.textContent = rules;
     svgEl.appendChild(styleEl);
   }
@@ -134,7 +137,7 @@ export function buildSvg(params, svgOptions = {}) {
           const ctx2d = canvas.getContext('2d');
           if (ctx2d) {
             const fromAngle = grad.from ?? 0;
-            const toAngle = grad.to ?? (fromAngle + 2 * Math.PI);
+            const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
             const cx = (grad.cx ?? 0) * scale;
             const cy = (grad.cy ?? 0) * scale;
             const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
@@ -243,7 +246,7 @@ export function buildSvg(params, svgOptions = {}) {
       if (layer.fragmentDefs) {
         const defsDoc = new DOMParser().parseFromString(
           `<svg xmlns="http://www.w3.org/2000/svg"><defs>${layer.fragmentDefs}</defs></svg>`,
-          'image/svg+xml'
+          'image/svg+xml',
         );
         const parsedDefs = defsDoc.querySelector('defs');
         if (parsedDefs) {
@@ -255,7 +258,7 @@ export function buildSvg(params, svgOptions = {}) {
       if (layer.fragmentVisuals) {
         const visualDoc = new DOMParser().parseFromString(
           `<svg xmlns="http://www.w3.org/2000/svg">${layer.fragmentVisuals}</svg>`,
-          'image/svg+xml'
+          'image/svg+xml',
         );
         const wrapper = document.createElementNS(SVG_NS, 'g');
         for (const child of Array.from(visualDoc.documentElement.children)) {
@@ -291,7 +294,7 @@ export function buildSvg(params, svgOptions = {}) {
         textEl.setAttribute('x', String(te.x));
         textEl.setAttribute('y', String(te.y));
         if (te.rotation != null) {
-          const deg = te.rotation * 180 / Math.PI;
+          const deg = (te.rotation * 180) / Math.PI;
           textEl.setAttribute('transform', `rotate(${deg}, ${te.x}, ${te.y})`);
         }
         for (const [key, value] of Object.entries(layer.styles)) {
@@ -310,7 +313,7 @@ export function buildSvg(params, svgOptions = {}) {
             tspan.textContent = child.text;
             if (child.dx != null) tspan.setAttribute('dx', String(child.dx));
             if (child.dy != null) tspan.setAttribute('dy', String(child.dy));
-            if (child.rotation != null) tspan.setAttribute('rotate', String(child.rotation * 180 / Math.PI));
+            if (child.rotation != null) tspan.setAttribute('rotate', String((child.rotation * 180) / Math.PI));
             if (child.styles) {
               for (const [key, value] of Object.entries(child.styles)) {
                 tspan.setAttribute(key, value);
@@ -333,9 +336,9 @@ export function buildSvg(params, svgOptions = {}) {
     }
 
     // Apply styles with defaults
-    path.setAttribute('stroke', layer.styles['stroke'] || defaultStroke);
+    path.setAttribute('stroke', layer.styles.stroke || defaultStroke);
     path.setAttribute('stroke-width', layer.styles['stroke-width'] || defaultStrokeWidth);
-    path.setAttribute('fill', layer.styles['fill'] || defaultFill);
+    path.setAttribute('fill', layer.styles.fill || defaultFill);
     for (const [key, value] of Object.entries(layer.styles)) {
       if (key !== 'stroke' && key !== 'stroke-width' && key !== 'fill') {
         path.setAttribute(key, value);

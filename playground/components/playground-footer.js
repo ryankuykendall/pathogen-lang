@@ -19,7 +19,6 @@ export class PlaygroundFooter extends HTMLElement {
     store.subscribe(['width', 'height', 'background', 'gridEnabled', 'gridColor', 'gridSize', 'toFixed'], () => {
       this.syncFromStore();
     });
-
   }
 
   syncFromStore() {
@@ -75,11 +74,13 @@ export class PlaygroundFooter extends HTMLElement {
     root.querySelector('#to-fixed').addEventListener('change', (e) => {
       const val = e.target.value;
       store.set('toFixed', val === '' ? null : parseInt(val, 10));
-      this.dispatchEvent(new CustomEvent('precision-change', {
-        bubbles: true,
-        composed: true,
-        detail: store.getAll()
-      }));
+      this.dispatchEvent(
+        new CustomEvent('precision-change', {
+          bubbles: true,
+          composed: true,
+          detail: store.getAll(),
+        }),
+      );
     });
 
     // Docs button
@@ -89,11 +90,13 @@ export class PlaygroundFooter extends HTMLElement {
   }
 
   dispatchStyleChange() {
-    this.dispatchEvent(new CustomEvent('style-change', {
-      bubbles: true,
-      composed: true,
-      detail: store.getAll()
-    }));
+    this.dispatchEvent(
+      new CustomEvent('style-change', {
+        bubbles: true,
+        composed: true,
+        detail: store.getAll(),
+      }),
+    );
   }
 
   render() {
@@ -295,11 +298,11 @@ export class PlaygroundFooter extends HTMLElement {
           <input type="checkbox" id="grid-enabled" ${state.gridEnabled ? 'checked' : ''}>
           <input type="color" id="grid-color" value="${state.gridColor}">
           <select id="grid-size">
-            <option value="10" ${state.gridSize == 10 ? 'selected' : ''}>10px</option>
-            <option value="20" ${state.gridSize == 20 ? 'selected' : ''}>20px</option>
-            <option value="25" ${state.gridSize == 25 ? 'selected' : ''}>25px</option>
-            <option value="50" ${state.gridSize == 50 ? 'selected' : ''}>50px</option>
-            <option value="100" ${state.gridSize == 100 ? 'selected' : ''}>100px</option>
+            <option value="10" ${String(state.gridSize) === '10' ? 'selected' : ''}>10px</option>
+            <option value="20" ${String(state.gridSize) === '20' ? 'selected' : ''}>20px</option>
+            <option value="25" ${String(state.gridSize) === '25' ? 'selected' : ''}>25px</option>
+            <option value="50" ${String(state.gridSize) === '50' ? 'selected' : ''}>50px</option>
+            <option value="100" ${String(state.gridSize) === '100' ? 'selected' : ''}>100px</option>
           </select>
         </div>
 

@@ -52,7 +52,7 @@ export async function getDevice() {
 }
 
 async function _createDevice() {
-  if (!await isWebGPUAvailable()) return null;
+  if (!(await isWebGPUAvailable())) return null;
 
   try {
     if (!gpuAdapter) {

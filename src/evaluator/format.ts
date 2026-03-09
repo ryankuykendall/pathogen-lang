@@ -9,7 +9,7 @@ export function formatNum(n: number): string {
 
 export function setNumberFormat(toFixed?: number | null): void {
   if (toFixed != null) {
-    _fmt = (n) => Number.isInteger(n) ? String(n) : n.toFixed(toFixed);
+    _fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(toFixed));
   } else {
     _fmt = String;
   }

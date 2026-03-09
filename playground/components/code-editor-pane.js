@@ -1,11 +1,11 @@
 // Code editor pane with CodeMirror
 
 import { store } from '../state/store.js';
+import { colorPickerExtension } from '../utils/cm-color-picker.js';
+import { errorHighlightExtension } from '../utils/cm-error-highlight.js';
+import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
 import { svgPathCompletions } from '../utils/codemirror-setup.js';
 import { themeManager } from '../utils/theme.js';
-import { colorPickerExtension } from '../utils/cm-color-picker.js';
-import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
-import { errorHighlightExtension } from '../utils/cm-error-highlight.js';
 
 export class CodeEditorPane extends HTMLElement {
   constructor() {
@@ -89,15 +89,9 @@ export class CodeEditorPane extends HTMLElement {
     const isDark = themeManager.getActiveTheme() === 'dark';
 
     if (isDark) {
-      return [
-        oneDark.oneDarkTheme,
-        language.syntaxHighlighting(oneDark.oneDarkHighlightStyle),
-      ];
-    } else {
-      return [
-        language.syntaxHighlighting(language.defaultHighlightStyle),
-      ];
+      return [oneDark.oneDarkTheme, language.syntaxHighlighting(oneDark.oneDarkHighlightStyle)];
     }
+    return [language.syntaxHighlighting(language.defaultHighlightStyle)];
   }
 
   createEditor() {
@@ -116,11 +110,13 @@ export class CodeEditorPane extends HTMLElement {
       if (update.docChanged) {
         store.set('isModified', true);
         store.set('code', this._editor.state.doc.toString());
-        this.dispatchEvent(new CustomEvent('code-change', {
-          bubbles: true,
-          composed: true,
-          detail: { code: this._editor.state.doc.toString() }
-        }));
+        this.dispatchEvent(
+          new CustomEvent('code-change', {
+            bubbles: true,
+            composed: true,
+            detail: { code: this._editor.state.doc.toString() },
+          }),
+        );
       }
     });
 
@@ -171,10 +167,12 @@ export class CodeEditorPane extends HTMLElement {
     // Apply any error highlight that arrived before the editor was ready
     this._applyPendingError();
 
-    this.dispatchEvent(new CustomEvent('editor-ready', {
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(
+      new CustomEvent('editor-ready', {
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   _updateEditorTheme() {
