@@ -17,6 +17,7 @@ export class LayersPanel extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this._collapsed = false;
+    this._collapsedGroups = new Set();
     this._unsubscribe = null;
   }
 
@@ -114,8 +115,15 @@ export class LayersPanel extends HTMLElement {
 
     const connectorHTML = depth > 0 ? '<span class="tree-connector"></span>' : '';
 
+    const isGroup = layer.type === 'group';
+    const isGroupCollapsed = isGroup && this._collapsedGroups.has(layer.name);
+    const groupChevronHTML = isGroup
+      ? `<button class="group-chevron${isGroupCollapsed ? ' collapsed' : ''}" title="${isGroupCollapsed ? 'Expand' : 'Collapse'} group">${isGroupCollapsed ? '\u25B6' : '\u25BC'}</button>`
+      : '';
+
     row.innerHTML = `
       ${connectorHTML}
+      ${groupChevronHTML}
       <span class="color-dot" style="${dotStyle}"></span>
       <span class="layer-name" title="${layer.name}">${layer.name}</span>
       <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : layer.type === 'group' ? 'grp' : 'path'}</span>
@@ -124,9 +132,24 @@ export class LayersPanel extends HTMLElement {
       </button>
     `;
 
-    row.querySelector('.eye-btn').addEventListener('click', () => {
+    row.querySelector('.eye-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
       this.toggleVisibility(layer.name);
     });
+
+    if (isGroup) {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', (e) => {
+        // Don't toggle if the eye button was clicked
+        if (e.target.closest('.eye-btn')) return;
+        if (this._collapsedGroups.has(layer.name)) {
+          this._collapsedGroups.delete(layer.name);
+        } else {
+          this._collapsedGroups.add(layer.name);
+        }
+        this.updateList();
+      });
+    }
 
     list.appendChild(row);
 
@@ -156,7 +179,7 @@ export class LayersPanel extends HTMLElement {
     }
 
     // Recursively render group children (children are LayerOutput objects, not names)
-    if (layer.type === 'group' && layer.children) {
+    if (isGroup && !isGroupCollapsed && layer.children) {
       for (const childLayer of layer.children) {
         this.renderLayerRow(childLayer, list, depth + 1, visibility, defsVisibility, layerDefs, layersByName);
       }
@@ -178,9 +201,30 @@ export class LayersPanel extends HTMLElement {
     const visibility = store.get('layerVisibility') || {};
     const defsVisibility = store.get('defsVisibility') || {};
 
-    // Hide entirely when <= 1 layer and no masks/clipPaths
+    // Hide entirely when <= 1 layer and no masks/clipPaths (standalone only)
     const hasDefs = masks.length > 0 || clipPaths.length > 0;
-    this.style.display = (layers.length <= 1 && !hasDefs) ? 'none' : '';
+    const isEmbedded = this.hasAttribute('embedded');
+    // Standalone: hide when single default layer and no defs
+    // Embedded: only treat as empty when literally 0 layers and no defs
+    const isEmpty = isEmbedded
+      ? layers.length === 0 && !hasDefs
+      : layers.length <= 1 && !hasDefs;
+    if (!isEmbedded) {
+      this.style.display = isEmpty ? 'none' : '';
+    }
+
+    // Update badge count (recursively count all layers including group children)
+    const badge = this.shadowRoot.querySelector('.badge');
+    const countLayers = (list) => {
+      let n = 0;
+      for (const l of list) {
+        n++;
+        if (l.type === 'group' && l.children) n += countLayers(l.children);
+      }
+      return n;
+    };
+    const totalCount = countLayers(layers) + masks.length + clipPaths.length;
+    if (badge) badge.textContent = totalCount > 0 ? totalCount : '';
 
     const list = this.shadowRoot.querySelector('.layer-list');
     if (!list) return;
@@ -205,6 +249,15 @@ export class LayersPanel extends HTMLElement {
     }
 
     list.innerHTML = '';
+
+    // Show empty state in embedded mode
+    if (isEmpty && this.hasAttribute('embedded')) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No layers';
+      list.appendChild(empty);
+      return;
+    }
 
     // Build a lookup of all layers by name (for mask/clipPath ref resolution)
     const layersByName = new Map();
@@ -238,6 +291,21 @@ export class LayersPanel extends HTMLElement {
           overflow: hidden;
         }
 
+        :host([embedded]) .panel {
+          width: 100%;
+          max-height: none;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+          border-bottom: 1px solid var(--border-color, #e2e8f0);
+          overflow: visible;
+        }
+
+        :host([embedded]) .layer-list {
+          flex: none;
+          overflow-y: visible;
+        }
+
         .panel-header {
           display: flex;
           align-items: center;
@@ -253,6 +321,13 @@ export class LayersPanel extends HTMLElement {
           letter-spacing: 0.03em;
         }
 
+        :host([embedded]) .panel-header {
+          background: var(--bg-secondary, #f1f5f9);
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
+
         .panel-header:hover {
           background: var(--hover-bg, rgba(0, 0, 0, 0.04));
         }
@@ -264,6 +339,24 @@ export class LayersPanel extends HTMLElement {
 
         .collapse-arrow.collapsed {
           transform: rotate(-90deg);
+        }
+
+        .badge {
+          margin-left: auto;
+          font-size: 0.625rem;
+          font-weight: 600;
+          font-family: var(--font-mono, 'Inconsolata', monospace);
+          color: var(--text-secondary, #64748b);
+          background: var(--bg-secondary, #f1f5f9);
+          padding: 0 0.375rem;
+          border-radius: 8px;
+          min-width: 1rem;
+          text-align: center;
+          line-height: 1.2rem;
+        }
+
+        .badge:empty {
+          display: none;
         }
 
         .layer-list {
@@ -331,6 +424,27 @@ export class LayersPanel extends HTMLElement {
           background: var(--hover-bg, rgba(0, 0, 0, 0.04));
         }
 
+        .group-chevron {
+          display: grid;
+          place-items: center;
+          width: 16px;
+          height: 16px;
+          padding: 0;
+          border: none;
+          background: none;
+          cursor: pointer;
+          color: var(--text-secondary, #64748b);
+          font-size: 0.5rem;
+          flex-shrink: 0;
+          border-radius: var(--radius-sm, 4px);
+          transition: color var(--transition-base, 0.15s ease);
+        }
+
+        .group-chevron:hover {
+          color: var(--text-primary, #1a1a2e);
+          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+        }
+
         .group-child {
           /* padding-left set via inline style based on depth */
         }
@@ -355,9 +469,21 @@ export class LayersPanel extends HTMLElement {
           font-size: 0.5rem;
         }
 
+        .empty-state {
+          padding: 0.75rem 0.5rem;
+          font-size: 0.6875rem;
+          color: var(--text-secondary, #64748b);
+          text-align: center;
+          font-style: italic;
+        }
+
         @media (max-width: 800px) {
           .panel {
             width: 160px;
+          }
+
+          :host([embedded]) .panel {
+            width: 100%;
           }
         }
       </style>
@@ -366,6 +492,7 @@ export class LayersPanel extends HTMLElement {
         <div class="panel-header">
           <span class="collapse-arrow">&#9660;</span>
           Layers
+          <span class="badge"></span>
         </div>
         <div class="layer-list"></div>
       </div>

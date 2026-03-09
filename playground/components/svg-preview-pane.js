@@ -1,9 +1,6 @@
 // SVG Preview pane with zoom/pan controls and navigator
 
 import { store } from '../state/store.js';
-import './layers-panel.js';
-import './palette-panel.js';
-import './cssvar-panel.js';
 
 const DEFAULT_STROKE = '#000000';
 const DEFAULT_STROKE_WIDTH = 2;
@@ -36,17 +33,6 @@ export class SvgPreviewPane extends HTMLElement {
     this.setupEventListeners();
     this.subscribeToStore();
     this.updateSvgStyles();
-
-    // Listen for CSS variable overrides from cssvar-panel
-    this.shadowRoot.addEventListener('cssvar-override', (e) => {
-      const svg = this.shadowRoot.querySelector('#preview');
-      const { varName, value } = e.detail;
-      if (value) {
-        svg.style.setProperty(varName, value);
-      } else {
-        svg.style.removeProperty(varName);
-      }
-    });
   }
 
   subscribeToStore() {
@@ -687,13 +673,25 @@ export class SvgPreviewPane extends HTMLElement {
     navGroup.innerHTML = '';
 
     // Build per-layer paths in the navigator, preserving individual styles
+    // Walk all descendants (not just direct children) to find paths/text inside <g> groups
     const layersGroup = this.shadowRoot.querySelector('#preview-layers');
     const visibleElements = layersGroup
-      ? Array.from(layersGroup.children).filter(el => el.style.display !== 'none')
+      ? Array.from(layersGroup.querySelectorAll('path, text, g')).filter(el => {
+          // Skip elements whose ancestor (up to layersGroup) is hidden
+          let node = el;
+          while (node && node !== layersGroup) {
+            if (node.style.display === 'none') return false;
+            node = node.parentElement;
+          }
+          return true;
+        })
       : [];
 
-    if (visibleElements.length > 0) {
-      for (const el of visibleElements) {
+    // Only process leaf elements (path/text), skip <g> containers
+    const leafElements = visibleElements.filter(el => el.tagName === 'path' || el.tagName === 'text');
+
+    if (leafElements.length > 0) {
+      for (const el of leafElements) {
         if (el.tagName === 'path') {
           const navPath = document.createElementNS(SVG_NS, 'path');
           navPath.setAttribute('d', el.getAttribute('d') || '');
@@ -701,7 +699,19 @@ export class SvgPreviewPane extends HTMLElement {
           navPath.setAttribute('stroke-width', Math.max(parseFloat(el.getAttribute('stroke-width')) || DEFAULT_STROKE_WIDTH, 1));
           navPath.setAttribute('fill', el.getAttribute('fill') || 'none');
           // Copy additional style attributes (dasharray scaled to screen pixels)
-          for (const attr of ['transform', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'fill-rule']) {
+          // Accumulate transforms from ancestor <g> elements
+          const transforms = [];
+          let ancestor = el.parentElement;
+          while (ancestor && ancestor !== layersGroup) {
+            const t = ancestor.getAttribute('transform');
+            if (t) transforms.unshift(t);
+            ancestor = ancestor.parentElement;
+          }
+          const ownTransform = el.getAttribute('transform');
+          if (ownTransform) transforms.push(ownTransform);
+          if (transforms.length > 0) navPath.setAttribute('transform', transforms.join(' '));
+
+          for (const attr of ['stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'fill-rule']) {
             const val = el.getAttribute(attr);
             if (val) navPath.setAttribute(attr, val);
           }
@@ -953,23 +963,6 @@ export class SvgPreviewPane extends HTMLElement {
           }
         }
 
-        .panels-stack {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          z-index: 10;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-end;
-          max-height: calc(100% - 2rem);
-          pointer-events: none;
-        }
-
-        .panels-stack > * {
-          pointer-events: auto;
-        }
-
         #preview-container {
           position: relative;
           width: 100%;
@@ -1118,12 +1111,6 @@ export class SvgPreviewPane extends HTMLElement {
           to { transform: rotate(360deg); }
         }
       </style>
-
-      <div class="panels-stack">
-        <layers-panel></layers-panel>
-        <palette-panel></palette-panel>
-        <cssvar-panel></cssvar-panel>
-      </div>
 
       <div id="zoom-navigator">
         <svg id="navigator-svg">

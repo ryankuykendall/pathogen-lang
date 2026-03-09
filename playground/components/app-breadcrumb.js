@@ -99,39 +99,50 @@ const styles = `
     padding-left: 1rem;
   }
 
+  .toggle-bar {
+    display: flex;
+    align-items: center;
+  }
+
   .toggle-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
     padding: 4px 10px;
     font-size: 0.75rem;
     font-family: inherit;
     background: transparent;
     border: 1px solid var(--border-color, #ddd);
-    border-radius: 4px;
     color: var(--text-secondary, #666);
     cursor: pointer;
     transition: all 0.15s;
+    border-radius: 0;
+    margin-left: -1px;
+  }
+
+  .toggle-bar .toggle-btn:first-child {
+    border-radius: 4px 0 0 4px;
+    margin-left: 0;
+  }
+
+  .toggle-bar .toggle-btn:last-child {
+    border-radius: 0 4px 4px 0;
   }
 
   .toggle-btn:hover {
     background: var(--bg-secondary, #f5f5f5);
     color: var(--text-primary, #1a1a1a);
+    z-index: 1;
   }
 
   .toggle-btn.active {
     background: var(--accent-color, #0066cc);
     border-color: var(--accent-color, #0066cc);
     color: var(--accent-text, #ffffff);
+    z-index: 2;
   }
 
-  .toggle-icon {
-    font-size: 0.875rem;
-    transition: transform 0.2s;
-  }
-
-  .toggle-btn.active .toggle-icon {
-    transform: rotate(180deg);
+  .toggle-btn.active + .toggle-btn.active {
+    border-left-color: var(--accent-border, rgba(255, 255, 255, 0.35));
   }
 
   .secondary-btn {
@@ -369,7 +380,7 @@ class AppBreadcrumb extends HTMLElement {
 
     // Subscribe to route and workspace changes
     this.unsubscribe = store.subscribe(
-      ['currentView', 'routeParams', 'currentFileName', 'workspaces', 'workspaceName', 'workspaceId', 'annotatedOpen', 'consoleOpen', 'saveStatus', 'saveError', 'compilationStatus', 'calledStdlibFunctions'],
+      ['currentView', 'routeParams', 'currentFileName', 'workspaces', 'workspaceName', 'workspaceId', 'annotatedOpen', 'consoleOpen', 'inspectorOpen', 'saveStatus', 'saveError', 'compilationStatus', 'calledStdlibFunctions'],
       () => this.render()
     );
   }
@@ -525,6 +536,7 @@ class AppBreadcrumb extends HTMLElement {
     const isWorkspaceView = currentView === 'workspace';
     const annotatedOpen = store.get('annotatedOpen');
     const consoleOpen = store.get('consoleOpen');
+    const inspectorOpen = store.get('inspectorOpen');
 
     // Derive usesRandom from calledStdlibFunctions
     const calledStdlib = store.get('calledStdlibFunctions') || [];
@@ -561,14 +573,11 @@ class AppBreadcrumb extends HTMLElement {
                   Refresh
                 </button>
               ` : ''}
-              <button id="annotated-toggle" class="toggle-btn ${annotatedOpen ? 'active' : ''}" title="Show annotated output">
-                <span class="toggle-icon">&#9654;</span>
-                Annotated
-              </button>
-              <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">
-                <span class="toggle-icon">&#9654;</span>
-                Console
-              </button>
+              <div class="toggle-bar">
+                <button id="annotated-toggle" class="toggle-btn ${annotatedOpen ? 'active' : ''}" title="Show annotated output">Annotated</button>
+                <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">Console</button>
+                <button id="inspector-toggle" class="toggle-btn ${inspectorOpen ? 'active' : ''}" title="Toggle inspector panel">Inspector</button>
+              </div>
               <button id="copy-code" class="secondary-btn" title="Copy code to clipboard">
                 Copy Code
               </button>
@@ -608,6 +617,10 @@ class AppBreadcrumb extends HTMLElement {
     this.shadowRoot.querySelector('#console-toggle')?.addEventListener('click', () => {
       store.set('consoleOpen', !store.get('consoleOpen'));
       this.dispatchEvent(new CustomEvent('toggle-console', { bubbles: true, composed: true }));
+    });
+
+    this.shadowRoot.querySelector('#inspector-toggle')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('toggle-inspector', { bubbles: true, composed: true }));
     });
 
     // Copy code button

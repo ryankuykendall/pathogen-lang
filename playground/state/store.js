@@ -141,6 +141,7 @@ export const store = createStore({
   annotatedOpen: false,
   consoleOpen: false,
   docsOpen: false,
+  inspectorOpen: false,
 
   // File state
   currentFileName: null,

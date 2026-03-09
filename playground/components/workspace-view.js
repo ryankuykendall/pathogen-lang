@@ -20,6 +20,7 @@ import './annotated-pane.js';
 import './console-pane.js';
 import './svg-preview-pane.js';
 import './docs-panel.js';
+import './inspector-panel.js';
 import './shared/error-panel.js';
 import './export-legend-modal.js';
 import './thumbnail-crop-modal.js';
@@ -122,6 +123,10 @@ export class WorkspaceView extends HTMLElement {
 
   get docsPanel() {
     return this.shadowRoot.querySelector('docs-panel');
+  }
+
+  get inspectorPanel() {
+    return this.shadowRoot.querySelector('inspector-panel');
   }
 
   get errorPanel() {
@@ -374,6 +379,18 @@ export class WorkspaceView extends HTMLElement {
       autosave.onPreferencesChange(preferences);
     });
 
+    // CSS variable overrides from inspector panel → apply to SVG preview
+    this.shadowRoot.addEventListener('cssvar-override', (e) => {
+      const svg = this.previewPane?.shadowRoot?.querySelector('#preview');
+      if (!svg) return;
+      const { varName, value } = e.detail;
+      if (value) {
+        svg.style.setProperty(varName, value);
+      } else {
+        svg.style.removeProperty(varName);
+      }
+    });
+
     // Open docs
     this.shadowRoot.addEventListener('open-docs', () => {
       this.docsPanel.open();
@@ -418,6 +435,15 @@ export class WorkspaceView extends HTMLElement {
       }
     };
     document.addEventListener('toggle-console', this._handleToggleConsole);
+
+    this._handleToggleInspector = () => {
+      if (store.get('currentView') === 'workspace') {
+        const isOpen = !store.get('inspectorOpen');
+        store.set('inspectorOpen', isOpen);
+        this.inspectorPanel.classList.toggle('open', isOpen);
+      }
+    };
+    document.addEventListener('toggle-inspector', this._handleToggleInspector);
 
     // Keyboard shortcuts
     this._handleKeydown = (e) => {
@@ -516,6 +542,7 @@ export class WorkspaceView extends HTMLElement {
     document.removeEventListener('copy-svg', this._handleCopySvg);
     document.removeEventListener('toggle-annotated', this._handleToggleAnnotated);
     document.removeEventListener('toggle-console', this._handleToggleConsole);
+    document.removeEventListener('toggle-inspector', this._handleToggleInspector);
     document.removeEventListener('keydown', this._handleKeydown);
     document.removeEventListener('export-legend', this._handleExportLegend);
     document.removeEventListener('refresh-preview', this._handleRefreshPreview);
@@ -781,6 +808,7 @@ export class WorkspaceView extends HTMLElement {
         <annotated-pane></annotated-pane>
         <console-pane></console-pane>
         <svg-preview-pane></svg-preview-pane>
+        <inspector-panel></inspector-panel>
       </playground-main>
 
       <error-panel></error-panel>

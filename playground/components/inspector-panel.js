@@ -1,0 +1,81 @@
+// Consolidated inspector panel — scrollable container with stacked sub-panels
+
+import './layers-panel.js';
+import './palette-panel.js';
+import './cssvar-panel.js';
+
+export class InspectorPanel extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+
+  render() {
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          height: 100%;
+          overflow: hidden;
+          background: var(--bg-elevated, #ffffff);
+        }
+
+        .inspector {
+          height: 100%;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .inspector-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.5rem 0.625rem;
+          border-bottom: 1px solid var(--border-color, #e2e8f0);
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: var(--text-secondary, #64748b);
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+          position: sticky;
+          top: 0;
+          background: var(--bg-elevated, #ffffff);
+          z-index: 1;
+        }
+
+        @media (max-width: 800px) {
+          :host {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            max-height: 60vh;
+            z-index: 100;
+            transition: height 0.3s ease;
+            border-top: 1px solid var(--border-color, #e2e8f0);
+            border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+            box-shadow: var(--shadow-lg);
+          }
+
+          :host(.open) {
+            height: 60vh;
+          }
+        }
+      </style>
+
+      <div class="inspector">
+        <div class="inspector-header">Inspector</div>
+        <layers-panel embedded></layers-panel>
+        <palette-panel embedded></palette-panel>
+        <cssvar-panel embedded></cssvar-panel>
+      </div>
+    `;
+  }
+}
+
+customElements.define('inspector-panel', InspectorPanel);

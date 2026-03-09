@@ -10,6 +10,16 @@ export class PlaygroundMain extends HTMLElement {
 
   connectedCallback() {
     this.render();
+    this._unsubscribe = store.subscribe('inspectorOpen', () => {
+      this.classList.toggle('inspector-open', store.get('inspectorOpen'));
+    });
+  }
+
+  disconnectedCallback() {
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
   }
 
   render() {
@@ -65,6 +75,27 @@ export class PlaygroundMain extends HTMLElement {
           min-width: 0;
         }
 
+        ::slotted(inspector-panel) {
+          flex: 0 0 0;
+          min-width: 0;
+          overflow: hidden;
+          transition: flex-basis 0.3s ease;
+          border-left: 1px solid var(--border-color, #ddd);
+        }
+
+        ::slotted(inspector-panel.open) {
+          flex: 1 1 0;
+          min-width: 240px;
+        }
+
+        :host(.inspector-open) ::slotted(code-editor-pane) {
+          flex: 2;
+        }
+
+        :host(.inspector-open) ::slotted(svg-preview-pane) {
+          flex: 3;
+        }
+
         @media (max-width: 800px) {
           ::slotted(code-editor-pane) {
             border-right: none;
@@ -92,6 +123,16 @@ export class PlaygroundMain extends HTMLElement {
 
           ::slotted(svg-preview-pane) {
             min-height: 250px;
+          }
+
+          :host(.inspector-open) ::slotted(code-editor-pane),
+          :host(.inspector-open) ::slotted(svg-preview-pane) {
+            flex: 1;
+          }
+
+          ::slotted(inspector-panel) {
+            flex: 0 0 0;
+            border-left: none;
           }
         }
       </style>

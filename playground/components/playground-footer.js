@@ -19,6 +19,7 @@ export class PlaygroundFooter extends HTMLElement {
     store.subscribe(['width', 'height', 'background', 'gridEnabled', 'gridColor', 'gridSize', 'toFixed'], () => {
       this.syncFromStore();
     });
+
   }
 
   syncFromStore() {

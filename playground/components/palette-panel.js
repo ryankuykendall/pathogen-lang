@@ -139,8 +139,19 @@ export class PalettePanel extends HTMLElement {
       }
     }
 
-    // Auto-hide when no colors found
-    this.style.display = colorCount === 0 ? 'none' : '';
+    // Update badge count
+    const badge = this.shadowRoot.querySelector('.badge');
+    if (badge) badge.textContent = colorCount > 0 ? colorCount : '';
+
+    // Auto-hide when no colors found (standalone only)
+    if (!this.hasAttribute('embedded')) {
+      this.style.display = colorCount === 0 ? 'none' : '';
+    } else if (colorCount === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No colors';
+      list.appendChild(empty);
+    }
 
     if (this._collapsed) {
       list.style.display = 'none';
@@ -166,6 +177,21 @@ export class PalettePanel extends HTMLElement {
           overflow: hidden;
         }
 
+        :host([embedded]) .panel {
+          width: 100%;
+          max-height: none;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+          border-bottom: 1px solid var(--border-color, #e2e8f0);
+          overflow: visible;
+        }
+
+        :host([embedded]) .palette-list {
+          flex: none;
+          overflow-y: visible;
+        }
+
         .panel-header {
           display: flex;
           align-items: center;
@@ -181,6 +207,13 @@ export class PalettePanel extends HTMLElement {
           letter-spacing: 0.03em;
         }
 
+        :host([embedded]) .panel-header {
+          background: var(--bg-secondary, #f1f5f9);
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
+
         .panel-header:hover {
           background: var(--hover-bg, rgba(0, 0, 0, 0.04));
         }
@@ -192,6 +225,24 @@ export class PalettePanel extends HTMLElement {
 
         .collapse-arrow.collapsed {
           transform: rotate(-90deg);
+        }
+
+        .badge {
+          margin-left: auto;
+          font-size: 0.625rem;
+          font-weight: 600;
+          font-family: var(--font-mono, 'Inconsolata', monospace);
+          color: var(--text-secondary, #64748b);
+          background: var(--bg-secondary, #f1f5f9);
+          padding: 0 0.375rem;
+          border-radius: 8px;
+          min-width: 1rem;
+          text-align: center;
+          line-height: 1.2rem;
+        }
+
+        .badge:empty {
+          display: none;
         }
 
         .palette-list {
@@ -253,9 +304,21 @@ export class PalettePanel extends HTMLElement {
           text-align: right;
         }
 
+        .empty-state {
+          padding: 0.75rem 0.5rem;
+          font-size: 0.6875rem;
+          color: var(--text-secondary, #64748b);
+          text-align: center;
+          font-style: italic;
+        }
+
         @media (max-width: 800px) {
           .panel {
             width: 170px;
+          }
+
+          :host([embedded]) .panel {
+            width: 100%;
           }
         }
       </style>
@@ -264,6 +327,7 @@ export class PalettePanel extends HTMLElement {
         <div class="panel-header">
           <span class="collapse-arrow">&#9660;</span>
           Palette
+          <span class="badge"></span>
         </div>
         <div class="palette-list"></div>
       </div>
