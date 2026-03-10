@@ -18,9 +18,13 @@ interface ErrorHighlightResult {
 }
 
 // The CM modules are passed in to avoid tight coupling to specific CM imports
+interface StateEffectType {
+  of(value: unknown): unknown;
+}
+
 interface CmStateModule {
   StateEffect: {
-    define<T>(): { of(value: T): unknown; is(effect: unknown): boolean };
+    define<T>(): StateEffectType;
   };
   StateField: {
     define<T>(config: {
@@ -85,13 +89,13 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
     create(): ErrorState {
       return { error: null, decorations: Decoration.none };
     },
-    update(state: ErrorState, tr: { effects: unknown[]; docChanged: boolean; state: { doc: unknown } }): ErrorState {
+    update(state: ErrorState, tr: { effects: Array<{ is(type: StateEffectType): boolean; value: unknown }>; docChanged: boolean; state: { doc: unknown } }): ErrorState {
       for (const effect of tr.effects) {
-        if ((setErrorEffect as unknown as { is(e: unknown): e is { value: ErrorPosition } }).is(effect)) {
-          const { line, column } = (effect as { value: ErrorPosition }).value;
+        if (effect.is(setErrorEffect)) {
+          const { line, column } = effect.value as ErrorPosition;
           return { error: { line, column }, decorations: buildDecorations(tr.state.doc as Parameters<typeof buildDecorations>[0], line, column) };
         }
-        if ((clearErrorEffect as unknown as { is(e: unknown): boolean }).is(effect)) {
+        if (effect.is(clearErrorEffect)) {
           return { error: null, decorations: Decoration.none };
         }
       }
