@@ -1,0 +1,54 @@
+:host {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border-color, #e2e8f0);
+  position: relative;
+  background: var(--bg-secondary, #ffffff);
+}
+
+@media (max-width: 800px) {
+  :host {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    min-height: 300px;
+  }
+}
+
+#editor-container {
+  flex: 1;
+  overflow: auto;
+}
+
+/* CodeMirror base styles */
+#editor-container .cm-editor {
+  height: 100%;
+  font-size: 14px;
+}
+
+#editor-container .cm-editor .cm-scroller {
+  font-family: var(--font-mono, 'Inconsolata', monospace);
+  font-weight: 500;
+}
+
+#editor-container .cm-editor .cm-content {
+  padding-bottom: 25%;
+}
+
+#editor-container .cm-editor.cm-focused {
+  outline: none;
+}
+
+#editor-container .cm-error-line {
+  background-color: rgba(255, 0, 0, 0.08);
+}
+
+#editor-container .cm-error-char {
+  text-decoration: underline wavy var(--error-text, #c00);
+  text-decoration-skip-ink: none;
+}
+
+:host-context([data-theme="dark"]) #editor-container .cm-error-line {
+  background-color: rgba(255, 80, 80, 0.12);
+}

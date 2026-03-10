@@ -1,0 +1,311 @@
+:host {
+  display: block;
+  background: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  min-height: 32px;
+  box-sizing: border-box;
+  gap: 1rem;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #666);
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-link {
+  color: var(--text-secondary, #666);
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  transition: color 0.15s ease;
+}
+
+.breadcrumb-link:hover {
+  color: var(--accent-color, #0066cc);
+  text-decoration: underline;
+}
+
+.breadcrumb-current {
+  color: var(--text-primary, #1a1a1a);
+  font-weight: 500;
+}
+
+.separator {
+  margin: 0 0.5rem;
+  color: var(--text-tertiary, #999);
+  user-select: none;
+}
+
+.workspace-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-id {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #999);
+  margin-left: 0.375rem;
+  font-family: var(--font-mono, 'SF Mono', Monaco, monospace);
+}
+
+/* Workspace controls container - spans full width after breadcrumb */
+.workspace-controls-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  margin-left: auto;
+}
+
+/* Left group: buttons positioned to end at center */
+.controls-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  padding-right: 1rem;
+}
+
+/* Right group: badges positioned to start at center */
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+}
+
+.toggle-bar {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border-color, #ddd);
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 0;
+  margin-left: -1px;
+}
+
+.toggle-bar .toggle-btn:first-child {
+  border-radius: 4px 0 0 4px;
+  margin-left: 0;
+}
+
+.toggle-bar .toggle-btn:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.toggle-btn:hover {
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-primary, #1a1a1a);
+  z-index: 1;
+}
+
+.toggle-btn.active {
+  background: var(--accent-color, #0066cc);
+  border-color: var(--accent-color, #0066cc);
+  color: var(--accent-text, #ffffff);
+  z-index: 2;
+}
+
+.toggle-btn.active + .toggle-btn.active {
+  border-left-color: var(--accent-border, rgba(255, 255, 255, 0.35));
+}
+
+.secondary-btn {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 4px;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.secondary-btn:hover {
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 4px;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.refresh-btn:hover {
+  background: var(--accent-color, #0066cc);
+  border-color: var(--accent-color, #0066cc);
+  color: var(--accent-text, #ffffff);
+}
+
+.refresh-btn .refresh-icon {
+  transition: transform 0.3s ease;
+}
+
+.refresh-btn:hover .refresh-icon {
+  transform: rotate(180deg);
+}
+
+.copy-feedback {
+  font-size: 0.75rem;
+  color: var(--success-color, #28a745);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.copy-feedback.visible {
+  opacity: 1;
+}
+
+.save-status {
+  font-size: 0.75rem;
+  font-family: var(--font-mono, 'Inconsolata', monospace);
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.save-status.hidden {
+  display: none;
+}
+
+.save-status.modified {
+  background: var(--warning-bg, #fff3cd);
+  color: var(--warning-color, #856404);
+}
+
+.save-status.saving {
+  background: var(--info-bg, #cce5ff);
+  color: var(--info-color, #004085);
+}
+
+.save-status.saved {
+  background: var(--success-bg, #d4edda);
+  color: var(--success-color, #155724);
+}
+
+.save-status.error {
+  background: var(--error-bg, #f8d7da);
+  color: var(--error-color, #721c24);
+  cursor: help;
+}
+
+.compilation-status {
+  font-size: 0.75rem;
+  font-family: var(--font-mono, 'Inconsolata', monospace);
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.compilation-status.hidden {
+  display: none;
+}
+
+.compilation-status.compiling {
+  background: var(--info-bg, #cce5ff);
+  color: var(--info-color, #004085);
+  animation: pulse 1s infinite;
+}
+
+.compilation-status.rendering {
+  background: var(--warning-bg, #fff3cd);
+  color: var(--warning-color, #856404);
+  animation: pulse 0.5s infinite;
+}
+
+.compilation-status.completed {
+  background: var(--success-bg, #d4edda);
+  color: var(--success-color, #155724);
+}
+
+.compilation-status.error {
+  background: var(--error-bg, #f8d7da);
+  color: var(--error-color, #721c24);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Hide breadcrumb on landing page */
+:host(.hidden) {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .breadcrumb-bar {
+    padding: 0.375rem 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb {
+    font-size: 0.75rem;
+  }
+
+  .workspace-name {
+    max-width: 120px;
+  }
+
+  .workspace-controls-wrapper {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .controls-left {
+    margin-left: 0;
+    padding-right: 0.5rem;
+  }
+
+  .controls-right {
+    padding-left: 0.5rem;
+  }
+
+  .toggle-btn,
+  .secondary-btn {
+    padding: 3px 8px;
+    font-size: 0.6875rem;
+  }
+}
