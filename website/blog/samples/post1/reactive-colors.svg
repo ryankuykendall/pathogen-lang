@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-  <style>
+  <style><![CDATA[
     @property --primary {
       syntax: "<color>";
       inherits: true;
@@ -15,7 +15,7 @@
       inherits: true;
       initial-value: #1a1a2e;
     }
-  </style>
+  ]]></style>
 
 <defs>
   <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">

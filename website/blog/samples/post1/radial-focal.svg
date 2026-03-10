@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 180" width="450" height="180">
+
+<defs>
+  <radialGradient id="sphere1" cx="0.5" cy="0.5" r="0.5" fx="0.3" fy="0.3">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="0.075" stop-color="#dbe9f8"/>
+    <stop offset="0.15" stop-color="#b8d4f0"/>
+    <stop offset="0.225" stop-color="#8dbcf0"/>
+    <stop offset="0.30000000000000004" stop-color="#65a1f0"/>
+    <stop offset="0.375" stop-color="#4184ee"/>
+    <stop offset="0.45" stop-color="#2563eb"/>
+    <stop offset="0.5375" stop-color="#2359ca"/>
+    <stop offset="0.625" stop-color="#214faa"/>
+    <stop offset="0.7125" stop-color="#20448c"/>
+    <stop offset="0.8" stop-color="#1e3a6e"/>
+    <stop offset="0.9" stop-color="#14264a"/>
+    <stop offset="1" stop-color="#0a1428"/>
+  </radialGradient>
+  <radialGradient id="sphere2" cx="0.5" cy="0.5" r="0.5" fx="0.5" fy="0.5">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="0.075" stop-color="#dbe9f8"/>
+    <stop offset="0.15" stop-color="#b8d4f0"/>
+    <stop offset="0.225" stop-color="#8dbcf0"/>
+    <stop offset="0.30000000000000004" stop-color="#65a1f0"/>
+    <stop offset="0.375" stop-color="#4184ee"/>
+    <stop offset="0.45" stop-color="#2563eb"/>
+    <stop offset="0.5375" stop-color="#2359ca"/>
+    <stop offset="0.625" stop-color="#214faa"/>
+    <stop offset="0.7125" stop-color="#20448c"/>
+    <stop offset="0.8" stop-color="#1e3a6e"/>
+    <stop offset="0.9" stop-color="#14264a"/>
+    <stop offset="1" stop-color="#0a1428"/>
+  </radialGradient>
+  <radialGradient id="sphere3" cx="0.5" cy="0.5" r="0.5" fx="0.7" fy="0.3">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="0.075" stop-color="#dbe9f8"/>
+    <stop offset="0.15" stop-color="#b8d4f0"/>
+    <stop offset="0.225" stop-color="#8dbcf0"/>
+    <stop offset="0.30000000000000004" stop-color="#65a1f0"/>
+    <stop offset="0.375" stop-color="#4184ee"/>
+    <stop offset="0.45" stop-color="#2563eb"/>
+    <stop offset="0.5375" stop-color="#2359ca"/>
+    <stop offset="0.625" stop-color="#214faa"/>
+    <stop offset="0.7125" stop-color="#20448c"/>
+    <stop offset="0.8" stop-color="#1e3a6e"/>
+    <stop offset="0.9" stop-color="#14264a"/>
+    <stop offset="1" stop-color="#0a1428"/>
+  </radialGradient>
+</defs>
+
+  <g>
+    <path d="M 0 0 L 450 0 L 450 180 L 0 180 Z" fill="#0a0a1a" stroke="none" stroke-width="2"/>
+    <path d="M 20 80 A 60 60 0 1 1 140 80 A 60 60 0 1 1 20 80 Z" fill="url(#sphere1)" stroke="none" stroke-width="2"/>
+    <path d="M 165 80 A 60 60 0 1 1 285 80 A 60 60 0 1 1 165 80 Z" fill="url(#sphere2)" stroke="none" stroke-width="2"/>
+    <path d="M 310 80 A 60 60 0 1 1 430 80 A 60 60 0 1 1 310 80 Z" fill="url(#sphere3)" stroke="none" stroke-width="2"/>
+    <text x="80" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.3  fy=0.3</text>
+    <text x="225" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.5  fy=0.5</text>
+    <text x="370" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.7  fy=0.3</text>
+  </g>
+</svg>

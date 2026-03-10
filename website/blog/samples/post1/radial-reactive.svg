@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <style><![CDATA[
+    @property --light-a {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #f4a261;
+    }
+    @property --light-b {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #2563eb;
+    }
+    @property --light-c {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #e63946;
+    }
+  ]]></style>
+
+<defs>
+  <radialGradient id="glow-a" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="var(--light-a, #f4a261)"/>
+    <stop offset="0.4" stop-color="rgba(244, 162, 97, 0.6)"/>
+    <stop offset="0.5" stop-color="rgba(244, 162, 97, 0.5)"/>
+    <stop offset="0.6" stop-color="rgba(244, 162, 97, 0.4)"/>
+    <stop offset="0.7" stop-color="rgba(244, 162, 97, 0.3)"/>
+    <stop offset="0.8" stop-color="rgba(244, 162, 97, 0.2)"/>
+    <stop offset="0.9" stop-color="rgba(244, 162, 97, 0.1)"/>
+    <stop offset="1" stop-color="rgba(244, 162, 97, 0)"/>
+  </radialGradient>
+  <radialGradient id="glow-b" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="var(--light-b, #2563eb)"/>
+    <stop offset="0.4" stop-color="rgba(37, 99, 235, 0.6)"/>
+    <stop offset="0.5" stop-color="rgba(37, 99, 235, 0.5)"/>
+    <stop offset="0.6" stop-color="rgba(37, 99, 235, 0.4)"/>
+    <stop offset="0.7" stop-color="rgba(37, 99, 235, 0.3)"/>
+    <stop offset="0.8" stop-color="rgba(37, 99, 235, 0.2)"/>
+    <stop offset="0.9" stop-color="rgba(37, 99, 235, 0.1)"/>
+    <stop offset="1" stop-color="rgba(37, 99, 235, 0)"/>
+  </radialGradient>
+  <radialGradient id="glow-c" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="var(--light-c, #e63946)"/>
+    <stop offset="0.4" stop-color="rgba(230, 57, 70, 0.6)"/>
+    <stop offset="0.5" stop-color="rgba(230, 57, 70, 0.5)"/>
+    <stop offset="0.6" stop-color="rgba(230, 57, 70, 0.4)"/>
+    <stop offset="0.7" stop-color="rgba(230, 57, 70, 0.3)"/>
+    <stop offset="0.8" stop-color="rgba(230, 57, 70, 0.2)"/>
+    <stop offset="0.9" stop-color="rgba(230, 57, 70, 0.1)"/>
+    <stop offset="1" stop-color="rgba(230, 57, 70, 0)"/>
+  </radialGradient>
+</defs>
+
+  <g>
+    <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="#0a0a1a" stroke="none" stroke-width="2"/>
+    <path d="M 10 120 A 130 130 0 1 1 270 120 A 130 130 0 1 1 10 120 Z" fill="url(#glow-a)" stroke="none" stroke-width="2" opacity="0.8"/>
+    <path d="M 150 110 A 130 130 0 1 1 410 110 A 130 130 0 1 1 150 110 Z" fill="url(#glow-b)" stroke="none" stroke-width="2" opacity="0.8"/>
+    <path d="M 70 220 A 130 130 0 1 1 330 220 A 130 130 0 1 1 70 220 Z" fill="url(#glow-c)" stroke="none" stroke-width="2" opacity="0.8"/>
+  </g>
+</svg>

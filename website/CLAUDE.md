@@ -64,6 +64,82 @@ Examples:
 - **Local**: `npm run serve:bbwp` → open `http://localhost:3001/website/bbwp/`
 - **Individual files**: open any `.html` file directly in a browser (they are self-contained)
 
+## Blog Sample Pipeline (`website/blog/samples/`)
+
+Blog posts embed interactive `<mini-workspace>` demos that display Pathogen source code alongside a rendered SVG preview. The pipeline for creating and integrating samples:
+
+### How It Works
+
+1. **Author** a `.pathogen` source file in `website/blog/samples/postN/`
+2. **Compile** the source to SVG using the CLI
+3. **Reference** the sample in the blog markdown via `<mini-workspace src="...">`
+4. **Build** the blog — `scripts/build-blog.ts` processes the tags
+
+### Step-by-Step
+
+```bash
+# 1. Create sample source file
+#    First line must be a viewBox comment: // viewBox="0 0 W H"
+vim website/blog/samples/post1/my-sample.pathogen
+
+# 2. Compile to SVG (same directory, .svg extension)
+npx tsx src/cli.ts \
+  --src=website/blog/samples/post1/my-sample.pathogen \
+  "--output-svg-file=website/blog/samples/post1/my-sample.svg" \
+  "--viewBox=0 0 W H" --width=W --height=H
+
+# 3. Reference in blog markdown
+#    <mini-workspace src="samples/post1/my-sample.pathogen" caption="..." code-open></mini-workspace>
+
+# 4. Build
+npm run build:blog    # processes tags → blog-content.js + blog-static/
+npm run build:website # assembles public/ including samples
+```
+
+### What `build-blog.ts` Does with `<mini-workspace>`
+
+The `processMiniWorkspaceTags()` function (line ~108) transforms each tag:
+
+1. Reads the `.pathogen` source → base64-encodes it into a `code-data` attribute
+2. Looks for a `.svg` file with the same basename → if found, embeds an `<img>` fallback
+3. Syntax-highlights the source as a `<code>` child element (static fallback)
+
+The resulting HTML is:
+```html
+<mini-workspace code-data="base64..." code-open caption="...">
+  <code class="hljs language-pathogen">highlighted source</code>
+  <img src="/pathogen/blog/samples/post1/my-sample.svg" loading="lazy">
+</mini-workspace>
+```
+
+### How `<mini-workspace>` Renders
+
+The web component (`playground/components/blog/mini-workspace.ts`):
+
+1. Decodes `code-data` → displays source in CodeMirror (read-only)
+2. Finds `<img>` child → fetches the SVG URL → feeds it to `<mini-preview>`
+3. `<mini-preview>` parses the SVG via `DOMParser('image/svg+xml')` and renders it in a pannable/zoomable viewport
+
+**Critical**: Without the `.svg` file, the preview will be blank. The component does NOT compile Pathogen source at runtime — it only displays pre-compiled SVG.
+
+### SVG with CSS Variables / `@property` Declarations
+
+When a sample uses `CSSVar()` / `Color(CSSVar(...))`, the compiled SVG contains `<style>` blocks with `@property` declarations like `syntax: "<color>"`. The `<color>` token breaks XML parsing in `DOMParser` unless the style content is wrapped in `<![CDATA[...]]>`.
+
+The compiler (`src/cli.ts`) automatically wraps `<style>` content in CDATA sections. If you encounter blank previews for reactive-color samples, this is the likely cause — re-generate the SVG from the compiler.
+
+### CSS Variable Color Pickers
+
+The `<mini-workspace>` component auto-detects `@property` declarations with `syntax: "<color>"` in the SVG's `<style>` block and generates interactive color picker controls. This detection happens in `_detectCssVarsFromSvg()`. You can also specify variables explicitly with the `vars` attribute.
+
+### Checklist for New Samples
+
+- [ ] `.pathogen` file with `// viewBox="0 0 W H"` comment on line 1
+- [ ] Compiled `.svg` file alongside (same directory, same basename)
+- [ ] `<mini-workspace>` tag in blog markdown with `src` pointing to `.pathogen` file
+- [ ] `npm run build:blog` succeeds without warnings
+- [ ] Visual verify via `npm run dev:website`
+
 ## Deployment
 
 The `website/` directory is not deployed directly. The `scripts/build-website.ts` script assembles the full Cloudflare Pages output in `public/` by copying playground, docs, blog, and static assets. The `_worker.js` file handles SPA routing and API endpoints at the edge.

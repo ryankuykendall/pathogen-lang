@@ -257,7 +257,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
           `    @property ${prop.name} {\n      syntax: "${prop.syntax}";\n      inherits: ${prop.inherits};\n      initial-value: ${prop.initialValue};\n    }`,
       )
       .join('\n');
-    styleSection = `\n  <style>\n${rules}\n  </style>`;
+    styleSection = `\n  <style><![CDATA[\n${rules}\n  ]]></style>`;
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeXml(viewBox)}" width="${escapeXml(width)}" height="${escapeXml(height)}">${styleSection}

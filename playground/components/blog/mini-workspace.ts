@@ -143,9 +143,76 @@ export class MiniWorkspace extends HTMLElement {
           setSvgContent(svg: string): void;
         };
         if (preview) preview.setSvgContent(this._svgContent);
+
+        // Re-detect CSS vars now that SVG content is available
+        if (this._cssVars.length === 0) {
+          this._initCssVars();
+          if (this._cssVars.length > 0) {
+            this._injectVarControls();
+          }
+        }
       }
     } catch (err) {
       console.warn('mini-workspace: failed to fetch SVG:', err);
+    }
+  }
+
+  /**
+   * Inject CSS variable color picker controls after async SVG load.
+   * Called when _initCssVars() detects vars from a late-arriving SVG.
+   */
+  private _injectVarControls(): void {
+    const toolbar = this.shadowRoot!.querySelector('.toolbar');
+    if (!toolbar || this.shadowRoot!.querySelector('.var-controls')) return;
+
+    const html = `<div class="var-controls">
+      ${this._cssVars
+        .map(
+          (v) => `
+        <label class="var-control">
+          <input type="color" value="${v.defaultValue}" data-var="${v.name}">
+          <span class="var-label">${v.name}</span>
+        </label>
+      `,
+        )
+        .join('')}
+      <button id="vars-reset" title="Reset colors to defaults">Reset</button>
+    </div>`;
+
+    toolbar.insertAdjacentHTML('afterend', html);
+
+    // Wire up event listeners for the new controls
+    const varControls = this.shadowRoot!.querySelector('.var-controls')!;
+    const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+
+    // Apply initial values
+    if (preview) {
+      for (const v of this._cssVars) {
+        preview.style.setProperty(v.name, v.defaultValue);
+      }
+    }
+
+    // Live color picker updates
+    varControls.addEventListener('input', (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      if (target.type === 'color') {
+        const varName = target.dataset.var;
+        if (preview && varName) {
+          preview.style.setProperty(varName, target.value);
+        }
+      }
+    });
+
+    // Reset button
+    const resetBtn = varControls.querySelector('#vars-reset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        for (const v of this._cssVars) {
+          const input = varControls.querySelector(`input[data-var="${v.name}"]`) as HTMLInputElement | null;
+          if (input) input.value = v.defaultValue;
+          if (preview) preview.style.setProperty(v.name, v.defaultValue);
+        }
+      });
     }
   }
 

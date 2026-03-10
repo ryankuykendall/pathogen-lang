@@ -1,0 +1,67 @@
+// viewBox="0 0 450 180"
+// Focal Point Spheres — Same stops, different fx/fy positions
+// Demonstrates how RadialGradient's focal point shifts the highlight
+
+// --- Shared background ---
+
+let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
+bg.apply { rect(0, 0, 450, 180) }
+
+// --- Sphere gradients with different focal points ---
+
+let sphere1_grad = RadialGradient('sphere1', 0.5, 0.5, 0.5, 0.3, 0.3) {|g|
+  g.stop(0,    Color('#ffffff'));
+  g.stop(0.15, Color('#b8d4f0'));
+  g.stop(0.45, Color('#2563eb'));
+  g.stop(0.8,  Color('#1e3a6e'));
+  g.stop(1,    Color('#0a1428'));
+};
+sphere1_grad.interpolation = 'oklch';
+
+let sphere2_grad = RadialGradient('sphere2', 0.5, 0.5, 0.5, 0.5, 0.5) {|g|
+  g.stop(0,    Color('#ffffff'));
+  g.stop(0.15, Color('#b8d4f0'));
+  g.stop(0.45, Color('#2563eb'));
+  g.stop(0.8,  Color('#1e3a6e'));
+  g.stop(1,    Color('#0a1428'));
+};
+sphere2_grad.interpolation = 'oklch';
+
+let sphere3_grad = RadialGradient('sphere3', 0.5, 0.5, 0.5, 0.7, 0.3) {|g|
+  g.stop(0,    Color('#ffffff'));
+  g.stop(0.15, Color('#b8d4f0'));
+  g.stop(0.45, Color('#2563eb'));
+  g.stop(0.8,  Color('#1e3a6e'));
+  g.stop(1,    Color('#0a1428'));
+};
+sphere3_grad.interpolation = 'oklch';
+
+// --- Sphere layers ---
+
+let s1 = PathLayer('s1') ${ fill: sphere1_grad; stroke: none; };
+s1.apply { circle(80, 80, 60); closePath() }
+
+let s2 = PathLayer('s2') ${ fill: sphere2_grad; stroke: none; };
+s2.apply { circle(225, 80, 60); closePath() }
+
+let s3 = PathLayer('s3') ${ fill: sphere3_grad; stroke: none; };
+s3.apply { circle(370, 80, 60); closePath() }
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #667;
+  text-anchor: middle;
+};
+labels.apply {
+  text(80, 160)`fx=0.3  fy=0.3`
+  text(225, 160)`fx=0.5  fy=0.5`
+  text(370, 160)`fx=0.7  fy=0.3`
+}
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, s1, s2, s3, labels)

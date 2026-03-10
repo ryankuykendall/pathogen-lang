@@ -1,347 +1,143 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel — Pathogen</title>
-    <meta
-      name="description"
-      content="After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist."
-    />
-    <link rel="canonical" href="https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing" />
-    <meta property="og:title" content="Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel — Pathogen" />
-    <meta
-      property="og:description"
-      content="After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist."
-    />
-    <meta property="og:url" content="https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing" />
-    <meta property="og:type" content="article" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/pathogen/styles/theme.css" />
-    <script>
-      // Flash prevention — apply saved theme before paint
-      (function () {
-        var t = localStorage.getItem('pathogen-theme');
-        if (t === 'light' || t === 'dark') {
-          document.documentElement.setAttribute('data-theme', t);
-          document.documentElement.setAttribute('data-active-theme', t);
-        } else {
-          document.documentElement.setAttribute(
-            'data-active-theme',
-            window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light',
-          );
-        }
-      })();
-    </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "headline": "Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel",
-        "description": "After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.",
-        "datePublished": "2026-02-17",
-        "url": "https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing",
-        "author": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
-      }
-    </script>
-    <style>
-      /* Reset */
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-        background: var(--bg-primary, #f8f9fa);
-        color: var(--text-primary, #1a1a2e);
-      }
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel — Pathogen</title>
+  <meta name="description" content="After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.">
+  <link rel="canonical" href="https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing">
+  <meta property="og:title" content="Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel — Pathogen">
+  <meta property="og:description" content="After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.">
+  <meta property="og:url" content="https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel","description":"After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.","datePublished":"2026-02-17","url":"https://pedestal.design/pathogen/blog/seo-pages-cloudflare-workers-routing","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pedestal.design"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg-primary, #f8f9fa);
+      color: var(--text-primary, #1a1a2e);
+    }
 
-      /* Nav bar */
-      .site-header {
-        background: var(--bg-secondary, #ffffff);
-        border-bottom: 1px solid var(--border-color, #e2e8f0);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
-      .site-header-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 1rem;
-        height: 56px;
-        gap: 1rem;
-      }
-      .logo {
-        display: flex;
-        flex-direction: column;
-        text-decoration: none;
-        line-height: 1.1;
-        flex-shrink: 0;
-      }
-      .logo:hover .logo-main {
-        color: var(--accent-color, #10b981);
-      }
-      .logo-main {
-        font-family: 'Baumans', cursive;
-        font-size: 1.5rem;
-        font-weight: 400;
-        color: var(--text-primary, #1a1a2e);
-        transition: color 0.15s ease;
-      }
-      .logo-sub {
-        font-family: 'Inconsolata', monospace;
-        font-size: 0.6rem;
-        color: var(--text-secondary, #64748b);
-        white-space: nowrap;
-      }
-      .site-nav {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        flex: 1;
-        justify-content: center;
-      }
-      .nav-link {
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        text-decoration: none;
-        color: var(--text-secondary, #64748b);
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.15s ease;
-      }
-      .nav-link:hover {
-        background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-        color: var(--text-primary, #1a1a2e);
-      }
-      .nav-link.active {
-        background: var(--accent-color, #10b981);
-        color: var(--accent-text, #ffffff);
-      }
+    /* Nav bar */
+    .site-header {
+      background: var(--bg-secondary, #ffffff);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .site-header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; height: 56px; gap: 1rem;
+    }
+    .logo {
+      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
+    }
+    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
+    .logo-main {
+      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
+      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
+    }
+    .logo-sub {
+      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
+      color: var(--text-secondary, #64748b); white-space: nowrap;
+    }
+    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
+    .nav-link {
+      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
+      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
+    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
 
-      /* Breadcrumb */
-      .breadcrumb-bar {
-        background: var(--bg-primary, #f8f9fa);
-        border-bottom: 1px solid var(--border-color, #e2e8f0);
-        padding: 0.625rem 1rem;
-        min-height: 32px;
-        position: sticky;
-        top: 56px;
-        z-index: 40;
-      }
-      .breadcrumb {
-        display: flex;
-        align-items: center;
-        font-size: 0.8125rem;
-        color: var(--text-secondary, #666);
-        max-width: 800px;
-        margin: 0 auto;
-      }
-      .breadcrumb-link {
-        color: var(--text-secondary, #666);
-        text-decoration: none;
-        transition: color 0.15s ease;
-      }
-      .breadcrumb-link:hover {
-        color: var(--accent-color, #10b981);
-        text-decoration: underline;
-      }
-      .breadcrumb-current {
-        color: var(--text-primary, #1a1a2e);
-        font-weight: 500;
-      }
-      .breadcrumb .separator {
-        margin: 0 0.5rem;
-        color: var(--text-tertiary, #94a3b8);
-      }
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      background: var(--bg-primary, #f8f9fa);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+      position: sticky; top: 56px; z-index: 40;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
 
-      /* Blog content area */
-      .blog-main {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 2rem 1rem;
-      }
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
 
-      /* Content styling — mirrors docs content area */
-      .blog-content h2 {
-        margin: 1.5rem 0 1rem;
-        font-size: 1.25rem;
-        font-weight: 600;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border-color, #e2e8f0);
-      }
-      .blog-content h3 {
-        margin: 1.5rem 0 0.75rem;
-        font-size: 1rem;
-        font-weight: 600;
-      }
-      .blog-content h4 {
-        margin: 1rem 0 0.5rem;
-        font-size: 0.9375rem;
-        font-weight: 600;
-      }
-      .blog-content p {
-        margin: 0 0 1rem;
-        line-height: 1.6;
-      }
-      code {
-        font-family: 'Inconsolata', monospace;
-        font-size: 0.875em;
-        background: var(--bg-tertiary, #f0f1f2);
-        padding: 0.125rem 0.375rem;
-        border-radius: 3px;
-      }
-      pre {
-        border-radius: 8px;
-        overflow-x: auto;
-        font-family: monospace;
-        font-size: 0.875rem;
-        line-height: 1.5;
-        margin: 0 0 1rem;
-      }
-      pre code {
-        background: none;
-        padding: 1rem;
-        display: block;
-        font-size: inherit;
-        font-family: inherit;
-      }
-      .blog-content ul,
-      .blog-content ol {
-        margin: 0 0 1rem;
-        padding-left: 1.5rem;
-      }
-      .blog-content li {
-        margin-bottom: 0.5rem;
-        line-height: 1.5;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 0 0 1rem;
-        font-size: 0.875rem;
-      }
-      th,
-      td {
-        padding: 0.75rem;
-        text-align: left;
-        border-bottom: 1px solid var(--border-color, #e2e8f0);
-      }
-      th {
-        font-weight: 600;
-        background: var(--bg-secondary, #fff);
-      }
-      td code {
-        white-space: nowrap;
-      }
-      hr {
-        border: none;
-        border-top: 1px solid var(--border-color, #e2e8f0);
-        margin: 2rem 0;
-      }
-      .blog-content a {
-        color: var(--accent-color, #10b981);
-      }
-      .blog-content img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-      }
-      .blog-content blockquote {
-        border-left: 3px solid var(--accent-color, #10b981);
-        padding-left: 1rem;
-        margin: 0 0 1rem;
-        color: var(--text-secondary, #64748b);
-      }
-      reactive-svg {
-        display: block;
-        margin: 1.5rem 0;
-      }
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
 
-      /* Blog index cards */
-      .blog-cards {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-      }
-      .blog-card {
-        display: block;
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 1px solid var(--border-color, #e2e8f0);
-        background: var(--bg-secondary, #fff);
-        text-decoration: none;
-        color: inherit;
-        transition:
-          box-shadow 0.15s ease,
-          border-color 0.15s ease;
-      }
-      .blog-card:hover {
-        box-shadow:
-          0 4px 6px -1px rgba(0, 0, 0, 0.07),
-          0 2px 4px -1px rgba(0, 0, 0, 0.04);
-        border-color: var(--accent-color, #10b981);
-      }
-      .blog-card h2 {
-        margin: 0 0 0.5rem;
-        font-size: 1.125rem;
-        font-weight: 600;
-        border: none;
-        padding: 0;
-      }
-      .blog-card time {
-        font-size: 0.8125rem;
-        color: var(--text-tertiary, #94a3b8);
-      }
-      .blog-card p {
-        margin: 0.5rem 0 0;
-        font-size: 0.9375rem;
-        color: var(--text-secondary, #64748b);
-        line-height: 1.5;
-      }
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
 
-      /* Post header */
-      .post-header {
-        margin-bottom: 2rem;
-      }
-      .post-header h1 {
-        font-size: 1.75rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-      .post-meta {
-        font-size: 0.875rem;
-        color: var(--text-secondary, #64748b);
-      }
-      .back-link {
-        display: inline-block;
-        margin-bottom: 1.5rem;
-        font-size: 0.875rem;
-        color: var(--accent-color, #10b981);
-        text-decoration: none;
-      }
-      .back-link:hover {
-        text-decoration: underline;
-      }
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
 
-      /* Syntax highlighting */
-      pre code.hljs {
-        display: block;
-        overflow-x: auto;
-        padding: 1em;
-      }
-      code.hljs {
-        padding: 3px 5px;
-      }
-      /*!
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
   Theme: GitHub Dark
   Description: Dark theme as seen on github.com
   Author: github.com
@@ -351,439 +147,240 @@
   Outdated base version: https://github.com/primer/github-syntax-dark
   Current colors taken from GitHub's CSS
 */
-      .hljs {
-        color: #c9d1d9;
-        background: #0d1117;
-      }
-      .hljs-doctag,
-      .hljs-keyword,
-      .hljs-meta .hljs-keyword,
-      .hljs-template-tag,
-      .hljs-template-variable,
-      .hljs-type,
-      .hljs-variable.language_ {
-        /* prettylights-syntax-keyword */
-        color: #ff7b72;
-      }
-      .hljs-title,
-      .hljs-title.class_,
-      .hljs-title.class_.inherited__,
-      .hljs-title.function_ {
-        /* prettylights-syntax-entity */
-        color: #d2a8ff;
-      }
-      .hljs-attr,
-      .hljs-attribute,
-      .hljs-literal,
-      .hljs-meta,
-      .hljs-number,
-      .hljs-operator,
-      .hljs-variable,
-      .hljs-selector-attr,
-      .hljs-selector-class,
-      .hljs-selector-id {
-        /* prettylights-syntax-constant */
-        color: #79c0ff;
-      }
-      .hljs-regexp,
-      .hljs-string,
-      .hljs-meta .hljs-string {
-        /* prettylights-syntax-string */
-        color: #a5d6ff;
-      }
-      .hljs-built_in,
-      .hljs-symbol {
-        /* prettylights-syntax-variable */
-        color: #ffa657;
-      }
-      .hljs-comment,
-      .hljs-code,
-      .hljs-formula {
-        /* prettylights-syntax-comment */
-        color: #8b949e;
-      }
-      .hljs-name,
-      .hljs-quote,
-      .hljs-selector-tag,
-      .hljs-selector-pseudo {
-        /* prettylights-syntax-entity-tag */
-        color: #7ee787;
-      }
-      .hljs-subst {
-        /* prettylights-syntax-storage-modifier-import */
-        color: #c9d1d9;
-      }
-      .hljs-section {
-        /* prettylights-syntax-markup-heading */
-        color: #1f6feb;
-        font-weight: bold;
-      }
-      .hljs-bullet {
-        /* prettylights-syntax-markup-list */
-        color: #f2cc60;
-      }
-      .hljs-emphasis {
-        /* prettylights-syntax-markup-italic */
-        color: #c9d1d9;
-        font-style: italic;
-      }
-      .hljs-strong {
-        /* prettylights-syntax-markup-bold */
-        color: #c9d1d9;
-        font-weight: bold;
-      }
-      .hljs-addition {
-        /* prettylights-syntax-markup-inserted */
-        color: #aff5b4;
-        background-color: #033a16;
-      }
-      .hljs-deletion {
-        /* prettylights-syntax-markup-deleted */
-        color: #ffdcd7;
-        background-color: #67060c;
-      }
-      .hljs-char.escape_,
-      .hljs-link,
-      .hljs-params,
-      .hljs-property,
-      .hljs-punctuation,
-      .hljs-tag {
-        /* purposely ignored */
-      }
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
 
-      @media (max-width: 768px) {
-        .site-header-inner {
-          padding: 0 0.75rem;
-          height: 52px;
-        }
-        .breadcrumb-bar {
-          top: 52px;
-        }
-        .logo-sub {
-          display: none;
-        }
-        .site-nav {
-          gap: 0;
-        }
-        .nav-link {
-          padding: 0.5rem 0.75rem;
-          font-size: 0.8125rem;
-        }
-        .blog-main {
-          padding: 1.5rem 0.75rem;
-        }
-        .blog-content pre {
-          font-size: 0.8125rem;
-        }
-        .blog-content table {
-          display: block;
-          overflow-x: auto;
-        }
-      }
-      @media (max-width: 600px) {
-        .site-nav {
-          display: none;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="site-header-inner">
-        <a class="logo" href="/pathogen/">
-          <span class="logo-main">Pathogen</span>
-          <span class="logo-sub">built on svg-path-extended v1.0</span>
-        </a>
-        <nav class="site-nav">
+    @media (max-width: 768px) {
+      .site-header-inner { padding: 0 0.75rem; height: 52px; }
+      .breadcrumb-bar { top: 52px; }
+      .logo-sub { display: none; }
+      .site-nav { gap: 0; }
+      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+    @media (max-width: 600px) {
+      .site-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="/pathogen/">
+        <span class="logo-main">Pathogen</span>
+        <span class="logo-sub">built on svg-path-extended v1.0</span>
+      </a>
+      <nav class="site-nav">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-        </nav>
-        <theme-toggle></theme-toggle>
-      </div>
-    </header>
-    <div class="breadcrumb-bar">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span
-        ><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span
-        ><span class="breadcrumb-current">Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</span>
       </nav>
+      <theme-toggle></theme-toggle>
     </div>
-    <main class="blog-main">
-      <article>
-        <header class="post-header">
-          <h1>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h1>
-          <p class="post-meta"><time datetime="2026-02-17">February 16, 2026</time></p>
-        </header>
-        <div class="blog-content">
-          <h2>The Goal</h2>
-          <p>
-            After getting our SPA working on CloudFlare Pages (a saga documented in
-            <a href="/pathogen/blog/cloudflare-pages-spa-routing-struggle">the first post</a>), we had a new problem:
-            search engines couldn&#39;t see any of our content. The SPA renders everything client-side with Web
-            Components and Shadow DOM. Googlebot sees an empty shell. Docs, workspace galleries, curated showcases — all
-            invisible to crawlers.
-          </p>
-          <p>The plan was straightforward: add three SEO-friendly pages that render real HTML.</p>
-          <ol>
-            <li><strong>Docs</strong> — static HTML generated at build time, served from the filesystem</li>
-            <li>
-              <strong>Explore</strong> — a paginated grid of public workspaces, rendered by the worker at request time
-            </li>
-            <li><strong>Featured</strong> — an admin-curated showcase, also worker-rendered</li>
-          </ol>
-          <p>
-            All three would share navigation look-and-feel with the SPA. Users clicking between them and the SPA should
-            feel like they&#39;re on one coherent site.
-          </p>
-          <p>
-            We already had <code>_worker.js</code> handling SPA routing. Extending it to serve SEO pages seemed like it
-            would be the easy part. It was not.
-          </p>
-          <h2>The Architecture</h2>
-          <p>The routing hierarchy we needed was simple:</p>
-          <pre><code class="hljs">/pathogen/api/*         → API handlers (existing)
+  </header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h1>
+        <p class="post-meta"><time datetime="2026-02-17">February 16, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <h2>The Goal</h2>
+<p>After getting our SPA working on CloudFlare Pages (a saga documented in <a href="/pathogen/blog/cloudflare-pages-spa-routing-struggle">the first post</a>), we had a new problem: search engines couldn&#39;t see any of our content. The SPA renders everything client-side with Web Components and Shadow DOM. Googlebot sees an empty shell. Docs, workspace galleries, curated showcases — all invisible to crawlers.</p>
+<p>The plan was straightforward: add three SEO-friendly pages that render real HTML.</p>
+<ol>
+<li><strong>Docs</strong> — static HTML generated at build time, served from the filesystem</li>
+<li><strong>Explore</strong> — a paginated grid of public workspaces, rendered by the worker at request time</li>
+<li><strong>Featured</strong> — an admin-curated showcase, also worker-rendered</li>
+</ol>
+<p>All three would share navigation look-and-feel with the SPA. Users clicking between them and the SPA should feel like they&#39;re on one coherent site.</p>
+<p>We already had <code>_worker.js</code> handling SPA routing. Extending it to serve SEO pages seemed like it would be the easy part. It was not.</p>
+<h2>The Architecture</h2>
+<p>The routing hierarchy we needed was simple:</p>
+<pre><code class="hljs">/pathogen/api/*         → API handlers (existing)
 /pathogen/docs          → static HTML file
 /pathogen/explore       → worker-rendered HTML
 /pathogen/featured      → worker-rendered HTML
 /pathogen/* (no ext)    → SPA index.html (existing)
 everything <span class="hljs-keyword">else</span>         → static assets (existing)
-</code></pre>
-          <p>
-            Worker-rendered pages were easy — the worker already intercepts all requests, so adding
-            <code>renderExplorePage()</code> and <code>renderFeaturedPage()</code> functions was just a matter of
-            checking the path and returning a <code>new Response()</code> with HTML content. No platform surprises
-            there.
-          </p>
-          <p>The static docs page, however, introduced a cascade of platform behaviors we didn&#39;t expect.</p>
-          <h2>Surprise 1: The 308 Redirect Phantom</h2>
-          <p>
-            We generated a complete HTML page at <code>public/pathogen/docs/index.html</code> during the build. The plan
-            was simple: when the worker sees <code>/pathogen/docs</code>, use <code>env.ASSETS.fetch()</code> to serve
-            the static file.
-          </p>
-          <pre><code class="hljs language-javascript"><span class="hljs-keyword">if</span> (path === <span class="hljs-string">&#x27;/pathogen/docs&#x27;</span> || path === <span class="hljs-string">&#x27;/pathogen/docs/&#x27;</span>) {
+</code></pre><p>Worker-rendered pages were easy — the worker already intercepts all requests, so adding <code>renderExplorePage()</code> and <code>renderFeaturedPage()</code> functions was just a matter of checking the path and returning a <code>new Response()</code> with HTML content. No platform surprises there.</p>
+<p>The static docs page, however, introduced a cascade of platform behaviors we didn&#39;t expect.</p>
+<h2>Surprise 1: The 308 Redirect Phantom</h2>
+<p>We generated a complete HTML page at <code>public/pathogen/docs/index.html</code> during the build. The plan was simple: when the worker sees <code>/pathogen/docs</code>, use <code>env.ASSETS.fetch()</code> to serve the static file.</p>
+<pre><code class="hljs language-javascript"><span class="hljs-keyword">if</span> (path === <span class="hljs-string">&#x27;/pathogen/docs&#x27;</span> || path === <span class="hljs-string">&#x27;/pathogen/docs/&#x27;</span>) {
   url.<span class="hljs-property">pathname</span> = <span class="hljs-string">&#x27;/pathogen/docs/index.html&#x27;</span>;
   <span class="hljs-keyword">return</span> env.<span class="hljs-property">ASSETS</span>.<span class="hljs-title function_">fetch</span>(url.<span class="hljs-title function_">toString</span>());
 }
-</code></pre>
-          <p>
-            Testing locally with <code>curl</code>, we got back 1,234 bytes — far too small for our 160KB docs page.
-            That&#39;s the SPA&#39;s <code>index.html</code>. Our route wasn&#39;t matching.
-          </p>
-          <p>
-            More investigation revealed something unexpected: requesting <code>/pathogen/docs/index.html</code> directly
-            returned a <strong>308 Permanent Redirect</strong> to <code>/pathogen/docs/</code>. CloudFlare Pages
-            automatically strips <code>.html</code> extensions and trailing <code>/index</code> from URLs, issuing 308
-            redirects. This is the platform&#39;s &quot;pretty URLs&quot; feature, and it runs at the static asset layer
-            — potentially before or alongside the worker.
-          </p>
-          <p>
-            Here&#39;s what&#39;s confusing: this behavior doesn&#39;t affect our worker route. The worker intercepts
-            <code>/pathogen/docs</code> before the static asset layer gets involved. The 308 exists if someone visits
-            <code>/pathogen/docs/index.html</code> directly, but our worker code never does — it catches the clean URL
-            first. So the 308 was a red herring. But we spent considerable time investigating it because it seemed like
-            it could explain why the wrong content was being served.
-          </p>
-          <p>The actual problem was something else entirely.</p>
-          <h2>Surprise 2: The Zombie Worker Strikes Again</h2>
-          <p>
-            After adding the SEO routes, rebuilding the site, and restarting the dev server, our new routes still
-            returned the SPA. Every request to <code>/pathogen/docs</code> showed &quot;My Workspaces&quot; — the SPA
-            landing page.
-          </p>
-          <p>
-            If this sounds familiar, it should. We documented the exact same problem in our
-            <a href="/pathogen/blog/cloudflare-pages-spa-routing-struggle">first CloudFlare Pages blog post</a>. The
-            <code>wrangler pages dev</code> command spawns a <code>workerd</code> subprocess that can survive the parent
-            process being killed. When you restart <code>wrangler</code>, it may start a fresh process while the old one
-            keeps running on the same port — or the old one keeps answering requests while the new one fails to bind.
-          </p>
-          <p>
-            The fix was the same as before: stop the dev server, verify no orphaned <code>workerd</code> processes are
-            running, and restart cleanly. After that, all three SEO routes served the correct content.
-          </p>
-          <p>
-            This is now a pattern. Every time we make significant changes to <code>_worker.js</code>, we have to be
-            paranoid about stale processes. The platform doesn&#39;t warn you. The old code just keeps running while you
-            stare at your changes wondering why they don&#39;t work.
-          </p>
-          <h2>Surprise 3: The Build Pipeline Race</h2>
-          <p>Our build pipeline runs in stages:</p>
-          <pre><code class="hljs">npm run build           → compile the library
+</code></pre><p>Testing locally with <code>curl</code>, we got back 1,234 bytes — far too small for our 160KB docs page. That&#39;s the SPA&#39;s <code>index.html</code>. Our route wasn&#39;t matching.</p>
+<p>More investigation revealed something unexpected: requesting <code>/pathogen/docs/index.html</code> directly returned a <strong>308 Permanent Redirect</strong> to <code>/pathogen/docs/</code>. CloudFlare Pages automatically strips <code>.html</code> extensions and trailing <code>/index</code> from URLs, issuing 308 redirects. This is the platform&#39;s &quot;pretty URLs&quot; feature, and it runs at the static asset layer — potentially before or alongside the worker.</p>
+<p>Here&#39;s what&#39;s confusing: this behavior doesn&#39;t affect our worker route. The worker intercepts <code>/pathogen/docs</code> before the static asset layer gets involved. The 308 exists if someone visits <code>/pathogen/docs/index.html</code> directly, but our worker code never does — it catches the clean URL first. So the 308 was a red herring. But we spent considerable time investigating it because it seemed like it could explain why the wrong content was being served.</p>
+<p>The actual problem was something else entirely.</p>
+<h2>Surprise 2: The Zombie Worker Strikes Again</h2>
+<p>After adding the SEO routes, rebuilding the site, and restarting the dev server, our new routes still returned the SPA. Every request to <code>/pathogen/docs</code> showed &quot;My Workspaces&quot; — the SPA landing page.</p>
+<p>If this sounds familiar, it should. We documented the exact same problem in our <a href="/pathogen/blog/cloudflare-pages-spa-routing-struggle">first CloudFlare Pages blog post</a>. The <code>wrangler pages dev</code> command spawns a <code>workerd</code> subprocess that can survive the parent process being killed. When you restart <code>wrangler</code>, it may start a fresh process while the old one keeps running on the same port — or the old one keeps answering requests while the new one fails to bind.</p>
+<p>The fix was the same as before: stop the dev server, verify no orphaned <code>workerd</code> processes are running, and restart cleanly. After that, all three SEO routes served the correct content.</p>
+<p>This is now a pattern. Every time we make significant changes to <code>_worker.js</code>, we have to be paranoid about stale processes. The platform doesn&#39;t warn you. The old code just keeps running while you stare at your changes wondering why they don&#39;t work.</p>
+<h2>Surprise 3: The Build Pipeline Race</h2>
+<p>Our build pipeline runs in stages:</p>
+<pre><code class="hljs">npm run build           → compile the library
 npm run <span class="hljs-attr">build</span>:docs      → generate <span class="hljs-keyword">static</span> docs <span class="hljs-variable constant_">HTML</span>
 npm run <span class="hljs-attr">build</span>:blog      → generate blog content <span class="hljs-variable language_">module</span>
 tsx build-website.<span class="hljs-property">ts</span>    → assemble everything into public/
-</code></pre>
-          <p>
-            The docs build generates <code>website/docs-static/index.html</code> — a complete HTML page with sidebar
-            navigation, syntax highlighting, and progressive enhancement scripts. The website build then copies it to
-            <code>public/pathogen/docs/index.html</code>.
-          </p>
-          <p>
-            But here&#39;s the trap: <code>build-website.ts</code> starts by wiping the entire
-            <code>public/</code> directory. If the docs build wrote directly to <code>public/pathogen/docs/</code>,
-            those files would be deleted moments later when the website build started.
-          </p>
-          <p>
-            We initially made this mistake. The docs page generated beautifully, the website build completed
-            successfully, but the docs page was gone — replaced by a clean copy of the SPA without the static docs.
-          </p>
-          <p>
-            The fix was an intermediate output directory. The docs build writes to <code>website/docs-static/</code>,
-            which the website build copies into <code>public/pathogen/docs/</code> after the clean step. Simple, but the
-            kind of issue that&#39;s invisible when each build step works correctly in isolation.
-          </p>
-          <p>
-            This isn&#39;t a CloudFlare-specific problem, but it&#39;s the kind of subtle ordering bug that emerges when
-            you&#39;re juggling static generation, worker rendering, and SPA routing in a single deployment.
-          </p>
-          <h2>Surprise 4: Static Assets and Worker Priority</h2>
-          <p>
-            CloudFlare Pages has an implicit priority order: static assets are served first, and the worker handles
-            everything else. This means if you have a file at <code>public/pathogen/docs/index.html</code>, the platform
-            might serve it before your worker even runs.
-          </p>
-          <p>
-            In practice, this worked in our favor for the docs page — but it also meant we needed to be deliberate about
-            which routes are handled by the worker versus served as static assets. For <code>/pathogen/docs</code>, the
-            worker explicitly hands off to the static asset layer via <code>env.ASSETS.fetch()</code>. For
-            <code>/pathogen/explore</code> and <code>/pathogen/featured</code>, the worker generates HTML on the fly.
-          </p>
-          <p>
-            The mental model you need: the worker is a middleware layer, and <code>env.ASSETS.fetch()</code> is how you
-            call &quot;next&quot; to let the static asset layer handle a request. If you don&#39;t call it, the worker
-            is the end of the line.
-          </p>
-          <p>
-            What the documentation doesn&#39;t make clear is the interaction between the worker, the static asset layer,
-            and the 308 redirect behavior. All three are happening, and understanding which runs when requires
-            experimentation rather than documentation.
-          </p>
-          <h2>The Navigation Consistency Problem</h2>
-          <p>
-            With three rendering modes — SPA (client-side), static (build-time), and worker (request-time) — keeping
-            navigation consistent is harder than it sounds.
-          </p>
-          <p>
-            The SPA uses a <code>&lt;app-header&gt;</code> Web Component with Shadow DOM. The static docs page and
-            worker-rendered pages use plain HTML. They need to look identical: same 56px height, same logo, same nav
-            links, same hover states, same theme toggle.
-          </p>
-          <p>
-            Our first pass duplicated the nav bar CSS and HTML across all three rendering contexts. This immediately
-            created a problem: the SPA had a theme toggle and Preferences link that the SEO pages didn&#39;t. Clicking
-            from Docs to Workspaces, the nav bar would gain two elements. Clicking back, they&#39;d disappear. The
-            effect was jarring — the navigation felt broken even though every page was technically correct in isolation.
-          </p>
-          <p>
-            The fix had two parts. First, we extracted the theme toggle into a standalone Web Component
-            (<code>&lt;theme-toggle&gt;</code>) that works in any context — SPA or static HTML. It reads and writes the
-            same <code>localStorage</code> key, dispatches the same events, and needs no framework or imports. Adding it
-            to SEO pages is just a <code>&lt;script type=&quot;module&quot;&gt;</code> tag and a
-            <code>&lt;theme-toggle&gt;</code> element in the header.
-          </p>
-          <p>
-            Second, we added the Preferences link to every page&#39;s navigation — SEO pages included. Even though
-            Preferences is an SPA route, linking to it from static pages works via a full page load. The important thing
-            is that every nav bar has the same links in the same order.
-          </p>
-          <h2>Flash of Wrong Theme</h2>
-          <p>
-            Static HTML pages have a subtlety that SPAs handle automatically: the theme. Our SPA initializes the theme
-            manager before any rendering occurs, so the user never sees a flash of the wrong color scheme. Static pages,
-            however, start rendering immediately — before any JavaScript runs.
-          </p>
-          <p>
-            If a user has dark mode saved in <code>localStorage</code> but the page&#39;s HTML defaults to light,
-            they&#39;ll see a brief flash of light theme before the JS kicks in and switches to dark. The fix is a tiny
-            inline <code>&lt;script&gt;</code> in the <code>&lt;head&gt;</code> — before the CSS even loads:
-          </p>
-          <pre><code class="hljs language-javascript">(<span class="hljs-keyword">function</span>(<span class="hljs-params"></span>){
+</code></pre><p>The docs build generates <code>website/docs-static/index.html</code> — a complete HTML page with sidebar navigation, syntax highlighting, and progressive enhancement scripts. The website build then copies it to <code>public/pathogen/docs/index.html</code>.</p>
+<p>But here&#39;s the trap: <code>build-website.ts</code> starts by wiping the entire <code>public/</code> directory. If the docs build wrote directly to <code>public/pathogen/docs/</code>, those files would be deleted moments later when the website build started.</p>
+<p>We initially made this mistake. The docs page generated beautifully, the website build completed successfully, but the docs page was gone — replaced by a clean copy of the SPA without the static docs.</p>
+<p>The fix was an intermediate output directory. The docs build writes to <code>website/docs-static/</code>, which the website build copies into <code>public/pathogen/docs/</code> after the clean step. Simple, but the kind of issue that&#39;s invisible when each build step works correctly in isolation.</p>
+<p>This isn&#39;t a CloudFlare-specific problem, but it&#39;s the kind of subtle ordering bug that emerges when you&#39;re juggling static generation, worker rendering, and SPA routing in a single deployment.</p>
+<h2>Surprise 4: Static Assets and Worker Priority</h2>
+<p>CloudFlare Pages has an implicit priority order: static assets are served first, and the worker handles everything else. This means if you have a file at <code>public/pathogen/docs/index.html</code>, the platform might serve it before your worker even runs.</p>
+<p>In practice, this worked in our favor for the docs page — but it also meant we needed to be deliberate about which routes are handled by the worker versus served as static assets. For <code>/pathogen/docs</code>, the worker explicitly hands off to the static asset layer via <code>env.ASSETS.fetch()</code>. For <code>/pathogen/explore</code> and <code>/pathogen/featured</code>, the worker generates HTML on the fly.</p>
+<p>The mental model you need: the worker is a middleware layer, and <code>env.ASSETS.fetch()</code> is how you call &quot;next&quot; to let the static asset layer handle a request. If you don&#39;t call it, the worker is the end of the line.</p>
+<p>What the documentation doesn&#39;t make clear is the interaction between the worker, the static asset layer, and the 308 redirect behavior. All three are happening, and understanding which runs when requires experimentation rather than documentation.</p>
+<h2>The Navigation Consistency Problem</h2>
+<p>With three rendering modes — SPA (client-side), static (build-time), and worker (request-time) — keeping navigation consistent is harder than it sounds.</p>
+<p>The SPA uses a <code>&lt;app-header&gt;</code> Web Component with Shadow DOM. The static docs page and worker-rendered pages use plain HTML. They need to look identical: same 56px height, same logo, same nav links, same hover states, same theme toggle.</p>
+<p>Our first pass duplicated the nav bar CSS and HTML across all three rendering contexts. This immediately created a problem: the SPA had a theme toggle and Preferences link that the SEO pages didn&#39;t. Clicking from Docs to Workspaces, the nav bar would gain two elements. Clicking back, they&#39;d disappear. The effect was jarring — the navigation felt broken even though every page was technically correct in isolation.</p>
+<p>The fix had two parts. First, we extracted the theme toggle into a standalone Web Component (<code>&lt;theme-toggle&gt;</code>) that works in any context — SPA or static HTML. It reads and writes the same <code>localStorage</code> key, dispatches the same events, and needs no framework or imports. Adding it to SEO pages is just a <code>&lt;script type=&quot;module&quot;&gt;</code> tag and a <code>&lt;theme-toggle&gt;</code> element in the header.</p>
+<p>Second, we added the Preferences link to every page&#39;s navigation — SEO pages included. Even though Preferences is an SPA route, linking to it from static pages works via a full page load. The important thing is that every nav bar has the same links in the same order.</p>
+<h2>Flash of Wrong Theme</h2>
+<p>Static HTML pages have a subtlety that SPAs handle automatically: the theme. Our SPA initializes the theme manager before any rendering occurs, so the user never sees a flash of the wrong color scheme. Static pages, however, start rendering immediately — before any JavaScript runs.</p>
+<p>If a user has dark mode saved in <code>localStorage</code> but the page&#39;s HTML defaults to light, they&#39;ll see a brief flash of light theme before the JS kicks in and switches to dark. The fix is a tiny inline <code>&lt;script&gt;</code> in the <code>&lt;head&gt;</code> — before the CSS even loads:</p>
+<pre><code class="hljs language-javascript">(<span class="hljs-keyword">function</span>(<span class="hljs-params"></span>){
   <span class="hljs-keyword">var</span> t = <span class="hljs-variable language_">localStorage</span>.<span class="hljs-title function_">getItem</span>(<span class="hljs-string">&#x27;pathogen-theme&#x27;</span>);
   <span class="hljs-keyword">if</span> (t === <span class="hljs-string">&#x27;light&#x27;</span> || t === <span class="hljs-string">&#x27;dark&#x27;</span>) {
     <span class="hljs-variable language_">document</span>.<span class="hljs-property">documentElement</span>.<span class="hljs-title function_">setAttribute</span>(<span class="hljs-string">&#x27;data-theme&#x27;</span>, t);
   }
 })();
-</code></pre>
-          <p>
-            This runs synchronously, blocking the parser for microseconds while it sets the theme attribute. By the time
-            the browser processes the <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code> for <code>theme.css</code>,
-            the correct custom properties are already active. No flash.
-          </p>
-          <h2>The <code>robots.txt</code> and <code>sitemap.xml</code> Dance</h2>
-          <p>
-            We also needed to tell search engines about the new pages. This meant generating
-            <code>robots.txt</code> (allow these paths, disallow those) and <code>sitemap.xml</code> (here are all the
-            URLs we want indexed).
-          </p>
-          <p>
-            The sitemap needed to be dynamic — blog posts are added as markdown files, and the build should discover
-            them automatically. We enumerate <code>website/blog/*.md</code>, strip the extension to get slugs, and
-            generate <code>&lt;url&gt;</code> entries for each.
-          </p>
-          <p>
-            One oversight: we initially forgot to include <code>/pathogen/blog</code> in both
-            <code>robots.txt</code> and <code>sitemap.xml</code>. The blog pages were already crawlable via the
-            SPA&#39;s static rendering, but without being listed in robots.txt and the sitemap, search engines had no
-            way to discover them efficiently. A small thing, but the kind of omission that undermines the entire SEO
-            effort.
-          </p>
-          <h2>Lessons Learned</h2>
-          <h3>1. Always restart <code>wrangler</code> cleanly</h3>
-          <p>
-            Kill orphaned <code>workerd</code> processes. Always. Check <code>ps aux | grep workerd</code> after
-            stopping the dev server. This is the single most time-wasting gotcha in CloudFlare Pages development. Until
-            CloudFlare fixes the process management, treat every restart as potentially stale.
-          </p>
-          <h3>2. Build pipeline ordering matters</h3>
-          <p>
-            If one build step cleans an output directory and another writes to it, they need to run in the right order
-            with an intermediate staging area. This is Build Systems 101, but it&#39;s easy to overlook when you&#39;re
-            adding features incrementally and each step works in isolation.
-          </p>
-          <h3>3. Navigation consistency beats navigation logic</h3>
-          <p>
-            When you have multiple rendering modes, every page should show the same navigation — same links, same order,
-            same interactive elements. It&#39;s tempting to hide links that &quot;don&#39;t apply&quot; on certain
-            pages. Don&#39;t. Users perceive the nav bar as a constant. When it changes between pages, the site feels
-            broken.
-          </p>
-          <h3>4. Theme flash prevention needs to be in <code>&lt;head&gt;</code></h3>
-          <p>
-            Any page that supports user-selected themes needs an inline script in <code>&lt;head&gt;</code> that runs
-            before the stylesheet loads. This is well-known in the SSR world but easy to forget when you&#39;re adding
-            static pages to an existing SPA.
-          </p>
-          <h3>5. Standalone Web Components bridge the gap</h3>
-          <p>
-            When you need UI elements that work identically across SPA and static contexts, standalone Web Components —
-            no imports, no framework, self-registering — are the right abstraction. Our
-            <code>&lt;theme-toggle&gt;</code> works everywhere because it depends on nothing except the DOM and
-            <code>localStorage</code>.
-          </p>
-          <h2>Conclusion</h2>
-          <p>
-            Adding SEO-friendly pages to a CloudFlare Pages SPA is achievable, but the platform makes you earn it. The
-            documentation doesn&#39;t cover the interaction between workers, static assets, and automatic redirects. The
-            dev server&#39;s process management will waste your time. And the challenge of maintaining visual
-            consistency across rendering modes is a design problem that no platform can solve for you.
-          </p>
-          <p>
-            The final architecture — static HTML for docs, worker-rendered HTML for dynamic pages, SPA for interactive
-            features, all sharing a common nav bar and theme system — works well. Getting there required more debugging
-            than coding. As with our first CloudFlare Pages adventure, the platform is powerful enough to do everything
-            we need. The documentation just hasn&#39;t caught up with the use cases yet.
-          </p>
-        </div>
-      </article>
-    </main>
-    <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-    <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-    <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-    <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
-  </body>
+</code></pre><p>This runs synchronously, blocking the parser for microseconds while it sets the theme attribute. By the time the browser processes the <code>&lt;link rel=&quot;stylesheet&quot;&gt;</code> for <code>theme.css</code>, the correct custom properties are already active. No flash.</p>
+<h2>The <code>robots.txt</code> and <code>sitemap.xml</code> Dance</h2>
+<p>We also needed to tell search engines about the new pages. This meant generating <code>robots.txt</code> (allow these paths, disallow those) and <code>sitemap.xml</code> (here are all the URLs we want indexed).</p>
+<p>The sitemap needed to be dynamic — blog posts are added as markdown files, and the build should discover them automatically. We enumerate <code>website/blog/*.md</code>, strip the extension to get slugs, and generate <code>&lt;url&gt;</code> entries for each.</p>
+<p>One oversight: we initially forgot to include <code>/pathogen/blog</code> in both <code>robots.txt</code> and <code>sitemap.xml</code>. The blog pages were already crawlable via the SPA&#39;s static rendering, but without being listed in robots.txt and the sitemap, search engines had no way to discover them efficiently. A small thing, but the kind of omission that undermines the entire SEO effort.</p>
+<h2>Lessons Learned</h2>
+<h3>1. Always restart <code>wrangler</code> cleanly</h3>
+<p>Kill orphaned <code>workerd</code> processes. Always. Check <code>ps aux | grep workerd</code> after stopping the dev server. This is the single most time-wasting gotcha in CloudFlare Pages development. Until CloudFlare fixes the process management, treat every restart as potentially stale.</p>
+<h3>2. Build pipeline ordering matters</h3>
+<p>If one build step cleans an output directory and another writes to it, they need to run in the right order with an intermediate staging area. This is Build Systems 101, but it&#39;s easy to overlook when you&#39;re adding features incrementally and each step works in isolation.</p>
+<h3>3. Navigation consistency beats navigation logic</h3>
+<p>When you have multiple rendering modes, every page should show the same navigation — same links, same order, same interactive elements. It&#39;s tempting to hide links that &quot;don&#39;t apply&quot; on certain pages. Don&#39;t. Users perceive the nav bar as a constant. When it changes between pages, the site feels broken.</p>
+<h3>4. Theme flash prevention needs to be in <code>&lt;head&gt;</code></h3>
+<p>Any page that supports user-selected themes needs an inline script in <code>&lt;head&gt;</code> that runs before the stylesheet loads. This is well-known in the SSR world but easy to forget when you&#39;re adding static pages to an existing SPA.</p>
+<h3>5. Standalone Web Components bridge the gap</h3>
+<p>When you need UI elements that work identically across SPA and static contexts, standalone Web Components — no imports, no framework, self-registering — are the right abstraction. Our <code>&lt;theme-toggle&gt;</code> works everywhere because it depends on nothing except the DOM and <code>localStorage</code>.</p>
+<h2>Conclusion</h2>
+<p>Adding SEO-friendly pages to a CloudFlare Pages SPA is achievable, but the platform makes you earn it. The documentation doesn&#39;t cover the interaction between workers, static assets, and automatic redirects. The dev server&#39;s process management will waste your time. And the challenge of maintaining visual consistency across rendering modes is a design problem that no platform can solve for you.</p>
+<p>The final architecture — static HTML for docs, worker-rendered HTML for dynamic pages, SPA for interactive features, all sharing a common nav bar and theme system — works well. Getting there required more debugging than coding. As with our first CloudFlare Pages adventure, the platform is powerful enough to do everything we need. The documentation just hasn&#39;t caught up with the use cases yet.</p>
+
+      </div>
+    </article>
+  </main>
+  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+</body>
 </html>

@@ -53,7 +53,26 @@ let glow = RadialGradient('glow', 0.5, 0.5, 0.6) {|g|
 };
 ```
 
-Radial gradients are natural fits for glows, spotlights, and vignettes. The `radial-glow` sample demonstrates a warm-to-dark radial falloff centered on a shape. Since the coordinate system is normalized, moving the center or changing the radius produces different effects without recalculating pixel positions.
+Radial gradients are natural fits for glows, spotlights, and vignettes. The scene below composes four radial gradients — a nebula background, two star types, and a planet with an off-center highlight — to build a cosmic scene entirely from radial falloffs and transparent stops.
+
+<mini-workspace src="samples/post1/radial-glow.pathogen" caption="Four radial gradients — nebula, stars, and a ringed planet" code-open></mini-workspace>
+
+### Focal Points
+
+The basic constructor centers the gradient's falloff at `(cx, cy)`. But `RadialGradient` also accepts two extra arguments — `fx` and `fy` — that shift the *focal point* away from the geometric center. The gradient still fills the same circle, but the highlight moves, creating the illusion of directional light on a 3D surface.
+
+```pathogen
+// Same radius, different highlight positions
+let sphere = RadialGradient('s', 0.5, 0.5, 0.5, 0.3, 0.3) {|g|
+  g.stop(0,   Color('#ffffff'));
+  g.stop(0.5, Color('#2563eb'));
+  g.stop(1,   Color('#0a1428'));
+};
+```
+
+The three spheres below use identical color stops. Only `fx` and `fy` differ — the highlight shifts from top-left to center to top-right.
+
+<mini-workspace src="samples/post1/radial-focal.pathogen" caption="Same gradient stops, three focal points — the highlight shifts with fx, fy"></mini-workspace>
 
 ## OKLCH Interpolation
 
@@ -120,7 +139,11 @@ One base gradient, three variants. Change the base and all inherited gradients u
 
 ## CSS Variable Reactivity
 
-Pathogen's gradients compose naturally with the [reactive color system](/pathogen/blog/reactive-color-svg). When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly. The `reactive-colors` sample demonstrates this in full, building a palette that adapts to a single base color.
+Pathogen's gradients compose naturally with the [reactive color system](/pathogen/blog/reactive-color-svg). When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.
+
+The demo below puts three overlapping radial glows on a dark background. Each glow's center color is bound to a CSS variable (`--light-a`, `--light-b`, `--light-c`) — use the color pickers to remix the scene in real time.
+
+<mini-workspace src="samples/post1/radial-reactive.pathogen" caption="Drag the color pickers to recolor three overlapping radial lights" code-open></mini-workspace>
 
 This is the payoff of treating gradients as first-class objects: they participate in the same variable binding, OKLCH manipulation, and reactive update system as every other part of the language.
 
