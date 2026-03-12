@@ -1,6 +1,6 @@
 # Blog
 
-Guidelines for blog content.
+Guidelines and playbook for blog content authoring, review, and publication.
 
 ## Overview
 
@@ -28,3 +28,128 @@ The `slug` must match the filename (without `.md`).
 - Use `<code>` for inline code, fenced code blocks with language tags
 - Supported syntax highlighting languages: javascript/js, bash/shell, json, html/xml, toml
 - Images/assets go in `website/blog/assets/` and are referenced relatively
+
+## Blog Sample Pipeline (`website/blog/samples/`)
+
+Blog posts embed interactive `<mini-workspace>` demos that display Pathogen source code alongside a rendered SVG preview. The pipeline for creating and integrating samples:
+
+### How It Works
+
+1. **Author** a `.pathogen` source file in `website/blog/samples/postN/`
+2. **Compile** the source to SVG using the CLI
+3. **Reference** the sample in the blog markdown via `<mini-workspace src="...">`
+4. **Build** the blog — `scripts/build-blog.ts` processes the tags
+
+### Step-by-Step
+
+```bash
+# 1. Create sample source file
+#    First line must be a viewBox comment: // viewBox="0 0 W H"
+vim website/blog/samples/post1/my-sample.pathogen
+
+# 2. Compile to SVG (same directory, .svg extension)
+npx tsx src/cli.ts \
+  --src=website/blog/samples/post1/my-sample.pathogen \
+  "--output-svg-file=website/blog/samples/post1/my-sample.svg" \
+  "--viewBox=0 0 W H" --width=W --height=H
+
+# 3. Reference in blog markdown
+#    <mini-workspace src="samples/post1/my-sample.pathogen" caption="..." code-open></mini-workspace>
+
+# 4. Build
+npm run build:blog    # processes tags → blog-content.js + blog-static/
+npm run build:website # assembles public/ including samples
+```
+
+### What `build-blog.ts` Does with `<mini-workspace>`
+
+The `processMiniWorkspaceTags()` function (line ~108) transforms each tag:
+
+1. Reads the `.pathogen` source → base64-encodes it into a `code-data` attribute
+2. Looks for a `.svg` file with the same basename → if found, embeds an `<img>` fallback
+3. Syntax-highlights the source as a `<code>` child element (static fallback)
+
+The resulting HTML is:
+```html
+<mini-workspace code-data="base64..." code-open caption="...">
+  <code class="hljs language-pathogen">highlighted source</code>
+  <img src="/pathogen/blog/samples/post1/my-sample.svg" loading="lazy">
+</mini-workspace>
+```
+
+### How `<mini-workspace>` Renders
+
+The web component (`playground/components/blog/mini-workspace.ts`):
+
+1. Decodes `code-data` → displays source in CodeMirror (read-only)
+2. Finds `<img>` child → fetches the SVG URL → feeds it to `<mini-preview>`
+3. `<mini-preview>` parses the SVG via `DOMParser('image/svg+xml')` and renders it in a pannable/zoomable viewport
+
+**Critical**: Without the `.svg` file, the preview will be blank. The component does NOT compile Pathogen source at runtime — it only displays pre-compiled SVG.
+
+### SVG with CSS Variables / `@property` Declarations
+
+When a sample uses `CSSVar()` / `Color(CSSVar(...))`, the compiled SVG contains `<style>` blocks with `@property` declarations like `syntax: "<color>"`. The `<color>` token breaks XML parsing in `DOMParser` unless the style content is wrapped in `<![CDATA[...]]>`.
+
+The compiler (`src/cli.ts`) automatically wraps `<style>` content in CDATA sections. If you encounter blank previews for reactive-color samples, this is the likely cause — re-generate the SVG from the compiler.
+
+### CSS Variable Color Pickers
+
+The `<mini-workspace>` component auto-detects `@property` declarations with `syntax: "<color>"` in the SVG's `<style>` block and generates interactive color picker controls. This detection happens in `_detectCssVarsFromSvg()`. You can also specify variables explicitly with the `vars` attribute.
+
+### Checklist for New Samples
+
+- [ ] `.pathogen` file with `// viewBox="0 0 W H"` comment on line 1
+- [ ] Compiled `.svg` file alongside (same directory, same basename)
+- [ ] `<mini-workspace>` tag in blog markdown with `src` pointing to `.pathogen` file
+- [ ] `npm run build:blog` succeeds without warnings
+- [ ] Visual verify via `npm run dev:website`
+
+## Blogging Playbook
+
+The end-to-end process for creating, reviewing, and publishing blog posts:
+
+### 1. Synopsis
+
+Author and review with the user a ~250-word synopsis for each blog post, including the title. This sets the scope, audience, and goals before any code or prose is written.
+
+### 2. Code Examples
+
+Assemble and review code examples that will be incorporated into the post using BBWPs and mini-workspaces. Follow the standards in [`../guidelines/code-example-guidelines.md`](../guidelines/code-example-guidelines.md).
+
+### 3. Draft Blog Post
+
+Author and review a draft blog post that incorporates code examples in mini-workspaces:
+
+- Posts should liberally link to other published blog posts and to the documentation site.
+- Posts should be available for review via `npm run dev:website`.
+
+### 4. Agentic Review
+
+Draft blog posts go through a structured multi-persona review round table. See the full process in [`../guidelines/agentic-review.md`](../guidelines/agentic-review.md).
+
+### 5. Final Version
+
+Author the final version of the blog post incorporating all feedback compiled from the agentic reviewers.
+
+### 6. Publish and Verify
+
+1. Push to `dev:website` so all links (on new posts, existing posts, and documentation) can be checked by Puppeteer.
+2. Fix all broken links.
+3. Rebuild the post from its parts.
+
+## Multi-Part Series
+
+When publishing a multi-part blog series:
+
+1. **Different dates** — Posts should be published on different days to correctly preserve their desired order.
+2. **Series TOC** — Posts should include a table of contents at the top showing each entry in the series and where the current post is ordered.
+3. **Part subtitle** — Posts in a series should include a subtitle worded something like "Part N in our series on [topic or feature area]".
+
+## Shared Content Guidelines
+
+The following shared guidelines apply to blog content:
+
+- [Code Example Guidelines](../guidelines/code-example-guidelines.md) — Standards for all embedded code examples
+- [Schematic and Diagram Checklist](../guidelines/schematic-and-diagram-checklist-plus-antipatterns.md) — Review checklist and anti-patterns for diagrams
+- [Agentic Review Process](../guidelines/agentic-review.md) — Multi-persona review process for published content
