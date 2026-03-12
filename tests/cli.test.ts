@@ -88,8 +88,7 @@ describe('CLI', () => {
 
     it('compiles stdlib function calls', () => {
       const result = runCli(['-e', 'circle(100, 100, 50)']);
-      expect(result.stdout).toContain('M');
-      expect(result.stdout).toContain('A');
+      expect(result.stdout.trim()).toBe('M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100');
     });
 
     it('errors when -e has no argument', () => {
@@ -105,8 +104,7 @@ describe('CLI', () => {
     it('compiles file with --src flag', () => {
       writeFileSync(inputFile, 'let r = 25; circle(50, 50, r)');
       const result = runCli([`--src=${inputFile}`]);
-      expect(result.stdout).toContain('M');
-      expect(result.stdout).toContain('A');
+      expect(result.stdout.trim()).toBe('M 25 50 A 25 25 0 1 1 75 50 A 25 25 0 1 1 25 50');
     });
 
     it('compiles file as positional argument', () => {
@@ -144,8 +142,7 @@ describe('CLI', () => {
       runCli([`--src=${inputFile}`, '-o', outputTxt]);
       expect(existsSync(outputTxt)).toBe(true);
       const content = readFileSync(outputTxt, 'utf-8');
-      expect(content).toContain('M');
-      expect(content).toContain('A');
+      expect(content.trim()).toBe('M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100');
     });
 
     it('writes path to file with --output', () => {
@@ -272,9 +269,7 @@ describe('CLI', () => {
 
     it('compiles user-defined functions', () => {
       const result = runCli(['-e', 'fn sq(x, y, s) { rect(x, y, s, s) } sq(10, 10, 20)']);
-      expect(result.stdout).toContain('M');
-      expect(result.stdout).toContain('L');
-      expect(result.stdout).toContain('Z');
+      expect(result.stdout.trim()).toBe('M 10 10 L 30 10 L 30 30 L 10 30 Z');
     });
 
     it('compiles nested loops', () => {

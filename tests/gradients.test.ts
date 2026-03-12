@@ -65,8 +65,7 @@ describe('Gradients', () => {
           g.stop(0, Color('#ff0000'));
         };
       `);
-      expect(result.gradients[0].stops[0].color).toBeDefined();
-      expect(typeof result.gradients[0].stops[0].color).toBe('string');
+      expect(result.gradients[0].stops[0].color).toBe('#ff0000');
     });
 
     it('stops accept named colors via Color()', () => {
@@ -75,8 +74,7 @@ describe('Gradients', () => {
           g.stop(0, Color('red'));
         };
       `);
-      expect(result.gradients[0].stops[0].color).toBeDefined();
-      expect(typeof result.gradients[0].stops[0].color).toBe('string');
+      expect(result.gradients[0].stops[0].color).toBe('#ff0000');
     });
 
     it('stop with .alpha() produces color with alpha', () => {
@@ -85,8 +83,7 @@ describe('Gradients', () => {
           g.stop(0, Color('#000000').alpha(0.5));
         };
       `);
-      // Alpha colors produce rgb() with alpha component or oklch with alpha
-      expect(result.gradients[0].stops[0].color).toBeDefined();
+      expect(result.gradients[0].stops[0].color).toBe('rgba(0, 0, 0, 0.5)');
     });
   });
 

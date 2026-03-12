@@ -28,6 +28,7 @@ src/
 
 ```
 tests/
+├── CLAUDE.md          # Testing playbook and conventions
 ├── parser.test.ts     # Parser unit tests
 ├── evaluator.test.ts  # Evaluator/integration tests
 ├── layers.test.ts     # Multi-layer system tests
@@ -35,7 +36,10 @@ tests/
 ├── context.test.ts    # Path context tracking tests
 ├── errors.test.ts     # Error handling tests
 ├── cli.test.ts        # CLI integration tests
-└── helpers.ts         # Shared test utilities
+├── helpers.ts         # Shared test utilities (compilePath, parseSVGPath, expectSVGPathCommandSequence)
+├── helpers.test.ts    # Tests for the test utilities
+├── setup.ts           # Custom Vitest matchers (toMatchSVGPath, toContainSVGCommands, etc.)
+└── vitest.d.ts        # TypeScript declarations for custom matchers
 ```
 
 ## Docs

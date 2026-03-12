@@ -48,7 +48,7 @@ describe('Path Blocks', () => {
 
     it('supports variables inside path block', () => {
       const result = compile('let p = @{ let d = 10; v d h d }; log(p.endPoint);');
-      expect(result.logs[0].parts[0].value).toContain('10');
+      expect(result.logs[0].parts[0].value).toBe('Point(10, 10)');
     });
 
     it('supports control flow inside path block', () => {
@@ -61,7 +61,7 @@ describe('Path Blocks', () => {
         log(p.endPoint);
       `);
       // 3 iterations of v 10 → endPoint should be (0, 30)
-      expect(result.logs[0].parts[0].value).toContain('30');
+      expect(result.logs[0].parts[0].value).toBe('Point(0, 30)');
     });
 
     it('reads outer variables', () => {
@@ -70,7 +70,7 @@ describe('Path Blocks', () => {
         let p = @{ v size h size };
         log(p.endPoint);
       `);
-      expect(result.logs[0].parts[0].value).toContain('20');
+      expect(result.logs[0].parts[0].value).toBe('Point(20, 20)');
     });
 
     it('supports context-aware functions inside path block', () => {
@@ -279,9 +279,8 @@ describe('Path Blocks', () => {
         log(proj.startPoint);
         log(proj.endPoint);
       `);
-      expect(result.logs[0].parts[0].value).toContain('10');
-      expect(result.logs[1].parts[0].value).toContain('40');
-      expect(result.logs[1].parts[0].value).toContain('30');
+      expect(result.logs[0].parts[0].value).toBe('Point(10, 10)');
+      expect(result.logs[1].parts[0].value).toBe('Point(40, 30)');
     });
 
     it('can be called multiple times at different positions', () => {
@@ -299,8 +298,7 @@ describe('Path Blocks', () => {
         shape.drawTo(10, 10);
         log(ctx.position);
       `);
-      expect(result.logs[0].parts[0].value).toContain('40');
-      expect(result.logs[0].parts[0].value).toContain('30');
+      expect(result.logs[0].parts[0].value).toBe('{\n  "x": 40,\n  "y": 30\n}');
     });
 
     it('works with stdlib path functions', () => {

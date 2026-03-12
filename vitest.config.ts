@@ -23,6 +23,7 @@ function jsTsFallback(): Plugin {
 export default defineConfig({
   plugins: [jsTsFallback()],
   test: {
+    setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',

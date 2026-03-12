@@ -469,42 +469,46 @@ describe('Evaluator', () => {
 
     it('evaluates roundRect', () => {
       const result = compilePath('roundRect(10, 10, 80, 60, 10)');
-      expect(result).toContain('M 20 10'); // Start with radius offset
-      expect(result).toContain('Q'); // Quadratic curves for corners
-      expect(result).toContain('Z');
+      // roundRect(x=10, y=10, w=80, h=60, r=min(10,40,30)=10)
+      expect(result).toBe(
+        'M 20 10 L 80 10 Q 90 10 90 20 L 90 60 Q 90 70 80 70 L 20 70 Q 10 70 10 60 L 10 20 Q 10 10 20 10 Z',
+      );
     });
 
     it('evaluates roundRect with large radius (clamped)', () => {
-      // radius is clamped to half the smaller dimension
+      // radius is clamped to min(50, 40/2=20, 20/2=10) = 10
       const result = compilePath('roundRect(0, 0, 40, 20, 50)');
-      expect(result).toContain('Q');
-      expect(result).toContain('Z');
+      expect(result).toBe(
+        'M 10 0 L 30 0 Q 40 0 40 10 L 40 10 Q 40 20 30 20 L 10 20 Q 0 20 0 10 L 0 10 Q 0 0 10 0 Z',
+      );
     });
 
     it('evaluates polygon', () => {
+      // polygon(cx=50, cy=50, r=25, sides=4) — square rotated 45°
       const result = compilePath('polygon(50, 50, 25, 4)');
-      expect(result).toContain('M');
-      expect(result).toContain('L');
-      expect(result).toContain('Z');
+      expect(result).toBe('M 50 25 L 75 50 L 50 75 L 25 50 Z');
     });
 
     it('evaluates polygon with different side counts', () => {
-      // Triangle
+      // Triangle: M + 2 L's + Z
       const triangle = compilePath('polygon(50, 50, 25, 3)');
       expect(triangle.match(/L/g)?.length).toBe(2);
+      expect(triangle).toMatch(/^M .+ L .+ L .+ Z$/);
 
-      // Hexagon
+      // Hexagon: M + 5 L's + Z
       const hexagon = compilePath('polygon(50, 50, 25, 6)');
       expect(hexagon.match(/L/g)?.length).toBe(5);
+      expect(hexagon).toMatch(/^M .+ Z$/);
     });
 
     it('evaluates star', () => {
+      // star(cx=50, cy=50, outerR=30, innerR=15, points=5)
+      // 10 vertices: 5 outer + 5 inner alternating → M + 9 L's + Z
       const result = compilePath('star(50, 50, 30, 15, 5)');
-      expect(result).toContain('M');
-      expect(result).toContain('L');
-      expect(result).toContain('Z');
-      // 5-pointed star has 10 L commands (alternating outer/inner points)
       expect(result.match(/L/g)?.length).toBe(9);
+      // First vertex at top: cx=50, cy=50-30=20
+      expect(result).toMatch(/^M 50 20 L/);
+      expect(result).toMatch(/Z$/);
     });
 
     it('evaluates line', () => {

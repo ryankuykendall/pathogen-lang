@@ -1172,7 +1172,7 @@ describe('Multi-Layer Support', () => {
       `);
       expect(result.masks).toHaveLength(1);
       expect(result.masks[0].elements).toHaveLength(1);
-      expect(result.masks[0].elements[0].pathData).toContain('M');
+      expect(result.masks[0].elements[0].pathData).toBe('M 0 0 L 50 50');
       expect(result.masks[0].elements[0].styles).toEqual({ fill: 'white' });
     });
 
@@ -1184,7 +1184,7 @@ describe('Multi-Layer Support', () => {
         m.append(proj, \${ fill: black; });
       `);
       expect(result.masks[0].elements).toHaveLength(1);
-      expect(result.masks[0].elements[0].pathData).toContain('M');
+      expect(result.masks[0].elements[0].pathData).toBe('M 10 20 L 60 70');
       expect(result.masks[0].elements[0].styles).toEqual({ fill: 'black' });
     });
 
@@ -1208,7 +1208,7 @@ describe('Multi-Layer Support', () => {
         c.append(p);
       `);
       expect(result.clipPaths[0].elements).toHaveLength(1);
-      expect(result.clipPaths[0].elements[0].pathData).toContain('M');
+      expect(result.clipPaths[0].elements[0].pathData).toBe('M 0 0 L 100 0 L 100 100 Z');
     });
 
     it('Mask.append() without styles uses empty styles', () => {
