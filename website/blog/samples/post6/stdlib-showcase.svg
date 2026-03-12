@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" width="600" height="260">
+
+  <path d="M 0 0 L 600 0 L 600 260 L 0 260 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path d="M 21 50 L 109 50 Q 115 50 115 56 L 115 144 Q 115 150 109 150 L 21 150 Q 15 150 15 144 L 15 56 Q 15 50 21 50 Z M 136 50 L 224 50 Q 230 50 230 56 L 230 144 Q 230 150 224 150 L 136 150 Q 130 150 130 144 L 130 56 Q 130 50 136 50 Z M 251 50 L 339 50 Q 345 50 345 56 L 345 144 Q 345 150 339 150 L 251 150 Q 245 150 245 144 L 245 56 Q 245 50 251 50 Z M 366 50 L 454 50 Q 460 50 460 56 L 460 144 Q 460 150 454 150 L 366 150 Q 360 150 360 144 L 360 56 Q 360 50 366 50 Z M 481 50 L 569 50 Q 575 50 575 56 L 575 144 Q 575 150 569 150 L 481 150 Q 475 150 475 144 L 475 56 Q 475 50 481 50 Z" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <path d="M 35 100 A 30 30 0 1 1 95 100 A 30 30 0 1 1 35 100" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="1.5"/>
+  <path d="M 150 72 L 210 72 L 210 112 L 150 112 Z" fill="rgba(34, 197, 94, 0.094)" stroke="#22c55e" stroke-width="1.5"/>
+  <path d="M 295 68 L 303.22899353209465 88.67376207875074 L 325.4338085214449 90.11145618000168 L 308.31479122813215 104.32623792124926 L 313.80912807335915 125.88854381999832 L 295 114 L 276.19087192664085 125.88854381999832 L 281.68520877186785 104.32623792124926 L 264.5661914785551 90.11145618000168 L 286.77100646790535 88.67376207875074 Z" fill="rgba(245, 158, 11, 0.094)" stroke="#f59e0b" stroke-width="1.5"/>
+  <path d="M 410 70 L 435.98076211353316 85 L 435.98076211353316 115 L 410 130 L 384.01923788646684 115.00000000000001 L 384.01923788646684 85 Z" fill="rgba(239, 68, 68, 0.094)" stroke="#ef4444" stroke-width="1.5"/>
+  <path d="M 506 75 L 545 75 Q 553 75 553 83 L 553 107 Q 553 115 545 115 L 506 115 Q 498 115 498 107 L 498 83 Q 498 75 506 75 Z" fill="rgba(139, 92, 246, 0.094)" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="65" y="170" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="middle">circle()</text>
+  <text x="180" y="170" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="middle">rect()</text>
+  <text x="295" y="170" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="middle">star()</text>
+  <text x="410" y="170" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="middle">polygon()</text>
+  <text x="525" y="170" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="middle">roundRect()</text>
+  <text x="65" y="183" font-family="monospace" font-size="7" fill="#64748b" text-anchor="middle">cx, cy, r</text>
+  <text x="180" y="183" font-family="monospace" font-size="7" fill="#64748b" text-anchor="middle">x, y, w, h</text>
+  <text x="295" y="183" font-family="monospace" font-size="7" fill="#64748b" text-anchor="middle">cx, cy, R, r, n</text>
+  <text x="410" y="183" font-family="monospace" font-size="7" fill="#64748b" text-anchor="middle">cx, cy, r, sides</text>
+  <text x="525" y="183" font-family="monospace" font-size="7" fill="#64748b" text-anchor="middle">x, y, w, h, r</text>
+  <text x="15" y="220" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let shape = @{ circle(0, 0, 30) };</text>
+  <text x="15" y="234" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">shape.drawTo(100, 100)</text>
+  <text x="15" y="220" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <text x="310" y="220" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// All stdlib functions return PathBlocks</text>
+  <text x="310" y="234" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// Use inside @{ } or directly in .apply { }</text>
+  <text x="15" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Standard Library Shapes</text>
+  <text x="220" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Built-in path functions for common geometry</text>
+</svg>

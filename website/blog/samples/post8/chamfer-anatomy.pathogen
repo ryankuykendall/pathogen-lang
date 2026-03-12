@@ -1,0 +1,248 @@
+// viewBox="0 0 480 340"
+// Chamfer anatomy — geometric construction at a single corner
+
+// A right-angle corner
+let corner = @{ h 100 v 80 };
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 480, 340) }
+
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
+};
+grid.apply {
+  for (i in 0..17) {
+    M 0 calc(i * 20)
+    h 480
+  }
+  for (j in 0..24) {
+    M calc(j * 20) 0
+    v 340
+  }
+}
+
+// --- Original corner (dashed) ---
+
+let original = PathLayer('original') ${
+  stroke: Color('#94a3b8');
+  stroke-width: 1.5;
+  stroke-dasharray: "6 4";
+  fill: none;
+};
+// Corner vertex at (200, 120), incoming from (100, 120), outgoing to (200, 200)
+original.apply {
+  M 100 120 h 100
+  M 200 120 v 80
+}
+
+// --- Chamfer line (result) ---
+
+let chamfer_line = PathLayer('chamfer') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2.5;
+  fill: none;
+};
+// d=30: trim 30px from each edge
+// Trim point on incoming: (170, 120) — 30px before vertex
+// Trim point on outgoing: (200, 150) — 30px after vertex
+chamfer_line.apply {
+  M 100 120 L 170 120
+  L 200 150
+  L 200 200
+}
+
+// --- Vertex dot ---
+
+let vertex_dot = PathLayer('vertex-dot') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+vertex_dot.apply {
+  circle(200, 120, 4)
+}
+
+// --- Trim points ---
+
+let trim_dots = PathLayer('trim-dots') ${
+  fill: Color('#22c55e');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+trim_dots.apply {
+  circle(170, 120, 4)
+  circle(200, 150, 4)
+}
+
+// --- Dimension lines ---
+
+let dims = PathLayer('dims') ${
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  fill: none;
+};
+dims.apply {
+  // d1 dimension (incoming trim distance)
+  M 170 108 h 30
+  M 170 105 v 6
+  M 200 105 v 6
+
+  // d2 dimension (outgoing trim distance)
+  M 212 120 v 30
+  M 209 120 h 6
+  M 209 150 h 6
+}
+
+// --- Dimension arrows ---
+
+let dim_arrows = PathLayer('dim-arrows') ${
+  fill: Color('#f59e0b');
+  stroke: none;
+};
+dim_arrows.apply {
+  // d1 arrows
+  M 172 108 l -4 -3 l 0 6 z
+  M 198 108 l 4 -3 l 0 6 z
+  // d2 arrows
+  M 212 122 l -3 -4 l 6 0 z
+  M 212 148 l -3 4 l 6 0 z
+}
+
+// --- Removed corner (hatched area) ---
+
+let removed = PathLayer('removed') ${
+  fill: Color('#ef444415');
+  stroke: Color('#ef444440');
+  stroke-width: 1;
+};
+removed.apply {
+  M 170 120 L 200 120 L 200 150 z
+}
+
+// --- Leader lines ---
+
+let leaders = PathLayer('leaders') ${
+  stroke: Color('#475569');
+  stroke-width: 0.5;
+  fill: none;
+};
+leaders.apply {
+  M 200 120 L 260 60
+  M 170 120 L 120 70
+  M 200 150 L 260 195
+  M 185 135 L 310 145
+}
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+labels.apply {
+  text(265, 57)`vertex (corner)`
+  text(265, 192)`trim point (outgoing)`
+  text(315, 142)`chamfer line`
+}
+
+let labels_left = TextLayer('labels-left') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+labels_left.apply {
+  text(30, 67)`trim point (incoming)`
+}
+
+// --- Dimension labels ---
+
+let dim_labels = TextLayer('dim-labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#f59e0b');
+  text-anchor: middle;
+};
+dim_labels.apply {
+  text(185, 102)`d1`
+  text(222, 138)`d2`
+}
+
+// --- Code ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 260)`box.chamfer(d1, d2)`
+  text(30, 276)`// d1 trims incoming edge`
+  text(30, 290)`// d2 trims outgoing edge`
+  text(30, 306)`// If d1 == d2: symmetric chamfer`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+
+// --- Legend ---
+
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+
+let leg_o = PathLayer('leg-orig') ${ fill: Color('#94a3b8'); stroke: none; };
+let leg_c = PathLayer('leg-cham') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_v = PathLayer('leg-vert') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-trim') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_r = PathLayer('leg-rem') ${ fill: Color('#ef444440'); stroke: none; };
+
+leg_o.apply { rect(310, 256, 8, 8) }
+leg_c.apply { rect(310, 270, 8, 8) }
+leg_v.apply { rect(310, 284, 8, 8) }
+leg_t.apply { rect(400, 256, 8, 8) }
+leg_r.apply { rect(400, 270, 8, 8) }
+
+leg.apply {
+  text(322, 263)`Original`
+  text(322, 277)`Chamfer`
+  text(322, 291)`Vertex`
+  text(412, 263)`Trim points`
+  text(412, 277)`Removed area`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 28)`Chamfer Anatomy`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 44)`Replace a corner vertex with a straight cut`
+}

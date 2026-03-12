@@ -1507,3 +1507,817 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
 
   return result;
 }
+
+// ---- Chamfers, Fillets, Elliptical Fillets ----
+
+/**
+ * Identify corner vertex indices — junctions between consecutive drawing commands.
+ * For a closed path (ending with z), the closure junction (last→first) is included.
+ * Returns indices into the commands array where command[i].end == command[i+1].start.
+ */
+function identifyCornerVertices(commands: TransformCmd[]): number[] {
+  if (commands.length < 2) return [];
+  const corners: number[] = [];
+  for (let i = 0; i < commands.length - 1; i++) {
+    // A corner is at the junction between command i and command i+1
+    // (command i's end == command i+1's start)
+    const upper = commands[i].command.toUpperCase();
+    const upperNext = commands[i + 1].command.toUpperCase();
+    if (upper === 'M' || upperNext === 'M' || upper === 'Z' || upperNext === 'Z') continue;
+    corners.push(i);
+  }
+  return corners;
+}
+
+/**
+ * Trim distance from end of a command using arc-length.
+ * Returns parametric t at which to split to keep the first portion.
+ */
+function findTrimFromEndT(cmd: TransformCmd, distance: number): number {
+  const len = calculateCommandLength(cmd);
+  if (len <= 0) return 1;
+  if (distance >= len) return 0;
+  const keepFraction = (len - distance) / len;
+  return getParametricTForCommand(cmd, keepFraction);
+}
+
+/**
+ * Trim distance from start of a command using arc-length.
+ * Returns parametric t at which to split to keep the tail portion.
+ */
+function findTrimFromStartT(cmd: TransformCmd, distance: number): number {
+  const len = calculateCommandLength(cmd);
+  if (len <= 0) return 0;
+  if (distance >= len) return 1;
+  const skipFraction = distance / len;
+  return getParametricTForCommand(cmd, skipFraction);
+}
+
+interface CornerOperation {
+  type: 'chamfer' | 'fillet' | 'ellipticalFillet';
+  d1: number;
+  d2: number;
+  // For fillet
+  radius?: number;
+  // For elliptical fillet
+  rx?: number;
+  ry?: number;
+  rotation?: number;
+}
+
+
+
+/**
+ * Apply corner operations (chamfer, fillet, or elliptical fillet) to commands.
+ * @param commands The path commands
+ * @param vertexIndices Which corner indices to operate on (null = all)
+ * @param op The corner operation to apply
+ * @returns { commands, warnings }
+ */
+export function applyCornerOperations(
+  commands: TransformCmd[],
+  vertexIndices: number[] | null,
+  op: CornerOperation,
+): { commands: TransformCmd[]; warnings: string[] } {
+  const warnings: string[] = [];
+
+  // Step 1: resolve S→C, T→Q
+  const resolved = resolveSmooth(commands);
+
+  // Check for closed path and expand z
+  let isClosed = false;
+  const working = [...resolved];
+  if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
+    const zCmd = working.pop()!;
+    isClosed = true;
+    const zdx = zCmd.end.x - zCmd.start.x;
+    const zdy = zCmd.end.y - zCmd.start.y;
+    if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      working.push({
+        command: 'l',
+        args: [zdx, zdy],
+        start: { ...zCmd.start },
+        end: { ...zCmd.end },
+      });
+    }
+  }
+
+  // Filter to drawing commands
+  const drawCmds = working.filter((c) => c.command.toUpperCase() !== 'M');
+  if (drawCmds.length < 2) return { commands: [...commands], warnings };
+
+  // Identify corners
+  const allCorners = identifyCornerVertices(drawCmds);
+
+  // If closed, add the closure corner (last cmd → first cmd)
+  if (isClosed && drawCmds.length >= 2) {
+    allCorners.push(drawCmds.length - 1); // junction at last command
+  }
+
+  // Filter to requested vertices
+  let targetCorners: number[];
+  if (vertexIndices !== null) {
+    targetCorners = [];
+    for (const vi of vertexIndices) {
+      if (vi < 0 || vi >= allCorners.length) {
+        throw new Error(`chamfer/fillet vertex index ${vi} out of range [0, ${allCorners.length - 1}]`);
+      }
+      targetCorners.push(allCorners[vi]);
+    }
+  } else {
+    targetCorners = [...allCorners];
+  }
+
+  if (targetCorners.length === 0) return { commands: [...commands], warnings };
+
+  // Process corners from end to start so indices stay valid
+  const targetSet = new Set(targetCorners);
+  const sortedCorners = [...targetSet].sort((a, b) => b - a);
+
+  // Work with a mutable copy of drawCmds
+  const result = drawCmds.map((cmd) => ({
+    command: cmd.command,
+    args: [...cmd.args],
+    start: { ...cmd.start },
+    end: { ...cmd.end },
+  }));
+
+  for (const cornerIdx of sortedCorners) {
+    const isClosureCorner = isClosed && cornerIdx === drawCmds.length - 1;
+    const incomingIdx = cornerIdx;
+    const outgoingIdx = isClosureCorner ? 0 : cornerIdx + 1;
+
+    if (incomingIdx >= result.length || outgoingIdx >= result.length) continue;
+
+    const incoming = result[incomingIdx];
+    const outgoing = result[outgoingIdx];
+
+    const inLen = calculateCommandLength(incoming);
+    const outLen = calculateCommandLength(outgoing);
+
+    let d1 = op.d1;
+    let d2 = op.d2;
+
+    // Clamp distances
+    if (d1 > inLen) {
+      d1 = inLen;
+      warnings.push(`Chamfer/fillet distance ${op.d1} clamped to incoming edge length ${inLen.toFixed(2)}`);
+    }
+    if (d2 > outLen) {
+      d2 = outLen;
+      warnings.push(`Chamfer/fillet distance ${op.d2} clamped to outgoing edge length ${outLen.toFixed(2)}`);
+    }
+
+    if (d1 <= 0 && d2 <= 0) continue;
+
+    // For fillet/ellipticalFillet, check if both edges are lines
+    if (op.type === 'fillet' || op.type === 'ellipticalFillet') {
+      const inUpper = incoming.command.toUpperCase();
+      const outUpper = outgoing.command.toUpperCase();
+      const isInLine = inUpper === 'L' || inUpper === 'H' || inUpper === 'V';
+      const isOutLine = outUpper === 'L' || outUpper === 'H' || outUpper === 'V';
+      if (!isInLine || !isOutLine) {
+        warnings.push(`Fillet skipped at curve junction (index ${cornerIdx})`);
+        continue;
+      }
+    }
+
+    // Trim incoming from end
+    const trimEndT = findTrimFromEndT(incoming, d1);
+    const [inHead] = splitCommandAtParametricT(incoming, trimEndT);
+
+    // Trim outgoing from start
+    const trimStartT = findTrimFromStartT(outgoing, d2);
+    const [, outTail] = splitCommandAtParametricT(outgoing, trimStartT);
+
+    // Build the corner insert
+    const trimEndPoint = inHead.end;
+    const trimStartPoint = outTail.start;
+
+    let insertCmds: TransformCmd[];
+
+    if (op.type === 'chamfer') {
+      // Insert a line from trimEndPoint to trimStartPoint
+      const dx = trimStartPoint.x - trimEndPoint.x;
+      const dy = trimStartPoint.y - trimEndPoint.y;
+      insertCmds = [
+        {
+          command: 'l',
+          args: [dx, dy],
+          start: { ...trimEndPoint },
+          end: { ...trimStartPoint },
+        },
+      ];
+    } else if (op.type === 'fillet') {
+      const radius = op.radius!;
+      insertCmds = buildFilletArc(incoming, outgoing, trimEndPoint, trimStartPoint, radius);
+    } else {
+      // ellipticalFillet
+      const rx = op.rx!;
+      const ry = op.ry!;
+      const rotation = op.rotation ?? 0;
+      insertCmds = buildEllipticalFilletArc(incoming, outgoing, trimEndPoint, trimStartPoint, rx, ry, rotation);
+    }
+
+    // Replace in result array
+    if (isClosureCorner) {
+      // Special case: closure corner straddles end and start
+      result[incomingIdx] = inHead;
+      result[outgoingIdx] = outTail;
+      // Insert chamfer/fillet at end and connect to start
+      result.push(...insertCmds);
+    } else {
+      // Replace incoming with trimmed head, outgoing with trimmed tail, insert between
+      result.splice(incomingIdx, 2, inHead, ...insertCmds, outTail);
+    }
+  }
+
+  // Re-close if was closed
+  if (isClosed) {
+    const last = result[result.length - 1];
+    const first = result[0];
+    const dx = first.start.x - last.end.x;
+    const dy = first.start.y - last.end.y;
+    if (Math.abs(dx) > 1e-10 || Math.abs(dy) > 1e-10) {
+      result.push({
+        command: 'z',
+        args: [],
+        start: { ...last.end },
+        end: { ...first.start },
+      });
+    } else {
+      result.push({
+        command: 'z',
+        args: [],
+        start: { ...last.end },
+        end: { ...first.start },
+      });
+    }
+  }
+
+  return { commands: result, warnings };
+}
+
+/**
+ * Build a circular fillet arc between two line segments.
+ */
+function buildFilletArc(
+  incoming: TransformCmd,
+  outgoing: TransformCmd,
+  p1: Point,
+  p2: Point,
+  radius: number,
+): TransformCmd[] {
+  // Compute edge directions at the vertex
+  const vertex = incoming.end;
+
+  // Incoming direction: from incoming.start to incoming.end
+  const inDx = vertex.x - incoming.start.x;
+  const inDy = vertex.y - incoming.start.y;
+  const inLen = Math.sqrt(inDx * inDx + inDy * inDy);
+
+  // Outgoing direction: from outgoing.start to outgoing.end
+  const outDx = outgoing.end.x - vertex.x;
+  const outDy = outgoing.end.y - vertex.y;
+  const outLen = Math.sqrt(outDx * outDx + outDy * outDy);
+
+  if (inLen < 1e-10 || outLen < 1e-10) {
+    // Degenerate: just line
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    return [{ command: 'l', args: [dx, dy], start: { ...p1 }, end: { ...p2 } }];
+  }
+
+  const uInX = inDx / inLen;
+  const uInY = inDy / inLen;
+  const uOutX = outDx / outLen;
+  const uOutY = outDy / outLen;
+
+  // Cross product determines sweep direction
+  const cross = uInX * uOutY - uInY * uOutX;
+  const sweep = cross > 0 ? 1 : 0;
+
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+
+  return [
+    {
+      command: 'a',
+      args: [radius, radius, 0, 0, sweep, dx, dy],
+      start: { ...p1 },
+      end: { ...p2 },
+    },
+  ];
+}
+
+/**
+ * Build an elliptical fillet arc between two line segments.
+ */
+function buildEllipticalFilletArc(
+  incoming: TransformCmd,
+  outgoing: TransformCmd,
+  p1: Point,
+  p2: Point,
+  rx: number,
+  ry: number,
+  rotation: number,
+): TransformCmd[] {
+  const vertex = incoming.end;
+
+  const inDx = vertex.x - incoming.start.x;
+  const inDy = vertex.y - incoming.start.y;
+  const inLen = Math.sqrt(inDx * inDx + inDy * inDy);
+
+  const outDx = outgoing.end.x - vertex.x;
+  const outDy = outgoing.end.y - vertex.y;
+  const outLen = Math.sqrt(outDx * outDx + outDy * outDy);
+
+  if (inLen < 1e-10 || outLen < 1e-10) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    return [{ command: 'l', args: [dx, dy], start: { ...p1 }, end: { ...p2 } }];
+  }
+
+  const uInX = inDx / inLen;
+  const uInY = inDy / inLen;
+  const uOutX = outDx / outLen;
+  const uOutY = outDy / outLen;
+
+  const cross = uInX * uOutY - uInY * uOutX;
+  const sweep = cross > 0 ? 1 : 0;
+
+  const rotDeg = (rotation * 180) / Math.PI;
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+
+  return [
+    {
+      command: 'a',
+      args: [rx, ry, rotDeg, 0, sweep, dx, dy],
+      start: { ...p1 },
+      end: { ...p2 },
+    },
+  ];
+}
+
+/**
+ * Chamfer all corners or specific vertices.
+ */
+export function chamferCommands(
+  commands: TransformCmd[],
+  d1: number,
+  d2: number,
+  vertexIndices: number[] | null,
+): { commands: TransformCmd[]; warnings: string[] } {
+  return applyCornerOperations(commands, vertexIndices, { type: 'chamfer', d1, d2 });
+}
+
+/**
+ * Fillet all corners or specific vertices with circular arcs.
+ */
+export function filletCommands(
+  commands: TransformCmd[],
+  radius: number,
+  vertexIndices: number[] | null,
+): { commands: TransformCmd[]; warnings: string[] } {
+  // For fillets, compute trim distance from radius and half-angle
+  // But we need vertex geometry per-corner; use applyCornerOperations with fillet type
+  // The trim distance for a circular fillet at a line-line junction is radius / tan(halfAngle)
+  // We pass the radius and let applyCornerOperations compute d1/d2 per vertex
+  return applyFilletOperations(commands, vertexIndices, radius);
+}
+
+/**
+ * Apply fillet operations with proper per-vertex trim distance calculation.
+ */
+function applyFilletOperations(
+  commands: TransformCmd[],
+  vertexIndices: number[] | null,
+  radius: number,
+): { commands: TransformCmd[]; warnings: string[] } {
+  const warnings: string[] = [];
+
+  const resolved = resolveSmooth(commands);
+
+  let isClosed = false;
+  const working = [...resolved];
+  if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
+    const zCmd = working.pop()!;
+    isClosed = true;
+    const zdx = zCmd.end.x - zCmd.start.x;
+    const zdy = zCmd.end.y - zCmd.start.y;
+    if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      working.push({
+        command: 'l',
+        args: [zdx, zdy],
+        start: { ...zCmd.start },
+        end: { ...zCmd.end },
+      });
+    }
+  }
+
+  const drawCmds = working.filter((c) => c.command.toUpperCase() !== 'M');
+  if (drawCmds.length < 2) return { commands: [...commands], warnings };
+
+  const allCorners = identifyCornerVertices(drawCmds);
+  if (isClosed && drawCmds.length >= 2) {
+    allCorners.push(drawCmds.length - 1);
+  }
+
+  let targetCorners: number[];
+  if (vertexIndices !== null) {
+    targetCorners = [];
+    for (const vi of vertexIndices) {
+      if (vi < 0 || vi >= allCorners.length) {
+        throw new Error(`fillet vertex index ${vi} out of range [0, ${allCorners.length - 1}]`);
+      }
+      targetCorners.push(allCorners[vi]);
+    }
+  } else {
+    targetCorners = [...allCorners];
+  }
+
+  if (targetCorners.length === 0) return { commands: [...commands], warnings };
+
+  const targetSet = new Set(targetCorners);
+  const sortedCorners = [...targetSet].sort((a, b) => b - a);
+
+  const result = drawCmds.map((cmd) => ({
+    command: cmd.command,
+    args: [...cmd.args],
+    start: { ...cmd.start },
+    end: { ...cmd.end },
+  }));
+
+  for (const cornerIdx of sortedCorners) {
+    const isClosureCorner = isClosed && cornerIdx === drawCmds.length - 1;
+    const incomingIdx = cornerIdx;
+    const outgoingIdx = isClosureCorner ? 0 : cornerIdx + 1;
+
+    if (incomingIdx >= result.length || outgoingIdx >= result.length) continue;
+
+    const incoming = result[incomingIdx];
+    const outgoing = result[outgoingIdx];
+
+    // Check line-line
+    const inUpper = incoming.command.toUpperCase();
+    const outUpper = outgoing.command.toUpperCase();
+    const isInLine = inUpper === 'L' || inUpper === 'H' || inUpper === 'V';
+    const isOutLine = outUpper === 'L' || outUpper === 'H' || outUpper === 'V';
+    if (!isInLine || !isOutLine) {
+      warnings.push(`Fillet skipped at curve junction (index ${cornerIdx})`);
+      continue;
+    }
+
+    const vertex = incoming.end;
+
+    // Edge directions
+    const inDx = vertex.x - incoming.start.x;
+    const inDy = vertex.y - incoming.start.y;
+    const inLen = Math.sqrt(inDx * inDx + inDy * inDy);
+
+    const outDx = outgoing.end.x - vertex.x;
+    const outDy = outgoing.end.y - vertex.y;
+    const outLen = Math.sqrt(outDx * outDx + outDy * outDy);
+
+    if (inLen < 1e-10 || outLen < 1e-10) continue;
+
+    // Unit vectors pointing away from vertex
+    const upX = -inDx / inLen; // toward incoming start
+    const upY = -inDy / inLen;
+    const uqX = outDx / outLen; // toward outgoing end
+    const uqY = outDy / outLen;
+
+    // Half angle
+    const dot = upX * uqX + upY * uqY;
+    const clampedDot = Math.max(-1, Math.min(1, dot));
+    const halfAngle = Math.acos(clampedDot) / 2;
+
+    if (halfAngle < 1e-10 || Math.abs(halfAngle - Math.PI / 2) < 1e-10 && Math.abs(Math.PI - Math.acos(clampedDot)) < 1e-10) {
+      // Collinear edges, skip
+      continue;
+    }
+
+    // Trim distance
+    let trimDist = radius / Math.tan(halfAngle);
+    let effectiveRadius = radius;
+
+    // Clamp
+    if (trimDist > inLen) {
+      trimDist = inLen;
+      effectiveRadius = trimDist * Math.tan(halfAngle);
+      warnings.push(`Fillet radius clamped at vertex ${cornerIdx}: effective radius ${effectiveRadius.toFixed(2)}`);
+    }
+    if (trimDist > outLen) {
+      trimDist = outLen;
+      effectiveRadius = trimDist * Math.tan(halfAngle);
+      warnings.push(`Fillet radius clamped at vertex ${cornerIdx}: effective radius ${effectiveRadius.toFixed(2)}`);
+    }
+
+    // Trim points
+    const p1 = { x: vertex.x + upX * trimDist, y: vertex.y + upY * trimDist };
+    const p2 = { x: vertex.x + uqX * trimDist, y: vertex.y + uqY * trimDist };
+
+    // Sweep flag: use cross product of incoming/outgoing direction
+    const crossIO = inDx * outDy - inDy * outDx;
+    const sweep = crossIO > 0 ? 1 : 0;
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+
+    const arcCmd: TransformCmd = {
+      command: 'a',
+      args: [effectiveRadius, effectiveRadius, 0, 0, sweep, dx, dy],
+      start: { ...p1 },
+      end: { ...p2 },
+    };
+
+    // Split incoming at p1
+    const inTrimT = findTrimFromEndT(incoming, trimDist);
+    const [inHead] = splitCommandAtParametricT(incoming, inTrimT);
+    // Fix inHead end to match p1 exactly
+    inHead.end = { ...p1 };
+
+    // Split outgoing at p2
+    const outTrimT = findTrimFromStartT(outgoing, trimDist);
+    const [, outTail] = splitCommandAtParametricT(outgoing, outTrimT);
+    outTail.start = { ...p2 };
+
+    if (isClosureCorner) {
+      result[incomingIdx] = inHead;
+      result[outgoingIdx] = outTail;
+      result.push(arcCmd);
+    } else {
+      result.splice(incomingIdx, 2, inHead, arcCmd, outTail);
+    }
+  }
+
+  if (isClosed) {
+    const last = result[result.length - 1];
+    const first = result[0];
+    result.push({
+      command: 'z',
+      args: [],
+      start: { ...last.end },
+      end: { ...first.start },
+    });
+  }
+
+  return { commands: result, warnings };
+}
+
+/**
+ * Elliptical fillet all corners or specific vertices.
+ */
+export function ellipticalFilletCommands(
+  commands: TransformCmd[],
+  rx: number,
+  ry: number,
+  rotation: number,
+  vertexIndices: number[] | null,
+): { commands: TransformCmd[]; warnings: string[] } {
+  return applyEllipticalFilletOperations(commands, vertexIndices, rx, ry, rotation);
+}
+
+function applyEllipticalFilletOperations(
+  commands: TransformCmd[],
+  vertexIndices: number[] | null,
+  rx: number,
+  ry: number,
+  rotation: number,
+): { commands: TransformCmd[]; warnings: string[] } {
+  const warnings: string[] = [];
+
+  const resolved = resolveSmooth(commands);
+
+  let isClosed = false;
+  const working = [...resolved];
+  if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
+    const zCmd = working.pop()!;
+    isClosed = true;
+    const zdx = zCmd.end.x - zCmd.start.x;
+    const zdy = zCmd.end.y - zCmd.start.y;
+    if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      working.push({
+        command: 'l',
+        args: [zdx, zdy],
+        start: { ...zCmd.start },
+        end: { ...zCmd.end },
+      });
+    }
+  }
+
+  const drawCmds = working.filter((c) => c.command.toUpperCase() !== 'M');
+  if (drawCmds.length < 2) return { commands: [...commands], warnings };
+
+  const allCorners = identifyCornerVertices(drawCmds);
+  if (isClosed && drawCmds.length >= 2) {
+    allCorners.push(drawCmds.length - 1);
+  }
+
+  let targetCorners: number[];
+  if (vertexIndices !== null) {
+    targetCorners = [];
+    for (const vi of vertexIndices) {
+      if (vi < 0 || vi >= allCorners.length) {
+        throw new Error(`ellipticalFillet vertex index ${vi} out of range [0, ${allCorners.length - 1}]`);
+      }
+      targetCorners.push(allCorners[vi]);
+    }
+  } else {
+    targetCorners = [...allCorners];
+  }
+
+  if (targetCorners.length === 0) return { commands: [...commands], warnings };
+
+  const targetSet = new Set(targetCorners);
+  const sortedCorners = [...targetSet].sort((a, b) => b - a);
+
+  const result = drawCmds.map((cmd) => ({
+    command: cmd.command,
+    args: [...cmd.args],
+    start: { ...cmd.start },
+    end: { ...cmd.end },
+  }));
+
+  for (const cornerIdx of sortedCorners) {
+    const isClosureCorner = isClosed && cornerIdx === drawCmds.length - 1;
+    const incomingIdx = cornerIdx;
+    const outgoingIdx = isClosureCorner ? 0 : cornerIdx + 1;
+
+    if (incomingIdx >= result.length || outgoingIdx >= result.length) continue;
+
+    const incoming = result[incomingIdx];
+    const outgoing = result[outgoingIdx];
+
+    const inUpper = incoming.command.toUpperCase();
+    const outUpper = outgoing.command.toUpperCase();
+    const isInLine = inUpper === 'L' || inUpper === 'H' || inUpper === 'V';
+    const isOutLine = outUpper === 'L' || outUpper === 'H' || outUpper === 'V';
+    if (!isInLine || !isOutLine) {
+      warnings.push(`Elliptical fillet skipped at curve junction (index ${cornerIdx})`);
+      continue;
+    }
+
+    const vertex = incoming.end;
+
+    const inDx = vertex.x - incoming.start.x;
+    const inDy = vertex.y - incoming.start.y;
+    const inLen = Math.sqrt(inDx * inDx + inDy * inDy);
+
+    const outDx = outgoing.end.x - vertex.x;
+    const outDy = outgoing.end.y - vertex.y;
+    const outLen = Math.sqrt(outDx * outDx + outDy * outDy);
+
+    if (inLen < 1e-10 || outLen < 1e-10) continue;
+
+    // Compute separate trim distances for each edge so the elliptical arc
+    // is tangent to both edges. For a 90° corner this gives trimIn=rx, trimOut=ry
+    // (matching CSS border-radius behavior).
+    //
+    // Algorithm: find the ellipse parameter t where the tangent is parallel to
+    // each edge, then solve the 2×2 system that places the ellipse center such
+    // that both tangent points lie on the respective edges.
+    const upX = -inDx / inLen;  // unit from vertex toward incoming start
+    const upY = -inDy / inLen;
+    const uqX = outDx / outLen; // unit from vertex toward outgoing end
+    const uqY = outDy / outLen;
+
+    const cosRot = Math.cos(rotation);
+    const sinRot = Math.sin(rotation);
+
+    // Transform edge directions into ellipse-local frame
+    const upLocalX = upX * cosRot + upY * sinRot;
+    const upLocalY = -upX * sinRot + upY * cosRot;
+    const uqLocalX = uqX * cosRot + uqY * sinRot;
+    const uqLocalY = -uqX * sinRot + uqY * cosRot;
+
+    // Tangent parameter where ellipse tangent is parallel to each edge.
+    // Ellipse tangent at t: (-rx sin t, ry cos t) in local frame.
+    // Parallel to (dx, dy) when: -rx sin(t) * dy = ry cos(t) * dx
+    //   => tan(t) = -ry dx / (rx dy)
+    // Two solutions per edge (opposite sides); we pick per-edge below.
+    const t1a = Math.atan2(-ry * upLocalX, rx * upLocalY);
+    const t2a = Math.atan2(-ry * uqLocalX, rx * uqLocalY);
+
+    // Angle bisector (toward the inside of the corner) determines which
+    // of the two ±π tangent candidates places the center on the correct side.
+    const bisX = upX + uqX;
+    const bisY = upY + uqY;
+    const bisLen = Math.sqrt(bisX * bisX + bisY * bisY);
+    if (bisLen < 1e-10) continue; // edges are anti-parallel
+
+    // Try all 4 combinations of (t1a, t1a+π) × (t2a, t2a+π) and pick
+    // the one where both trim distances are positive and center is on the
+    // inside (positive dot with bisector).
+    let bestTrimIn = -1;
+    let bestTrimOut = -1;
+    let bestP1 = { x: 0, y: 0 };
+    let bestP2 = { x: 0, y: 0 };
+    let found = false;
+
+    for (const t1Offset of [0, Math.PI]) {
+      for (const t2Offset of [0, Math.PI]) {
+        const t1 = t1a + t1Offset;
+        const t2 = t2a + t2Offset;
+
+        // Ellipse tangent point offsets (in world frame) from center
+        const e1x = rx * Math.cos(t1) * cosRot - ry * Math.sin(t1) * sinRot;
+        const e1y = rx * Math.cos(t1) * sinRot + ry * Math.sin(t1) * cosRot;
+        const e2x = rx * Math.cos(t2) * cosRot - ry * Math.sin(t2) * sinRot;
+        const e2y = rx * Math.cos(t2) * sinRot + ry * Math.sin(t2) * cosRot;
+
+        // Solve: dIn * uP - dOut * uQ = (e1 - e2)
+        const rhsX = e1x - e2x;
+        const rhsY = e1y - e2y;
+        const det = upX * (-uqY) - (-uqX) * upY;
+        if (Math.abs(det) < 1e-10) continue;
+
+        const dIn = (-uqY * rhsX + uqX * rhsY) / det;
+        const dOut = (-upY * rhsX + upX * rhsY) / det;
+
+        if (dIn < -1e-10 || dOut < -1e-10) continue;
+
+        // Check center is on the inside of the corner
+        const cx = dIn * upX - e1x;
+        const cy = dIn * upY - e1y;
+        const dotBis = cx * bisX + cy * bisY;
+        if (dotBis < -1e-10) continue;
+
+        // Pick the solution with smallest total trim (most conservative)
+        if (!found || (dIn + dOut < bestTrimIn + bestTrimOut)) {
+          bestTrimIn = Math.max(0, dIn);
+          bestTrimOut = Math.max(0, dOut);
+          bestP1 = { x: vertex.x + upX * bestTrimIn, y: vertex.y + upY * bestTrimIn };
+          bestP2 = { x: vertex.x + uqX * bestTrimOut, y: vertex.y + uqY * bestTrimOut };
+          found = true;
+        }
+      }
+    }
+
+    if (!found) {
+      warnings.push(`Elliptical fillet: no valid placement at vertex ${cornerIdx}`);
+      continue;
+    }
+
+    let trimIn = bestTrimIn;
+    let trimOut = bestTrimOut;
+    let p1 = bestP1;
+    let p2 = bestP2;
+
+    // Clamp if trim exceeds edge length
+    if (trimIn > inLen) {
+      trimIn = inLen;
+      p1 = { x: vertex.x + upX * trimIn, y: vertex.y + upY * trimIn };
+      warnings.push(`Elliptical fillet clamped at vertex ${cornerIdx}`);
+    }
+    if (trimOut > outLen) {
+      trimOut = outLen;
+      p2 = { x: vertex.x + uqX * trimOut, y: vertex.y + uqY * trimOut };
+      warnings.push(`Elliptical fillet clamped at vertex ${cornerIdx}`);
+    }
+
+    const crossIO = inDx * outDy - inDy * outDx;
+    const sweep = crossIO > 0 ? 1 : 0;
+    const rotDeg = (rotation * 180) / Math.PI;
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+
+    const arcCmd: TransformCmd = {
+      command: 'a',
+      args: [rx, ry, rotDeg, 0, sweep, dx, dy],
+      start: { ...p1 },
+      end: { ...p2 },
+    };
+
+    const inTrimT = findTrimFromEndT(incoming, trimIn);
+    const [inHead] = splitCommandAtParametricT(incoming, inTrimT);
+    inHead.end = { ...p1 };
+
+    const outTrimT = findTrimFromStartT(outgoing, trimOut);
+    const [, outTail] = splitCommandAtParametricT(outgoing, outTrimT);
+    outTail.start = { ...p2 };
+
+    if (isClosureCorner) {
+      result[incomingIdx] = inHead;
+      result[outgoingIdx] = outTail;
+      result.push(arcCmd);
+    } else {
+      result.splice(incomingIdx, 2, inHead, arcCmd, outTail);
+    }
+  }
+
+  if (isClosed) {
+    const last = result[result.length - 1];
+    const first = result[0];
+    result.push({
+      command: 'z',
+      args: [],
+      start: { ...last.end },
+      end: { ...first.start },
+    });
+  }
+
+  return { commands: result, warnings };
+}

@@ -1,0 +1,53 @@
+// viewBox="0 0 400 300"
+// Parametric sampling — placing dots along a curve
+
+let curve = @{
+  c 0 -120 200 -120 200 0
+  c 0 120 -200 120 -200 0
+};
+
+let path = PathLayer('path') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: none;
+};
+
+let dots = PathLayer('dots') ${
+  fill: Color('#ef4444');
+  stroke: none;
+};
+
+let tangents = PathLayer('tangents') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
+};
+
+// Get projection for sampling
+let proj = curve.project(50, 150);
+
+// Draw the curve
+path.apply {
+  curve.drawTo(50, 150)
+}
+
+// Sample 8 points along the curve
+dots.apply {
+  let pts = proj.partition(8);
+  for (p in pts) {
+    M calc(p.point.x - 4) p.point.y
+    a 4 4 0 1 1 8 0
+    a 4 4 0 1 1 -8 0
+  }
+}
+
+// Show tangent lines at a few points
+tangents.apply {
+  for (i in 0..8) {
+    let t = calc(i / 8);
+    let tan = proj.tangent(t);
+    let len = 20;
+    M calc(tan.point.x - cos(tan.angle) * len / 2) calc(tan.point.y - sin(tan.angle) * len / 2)
+    l calc(cos(tan.angle) * len) calc(sin(tan.angle) * len)
+  }
+}

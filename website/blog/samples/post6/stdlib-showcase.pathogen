@@ -1,0 +1,147 @@
+// viewBox="0 0 600 260"
+// Standard library shape gallery
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 260) }
+
+// --- Grid cells ---
+
+let cells = PathLayer('cells') ${
+  fill: Color('#1e293b');
+  stroke: Color('#334155');
+  stroke-width: 1;
+};
+cells.apply {
+  roundRect(15, 50, 100, 100, 6)
+  roundRect(130, 50, 100, 100, 6)
+  roundRect(245, 50, 100, 100, 6)
+  roundRect(360, 50, 100, 100, 6)
+  roundRect(475, 50, 100, 100, 6)
+}
+
+// --- Shapes ---
+
+let s1 = PathLayer('s-circle') ${
+  fill: Color('#3b82f618');
+  stroke: Color('#3b82f6');
+  stroke-width: 1.5;
+};
+s1.apply { circle(65, 100, 30) }
+
+let s2 = PathLayer('s-rect') ${
+  fill: Color('#22c55e18');
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+};
+s2.apply { rect(150, 72, 60, 40) }
+
+let s3 = PathLayer('s-star') ${
+  fill: Color('#f59e0b18');
+  stroke: Color('#f59e0b');
+  stroke-width: 1.5;
+};
+s3.apply { star(295, 100, 32, 14, 5) }
+
+let s4 = PathLayer('s-polygon') ${
+  fill: Color('#ef444418');
+  stroke: Color('#ef4444');
+  stroke-width: 1.5;
+};
+s4.apply { polygon(410, 100, 30, 6) }
+
+let s5 = PathLayer('s-roundrect') ${
+  fill: Color('#8b5cf618');
+  stroke: Color('#8b5cf6');
+  stroke-width: 1.5;
+};
+s5.apply { roundRect(498, 75, 55, 40, 8) }
+
+// --- Shape names ---
+
+let names = TextLayer('names') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+names.apply {
+  text(65, 170)`circle()`
+  text(180, 170)`rect()`
+  text(295, 170)`star()`
+  text(410, 170)`polygon()`
+  text(525, 170)`roundRect()`
+}
+
+// --- Signatures ---
+
+let sigs = TextLayer('sigs') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: Color('#64748b');
+  text-anchor: middle;
+};
+sigs.apply {
+  text(65, 183)`cx, cy, r`
+  text(180, 183)`x, y, w, h`
+  text(295, 183)`cx, cy, R, r, n`
+  text(410, 183)`cx, cy, r, sides`
+  text(525, 183)`x, y, w, h, r`
+}
+
+// --- Usage example ---
+
+let usage = TextLayer('usage') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+usage.apply {
+  text(15, 220)`let shape = @{ circle(0, 0, 30) };`
+  text(15, 234)`shape.drawTo(100, 100)`
+}
+
+let usage_kw = TextLayer('usage-kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+usage_kw.apply {
+  text(15, 220)`let`
+}
+
+let usage_note = TextLayer('usage-note') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+usage_note.apply {
+  text(310, 220)`// All stdlib functions return PathBlocks`
+  text(310, 234)`// Use inside @{ } or directly in .apply { }`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(15, 32)`Standard Library Shapes`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(220, 32)`Built-in path functions for common geometry`
+}

@@ -1,0 +1,136 @@
+// viewBox="0 0 560 300"
+// Fillet gallery — circular, elliptical, per-vertex
+
+let box = @{ h 70 v 70 h -70 z };
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 560, 300) }
+
+// --- Original outlines ---
+
+let original = PathLayer('original') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+
+original.apply {
+  box.drawTo(30, 60)
+  box.drawTo(140, 60)
+  box.drawTo(250, 60)
+  box.drawTo(360, 60)
+  box.drawTo(470, 60)
+}
+
+// --- Filleted shapes ---
+
+let filleted = PathLayer('filleted') ${
+  stroke: Color('#8b5cf6');
+  stroke-width: 2;
+  fill: Color('#8b5cf615');
+};
+
+filleted.apply {
+  // Small circular
+  let f1 = box.fillet(5);
+  f1.drawTo(30, 60)
+
+  // Large circular
+  let f2 = box.fillet(15);
+  f2.drawTo(140, 60)
+
+  // Elliptical
+  let f3 = box.ellipticalFillet(15, 8);
+  f3.drawTo(250, 60)
+
+  // Single vertex
+  let f4 = box.filletAtVertex(1, 25);
+  f4.drawTo(360, 60)
+
+  // Elliptical with rotation
+  let f5 = box.ellipticalFillet(15, 8, 0.3);
+  f5.drawTo(470, 60)
+}
+
+// --- Labels ---
+
+let names = TextLayer('names') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+names.apply {
+  text(65, 152)`fillet(5)`
+  text(175, 152)`fillet(15)`
+  text(285, 152)`elliptical`
+  text(285, 164)`Fillet(15, 8)`
+  text(395, 152)`filletAt`
+  text(395, 164)`Vertex(1, 25)`
+  text(505, 152)`elliptical`
+  text(505, 164)`Fillet(15,8,.3)`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: middle;
+};
+desc.apply {
+  text(65, 176)`small circular`
+  text(175, 176)`large circular`
+  text(285, 176)`elliptical arcs`
+  text(395, 176)`single corner`
+  text(505, 176)`rotated ellipse`
+}
+
+// --- Code ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 220)`let box = @{ h 70 v 70 h -70 z };`
+  text(30, 236)`let rounded = box.fillet(15);`
+  text(30, 252)`rounded.drawTo(x, y)`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(30, 220)`let`
+  text(30, 236)`let`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 32)`Fillet Gallery`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(155, 32)`Circular, elliptical, per-vertex, and rotated on a 70×70 square`
+}

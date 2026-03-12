@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280" width="520" height="280">
+
+  <path d="M 0 0 L 520 0 L 520 280 L 0 280 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g transform="translate(30, 60)">
+    <path d="M 0 0 h 60 v 60 h -60 z M 25 25 h 60 v 60 h -60 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="42" y="115" font-family="system-ui, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Overlapping squares</text>
+    <text x="42" y="130" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">step 1: input</text>
+  </g>
+  <g transform="translate(195, 60)">
+    <path d="M 0 0 h 60 v 60 h -60 z M 25 25 h 60 v 60 h -60 z" fill="none" stroke="rgba(148, 163, 184, 0.188)" stroke-width="1" stroke-dasharray="4 3"/>
+    <path d="M 0 0 m 0 0 h 60 l 0 25 l 25 0 v 60 h -60 l 0 -25 l -25 0 l 0 -60 z" fill="rgba(59, 130, 246, 0.082)" stroke="#3b82f6" stroke-width="2"/>
+    <text x="42" y="115" font-family="system-ui, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">.union()</text>
+    <text x="42" y="130" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">step 2: combine</text>
+  </g>
+  <g transform="translate(370, 60)">
+    <path d="M 0 0 h 60 v 60 h -60 z M 25 25 h 60 v 60 h -60 z" fill="none" stroke="rgba(148, 163, 184, 0.188)" stroke-width="1" stroke-dasharray="4 3"/>
+    <path d="M 0 0 m 8.000000000000002 0 l 44 0 a 8 8 0 0 1 8 8.000000000000002 l 0 8.999999999999998 a 8 8 0 0 0 8 8 l 9 0 a 8 8 0 0 1 8 8 l 0 44 a 8 8 0 0 1 -8 8 l -44 0 a 8 8 0 0 1 -8 -8 l 0 -9 a 8 8 0 0 0 -8 -8 l -8.999999999999998 0 a 8 8 0 0 1 -8.000000000000002 -8 l 0 -44 a 8 8 0 0 1 8.000000000000002 -8.000000000000002 z" fill="rgba(139, 92, 246, 0.082)" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="42" y="115" font-family="system-ui, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">.union().fillet(8)</text>
+    <text x="42" y="130" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">step 3: round</text>
+  </g>
+  <path d="M 125 95 h 55 M 178 91 l 7 4 l -7 4 z M 300 95 h 55 M 353 91 l 7 4 l -7 4 z" fill="#475569" stroke="#475569" stroke-width="1.5"/>
+  <text x="30" y="222" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let combined = a.union(b);</text>
+  <text x="30" y="236" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let rounded = combined.fillet(8);</text>
+  <text x="30" y="250" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">rounded.drawTo(x, y)</text>
+  <text x="30" y="222" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <text x="30" y="236" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <text x="30" y="266" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// Every operation returns a PathBlock — chain freely</text>
+  <text x="30" y="28" font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0" text-anchor="start">Chaining: Boolean + Fillet</text>
+  <text x="260" y="28" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="start">Combine shapes, then round the result</text>
+</svg>

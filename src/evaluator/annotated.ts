@@ -4,7 +4,10 @@ import { contextToObject, createPathContext, setLastTangent, updateContextForCom
 import {
   commandToPathString,
   computeBoundingBox,
+  chamferCommands,
   concatenateCommands,
+  ellipticalFilletCommands,
+  filletCommands,
   mirrorCommands,
   offsetCommands,
   reverseCommands,
@@ -12,6 +15,7 @@ import {
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
+import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { partitionPath, samplePathAtFraction } from './sampling';
@@ -1232,9 +1236,153 @@ function evaluateAnnotatedPathTransforms(
       };
     }
 
+    case 'chamfer': {
+      if (expr.args.length < 1 || expr.args.length > 2) throw new Error('chamfer() expects 1-2 arguments');
+      const cd1 = evaluateExpression(expr.args[0], scope);
+      if (typeof cd1 !== 'number') throw new Error('chamfer() distance must be a number');
+      let cd2 = cd1;
+      if (expr.args.length === 2) {
+        cd2 = evaluateExpression(expr.args[1], scope) as number;
+        if (typeof cd2 !== 'number') throw new Error('chamfer() d2 must be a number');
+      }
+      const chamResult = chamferCommands(obj.commands, cd1, cd2, null);
+      return buildAnnotatedResult(chamResult.commands, isBlock, obj);
+    }
+
+    case 'chamferAtVertex': {
+      if (expr.args.length < 2 || expr.args.length > 3) throw new Error('chamferAtVertex() expects 2-3 arguments');
+      const cvIdx = evaluateExpression(expr.args[0], scope);
+      if (typeof cvIdx !== 'number' || !Number.isInteger(cvIdx)) throw new Error('chamferAtVertex() index must be an integer');
+      const cvD1 = evaluateExpression(expr.args[1], scope);
+      if (typeof cvD1 !== 'number') throw new Error('chamferAtVertex() distance must be a number');
+      let cvD2 = cvD1;
+      if (expr.args.length === 3) {
+        cvD2 = evaluateExpression(expr.args[2], scope) as number;
+        if (typeof cvD2 !== 'number') throw new Error('chamferAtVertex() d2 must be a number');
+      }
+      const cvResult = chamferCommands(obj.commands, cvD1, cvD2, [cvIdx]);
+      return buildAnnotatedResult(cvResult.commands, isBlock, obj);
+    }
+
+    case 'fillet': {
+      if (expr.args.length !== 1) throw new Error('fillet() expects 1 argument (radius)');
+      const fRadius = evaluateExpression(expr.args[0], scope);
+      if (typeof fRadius !== 'number') throw new Error('fillet() radius must be a number');
+      const fResult = filletCommands(obj.commands, fRadius, null);
+      return buildAnnotatedResult(fResult.commands, isBlock, obj);
+    }
+
+    case 'filletAtVertex': {
+      if (expr.args.length !== 2) throw new Error('filletAtVertex() expects 2 arguments (index, radius)');
+      const fvIdx = evaluateExpression(expr.args[0], scope);
+      if (typeof fvIdx !== 'number' || !Number.isInteger(fvIdx)) throw new Error('filletAtVertex() index must be an integer');
+      const fvRadius = evaluateExpression(expr.args[1], scope);
+      if (typeof fvRadius !== 'number') throw new Error('filletAtVertex() radius must be a number');
+      const fvResult = filletCommands(obj.commands, fvRadius, [fvIdx]);
+      return buildAnnotatedResult(fvResult.commands, isBlock, obj);
+    }
+
+    case 'ellipticalFillet': {
+      if (expr.args.length < 2 || expr.args.length > 3) throw new Error('ellipticalFillet() expects 2-3 arguments');
+      const efRx = evaluateExpression(expr.args[0], scope);
+      const efRy = evaluateExpression(expr.args[1], scope);
+      if (typeof efRx !== 'number') throw new Error('ellipticalFillet() rx must be a number');
+      if (typeof efRy !== 'number') throw new Error('ellipticalFillet() ry must be a number');
+      let efRot = 0;
+      if (expr.args.length === 3) {
+        efRot = evaluateExpression(expr.args[2], scope) as number;
+        if (typeof efRot !== 'number') throw new Error('ellipticalFillet() rotation must be a number');
+      }
+      const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
+      return buildAnnotatedResult(efResult.commands, isBlock, obj);
+    }
+
+    case 'ellipticalFilletAtVertex': {
+      if (expr.args.length < 3 || expr.args.length > 4) throw new Error('ellipticalFilletAtVertex() expects 3-4 arguments');
+      const efvIdx = evaluateExpression(expr.args[0], scope);
+      if (typeof efvIdx !== 'number' || !Number.isInteger(efvIdx)) throw new Error('ellipticalFilletAtVertex() index must be an integer');
+      const efvRx = evaluateExpression(expr.args[1], scope);
+      const efvRy = evaluateExpression(expr.args[2], scope);
+      if (typeof efvRx !== 'number') throw new Error('ellipticalFilletAtVertex() rx must be a number');
+      if (typeof efvRy !== 'number') throw new Error('ellipticalFilletAtVertex() ry must be a number');
+      let efvRot = 0;
+      if (expr.args.length === 4) {
+        efvRot = evaluateExpression(expr.args[3], scope) as number;
+        if (typeof efvRot !== 'number') throw new Error('ellipticalFilletAtVertex() rotation must be a number');
+      }
+      const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
+      return buildAnnotatedResult(efvResult.commands, isBlock, obj);
+    }
+
+    case 'union':
+    case 'difference':
+    case 'intersection':
+    case 'xor': {
+      if (expr.args.length !== 1) throw new Error(`${expr.method}() expects 1 argument (other path)`);
+      const otherVal = evaluateExpression(expr.args[0], scope);
+      let otherCmds: PathBlockCommand[];
+      if (isPathBlockValue(otherVal)) {
+        otherCmds = otherVal.commands;
+      } else if (isProjectedPathValue(otherVal)) {
+        otherCmds = otherVal.commands;
+      } else {
+        throw new Error(`${expr.method}() argument must be a PathBlock or ProjectedPath`);
+      }
+      let resultCmds: PathBlockCommand[];
+      switch (expr.method) {
+        case 'union': resultCmds = pathUnion(obj.commands, otherCmds); break;
+        case 'difference': resultCmds = pathDifference(obj.commands, otherCmds); break;
+        case 'intersection': resultCmds = pathIntersection(obj.commands, otherCmds); break;
+        case 'xor': resultCmds = pathXor(obj.commands, otherCmds); break;
+        default: resultCmds = [];
+      }
+      return buildAnnotatedResult(resultCmds, true, obj);
+    }
+
     default:
       return null;
   }
+}
+
+/**
+ * Build PathBlockValue or ProjectedPathValue from transform result commands.
+ */
+function buildAnnotatedResult(
+  cmds: PathBlockCommand[],
+  isBlock: boolean,
+  original: PathBlockValue | ProjectedPathValue,
+): PathBlockValue | ProjectedPathValue {
+  if (cmds.length === 0) {
+    if (isBlock) {
+      return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+    }
+    return { type: 'ProjectedPathValue' as const, commands: [], startPoint: { ...original.startPoint }, endPoint: { ...original.startPoint } };
+  }
+  if (isBlock) {
+    const originX = cmds[0].start.x;
+    const originY = cmds[0].start.y;
+    const normalized = cmds.map((cmd) => ({
+      command: cmd.command, args: [...cmd.args],
+      start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
+      end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
+    }));
+    const last = normalized[normalized.length - 1];
+    return {
+      type: 'PathBlockValue' as const,
+      commands: normalized,
+      pathStrings: normalized.map((c) => commandToPathString(c)),
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: last.end.x, y: last.end.y },
+    };
+  }
+  const start = cmds[0].start;
+  const end = cmds[cmds.length - 1].end;
+  return {
+    type: 'ProjectedPathValue' as const,
+    commands: cmds,
+    startPoint: { x: start.x, y: start.y },
+    endPoint: { x: end.x, y: end.y },
+  };
 }
 
 function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
@@ -1277,6 +1425,36 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         result: projected as unknown as ContextObject,
       };
     }
+    if (expr.method === 'drawTo') {
+      if (expr.args.length !== 2) throw new Error('drawTo() expects 2 arguments (x, y)');
+      const dtX = evaluateExpression(expr.args[0], scope);
+      const dtY = evaluateExpression(expr.args[1], scope);
+      if (typeof dtX !== 'number') throw new Error('drawTo() x must be a number');
+      if (typeof dtY !== 'number') throw new Error('drawTo() y must be a number');
+
+      const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
+      const moveCmd = `M ${fmt(dtX)} ${fmt(dtY)}`;
+      const relativeD = commandsToRelativeD(obj.commands);
+      const emittedPath = `${moveCmd} ${relativeD}`;
+
+      if (scope.evalState) {
+        parseAndTrackPathString(emittedPath, scope);
+      }
+
+      const projectedCommands = projectCommands(obj.commands, dtX, dtY);
+      const projected: ProjectedPathValue = {
+        type: 'ProjectedPathValue',
+        commands: projectedCommands,
+        startPoint: { x: obj.startPoint.x + dtX, y: obj.startPoint.y + dtY },
+        endPoint: { x: obj.endPoint.x + dtX, y: obj.endPoint.y + dtY },
+      };
+
+      return {
+        type: 'PathWithResult' as const,
+        path: emittedPath,
+        result: projected as unknown as ContextObject,
+      };
+    }
     if (expr.method === 'project') {
       const args = expr.args.map((a) => evaluateExpression(a, scope));
       const x = typeof args[0] === 'number' ? args[0] : 0;
@@ -1302,8 +1480,46 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     throw mError(`Unknown PathBlock method: ${expr.method}`);
   }
 
-  // ProjectedPathValue methods: get(), tangent(), normal(), partition()
+  // ProjectedPathValue methods: drawTo(), get(), tangent(), normal(), partition()
   if (isProjectedPathValue(obj)) {
+    if (expr.method === 'drawTo') {
+      if (expr.args.length !== 2) throw new Error('drawTo() expects 2 arguments (x, y)');
+      const dtX = evaluateExpression(expr.args[0], scope);
+      const dtY = evaluateExpression(expr.args[1], scope);
+      if (typeof dtX !== 'number') throw new Error('drawTo() x must be a number');
+      if (typeof dtY !== 'number') throw new Error('drawTo() y must be a number');
+
+      const offsetX = dtX - obj.startPoint.x;
+      const offsetY = dtY - obj.startPoint.y;
+      const reProjectedCommands = obj.commands.map((cmd) => ({
+        command: cmd.command,
+        args: [...cmd.args],
+        start: { x: cmd.start.x + offsetX, y: cmd.start.y + offsetY },
+        end: { x: cmd.end.x + offsetX, y: cmd.end.y + offsetY },
+      }));
+
+      const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
+      const moveCmd = `M ${fmt(dtX)} ${fmt(dtY)}`;
+      const relativeD = commandsToRelativeD(reProjectedCommands);
+      const emittedPath = `${moveCmd} ${relativeD}`;
+
+      if (scope.evalState) {
+        parseAndTrackPathString(emittedPath, scope);
+      }
+
+      const projected: ProjectedPathValue = {
+        type: 'ProjectedPathValue',
+        commands: reProjectedCommands,
+        startPoint: { x: dtX, y: dtY },
+        endPoint: { x: obj.endPoint.x + offsetX, y: obj.endPoint.y + offsetY },
+      };
+
+      return {
+        type: 'PathWithResult' as const,
+        path: emittedPath,
+        result: projected as unknown as ContextObject,
+      };
+    }
     const pathSamplingResult = evaluateAnnotatedPathSampling(obj.commands, expr, scope);
     if (pathSamplingResult !== null) return pathSamplingResult;
     // Transform methods: reverse, boundingBox, offset

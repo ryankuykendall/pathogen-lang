@@ -35,9 +35,12 @@ import {
   setLightnessCSS,
 } from '../color';
 import {
+  chamferCommands,
   commandToPathString,
   computeBoundingBox,
   concatenateCommands,
+  ellipticalFilletCommands,
+  filletCommands,
   mirrorCommands,
   offsetCommands,
   reverseCommands,
@@ -45,6 +48,7 @@ import {
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
+import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
 
 import type { PathContext, TransformState } from './context';
@@ -450,6 +454,59 @@ function countSubPaths(commands: PathBlockCommand[]): number {
 }
 
 /**
+ * Build a PathBlockValue from transform result commands, normalizing to (0,0) origin.
+ */
+function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
+  if (cmds.length === 0) {
+    return {
+      type: 'PathBlockValue' as const,
+      commands: [],
+      pathStrings: [],
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 0, y: 0 },
+    };
+  }
+  const originX = origin ? origin.x : cmds[0].start.x;
+  const originY = origin ? origin.y : cmds[0].start.y;
+  const normalized = cmds.map((cmd) => ({
+    command: cmd.command,
+    args: [...cmd.args],
+    start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
+    end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
+  }));
+  const last = normalized[normalized.length - 1];
+  return {
+    type: 'PathBlockValue' as const,
+    commands: normalized,
+    pathStrings: normalized.map((c) => commandToPathString(c)),
+    startPoint: { x: 0, y: 0 },
+    endPoint: { x: last.end.x, y: last.end.y },
+  };
+}
+
+/**
+ * Build a ProjectedPathValue from transform result commands.
+ */
+function buildProjectedPathFromCommands(cmds: PathBlockCommand[], original: ProjectedPathValue): ProjectedPathValue {
+  if (cmds.length === 0) {
+    return {
+      type: 'ProjectedPathValue' as const,
+      commands: [],
+      startPoint: { ...original.startPoint },
+      endPoint: { ...original.startPoint },
+    };
+  }
+  const start = cmds[0].start;
+  const end = cmds[cmds.length - 1].end;
+  return {
+    type: 'ProjectedPathValue' as const,
+    commands: cmds,
+    startPoint: { x: start.x, y: start.y },
+    endPoint: { x: end.x, y: end.y },
+  };
+}
+
+/**
  * Project a PathBlockValue's commands to absolute coordinates from a given origin
  */
 function projectCommands(commands: PathBlockCommand[], originX: number, originY: number): PathBlockCommand[] {
@@ -465,40 +522,75 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
  * Serialize PathBlockCommands to a relative SVG d-attribute string.
  * Reconstructs relative commands from structured command data. Used by .draw()
  * so PathBlock geometry stays relative to the cursor position.
+ *
+ * When bridgeOriginGap is true, prepends a relative move `m dx dy` if the first
+ * command doesn't start at (0,0). This compensates for closed-path fillet/chamfer
+ * operations that cyclically shift the command start point away from the pathblock origin.
  */
-function commandsToRelativeD(commands: PathBlockCommand[]): string {
+function commandsToRelativeD(commands: PathBlockCommand[], bridgeOriginGap = false): string {
   const parts: string[] = [];
+  // Track actual SVG cursor position — needed because after `z` the cursor
+  // jumps to the subpath start, which may differ from the next command's `start`.
+  let cursorX = 0;
+  let cursorY = 0;
+  let subpathStartX = 0;
+  let subpathStartY = 0;
+  if (bridgeOriginGap && commands.length > 0) {
+    const s = commands[0].start;
+    if (Math.abs(s.x) > 1e-10 || Math.abs(s.y) > 1e-10) {
+      parts.push(`m ${formatNum(s.x)} ${formatNum(s.y)}`);
+      cursorX = s.x;
+      cursorY = s.y;
+      subpathStartX = s.x;
+      subpathStartY = s.y;
+    }
+  }
   for (const cmd of commands) {
     const c = cmd.command;
-    const dx = cmd.end.x - cmd.start.x;
-    const dy = cmd.end.y - cmd.start.y;
     if (c === 'z') {
       parts.push('z');
-    } else if (c === 'h') {
-      parts.push(`h ${formatNum(dx)}`);
-    } else if (c === 'v') {
-      parts.push(`v ${formatNum(dy)}`);
-    } else if (c === 'c') {
-      const [dx1, dy1, dx2, dy2] = cmd.args;
-      parts.push(
-        `c ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`,
-      );
-    } else if (c === 's') {
-      const [dx2, dy2] = cmd.args;
-      parts.push(`s ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`);
-    } else if (c === 'q') {
-      const [dx1, dy1] = cmd.args;
-      parts.push(`q ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx)} ${formatNum(dy)}`);
-    } else if (c === 't') {
-      parts.push(`t ${formatNum(dx)} ${formatNum(dy)}`);
-    } else if (c === 'a') {
-      const [rx, ry, rotation, largeArc, sweep] = cmd.args;
-      parts.push(
-        `a ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${formatNum(largeArc)} ${formatNum(sweep)} ${formatNum(dx)} ${formatNum(dy)}`,
-      );
+      cursorX = subpathStartX;
+      cursorY = subpathStartY;
+    } else if (c === 'm') {
+      // Move: compute relative displacement from actual cursor position
+      const mx = cmd.end.x - cursorX;
+      const my = cmd.end.y - cursorY;
+      parts.push(`m ${formatNum(mx)} ${formatNum(my)}`);
+      cursorX = cmd.end.x;
+      cursorY = cmd.end.y;
+      subpathStartX = cmd.end.x;
+      subpathStartY = cmd.end.y;
     } else {
-      // m, l → relative move/line
-      parts.push(`${c} ${formatNum(dx)} ${formatNum(dy)}`);
+      const dx = cmd.end.x - cmd.start.x;
+      const dy = cmd.end.y - cmd.start.y;
+      if (c === 'h') {
+        parts.push(`h ${formatNum(dx)}`);
+      } else if (c === 'v') {
+        parts.push(`v ${formatNum(dy)}`);
+      } else if (c === 'c') {
+        const [dx1, dy1, dx2, dy2] = cmd.args;
+        parts.push(
+          `c ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`,
+        );
+      } else if (c === 's') {
+        const [dx2, dy2] = cmd.args;
+        parts.push(`s ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`);
+      } else if (c === 'q') {
+        const [dx1, dy1] = cmd.args;
+        parts.push(`q ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx)} ${formatNum(dy)}`);
+      } else if (c === 't') {
+        parts.push(`t ${formatNum(dx)} ${formatNum(dy)}`);
+      } else if (c === 'a') {
+        const [rx, ry, rotation, largeArc, sweep] = cmd.args;
+        parts.push(
+          `a ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${formatNum(largeArc)} ${formatNum(sweep)} ${formatNum(dx)} ${formatNum(dy)}`,
+        );
+      } else {
+        // l → relative line
+        parts.push(`${c} ${formatNum(dx)} ${formatNum(dy)}`);
+      }
+      cursorX = cmd.end.x;
+      cursorY = cmd.end.y;
     }
   }
   return parts.join(' ');
@@ -1170,7 +1262,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         // is needed for the emitted path. We reconstruct from structured commands
         // because stdlib functions like circle() store absolute coordinates in their
         // PathSegment strings, but the structured commands are already relative.
-        const emittedPath = commandsToRelativeD(obj.commands);
+        const emittedPath = commandsToRelativeD(obj.commands, true);
 
         // Track the relative path in context (updates cursor from current position)
         parseAndTrackPathString(emittedPath, scope);
@@ -1185,6 +1277,38 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         };
 
         // Return as PathWithResult — emits relative path AND returns ProjectedPath
+        return {
+          type: 'PathWithResult' as const,
+          path: emittedPath,
+          result: projected,
+        };
+      }
+
+      case 'drawTo': {
+        if (expr.args.length !== 2) throw mError('drawTo() expects 2 arguments (x, y)');
+        if (!scope.evalState) throw mError('drawTo() requires evaluation context');
+        const dtX = evaluateExpression(expr.args[0], scope);
+        const dtY = evaluateExpression(expr.args[1], scope);
+        if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
+        if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
+
+        // Emit M x y followed by relative commands
+        const moveCmd = `M ${formatNum(dtX)} ${formatNum(dtY)}`;
+        const relativeD = commandsToRelativeD(obj.commands, true);
+        const emittedPath = `${moveCmd} ${relativeD}`;
+
+        // Track in path context
+        parseAndTrackPathString(emittedPath, scope);
+
+        // Build ProjectedPathValue with absolute coordinates
+        const projectedCommands = projectCommands(obj.commands, dtX, dtY);
+        const projected: ProjectedPathValue = {
+          type: 'ProjectedPathValue',
+          commands: projectedCommands,
+          startPoint: { x: obj.startPoint.x + dtX, y: obj.startPoint.y + dtY },
+          endPoint: { x: obj.endPoint.x + dtX, y: obj.endPoint.y + dtY },
+        };
+
         return {
           type: 'PathWithResult' as const,
           path: emittedPath,
@@ -1473,14 +1597,198 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         };
       }
 
+      case 'chamfer': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('chamfer() expects 1-2 arguments (distance) or (d1, d2)');
+        const cd1 = evaluateExpression(expr.args[0], scope);
+        if (typeof cd1 !== 'number') throw mError('chamfer() distance must be a number');
+        let cd2 = cd1;
+        if (expr.args.length === 2) {
+          cd2 = evaluateExpression(expr.args[1], scope) as number;
+          if (typeof cd2 !== 'number') throw mError('chamfer() d2 must be a number');
+        }
+        const chamResult = chamferCommands(obj.commands, cd1, cd2, null);
+        for (const w of chamResult.warnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return buildPathBlockFromCommands(chamResult.commands, { x: 0, y: 0 });
+      }
+
+      case 'chamferAtVertex': {
+        if (expr.args.length < 2 || expr.args.length > 3) throw mError('chamferAtVertex() expects 2-3 arguments (index, distance) or (index, d1, d2)');
+        const cvIdx = evaluateExpression(expr.args[0], scope);
+        if (typeof cvIdx !== 'number' || !Number.isInteger(cvIdx)) throw mError('chamferAtVertex() index must be an integer');
+        const cvD1 = evaluateExpression(expr.args[1], scope);
+        if (typeof cvD1 !== 'number') throw mError('chamferAtVertex() distance must be a number');
+        let cvD2 = cvD1;
+        if (expr.args.length === 3) {
+          cvD2 = evaluateExpression(expr.args[2], scope) as number;
+          if (typeof cvD2 !== 'number') throw mError('chamferAtVertex() d2 must be a number');
+        }
+        const cvResult = chamferCommands(obj.commands, cvD1, cvD2, [cvIdx]);
+        for (const w of cvResult.warnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return buildPathBlockFromCommands(cvResult.commands, { x: 0, y: 0 });
+      }
+
+      case 'fillet': {
+        if (expr.args.length !== 1) throw mError('fillet() expects 1 argument (radius)');
+        const fRadius = evaluateExpression(expr.args[0], scope);
+        if (typeof fRadius !== 'number') throw mError('fillet() radius must be a number');
+        const fResult = filletCommands(obj.commands, fRadius, null);
+        for (const w of fResult.warnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return buildPathBlockFromCommands(fResult.commands, { x: 0, y: 0 });
+      }
+
+      case 'filletAtVertex': {
+        if (expr.args.length !== 2) throw mError('filletAtVertex() expects 2 arguments (index, radius)');
+        const fvIdx = evaluateExpression(expr.args[0], scope);
+        if (typeof fvIdx !== 'number' || !Number.isInteger(fvIdx)) throw mError('filletAtVertex() index must be an integer');
+        const fvRadius = evaluateExpression(expr.args[1], scope);
+        if (typeof fvRadius !== 'number') throw mError('filletAtVertex() radius must be a number');
+        const fvResult = filletCommands(obj.commands, fvRadius, [fvIdx]);
+        for (const w of fvResult.warnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return buildPathBlockFromCommands(fvResult.commands, { x: 0, y: 0 });
+      }
+
+      case 'ellipticalFillet': {
+        if (expr.args.length < 2 || expr.args.length > 3) throw mError('ellipticalFillet() expects 2-3 arguments (rx, ry) or (rx, ry, rotation)');
+        const efRx = evaluateExpression(expr.args[0], scope);
+        const efRy = evaluateExpression(expr.args[1], scope);
+        if (typeof efRx !== 'number') throw mError('ellipticalFillet() rx must be a number');
+        if (typeof efRy !== 'number') throw mError('ellipticalFillet() ry must be a number');
+        let efRot = 0;
+        if (expr.args.length === 3) {
+          efRot = evaluateExpression(expr.args[2], scope) as number;
+          if (typeof efRot !== 'number') throw mError('ellipticalFillet() rotation must be a number');
+        }
+        const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
+        for (const w of efResult.warnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return buildPathBlockFromCommands(efResult.commands, { x: 0, y: 0 });
+      }
+
+      case 'ellipticalFilletAtVertex': {
+        if (expr.args.length < 3 || expr.args.length > 4) throw mError('ellipticalFilletAtVertex() expects 3-4 arguments (index, rx, ry) or (index, rx, ry, rotation)');
+        const efvIdx = evaluateExpression(expr.args[0], scope);
+        if (typeof efvIdx !== 'number' || !Number.isInteger(efvIdx)) throw mError('ellipticalFilletAtVertex() index must be an integer');
+        const efvRx = evaluateExpression(expr.args[1], scope);
+        const efvRy = evaluateExpression(expr.args[2], scope);
+        if (typeof efvRx !== 'number') throw mError('ellipticalFilletAtVertex() rx must be a number');
+        if (typeof efvRy !== 'number') throw mError('ellipticalFilletAtVertex() ry must be a number');
+        let efvRot = 0;
+        if (expr.args.length === 4) {
+          efvRot = evaluateExpression(expr.args[3], scope) as number;
+          if (typeof efvRot !== 'number') throw mError('ellipticalFilletAtVertex() rotation must be a number');
+        }
+        const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
+        for (const w of efvResult.warnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return buildPathBlockFromCommands(efvResult.commands, { x: 0, y: 0 });
+      }
+
+      case 'union':
+      case 'difference':
+      case 'intersection':
+      case 'xor': {
+        if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (other path)`);
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        let otherCmds: PathBlockCommand[];
+        if (isPathBlockValue(otherVal)) {
+          otherCmds = otherVal.commands;
+        } else if (isProjectedPathValue(otherVal)) {
+          otherCmds = otherVal.commands;
+        } else {
+          throw mError(`${expr.method}() argument must be a PathBlock or ProjectedPath`);
+        }
+        // Project PathBlockValue commands to absolute (origin 0,0)
+        const aCmds = obj.commands;
+        const bCmds = otherCmds;
+        let resultCmds: PathBlockCommand[];
+        switch (expr.method) {
+          case 'union': resultCmds = pathUnion(aCmds, bCmds); break;
+          case 'difference': resultCmds = pathDifference(aCmds, bCmds); break;
+          case 'intersection': resultCmds = pathIntersection(aCmds, bCmds); break;
+          case 'xor': resultCmds = pathXor(aCmds, bCmds); break;
+          default: resultCmds = [];
+        }
+        return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
+      }
+
       default:
         throw mError(`Unknown PathBlock method: ${expr.method}`);
     }
   }
 
-  // ProjectedPathValue methods: get(), tangent(), normal(), partition()
+  // ProjectedPathValue methods: drawTo(), get(), tangent(), normal(), partition()
   if (isProjectedPathValue(obj)) {
+    // Check if we're inside a path block — drawTo not allowed there
+    if (scope.evalState && (scope.evalState as EvaluationState & { _insidePathBlock?: boolean })._insidePathBlock) {
+      if (expr.method === 'drawTo') {
+        throw mError(`Cannot call .${expr.method}() inside a path block`);
+      }
+    }
+
     switch (expr.method) {
+      case 'drawTo': {
+        if (expr.args.length !== 2) throw mError('drawTo() expects 2 arguments (x, y)');
+        if (!scope.evalState) throw mError('drawTo() requires evaluation context');
+        const dtX = evaluateExpression(expr.args[0], scope);
+        const dtY = evaluateExpression(expr.args[1], scope);
+        if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
+        if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
+
+        // Re-project commands from PPV origin to new drawTo origin
+        const offsetX = dtX - obj.startPoint.x;
+        const offsetY = dtY - obj.startPoint.y;
+        const reProjectedCommands = obj.commands.map((cmd) => ({
+          command: cmd.command,
+          args: [...cmd.args],
+          start: { x: cmd.start.x + offsetX, y: cmd.start.y + offsetY },
+          end: { x: cmd.end.x + offsetX, y: cmd.end.y + offsetY },
+        }));
+
+        // Emit M x y followed by relative commands
+        const moveCmd = `M ${formatNum(dtX)} ${formatNum(dtY)}`;
+        const relativeD = commandsToRelativeD(reProjectedCommands);
+        const emittedPath = `${moveCmd} ${relativeD}`;
+
+        // Track in path context
+        parseAndTrackPathString(emittedPath, scope);
+
+        // Build ProjectedPathValue with absolute coordinates
+        const projected: ProjectedPathValue = {
+          type: 'ProjectedPathValue',
+          commands: reProjectedCommands,
+          startPoint: { x: dtX, y: dtY },
+          endPoint: { x: obj.endPoint.x + offsetX, y: obj.endPoint.y + offsetY },
+        };
+
+        return {
+          type: 'PathWithResult' as const,
+          path: emittedPath,
+          result: projected,
+        };
+      }
+
       case 'get': {
         if (expr.args.length !== 1) throw mError('get() expects 1 argument (t)');
         const t = evaluateExpression(expr.args[0], scope);
@@ -1667,6 +1975,129 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           startPoint: { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
+      }
+
+      case 'chamfer': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('chamfer() expects 1-2 arguments');
+        const cd1 = evaluateExpression(expr.args[0], scope);
+        if (typeof cd1 !== 'number') throw mError('chamfer() distance must be a number');
+        let cd2 = cd1;
+        if (expr.args.length === 2) {
+          cd2 = evaluateExpression(expr.args[1], scope) as number;
+          if (typeof cd2 !== 'number') throw mError('chamfer() d2 must be a number');
+        }
+        const chamResult = chamferCommands(obj.commands, cd1, cd2, null);
+        for (const w of chamResult.warnings) {
+          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildProjectedPathFromCommands(chamResult.commands, obj);
+      }
+
+      case 'chamferAtVertex': {
+        if (expr.args.length < 2 || expr.args.length > 3) throw mError('chamferAtVertex() expects 2-3 arguments');
+        const cvIdx = evaluateExpression(expr.args[0], scope);
+        if (typeof cvIdx !== 'number' || !Number.isInteger(cvIdx)) throw mError('chamferAtVertex() index must be an integer');
+        const cvD1 = evaluateExpression(expr.args[1], scope);
+        if (typeof cvD1 !== 'number') throw mError('chamferAtVertex() distance must be a number');
+        let cvD2 = cvD1;
+        if (expr.args.length === 3) {
+          cvD2 = evaluateExpression(expr.args[2], scope) as number;
+          if (typeof cvD2 !== 'number') throw mError('chamferAtVertex() d2 must be a number');
+        }
+        const cvResult = chamferCommands(obj.commands, cvD1, cvD2, [cvIdx]);
+        for (const w of cvResult.warnings) {
+          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildProjectedPathFromCommands(cvResult.commands, obj);
+      }
+
+      case 'fillet': {
+        if (expr.args.length !== 1) throw mError('fillet() expects 1 argument (radius)');
+        const fRadius = evaluateExpression(expr.args[0], scope);
+        if (typeof fRadius !== 'number') throw mError('fillet() radius must be a number');
+        const fResult = filletCommands(obj.commands, fRadius, null);
+        for (const w of fResult.warnings) {
+          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildProjectedPathFromCommands(fResult.commands, obj);
+      }
+
+      case 'filletAtVertex': {
+        if (expr.args.length !== 2) throw mError('filletAtVertex() expects 2 arguments (index, radius)');
+        const fvIdx = evaluateExpression(expr.args[0], scope);
+        if (typeof fvIdx !== 'number' || !Number.isInteger(fvIdx)) throw mError('filletAtVertex() index must be an integer');
+        const fvRadius = evaluateExpression(expr.args[1], scope);
+        if (typeof fvRadius !== 'number') throw mError('filletAtVertex() radius must be a number');
+        const fvResult = filletCommands(obj.commands, fvRadius, [fvIdx]);
+        for (const w of fvResult.warnings) {
+          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildProjectedPathFromCommands(fvResult.commands, obj);
+      }
+
+      case 'ellipticalFillet': {
+        if (expr.args.length < 2 || expr.args.length > 3) throw mError('ellipticalFillet() expects 2-3 arguments');
+        const efRx = evaluateExpression(expr.args[0], scope);
+        const efRy = evaluateExpression(expr.args[1], scope);
+        if (typeof efRx !== 'number') throw mError('ellipticalFillet() rx must be a number');
+        if (typeof efRy !== 'number') throw mError('ellipticalFillet() ry must be a number');
+        let efRot = 0;
+        if (expr.args.length === 3) {
+          efRot = evaluateExpression(expr.args[2], scope) as number;
+          if (typeof efRot !== 'number') throw mError('ellipticalFillet() rotation must be a number');
+        }
+        const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
+        for (const w of efResult.warnings) {
+          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildProjectedPathFromCommands(efResult.commands, obj);
+      }
+
+      case 'ellipticalFilletAtVertex': {
+        if (expr.args.length < 3 || expr.args.length > 4) throw mError('ellipticalFilletAtVertex() expects 3-4 arguments');
+        const efvIdx = evaluateExpression(expr.args[0], scope);
+        if (typeof efvIdx !== 'number' || !Number.isInteger(efvIdx)) throw mError('ellipticalFilletAtVertex() index must be an integer');
+        const efvRx = evaluateExpression(expr.args[1], scope);
+        const efvRy = evaluateExpression(expr.args[2], scope);
+        if (typeof efvRx !== 'number') throw mError('ellipticalFilletAtVertex() rx must be a number');
+        if (typeof efvRy !== 'number') throw mError('ellipticalFilletAtVertex() ry must be a number');
+        let efvRot = 0;
+        if (expr.args.length === 4) {
+          efvRot = evaluateExpression(expr.args[3], scope) as number;
+          if (typeof efvRot !== 'number') throw mError('ellipticalFilletAtVertex() rotation must be a number');
+        }
+        const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
+        for (const w of efvResult.warnings) {
+          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildProjectedPathFromCommands(efvResult.commands, obj);
+      }
+
+      case 'union':
+      case 'difference':
+      case 'intersection':
+      case 'xor': {
+        if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (other path)`);
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        let otherCmds: PathBlockCommand[];
+        if (isPathBlockValue(otherVal)) {
+          otherCmds = otherVal.commands;
+        } else if (isProjectedPathValue(otherVal)) {
+          otherCmds = otherVal.commands;
+        } else {
+          throw mError(`${expr.method}() argument must be a PathBlock or ProjectedPath`);
+        }
+        const aCmds = obj.commands;
+        const bCmds = otherCmds;
+        let resultCmds: PathBlockCommand[];
+        switch (expr.method) {
+          case 'union': resultCmds = pathUnion(aCmds, bCmds); break;
+          case 'difference': resultCmds = pathDifference(aCmds, bCmds); break;
+          case 'intersection': resultCmds = pathIntersection(aCmds, bCmds); break;
+          case 'xor': resultCmds = pathXor(aCmds, bCmds); break;
+          default: resultCmds = [];
+        }
+        return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
       }
 
       default:
@@ -4125,7 +4556,7 @@ function parseAndTrackPathString(pathStr: string, scope: Scope): void {
   if (!scope.evalState) return;
 
   // Parse path commands from string: M 10 20 L 30 40 A 5 5 0 1 1 50 50 etc.
-  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])\s*([\d\s.,-]*)/g;
+  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])\s*([\d\s.,eE+-]*)/g;
   let match;
 
   while ((match = commandRegex.exec(pathStr)) !== null) {
@@ -4135,7 +4566,7 @@ function parseAndTrackPathString(pathStr: string, scope: Scope): void {
     // Parse numeric arguments
     const args: number[] = [];
     if (argsStr) {
-      const numMatches = argsStr.match(/-?[\d.]+/g);
+      const numMatches = argsStr.match(/-?[\d.]+(?:e[+-]?\d+)?/gi);
       if (numMatches) {
         for (const num of numMatches) {
           args.push(parseFloat(num));

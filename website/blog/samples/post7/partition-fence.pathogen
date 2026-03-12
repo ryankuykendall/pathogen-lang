@@ -1,0 +1,151 @@
+// viewBox="0 0 540 320"
+// partition() — evenly-spaced fence posts along a curved path
+
+let road = @{
+  c 50 -80 150 -80 200 0
+  c 50 80 150 80 200 0
+};
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 540, 320) }
+
+// --- Layers ---
+
+let roadLayer = PathLayer('road') ${
+  stroke: Color('#475569');
+  stroke-width: 4;
+  fill: none;
+};
+
+let posts = PathLayer('posts') ${
+  stroke: Color('#854d0e');
+  stroke-width: 2;
+  fill: none;
+};
+
+let rails = PathLayer('rails') ${
+  stroke: Color('#a16207');
+  stroke-width: 1;
+  fill: none;
+};
+
+// Get projection for sampling
+let proj = road.project(50, 180);
+let n = 16;
+let pts = proj.partition(n);
+
+// Draw the road
+roadLayer.apply {
+  road.drawTo(50, 180)
+}
+
+// Place fence posts evenly along the road
+posts.apply {
+  for (p in pts) {
+    let norm = proj.normal(p.t);
+    M p.point.x p.point.y
+    l calc(cos(norm.angle) * 30) calc(sin(norm.angle) * 30)
+  }
+}
+
+// Connect posts with rails
+let nMinus1 = calc(n - 1);
+rails.apply {
+  for (i in 0..nMinus1) {
+    let p1 = pts[i];
+    let p2 = pts[calc(i + 1)];
+    let n1 = proj.normal(p1.t);
+    let n2 = proj.normal(p2.t);
+    // Rail at 1/3 height
+    M calc(p1.point.x + cos(n1.angle) * 10) calc(p1.point.y + sin(n1.angle) * 10)
+    L calc(p2.point.x + cos(n2.angle) * 10) calc(p2.point.y + sin(n2.angle) * 10)
+    // Rail at 2/3 height
+    M calc(p1.point.x + cos(n1.angle) * 20) calc(p1.point.y + sin(n1.angle) * 20)
+    L calc(p2.point.x + cos(n2.angle) * 20) calc(p2.point.y + sin(n2.angle) * 20)
+  }
+}
+
+// --- Post base dots ---
+
+let base_dots = PathLayer('base-dots') ${
+  fill: Color('#854d0e');
+  stroke: none;
+};
+base_dots.apply {
+  for (p in pts) {
+    circle(p.point.x, p.point.y, 2)
+  }
+}
+
+// --- Annotations ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+labels.apply {
+  text(360, 28)`road: cubic Bézier path`
+  text(360, 42)`posts: partition(16) + normal()`
+  text(360, 56)`rails: connecting adjacent posts`
+}
+
+let label_dots = PathLayer('label-dots') ${
+  fill: none;
+  stroke-width: 1.5;
+};
+
+let ld1 = PathLayer('ld1') ${ fill: none; stroke: Color('#475569'); stroke-width: 3; };
+let ld2 = PathLayer('ld2') ${ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
+let ld3 = PathLayer('ld3') ${ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
+ld1.apply { M 350 24 h 6 }
+ld2.apply { M 350 38 h 6 }
+ld3.apply { M 350 52 h 6 }
+
+// --- Code annotation ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 272)`let pts = proj.partition(16);`
+  text(30, 286)`let norm = proj.normal(p.t);`
+}
+
+let code_comment = TextLayer('code-comment') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+code_comment.apply {
+  text(30, 302)`// normal() returns perpendicular direction at each point`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 28)`Fence Along a Curve`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 42)`partition() + normal() for perpendicular placement`
+}

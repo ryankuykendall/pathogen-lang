@@ -1,0 +1,263 @@
+// viewBox="0 0 480 340"
+// Fillet anatomy — circular arc construction at a corner
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 480, 340) }
+
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
+};
+grid.apply {
+  for (i in 0..17) {
+    M 0 calc(i * 20)
+    h 480
+  }
+  for (j in 0..24) {
+    M calc(j * 20) 0
+    v 340
+  }
+}
+
+// --- Original corner (dashed) ---
+
+let original = PathLayer('original') ${
+  stroke: Color('#94a3b8');
+  stroke-width: 1.5;
+  stroke-dasharray: "6 4";
+  fill: none;
+};
+// Corner at (200, 120), incoming horizontal, outgoing vertical
+original.apply {
+  M 100 120 h 100
+  M 200 120 v 80
+}
+
+// --- Fillet arc + trimmed edges (result) ---
+
+let fillet = PathLayer('fillet') ${
+  stroke: Color('#8b5cf6');
+  stroke-width: 2.5;
+  fill: none;
+};
+// r=40: trim distance = 40 (90° corner, tan(45°) = 1, so trim = r)
+// Trim incoming at (160, 120), trim outgoing at (200, 160)
+// Arc center at (160, 160) — offset by r from both edges
+fillet.apply {
+  M 100 120 L 160 120
+  a 40 40 0 0 1 40 40
+  L 200 200
+}
+
+// --- Arc center ---
+
+let center_dot = PathLayer('center-dot') ${
+  fill: Color('#8b5cf640');
+  stroke: Color('#8b5cf6');
+  stroke-width: 1;
+};
+center_dot.apply {
+  circle(160, 160, 3)
+}
+
+// --- Radius lines (from center to trim points) ---
+
+let radii = PathLayer('radii') ${
+  stroke: Color('#8b5cf660');
+  stroke-width: 1;
+  stroke-dasharray: "3 3";
+  fill: none;
+};
+radii.apply {
+  M 160 160 L 160 120
+  M 160 160 L 200 160
+}
+
+// --- Vertex dot ---
+
+let vertex = PathLayer('vertex') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+vertex.apply {
+  circle(200, 120, 4)
+}
+
+// --- Trim points ---
+
+let trim_dots = PathLayer('trim-dots') ${
+  fill: Color('#22c55e');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+trim_dots.apply {
+  circle(160, 120, 4)
+  circle(200, 160, 4)
+}
+
+// --- Removed corner area ---
+
+let removed = PathLayer('removed') ${
+  fill: Color('#ef444412');
+  stroke: none;
+};
+removed.apply {
+  M 160 120 L 200 120 L 200 160
+  a 40 40 0 0 0 -40 -40
+  z
+}
+
+// --- Radius dimension ---
+
+let r_dim = PathLayer('r-dim') ${
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  fill: none;
+};
+r_dim.apply {
+  // Radius line from center toward upper-right (along 45° between edges)
+  M 160 160 L calc(160 + 28) calc(160 - 28)
+}
+
+let r_arrow = PathLayer('r-arrow') ${
+  fill: Color('#f59e0b');
+  stroke: none;
+};
+r_arrow.apply {
+  // Arrowhead at end of radius line, pointing along 45° direction (up-right)
+  M calc(160 + 28) calc(160 - 28)
+  l calc(-0.707 * 8 + 0.707 * 3.5) calc(0.707 * 8 + 0.707 * 3.5)
+  l calc(-0.707 * 7) calc(0.707 * 7)
+  z
+}
+
+// --- Leader lines ---
+
+let leaders = PathLayer('leaders') ${
+  stroke: Color('#475569');
+  stroke-width: 0.5;
+  fill: none;
+};
+leaders.apply {
+  M 200 120 L 260 60
+  M 160 120 L 100 70
+  M 200 160 L 260 200
+  M 160 160 L 100 200
+  M 180 140 L 310 140
+}
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+labels.apply {
+  text(265, 57)`vertex`
+  text(265, 197)`trim point`
+  text(315, 137)`circular arc`
+  text(315, 150)`a r r 0 0 1 dx dy`
+}
+
+let labels_left = TextLayer('labels-left') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: end;
+};
+labels_left.apply {
+  text(95, 67)`trim point`
+  text(95, 197)`arc center`
+}
+
+// --- Radius label ---
+
+let r_label = TextLayer('r-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#f59e0b');
+  text-anchor: start;
+};
+r_label.apply {
+  text(190, 150)`r`
+}
+
+// --- Geometry note ---
+
+let geo = TextLayer('geo') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+geo.apply {
+  text(100, 218)`trim = r / tan(halfAngle)`
+  text(100, 230)`90° corner → trim = r`
+}
+
+// --- Code ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 265)`box.fillet(40)`
+  text(30, 281)`// replaces vertex with tangent arc`
+}
+
+// --- Legend ---
+
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+
+let leg_o = PathLayer('leg-o') ${ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-t') ${ fill: Color('#22c55e'); stroke: none; };
+
+leg_o.apply { rect(300, 260, 8, 8) }
+leg_f.apply { rect(300, 274, 8, 8) }
+leg_v.apply { rect(390, 260, 8, 8) }
+leg_t.apply { rect(390, 274, 8, 8) }
+
+leg.apply {
+  text(312, 267)`Original`
+  text(312, 281)`Fillet arc`
+  text(402, 267)`Vertex`
+  text(402, 281)`Trim points`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 28)`Fillet Anatomy`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 44)`Replace a corner vertex with a tangent circular arc`
+}

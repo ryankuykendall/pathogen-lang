@@ -39,6 +39,34 @@ let proj = shape.draw();
 // proj.endPoint = Point(30, 30)
 ```
 
+### Drawing at a specific position
+
+Use `.drawTo(x, y)` to emit `M x y` followed by the path's commands in a single call. This combines positioning and drawing — no separate `M` command needed.
+
+```
+let shape = @{ v 20 h 20 v -20 z };
+
+shape.drawTo(10, 10)     // emits: M 10 10 v 20 h 20 v -20 z
+shape.drawTo(50, 50)     // reuse at a different position
+```
+
+`drawTo()` returns a `ProjectedPath` with absolute coordinates, just like `draw()`:
+
+```
+let shape = @{ v 20 h 30 };
+let proj = shape.drawTo(10, 10);
+// proj.startPoint = Point(10, 10)
+// proj.endPoint = Point(40, 30)
+```
+
+`drawTo()` also works on ProjectedPath values — it re-positions the projected path to the new origin:
+
+```
+let shape = @{ h 50 v 30 };
+let proj = shape.project(0, 0);
+proj.drawTo(100, 100)    // emits: M 100 100 h 50 v 30
+```
+
 ## Projecting Without Drawing
 
 Use `.project(x, y)` to compute absolute coordinates without emitting commands or moving the cursor:
@@ -466,3 +494,192 @@ let mid = combined.get(0.5);
 ```
 
 The `<<` operator also works for [style block merging](syntax.md#style-blocks). The operand types must match — mixing PathBlocks and style blocks throws an error.
+
+## Chamfers
+
+Chamfers cut corners by replacing a vertex with a straight line segment. The incoming and outgoing edges are trimmed by the specified distance, and a line connects the two trim points.
+
+### `chamfer(distance)` → PathBlock / ProjectedPath
+
+Chamfers all corner vertices with equal distance on both sides:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let chamfered = box.chamfer(8);
+M 10 10
+chamfered.draw()
+```
+
+### `chamfer(d1, d2)` → PathBlock / ProjectedPath
+
+Asymmetric chamfer — `d1` is the trim distance on the incoming edge, `d2` on the outgoing edge:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let asym = box.chamfer(5, 15);
+M 10 10
+asym.draw()
+```
+
+### `chamferAtVertex(index, distance)` → PathBlock / ProjectedPath
+
+Chamfers a single vertex by index (from the `.vertices` array):
+
+```
+let box = @{ h 60 v 40 h -60 z };
+// box.vertices: Point(0,0), Point(60,0), Point(60,40), Point(0,40)
+let oneCorner = box.chamferAtVertex(1, 10);
+M 10 10
+oneCorner.draw()
+```
+
+### `chamferAtVertex(index, d1, d2)` → PathBlock / ProjectedPath
+
+Asymmetric chamfer at a single vertex:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let asym = box.chamferAtVertex(2, 5, 15);
+M 10 10
+asym.draw()
+```
+
+### Edge cases
+
+If the chamfer distance exceeds the available edge length, it is clamped to the edge length and a warning is logged. If the vertex index is out of range, an error is thrown.
+
+Chamfers work with all command types — lines, curves, and arcs. For curves, the trim operation uses arc-length parameterization to find the exact split point.
+
+## Fillets
+
+Fillets round corners by replacing a vertex with a circular arc. The incoming and outgoing edges are trimmed, and an arc tangent to both edges is inserted.
+
+**Scope:** Line-line junctions only. At curve junctions, the fillet is skipped and a warning is logged.
+
+### `fillet(radius)` → PathBlock / ProjectedPath
+
+Fillets all corner vertices with the given radius:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let rounded = box.fillet(8);
+M 10 10
+rounded.draw()
+```
+
+### `filletAtVertex(index, radius)` → PathBlock / ProjectedPath
+
+Fillets a single vertex:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let oneRound = box.filletAtVertex(1, 12);
+M 10 10
+oneRound.draw()
+```
+
+If the radius is too large for the available edge length, it is clamped and a warning is logged. If the vertex index is out of range, an error is thrown.
+
+## Elliptical Fillets
+
+Elliptical fillets replace a corner with an elliptical arc instead of a circular one, allowing for more expressive corner shapes.
+
+**Scope:** Line-line junctions only (same as circular fillets).
+
+### `ellipticalFillet(rx, ry)` → PathBlock / ProjectedPath
+
+Fillets all corners with an elliptical arc of radii `rx` and `ry`:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let eFilleted = box.ellipticalFillet(12, 6);
+M 10 10
+eFilleted.draw()
+```
+
+### `ellipticalFillet(rx, ry, rotation)` → PathBlock / ProjectedPath
+
+Elliptical fillet with a rotated ellipse (rotation in radians, default 0):
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let rotated = box.ellipticalFillet(12, 6, 0.3);
+M 10 10
+rotated.draw()
+```
+
+### `ellipticalFilletAtVertex(index, rx, ry)` → PathBlock / ProjectedPath
+
+Elliptical fillet at a single vertex:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let one = box.ellipticalFilletAtVertex(1, 15, 8);
+M 10 10
+one.draw()
+```
+
+### `ellipticalFilletAtVertex(index, rx, ry, rotation)` → PathBlock / ProjectedPath
+
+Elliptical fillet at a single vertex with rotation:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let one = box.ellipticalFilletAtVertex(2, 15, 8, 0.5);
+M 10 10
+one.draw()
+```
+
+## Boolean Operations
+
+Boolean operations combine two closed paths using set operations. Both paths must be closed (end with `z` or have coincident start and end points). The result preserves original curve types — no linearization.
+
+See also: [Standard Library path functions](stdlib.md#path-functions) for creating shapes to use with boolean operations.
+
+### `union(other)` → PathBlock
+
+Combines two paths into their union (outer boundary):
+
+```
+let a = @{ circle(30) };
+let b = @{ circle(30) };
+let combined = a.project(50, 50).union(b.project(70, 50));
+```
+
+### `difference(other)` → PathBlock
+
+Subtracts `other` from the path:
+
+```
+let plate = @{ circle(40) };
+let hole = @{ circle(15) };
+let result = plate.project(50, 50).difference(hole.project(50, 50));
+```
+
+### `intersection(other)` → PathBlock
+
+Returns only the overlapping region:
+
+```
+let a = @{ circle(30) };
+let b = @{ circle(30) };
+let overlap = a.project(50, 50).intersection(b.project(70, 50));
+```
+
+### `xor(other)` → PathBlock
+
+Returns the symmetric difference — everything in either path but not both:
+
+```
+let a = @{ circle(30) };
+let b = @{ circle(30) };
+let exclusive = a.project(50, 50).xor(b.project(70, 50));
+```
+
+### Requirements and behavior
+
+- Both paths must be closed. Open paths throw an error.
+- The `other` argument can be a PathBlock or ProjectedPath.
+- Multi-component results produce multiple subpaths (`M...z M...z`).
+- All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.
+- Results are always returned as PathBlock values (normalized to `(0, 0)` origin).

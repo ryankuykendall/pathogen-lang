@@ -1,0 +1,160 @@
+// viewBox="0 0 700 380"
+// Elliptical fillet at various corner angles — before (dashed) and after (solid)
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 700, 380) }
+
+// --- Layers ---
+
+let original = PathLayer('original') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+
+let filleted = PathLayer('filleted') ${
+  stroke: Color('#8b5cf6');
+  stroke-width: 2;
+  fill: Color('#8b5cf615');
+};
+
+let dots = PathLayer('dots') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+
+// --- Generate shapes at different angles ---
+// Angles: -0.4π, -0.3π, -0.2π, -0.1π, 0.1π, 0.2π, 0.3π, 0.4π
+
+let angles_neg = [-0.4, -0.3, -0.2, -0.1];
+let angles_pos = [0.1, 0.2, 0.3, 0.4];
+
+// Row 1: negative angles (acute to right angle, outgoing goes upward)
+for (i in 0..3) {
+  let angle = calc(angles_neg[i] * 3.14159265);
+  let ox = calc(30 + i * 170);
+  let oy = 150;
+  let shape = @{
+    h 50
+    l calc(cos(angle) * 40) calc(sin(angle) * 40)
+  };
+
+  let ef = shape.ellipticalFillet(32, 16);
+
+  original.apply {
+    shape.drawTo(ox, oy)
+  }
+  filleted.apply {
+    ef.drawTo(ox, oy)
+  }
+  // vertex dot
+  dots.apply {
+    circle(calc(ox + 50), oy, 3)
+  }
+}
+
+// Row 2: positive angles (right angle to obtuse, outgoing goes downward)
+for (i in 0..3) {
+  let angle = calc(angles_pos[i] * 3.14159265);
+  let ox = calc(30 + i * 170);
+  let oy = 270;
+  let shape = @{
+    h 50
+    l calc(cos(angle) * 40) calc(sin(angle) * 40)
+  };
+
+  let ef = shape.ellipticalFillet(24, 48);
+
+  original.apply {
+    shape.drawTo(ox, oy)
+  }
+  filleted.apply {
+    ef.drawTo(ox, oy)
+  }
+  // vertex dot
+  dots.apply {
+    circle(calc(ox + 50), oy, 3)
+  }
+}
+
+// --- Angle labels ---
+
+let angle_labels = TextLayer('angle-labels') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+angle_labels.apply {
+  // Row 1
+  text(80, 180)`−0.4π`
+  text(250, 180)`−0.3π`
+  text(420, 180)`−0.2π`
+  text(590, 180)`−0.1π`
+  // Row 2
+  text(80, 330)`0.1π`
+  text(250, 330)`0.2π`
+  text(420, 330)`0.3π`
+  text(590, 330)`0.4π`
+}
+
+// --- Legend ---
+
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+let leg_o = PathLayer('leg-o') ${ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
+
+leg_o.apply { rect(560, 20, 8, 8) }
+leg_f.apply { rect(560, 34, 8, 8) }
+leg_v.apply { rect(640, 20, 8, 8) }
+
+leg.apply {
+  text(572, 27)`Original`
+  text(572, 41)`Filleted`
+  text(652, 27)`Vertex`
+}
+
+// --- Code ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 352)`Row 1: ellipticalFillet(32, 16)  // wider rx`
+  text(30, 366)`Row 2: ellipticalFillet(24, 48)  // taller ry`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 32)`Elliptical Fillet at Various Angles`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`ellipticalFillet(rx, ry) adapts to any corner angle`
+}

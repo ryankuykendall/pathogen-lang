@@ -1638,6 +1638,21 @@ M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
 <span class="hljs-keyword">let</span> proj = shape.<span class="hljs-title function_">draw</span>();
 <span class="hljs-comment">// proj.startPoint = Point(10, 10)</span>
 <span class="hljs-comment">// proj.endPoint = Point(30, 30)</span>
+</code></pre><h3 id="path-blocks-drawing-at-a-specific-position">Drawing at a specific position</h3>
+<p>Use <code>.drawTo(x, y)</code> to emit <code>M x y</code> followed by the path&#39;s commands in a single call. This combines positioning and drawing — no separate <code>M</code> command needed.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> shape = @{ v <span class="hljs-number">20</span> h <span class="hljs-number">20</span> v -<span class="hljs-number">20</span> z };
+
+shape.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>)     <span class="hljs-comment">// emits: M 10 10 v 20 h 20 v -20 z</span>
+shape.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>)     <span class="hljs-comment">// reuse at a different position</span>
+</code></pre><p><code>drawTo()</code> returns a <code>ProjectedPath</code> with absolute coordinates, just like <code>draw()</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> shape = @{ v <span class="hljs-number">20</span> h <span class="hljs-number">30</span> };
+<span class="hljs-keyword">let</span> proj = shape.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>);
+<span class="hljs-comment">// proj.startPoint = Point(10, 10)</span>
+<span class="hljs-comment">// proj.endPoint = Point(40, 30)</span>
+</code></pre><p><code>drawTo()</code> also works on ProjectedPath values — it re-positions the projected path to the new origin:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> shape = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">30</span> };
+<span class="hljs-keyword">let</span> proj = shape.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+proj.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>)    <span class="hljs-comment">// emits: M 100 100 h 50 v 30</span>
 </code></pre><h2 id="path-blocks-projecting-without-drawing">Projecting Without Drawing</h2>
 <p>Use <code>.project(x, y)</code> to compute absolute coordinates without emitting commands or moving the cursor:</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> shape = @{ v <span class="hljs-number">20</span> h <span class="hljs-number">30</span> };
@@ -1946,6 +1961,110 @@ c.<span class="hljs-title function_">draw</span>()                             <
 <span class="hljs-keyword">let</span> rev = combined.<span class="hljs-title function_">reverse</span>();
 <span class="hljs-keyword">let</span> mid = combined.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
 </code></pre><p>The <code>&lt;&lt;</code> operator also works for <a href="syntax.md#style-blocks">style block merging</a>. The operand types must match — mixing PathBlocks and style blocks throws an error.</p>
+<h2 id="path-blocks-chamfers">Chamfers</h2>
+<p>Chamfers cut corners by replacing a vertex with a straight line segment. The incoming and outgoing edges are trimmed by the specified distance, and a line connects the two trim points.</p>
+<h3 id="path-blocks-chamferdistance-pathblock-projectedpath"><code>chamfer(distance)</code> → PathBlock / ProjectedPath</h3>
+<p>Chamfers all corner vertices with equal distance on both sides:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> chamfered = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">8</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+chamfered.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code> → PathBlock / ProjectedPath</h3>
+<p>Asymmetric chamfer — <code>d1</code> is the trim distance on the incoming edge, <code>d2</code> on the outgoing edge:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> asym = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">5</span>, <span class="hljs-number">15</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+asym.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code> → PathBlock / ProjectedPath</h3>
+<p>Chamfers a single vertex by index (from the <code>.vertices</code> array):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-comment">// box.vertices: Point(0,0), Point(60,0), Point(60,40), Point(0,40)</span>
+<span class="hljs-keyword">let</span> oneCorner = box.<span class="hljs-title function_">chamferAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">10</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+oneCorner.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-chamferatvertexindex-d1-d2-pathblock-projectedpath"><code>chamferAtVertex(index, d1, d2)</code> → PathBlock / ProjectedPath</h3>
+<p>Asymmetric chamfer at a single vertex:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> asym = box.<span class="hljs-title function_">chamferAtVertex</span>(<span class="hljs-number">2</span>, <span class="hljs-number">5</span>, <span class="hljs-number">15</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+asym.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-edge-cases">Edge cases</h3>
+<p>If the chamfer distance exceeds the available edge length, it is clamped to the edge length and a warning is logged. If the vertex index is out of range, an error is thrown.</p>
+<p>Chamfers work with all command types — lines, curves, and arcs. For curves, the trim operation uses arc-length parameterization to find the exact split point.</p>
+<h2 id="path-blocks-fillets">Fillets</h2>
+<p>Fillets round corners by replacing a vertex with a circular arc. The incoming and outgoing edges are trimmed, and an arc tangent to both edges is inserted.</p>
+<p><strong>Scope:</strong> Line-line junctions only. At curve junctions, the fillet is skipped and a warning is logged.</p>
+<h3 id="path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code> → PathBlock / ProjectedPath</h3>
+<p>Fillets all corner vertices with the given radius:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+rounded.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code> → PathBlock / ProjectedPath</h3>
+<p>Fillets a single vertex:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> oneRound = box.<span class="hljs-title function_">filletAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">12</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+oneRound.<span class="hljs-title function_">draw</span>()
+</code></pre><p>If the radius is too large for the available edge length, it is clamped and a warning is logged. If the vertex index is out of range, an error is thrown.</p>
+<h2 id="path-blocks-elliptical-fillets">Elliptical Fillets</h2>
+<p>Elliptical fillets replace a corner with an elliptical arc instead of a circular one, allowing for more expressive corner shapes.</p>
+<p><strong>Scope:</strong> Line-line junctions only (same as circular fillets).</p>
+<h3 id="path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code> → PathBlock / ProjectedPath</h3>
+<p>Fillets all corners with an elliptical arc of radii <code>rx</code> and <code>ry</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> eFilleted = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">12</span>, <span class="hljs-number">6</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+eFilleted.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code> → PathBlock / ProjectedPath</h3>
+<p>Elliptical fillet with a rotated ellipse (rotation in radians, default 0):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> rotated = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">12</span>, <span class="hljs-number">6</span>, <span class="hljs-number">0.3</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+rotated.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex(index, rx, ry)</code> → PathBlock / ProjectedPath</h3>
+<p>Elliptical fillet at a single vertex:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> one = box.<span class="hljs-title function_">ellipticalFilletAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">15</span>, <span class="hljs-number">8</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+one.<span class="hljs-title function_">draw</span>()
+</code></pre><h3 id="path-blocks-ellipticalfilletatvertexindex-rx-ry-rotation-pathblock-projectedpath"><code>ellipticalFilletAtVertex(index, rx, ry, rotation)</code> → PathBlock / ProjectedPath</h3>
+<p>Elliptical fillet at a single vertex with rotation:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> one = box.<span class="hljs-title function_">ellipticalFilletAtVertex</span>(<span class="hljs-number">2</span>, <span class="hljs-number">15</span>, <span class="hljs-number">8</span>, <span class="hljs-number">0.5</span>);
+M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+one.<span class="hljs-title function_">draw</span>()
+</code></pre><h2 id="path-blocks-boolean-operations">Boolean Operations</h2>
+<p>Boolean operations combine two closed paths using set operations. Both paths must be closed (end with <code>z</code> or have coincident start and end points). The result preserves original curve types — no linearization.</p>
+<p>See also: <a href="stdlib.md#path-functions">Standard Library path functions</a> for creating shapes to use with boolean operations.</p>
+<h3 id="path-blocks-unionother-pathblock"><code>union(other)</code> → PathBlock</h3>
+<p>Combines two paths into their union (outer boundary):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> b = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> combined = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>).<span class="hljs-title function_">union</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>));
+</code></pre><h3 id="path-blocks-differenceother-pathblock"><code>difference(other)</code> → PathBlock</h3>
+<p>Subtracts <code>other</code> from the path:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">40</span>) };
+<span class="hljs-keyword">let</span> hole = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">15</span>) };
+<span class="hljs-keyword">let</span> result = plate.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>));
+</code></pre><h3 id="path-blocks-intersectionother-pathblock"><code>intersection(other)</code> → PathBlock</h3>
+<p>Returns only the overlapping region:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> b = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> overlap = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>).<span class="hljs-title function_">intersection</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>));
+</code></pre><h3 id="path-blocks-xorother-pathblock"><code>xor(other)</code> → PathBlock</h3>
+<p>Returns the symmetric difference — everything in either path but not both:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> b = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>));
+</code></pre><h3 id="path-blocks-requirements-and-behavior">Requirements and behavior</h3>
+<ul>
+<li>Both paths must be closed. Open paths throw an error.</li>
+<li>The <code>other</code> argument can be a PathBlock or ProjectedPath.</li>
+<li>Multi-component results produce multiple subpaths (<code>M...z M...z</code>).</li>
+<li>All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.</li>
+<li>Results are always returned as PathBlock values (normalized to <code>(0, 0)</code> origin).</li>
+</ul>
 `;
 
 export const debug = `<h1 id="debug-debug-console">Debug &amp; Console</h1>
@@ -3287,6 +3406,11 @@ export const tocData = JSON.parse(`[
         "level": 3
       },
       {
+        "id": "path-blocks-drawing-at-a-specific-position",
+        "title": "Drawing at a specific position",
+        "level": 3
+      },
+      {
         "id": "path-blocks-projecting-without-drawing",
         "title": "Projecting Without Drawing",
         "level": 2
@@ -3420,6 +3544,106 @@ export const tocData = JSON.parse(`[
         "id": "path-blocks-concatenation",
         "title": "Concatenation (<<)",
         "level": 2
+      },
+      {
+        "id": "path-blocks-chamfers",
+        "title": "Chamfers",
+        "level": 2
+      },
+      {
+        "id": "path-blocks-chamferdistance-pathblock-projectedpath",
+        "title": "chamfer(distance) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-chamferd1-d2-pathblock-projectedpath",
+        "title": "chamfer(d1, d2) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-chamferatvertexindex-distance-pathblock-projectedpath",
+        "title": "chamferAtVertex(index, distance) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-chamferatvertexindex-d1-d2-pathblock-projectedpath",
+        "title": "chamferAtVertex(index, d1, d2) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-edge-cases",
+        "title": "Edge cases",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-fillets",
+        "title": "Fillets",
+        "level": 2
+      },
+      {
+        "id": "path-blocks-filletradius-pathblock-projectedpath",
+        "title": "fillet(radius) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-filletatvertexindex-radius-pathblock-projectedpath",
+        "title": "filletAtVertex(index, radius) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-elliptical-fillets",
+        "title": "Elliptical Fillets",
+        "level": 2
+      },
+      {
+        "id": "path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath",
+        "title": "ellipticalFillet(rx, ry) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath",
+        "title": "ellipticalFillet(rx, ry, rotation) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath",
+        "title": "ellipticalFilletAtVertex(index, rx, ry) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-ellipticalfilletatvertexindex-rx-ry-rotation-pathblock-projectedpath",
+        "title": "ellipticalFilletAtVertex(index, rx, ry, rotation) → PathBlock / ProjectedPath",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-boolean-operations",
+        "title": "Boolean Operations",
+        "level": 2
+      },
+      {
+        "id": "path-blocks-unionother-pathblock",
+        "title": "union(other) → PathBlock",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-differenceother-pathblock",
+        "title": "difference(other) → PathBlock",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-intersectionother-pathblock",
+        "title": "intersection(other) → PathBlock",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-xorother-pathblock",
+        "title": "xor(other) → PathBlock",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-requirements-and-behavior",
+        "title": "Requirements and behavior",
+        "level": 3
       }
     ]
   },

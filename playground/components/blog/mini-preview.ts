@@ -6,7 +6,7 @@ export class MiniPreview extends HTMLElement {
   // Canvas dimensions
   private _width: number = 200;
   private _height: number = 200;
-  private _background: string = '#ffffff';
+  private _background: string = 'transparent';
 
   // Zoom/pan constants
   private readonly MIN_ZOOM: number = 0.25;

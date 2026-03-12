@@ -1,0 +1,134 @@
+// viewBox="0 0 560 300"
+// Chamfer gallery — symmetric, asymmetric, per-vertex
+
+let box = @{ h 70 v 70 h -70 z };
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 560, 300) }
+
+// --- Original outlines ---
+
+let original = PathLayer('original') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+
+original.apply {
+  box.drawTo(30, 60)
+  box.drawTo(140, 60)
+  box.drawTo(250, 60)
+  box.drawTo(360, 60)
+  box.drawTo(470, 60)
+}
+
+// --- Chamfered shapes ---
+
+let chamfered = PathLayer('chamfered') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f615');
+};
+
+chamfered.apply {
+  // Symmetric 5px
+  let c1 = box.chamfer(5);
+  c1.drawTo(30, 60)
+
+  // Symmetric 15px
+  let c2 = box.chamfer(15);
+  c2.drawTo(140, 60)
+
+  // Symmetric 30px
+  let c3 = box.chamfer(30);
+  c3.drawTo(250, 60)
+
+  // Asymmetric 5/25
+  let c4 = box.chamfer(5, 25);
+  c4.drawTo(360, 60)
+
+  // Single vertex
+  let c5 = box.chamferAtVertex(1, 20);
+  c5.drawTo(470, 60)
+}
+
+// --- Labels ---
+
+let names = TextLayer('names') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+names.apply {
+  text(65, 152)`chamfer(5)`
+  text(175, 152)`chamfer(15)`
+  text(285, 152)`chamfer(30)`
+  text(395, 152)`chamfer(5, 25)`
+  text(505, 152)`chamferAt`
+  text(505, 164)`Vertex(1, 20)`
+}
+
+let desc = TextLayer('desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: middle;
+};
+desc.apply {
+  text(65, 176)`small symmetric`
+  text(175, 176)`medium symmetric`
+  text(285, 176)`large symmetric`
+  text(395, 176)`asymmetric`
+  text(505, 176)`single corner`
+}
+
+// --- Code ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 220)`let box = @{ h 70 v 70 h -70 z };`
+  text(30, 236)`let beveled = box.chamfer(15);`
+  text(30, 252)`beveled.drawTo(x, y)`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(30, 220)`let`
+  text(30, 236)`let`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 32)`Chamfer Gallery`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(175, 32)`Five chamfer modes on a 70×70 square`
+}

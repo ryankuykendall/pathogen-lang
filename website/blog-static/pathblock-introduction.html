@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen</title>
+  <meta name="description" content="How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.">
+  <link rel="canonical" href="https://pedestal.design/pathogen/blog/pathblock-introduction">
+  <meta property="og:title" content="PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen">
+  <meta property="og:description" content="How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.">
+  <meta property="og:url" content="https://pedestal.design/pathogen/blog/pathblock-introduction">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"PathBlocks: Reusable Shape Primitives in Pathogen","description":"How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.","datePublished":"2026-03-10","url":"https://pedestal.design/pathogen/blog/pathblock-introduction","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pedestal.design"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg-primary, #f8f9fa);
+      color: var(--text-primary, #1a1a2e);
+    }
+
+    /* Nav bar */
+    .site-header {
+      background: var(--bg-secondary, #ffffff);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .site-header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; height: 56px; gap: 1rem;
+    }
+    .logo {
+      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
+    }
+    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
+    .logo-main {
+      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
+      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
+    }
+    .logo-sub {
+      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
+      color: var(--text-secondary, #64748b); white-space: nowrap;
+    }
+    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
+    .nav-link {
+      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
+      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
+    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      background: var(--bg-primary, #f8f9fa);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+      position: sticky; top: 56px; z-index: 40;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .site-header-inner { padding: 0 0.75rem; height: 52px; }
+      .breadcrumb-bar { top: 52px; }
+      .logo-sub { display: none; }
+      .site-nav { gap: 0; }
+      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+    @media (max-width: 600px) {
+      .site-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="/pathogen/">
+        <span class="logo-main">Pathogen</span>
+        <span class="logo-sub">built on svg-path-extended v1.0</span>
+      </a>
+      <nav class="site-nav">
+          <a class="nav-link" href="/pathogen/">Workspaces</a>
+          <a class="nav-link" href="/pathogen/docs">Docs</a>
+          <a class="nav-link" href="/pathogen/explore">Explore</a>
+          <a class="nav-link" href="/pathogen/featured">Featured</a>
+          <a class="nav-link active" href="/pathogen/blog">Blog</a>
+          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+      </nav>
+      <theme-toggle></theme-toggle>
+    </div>
+  </header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">PathBlocks: Reusable Shape Primitives in Pathogen</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>PathBlocks: Reusable Shape Primitives in Pathogen</h1>
+        <p class="post-meta"><time datetime="2026-03-10">March 9, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 1 of 4 in our series on PathBlock extensions.</em></p>
+<blockquote>
+<p><strong>Series: PathBlock Extensions</strong></p>
+<ol>
+<li><strong>Introduction to PathBlocks</strong> (this post)</li>
+<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+</ol>
+</blockquote>
+<p>If you build parametric SVGs, icon systems, or generative art, you&#39;ve felt the friction: repeating the same shapes at different positions means copy-pasting <code>&lt;path&gt;</code> elements, tweaking <code>d</code> attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.</p>
+<h2>What Is a PathBlock?</h2>
+<p>A PathBlock is a reusable fragment of SVG path commands. You define one with the <code>@{ ... }</code> syntax, and the commands inside are stored as relative offsets from an implicit <code>(0, 0)</code> origin. The block doesn&#39;t draw anything on its own — it&#39;s a template waiting to be placed.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> arrow = @{
+  h <span class="hljs-number">40</span>
+  l -<span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
+  h -<span class="hljs-number">30</span>
+  v <span class="hljs-number">6</span>
+  h <span class="hljs-number">30</span>
+  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
+  l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+};
+</code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/pathogen/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
+<p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/pathogen/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/pathogen/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjAwJTIwMzgwJTIyJTBBJTJGJTJGJTIwUGF0aEJsb2NrJTIwQW5hdG9teSUyMCVFMiU4MCU5NCUyMHZpc3VhbCUyMGd1aWRlJTIwdG8lMjBzdHJ1Y3R1cmUlMjBhbmQlMjBwcm9wZXJ0aWVzJTBBJTBBbGV0JTIwYXJyb3clMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBoJTIwNjAlMEElMjAlMjB2JTIwLTIwJTBBJTIwJTIwbCUyMDMwJTIwMzAlMEElMjAlMjBsJTIwLTMwJTIwMzAlMEElMjAlMjB2JTIwLTIwJTBBJTIwJTIwaCUyMC02MCUwQSUyMCUyMHolMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzBmMTcyYScpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDYwMCUyQyUyMDM4MCklMjAlN0QlMEElMEFsZXQlMjBncmlkJTIwJTNEJTIwUGF0aExheWVyKCdncmlkJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMWUyOTNiJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQWdyaWQuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uMTkpJTIwJTdCJTBBJTIwJTIwJTIwJTIwTSUyMDAlMjBjYWxjKGklMjAqJTIwMjApJTBBJTIwJTIwJTIwJTIwaCUyMDYwMCUwQSUyMCUyMCU3RCUwQSUyMCUyMGZvciUyMChqJTIwaW4lMjAwLi4zMCklMjAlN0IlMEElMjAlMjAlMjAlMjBNJTIwY2FsYyhqJTIwKiUyMDIwKSUyMDAlMEElMjAlMjAlMjAlMjB2JTIwMzgwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2hhcGUlMjAtLS0lMEElMEFsZXQlMjBzaGFwZSUyMCUzRCUyMFBhdGhMYXllcignc2hhcGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzM2I4MmY2MTgnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjBBcnJvdyUyMGF0JTIwKDIyMCUyQyUyMDE5MCklM0ElMjB2ZXJ0aWNlcyUyMGF0JTBBJTJGJTJGJTIwVjAoMjIwJTJDMTkwKSUyMFYxKDI4MCUyQzE5MCklMjBWMigyODAlMkMxNzApJTIwVjMoMzEwJTJDMjAwKSUwQSUyRiUyRiUyMFY0KDI4MCUyQzIzMCklMjBWNSgyODAlMkMyMTApJTIwVjYoMjIwJTJDMjEwKSUwQXNoYXBlLmFwcGx5JTIwJTdCJTBBJTIwJTIwYXJyb3cuZHJhd1RvKDIyMCUyQyUyMDE5MCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBCb3VuZGluZyUyMGJveCUyMG92ZXJsYXklMjAtLS0lMEElMEFsZXQlMjBiYm94JTIwJTNEJTIwUGF0aExheWVyKCdiYm94JyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjNmNTllMGInKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNSUyMDMlMjIlM0IlMEElN0QlM0IlMEFiYm94LmFwcGx5JTIwJTdCJTBBJTIwJTIwJTJGJTJGJTIwQkJveCUzQSUyMHglM0QyMjAlMkMlMjB5JTNEMTcwJTJDJTIwdyUzRDkwJTJDJTIwaCUzRDYwJTBBJTIwJTIwcmVjdCgyMjAlMkMlMjAxNzAlMkMlMjA5MCUyQyUyMDYwKSUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFZlcnRleCUyMGRvdHMlMjAtLS0lMEElMEFsZXQlMjB2ZG90cyUyMCUzRCUyMFBhdGhMYXllcigndmRvdHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZWY0NDQ0JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMGYxNzJhJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEF2ZG90cy5hcHBseSUyMCU3QiUwQSUyMCUyMGNpcmNsZSgyMjAlMkMlMjAxOTAlMkMlMjAzLjUpJTBBJTIwJTIwY2lyY2xlKDI4MCUyQyUyMDE5MCUyQyUyMDMuNSklMEElMjAlMjBjaXJjbGUoMjgwJTJDJTIwMTcwJTJDJTIwMy41KSUwQSUyMCUyMGNpcmNsZSgzMTAlMkMlMjAyMDAlMkMlMjAzLjUpJTBBJTIwJTIwY2lyY2xlKDI4MCUyQyUyMDIzMCUyQyUyMDMuNSklMEElMjAlMjBjaXJjbGUoMjgwJTJDJTIwMjEwJTJDJTIwMy41KSUwQSUyMCUyMGNpcmNsZSgyMjAlMkMlMjAyMTAlMkMlMjAzLjUpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwT3JpZ2luJTIwY3Jvc3NoYWlyJTIwLS0tJTBBJTBBbGV0JTIwb3JpZ2luX21hcmslMjAlM0QlMjBQYXRoTGF5ZXIoJ29yaWdpbi1tYXJrJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQW9yaWdpbl9tYXJrLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMDIxMyUyMDE5MCUyMGglMjAxNCUwQSUyMCUyME0lMjAyMjAlMjAxODMlMjB2JTIwMTQlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBEaXJlY3Rpb24lMjBpbmRpY2F0b3JzJTIwYWxvbmclMjBlZGdlcyUyMC0tLSUwQSUwQWxldCUyMGRpcl9hcnJvd3MlMjAlM0QlMjBQYXRoTGF5ZXIoJ2Rpci1hcnJvd3MnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzODE4Y2Y4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBZGlyX2Fycm93cy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMEFsb25nJTIwaCUyMDYwJTIwZWRnZSUyMCVFMiU4MCU5NCUyMG1pZHBvaW50JTIwKDI1MCUyQyUyMDE5MCklMkMlMjBwb2ludGluZyUyMHJpZ2h0JTBBJTIwJTIwTSUyMDI0OCUyMDE4NyUyMGwlMjA3JTIwMyUyMGwlMjAtNyUyMDMlMjB6JTBBJTIwJTIwJTJGJTJGJTIwQWxvbmclMjB2JTIwLTIwJTIwZWRnZSUyMCVFMiU4MCU5NCUyMG1pZHBvaW50JTIwKDI4MCUyQyUyMDE4MCklMkMlMjBwb2ludGluZyUyMHVwJTBBJTIwJTIwTSUyMDI3NyUyMDE4MiUyMGwlMjAzJTIwLTclMjBsJTIwMyUyMDclMjB6JTBBJTIwJTIwJTJGJTJGJTIwQWxvbmclMjBsJTIwMzAlMjAzMCUyMHRvJTIwdGlwJTIwJUUyJTgwJTk0JTIwbWlkcG9pbnQlMjAoMjk1JTJDJTIwMTg1KSUyQyUyMHBvaW50aW5nJTIwZG93bi1yaWdodCUwQSUyMCUyME0lMjAyOTMlMjAxODMlMjBsJTIwNiUyMDElMjBsJTIwLTElMjA2JTIweiUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExlYWRlciUyMGxpbmVzJTIwLS0tJTBBJTBBbGV0JTIwbGVhZGVycyUyMCUzRCUyMFBhdGhMYXllcignbGVhZGVycycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzNDc1NTY5JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMEElN0QlM0IlMEFsZWFkZXJzLmFwcGx5JTIwJTdCJTBBJTIwJTIwJTJGJTJGJTIwT3JpZ2luJTIwJUUyJTg2JTkyJTIwbGFiZWwlMEElMjAlMjBNJTIwMjIwJTIwMTkwJTIwTCUyMDE0MCUyMDE0MCUwQSUyMCUyMCUyRiUyRiUyMEJCb3glMjBjb3JuZXIlMjAlRTIlODYlOTIlMjBsYWJlbCUwQSUyMCUyME0lMjAzMTAlMjAxNzAlMjBMJTIwMzcwJTIwMTMwJTBBJTIwJTIwJTJGJTJGJTIwVGlwJTIwdmVydGV4JTIwJUUyJTg2JTkyJTIwbGFiZWwlMEElMjAlMjBNJTIwMzEwJTIwMjAwJTIwTCUyMDM3MCUyMDIxMCUwQSUyMCUyMCUyRiUyRiUyMENsb3NlJTIwJUUyJTg2JTkyJTIwbGFiZWwlMEElMjAlMjBNJTIwMjIwJTIwMjEwJTIwTCUyMDE0MCUyMDI1NSUwQSUyMCUyMCUyRiUyRiUyMERpcmVjdGlvbiUyMCVFMiU4NiU5MiUyMGxhYmVsJTBBJTIwJTIwTSUyMDI0OCUyMDE5MyUyMEwlMjAyNDglMjAyNjUlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBWZXJ0ZXglMjBpbmRleCUyMGxhYmVscyUyMC0tLSUwQSUwQWxldCUyMHZpZHglMjAlM0QlMjBUZXh0TGF5ZXIoJ3ZpZHgnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZmNhNWE1JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQXZpZHguYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIzMCUyQyUyMDE4MiklNjAwJTYwJTBBJTIwJTIwdGV4dCgyNzAlMkMlMjAxODIpJTYwMSU2MCUwQSUyMCUyMHRleHQoMjg2JTJDJTIwMTYzKSU2MDIlNjAlMEElMjAlMjB0ZXh0KDMxOCUyQyUyMDE5NCklNjAzJTYwJTBBJTIwJTIwdGV4dCgyODYlMkMlMjAyNDApJTYwNCU2MCUwQSUyMCUyMHRleHQoMjcwJTJDJTIwMjIwKSU2MDUlNjAlMEElMjAlMjB0ZXh0KDIzMCUyQyUyMDIyMCklNjA2JTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwUHJvcGVydHklMjBjYWxsb3V0cyUyMC0tLSUwQSUwQWxldCUyMHByb3BzJTIwJTNEJTIwVGV4dExheWVyKCdwcm9wcycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBcHJvcHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDUwJTJDJTIwMTM3KSU2MC5zdGFydFBvaW50JTYwJTBBJTIwJTIwdGV4dCg1MCUyQyUyMDE1MCklNjBQb2ludCgwJTJDJTIwMCklNjAlMEElMjAlMjB0ZXh0KDM3NSUyQyUyMDEyNyklNjAuYm91bmRzJTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAxNDApJTYwJTdCJTIwdyUzQSUyMDkwJTJDJTIwaCUzQSUyMDYwJTIwJTdEJTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAyMDcpJTYwLnZlcnRpY2VzJTVCMyU1RCU2MCUwQSUyMCUyMHRleHQoMzc1JTJDJTIwMjIwKSU2MFBvaW50KDkwJTJDJTIwMTApJTYwJTBBJTIwJTIwdGV4dCg1MCUyQyUyMDI1MiklNjAuY2xvc2VkJTIwJTNEJTIwdHJ1ZSU2MCUwQSUyMCUyMHRleHQoNTAlMkMlMjAyNjUpJTYweiUyMCVFMiU4NiU5MiUyMGJhY2slMjB0byUyMG9yaWdpbiU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFN1YmR1ZWQlMjBwcm9wZXJ0eSUyMHR5cGUlMjBsYWJlbHMlMjAtLS0lMEElMEFsZXQlMjB0eXBlX2xhYmVscyUyMCUzRCUyMFRleHRMYXllcigndHlwZXMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdHlwZV9sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDUwJTJDJTIwMTYyKSU2MCUyRiUyRiUyMGdyZWVuJTIwY3Jvc3NoYWlyJTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAxNTIpJTYwJTJGJTJGJTIwZGFzaGVkJTIweWVsbG93JTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAyMzIpJTYwJTJGJTJGJTIwYXJyb3clMjB0aXAlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBEaXJlY3Rpb24lMjBsYWJlbCUyMC0tLSUwQSUwQWxldCUyMGRpcl9sYWJlbCUyMCUzRCUyMFRleHRMYXllcignZGlyLWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzgxOGNmOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFkaXJfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI0OCUyQyUyMDI3OCklNjBwYXRoJTIwZGlyZWN0aW9uJTIwJUUyJTg2JTkyJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29kZSUyMGJsb2NrJTIwKHRvcC1sZWZ0KSUyMC0tLSUwQSUwQWxldCUyMGNvZGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWNvZGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDM4MCUyQyUyMDMwKSU2MGxldCUyMGFycm93JTIwJTNEJTIwJTQwJTdCJTYwJTBBJTIwJTIwdGV4dCgzOTIlMkMlMjA0NCklNjBoJTIwNjAlMjAlMjB2JTIwLTIwJTYwJTBBJTIwJTIwdGV4dCgzOTIlMkMlMjA1OCklNjBsJTIwMzAlMjAzMCU2MCUwQSUyMCUyMHRleHQoMzkyJTJDJTIwNzIpJTYwbCUyMC0zMCUyMDMwJTYwJTBBJTIwJTIwdGV4dCgzOTIlMkMlMjA4NiklNjB2JTIwLTIwJTIwJTIwaCUyMC02MCUyMCUyMHolNjAlMEElMjAlMjB0ZXh0KDM4MCUyQyUyMDEwMCklNjAlN0QlM0IlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTeW50YXglMjBoaWdobGlnaHQlM0ElMjBrZXl3b3JkcyUyMC0tLSUwQSUwQWxldCUyMGt3JTIwJTNEJTIwVGV4dExheWVyKCdrdycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDM4MCUyQyUyMDMwKSU2MGxldCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxNSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzApJTYwUGF0aEJsb2NrJTIwQW5hdG9teSU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXN1YnRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDQ2KSU2MFJlbGF0aXZlJTIwY29tbWFuZHMlMjBzdG9yZWQlMjBmcm9tJTIwb3JpZ2luJTIwKDAlMkMlMjAwKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExlZ2VuZCUyMC0tLSUwQSUwQWxldCUyMGxlZyUyMCUzRCUyMFRleHRMYXllcignbGVnZW5kJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA4JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEElMEFsZXQlMjBsZWdfcyUyMCUzRCUyMFBhdGhMYXllcignbGVnLXMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwbGVnX2IlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlZy1iJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWxldCUyMGxlZ192JTIwJTNEJTIwUGF0aExheWVyKCdsZWctdicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlZjQ0NDQnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFsZXQlMjBsZWdfbyUyMCUzRCUyMFBhdGhMYXllcignbGVnLW8nKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwbGVnX2QlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlZy1kJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzgxOGNmOCcpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQSUwQWxlZ19zLmFwcGx5JTIwJTdCJTIwcmVjdCgzMCUyQyUyMDMzNSUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ19iLmFwcGx5JTIwJTdCJTIwcmVjdCgzMCUyQyUyMDM0OSUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ192LmFwcGx5JTIwJTdCJTIwcmVjdCgzMCUyQyUyMDM2MyUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ19vLmFwcGx5JTIwJTdCJTIwcmVjdCgxMjAlMkMlMjAzMzUlMkMlMjA4JTJDJTIwOCklMjAlN0QlMEFsZWdfZC5hcHBseSUyMCU3QiUyMHJlY3QoMTIwJTJDJTIwMzQ5JTJDJTIwOCUyQyUyMDgpJTIwJTdEJTBBJTBBbGVnLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDM0MiklNjBTaGFwZSU2MCUwQSUyMCUyMHRleHQoNDIlMkMlMjAzNTYpJTYwQm91bmRpbmclMjBib3glNjAlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMzcwKSU2MFZlcnRpY2VzJTYwJTBBJTIwJTIwdGV4dCgxMzIlMkMlMjAzNDIpJTYwT3JpZ2luJTYwJTBBJTIwJTIwdGV4dCgxMzIlMkMlMjAzNTYpJTYwRGlyZWN0aW9uJTYwJTBBJTdEJTBB" caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 600 380&quot;</span>
+<span class="hljs-comment">// PathBlock Anatomy — visual guide to structure and properties</span>
+
+<span class="hljs-keyword">let</span> arrow = @{
+  h <span class="hljs-number">60</span>
+  v -<span class="hljs-number">20</span>
+  l <span class="hljs-number">30</span> <span class="hljs-number">30</span>
+  l -<span class="hljs-number">30</span> <span class="hljs-number">30</span>
+  v -<span class="hljs-number">20</span>
+  h -<span class="hljs-number">60</span>
+  z
+};
+
+<span class="hljs-comment">// --- Background ---</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">600</span>, <span class="hljs-number">380</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) ${
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e293b&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+  <span class="hljs-attr">fill</span>: none;
+};
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.19</span>) {
+    M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>)
+    h <span class="hljs-number">600</span>
+  }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.30</span>) {
+    M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span>
+    v <span class="hljs-number">380</span>
+  }
+}
+
+<span class="hljs-comment">// --- Shape ---</span>
+
+<span class="hljs-keyword">let</span> shape = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
+};
+
+<span class="hljs-comment">// Arrow at (220, 190): vertices at</span>
+<span class="hljs-comment">// V0(220,190) V1(280,190) V2(280,170) V3(310,200)</span>
+<span class="hljs-comment">// V4(280,230) V5(280,210) V6(220,210)</span>
+shape.<span class="hljs-property">apply</span> {
+  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">220</span>, <span class="hljs-number">190</span>)
+}
+
+<span class="hljs-comment">// --- Bounding box overlay ---</span>
+
+<span class="hljs-keyword">let</span> bbox = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bbox&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: none;
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;5 3&quot;</span>;
+};
+bbox.<span class="hljs-property">apply</span> {
+  <span class="hljs-comment">// BBox: x=220, y=170, w=90, h=60</span>
+  <span class="hljs-title function_">rect</span>(<span class="hljs-number">220</span>, <span class="hljs-number">170</span>, <span class="hljs-number">90</span>, <span class="hljs-number">60</span>)
+}
+
+<span class="hljs-comment">// --- Vertex dots ---</span>
+
+<span class="hljs-keyword">let</span> vdots = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;vdots&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+vdots.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">220</span>, <span class="hljs-number">190</span>, <span class="hljs-number">3.5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">190</span>, <span class="hljs-number">3.5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">170</span>, <span class="hljs-number">3.5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">310</span>, <span class="hljs-number">200</span>, <span class="hljs-number">3.5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">230</span>, <span class="hljs-number">3.5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">210</span>, <span class="hljs-number">3.5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">220</span>, <span class="hljs-number">210</span>, <span class="hljs-number">3.5</span>)
+}
+
+<span class="hljs-comment">// --- Origin crosshair ---</span>
+
+<span class="hljs-keyword">let</span> origin_mark = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;origin-mark&#x27;</span>) ${
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+  <span class="hljs-attr">fill</span>: none;
+};
+origin_mark.<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">213</span> <span class="hljs-number">190</span> h <span class="hljs-number">14</span>
+  M <span class="hljs-number">220</span> <span class="hljs-number">183</span> v <span class="hljs-number">14</span>
+}
+
+<span class="hljs-comment">// --- Direction indicators along edges ---</span>
+
+<span class="hljs-keyword">let</span> dir_arrows = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dir-arrows&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#818cf8&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: none;
+};
+dir_arrows.<span class="hljs-property">apply</span> {
+  <span class="hljs-comment">// Along h 60 edge — midpoint (250, 190), pointing right</span>
+  M <span class="hljs-number">248</span> <span class="hljs-number">187</span> l <span class="hljs-number">7</span> <span class="hljs-number">3</span> l -<span class="hljs-number">7</span> <span class="hljs-number">3</span> z
+  <span class="hljs-comment">// Along v -20 edge — midpoint (280, 180), pointing up</span>
+  M <span class="hljs-number">277</span> <span class="hljs-number">182</span> l <span class="hljs-number">3</span> -<span class="hljs-number">7</span> l <span class="hljs-number">3</span> <span class="hljs-number">7</span> z
+  <span class="hljs-comment">// Along l 30 30 to tip — midpoint (295, 185), pointing down-right</span>
+  M <span class="hljs-number">293</span> <span class="hljs-number">183</span> l <span class="hljs-number">6</span> <span class="hljs-number">1</span> l -<span class="hljs-number">1</span> <span class="hljs-number">6</span> z
+}
+
+<span class="hljs-comment">// --- Leader lines ---</span>
+
+<span class="hljs-keyword">let</span> leaders = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaders&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: none;
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+};
+leaders.<span class="hljs-property">apply</span> {
+  <span class="hljs-comment">// Origin → label</span>
+  M <span class="hljs-number">220</span> <span class="hljs-number">190</span> L <span class="hljs-number">140</span> <span class="hljs-number">140</span>
+  <span class="hljs-comment">// BBox corner → label</span>
+  M <span class="hljs-number">310</span> <span class="hljs-number">170</span> L <span class="hljs-number">370</span> <span class="hljs-number">130</span>
+  <span class="hljs-comment">// Tip vertex → label</span>
+  M <span class="hljs-number">310</span> <span class="hljs-number">200</span> L <span class="hljs-number">370</span> <span class="hljs-number">210</span>
+  <span class="hljs-comment">// Close → label</span>
+  M <span class="hljs-number">220</span> <span class="hljs-number">210</span> L <span class="hljs-number">140</span> <span class="hljs-number">255</span>
+  <span class="hljs-comment">// Direction → label</span>
+  M <span class="hljs-number">248</span> <span class="hljs-number">193</span> L <span class="hljs-number">248</span> <span class="hljs-number">265</span>
+}
+
+<span class="hljs-comment">// --- Vertex index labels ---</span>
+
+<span class="hljs-keyword">let</span> vidx = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;vidx&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#fca5a5&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+vidx.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">230</span>, <span class="hljs-number">182</span>)<span class="hljs-string">`0`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">270</span>, <span class="hljs-number">182</span>)<span class="hljs-string">`1`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">286</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`2`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">318</span>, <span class="hljs-number">194</span>)<span class="hljs-string">`3`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">286</span>, <span class="hljs-number">240</span>)<span class="hljs-string">`4`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">270</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`5`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">230</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`6`</span>
+}
+
+<span class="hljs-comment">// --- Property callouts ---</span>
+
+<span class="hljs-keyword">let</span> props = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;props&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+props.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">137</span>)<span class="hljs-string">`.startPoint`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">150</span>)<span class="hljs-string">`Point(0, 0)`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">127</span>)<span class="hljs-string">`.bounds`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">140</span>)<span class="hljs-string">`{ w: 90, h: 60 }`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">207</span>)<span class="hljs-string">`.vertices[3]`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`Point(90, 10)`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">252</span>)<span class="hljs-string">`.closed = true`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">265</span>)<span class="hljs-string">`z → back to origin`</span>
+}
+
+<span class="hljs-comment">// --- Subdued property type labels ---</span>
+
+<span class="hljs-keyword">let</span> type_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;types&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+type_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">162</span>)<span class="hljs-string">`// green crosshair`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">152</span>)<span class="hljs-string">`// dashed yellow`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">232</span>)<span class="hljs-string">`// arrow tip`</span>
+}
+
+<span class="hljs-comment">// --- Direction label ---</span>
+
+<span class="hljs-keyword">let</span> dir_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;dir-label&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#818cf8&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+dir_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">248</span>, <span class="hljs-number">278</span>)<span class="hljs-string">`path direction →`</span>
+}
+
+<span class="hljs-comment">// --- Code block (top-left) ---</span>
+
+<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">380</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`let arrow = @{`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">44</span>)<span class="hljs-string">`h 60  v -20`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">58</span>)<span class="hljs-string">`l 30 30`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">72</span>)<span class="hljs-string">`l -30 30`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">86</span>)<span class="hljs-string">`v -20  h -60  z`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">380</span>, <span class="hljs-number">100</span>)<span class="hljs-string">`};`</span>
+}
+
+<span class="hljs-comment">// --- Syntax highlight: keywords ---</span>
+
+<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+kw.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">380</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`let`</span>
+}
+
+<span class="hljs-comment">// --- Title ---</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">15</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`PathBlock Anatomy`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">`Relative commands stored from origin (0, 0)`</span>
+}
+
+<span class="hljs-comment">// --- Legend ---</span>
+
+<span class="hljs-keyword">let</span> leg = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+
+<span class="hljs-keyword">let</span> leg_s = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-s&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+<span class="hljs-keyword">let</span> leg_b = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-b&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+<span class="hljs-keyword">let</span> leg_v = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-v&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+<span class="hljs-keyword">let</span> leg_o = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-o&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+<span class="hljs-keyword">let</span> leg_d = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-d&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#818cf8&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+
+leg_s.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">335</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+leg_b.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">349</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+leg_v.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">363</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+leg_o.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">120</span>, <span class="hljs-number">335</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+leg_d.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">120</span>, <span class="hljs-number">349</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+
+leg.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">342</span>)<span class="hljs-string">`Shape`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">356</span>)<span class="hljs-string">`Bounding box`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">370</span>)<span class="hljs-string">`Vertices`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">132</span>, <span class="hljs-number">342</span>)<span class="hljs-string">`Origin`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">132</span>, <span class="hljs-number">356</span>)<span class="hljs-string">`Direction`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post6/pathblock-anatomy.svg" alt="PathBlock anatomy — origin, vertices, bounds, and path direction" loading="lazy">
+</mini-workspace></p>
+<h2>Drawing and Positioning</h2>
+<p>There are two ways to draw a PathBlock: the manual approach and the convenience method.</p>
+<h3>Manual: <code>M</code> + <code>.draw()</code></h3>
+<p>Position the cursor with an <code>M</code> command, then call <code>.draw()</code> to emit the relative commands:</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">60</span> <span class="hljs-number">70</span>
+arrow.<span class="hljs-title function_">draw</span>()
+</code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/pathogen/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
+<h3>Convenience: <code>.drawTo(x, y)</code></h3>
+<p>The <code>drawTo()</code> method combines positioning and drawing in a single call:</p>
+<pre><code class="hljs language-pathogen">arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">70</span>)
+</code></pre><p>It emits <code>M 60 70</code> followed by the PathBlock&#39;s commands, and returns a <code>ProjectedPath</code> value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.</p>
+<p>The demo below shows both approaches — manual on top, <code>drawTo</code> on the bottom. Same shapes, same positions, less ceremony with <code>drawTo</code>.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMjAwJTIyJTBBJTJGJTJGJTIwZHJhd1RvKCklMjB2cyUyMG1hbnVhbCUyME0lMjAlMkIlMjBkcmF3KCklMEElMEFsZXQlMjBkaWFtb25kJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwbCUyMDE1JTIwMTUlMEElMjAlMjBsJTIwMTUlMjAtMTUlMEElMjAlMjBsJTIwLTE1JTIwLTE1JTBBJTIwJTIweiUwQSU3RCUzQiUwQSUwQWxldCUyMG1hbnVhbCUyMCUzRCUyMFBhdGhMYXllcignbWFudWFsJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyM2I0NTMwOScpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwZHJhd3RvJTIwJTNEJTIwUGF0aExheWVyKCdkcmF3dG8nKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOGI1Y2Y2JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzNmQyOGQ5JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEElMEFsZXQlMjBsYWJlbCUyMCUzRCUyMFBhdGhMYXllcignbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjAlMjIzJTIwMiUyMiUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyME1hbnVhbCUyMGFwcHJvYWNoJTNBJTIwTSUyMHRoZW4lMjBkcmF3JTBBbWFudWFsLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwTSUyMGNhbGMoNjAlMjAlMkIlMjBpJTIwKiUyMDUwKSUyMDcwJTBBJTIwJTIwJTIwJTIwZGlhbW9uZC5kcmF3KCklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBkcmF3VG8lMjBhcHByb2FjaCUzQSUyMHNpbmdsZSUyMGNhbGwlMEFkcmF3dG8uYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uMyklMjAlN0IlMEElMjAlMjAlMjAlMjBkaWFtb25kLmRyYXdUbyhjYWxjKDYwJTIwJTJCJTIwaSUyMColMjA1MCklMkMlMjAxNDApJTBBJTIwJTIwJTdEJTBBJTdEJTBB" code-open caption="Manual M+draw() vs drawTo() — same result, less code">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 200&quot;</span>
+<span class="hljs-comment">// drawTo() vs manual M + draw()</span>
+
+<span class="hljs-keyword">let</span> diamond = @{
+  l <span class="hljs-number">15</span> <span class="hljs-number">15</span>
+  l <span class="hljs-number">15</span> -<span class="hljs-number">15</span>
+  l -<span class="hljs-number">15</span> -<span class="hljs-number">15</span>
+  z
+};
+
+<span class="hljs-keyword">let</span> manual = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;manual&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b45309&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+
+<span class="hljs-keyword">let</span> drawto = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;drawto&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf6&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6d28d9&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+
+<span class="hljs-keyword">let</span> label = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;label&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: none;
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;3 2&quot;</span>;
+};
+
+<span class="hljs-comment">// Manual approach: M then draw</span>
+manual.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.3</span>) {
+    M <span class="hljs-title function_">calc</span>(<span class="hljs-number">60</span> + i * <span class="hljs-number">50</span>) <span class="hljs-number">70</span>
+    diamond.<span class="hljs-title function_">draw</span>()
+  }
+}
+
+<span class="hljs-comment">// drawTo approach: single call</span>
+drawto.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.3</span>) {
+    diamond.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">60</span> + i * <span class="hljs-number">50</span>), <span class="hljs-number">140</span>)
+  }
+}
+</code>
+  <img src="/pathogen/blog/samples/post6/drawto-vs-manual.svg" alt="Manual M+draw() vs drawTo() — same result, less code" loading="lazy">
+</mini-workspace></p>
+<h2>Reuse and Repetition</h2>
+<p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/pathogen/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> dot = @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> };
+
+<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
+    dot.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + i * <span class="hljs-number">15</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + j * <span class="hljs-number">15</span>))
+  }
+}
+</code></pre><p>PathBlocks are <a href="/pathogen/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
+<p>Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUGF0aEJsb2NrJTIwcmV1c2UlMjAlRTIlODAlOTQlMjBkZWZpbmUlMjBvbmNlJTJDJTIwY3JlYXRlJTIwcGF0dGVybnMlMEElMEElMkYlMkYlMjBBJTIwbGVhZi1saWtlJTIwbW90aWYlMEFsZXQlMjBsZWFmJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwYyUyMDglMjAtMTglMjAyMiUyMC0xOCUyMDMwJTIwMCUwQSUyMCUyMGMlMjAtOCUyMDE4JTIwLTIyJTIwMTglMjAtMzAlMjAwJTBBJTIwJTIweiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMEElMjBzbWFsbCUyMGRpYW1vbmQlMjBhY2NlbnQlMEFsZXQlMjBnZW0lMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBsJTIwNSUyMDglMEElMjAlMjBsJTIwNSUyMC04JTBBJTIwJTIwbCUyMC01JTIwLTglMEElMjAlMjB6JTBBJTdEJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwUmFkaWFsJTIwbGVhZiUyMHBhdHRlcm4lMjAoY2VudGVyKSUyMC0tLSUwQSUwQWxldCUyMGxlYXZlcyUyMCUzRCUyMFBhdGhMYXllcignbGVhdmVzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzIyYzU1ZTEyJyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwbGVhdmVzMiUyMCUzRCUyMFBhdGhMYXllcignbGVhdmVzMicpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjMzYjgyZjYxMicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzNiODJmNicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMElubmVyJTIwcmluZyUyMCVFMiU4MCU5NCUyMDglMjBsZWF2ZXMlMEFsZWF2ZXMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uOCklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoaSUyMColMjAwLjc4NTQpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMGNvcyhhbmdsZSklMjAqJTIwNjApJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwY3klMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMHNpbihhbmdsZSklMjAqJTIwNjApJTNCJTBBJTIwJTIwJTIwJTIwbGVhZi5kcmF3VG8oY2FsYyhjeCUyMC0lMjAxNSklMkMlMjBjeSklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBPdXRlciUyMHJpbmclMjAlRTIlODAlOTQlMjAxMiUyMGxlYXZlcyUyQyUyMG9mZnNldCUyMHJvdGF0aW9uJTBBbGVhdmVzMi5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi4xMiklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoaSUyMColMjAwLjUyMzYlMjAlMkIlMjAwLjI2MTgpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMGNvcyhhbmdsZSklMjAqJTIwMTIwKSUzQiUwQSUyMCUyMCUyMCUyMGxldCUyMGN5JTIwJTNEJTIwY2FsYygyMDAlMjAlMkIlMjBzaW4oYW5nbGUpJTIwKiUyMDEyMCklM0IlMEElMjAlMjAlMjAlMjBsZWFmLmRyYXdUbyhjYWxjKGN4JTIwLSUyMDE1KSUyQyUyMGN5KSUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMERpYW1vbmQlMjBhY2NlbnRzJTIwLS0tJTBBJTBBbGV0JTIwZ2VtcyUyMCUzRCUyMFBhdGhMYXllcignZ2VtcycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNmNTllMGInKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjNiNDUzMDknKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUwQSU3RCUzQiUwQWdlbXMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uOCklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoaSUyMColMjAwLjc4NTQlMjAlMkIlMjAwLjM5MjcpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwZ3glMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMGNvcyhhbmdsZSklMjAqJTIwOTAlMjAtJTIwNSklM0IlMEElMjAlMjAlMjAlMjBsZXQlMjBneSUyMCUzRCUyMGNhbGMoMjAwJTIwJTJCJTIwc2luKGFuZ2xlKSUyMColMjA5MCklM0IlMEElMjAlMjAlMjAlMjBnZW0uZHJhd1RvKGd4JTJDJTIwZ3kpJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ2VudGVyJTIwZG90JTIwLS0tJTBBJTBBbGV0JTIwY2VudGVyJTIwJTNEJTIwUGF0aExheWVyKCdjZW50ZXInKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBY2VudGVyLmFwcGx5JTIwJTdCJTBBJTIwJTIwY2lyY2xlKDIwMCUyQyUyMDIwMCUyQyUyMDQpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29uc3RydWN0aW9uJTIwY2lyY2xlcyUyMC0tLSUwQSUwQWxldCUyMGd1aWRlcyUyMCUzRCUyMFBhdGhMYXllcignZ3VpZGVzJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMzM0MTU1JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyMyUyMDQlMjIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQWd1aWRlcy5hcHBseSUyMCU3QiUwQSUyMCUyMGNpcmNsZSgyMDAlMkMlMjAyMDAlMkMlMjA2MCklMEElMjAlMjBjaXJjbGUoMjAwJTJDJTIwMjAwJTJDJTIwOTApJTBBJTIwJTIwY2lyY2xlKDIwMCUyQyUyMDIwMCUyQyUyMDEyMCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBBbm5vdGF0aW9ucyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjY1JTJDJTIwMjA1KSU2MHIlMjAlM0QlMjA2MCU2MCUwQSUyMCUyMHRleHQoMjk1JTJDJTIwMjA1KSU2MHIlMjAlM0QlMjA5MCU2MCUwQSUyMCUyMHRleHQoMzI1JTJDJTIwMjA1KSU2MHIlMjAlM0QlMjAxMjAlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBDb2RlJTIwYW5ub3RhdGlvbiUyMC0tLSUwQSUwQWxldCUyMGNvZGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBY29kZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjAlMkMlMjAyNSklNjBsZXQlMjBsZWFmJTIwJTNEJTIwJTQwJTdCJTYwJTBBJTIwJTIwdGV4dCgzMiUyQyUyMDM3KSU2MGMlMjA4JTIwLTE4JTIwMjIlMjAtMTglMjAzMCUyMDAlNjAlMEElMjAlMjB0ZXh0KDMyJTJDJTIwNDkpJTYwYyUyMC04JTIwMTglMjAtMjIlMjAxOCUyMC0zMCUyMDAlNjAlMEElMjAlMjB0ZXh0KDMyJTJDJTIwNjEpJTYweiU2MCUwQSUyMCUyMHRleHQoMjAlMkMlMjA3MyklNjAlN0QlM0IlNjAlMEElN0QlMEElMEFsZXQlMjBrdyUyMCUzRCUyMFRleHRMYXllcigna3cnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwJTJDJTIwMjUpJTYwbGV0JTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU3RhdHMlMjAtLS0lMEElMEFsZXQlMjBzdGF0cyUyMCUzRCUyMFRleHRMYXllcignc3RhdHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBlbmQlM0IlMEElN0QlM0IlMEFzdGF0cy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzg1JTJDJTIwMzc1KSU2MDElMjBQYXRoQmxvY2slNjAlMEElMjAlMjB0ZXh0KDM4NSUyQyUyMDM4OCklNjAyOCUyMGluc3RhbmNlcyU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMGVuZCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzODUlMkMlMjAyNSklNjBEZWZpbmUlMjBPbmNlJTJDJTIwRHJhdyUyMEV2ZXJ5d2hlcmUlNjAlMEElN0QlMEE=" caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
+<span class="hljs-comment">// PathBlock reuse — define once, create patterns</span>
+
+<span class="hljs-comment">// A leaf-like motif</span>
+<span class="hljs-keyword">let</span> leaf = @{
+  c <span class="hljs-number">8</span> -<span class="hljs-number">18</span> <span class="hljs-number">22</span> -<span class="hljs-number">18</span> <span class="hljs-number">30</span> <span class="hljs-number">0</span>
+  c -<span class="hljs-number">8</span> <span class="hljs-number">18</span> -<span class="hljs-number">22</span> <span class="hljs-number">18</span> -<span class="hljs-number">30</span> <span class="hljs-number">0</span>
+  z
+};
+
+<span class="hljs-comment">// A small diamond accent</span>
+<span class="hljs-keyword">let</span> gem = @{
+  l <span class="hljs-number">5</span> <span class="hljs-number">8</span>
+  l <span class="hljs-number">5</span> -<span class="hljs-number">8</span>
+  l -<span class="hljs-number">5</span> -<span class="hljs-number">8</span>
+  z
+};
+
+<span class="hljs-comment">// --- Background ---</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+
+<span class="hljs-comment">// --- Radial leaf pattern (center) ---</span>
+
+<span class="hljs-keyword">let</span> leaves = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaves&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e12&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+};
+
+<span class="hljs-keyword">let</span> leaves2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaves2&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f612&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+};
+
+<span class="hljs-comment">// Inner ring — 8 leaves</span>
+leaves.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
+    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.7854</span>);
+    <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">60</span>);
+    <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">60</span>);
+    leaf.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(cx - <span class="hljs-number">15</span>), cy)
+  }
+}
+
+<span class="hljs-comment">// Outer ring — 12 leaves, offset rotation</span>
+leaves2.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.12</span>) {
+    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.5236</span> + <span class="hljs-number">0.2618</span>);
+    <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">120</span>);
+    <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">120</span>);
+    leaf.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(cx - <span class="hljs-number">15</span>), cy)
+  }
+}
+
+<span class="hljs-comment">// --- Diamond accents ---</span>
+
+<span class="hljs-keyword">let</span> gems = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;gems&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b45309&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+};
+gems.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
+    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.7854</span> + <span class="hljs-number">0.3927</span>);
+    <span class="hljs-keyword">let</span> gx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">90</span> - <span class="hljs-number">5</span>);
+    <span class="hljs-keyword">let</span> gy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">90</span>);
+    gem.<span class="hljs-title function_">drawTo</span>(gx, gy)
+  }
+}
+
+<span class="hljs-comment">// --- Center dot ---</span>
+
+<span class="hljs-keyword">let</span> center = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;center&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: none;
+};
+center.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">4</span>)
+}
+
+<span class="hljs-comment">// --- Construction circles ---</span>
+
+<span class="hljs-keyword">let</span> guides = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;guides&#x27;</span>) ${
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#334155&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;3 4&quot;</span>;
+  <span class="hljs-attr">fill</span>: none;
+};
+guides.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">60</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">90</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">120</span>)
+}
+
+<span class="hljs-comment">// --- Annotations ---</span>
+
+<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">265</span>, <span class="hljs-number">205</span>)<span class="hljs-string">`r = 60`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">205</span>)<span class="hljs-string">`r = 90`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">325</span>, <span class="hljs-number">205</span>)<span class="hljs-string">`r = 120`</span>
+}
+
+<span class="hljs-comment">// --- Code annotation ---</span>
+
+<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`let leaf = @{`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">32</span>, <span class="hljs-number">37</span>)<span class="hljs-string">`c 8 -18 22 -18 30 0`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">32</span>, <span class="hljs-number">49</span>)<span class="hljs-string">`c -8 18 -22 18 -30 0`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">32</span>, <span class="hljs-number">61</span>)<span class="hljs-string">`z`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">73</span>)<span class="hljs-string">`};`</span>
+}
+
+<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+kw.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`let`</span>
+}
+
+<span class="hljs-comment">// --- Stats ---</span>
+
+<span class="hljs-keyword">let</span> stats = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;stats&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: end;
+};
+stats.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">385</span>, <span class="hljs-number">375</span>)<span class="hljs-string">`1 PathBlock`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">385</span>, <span class="hljs-number">388</span>)<span class="hljs-string">`28 instances`</span>
+}
+
+<span class="hljs-comment">// --- Title ---</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: end;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">385</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`Define Once, Draw Everywhere`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post6/pathblock-pattern.svg" alt="Radial pattern — one PathBlock drawn 28 times with trigonometric placement" loading="lazy">
+</mini-workspace></p>
+<h2>A Practical Example</h2>
+<p>Here&#39;s a grid built from two simple PathBlocks — a horizontal line and a vertical line — repeated with loops. The PathBlock captures the shape; the loop handles placement.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwUGF0aEJsb2NrJTIwYmFzaWNzJTIwJUUyJTgwJTk0JTIwZGVmaW5lJTJDJTIwZHJhdyUyQyUyMHJldXNlJTBBJTBBbGV0JTIwYXJyb3clMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBoJTIwNDAlMEElMjAlMjBsJTIwLTEwJTIwLTglMEElMjAlMjBsJTIwMCUyMDUlMEElMjAlMjBoJTIwLTMwJTBBJTIwJTIwdiUyMDYlMEElMjAlMjBoJTIwMzAlMEElMjAlMjBsJTIwMCUyMDUlMEElMjAlMjBsJTIwMTAlMjAtOCUwQSU3RCUzQiUwQSUwQWxldCUyMGFycm93cyUyMCUzRCUyMFBhdGhMYXllcignYXJyb3dzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzFlNDBhZicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNCUyMDMlMjIlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjBEcmF3JTIwdGhlJTIwZ3JpZCUwQWZvciUyMChpJTIwaW4lMjAwLi42KSUyMCU3QiUwQSUyMCUyME0lMjA1MCUyMGNhbGMoNTAlMjAlMkIlMjBpJTIwKiUyMDQwKSUwQSUyMCUyMGglMjAzMDAlMEElN0QlMEFmb3IlMjAoaiUyMGluJTIwMC4uOCklMjAlN0IlMEElMjAlMjBNJTIwY2FsYyg1MCUyMCUyQiUyMGolMjAqJTIwNDApJTIwNTAlMEElMjAlMjB2JTIwMjAwJTBBJTdEJTBBJTBBJTJGJTJGJTIwUmV1c2UlMjB0aGUlMjBhcnJvdyUyMGF0JTIwZGlmZmVyZW50JTIwcG9zaXRpb25zJTBBYXJyb3dzLmFwcGx5JTIwJTdCJTBBJTIwJTIwYXJyb3cuZHJhd1RvKDgwJTJDJTIwOTApJTBBJTIwJTIwYXJyb3cuZHJhd1RvKDIwMCUyQyUyMDEzMCklMEElMjAlMjBhcnJvdy5kcmF3VG8oMTYwJTJDJTIwMjEwKSUwQSUyMCUyMGFycm93LmRyYXdUbygyODAlMkMlMjAxNzApJTBBJTdEJTBB" code-open caption="Grid from two PathBlocks — define once, draw in loops">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
+<span class="hljs-comment">// PathBlock basics — define, draw, reuse</span>
+
+<span class="hljs-keyword">let</span> arrow = @{
+  h <span class="hljs-number">40</span>
+  l -<span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
+  h -<span class="hljs-number">30</span>
+  v <span class="hljs-number">6</span>
+  h <span class="hljs-number">30</span>
+  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
+  l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+};
+
+<span class="hljs-keyword">let</span> arrows = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arrows&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e40af&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  <span class="hljs-attr">fill</span>: none;
+  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
+};
+
+<span class="hljs-comment">// Draw the grid</span>
+<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.6</span>) {
+  M <span class="hljs-number">50</span> <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + i * <span class="hljs-number">40</span>)
+  h <span class="hljs-number">300</span>
+}
+<span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
+  M <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + j * <span class="hljs-number">40</span>) <span class="hljs-number">50</span>
+  v <span class="hljs-number">200</span>
+}
+
+<span class="hljs-comment">// Reuse the arrow at different positions</span>
+arrows.<span class="hljs-property">apply</span> {
+  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">80</span>, <span class="hljs-number">90</span>)
+  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">200</span>, <span class="hljs-number">130</span>)
+  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">160</span>, <span class="hljs-number">210</span>)
+  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">280</span>, <span class="hljs-number">170</span>)
+}
+</code>
+  <img src="/pathogen/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
+</mini-workspace></p>
+<h2>PathBlock Properties</h2>
+<p>Every PathBlock carries metadata about its geometry. The <a href="/pathogen/docs#path-blocks-properties">Properties</a> section covers all of them:</p>
+<ul>
+<li><code>.startPoint</code> / <code>.endPoint</code> — where the shape begins and ends</li>
+<li><code>.vertices</code> — all junction points as an array of Points</li>
+<li><code>.length</code> — total arc length</li>
+<li><code>.bounds</code> — axis-aligned bounding box (<code>{ x, y, width, height }</code>)</li>
+</ul>
+<p>These properties make PathBlocks queryable — you can inspect a shape&#39;s geometry before deciding how to draw or transform it.</p>
+<h2>Projection</h2>
+<p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
+<p><code>.project()</code> returns a <code>ProjectedPath</code> — the same commands, but offset to absolute coordinates at <code>(x, y)</code>. The PathBlock itself stays unchanged; the ProjectedPath is a positioned view of it:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
+<span class="hljs-keyword">let</span> proj = box.<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>);
+<span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>));  <span class="hljs-comment">// Point at midpoint of positioned path</span>
+</code></pre><p>Think of it as &quot;place the shape here, but don&#39;t draw it yet.&quot; ProjectedPaths support all the same operations as PathBlocks — sampling, fillets, chamfers, booleans — but in absolute coordinates. You&#39;ll see <code>.project()</code> used heavily in the rest of this series whenever shapes need to interact with each other spatially.</p>
+<h2>Standard Library Shapes</h2>
+<p>Pathogen&#39;s <a href="/pathogen/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
+<span class="hljs-keyword">let</span> r = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) };
+<span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
+</code></pre><p>These return PathBlocks, so all the same methods — <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, transforms — work on them.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjAwJTIwMjYwJTIyJTBBJTJGJTJGJTIwU3RhbmRhcmQlMjBsaWJyYXJ5JTIwc2hhcGUlMjBnYWxsZXJ5JTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA2MDAlMkMlMjAyNjApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwR3JpZCUyMGNlbGxzJTIwLS0tJTBBJTBBbGV0JTIwY2VsbHMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2NlbGxzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzFlMjkzYicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzMzNDE1NScpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSU3RCUzQiUwQWNlbGxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwcm91bmRSZWN0KDE1JTJDJTIwNTAlMkMlMjAxMDAlMkMlMjAxMDAlMkMlMjA2KSUwQSUyMCUyMHJvdW5kUmVjdCgxMzAlMkMlMjA1MCUyQyUyMDEwMCUyQyUyMDEwMCUyQyUyMDYpJTBBJTIwJTIwcm91bmRSZWN0KDI0NSUyQyUyMDUwJTJDJTIwMTAwJTJDJTIwMTAwJTJDJTIwNiklMEElMjAlMjByb3VuZFJlY3QoMzYwJTJDJTIwNTAlMkMlMjAxMDAlMkMlMjAxMDAlMkMlMjA2KSUwQSUyMCUyMHJvdW5kUmVjdCg0NzUlMkMlMjA1MCUyQyUyMDEwMCUyQyUyMDEwMCUyQyUyMDYpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2hhcGVzJTIwLS0tJTBBJTBBbGV0JTIwczElMjAlM0QlMjBQYXRoTGF5ZXIoJ3MtY2lyY2xlJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNjE4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEFzMS5hcHBseSUyMCU3QiUyMGNpcmNsZSg2NSUyQyUyMDEwMCUyQyUyMDMwKSUyMCU3RCUwQSUwQWxldCUyMHMyJTIwJTNEJTIwUGF0aExheWVyKCdzLXJlY3QnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzMjJjNTVlMTgnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMyMmM1NWUnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUwQSU3RCUzQiUwQXMyLmFwcGx5JTIwJTdCJTIwcmVjdCgxNTAlMkMlMjA3MiUyQyUyMDYwJTJDJTIwNDApJTIwJTdEJTBBJTBBbGV0JTIwczMlMjAlM0QlMjBQYXRoTGF5ZXIoJ3Mtc3RhcicpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNmNTllMGIxOCcpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBczMuYXBwbHklMjAlN0IlMjBzdGFyKDI5NSUyQyUyMDEwMCUyQyUyMDMyJTJDJTIwMTQlMkMlMjA1KSUyMCU3RCUwQSUwQWxldCUyMHM0JTIwJTNEJTIwUGF0aExheWVyKCdzLXBvbHlnb24nKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZWY0NDQ0MTgnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjNlZjQ0NDQnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUwQSU3RCUzQiUwQXM0LmFwcGx5JTIwJTdCJTIwcG9seWdvbig0MTAlMkMlMjAxMDAlMkMlMjAzMCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwczUlMjAlM0QlMjBQYXRoTGF5ZXIoJ3Mtcm91bmRyZWN0JyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzhiNWNmNjE4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOGI1Y2Y2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEFzNS5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCg0OTglMkMlMjA3NSUyQyUyMDU1JTJDJTIwNDAlMkMlMjA4KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNoYXBlJTIwbmFtZXMlMjAtLS0lMEElMEFsZXQlMjBuYW1lcyUyMCUzRCUyMFRleHRMYXllcignbmFtZXMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFuYW1lcy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNjUlMkMlMjAxNzApJTYwY2lyY2xlKCklNjAlMEElMjAlMjB0ZXh0KDE4MCUyQyUyMDE3MCklNjByZWN0KCklNjAlMEElMjAlMjB0ZXh0KDI5NSUyQyUyMDE3MCklNjBzdGFyKCklNjAlMEElMjAlMjB0ZXh0KDQxMCUyQyUyMDE3MCklNjBwb2x5Z29uKCklNjAlMEElMjAlMjB0ZXh0KDUyNSUyQyUyMDE3MCklNjByb3VuZFJlY3QoKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNpZ25hdHVyZXMlMjAtLS0lMEElMEFsZXQlMjBzaWdzJTIwJTNEJTIwVGV4dExheWVyKCdzaWdzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDclM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFzaWdzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg2NSUyQyUyMDE4MyklNjBjeCUyQyUyMGN5JTJDJTIwciU2MCUwQSUyMCUyMHRleHQoMTgwJTJDJTIwMTgzKSU2MHglMkMlMjB5JTJDJTIwdyUyQyUyMGglNjAlMEElMjAlMjB0ZXh0KDI5NSUyQyUyMDE4MyklNjBjeCUyQyUyMGN5JTJDJTIwUiUyQyUyMHIlMkMlMjBuJTYwJTBBJTIwJTIwdGV4dCg0MTAlMkMlMjAxODMpJTYwY3glMkMlMjBjeSUyQyUyMHIlMkMlMjBzaWRlcyU2MCUwQSUyMCUyMHRleHQoNTI1JTJDJTIwMTgzKSU2MHglMkMlMjB5JTJDJTIwdyUyQyUyMGglMkMlMjByJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVXNhZ2UlMjBleGFtcGxlJTIwLS0tJTBBJTBBbGV0JTIwdXNhZ2UlMjAlM0QlMjBUZXh0TGF5ZXIoJ3VzYWdlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXVzYWdlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNSUyQyUyMDIyMCklNjBsZXQlMjBzaGFwZSUyMCUzRCUyMCU0MCU3QiUyMGNpcmNsZSgwJTJDJTIwMCUyQyUyMDMwKSUyMCU3RCUzQiU2MCUwQSUyMCUyMHRleHQoMTUlMkMlMjAyMzQpJTYwc2hhcGUuZHJhd1RvKDEwMCUyQyUyMDEwMCklNjAlMEElN0QlMEElMEFsZXQlMjB1c2FnZV9rdyUyMCUzRCUyMFRleHRMYXllcigndXNhZ2Uta3cnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdXNhZ2Vfa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDE1JTJDJTIwMjIwKSU2MGxldCU2MCUwQSU3RCUwQSUwQWxldCUyMHVzYWdlX25vdGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3VzYWdlLW5vdGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdXNhZ2Vfbm90ZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzEwJTJDJTIwMjIwKSU2MCUyRiUyRiUyMEFsbCUyMHN0ZGxpYiUyMGZ1bmN0aW9ucyUyMHJldHVybiUyMFBhdGhCbG9ja3MlNjAlMEElMjAlMjB0ZXh0KDMxMCUyQyUyMDIzNCklNjAlMkYlMkYlMjBVc2UlMjBpbnNpZGUlMjAlNDAlN0IlMjAlN0QlMjBvciUyMGRpcmVjdGx5JTIwaW4lMjAuYXBwbHklMjAlN0IlMjAlN0QlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUaXRsZSUyMC0tLSUwQSUwQWxldCUyMHRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTQlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNSUyQyUyMDMyKSU2MFN0YW5kYXJkJTIwTGlicmFyeSUyMFNoYXBlcyU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXN1YnRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMjAlMkMlMjAzMiklNjBCdWlsdC1pbiUyMHBhdGglMjBmdW5jdGlvbnMlMjBmb3IlMjBjb21tb24lMjBnZW9tZXRyeSU2MCUwQSU3RCUwQQ==" caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 600 260&quot;</span>
+<span class="hljs-comment">// Standard library shape gallery</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">600</span>, <span class="hljs-number">260</span>) }
+
+<span class="hljs-comment">// --- Grid cells ---</span>
+
+<span class="hljs-keyword">let</span> cells = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cells&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e293b&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#334155&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+};
+cells.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">15</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">130</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">245</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">360</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">475</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
+}
+
+<span class="hljs-comment">// --- Shapes ---</span>
+
+<span class="hljs-keyword">let</span> s1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-circle&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+s1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">65</span>, <span class="hljs-number">100</span>, <span class="hljs-number">30</span>) }
+
+<span class="hljs-keyword">let</span> s2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-rect&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e18&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+s2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">150</span>, <span class="hljs-number">72</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) }
+
+<span class="hljs-keyword">let</span> s3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-star&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b18&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+s3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">star</span>(<span class="hljs-number">295</span>, <span class="hljs-number">100</span>, <span class="hljs-number">32</span>, <span class="hljs-number">14</span>, <span class="hljs-number">5</span>) }
+
+<span class="hljs-keyword">let</span> s4 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-polygon&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef444418&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+s4.<span class="hljs-property">apply</span> { <span class="hljs-title function_">polygon</span>(<span class="hljs-number">410</span>, <span class="hljs-number">100</span>, <span class="hljs-number">30</span>, <span class="hljs-number">6</span>) }
+
+<span class="hljs-keyword">let</span> s5 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-roundrect&#x27;</span>) ${
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf618&#x27;</span>);
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf6&#x27;</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+};
+s5.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">498</span>, <span class="hljs-number">75</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">8</span>) }
+
+<span class="hljs-comment">// --- Shape names ---</span>
+
+<span class="hljs-keyword">let</span> names = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;names&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+names.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">65</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`circle()`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">180</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`rect()`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`star()`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">410</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`polygon()`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">525</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`roundRect()`</span>
+}
+
+<span class="hljs-comment">// --- Signatures ---</span>
+
+<span class="hljs-keyword">let</span> sigs = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;sigs&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+sigs.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">65</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`cx, cy, r`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">180</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`x, y, w, h`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`cx, cy, R, r, n`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">410</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`cx, cy, r, sides`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">525</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`x, y, w, h, r`</span>
+}
+
+<span class="hljs-comment">// --- Usage example ---</span>
+
+<span class="hljs-keyword">let</span> usage = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;usage&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+usage.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`let shape = @{ circle(0, 0, 30) };`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">234</span>)<span class="hljs-string">`shape.drawTo(100, 100)`</span>
+}
+
+<span class="hljs-keyword">let</span> usage_kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;usage-kw&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+usage_kw.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`let`</span>
+}
+
+<span class="hljs-keyword">let</span> usage_note = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;usage-note&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+usage_note.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">310</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`// All stdlib functions return PathBlocks`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">310</span>, <span class="hljs-number">234</span>)<span class="hljs-string">`// Use inside @{ } or directly in .apply { }`</span>
+}
+
+<span class="hljs-comment">// --- Title ---</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">32</span>)<span class="hljs-string">`Standard Library Shapes`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">32</span>)<span class="hljs-string">`Built-in path functions for common geometry`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post6/stdlib-showcase.svg" alt="Standard library shapes — circle, rect, star, polygon, and roundRect" loading="lazy">
+</mini-workspace></p>
+<h2>What&#39;s Next</h2>
+<p>PathBlocks are the foundation for everything that follows. In the next post, we&#39;ll explore <a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a> — querying points, tangents, and normals along a path to place elements precisely along curves. After that, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a> show how to round and cut corners, and <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a> combine shapes using union, difference, intersection, and xor.</p>
+<p>Try it yourself in the <a href="/pathogen/">Pathogen playground</a> — paste any of the examples above and see the SVG output live.</p>
+
+      </div>
+    </article>
+  </main>
+  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

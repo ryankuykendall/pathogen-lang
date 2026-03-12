@@ -1,0 +1,43 @@
+// viewBox="0 0 400 200"
+// drawTo() vs manual M + draw()
+
+let diamond = @{
+  l 15 15
+  l 15 -15
+  l -15 -15
+  z
+};
+
+let manual = PathLayer('manual') ${
+  fill: Color('#f59e0b');
+  stroke: Color('#b45309');
+  stroke-width: 1.5;
+};
+
+let drawto = PathLayer('drawto') ${
+  fill: Color('#8b5cf6');
+  stroke: Color('#6d28d9');
+  stroke-width: 1.5;
+};
+
+let label = PathLayer('label') ${
+  fill: none;
+  stroke: Color('#64748b');
+  stroke-width: 1;
+  stroke-dasharray: "3 2";
+};
+
+// Manual approach: M then draw
+manual.apply {
+  for (i in 0..3) {
+    M calc(60 + i * 50) 70
+    diamond.draw()
+  }
+}
+
+// drawTo approach: single call
+drawto.apply {
+  for (i in 0..3) {
+    diamond.drawTo(calc(60 + i * 50), 140)
+  }
+}

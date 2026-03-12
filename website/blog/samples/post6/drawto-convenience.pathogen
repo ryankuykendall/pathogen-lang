@@ -1,0 +1,194 @@
+// viewBox="0 0 520 340"
+// drawTo() vs manual positioning — side-by-side comparison
+
+let pent = @{
+  l 20 -15
+  l 20 15
+  l -10 20
+  l -20 0
+  z
+};
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 520, 340) }
+
+// --- Divider ---
+
+let divider = PathLayer('divider') ${
+  stroke: Color('#334155');
+  stroke-width: 1;
+  stroke-dasharray: "6 4";
+  fill: none;
+};
+divider.apply {
+  M 260 40 v 260
+}
+
+// --- Manual approach (left) ---
+
+let manual_shapes = PathLayer('manual-shapes') ${
+  fill: Color('#f59e0b20');
+  stroke: Color('#f59e0b');
+  stroke-width: 1.5;
+};
+
+// Manual: M then draw
+manual_shapes.apply {
+  M 60 100
+  pent.draw()
+  M 130 100
+  pent.draw()
+  M 200 100
+  pent.draw()
+
+  M 60 180
+  pent.draw()
+  M 130 180
+  pent.draw()
+  M 200 180
+  pent.draw()
+}
+
+// Cursor markers for manual approach
+let cursors = PathLayer('cursors') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1;
+  fill: none;
+};
+cursors.apply {
+  // Show cursor at each M position
+  M 57 97 h 6 M 60 94 v 6
+  M 127 97 h 6 M 130 94 v 6
+  M 197 97 h 6 M 200 94 v 6
+  M 57 177 h 6 M 60 174 v 6
+  M 127 177 h 6 M 130 174 v 6
+  M 197 177 h 6 M 200 174 v 6
+}
+
+// --- drawTo approach (right) ---
+
+let drawto_shapes = PathLayer('drawto-shapes') ${
+  fill: Color('#8b5cf620');
+  stroke: Color('#8b5cf6');
+  stroke-width: 1.5;
+};
+
+drawto_shapes.apply {
+  pent.drawTo(320, 100)
+  pent.drawTo(390, 100)
+  pent.drawTo(460, 100)
+
+  pent.drawTo(320, 180)
+  pent.drawTo(390, 180)
+  pent.drawTo(460, 180)
+}
+
+// --- Code annotations ---
+
+let code_manual = TextLayer('code-manual') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code_manual.apply {
+  text(45, 250)`M 60 100`
+  text(45, 263)`pent.draw()`
+  text(45, 280)`M 130 100`
+  text(45, 293)`pent.draw()`
+}
+
+let code_drawto = TextLayer('code-drawto') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code_drawto.apply {
+  text(310, 250)`pent.drawTo(320, 100)`
+  text(310, 263)`pent.drawTo(390, 100)`
+}
+
+// --- Highlight keywords ---
+
+let kw_manual = TextLayer('kw-manual') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#f59e0b');
+  text-anchor: start;
+};
+kw_manual.apply {
+  text(45, 250)`M`
+  text(45, 280)`M`
+}
+
+let kw_drawto = TextLayer('kw-drawto') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#8b5cf6');
+  text-anchor: start;
+};
+kw_drawto.apply {
+  text(310, 250)`pent.drawTo`
+  text(310, 263)`pent.drawTo`
+}
+
+// --- Step counts ---
+
+let steps = TextLayer('steps') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+steps.apply {
+  text(45, 310)`// 2 statements per shape`
+  text(310, 278)`// 1 statement per shape`
+}
+
+// --- Section headers ---
+
+let headers = TextLayer('headers') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+headers.apply {
+  text(130, 65)`Manual: M + draw()`
+  text(390, 65)`Convenience: drawTo()`
+}
+
+// --- Section badges ---
+
+let badge_manual = PathLayer('badge-manual') ${
+  fill: Color('#f59e0b18');
+  stroke: Color('#f59e0b');
+  stroke-width: 0.5;
+};
+badge_manual.apply {
+  roundRect(55, 50, 150, 22, 4)
+}
+
+let badge_drawto = PathLayer('badge-drawto') ${
+  fill: Color('#8b5cf618');
+  stroke: Color('#8b5cf6');
+  stroke-width: 0.5;
+};
+badge_drawto.apply {
+  roundRect(315, 50, 150, 22, 4)
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+title.apply {
+  text(260, 28)`Positioning: Two Approaches`
+}

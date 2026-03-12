@@ -1,0 +1,314 @@
+// viewBox="0 0 580 480"
+// Boolean operations — union, difference, intersection, xor
+// Each quadrant uses a GroupLayer with translate to avoid compounding projections
+
+let sq = @{ h 50 v 50 h -50 z };
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 580, 480) }
+
+// ═══════════════════════════════════════
+// Union (top-left quadrant)
+// ═══════════════════════════════════════
+
+let u_orig = PathLayer('u-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+u_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
+}
+
+let u_result = PathLayer('u-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
+};
+u_result.apply {
+  let u = sq.project(0, 0).union(sq.project(25, 25));
+  u.drawTo(0, 0)
+}
+
+let u_ab = TextLayer('u-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+u_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
+}
+
+let u_op = TextLayer('u-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+u_op.apply {
+  text(110, 35)`.union(B)`
+  text(110, 50)`A ∪ B`
+}
+
+let u_desc = TextLayer('u-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+u_desc.apply {
+  text(110, 68)`Combined outline`
+}
+
+let g_union = GroupLayer('g-union') ${ translate-x: 50; translate-y: 80; };
+g_union.append(u_orig, u_result, u_ab, u_op, u_desc);
+
+// ═══════════════════════════════════════
+// Difference (top-right quadrant)
+// ═══════════════════════════════════════
+
+let d_orig = PathLayer('d-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+d_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
+}
+
+let d_result = PathLayer('d-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
+};
+d_result.apply {
+  let d = sq.project(0, 0).difference(sq.project(25, 25));
+  d.drawTo(0, 0)
+}
+
+let d_ab = TextLayer('d-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+d_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
+}
+
+let d_op = TextLayer('d-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+d_op.apply {
+  text(110, 35)`.difference(B)`
+  text(110, 50)`A \ B`
+}
+
+let d_desc = TextLayer('d-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+d_desc.apply {
+  text(110, 68)`A minus overlap`
+}
+
+let g_diff = GroupLayer('g-diff') ${ translate-x: 320; translate-y: 80; };
+g_diff.append(d_orig, d_result, d_ab, d_op, d_desc);
+
+// ═══════════════════════════════════════
+// Intersection (bottom-left quadrant)
+// ═══════════════════════════════════════
+
+let i_orig = PathLayer('i-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+i_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
+}
+
+let i_result = PathLayer('i-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
+};
+i_result.apply {
+  let ix = sq.project(0, 0).intersection(sq.project(25, 25));
+  ix.drawTo(0, 0)
+}
+
+let i_ab = TextLayer('i-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+i_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
+}
+
+let i_op = TextLayer('i-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+i_op.apply {
+  text(110, 35)`.intersection(B)`
+  text(110, 50)`A ∩ B`
+}
+
+let i_desc = TextLayer('i-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+i_desc.apply {
+  text(110, 68)`Only overlap`
+}
+
+let g_int = GroupLayer('g-int') ${ translate-x: 50; translate-y: 290; };
+g_int.append(i_orig, i_result, i_ab, i_op, i_desc);
+
+// ═══════════════════════════════════════
+// XOR (bottom-right quadrant)
+// ═══════════════════════════════════════
+
+let x_orig = PathLayer('x-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
+};
+x_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
+}
+
+let x_result = PathLayer('x-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
+};
+x_result.apply {
+  let xr = sq.project(0, 0).xor(sq.project(25, 25));
+  xr.drawTo(0, 0)
+}
+
+let x_ab = TextLayer('x-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+x_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
+}
+
+let x_op = TextLayer('x-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+x_op.apply {
+  text(110, 35)`.xor(B)`
+  text(110, 50)`A △ B`
+}
+
+let x_desc = TextLayer('x-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+x_desc.apply {
+  text(110, 68)`Everything except overlap`
+}
+
+let g_xor = GroupLayer('g-xor') ${ translate-x: 320; translate-y: 290; };
+g_xor.append(x_orig, x_result, x_ab, x_op, x_desc);
+
+// ═══════════════════════════════════════
+// Chrome: dividers, code, title
+// ═══════════════════════════════════════
+
+// --- Dividers ---
+
+let dividers = PathLayer('dividers') ${
+  stroke: Color('#334155');
+  stroke-width: 1;
+  stroke-dasharray: "6 4";
+  fill: none;
+};
+dividers.apply {
+  M 290 50 v 390
+  M 20 255 h 545
+}
+
+// --- Code ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(30, 440)`let a = sq.project(0, 0);`
+  text(30, 454)`let result = a.union(sq.project(25, 25));`
+  text(30, 468)`result.drawTo(0, 0)`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(30, 440)`let`
+  text(30, 454)`let`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`Boolean Operations`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`Four set operations on overlapping 50×50 squares`
+}

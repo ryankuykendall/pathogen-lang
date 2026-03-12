@@ -1,0 +1,268 @@
+// viewBox="0 0 600 380"
+// PathBlock Anatomy — visual guide to structure and properties
+
+let arrow = @{
+  h 60
+  v -20
+  l 30 30
+  l -30 30
+  v -20
+  h -60
+  z
+};
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 380) }
+
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
+};
+grid.apply {
+  for (i in 0..19) {
+    M 0 calc(i * 20)
+    h 600
+  }
+  for (j in 0..30) {
+    M calc(j * 20) 0
+    v 380
+  }
+}
+
+// --- Shape ---
+
+let shape = PathLayer('shape') ${
+  fill: Color('#3b82f618');
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+};
+
+// Arrow at (220, 190): vertices at
+// V0(220,190) V1(280,190) V2(280,170) V3(310,200)
+// V4(280,230) V5(280,210) V6(220,210)
+shape.apply {
+  arrow.drawTo(220, 190)
+}
+
+// --- Bounding box overlay ---
+
+let bbox = PathLayer('bbox') ${
+  fill: none;
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  stroke-dasharray: "5 3";
+};
+bbox.apply {
+  // BBox: x=220, y=170, w=90, h=60
+  rect(220, 170, 90, 60)
+}
+
+// --- Vertex dots ---
+
+let vdots = PathLayer('vdots') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+vdots.apply {
+  circle(220, 190, 3.5)
+  circle(280, 190, 3.5)
+  circle(280, 170, 3.5)
+  circle(310, 200, 3.5)
+  circle(280, 230, 3.5)
+  circle(280, 210, 3.5)
+  circle(220, 210, 3.5)
+}
+
+// --- Origin crosshair ---
+
+let origin_mark = PathLayer('origin-mark') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
+};
+origin_mark.apply {
+  M 213 190 h 14
+  M 220 183 v 14
+}
+
+// --- Direction indicators along edges ---
+
+let dir_arrows = PathLayer('dir-arrows') ${
+  fill: Color('#818cf8');
+  stroke: none;
+};
+dir_arrows.apply {
+  // Along h 60 edge — midpoint (250, 190), pointing right
+  M 248 187 l 7 3 l -7 3 z
+  // Along v -20 edge — midpoint (280, 180), pointing up
+  M 277 182 l 3 -7 l 3 7 z
+  // Along l 30 30 to tip — midpoint (295, 185), pointing down-right
+  M 293 183 l 6 1 l -1 6 z
+}
+
+// --- Leader lines ---
+
+let leaders = PathLayer('leaders') ${
+  fill: none;
+  stroke: Color('#475569');
+  stroke-width: 0.5;
+};
+leaders.apply {
+  // Origin → label
+  M 220 190 L 140 140
+  // BBox corner → label
+  M 310 170 L 370 130
+  // Tip vertex → label
+  M 310 200 L 370 210
+  // Close → label
+  M 220 210 L 140 255
+  // Direction → label
+  M 248 193 L 248 265
+}
+
+// --- Vertex index labels ---
+
+let vidx = TextLayer('vidx') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#fca5a5');
+  text-anchor: middle;
+};
+vidx.apply {
+  text(230, 182)`0`
+  text(270, 182)`1`
+  text(286, 163)`2`
+  text(318, 194)`3`
+  text(286, 240)`4`
+  text(270, 220)`5`
+  text(230, 220)`6`
+}
+
+// --- Property callouts ---
+
+let props = TextLayer('props') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+props.apply {
+  text(50, 137)`.startPoint`
+  text(50, 150)`Point(0, 0)`
+  text(375, 127)`.bounds`
+  text(375, 140)`{ w: 90, h: 60 }`
+  text(375, 207)`.vertices[3]`
+  text(375, 220)`Point(90, 10)`
+  text(50, 252)`.closed = true`
+  text(50, 265)`z → back to origin`
+}
+
+// --- Subdued property type labels ---
+
+let type_labels = TextLayer('types') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+type_labels.apply {
+  text(50, 162)`// green crosshair`
+  text(375, 152)`// dashed yellow`
+  text(375, 232)`// arrow tip`
+}
+
+// --- Direction label ---
+
+let dir_label = TextLayer('dir-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#818cf8');
+  text-anchor: middle;
+};
+dir_label.apply {
+  text(248, 278)`path direction →`
+}
+
+// --- Code block (top-left) ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(380, 30)`let arrow = @{`
+  text(392, 44)`h 60  v -20`
+  text(392, 58)`l 30 30`
+  text(392, 72)`l -30 30`
+  text(392, 86)`v -20  h -60  z`
+  text(380, 100)`};`
+}
+
+// --- Syntax highlight: keywords ---
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(380, 30)`let`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 15;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`PathBlock Anatomy`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`Relative commands stored from origin (0, 0)`
+}
+
+// --- Legend ---
+
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+
+let leg_s = PathLayer('leg-s') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
+let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_d = PathLayer('leg-d') ${ fill: Color('#818cf8'); stroke: none; };
+
+leg_s.apply { rect(30, 335, 8, 8) }
+leg_b.apply { rect(30, 349, 8, 8) }
+leg_v.apply { rect(30, 363, 8, 8) }
+leg_o.apply { rect(120, 335, 8, 8) }
+leg_d.apply { rect(120, 349, 8, 8) }
+
+leg.apply {
+  text(42, 342)`Shape`
+  text(42, 356)`Bounding box`
+  text(42, 370)`Vertices`
+  text(132, 342)`Origin`
+  text(132, 356)`Direction`
+}

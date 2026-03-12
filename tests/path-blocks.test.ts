@@ -263,6 +263,120 @@ describe('Path Blocks', () => {
     });
   });
 
+  describe('drawTo()', () => {
+    it('emits M followed by relative commands', () => {
+      const result = compilePath(`
+        let shape = @{ v 20 h 20 v -20 z };
+        shape.drawTo(10, 10)
+      `);
+      expect(result).toBe('M 10 10 v 20 h 20 v -20 z');
+    });
+
+    it('returns ProjectedPath with correct coordinates', () => {
+      const result = compile(`
+        let shape = @{ v 20 h 30 };
+        let proj = shape.drawTo(10, 10);
+        log(proj.startPoint);
+        log(proj.endPoint);
+      `);
+      expect(result.logs[0].parts[0].value).toContain('10');
+      expect(result.logs[1].parts[0].value).toContain('40');
+      expect(result.logs[1].parts[0].value).toContain('30');
+    });
+
+    it('can be called multiple times at different positions', () => {
+      const result = compilePath(`
+        let shape = @{ h 20 v 10 };
+        shape.drawTo(0, 0)
+        shape.drawTo(50, 50)
+      `);
+      expect(result).toBe('M 0 0 h 20 v 10 M 50 50 h 20 v 10');
+    });
+
+    it('updates cursor position', () => {
+      const result = compile(`
+        let shape = @{ h 30 v 20 };
+        shape.drawTo(10, 10);
+        log(ctx.position);
+      `);
+      expect(result.logs[0].parts[0].value).toContain('40');
+      expect(result.logs[0].parts[0].value).toContain('30');
+    });
+
+    it('works with stdlib path functions', () => {
+      const result = compilePath(`
+        let c = @{ circle(10) };
+        c.drawTo(50, 50)
+      `);
+      // Should emit M 50 50 followed by the circle's relative commands
+      expect(result).toMatch(/^M 50 50 /);
+    });
+
+    it('works on ProjectedPathValue', () => {
+      const result = compilePath(`
+        let shape = @{ h 50 v 30 };
+        let proj = shape.project(0, 0);
+        proj.drawTo(100, 100)
+      `);
+      expect(result).toMatch(/^M 100 100 /);
+    });
+
+    it('ProjectedPathValue drawTo returns correct coordinates', () => {
+      const result = compile(`
+        let shape = @{ h 50 v 30 };
+        let proj = shape.project(0, 0);
+        let drawn = proj.drawTo(100, 100);
+        log(drawn.startPoint);
+        log(drawn.endPoint);
+      `);
+      expect(result.logs[0].parts[0].value).toContain('100');
+      expect(result.logs[1].parts[0].value).toContain('150');
+      expect(result.logs[1].parts[0].value).toContain('130');
+    });
+
+    it('requires exactly 2 arguments', () => {
+      expect(() => compilePath('let p = @{ h 10 }; p.drawTo(10)')).toThrow(/drawTo\(\) expects 2 arguments/);
+      expect(() => compilePath('let p = @{ h 10 }; p.drawTo(10, 20, 30)')).toThrow(/drawTo\(\) expects 2 arguments/);
+    });
+
+    it('requires numeric arguments', () => {
+      expect(() => compilePath('let p = @{ h 10 }; p.drawTo("a", 10)')).toThrow(/must be a number/);
+    });
+
+    it('cannot be called inside a path block', () => {
+      expect(() => compilePath('let p = @{ h 10 }; let q = @{ p.drawTo(0, 0) };')).toThrow(/Cannot call.*inside a path block/);
+    });
+
+    it('works with closed paths', () => {
+      const result = compilePath(`
+        let box = @{ h 30 v 30 h -30 z };
+        box.drawTo(10, 10)
+      `);
+      expect(result).toBe('M 10 10 h 30 v 30 h -30 z');
+    });
+
+    it('works with curve commands', () => {
+      const result = compilePath(`
+        let curve = @{ c 0 -40 50 -40 50 0 };
+        curve.drawTo(20, 60)
+      `);
+      expect(result).toMatch(/^M 20 60 c 0 -40 50 -40 50 0$/);
+    });
+
+    it('sets cursor to drawTo position before path', () => {
+      // Verify cursor is at endpoint after drawTo
+      const result = compile(`
+        M 0 0
+        let shape = @{ h 50 };
+        shape.drawTo(100, 200);
+        // cursor should now be at (150, 200) = drawTo origin + shape endpoint
+        log(ctx.position);
+      `);
+      expect(result.logs[0].parts[0].value).toContain('150');
+      expect(result.logs[0].parts[0].value).toContain('200');
+    });
+  });
+
   describe('restrictions', () => {
     it('rejects absolute path commands', () => {
       expect(() => compilePath('let p = @{ V 20 };')).toThrow(/Absolute path command.*not allowed.*path blocks/);
@@ -2066,6 +2180,439 @@ describe('Path Blocks', () => {
       // circle(50,50,10) starts at M 40 50, arc to 60 50, arc back to 40 50
       // Relative end = (40, 50). Projected from (100, 100) → (140, 150)
       expect(result.logs[0].parts[0].value).toBe('Point(140, 150)');
+    });
+  });
+
+  describe('chamfer()', () => {
+    it('chamfers all vertices of a rectangle', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let c = box.chamfer(5);
+        M 10 10
+        c.draw()
+      `);
+      // Should have line segments connecting trim points
+      expect(result).toContain('M 10 10');
+      // Should not have the original sharp corners
+      expect(result).toMatch(/l /);
+    });
+
+    it('preserves path closedness', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let c = box.chamfer(5);
+        M 10 10
+        c.draw()
+      `);
+      expect(result).toMatch(/z$/);
+    });
+
+    it('symmetric chamfer produces expected geometry', () => {
+      // Simple right angle: h 40 v 40 — one corner at (40, 0)
+      const result = compile(`
+        let path = @{ h 40 v 40 };
+        let c = path.chamfer(10);
+        log(c.vertices.length);
+      `);
+      // Original: 3 vertices, after chamfering the corner vertex we get 4 vertices
+      expect(result.logs[0].parts[0].value).toBe('4');
+    });
+
+    it('asymmetric chamfer uses different distances', () => {
+      const result = compile(`
+        let path = @{ h 40 v 40 };
+        let c = path.chamfer(5, 15);
+        log(c.vertices.length);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('4');
+    });
+
+    it('chamferAtVertex chamfers only the specified vertex', () => {
+      const result = compile(`
+        let box = @{ h 60 v 40 h -60 z };
+        let c = box.chamferAtVertex(1, 10);
+        // Original 4 corners, only 1 chamfered → 5 vertices (4 original - 1 + 2 new)
+        log(c.vertices.length);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('5');
+    });
+
+    it('chamferAtVertex with asymmetric distances', () => {
+      const result = compile(`
+        let box = @{ h 60 v 40 h -60 z };
+        let c = box.chamferAtVertex(1, 5, 15);
+        log(c.vertices.length);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('5');
+    });
+
+    it('throws on out-of-range vertex index', () => {
+      expect(() => compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let c = box.chamferAtVertex(10, 5);
+        M 10 10
+        c.draw()
+      `)).toThrow(/vertex index.*out of range/i);
+    });
+
+    it('clamps chamfer distance to edge length with warning', () => {
+      const result = compile(`
+        let small = @{ h 10 v 10 };
+        let c = small.chamfer(100);
+        log(c.length);
+      `);
+      // Should not throw, but should produce a path
+      expect(result.logs.length).toBeGreaterThan(0);
+    });
+
+    it('works on ProjectedPathValue', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let proj = box.project(10, 10);
+        let c = proj.chamfer(5);
+        c.drawTo(0, 0)
+      `);
+      expect(result).toContain('M 0 0');
+    });
+
+    it('requires at least 1 argument', () => {
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.chamfer()')).toThrow(/chamfer\(\) expects/);
+    });
+
+    it('requires numeric arguments', () => {
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.chamfer("x")')).toThrow(/must be a number/);
+    });
+
+    it('works with open paths', () => {
+      const result = compilePath(`
+        let path = @{ h 40 v 40 h -40 };
+        let c = path.chamfer(5);
+        M 10 10
+        c.draw()
+      `);
+      // Open path with interior corners should still be chamfered
+      expect(result).toContain('M 10 10');
+    });
+
+    it('handles zero-distance chamfer (no-op)', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let c = box.chamfer(0);
+        M 10 10
+        c.draw()
+      `);
+      expect(result).toContain('M 10 10');
+    });
+  });
+
+  describe('fillet()', () => {
+    it('fillets all vertices of a rectangle', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.fillet(5);
+        M 10 10
+        f.draw()
+      `);
+      expect(result).toContain('M 10 10');
+      // Should contain arc commands for the rounded corners
+      expect(result).toMatch(/a /);
+    });
+
+    it('preserves closedness', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.fillet(5);
+        M 10 10
+        f.draw()
+      `);
+      expect(result).toMatch(/z$/);
+    });
+
+    it('filletAtVertex rounds only one corner', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.filletAtVertex(1, 8);
+        M 10 10
+        f.draw()
+      `);
+      // Should have exactly one arc command
+      const arcCount = (result.match(/\ba /g) || []).length;
+      expect(arcCount).toBe(1);
+    });
+
+    it('clamps radius to edge length with warning', () => {
+      const result = compile(`
+        let small = @{ h 10 v 10 };
+        let f = small.fillet(100);
+        log(f.length);
+      `);
+      expect(result.logs.length).toBeGreaterThan(0);
+    });
+
+    it('throws on out-of-range vertex index', () => {
+      expect(() => compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.filletAtVertex(10, 5);
+        M 10 10
+        f.draw()
+      `)).toThrow(/vertex index.*out of range/i);
+    });
+
+    it('works on ProjectedPathValue', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let proj = box.project(10, 10);
+        let f = proj.fillet(5);
+        f.drawTo(0, 0)
+      `);
+      expect(result).toMatch(/a /);
+    });
+
+    it('requires exactly 1 argument', () => {
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.fillet()')).toThrow(/fillet\(\) expects/);
+    });
+
+    it('requires numeric argument', () => {
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.fillet("x")')).toThrow(/must be a number/);
+    });
+
+    it('arc has correct radius', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.fillet(10);
+        M 0 0
+        f.draw()
+      `);
+      // Arc commands should contain radius 10
+      expect(result).toMatch(/a 10 10/);
+    });
+
+    it('works with open paths', () => {
+      const result = compilePath(`
+        let path = @{ h 40 v 40 h -40 };
+        let f = path.fillet(5);
+        M 10 10
+        f.draw()
+      `);
+      expect(result).toMatch(/a /);
+    });
+
+    it('skips curve junctions with warning', () => {
+      const result = compile(`
+        let path = @{ c 0 -20 20 -20 20 0 h 20 };
+        let f = path.fillet(5);
+        log(f.length);
+      `);
+      // Should not throw, should produce a result
+      expect(result.logs.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('ellipticalFillet()', () => {
+    it('fillets all vertices of a rectangle with elliptical arcs', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.ellipticalFillet(12, 6);
+        M 10 10
+        f.draw()
+      `);
+      expect(result).toMatch(/a /);
+      // Arc should have rx != ry
+      expect(result).toMatch(/a 12 6/);
+    });
+
+    it('supports rotation parameter', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.ellipticalFillet(12, 6, 0.3);
+        M 10 10
+        f.draw()
+      `);
+      expect(result).toMatch(/a /);
+    });
+
+    it('ellipticalFilletAtVertex rounds only one corner', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.ellipticalFilletAtVertex(1, 12, 6);
+        M 10 10
+        f.draw()
+      `);
+      const arcCount = (result.match(/\ba /g) || []).length;
+      expect(arcCount).toBe(1);
+    });
+
+    it('ellipticalFilletAtVertex with rotation', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.ellipticalFilletAtVertex(2, 15, 8, 0.5);
+        M 10 10
+        f.draw()
+      `);
+      expect(result).toMatch(/a /);
+    });
+
+    it('throws on out-of-range vertex index', () => {
+      expect(() => compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let f = box.ellipticalFilletAtVertex(10, 12, 6);
+        M 10 10
+        f.draw()
+      `)).toThrow(/vertex index.*out of range/i);
+    });
+
+    it('works on ProjectedPathValue', () => {
+      const result = compilePath(`
+        let box = @{ h 60 v 40 h -60 z };
+        let proj = box.project(10, 10);
+        let f = proj.ellipticalFillet(12, 6);
+        f.drawTo(0, 0)
+      `);
+      expect(result).toMatch(/a /);
+    });
+
+    it('requires at least 2 arguments', () => {
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.ellipticalFillet(12)')).toThrow(/ellipticalFillet\(\) expects/);
+    });
+
+    describe('trim distance correctness', () => {
+      // Helper: parse the d-string into segments for analysis
+      function parseSegments(d: string) {
+        const segments: { cmd: string; args: number[] }[] = [];
+        const re = /([a-zA-Z])([^a-zA-Z]*)/g;
+        let m;
+        while ((m = re.exec(d)) !== null) {
+          const cmd = m[1];
+          const args = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+          segments.push({ cmd, args });
+        }
+        return segments;
+      }
+
+      it('90° corner: trims rx on horizontal edges and ry on vertical edges', () => {
+        // box: h 60 v 40 h -60 z → 4 right-angle corners
+        // ellipticalFillet(15, 8) should trim 15 from horizontal edges, 8 from vertical
+        const result = compilePath(`
+          let box = @{ h 60 v 40 h -60 z };
+          let f = box.ellipticalFillet(15, 8);
+          M 0 0
+          f.draw()
+        `);
+        const segs = parseSegments(result);
+
+        // After M 0 0: first segment is a line (horizontal, trimmed)
+        // For a 60-wide, 40-tall box with rx=15, ry=8:
+        // Horizontal edges (length 60): trimmed by 15 from each end → 30 remaining
+        // Vertical edges (length 40): trimmed by 8 from each end → 24 remaining
+        const lines = segs.filter(s => s.cmd === 'l');
+        const arcs = segs.filter(s => s.cmd === 'a');
+
+        expect(arcs.length).toBe(4);
+        // All arcs should have rx=15, ry=8
+        for (const arc of arcs) {
+          expect(arc.args[0]).toBeCloseTo(15, 5);
+          expect(arc.args[1]).toBeCloseTo(8, 5);
+        }
+
+        // Horizontal lines: should have |dx|=30, dy=0
+        const horizontalLines = lines.filter(l => Math.abs(l.args[1]) < 0.001);
+        for (const hl of horizontalLines) {
+          expect(Math.abs(hl.args[0])).toBeCloseTo(30, 3);
+        }
+
+        // Vertical lines: should have dx=0, |dy|=24
+        const verticalLines = lines.filter(l => Math.abs(l.args[0]) < 0.001);
+        for (const vl of verticalLines) {
+          expect(Math.abs(vl.args[1])).toBeCloseTo(24, 3);
+        }
+      });
+
+      it('ellipticalFillet(r, r) matches circular fillet(r)', () => {
+        const circular = compilePath(`
+          let box = @{ h 60 v 40 h -60 z };
+          let f = box.fillet(10);
+          M 0 0
+          f.draw()
+        `);
+        const elliptical = compilePath(`
+          let box = @{ h 60 v 40 h -60 z };
+          let f = box.ellipticalFillet(10, 10);
+          M 0 0
+          f.draw()
+        `);
+
+        // Parse and compare segment by segment (allow floating point tolerance)
+        const cSegs = parseSegments(circular);
+        const eSegs = parseSegments(elliptical);
+        expect(eSegs.length).toBe(cSegs.length);
+        for (let i = 0; i < cSegs.length; i++) {
+          expect(eSegs[i].cmd).toBe(cSegs[i].cmd);
+          for (let j = 0; j < cSegs[i].args.length; j++) {
+            expect(eSegs[i].args[j]).toBeCloseTo(cSegs[i].args[j], 3);
+          }
+        }
+      });
+
+      it('arc stays within original shape bounds', () => {
+        // A 100×80 box filleted with rx=20, ry=10
+        // The result should not exceed the bounding box of the original
+        const result = compilePath(`
+          let box = @{ h 100 v 80 h -100 z };
+          let f = box.ellipticalFillet(20, 10);
+          M 0 0
+          f.draw()
+        `);
+        const segs = parseSegments(result);
+
+        // Walk the path and track position
+        let x = 0, y = 0;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const seg of segs) {
+          if (seg.cmd === 'M') {
+            x = seg.args[0]; y = seg.args[1];
+          } else if (seg.cmd === 'm') {
+            x += seg.args[0]; y += seg.args[1];
+          } else if (seg.cmd === 'l') {
+            x += seg.args[0]; y += seg.args[1];
+          } else if (seg.cmd === 'a') {
+            x += seg.args[5]; y += seg.args[6];
+          } else if (seg.cmd === 'z') {
+            // back to start
+          }
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+
+        // Endpoints should be within [0, 100] × [0, 80]
+        expect(minX).toBeGreaterThanOrEqual(-0.01);
+        expect(minY).toBeGreaterThanOrEqual(-0.01);
+        expect(maxX).toBeLessThanOrEqual(100.01);
+        expect(maxY).toBeLessThanOrEqual(80.01);
+      });
+
+      it('non-90° angles: produces valid fillets at various angles', () => {
+        // Test angles from acute to obtuse
+        const angles = [-0.4, -0.3, -0.2, -0.1, 0.1, 0.2, 0.3, 0.4];
+        for (const angleFraction of angles) {
+          const angle = angleFraction * Math.PI;
+          const result = compilePath(`
+            let shape = @{
+              h 40
+              l calc(cos(${angle}) * 30) calc(sin(${angle}) * 30)
+            };
+            let f = shape.ellipticalFillet(8, 5);
+            M 50 50
+            f.draw()
+          `);
+          // Should produce exactly 1 arc
+          const arcCount = (result.match(/\ba /g) || []).length;
+          expect(arcCount).toBe(1);
+          // Arc should have correct radii
+          expect(result).toMatch(/a 8 5/);
+        }
+      });
     });
   });
 });

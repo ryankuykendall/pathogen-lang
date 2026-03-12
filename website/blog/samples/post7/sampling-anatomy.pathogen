@@ -1,0 +1,242 @@
+// viewBox="0 0 560 360"
+// Parametric Sampling Anatomy — .get(), .tangent(), .normal() visualized
+
+let curve = @{
+  c 0 -140 220 -140 220 0
+};
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 560, 360) }
+
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
+};
+grid.apply {
+  for (i in 0..18) {
+    M 0 calc(i * 20)
+    h 560
+  }
+  for (j in 0..28) {
+    M calc(j * 20) 0
+    v 360
+  }
+}
+
+// --- The curve ---
+
+let path = PathLayer('path') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2.5;
+  fill: none;
+};
+path.apply {
+  curve.drawTo(80, 240)
+}
+
+// --- Get real sampling data at t=0.4 ---
+
+let proj = curve.project(80, 240);
+let pt = proj.get(0.4);
+let tan = proj.tangent(0.4);
+let norm = proj.normal(0.4);
+
+// --- Sample point dot ---
+
+let sample_dot = PathLayer('sample-dot') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 2;
+};
+sample_dot.apply {
+  circle(pt.x, pt.y, 5)
+}
+
+// --- Tangent line ---
+
+let tangent = PathLayer('tangent') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
+};
+tangent.apply {
+  M calc(pt.x - cos(tan.angle) * 55) calc(pt.y - sin(tan.angle) * 55)
+  L calc(pt.x + cos(tan.angle) * 55) calc(pt.y + sin(tan.angle) * 55)
+}
+
+// Tangent direction arrow
+let tan_arrow = PathLayer('tan-arrow') ${
+  fill: Color('#22c55e');
+  stroke: none;
+};
+// Arrow at the positive end of tangent
+let tan_end_x = calc(pt.x + cos(tan.angle) * 55);
+let tan_end_y = calc(pt.y + sin(tan.angle) * 55);
+let tan_perp_x = calc(-sin(tan.angle));
+let tan_perp_y = calc(cos(tan.angle));
+tan_arrow.apply {
+  M tan_end_x tan_end_y
+  l calc(-cos(tan.angle) * 10 + tan_perp_x * 4) calc(-sin(tan.angle) * 10 + tan_perp_y * 4)
+  l calc(-tan_perp_x * 8) calc(-tan_perp_y * 8)
+  z
+}
+
+// --- Normal line ---
+
+let normal = PathLayer('normal') ${
+  stroke: Color('#f59e0b');
+  stroke-width: 1.5;
+  fill: none;
+};
+normal.apply {
+  M pt.x pt.y
+  L calc(pt.x + cos(norm.angle) * 50) calc(pt.y + sin(norm.angle) * 50)
+}
+
+// Normal direction arrow
+let norm_end_x = calc(pt.x + cos(norm.angle) * 50);
+let norm_end_y = calc(pt.y + sin(norm.angle) * 50);
+let norm_perp_x = calc(-sin(norm.angle));
+let norm_perp_y = calc(cos(norm.angle));
+normal.apply {
+  // arrowhead
+  M norm_end_x norm_end_y
+  l calc(-cos(norm.angle) * 10 + norm_perp_x * 4) calc(-sin(norm.angle) * 10 + norm_perp_y * 4)
+  l calc(-norm_perp_x * 8) calc(-norm_perp_y * 8)
+  z
+}
+
+// --- t=0 and t=1 endpoint markers ---
+
+let endpoints = PathLayer('endpoints') ${
+  fill: Color('#94a3b8');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+endpoints.apply {
+  circle(80, 240, 3.5)
+  circle(300, 240, 3.5)
+}
+
+// --- Leader lines ---
+
+let leaders = PathLayer('leaders') ${
+  fill: none;
+  stroke: Color('#475569');
+  stroke-width: 0.5;
+};
+leaders.apply {
+  // Tangent label leader
+  M calc(pt.x + cos(tan.angle) * 48) calc(pt.y + sin(tan.angle) * 48)
+  L 310 80
+  // Normal label leader
+  M calc(pt.x + cos(norm.angle) * 44) calc(pt.y + sin(norm.angle) * 44)
+  L 110 50
+  // Sample point leader (below curve)
+  M calc(pt.x) calc(pt.y + 8)
+  L calc(pt.x) 260
+  L 365 260
+  // t=0 leader
+  M 80 240 L 55 268
+  // t=1 leader
+  M 300 240 L 325 268
+}
+
+// --- Endpoint labels ---
+
+let ep_labels = TextLayer('ep-labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+ep_labels.apply {
+  text(55, 280)`t = 0`
+  text(325, 280)`t = 1`
+}
+
+// --- Method callout labels ---
+
+let method_labels = TextLayer('method-labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+method_labels.apply {
+  text(370, 256)`.get(0.4)`
+  text(370, 269)`→ Point`
+}
+
+let tangent_label = TextLayer('tangent-label') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#22c55e');
+  text-anchor: start;
+};
+tangent_label.apply {
+  text(315, 76)`.tangent(0.4)`
+  text(315, 89)`→ { point, angle }`
+}
+
+let normal_label = TextLayer('normal-label') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#f59e0b');
+  text-anchor: start;
+};
+normal_label.apply {
+  text(50, 45)`.normal(0.4)`
+  text(50, 58)`→ tangent − π/2`
+}
+
+// --- Legend ---
+
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+
+let leg_c = PathLayer('leg-curve') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_t = PathLayer('leg-tan') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_n = PathLayer('leg-norm') ${ fill: Color('#f59e0b'); stroke: none; };
+let leg_p = PathLayer('leg-pt') ${ fill: Color('#ef4444'); stroke: none; };
+
+leg_c.apply { rect(370, 310, 8, 8) }
+leg_t.apply { rect(370, 324, 8, 8) }
+leg_n.apply { rect(460, 310, 8, 8) }
+leg_p.apply { rect(460, 324, 8, 8) }
+
+leg.apply {
+  text(382, 317)`Curve path`
+  text(382, 331)`Tangent`
+  text(472, 317)`Normal`
+  text(472, 331)`Sample point`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 328)`Parametric Sampling`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 344)`Query any point along a path by arc-length fraction t`
+}

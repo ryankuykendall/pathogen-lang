@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300">
+
+  <path d="M 0 0 L 520 0 L 520 300 L 0 300 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path d="M 60 150 c 0 -120 200 -120 200 0 c 0 120 200 120 200 0" fill="none" stroke="#3b82f6" stroke-width="2"/>
+  <path d="M 56 150 A 4 4 0 1 1 64 150 A 4 4 0 1 1 56 150 M 85.94688688032869 83.56299929857187 A 4 4 0 1 1 93.94688688032869 83.56299929857187 A 4 4 0 1 1 85.94688688032869 83.56299929857187 M 155.99999999999997 60 A 4 4 0 1 1 163.99999999999997 60 A 4 4 0 1 1 155.99999999999997 60 M 226.0531131196713 83.56299929857184 A 4 4 0 1 1 234.0531131196713 83.56299929857184 A 4 4 0 1 1 226.0531131196713 83.56299929857184 M 256 150 A 4 4 0 1 1 264 150 A 4 4 0 1 1 256 150 M 285.94688688032875 216.43700070142813 A 4 4 0 1 1 293.94688688032875 216.43700070142813 A 4 4 0 1 1 285.94688688032875 216.43700070142813 M 355.99999999999994 240 A 4 4 0 1 1 363.99999999999994 240 A 4 4 0 1 1 355.99999999999994 240 M 426.05311311967125 216.43700070142813 A 4 4 0 1 1 434.05311311967125 216.43700070142813 A 4 4 0 1 1 426.05311311967125 216.43700070142813 M 456 150 A 4 4 0 1 1 464 150 A 4 4 0 1 1 456 150" fill="#ef4444" stroke="#0f172a" stroke-width="1.5"/>
+  <text x="60" y="168" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.00</text>
+  <text x="81.94688688032869" y="71.56299929857187" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.125</text>
+  <text x="159.99999999999997" y="48" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.25</text>
+  <text x="238.0531131196713" y="71.56299929857184" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.375</text>
+  <text x="260" y="168" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.50</text>
+  <text x="297.94688688032875" y="234.43700070142813" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.625</text>
+  <text x="359.99999999999994" y="258" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.75</text>
+  <text x="438.05311311967125" y="234.43700070142813" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">0.875</text>
+  <text x="460" y="168" font-family="monospace" font-size="8" fill="#fca5a5" text-anchor="middle">1.00</text>
+  <text x="30" y="262" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let pts = curve.partition(8);</text>
+  <text x="30" y="276" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// → 9 points at t = 0, 0.125, 0.25, ... 1.0</text>
+  <text x="30" y="262" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <text x="30" y="28" font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0" text-anchor="start">partition(8) — Even Distribution</text>
+  <text x="295" y="28" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="start">n + 1 points at equal arc-length intervals</text>
+</svg>

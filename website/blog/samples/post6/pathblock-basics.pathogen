@@ -1,0 +1,44 @@
+// viewBox="0 0 400 300"
+// PathBlock basics — define, draw, reuse
+
+let arrow = @{
+  h 40
+  l -10 -8
+  l 0 5
+  h -30
+  v 6
+  h 30
+  l 0 5
+  l 10 -8
+};
+
+let arrows = PathLayer('arrows') ${
+  fill: Color('#3b82f6');
+  stroke: Color('#1e40af');
+  stroke-width: 1.5;
+};
+
+let bg = PathLayer('bg') ${
+  stroke: Color('#94a3b8');
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: "4 3";
+};
+
+// Draw the grid
+for (i in 0..6) {
+  M 50 calc(50 + i * 40)
+  h 300
+}
+for (j in 0..8) {
+  M calc(50 + j * 40) 50
+  v 200
+}
+
+// Reuse the arrow at different positions
+arrows.apply {
+  arrow.drawTo(80, 90)
+  arrow.drawTo(200, 130)
+  arrow.drawTo(160, 210)
+  arrow.drawTo(280, 170)
+}

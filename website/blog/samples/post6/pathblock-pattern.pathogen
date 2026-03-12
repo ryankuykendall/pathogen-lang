@@ -1,0 +1,161 @@
+// viewBox="0 0 400 400"
+// PathBlock reuse — define once, create patterns
+
+// A leaf-like motif
+let leaf = @{
+  c 8 -18 22 -18 30 0
+  c -8 18 -22 18 -30 0
+  z
+};
+
+// A small diamond accent
+let gem = @{
+  l 5 8
+  l 5 -8
+  l -5 -8
+  z
+};
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// --- Radial leaf pattern (center) ---
+
+let leaves = PathLayer('leaves') ${
+  fill: Color('#22c55e12');
+  stroke: Color('#22c55e');
+  stroke-width: 1;
+};
+
+let leaves2 = PathLayer('leaves2') ${
+  fill: Color('#3b82f612');
+  stroke: Color('#3b82f6');
+  stroke-width: 1;
+};
+
+// Inner ring — 8 leaves
+leaves.apply {
+  for (i in 0..8) {
+    let angle = calc(i * 0.7854);
+    let cx = calc(200 + cos(angle) * 60);
+    let cy = calc(200 + sin(angle) * 60);
+    leaf.drawTo(calc(cx - 15), cy)
+  }
+}
+
+// Outer ring — 12 leaves, offset rotation
+leaves2.apply {
+  for (i in 0..12) {
+    let angle = calc(i * 0.5236 + 0.2618);
+    let cx = calc(200 + cos(angle) * 120);
+    let cy = calc(200 + sin(angle) * 120);
+    leaf.drawTo(calc(cx - 15), cy)
+  }
+}
+
+// --- Diamond accents ---
+
+let gems = PathLayer('gems') ${
+  fill: Color('#f59e0b');
+  stroke: Color('#b45309');
+  stroke-width: 0.5;
+};
+gems.apply {
+  for (i in 0..8) {
+    let angle = calc(i * 0.7854 + 0.3927);
+    let gx = calc(200 + cos(angle) * 90 - 5);
+    let gy = calc(200 + sin(angle) * 90);
+    gem.drawTo(gx, gy)
+  }
+}
+
+// --- Center dot ---
+
+let center = PathLayer('center') ${
+  fill: Color('#e2e8f0');
+  stroke: none;
+};
+center.apply {
+  circle(200, 200, 4)
+}
+
+// --- Construction circles ---
+
+let guides = PathLayer('guides') ${
+  stroke: Color('#334155');
+  stroke-width: 0.5;
+  stroke-dasharray: "3 4";
+  fill: none;
+};
+guides.apply {
+  circle(200, 200, 60)
+  circle(200, 200, 90)
+  circle(200, 200, 120)
+}
+
+// --- Annotations ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+labels.apply {
+  text(265, 205)`r = 60`
+  text(295, 205)`r = 90`
+  text(325, 205)`r = 120`
+}
+
+// --- Code annotation ---
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(20, 25)`let leaf = @{`
+  text(32, 37)`c 8 -18 22 -18 30 0`
+  text(32, 49)`c -8 18 -22 18 -30 0`
+  text(32, 61)`z`
+  text(20, 73)`};`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(20, 25)`let`
+}
+
+// --- Stats ---
+
+let stats = TextLayer('stats') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: end;
+};
+stats.apply {
+  text(385, 375)`1 PathBlock`
+  text(385, 388)`28 instances`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: Color('#e2e8f0');
+  text-anchor: end;
+};
+title.apply {
+  text(385, 25)`Define Once, Draw Everywhere`
+}
