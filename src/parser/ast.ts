@@ -26,6 +26,7 @@ export type Node =
   | ForEachLoop
   | IfStatement
   | FunctionDefinition
+  | EnumDefinition
   | PathCommand
   | LayerDefinition
   | LayerApplyBlock
@@ -36,6 +37,7 @@ export type Node =
   | UnaryExpression
   | MemberExpression
   | NullLiteral
+  | BooleanLiteral
   | ArrayLiteral
   | ObjectLiteral
   | IndexExpression
@@ -65,6 +67,7 @@ export type Statement =
   | ForEachLoop
   | IfStatement
   | FunctionDefinition
+  | EnumDefinition
   | ReturnStatement
   | PathCommand
   | LayerDefinition
@@ -141,6 +144,7 @@ export interface PathCommand {
 
 export type PathArg =
   | NumberLiteral
+  | BooleanLiteral
   | Identifier
   | CalcExpression
   | FunctionCall
@@ -214,6 +218,20 @@ export interface TemplateLiteral {
 // null literal
 export interface NullLiteral {
   type: 'NullLiteral';
+}
+
+// boolean literal
+export interface BooleanLiteral {
+  type: 'BooleanLiteral';
+  value: boolean;
+}
+
+// enum definition
+export interface EnumDefinition {
+  type: 'EnumDefinition';
+  name: string;
+  members: { name: string; value?: Expression }[];
+  loc?: SourceLocation;
 }
 
 // Array literal: [1, 2, 3]
@@ -355,6 +373,7 @@ export type Expression =
   | FunctionCall
   | MemberExpression
   | NullLiteral
+  | BooleanLiteral
   | ArrayLiteral
   | ObjectLiteral
   | IndexExpression

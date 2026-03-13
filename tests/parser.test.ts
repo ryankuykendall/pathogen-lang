@@ -813,6 +813,96 @@ L 10 20 // end point`;
     });
   });
 
+  describe('booleans', () => {
+    it('parses true as BooleanLiteral', () => {
+      const ast = parse('let x = true;');
+      expect(ast.body[0]).toMatchObject({
+        type: 'LetDeclaration',
+        name: 'x',
+        value: { type: 'BooleanLiteral', value: true },
+      });
+    });
+
+    it('parses false as BooleanLiteral', () => {
+      const ast = parse('let x = false;');
+      expect(ast.body[0]).toMatchObject({
+        type: 'LetDeclaration',
+        name: 'x',
+        value: { type: 'BooleanLiteral', value: false },
+      });
+    });
+
+    it('true is a reserved word', () => {
+      expect(() => parse('let true = 10;')).toThrow();
+    });
+
+    it('false is a reserved word', () => {
+      expect(() => parse('let false = 10;')).toThrow();
+    });
+
+    it('parses boolean as path arg', () => {
+      const ast = parse('A 50 50 0 true false 100 0');
+      const cmd = ast.body[0] as any;
+      expect(cmd.type).toBe('PathCommand');
+      expect(cmd.args[3]).toMatchObject({ type: 'BooleanLiteral', value: true });
+      expect(cmd.args[4]).toMatchObject({ type: 'BooleanLiteral', value: false });
+    });
+  });
+
+  describe('enums', () => {
+    it('parses basic enum with auto-valued members', () => {
+      const ast = parse('enum Dir { Up, Down, Left, Right }');
+      expect(ast.body[0]).toMatchObject({
+        type: 'EnumDefinition',
+        name: 'Dir',
+        members: [
+          { name: 'Up' },
+          { name: 'Down' },
+          { name: 'Left' },
+          { name: 'Right' },
+        ],
+      });
+    });
+
+    it('parses enum with explicit string values', () => {
+      const ast = parse("enum Season { Spring = 'vernal', Summer = 'estival' }");
+      const enumDef = ast.body[0] as any;
+      expect(enumDef.type).toBe('EnumDefinition');
+      expect(enumDef.members[0].value).toMatchObject({ type: 'StringLiteral', value: 'vernal' });
+      expect(enumDef.members[1].value).toMatchObject({ type: 'StringLiteral', value: 'estival' });
+    });
+
+    it('parses enum with explicit number values', () => {
+      const ast = parse('enum Weight { Thin = 1, Bold = 4 }');
+      const enumDef = ast.body[0] as any;
+      expect(enumDef.members[0].value).toMatchObject({ type: 'NumberLiteral', value: 1 });
+      expect(enumDef.members[1].value).toMatchObject({ type: 'NumberLiteral', value: 4 });
+    });
+
+    it('parses enum with color values', () => {
+      const ast = parse('enum P { Primary = #0066ff, Accent = #ff6600 }');
+      const enumDef = ast.body[0] as any;
+      expect(enumDef.members[0].value).toMatchObject({ type: 'ColorLiteral', raw: '#0066ff' });
+    });
+
+    it('parses enum with boolean values', () => {
+      const ast = parse('enum T { On = true, Off = false }');
+      const enumDef = ast.body[0] as any;
+      expect(enumDef.members[0].value).toMatchObject({ type: 'BooleanLiteral', value: true });
+      expect(enumDef.members[1].value).toMatchObject({ type: 'BooleanLiteral', value: false });
+    });
+
+    it('enum is a reserved word', () => {
+      expect(() => parse('let enum = 10;')).toThrow();
+    });
+
+    it('parses enum with trailing comma', () => {
+      const ast = parse('enum Dir { Up, Down, }');
+      const enumDef = ast.body[0] as any;
+      expect(enumDef.members).toHaveLength(2);
+    });
+  });
+
   describe('arrays', () => {
     it('parses empty array', () => {
       const ast = parse('let x = [];');

@@ -1024,6 +1024,183 @@ describe('Evaluator', () => {
     });
   });
 
+  describe('booleans', () => {
+    it('true is truthy in conditionals', () => {
+      expect(compilePath('if (true) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('false is falsy in conditionals', () => {
+      expect(compilePath('if (false) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
+    });
+
+    it('true == 1 is true', () => {
+      expect(compilePath('if (true == 1) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('false == 0 is true', () => {
+      expect(compilePath('if (false == 0) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('arithmetic: true + 1 == 2', () => {
+      expect(compilePath('let x = calc(true + 1); M x 0')).toBe('M 2 0');
+    });
+
+    it('arithmetic: true + true == 2', () => {
+      expect(compilePath('let x = calc(true + true); M x 0')).toBe('M 2 0');
+    });
+
+    it('log(true) displays "true"', () => {
+      const result = compile('log(true);');
+      expect(result.logs[0].parts[0].value).toBe('true');
+    });
+
+    it('log(false) displays "false"', () => {
+      const result = compile('log(false);');
+      expect(result.logs[0].parts[0].value).toBe('false');
+    });
+
+    it('log(5 > 3) displays "true"', () => {
+      const result = compile('log(5 > 3);');
+      expect(result.logs[0].parts[0].value).toBe('true');
+    });
+
+    it('log(1 > 5) displays "false"', () => {
+      const result = compile('log(1 > 5);');
+      expect(result.logs[0].parts[0].value).toBe('false');
+    });
+
+    it('negation: !true == false', () => {
+      expect(compilePath('if (!true) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
+    });
+
+    it('negation: !false == true', () => {
+      expect(compilePath('if (!false) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('logical AND: true && false == false', () => {
+      expect(compilePath('if (true && false) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
+    });
+
+    it('logical OR: false || true == true', () => {
+      expect(compilePath('if (false || true) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('template literal: `${true}` renders as "true"', () => {
+      const result = compile('log(`${true}`);');
+      expect(result.logs[0].parts[0].value).toBe('true');
+    });
+
+    it('path args: boolean as arc flag', () => {
+      expect(compilePath('let flag = true; M 0 0 A 50 50 0 flag false 100 0')).toBe(
+        'M 0 0 A 50 50 0 1 0 100 0',
+      );
+    });
+
+    it('true == null is false', () => {
+      expect(compilePath('if (true == null) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
+    });
+
+    it('false == null is false', () => {
+      expect(compilePath('if (false == null) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
+    });
+
+    it('comparison returns boolean that displays correctly', () => {
+      const result = compile('let a = 10; let b = 20; log(a < b);');
+      expect(result.logs[0].parts[0].value).toBe('true');
+    });
+
+    it('boolean in variable used in conditional', () => {
+      expect(compilePath('let x = 5 > 3; if (x) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+  });
+
+  describe('built-in enums', () => {
+    it('Easing.Linear resolves to "linear"', () => {
+      const result = compile('log(Easing.Linear);');
+      expect(result.logs[0].parts[0].value).toBe('linear');
+    });
+
+    it('Easing.Smoothstep resolves to "smoothstep"', () => {
+      const result = compile('log(Easing.Smoothstep);');
+      expect(result.logs[0].parts[0].value).toBe('smoothstep');
+    });
+
+    it('Interpolation.OKLCH resolves to "oklch"', () => {
+      const result = compile('log(Interpolation.OKLCH);');
+      expect(result.logs[0].parts[0].value).toBe('oklch');
+    });
+
+    it('SpreadMethod.Pad resolves to "pad"', () => {
+      const result = compile('log(SpreadMethod.Pad);');
+      expect(result.logs[0].parts[0].value).toBe('pad');
+    });
+
+    it('Direction.CW resolves to "cw"', () => {
+      const result = compile('log(Direction.CW);');
+      expect(result.logs[0].parts[0].value).toBe('cw');
+    });
+
+    it('TopoMethod.Laplace resolves to "laplace"', () => {
+      const result = compile('log(TopoMethod.Laplace);');
+      expect(result.logs[0].parts[0].value).toBe('laplace');
+    });
+
+    it('Easing.Linear == "linear" is true', () => {
+      expect(compilePath('if (Easing.Linear == "linear") { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('unknown member returns null', () => {
+      const result = compile('log(Easing.FooBar);');
+      expect(result.logs[0].parts[0].value).toBe('null');
+    });
+  });
+
+  describe('user-defined enums', () => {
+    it('auto-valued enum members are lowercase strings', () => {
+      const result = compile('enum Dir { Up, Down, Left, Right } log(Dir.Up);');
+      expect(result.logs[0].parts[0].value).toBe('up');
+    });
+
+    it('explicit string values', () => {
+      const result = compile("enum X { A = 'alpha', B = 'beta' } log(X.A);");
+      expect(result.logs[0].parts[0].value).toBe('alpha');
+    });
+
+    it('explicit number values', () => {
+      const result = compile('enum W { Thin = 1, Bold = 4 } M W.Thin W.Bold');
+      expect(compilePath('enum W { Thin = 1, Bold = 4 } M W.Thin W.Bold')).toBe('M 1 4');
+    });
+
+    it('explicit angle values', () => {
+      const result = compile('enum A { Quarter = 90deg } log(A.Quarter);');
+      // 90deg → PI/2 radians
+      expect(result.logs[0].parts[0].value).toBe(String(Math.PI / 2));
+    });
+
+    it('explicit color values', () => {
+      const result = compile('enum P { Main = #ff0000 } log(P.Main);');
+      expect(result.logs[0].parts[0].value).toContain('Color(');
+    });
+
+    it('explicit boolean values', () => {
+      const result = compile('enum T { On = true, Off = false } log(T.On);');
+      expect(result.logs[0].parts[0].value).toBe('true');
+    });
+
+    it('enum member used in conditional', () => {
+      expect(compilePath("enum Dir { Up, Down } let d = Dir.Up; if (d == 'up') { M 10 20 } else { M 0 0 }")).toBe('M 10 20');
+    });
+
+    it('unknown member returns null', () => {
+      const result = compile('enum Dir { Up, Down } log(Dir.Left);');
+      expect(result.logs[0].parts[0].value).toBe('null');
+    });
+
+    it('redefinition in same scope throws', () => {
+      expect(() => compile('enum Dir { Up } enum Dir { Down }')).toThrow(/already defined/);
+    });
+  });
+
   describe('arrays', () => {
     it('creates an array and accesses elements', () => {
       expect(compilePath('let list = [10, 20, 30]; M list[0] list[1]')).toBe('M 10 20');
@@ -1370,9 +1547,9 @@ describe('Evaluator', () => {
         log(fourth == c.pick());
         log(fifth == c.pick());
       `);
-      // All comparisons should be truthy (1)
+      // All comparisons should be truthy (true)
       for (const log of result.logs) {
-        expect(log.parts[0].value).toBe('1');
+        expect(log.parts[0].value).toBe('true');
       }
     });
 

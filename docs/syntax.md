@@ -299,6 +299,126 @@ let y = x + 1;     // Error: Cannot use null in arithmetic expression
 M x 0               // Error: Cannot use null as a path argument
 ```
 
+## Booleans
+
+The `true` and `false` keywords represent boolean values. They are a semantic subtype of number — `true` is `1`, `false` is `0` — but display as `true`/`false` in logs and template literals.
+
+```
+let flag = true;
+let check = false;
+```
+
+### Numeric Equivalence
+
+Booleans participate in arithmetic as their numeric values:
+
+```
+true + 1     // 2
+true + true  // 2
+false + 1    // 1
+true == 1    // true
+false == 0   // true
+```
+
+### Display
+
+Booleans display as `true` or `false`, and comparisons return booleans:
+
+```
+log(true);       // true
+log(5 > 3);      // true
+log(1 > 5);      // false
+log(`${true}`);  // true
+```
+
+### Truthiness
+
+`false` is falsy (like `0` and `null`); `true` is truthy:
+
+```
+if (true) { /* runs */ }
+if (false) { /* skipped */ }
+
+let result = 5 > 3;  // true (BooleanValue)
+if (result) { /* runs */ }
+```
+
+### Logical Operators
+
+```
+!true         // false
+!false        // true
+true && false // false
+false || true // true
+```
+
+### Arc Flags
+
+Booleans can be used directly as arc flag arguments, converting to `1`/`0` in the SVG output:
+
+```
+let largeArc = true;
+let sweep = false;
+M 0 0 A 50 50 0 largeArc sweep 100 0
+// → M 0 0 A 50 50 0 1 0 100 0
+```
+
+## Enums
+
+### Built-in Enums
+
+Pathogen provides built-in enums for gradient and geometry properties. Enum members resolve to the string values accepted by these properties:
+
+| Enum | Members |
+|------|---------|
+| `Easing` | `Linear`, `Smoothstep`, `EaseIn`, `EaseOut`, `EaseInOut` |
+| `Interpolation` | `SRGB`, `OKLCH`, `LinearRGB` |
+| `SpreadMethod` | `Pad`, `Reflect`, `Repeat` |
+| `GradientUnits` | `ObjectBoundingBox`, `UserSpaceOnUse` |
+| `Direction` | `CW`, `CCW` |
+| `ConicSpread` | `Clamp`, `Repeat`, `Transparent` |
+| `InnerFill` | `Transparent`, `TransparentBlend`, `Center` |
+| `TopoMethod` | `Distance`, `Laplace` |
+
+```
+topo.easing = Easing.Smoothstep;       // equivalent to 'smoothstep'
+grad.interpolation = Interpolation.OKLCH;
+```
+
+Enum values are interchangeable with their string equivalents:
+
+```
+Easing.Linear == 'linear'  // true
+```
+
+### User-Defined Enums
+
+Define custom enums with `enum`:
+
+```
+// Auto-valued — member name lowercased to a string
+enum Symmetry { None, Bilateral, Radial, Rotational }
+log(Symmetry.Bilateral);  // bilateral
+
+// Explicit string values
+enum Season { Spring = 'vernal', Summer = 'estival' }
+
+// Explicit typed values — number, angle, color, boolean
+enum Angle { Quarter = 90deg, Half = 180deg, Full = 360deg }
+enum Palette { Primary = #0066ff, Accent = #ff6600, Muted = #999 }
+enum Weight { Thin = 1, Normal = 2, Bold = 4 }
+enum Toggle { On = true, Off = false }
+```
+
+Auto-valued members always produce the lowercase string of the member name. Other types require an explicit `= value`.
+
+Enum members are accessed with dot notation and can be used in conditionals:
+
+```
+let d = Dir.Up;
+if (d == 'up') { M 10 20 }
+```
+
 ## Points
 
 Points represent 2D coordinates and provide geometric operations for SVG path construction.

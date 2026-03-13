@@ -110,14 +110,14 @@ describe('Objects', () => {
   });
 
   describe('has()', () => {
-    it('returns 1 for existing key', () => {
+    it('returns true for existing key', () => {
       const result = compile("let obj = { x: 10 }; log(obj.has('x'));");
-      expect(result.logs[0].parts[0].value).toBe('1');
+      expect(result.logs[0].parts[0].value).toBe('true');
     });
 
-    it('returns 0 for missing key', () => {
+    it('returns false for missing key', () => {
       const result = compile("let obj = { x: 10 }; log(obj.has('y'));");
-      expect(result.logs[0].parts[0].value).toBe('0');
+      expect(result.logs[0].parts[0].value).toBe('false');
     });
   });
 

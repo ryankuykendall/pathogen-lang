@@ -77,11 +77,44 @@ export interface AnnotatedOutput {
   lines: AnnotatedLine[];
 }
 
+// BooleanValue type (mirrors main evaluator)
+export interface BooleanValue {
+  type: 'BooleanValue';
+  value: 0 | 1;
+}
+
+function isBooleanValue(value: Value): value is BooleanValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'BooleanValue';
+}
+
+function boolVal(v: boolean | number): BooleanValue {
+  return { type: 'BooleanValue', value: v ? 1 : 0 };
+}
+
+function toNumber(v: Value): number | undefined {
+  if (typeof v === 'number') return v;
+  if (isBooleanValue(v)) return v.value;
+  return undefined;
+}
+
+/** Built-in enum definitions */
+const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
+  Easing: { Linear: 'linear', Smoothstep: 'smoothstep', EaseIn: 'ease-in', EaseOut: 'ease-out', EaseInOut: 'ease-in-out' },
+  Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
+  SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
+  GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
+  Direction: { CW: 'cw', CCW: 'ccw' },
+  ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
+  InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
+  TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
+};
+
 // Value types (same as main evaluator)
 export type Value =
   | number
   | string
   | null
+  | BooleanValue
   | PathSegment
   | UserFunction
   | ContextObject
@@ -341,6 +374,12 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   }
   if (name === 'Color') {
     return { type: 'ColorNamespace' } as ColorNamespace;
+  }
+  // Built-in enums
+  if (name in BUILTIN_ENUMS) {
+    const props = new Map<string, Value>();
+    for (const [k, v] of Object.entries(BUILTIN_ENUMS[name])) props.set(k, v);
+    return { type: 'ObjectValue', properties: props } as ObjectValue;
   }
   if (name in stdlib) {
     return stdlib[name as keyof typeof stdlib] as unknown as Value;
@@ -1951,6 +1990,9 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     case 'NullLiteral':
       return null;
 
+    case 'BooleanLiteral':
+      return boolVal(expr.value);
+
     case 'Identifier': {
       const idLoc = (expr as { loc?: { line: number; column: number } }).loc;
       return lookupVariable(scope, expr.name, idLoc?.line, idLoc?.column);
@@ -2015,15 +2057,19 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       // Null equality checks
       if (expr.operator === '==' || expr.operator === '!=') {
         if (left === null || right === null) {
-          if (expr.operator === '==') return left === null && right === null ? 1 : 0;
-          return left === null && right === null ? 0 : 1;
+          if (expr.operator === '==') return boolVal(left === null && right === null);
+          return boolVal(!(left === null && right === null));
         }
       }
 
-      // String equality: == and != work for strings
-      if ((expr.operator === '==' || expr.operator === '!=') && typeof left === 'string' && typeof right === 'string') {
-        if (expr.operator === '==') return left === right ? 1 : 0;
-        return left !== right ? 1 : 0;
+      // String/BooleanValue equality
+      if (expr.operator === '==' || expr.operator === '!=') {
+        const ls = typeof left === 'string' ? left : (isBooleanValue(left) ? (left.value ? 'true' : 'false') : undefined);
+        const rs = typeof right === 'string' ? right : (isBooleanValue(right) ? (right.value ? 'true' : 'false') : undefined);
+        if (ls !== undefined && rs !== undefined) {
+          if (expr.operator === '==') return boolVal(ls === rs);
+          return boolVal(ls !== rs);
+        }
       }
 
       // Null in arithmetic
@@ -2031,37 +2077,40 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         throw new Error(formatError('Cannot use null in arithmetic expression', line));
       }
 
-      if (typeof left !== 'number' || typeof right !== 'number') {
+      const leftNum = toNumber(left);
+      const rightNum = toNumber(right);
+
+      if (leftNum === undefined || rightNum === undefined) {
         throw new Error(formatError(`Binary operator ${expr.operator} requires numeric operands`, line));
       }
 
       switch (expr.operator) {
         case '+':
-          return left + right;
+          return leftNum + rightNum;
         case '-':
-          return left - right;
+          return leftNum - rightNum;
         case '*':
-          return left * right;
+          return leftNum * rightNum;
         case '/':
-          return left / right;
+          return leftNum / rightNum;
         case '%':
-          return left % right;
+          return leftNum % rightNum;
         case '<':
-          return left < right ? 1 : 0;
+          return boolVal(leftNum < rightNum);
         case '>':
-          return left > right ? 1 : 0;
+          return boolVal(leftNum > rightNum);
         case '<=':
-          return left <= right ? 1 : 0;
+          return boolVal(leftNum <= rightNum);
         case '>=':
-          return left >= right ? 1 : 0;
+          return boolVal(leftNum >= rightNum);
         case '==':
-          return left === right ? 1 : 0;
+          return boolVal(leftNum === rightNum);
         case '!=':
-          return left !== right ? 1 : 0;
+          return boolVal(leftNum !== rightNum);
         case '&&':
-          return left && right ? 1 : 0;
+          return boolVal(leftNum && rightNum);
         case '||':
-          return left || right ? 1 : 0;
+          return boolVal(leftNum || rightNum);
       }
     }
     // falls through
@@ -2071,14 +2120,15 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       if (arg === null) {
         throw new Error(formatError('Cannot use null in arithmetic expression', line));
       }
-      if (typeof arg !== 'number') {
+      const argNum = toNumber(arg);
+      if (argNum === undefined) {
         throw new Error(formatError(`Unary operator ${expr.operator} requires numeric operand`, line));
       }
       switch (expr.operator) {
         case '-':
-          return -arg;
+          return -argNum;
         case '!':
-          return arg ? 0 : 1;
+          return boolVal(!argNum);
       }
     }
     // falls through
@@ -2101,6 +2151,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           if (typeof part === 'string') return part;
           const val = evaluateExpression(part, scope);
           if (val === null) return 'null';
+          if (isBooleanValue(val)) return val.value ? 'true' : 'false';
           if (typeof val === 'number') return String(val);
           if (typeof val === 'string') return val;
           if (isObjectValue(val)) {
@@ -2739,10 +2790,14 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
     case 'NumberLiteral':
       return String(convertUnitSuffix(arg.value, arg.unit));
 
+    case 'BooleanLiteral':
+      return arg.value ? '1' : '0';
+
     case 'Identifier': {
       const argLoc = (arg as { loc?: { line: number; column: number } }).loc;
       const value = lookupVariable(scope, arg.name, argLoc?.line, argLoc?.column);
       if (value === null) throw new Error('Cannot use null as a path argument');
+      if (isBooleanValue(value)) return String(value.value);
       if (typeof value === 'number') {
         return String(value);
       }
@@ -2755,6 +2810,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
     case 'CalcExpression': {
       const value = evaluateExpression(arg.expression, scope);
       if (value === null) throw new Error('Cannot use null as a path argument');
+      if (isBooleanValue(value)) return String(value.value);
       if (typeof value !== 'number') {
         throw new Error('calc() must evaluate to a number');
       }
@@ -2784,6 +2840,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
     case 'MemberExpression': {
       const value = evaluateMemberExpression(arg, scope);
       if (value === null) throw new Error('Cannot use null as a path argument');
+      if (isBooleanValue(value)) return String(value.value);
       if (typeof value === 'number') {
         return String(value);
       }
@@ -2793,6 +2850,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
     case 'IndexExpression': {
       const value = evaluateIndexExpression(arg, scope);
       if (value === null) throw new Error('Cannot use null as a path argument');
+      if (isBooleanValue(value)) return String(value.value);
       if (typeof value === 'number') return String(value);
       throw new Error('Index expression did not evaluate to a number');
     }
@@ -2878,7 +2936,7 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const isTruthy = condition !== null && (typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
 
       if (isTruthy) {
         const results: string[] = [];
@@ -2962,6 +3020,21 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         body: stmt.body,
       };
       setVariable(scope, stmt.name, fn);
+      return '';
+    }
+
+    case 'EnumDefinition': {
+      if (scope.variables.has(stmt.name)) {
+        throw new Error(formatError(`Enum '${stmt.name}' is already defined`, (stmt as { loc?: { line: number } }).loc?.line));
+      }
+      const enumProps = new Map<string, Value>();
+      for (const member of stmt.members) {
+        const val = member.value
+          ? evaluateExpression(member.value, scope)
+          : member.name.toLowerCase();
+        enumProps.set(member.name, val);
+      }
+      setVariable(scope, stmt.name, { type: 'ObjectValue', properties: enumProps } as ObjectValue);
       return '';
     }
 
@@ -3214,7 +3287,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const isTruthy = condition !== null && (typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
 
       if (isTruthy) {
         for (const bodyStmt of stmt.consequent) {
@@ -3344,6 +3417,21 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       };
       setVariable(scope, stmt.name, fn);
       // Function definitions don't produce output
+      break;
+    }
+
+    case 'EnumDefinition': {
+      if (scope.variables.has(stmt.name)) {
+        throw new Error(formatError(`Enum '${stmt.name}' is already defined`, (stmt as { loc?: { line: number } }).loc?.line));
+      }
+      const enumAnnotatedProps = new Map<string, Value>();
+      for (const member of stmt.members) {
+        const val = member.value
+          ? evaluateExpression(member.value, scope)
+          : member.name.toLowerCase();
+        enumAnnotatedProps.set(member.name, val);
+      }
+      setVariable(scope, stmt.name, { type: 'ObjectValue', properties: enumAnnotatedProps } as ObjectValue);
       break;
     }
 

@@ -55,6 +55,7 @@ import type { PathContext, TransformState } from './context';
 import type { OKLCH } from '../color';
 import type {
   ArrayValue,
+  BooleanValue,
   ClipPathOutput,
   ClipPathValue,
   ColorNamespace,
@@ -116,6 +117,7 @@ import type {
 // Re-export all types from the dedicated types module
 export type {
   ArrayValue,
+  BooleanValue,
   ClipPathOutput,
   ClipPathValue,
   ColorNamespace,
@@ -225,6 +227,37 @@ export function isProjectedPathValue(value: Value): value is ProjectedPathValue 
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
 }
 
+export function isBooleanValue(value: Value): value is BooleanValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'BooleanValue';
+}
+
+/** Create a BooleanValue from a JS boolean or truthy/falsy expression */
+function boolVal(v: boolean | number): BooleanValue {
+  return { type: 'BooleanValue', value: v ? 1 : 0 };
+}
+
+/**
+ * Extract numeric value from a Value that is either a number or a BooleanValue.
+ * Returns undefined if the value is neither.
+ */
+function toNumber(v: Value): number | undefined {
+  if (typeof v === 'number') return v;
+  if (isBooleanValue(v)) return v.value;
+  return undefined;
+}
+
+/** Built-in enum definitions — constant map of enum name → member name → string value */
+const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
+  Easing: { Linear: 'linear', Smoothstep: 'smoothstep', EaseIn: 'ease-in', EaseOut: 'ease-out', EaseInOut: 'ease-in-out' },
+  Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
+  SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
+  GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
+  Direction: { CW: 'cw', CCW: 'ccw' },
+  ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
+  InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
+  TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
+};
+
 /**
  * Convert an Expression AST node to its source text representation
  */
@@ -254,6 +287,8 @@ function expressionToSource(expr: Expression): string {
       return `\${ ${expr.properties.map((p) => `${p.name}: ${p.value};`).join(' ')} }`;
     case 'NullLiteral':
       return 'null';
+    case 'BooleanLiteral':
+      return expr.value ? 'true' : 'false';
     case 'ArrayLiteral':
       return `[${expr.elements.map(expressionToSource).join(', ')}]`;
     case 'IndexExpression':
@@ -326,6 +361,12 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   // Color namespace
   if (name === 'Color') {
     return { type: 'ColorNamespace' } as ColorNamespace;
+  }
+  // Built-in enums
+  if (name in BUILTIN_ENUMS) {
+    const props = new Map<string, Value>();
+    for (const [k, v] of Object.entries(BUILTIN_ENUMS[name])) props.set(k, v);
+    return { type: 'ObjectValue', properties: props } as ObjectValue;
   }
   // Check stdlib
   if (name in stdlib) {
@@ -733,6 +774,9 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     case 'NullLiteral':
       return null;
 
+    case 'BooleanLiteral':
+      return boolVal(expr.value);
+
     case 'Identifier':
       return lookupVariable(scope, expr.name, getLine(expr), getCol(expr));
 
@@ -805,15 +849,19 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       // Null equality checks
       if (expr.operator === '==' || expr.operator === '!=') {
         if (left === null || right === null) {
-          if (expr.operator === '==') return left === null && right === null ? 1 : 0;
-          return left === null && right === null ? 0 : 1;
+          if (expr.operator === '==') return boolVal(left === null && right === null);
+          return boolVal(!(left === null && right === null));
         }
       }
 
-      // String equality: == and != work for strings
-      if ((expr.operator === '==' || expr.operator === '!=') && typeof left === 'string' && typeof right === 'string') {
-        if (expr.operator === '==') return left === right ? 1 : 0;
-        return left !== right ? 1 : 0;
+      // String/BooleanValue equality: == and != (including cross-type with strings for enum interop)
+      if (expr.operator === '==' || expr.operator === '!=') {
+        const ls = typeof left === 'string' ? left : (isBooleanValue(left) ? (left.value ? 'true' : 'false') : undefined);
+        const rs = typeof right === 'string' ? right : (isBooleanValue(right) ? (right.value ? 'true' : 'false') : undefined);
+        if (ls !== undefined && rs !== undefined) {
+          if (expr.operator === '==') return boolVal(ls === rs);
+          return boolVal(ls !== rs);
+        }
       }
 
       // Null in arithmetic
@@ -821,37 +869,41 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         throw new Error(formatError('Cannot use null in arithmetic expression', getLineDeep(expr)));
       }
 
-      if (typeof left !== 'number' || typeof right !== 'number') {
+      // Extract numeric values (number or BooleanValue)
+      const leftNum = toNumber(left);
+      const rightNum = toNumber(right);
+
+      if (leftNum === undefined || rightNum === undefined) {
         throw new Error(formatError(`Binary operator ${expr.operator} requires numeric operands`, getLineDeep(expr)));
       }
 
       switch (expr.operator) {
         case '+':
-          return left + right;
+          return leftNum + rightNum;
         case '-':
-          return left - right;
+          return leftNum - rightNum;
         case '*':
-          return left * right;
+          return leftNum * rightNum;
         case '/':
-          return left / right;
+          return leftNum / rightNum;
         case '%':
-          return left % right;
+          return leftNum % rightNum;
         case '<':
-          return left < right ? 1 : 0;
+          return boolVal(leftNum < rightNum);
         case '>':
-          return left > right ? 1 : 0;
+          return boolVal(leftNum > rightNum);
         case '<=':
-          return left <= right ? 1 : 0;
+          return boolVal(leftNum <= rightNum);
         case '>=':
-          return left >= right ? 1 : 0;
+          return boolVal(leftNum >= rightNum);
         case '==':
-          return left === right ? 1 : 0;
+          return boolVal(leftNum === rightNum);
         case '!=':
-          return left !== right ? 1 : 0;
+          return boolVal(leftNum !== rightNum);
         case '&&':
-          return left && right ? 1 : 0;
+          return boolVal(leftNum && rightNum);
         case '||':
-          return left || right ? 1 : 0;
+          return boolVal(leftNum || rightNum);
       }
     }
     // falls through
@@ -861,14 +913,15 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       if (arg === null) {
         throw new Error(formatError('Cannot use null in arithmetic expression', getLine(expr)));
       }
-      if (typeof arg !== 'number') {
+      const argNum = toNumber(arg);
+      if (argNum === undefined) {
         throw new Error(formatError(`Unary operator ${expr.operator} requires numeric operand`, getLine(expr)));
       }
       switch (expr.operator) {
         case '-':
-          return -arg;
+          return -argNum;
         case '!':
-          return arg ? 0 : 1;
+          return boolVal(!argNum);
       }
     }
     // falls through
@@ -2770,7 +2823,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       if (expr.args.length !== 1) throw mError('has() expects 1 argument');
       const key = evaluateExpression(expr.args[0], scope);
       if (typeof key !== 'string') throw mError('has() argument must be a string');
-      return obj.properties.has(key) ? 1 : 0;
+      return boolVal(obj.properties.has(key));
     }
     throw mError(`Unknown object method: ${expr.method}`);
   }
@@ -2780,7 +2833,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     switch (expr.method) {
       case 'empty': {
         if (expr.args.length !== 0) throw mError('empty() expects 0 arguments');
-        return obj.length === 0 ? 1 : 0;
+        return boolVal(obj.length === 0);
       }
       case 'split': {
         if (expr.args.length !== 0) throw mError('split() expects 0 arguments');
@@ -2803,7 +2856,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 1) throw mError('includes() expects 1 argument');
         const val = evaluateExpression(expr.args[0], scope);
         if (typeof val !== 'string') throw mError('includes() argument must be a string');
-        return obj.includes(val) ? 1 : 0;
+        return boolVal(obj.includes(val));
       }
       case 'slice': {
         if (expr.args.length !== 2) throw mError('slice() expects 2 arguments');
@@ -2849,7 +2902,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
     case 'empty': {
       if (expr.args.length !== 0) throw mError('empty() expects 0 arguments');
-      return obj.elements.length === 0 ? 1 : 0;
+      return boolVal(obj.elements.length === 0);
     }
     default:
       throw mError(`Unknown array method: ${expr.method}`);
@@ -2858,6 +2911,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
 function formatValueForDisplay(val: Value): string {
   if (val === null) return 'null';
+  if (isBooleanValue(val)) return val.value ? 'true' : 'false';
   if (typeof val === 'number') return formatNum(val);
   if (typeof val === 'string') return val;
   if (isPointValue(val)) {
@@ -3340,6 +3394,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
         if (value === null) {
           stringValue = 'null';
+        } else if (isBooleanValue(value)) {
+          stringValue = formatValueForDisplay(value);
         } else if (isPointValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isObjectValue(value)) {
@@ -4063,10 +4119,16 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
     case 'NumberLiteral':
       return formatNum(convertUnitSuffix(arg.value, arg.unit));
 
+    case 'BooleanLiteral':
+      return arg.value ? '1' : '0';
+
     case 'Identifier': {
       const value = lookupVariable(scope, arg.name, getLine(arg), getCol(arg));
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
+      }
+      if (isBooleanValue(value)) {
+        return formatNum(value.value);
       }
       if (typeof value === 'number') {
         return formatNum(value);
@@ -4081,6 +4143,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       const value = evaluateExpression(arg.expression, scope);
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
+      }
+      if (isBooleanValue(value)) {
+        return formatNum(value.value);
       }
       if (typeof value !== 'number') {
         throw new Error('calc() must evaluate to a number');
@@ -4114,6 +4179,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
       }
+      if (isBooleanValue(value)) {
+        return formatNum(value.value);
+      }
       if (typeof value === 'number') {
         return formatNum(value);
       }
@@ -4124,6 +4192,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       const value = evaluateIndexExpression(arg, scope);
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
+      }
+      if (isBooleanValue(value)) {
+        return formatNum(value.value);
       }
       if (typeof value === 'number') {
         return formatNum(value);
@@ -4164,36 +4235,44 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
   for (const arg of args) {
     if (arg.type === 'NumberLiteral') {
       numericArgs.push(convertUnitSuffix(arg.value, arg.unit));
+    } else if (arg.type === 'BooleanLiteral') {
+      numericArgs.push(arg.value ? 1 : 0);
     } else if (arg.type === 'Identifier') {
       const value = lookupVariable(scope, arg.name);
-      if (typeof value === 'number') {
-        numericArgs.push(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        numericArgs.push(n);
       }
     } else if (arg.type === 'CalcExpression') {
       const value = evaluateExpression(arg.expression, scope);
-      if (typeof value === 'number') {
-        numericArgs.push(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        numericArgs.push(n);
       }
     } else if (arg.type === 'MemberExpression') {
       const value = evaluateMemberExpression(arg, scope);
-      if (typeof value === 'number') {
-        numericArgs.push(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        numericArgs.push(n);
       }
     } else if (arg.type === 'FunctionCall') {
       const value = evaluateFunctionCall(arg, scope);
-      if (typeof value === 'number') {
-        numericArgs.push(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        numericArgs.push(n);
       }
       // PathSegments don't contribute to numeric args for context tracking
     } else if (arg.type === 'IndexExpression') {
       const value = evaluateIndexExpression(arg, scope);
-      if (typeof value === 'number') {
-        numericArgs.push(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        numericArgs.push(n);
       }
     } else if (arg.type === 'MethodCallExpression') {
       const value = evaluateMethodCall(arg, scope);
-      if (typeof value === 'number') {
-        numericArgs.push(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        numericArgs.push(n);
       }
     }
   }
@@ -4677,7 +4756,7 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
-      const isTruthy = condition !== null && (typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
       if (isTruthy) {
         evaluateTextBody(item.consequent as TextBodyItem[], scope, children);
       } else if (item.alternate) {
@@ -4783,7 +4862,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const isTruthy = condition !== null && (typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
 
       if (isTruthy) {
         evaluateStatementsToAccum(stmt.consequent, createScope(scope), accum);
@@ -4836,6 +4915,21 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         body: stmt.body,
       };
       setVariable(scope, stmt.name, fn);
+      return;
+    }
+
+    case 'EnumDefinition': {
+      if (scope.variables.has(stmt.name)) {
+        throw new Error(formatError(`Enum '${stmt.name}' is already defined`, getLine(stmt)));
+      }
+      const props = new Map<string, Value>();
+      for (const member of stmt.members) {
+        const value = member.value
+          ? evaluateExpression(member.value, scope)
+          : member.name.toLowerCase(); // auto-value: lowercase string
+        props.set(member.name, value);
+      }
+      setVariable(scope, stmt.name, { type: 'ObjectValue', properties: props } as ObjectValue);
       return;
     }
 

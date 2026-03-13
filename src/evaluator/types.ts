@@ -22,6 +22,7 @@ export type Value =
   | number
   | string
   | null
+  | BooleanValue
   | PathSegment
   | UserFunction
   | ContextObject
@@ -50,6 +51,14 @@ export type Value =
 // ---------------------------------------------------------------------------
 // Core value interfaces
 // ---------------------------------------------------------------------------
+
+/**
+ * Represents a boolean value (semantic subtype of number: true=1, false=0)
+ */
+export interface BooleanValue {
+  type: 'BooleanValue';
+  value: 0 | 1;
+}
 
 /**
  * Represents an array value (reference semantics)

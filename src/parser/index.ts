@@ -4,9 +4,11 @@ import type {
   ArrayLiteral,
   AssignmentStatement,
   BinaryExpression,
+  BooleanLiteral,
   CalcExpression,
   ColorLiteral,
   Comment,
+  EnumDefinition,
   Expression,
   ExpressionStatement,
   ForEachLoop,
@@ -161,6 +163,9 @@ const reservedWords = [
   'text',
   'tspan',
   'null',
+  'true',
+  'false',
+  'enum',
   'PathLayer',
   'TextLayer',
 ];
@@ -537,6 +542,12 @@ const nullLiteral: Parsimmon.Parser<NullLiteral> = keyword('null').map(
   }),
 );
 
+// Boolean literal
+const booleanLiteral: Parsimmon.Parser<BooleanLiteral> = P.alt(
+  keyword('true').map((): BooleanLiteral => ({ type: 'BooleanLiteral' as const, value: true })),
+  keyword('false').map((): BooleanLiteral => ({ type: 'BooleanLiteral' as const, value: false })),
+);
+
 // Array literal: [], [1, 2, 3], [expr, expr]
 const arrayLiteral: Parsimmon.Parser<ArrayLiteral> = P.seq(
   word('['),
@@ -612,6 +623,7 @@ const primaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
     withPostfix(styleBlockLiteral),
     withPostfix(pathBlockExpression as Parsimmon.Parser<Expression>),
     nullLiteral,
+    booleanLiteral,
     withPostfix(arrayLiteral as Parsimmon.Parser<Expression>),
     withPostfix(colorLiteral as Parsimmon.Parser<Expression>),
     withPostfix(cssColorLiteral as Parsimmon.Parser<Expression>),
@@ -673,8 +685,8 @@ const pathFunctionCall: Parsimmon.Parser<FunctionCall> = P.seqMap(
   }),
 );
 
-// Path argument: number, identifier (non-path-command) with optional property access, calc(), or function call
-const pathArg: Parsimmon.Parser<PathArg> = P.alt(calcExpression, pathFunctionCall, numberLiteral, pathMemberExpression);
+// Path argument: number, boolean, identifier (non-path-command) with optional property access, calc(), or function call
+const pathArg: Parsimmon.Parser<PathArg> = P.alt(calcExpression, pathFunctionCall, booleanLiteral, numberLiteral, pathMemberExpression);
 
 // Path command: M, L, C, A, Z, etc. followed by arguments
 // Arguments stop when we see another path command letter or end of input
@@ -1183,6 +1195,40 @@ const textStatement: Parsimmon.Parser<TextStatement> = P.seqMap(
   }),
 );
 
+// Enum definition: enum Name { Member, Member = value, ... }
+const enumMemberValue: Parsimmon.Parser<Expression> = P.alt(
+  stringLiteral,
+  booleanLiteral,
+  colorLiteral as Parsimmon.Parser<Expression>,
+  cssColorLiteral as Parsimmon.Parser<Expression>,
+  numberLiteral,
+  nullLiteral,
+);
+
+const enumMember: Parsimmon.Parser<{ name: string; value?: Expression }> = P.seqMap(
+  token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
+  P.seq(word('='), enumMemberValue)
+    .map(([, v]) => v)
+    .fallback(undefined as Expression | undefined),
+  (name, value) => ({ name, ...(value !== undefined ? { value } : {}) }),
+);
+
+const enumDefinition: Parsimmon.Parser<EnumDefinition> = P.seqMap(
+  P.index,
+  keyword('enum'),
+  token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
+  word('{'),
+  P.sepBy(enumMember, word(',')),
+  word(',').atMost(1), // optional trailing comma
+  word('}'),
+  (startIndex, _enum, name, _open, members, _trailing, _close) => ({
+    type: 'EnumDefinition' as const,
+    name,
+    members,
+    loc: indexToLoc(startIndex),
+  }),
+);
+
 // Statement
 // Important: functionCallStatement must come BEFORE pathCommand to avoid
 // 'circle(...)' being parsed as path command 'c' + 'ircle(...)'
@@ -1191,6 +1237,7 @@ const statement: Parsimmon.Parser<Statement> = P.alt(
   layerDefinition,
   layerApplyBlock,
   textStatement,
+  enumDefinition,
   letDeclaration,
   forLoop,
   forEachLoop,

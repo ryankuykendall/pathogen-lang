@@ -9,7 +9,9 @@ export { stdlib } from './stdlib';
 
 export type {
   ArrayLiteral,
+  BooleanLiteral,
   Comment,
+  EnumDefinition,
   Expression,
   ForEachLoop,
   IndexedAssignmentStatement,
@@ -35,6 +37,7 @@ export type {
   AnnotatedLine,
   AnnotatedOutput,
   ArrayValue,
+  BooleanValue,
   ClipPathOutput,
   ClipPathValue,
   ColorValue,
@@ -71,6 +74,7 @@ export type {
   TextLayerState,
 } from './evaluator';
 export {
+  isBooleanValue,
   isClipPathValue,
   isColorValue,
   isCSSVarValue,
