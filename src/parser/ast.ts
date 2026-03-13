@@ -41,6 +41,7 @@ export type Node =
   | IndexExpression
   | MethodCallExpression
   | LayerConstructorExpression
+  | ColorLiteral
   | Identifier
   | NumberLiteral
   | StringLiteral
@@ -195,7 +196,7 @@ export interface Identifier {
 export interface NumberLiteral {
   type: 'NumberLiteral';
   value: number;
-  unit?: 'deg' | 'rad' | 'pi'; // Optional angle unit
+  unit?: 'deg' | 'rad' | 'pi' | '%'; // Optional unit suffix (angle or percent)
 }
 
 // String literal (for log messages)
@@ -333,6 +334,13 @@ export interface LayerApplyBlock {
   loc?: SourceLocation;
 }
 
+// Color literal: #cc0000, #f00, #cc000080, #f008
+export interface ColorLiteral {
+  type: 'ColorLiteral';
+  raw: string; // e.g., '#cc0000'
+  loc?: SourceLocation;
+}
+
 // Path block expression: @{ relative path commands }
 export interface PathBlockExpression {
   type: 'PathBlockExpression';
@@ -352,6 +360,7 @@ export type Expression =
   | IndexExpression
   | MethodCallExpression
   | LayerConstructorExpression
+  | ColorLiteral
   | Identifier
   | NumberLiteral
   | StringLiteral

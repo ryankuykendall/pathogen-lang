@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "color-literals",
+    "title": "Drop the Quotes: Color Literals in Pathogen",
+    "date": "2026-03-14",
+    "description": "A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen."
+  },
+  {
     "slug": "pathblock-boolean-operations",
     "title": "Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR",
     "date": "2026-03-13",
@@ -198,6 +204,1128 @@ not_found_handling = <span class="hljs-string">&quot;single-page-application&quo
 <p>What should have been a 10-minute configuration task became a hours-long debugging session. The core issue isn&#39;t that CloudFlare Pages can&#39;t handle SPA routing—it clearly can, with <code>_worker.js</code>. The issue is that the documentation guides developers toward solutions that don&#39;t work (<code>_redirects</code> with 200 rewrites), while the solution that does work (<code>_worker.js</code>) is poorly documented and not presented as the primary approach.</p>
 <p>For developers facing similar struggles: skip the <code>_redirects</code> file for complex SPA routing. Go directly to <code>_worker.js</code>. It gives you full control, works reliably, and once you understand the pattern, it&#39;s actually simpler than trying to make <code>_redirects</code> rules work.</p>
 <p>The CloudFlare Pages platform is powerful, but its documentation needs significant improvement to match that power. Until then, blog posts like this one—born from developer frustration—will have to fill the gaps.</p>
+`,
+  'color-literals': `<p>A UX bug became a language feature.</p>
+<p>When users changed colors via the playground&#39;s color picker on <code>Color(&#39;#cc0000&#39;)</code>, the picker stripped the quotes — producing <code>Color(#cc0000)</code>, which failed to compile. Rather than just fixing the quoting, we asked: why require quotes at all?</p>
+<p>The result is <strong>color literals</strong> — bare hex codes and CSS color functions that are first-class expressions. Writing colors now feels like writing CSS, not calling an API. No <code>Color()</code> wrapper, no string quoting — just <code>#cc0000</code> directly in your code. Everything is backwards-compatible; existing <code>Color()</code> calls continue to work unchanged.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTQwJTIwMjgwJTIyJTBBJTJGJTJGJTIwQmVmb3JlJTJGQWZ0ZXIlMjAlRTIlODAlOTQlMjBDb2xvcignJTIzY2MwMDAwJyklMjB2cyUyMCUyM2NjMDAwMCUwQSUyRiUyRiUyMFNob3dzJTIwdGhhdCUyMGJvdGglMjBwcm9kdWNlJTIwaWRlbnRpY2FsJTIwb3V0cHV0JTJDJTIwYnV0JTIwdGhlJTIwbGl0ZXJhbCUyMGlzJTIwY2xlYW5lciUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFN0eWxlJTIwdmFyaWFibGVzJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwa3clMjAlMjAlMjAlM0QlMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzYzA4NGZjJTNCJTIwJTdEJTNCJTBBbGV0JTIwc3RyJTIwJTIwJTNEJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyM2EzZTYzNSUzQiUyMCU3RCUzQiUwQWxldCUyMGhleCUyMCUyMCUzRCUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjNmYjkyM2MlM0IlMjAlN0QlM0IlMEFsZXQlMjBwY3QlMjAlMjAlM0QlMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMzhiZGY4JTNCJTIwJTdEJTNCJTBBbGV0JTIwYmFzZSUyMCUzRCUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMjAlN0QlM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBCYWNrZ3JvdW5kJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGYxNzJhJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDU0MCUyQyUyMDI4MCklMjAlN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBUaXRsZSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMHRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTQlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzZTJlOGYwJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDMwKSU2MEJlZm9yZSUyMCUyNiUyMEFmdGVyJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDYpJTYwU2FtZSUyMG91dHB1dCUyMCVFMiU4MCU5NCUyMGxlc3MlMjBjZXJlbW9ueSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMERpdmlkZXIlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBkaXZpZGVyJTIwJTNEJTIwUGF0aExheWVyKCdkaXZpZGVyJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjAlMjMzMzQxNTUlM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTIwJTIwc3Ryb2tlLWRhc2hhcnJheSUzQSUyMCUyMjQlMjA0JTIyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEFkaXZpZGVyLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMDI3MCUyMDY2JTIwdiUyMDE5NiUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMCUyMkJlZm9yZSUyMiUyMHBhbmVsJTIwKGxlZnQpJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwYmVmb3JlX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdiZWZvcmUtbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBYmVmb3JlX2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNTAlMkMlMjA3OCklNjBCZWZvcmUlNjAlMEElN0QlMEElMEElMkYlMkYlMjBDb2RlJTIwYmxvY2slMjBiYWNrZ3JvdW5kJTBBbGV0JTIwYmVmb3JlX2NvZGVfYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JlZm9yZS1jb2RlLWJnJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzMWUyOTNiJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwJTIzMzM0MTU1JTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSU3RCUzQiUwQWJlZm9yZV9jb2RlX2JnLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDMwJTJDJTIwOTAlMkMlMjAyMjUlMkMlMjA4MCUyQyUyMDYpJTIwJTdEJTBBJTBBJTJGJTJGJTIwQ29kZSUyMHRleHQlMjB3aXRoJTIwdHNwYW4tYmFzZWQlMjBzeW50YXglMjBjb2xvcmluZyUwQWxldCUyMGJlZm9yZV9jb2RlJTIwJTNEJTIwVGV4dExheWVyKCdiZWZvcmUtY29kZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFiZWZvcmVfY29kZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNDIlMkMlMjAxMTEpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdHNwYW4oMCUyQyUyMDAlMkMlMjAwJTJDJTIwa3cpJTYwbGV0JTYwJTBBJTIwJTIwJTIwJTIwdHNwYW4oMCUyQyUyMDAlMkMlMjAwJTJDJTIwYmFzZSklNjAlMjBjJTIwJTNEJTIwQ29sb3IoJTYwJTBBJTIwJTIwJTIwJTIwdHNwYW4oMCUyQyUyMDAlMkMlMjAwJTJDJTIwc3RyKSU2MCclMjNjYzAwMDAnJTYwJTBBJTIwJTIwJTIwJTIwdHNwYW4oMCUyQyUyMDAlMkMlMjAwJTJDJTIwYmFzZSklNjApJTNCJTYwJTBBJTIwJTIwJTdEJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDEyNyklMjAlN0IlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBrdyklNjBsZXQlNjAlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBiYXNlKSU2MCUyMGxpZ2h0JTIwJTNEJTIwYy5saWdodGVuKDAuMiklM0IlNjAlMEElMjAlMjAlN0QlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMTQzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMGt3KSU2MGxldCU2MCUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMGJhc2UpJTYwJTIwZmFkZWQlMjAlM0QlMjBjLmFscGhhKDAuNSklM0IlNjAlMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBTd2F0Y2hlcyUyMGZvciUyMGJlZm9yZSUwQWxldCUyMGJfc3dhdGNoMSUyMCUzRCUyMFBhdGhMYXllcignYi1zdzEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzY2MwMDAwJyklM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBYl9zd2F0Y2gxLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDQ4JTJDJTIwMTgzJTJDJTIwNTUlMkMlMjA0MCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwYl9zd2F0Y2gyJTIwJTNEJTIwUGF0aExheWVyKCdiLXN3MicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjNjYzAwMDAnKS5saWdodGVuKDAuMiklM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBYl9zd2F0Y2gyLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDExMyUyQyUyMDE4MyUyQyUyMDU1JTJDJTIwNDAlMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMGJfc3dhdGNoMyUyMCUzRCUyMFBhdGhMYXllcignYi1zdzMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzY2MwMDAwJykuYWxwaGEoMC41KSUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ3NTU2OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFiX3N3YXRjaDMuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMTc4JTJDJTIwMTgzJTJDJTIwNTUlMkMlMjA0MCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwYl9zd19sYWJlbHMlMjAlM0QlMjBUZXh0TGF5ZXIoJ2Itc3ctbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFiX3N3X2xhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNzUlMkMlMjAyMzgpJTYwYyU2MCUwQSUyMCUyMHRleHQoMTQwJTJDJTIwMjM4KSU2MGxpZ2h0JTYwJTBBJTIwJTIwdGV4dCgyMDUlMkMlMjAyMzgpJTYwZmFkZWQlNjAlMEElN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjAlMjJBZnRlciUyMiUyMHBhbmVsJTIwKHJpZ2h0KSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMGFmdGVyX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdhZnRlci1sYWJlbCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzMzhiZGY4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFhZnRlcl9sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNDAwJTJDJTIwNzgpJTYwQWZ0ZXIlNjAlMEElN0QlMEElMEElMkYlMkYlMjBDb2RlJTIwYmxvY2slMjBiYWNrZ3JvdW5kJTBBbGV0JTIwYWZ0ZXJfY29kZV9iZyUyMCUzRCUyMFBhdGhMYXllcignYWZ0ZXItY29kZS1iZycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzFlMjkzYiUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMCUyMzM4YmRmOCUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMEElN0QlM0IlMEFhZnRlcl9jb2RlX2JnLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDI4NSUyQyUyMDkwJTJDJTIwMjI1JTJDJTIwODAlMkMlMjA2KSUyMCU3RCUwQSUwQSUyRiUyRiUyMENvZGUlMjB0ZXh0JTIwd2l0aCUyMHRzcGFuLWJhc2VkJTIwc3ludGF4JTIwY29sb3JpbmclMEFsZXQlMjBhZnRlcl9jb2RlJTIwJTNEJTIwVGV4dExheWVyKCdhZnRlci1jb2RlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWFmdGVyX2NvZGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI5NyUyQyUyMDExMSklMjAlN0IlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBrdyklNjBsZXQlNjAlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBiYXNlKSU2MCUyMGMlMjAlM0QlMjAlNjAlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBoZXgpJTYwJTIzY2MwMDAwJTYwJTBBJTIwJTIwJTIwJTIwdHNwYW4oMCUyQyUyMDAlMkMlMjAwJTJDJTIwYmFzZSklNjAlM0IlNjAlMEElMjAlMjAlN0QlMEElMjAlMjB0ZXh0KDI5NyUyQyUyMDEyNyklMjAlN0IlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBrdyklNjBsZXQlNjAlMEElMjAlMjAlMjAlMjB0c3BhbigwJTJDJTIwMCUyQyUyMDAlMkMlMjBiYXNlKSU2MCUyMGxpZ2h0JTIwJTNEJTIwYy5saWdodGVuKCU2MCUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMHBjdCklNjAyMCUyNSU2MCUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMGJhc2UpJTYwKSUzQiU2MCUwQSUyMCUyMCU3RCUwQSUyMCUyMHRleHQoMjk3JTJDJTIwMTQzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMGt3KSU2MGxldCU2MCUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMGJhc2UpJTYwJTIwZmFkZWQlMjAlM0QlMjBjLmFscGhhKCU2MCUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMHBjdCklNjA1MCUyNSU2MCUwQSUyMCUyMCUyMCUyMHRzcGFuKDAlMkMlMjAwJTJDJTIwMCUyQyUyMGJhc2UpJTYwKSUzQiU2MCUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMFN3YXRjaGVzJTIwZm9yJTIwYWZ0ZXIlMEFsZXQlMjBhX3N3YXRjaDElMjAlM0QlMjBQYXRoTGF5ZXIoJ2Etc3cxJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzY2MwMDAwJTNCJTIwc3Ryb2tlJTNBJTIwJTIzNDc1NTY5JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWFfc3dhdGNoMS5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgyOTglMkMlMjAxODMlMkMlMjA1NSUyQyUyMDQwJTJDJTIwNCklMjAlN0QlMEElMEFsZXQlMjBhX3N3YXRjaDIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2Etc3cyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwKCUyM2NjMDAwMCkubGlnaHRlbigyMCUyNSklM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBYV9zd2F0Y2gyLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDM2MyUyQyUyMDE4MyUyQyUyMDU1JTJDJTIwNDAlMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMGFfc3dhdGNoMyUyMCUzRCUyMFBhdGhMYXllcignYS1zdzMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAoJTIzY2MwMDAwKS5hbHBoYSg1MCUyNSklM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBYV9zd2F0Y2gzLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDQyOCUyQyUyMDE4MyUyQyUyMDU1JTJDJTIwNDAlMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMGFfc3dfbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdhLXN3LWxhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA4JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzY0NzQ4YiUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBYV9zd19sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMyNSUyQyUyMDIzOCklNjBjJTYwJTBBJTIwJTIwdGV4dCgzOTAlMkMlMjAyMzgpJTYwbGlnaHQlNjAlMEElMjAlMjB0ZXh0KDQ1NSUyQyUyMDIzOCklNjBmYWRlZCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEVxdWFscyUyMHNpZ24lMjBiZXR3ZWVuJTIwc3dhdGNoZXMlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBlcXVhbHMlMjAlM0QlMjBUZXh0TGF5ZXIoJ2VxdWFscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMjAlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzMzhiZGY4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFlcXVhbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI3MCUyQyUyMDIxMCklNjAlM0QlNjAlMEElN0QlMEE=" caption="Before and After — Color('#cc0000') vs #cc0000 produce identical output">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 540 280&quot;</span>
+<span class="hljs-comment">// Before/After — Color(&#x27;#cc0000&#x27;) vs #cc0000</span>
+<span class="hljs-comment">// Shows that both produce identical output, but the literal is cleaner</span>
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Style variables</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> kw   = \${ <span class="hljs-attr">fill</span>: #c084fc; };
+<span class="hljs-keyword">let</span> str  = \${ <span class="hljs-attr">fill</span>: #a3e635; };
+<span class="hljs-keyword">let</span> hex  = \${ <span class="hljs-attr">fill</span>: #fb923c; };
+<span class="hljs-keyword">let</span> pct  = \${ <span class="hljs-attr">fill</span>: #38bdf8; };
+<span class="hljs-keyword">let</span> base = \${ <span class="hljs-attr">fill</span>: #94a3b8; };
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Background</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">540</span>, <span class="hljs-number">280</span>) }
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Title</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`Before &amp; After\`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`Same output — less ceremony\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Divider</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> divider = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;divider&#x27;</span>) \${
+  <span class="hljs-attr">stroke</span>: #<span class="hljs-number">334155</span>;
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 4&quot;</span>;
+  <span class="hljs-attr">fill</span>: none;
+};
+divider.<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">270</span> <span class="hljs-number">66</span> v <span class="hljs-number">196</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// &quot;Before&quot; panel (left)</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> before_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;before-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+before_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">150</span>, <span class="hljs-number">78</span>)<span class="hljs-string">\`Before\`</span>
+}
+
+<span class="hljs-comment">// Code block background</span>
+<span class="hljs-keyword">let</span> before_code_bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;before-code-bg&#x27;</span>) \${
+  <span class="hljs-attr">fill</span>: #1e293b;
+  <span class="hljs-attr">stroke</span>: #<span class="hljs-number">334155</span>;
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+};
+before_code_bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">90</span>, <span class="hljs-number">225</span>, <span class="hljs-number">80</span>, <span class="hljs-number">6</span>) }
+
+<span class="hljs-comment">// Code text with tspan-based syntax coloring</span>
+<span class="hljs-keyword">let</span> before_code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;before-code&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+before_code.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-params"><span class="hljs-number">42</span>, <span class="hljs-number">111</span></span>) {
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, kw)<span class="hljs-string">\`let\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\` c = Color(\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, str)<span class="hljs-string">\`&#x27;#cc0000&#x27;\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\`);\`</span>
+  }
+  <span class="hljs-title function_">text</span>(<span class="hljs-params"><span class="hljs-number">42</span>, <span class="hljs-number">127</span></span>) {
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, kw)<span class="hljs-string">\`let\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\` light = c.lighten(0.2);\`</span>
+  }
+  <span class="hljs-title function_">text</span>(<span class="hljs-params"><span class="hljs-number">42</span>, <span class="hljs-number">143</span></span>) {
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, kw)<span class="hljs-string">\`let\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\` faded = c.alpha(0.5);\`</span>
+  }
+}
+
+<span class="hljs-comment">// Swatches for before</span>
+<span class="hljs-keyword">let</span> b_swatch1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;b-sw1&#x27;</span>) \${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#cc0000&#x27;</span>); <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+b_swatch1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">48</span>, <span class="hljs-number">183</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> b_swatch2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;b-sw2&#x27;</span>) \${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#cc0000&#x27;</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.2</span>); <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+b_swatch2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">113</span>, <span class="hljs-number">183</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> b_swatch3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;b-sw3&#x27;</span>) \${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#cc0000&#x27;</span>).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.5</span>); <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+b_swatch3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">178</span>, <span class="hljs-number">183</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> b_sw_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;b-sw-labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+b_sw_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">75</span>, <span class="hljs-number">238</span>)<span class="hljs-string">\`c\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">140</span>, <span class="hljs-number">238</span>)<span class="hljs-string">\`light\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">205</span>, <span class="hljs-number">238</span>)<span class="hljs-string">\`faded\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// &quot;After&quot; panel (right)</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> after_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;after-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
+  <span class="hljs-attr">fill</span>: #38bdf8;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+after_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">400</span>, <span class="hljs-number">78</span>)<span class="hljs-string">\`After\`</span>
+}
+
+<span class="hljs-comment">// Code block background</span>
+<span class="hljs-keyword">let</span> after_code_bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;after-code-bg&#x27;</span>) \${
+  <span class="hljs-attr">fill</span>: #1e293b;
+  <span class="hljs-attr">stroke</span>: #38bdf8;
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+};
+after_code_bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">285</span>, <span class="hljs-number">90</span>, <span class="hljs-number">225</span>, <span class="hljs-number">80</span>, <span class="hljs-number">6</span>) }
+
+<span class="hljs-comment">// Code text with tspan-based syntax coloring</span>
+<span class="hljs-keyword">let</span> after_code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;after-code&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+after_code.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-params"><span class="hljs-number">297</span>, <span class="hljs-number">111</span></span>) {
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, kw)<span class="hljs-string">\`let\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\` c = \`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, hex)<span class="hljs-string">\`#cc0000\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\`;\`</span>
+  }
+  <span class="hljs-title function_">text</span>(<span class="hljs-params"><span class="hljs-number">297</span>, <span class="hljs-number">127</span></span>) {
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, kw)<span class="hljs-string">\`let\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\` light = c.lighten(\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, pct)<span class="hljs-string">\`20%\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\`);\`</span>
+  }
+  <span class="hljs-title function_">text</span>(<span class="hljs-params"><span class="hljs-number">297</span>, <span class="hljs-number">143</span></span>) {
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, kw)<span class="hljs-string">\`let\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\` faded = c.alpha(\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, pct)<span class="hljs-string">\`50%\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, base)<span class="hljs-string">\`);\`</span>
+  }
+}
+
+<span class="hljs-comment">// Swatches for after</span>
+<span class="hljs-keyword">let</span> a_swatch1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;a-sw1&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #cc0000; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+a_swatch1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">298</span>, <span class="hljs-number">183</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> a_swatch2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;a-sw2&#x27;</span>) \${ <span class="hljs-attr">fill</span>: (#cc0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%); <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+a_swatch2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">363</span>, <span class="hljs-number">183</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> a_swatch3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;a-sw3&#x27;</span>) \${ <span class="hljs-attr">fill</span>: (#cc0000).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%); <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+a_swatch3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">428</span>, <span class="hljs-number">183</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> a_sw_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;a-sw-labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+a_sw_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">325</span>, <span class="hljs-number">238</span>)<span class="hljs-string">\`c\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">390</span>, <span class="hljs-number">238</span>)<span class="hljs-string">\`light\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">455</span>, <span class="hljs-number">238</span>)<span class="hljs-string">\`faded\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Equals sign between swatches</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> equals = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;equals&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">20</span>;
+  <span class="hljs-attr">fill</span>: #38bdf8;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+equals.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">270</span>, <span class="hljs-number">210</span>)<span class="hljs-string">\`=\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post10/before-after.svg" alt="Before and After — Color('#cc0000') vs #cc0000 produce identical output" loading="lazy">
+</mini-workspace></p>
+<p>The left panel shows the old way: wrap a string in <code>Color()</code>, call methods with decimal arguments. The right panel shows the new way: bare hex literal, percent suffix. Both produce the same three swatches. The <code>Color()</code> wrapper still works — it now accepts bare hex values as a pass-through — but you no longer need it for hex colors.</p>
+<h2>Hex Literals</h2>
+<p>Hex color codes are first-class expressions anywhere a value is expected:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = #cc0000;            <span class="hljs-comment">// 6-digit hex</span>
+<span class="hljs-keyword">let</span> c = #f00;               <span class="hljs-comment">// 3-digit shorthand</span>
+<span class="hljs-keyword">let</span> c = #cc000080;          <span class="hljs-comment">// 8-digit with alpha</span>
+<span class="hljs-keyword">let</span> c = #f008;              <span class="hljs-comment">// 4-digit with alpha</span>
+</code></pre><p>Wrap in parentheses for method chaining:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = (#cc0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> shifted = (#0066ff).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+</code></pre><p>From a single hex literal you can build full color palettes — lighten, darken, shift hue, adjust saturation, set alpha. The demo below starts from <code>#0066ff</code> and derives an entire palette using method chaining and the percent suffix:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMzIwJTIyJTBBJTJGJTJGJTIwSGV4JTIwUGFsZXR0ZSUyMCVFMiU4MCU5NCUyMEJ1aWxkaW5nJTIwYSUyMGNvbG9yJTIwcGFsZXR0ZSUyMGZyb20lMjBhJTIwc2luZ2xlJTIwaGV4JTIwbGl0ZXJhbCUwQSUyRiUyRiUyMERlbW9uc3RyYXRlcyUyMG1ldGhvZCUyMGNoYWluaW5nJTIwb24lMjBoZXglMjBjb2xvciUyMGxpdGVyYWxzJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwQmFja2dyb3VuZCUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzBmMTcyYSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1MjAlMkMlMjAzMjApJTIwJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwVGl0bGUlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEF0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjAzMCklNjBQYWxldHRlJTIwZnJvbSUyMGElMjBTaW5nbGUlMjBIZXglMjBMaXRlcmFsJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDYpJTYwTWV0aG9kJTIwY2hhaW5pbmclM0ElMjAoJTIzMDA2NmZmKS5saWdodGVuKDIwJTI1KSUyQyUyMCglMjMwMDY2ZmYpLmh1ZVNoaWZ0KDYwKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEJhc2UlMjBjb2xvciUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMGJhc2UlMjAlM0QlMjAlMjMwMDY2ZmYlM0IlMEElMEElMkYlMkYlMjAlRTIlOTQlODAlRTIlOTQlODAlMjBMaWdodG5lc3MlMjByYW1wJTIwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJTBBJTBBbGV0JTIwZGFyazIlMjAlMjAlM0QlMjAoYmFzZSkuZGFya2VuKDMwJTI1KSUzQiUwQWxldCUyMGRhcmsxJTIwJTIwJTNEJTIwKGJhc2UpLmRhcmtlbigxNSUyNSklM0IlMEFsZXQlMjBsaWdodDElMjAlM0QlMjAoYmFzZSkubGlnaHRlbigxNSUyNSklM0IlMEFsZXQlMjBsaWdodDIlMjAlM0QlMjAoYmFzZSkubGlnaHRlbigzMCUyNSklM0IlMEElMEFsZXQlMjBsaWdodG5lc3Nfcm93JTIwJTNEJTIwJTVCZGFyazIlMkMlMjBkYXJrMSUyQyUyMGJhc2UlMkMlMjBsaWdodDElMkMlMjBsaWdodDIlNUQlM0IlMEFsZXQlMjBsaWdodG5lc3NfbmFtZXMlMjAlM0QlMjAlNUInZGFya2VuJTIwMzAlMjUnJTJDJTIwJ2RhcmtlbiUyMDE1JTI1JyUyQyUyMCdiYXNlJyUyQyUyMCdsaWdodGVuJTIwMTUlMjUnJTJDJTIwJ2xpZ2h0ZW4lMjAzMCUyNSclNUQlM0IlMEElMEElMkYlMkYlMjAlRTIlOTQlODAlRTIlOTQlODAlMjBIdWUlMjBzaGlmdCUyMHJhbXAlMjAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlMEElMEFsZXQlMjBodWUxJTIwJTNEJTIwKGJhc2UpLmh1ZVNoaWZ0KC02MCklM0IlMEFsZXQlMjBodWUyJTIwJTNEJTIwKGJhc2UpLmh1ZVNoaWZ0KC0zMCklM0IlMEFsZXQlMjBodWUzJTIwJTNEJTIwKGJhc2UpLmh1ZVNoaWZ0KDMwKSUzQiUwQWxldCUyMGh1ZTQlMjAlM0QlMjAoYmFzZSkuaHVlU2hpZnQoNjApJTNCJTBBJTBBbGV0JTIwaHVlX3JvdyUyMCUzRCUyMCU1Qmh1ZTElMkMlMjBodWUyJTJDJTIwYmFzZSUyQyUyMGh1ZTMlMkMlMjBodWU0JTVEJTNCJTBBbGV0JTIwaHVlX25hbWVzJTIwJTNEJTIwJTVCJy02MCVDMiVCMCclMkMlMjAnLTMwJUMyJUIwJyUyQyUyMCdiYXNlJyUyQyUyMCclMkIzMCVDMiVCMCclMkMlMjAnJTJCNjAlQzIlQjAnJTVEJTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk0JTgwJUUyJTk0JTgwJTIwU2F0dXJhdGlvbiUyMHJhbXAlMjAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlMEElMEFsZXQlMjBkZXNhdDIlMjAlM0QlMjAoYmFzZSkuZGVzYXR1cmF0ZSgyNSUyNSklM0IlMEFsZXQlMjBkZXNhdDElMjAlM0QlMjAoYmFzZSkuZGVzYXR1cmF0ZSg1MCUyNSklM0IlMEFsZXQlMjBzYXQxJTIwJTIwJTIwJTNEJTIwKGJhc2UpLnNhdHVyYXRlKDEuMyklM0IlMEFsZXQlMjBzYXQyJTIwJTIwJTIwJTNEJTIwKGJhc2UpLnNhdHVyYXRlKDEuNiklM0IlMEElMEFsZXQlMjBzYXRfcm93JTIwJTNEJTIwJTVCZGVzYXQxJTJDJTIwZGVzYXQyJTJDJTIwYmFzZSUyQyUyMHNhdDElMkMlMjBzYXQyJTVEJTNCJTBBbGV0JTIwc2F0X25hbWVzJTIwJTNEJTIwJTVCJ2Rlc2F0JTIwNTAlMjUnJTJDJTIwJ2Rlc2F0JTIwMjUlMjUnJTJDJTIwJ2Jhc2UnJTJDJTIwJ3NhdCUyMDEuMyVDMyU5NyclMkMlMjAnc2F0JTIwMS42JUMzJTk3JyU1RCUzQiUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFN3YXRjaCUyMGdyaWQlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBzeCUyMCUzRCUyMDY1JTNCJTBBbGV0JTIwc3AlMjAlM0QlMjA5OCUzQiUwQWxldCUyMHN3JTIwJTNEJTIwNjAlM0IlMEFsZXQlMjBzaCUyMCUzRCUyMDQ0JTNCJTBBbGV0JTIwc3IlMjAlM0QlMjA1JTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk0JTgwJUUyJTk0JTgwJTIwUm93JTIwbGFiZWxzJTIwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJTBBJTBBbGV0JTIwcm93X2xhYmVscyUyMCUzRCUyMFRleHRMYXllcigncm93LWxhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBlbmQlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAlRTIlOTQlODAlRTIlOTQlODAlMjBTd2F0Y2glMjBsYWJlbHMlMjAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlMEElMEFsZXQlMjBzd19sYWJlbHMlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N3LWxhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA3JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzY0NzQ4YiUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk0JTgwJUUyJTk0JTgwJTIwUm93JTIwMSUzQSUyMExpZ2h0bmVzcyUyMCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCUwQSUwQWxldCUyMHJvdzFfeSUyMCUzRCUyMDkwJTNCJTBBJTBBcm93X2xhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjQlMkMlMjBjYWxjKHJvdzFfeSUyMCUyQiUyMHNoJTIwJTJGJTIwMiUyMCUyQiUyMDMpKSU2MExpZ2h0bmVzcyU2MCUwQSU3RCUwQSUwQWZvciUyMCglNUJjb2xvciUyQyUyMGklNUQlMjBpbiUyMGxpZ2h0bmVzc19yb3cpJTIwJTdCJTBBJTIwJTIwbGV0JTIweCUyMCUzRCUyMGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUzQiUwQSUyMCUyMGxldCUyMHN3YXRjaCUyMCUzRCUyMFBhdGhMYXllciglNjBsXyUyNCU3QmklN0QlNjApJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNvbG9yJTNCJTIwc3Ryb2tlJTNBJTIwJTIzNDc1NTY5JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQSUyMCUyMHN3YXRjaC5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdChjYWxjKHglMjAtJTIwc3clMjAlMkYlMjAyKSUyQyUyMHJvdzFfeSUyQyUyMHN3JTJDJTIwc2glMkMlMjBzciklMjAlN0QlMEElN0QlMEElMEFzd19sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoJTVCbmFtZSUyQyUyMGklNUQlMjBpbiUyMGxpZ2h0bmVzc19uYW1lcyklMjAlN0IlMEElMjAlMjAlMjAlMjB0ZXh0KGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUyQyUyMGNhbGMocm93MV95JTIwJTJCJTIwc2glMjAlMkIlMjAxMikpJTYwJTI0JTdCbmFtZSU3RCU2MCUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NCU4MCVFMiU5NCU4MCUyMFJvdyUyMDIlM0ElMjBIdWUlMjBTaGlmdCUyMCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCUwQSUwQWxldCUyMHJvdzJfeSUyMCUzRCUyMDE2MCUzQiUwQSUwQXJvd19sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI0JTJDJTIwY2FsYyhyb3cyX3klMjAlMkIlMjBzaCUyMCUyRiUyMDIlMjAlMkIlMjAzKSklNjBIdWUlNjAlMEElN0QlMEElMEFmb3IlMjAoJTVCY29sb3IlMkMlMjBpJTVEJTIwaW4lMjBodWVfcm93KSUyMCU3QiUwQSUyMCUyMGxldCUyMHglMjAlM0QlMjBjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklM0IlMEElMjAlMjBsZXQlMjBzd2F0Y2glMjAlM0QlMjBQYXRoTGF5ZXIoJTYwaF8lMjQlN0JpJTdEJTYwKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBjb2xvciUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ3NTU2OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEElMjAlMjBzd2F0Y2guYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoY2FsYyh4JTIwLSUyMHN3JTIwJTJGJTIwMiklMkMlMjByb3cyX3klMkMlMjBzdyUyQyUyMHNoJTJDJTIwc3IpJTIwJTdEJTBBJTdEJTBBJTBBc3dfbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKCU1Qm5hbWUlMkMlMjBpJTVEJTIwaW4lMjBodWVfbmFtZXMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdGV4dChjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklMkMlMjBjYWxjKHJvdzJfeSUyMCUyQiUyMHNoJTIwJTJCJTIwMTIpKSU2MCUyNCU3Qm5hbWUlN0QlNjAlMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlRTIlOTQlODAlRTIlOTQlODAlMjBSb3clMjAzJTNBJTIwU2F0dXJhdGlvbiUyMCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCUwQSUwQWxldCUyMHJvdzNfeSUyMCUzRCUyMDIzMCUzQiUwQSUwQXJvd19sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI0JTJDJTIwY2FsYyhyb3czX3klMjAlMkIlMjBzaCUyMCUyRiUyMDIlMjAlMkIlMjAzKSklNjBDaHJvbWElNjAlMEElN0QlMEElMEFmb3IlMjAoJTVCY29sb3IlMkMlMjBpJTVEJTIwaW4lMjBzYXRfcm93KSUyMCU3QiUwQSUyMCUyMGxldCUyMHglMjAlM0QlMjBjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklM0IlMEElMjAlMjBsZXQlMjBzd2F0Y2glMjAlM0QlMjBQYXRoTGF5ZXIoJTYwc18lMjQlN0JpJTdEJTYwKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBjb2xvciUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ3NTU2OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEElMjAlMjBzd2F0Y2guYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoY2FsYyh4JTIwLSUyMHN3JTIwJTJGJTIwMiklMkMlMjByb3czX3klMkMlMjBzdyUyQyUyMHNoJTJDJTIwc3IpJTIwJTdEJTBBJTdEJTBBJTBBc3dfbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKCU1Qm5hbWUlMkMlMjBpJTVEJTIwaW4lMjBzYXRfbmFtZXMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdGV4dChjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklMkMlMjBjYWxjKHJvdzNfeSUyMCUyQiUyMHNoJTIwJTJCJTIwMTIpKSU2MCUyNCU3Qm5hbWUlN0QlNjAlMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBCYXNlJTIwaW5kaWNhdG9yJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwYmFzZV9pbmRpY2F0b3IlMjAlM0QlMjBUZXh0TGF5ZXIoJ2Jhc2UtaW5kaWNhdG9yJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzMzhiZGY4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFiYXNlX2luZGljYXRvci5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoY2FsYyhzeCUyMCUyQiUyMDIlMjAqJTIwc3ApJTJDJTIwY2FsYyhyb3cxX3klMjAtJTIwOCkpJTYwJTIzMDA2NmZmJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk0JTgwJUUyJTk0JTgwJTIwVmVydGljYWwlMjBiYXNlJTIwbGluZSUyMCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCUwQSUwQWxldCUyMGJhc2VfbGluZSUyMCUzRCUyMFBhdGhMYXllcignYmFzZS1saW5lJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjAlMjMzOGJkZjglM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTIwJTIwc3Ryb2tlLWRhc2hhcnJheSUzQSUyMCUyMjMlMjAzJTIyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElMjAlMjBvcGFjaXR5JTNBJTIwMC41JTNCJTBBJTdEJTNCJTBBYmFzZV9saW5lLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMGNhbGMoc3glMjAlMkIlMjAyJTIwKiUyMHNwKSUyMHJvdzFfeSUwQSUyMCUyMHYlMjBjYWxjKHJvdzNfeSUyMCUyQiUyMHNoJTIwLSUyMHJvdzFfeSklMEElN0QlMEE=" code-open caption="Lightness, hue, and saturation ramps derived from a single hex literal">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 320&quot;</span>
+<span class="hljs-comment">// Hex Palette — Building a color palette from a single hex literal</span>
+<span class="hljs-comment">// Demonstrates method chaining on hex color literals</span>
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Background</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">320</span>) }
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Title</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`Palette from a Single Hex Literal\`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`Method chaining: (#0066ff).lighten(20%), (#0066ff).hueShift(60)\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Base color</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base = #0066ff;
+
+<span class="hljs-comment">// ── Lightness ramp ──────────────────</span>
+
+<span class="hljs-keyword">let</span> dark2  = (base).<span class="hljs-title function_">darken</span>(<span class="hljs-number">30</span>%);
+<span class="hljs-keyword">let</span> dark1  = (base).<span class="hljs-title function_">darken</span>(<span class="hljs-number">15</span>%);
+<span class="hljs-keyword">let</span> light1 = (base).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">15</span>%);
+<span class="hljs-keyword">let</span> light2 = (base).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">30</span>%);
+
+<span class="hljs-keyword">let</span> lightness_row = [dark2, dark1, base, light1, light2];
+<span class="hljs-keyword">let</span> lightness_names = [<span class="hljs-string">&#x27;darken 30%&#x27;</span>, <span class="hljs-string">&#x27;darken 15%&#x27;</span>, <span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;lighten 15%&#x27;</span>, <span class="hljs-string">&#x27;lighten 30%&#x27;</span>];
+
+<span class="hljs-comment">// ── Hue shift ramp ─────────────────</span>
+
+<span class="hljs-keyword">let</span> hue1 = (base).<span class="hljs-title function_">hueShift</span>(-<span class="hljs-number">60</span>);
+<span class="hljs-keyword">let</span> hue2 = (base).<span class="hljs-title function_">hueShift</span>(-<span class="hljs-number">30</span>);
+<span class="hljs-keyword">let</span> hue3 = (base).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">30</span>);
+<span class="hljs-keyword">let</span> hue4 = (base).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+
+<span class="hljs-keyword">let</span> hue_row = [hue1, hue2, base, hue3, hue4];
+<span class="hljs-keyword">let</span> hue_names = [<span class="hljs-string">&#x27;-60°&#x27;</span>, <span class="hljs-string">&#x27;-30°&#x27;</span>, <span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;+30°&#x27;</span>, <span class="hljs-string">&#x27;+60°&#x27;</span>];
+
+<span class="hljs-comment">// ── Saturation ramp ────────────────</span>
+
+<span class="hljs-keyword">let</span> desat2 = (base).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">25</span>%);
+<span class="hljs-keyword">let</span> desat1 = (base).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
+<span class="hljs-keyword">let</span> sat1   = (base).<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.3</span>);
+<span class="hljs-keyword">let</span> sat2   = (base).<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.6</span>);
+
+<span class="hljs-keyword">let</span> sat_row = [desat1, desat2, base, sat1, sat2];
+<span class="hljs-keyword">let</span> sat_names = [<span class="hljs-string">&#x27;desat 50%&#x27;</span>, <span class="hljs-string">&#x27;desat 25%&#x27;</span>, <span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;sat 1.3×&#x27;</span>, <span class="hljs-string">&#x27;sat 1.6×&#x27;</span>];
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Swatch grid</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">65</span>;
+<span class="hljs-keyword">let</span> sp = <span class="hljs-number">98</span>;
+<span class="hljs-keyword">let</span> sw = <span class="hljs-number">60</span>;
+<span class="hljs-keyword">let</span> sh = <span class="hljs-number">44</span>;
+<span class="hljs-keyword">let</span> sr = <span class="hljs-number">5</span>;
+
+<span class="hljs-comment">// ── Row labels ──────────────────────</span>
+
+<span class="hljs-keyword">let</span> row_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;row-labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: end;
+};
+
+<span class="hljs-comment">// ── Swatch labels ───────────────────</span>
+
+<span class="hljs-keyword">let</span> sw_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;sw-labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+
+<span class="hljs-comment">// ── Row 1: Lightness ────────────────</span>
+
+<span class="hljs-keyword">let</span> row1_y = <span class="hljs-number">90</span>;
+
+row_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-title function_">calc</span>(row1_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`Lightness\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> lightness_row) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`l_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row1_y, sw, sh, sr) }
+}
+
+sw_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> lightness_names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row1_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ── Row 2: Hue Shift ────────────────</span>
+
+<span class="hljs-keyword">let</span> row2_y = <span class="hljs-number">160</span>;
+
+row_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-title function_">calc</span>(row2_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`Hue\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> hue_row) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`h_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row2_y, sw, sh, sr) }
+}
+
+sw_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> hue_names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row2_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ── Row 3: Saturation ───────────────</span>
+
+<span class="hljs-keyword">let</span> row3_y = <span class="hljs-number">230</span>;
+
+row_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-title function_">calc</span>(row3_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`Chroma\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> sat_row) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`s_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row3_y, sw, sh, sr) }
+}
+
+sw_labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> sat_names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row3_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Base indicator</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base_indicator = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;base-indicator&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #38bdf8;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+base_indicator.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + <span class="hljs-number">2</span> * sp), <span class="hljs-title function_">calc</span>(row1_y - <span class="hljs-number">8</span>))<span class="hljs-string">\`#0066ff\`</span>
+}
+
+<span class="hljs-comment">// ── Vertical base line ──────────────</span>
+
+<span class="hljs-keyword">let</span> base_line = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;base-line&#x27;</span>) \${
+  <span class="hljs-attr">stroke</span>: #38bdf8;
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;3 3&quot;</span>;
+  <span class="hljs-attr">fill</span>: none;
+  <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.5</span>;
+};
+base_line.<span class="hljs-property">apply</span> {
+  M <span class="hljs-title function_">calc</span>(sx + <span class="hljs-number">2</span> * sp) row1_y
+  v <span class="hljs-title function_">calc</span>(row3_y + sh - row1_y)
+}
+</code>
+  <img src="/pathogen/blog/samples/post10/hex-palette.svg" alt="Lightness, hue, and saturation ramps derived from a single hex literal" loading="lazy">
+</mini-workspace></p>
+<h2>CSS Color Function Literals</h2>
+<p>All major CSS color functions work as bare expressions. You can paste any CSS color value directly into Pathogen code and it will just work — <code>%</code> and <code>/</code> inside function arguments are treated as literal characters, not operators:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">50</span>%);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span> / <span class="hljs-number">0.5</span>);  <span class="hljs-comment">// slash alpha</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hwb</span>(<span class="hljs-number">0</span> <span class="hljs-number">0</span>% <span class="hljs-number">0</span>%);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lab</span>(<span class="hljs-number">50</span> <span class="hljs-number">40</span> <span class="hljs-number">59.5</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lch</span>(<span class="hljs-number">50</span> <span class="hljs-number">64</span> <span class="hljs-number">30</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklab</span>(<span class="hljs-number">0.6</span> -<span class="hljs-number">0.1</span> <span class="hljs-number">0.15</span>);
+</code></pre><p>Method chaining works directly — no wrapper needed:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
+</code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/pathogen/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTYwJTIwMzQwJTIyJTBBJTJGJTJGJTIwQ29sb3IlMjBTcGFjZXMlMjAlRTIlODAlOTQlMjBUaGUlMjBzYW1lJTIwcmVkJTIwZXhwcmVzc2VkJTIwaW4lMjA3JTIwQ1NTJTIwY29sb3IlMjBmdW5jdGlvbiUyMHN5bnRheGVzJTBBJTJGJTJGJTIwQWxsJTIwcHJvZHVjZSUyMHRoZSUyMHNhbWUlMjBDb2xvclZhbHVlJTIwaW50ZXJuYWxseSUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEJhY2tncm91bmQlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNTYwJTJDJTIwMzQwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFRpdGxlJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxNCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzApJTYwQ1NTJTIwQ29sb3IlMjBGdW5jdGlvbiUyMExpdGVyYWxzJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDYpJTYwT25lJTIwcmVkJTJDJTIwc2V2ZW4lMjB3YXlzJTIwJUUyJTgwJTk0JTIwYWxsJTIwZmlyc3QtY2xhc3MlMjBleHByZXNzaW9ucyU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMENvbG9ycyUyMCVFMiU4MCU5NCUyMGFsbCUyMGV4cHJlc3NpbmclMjB0aGUlMjBzYW1lJTIwcmVkJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwY19oZXglMjAlMjAlMjAlM0QlMjAlMjNjYzAwMDAlM0IlMEFsZXQlMjBjX3JnYiUyMCUyMCUyMCUzRCUyMHJnYigyMDQlMkMlMjAwJTJDJTIwMCklM0IlMEFsZXQlMjBjX2hzbCUyMCUyMCUyMCUzRCUyMGhzbCgwJTJDJTIwMTAwJTI1JTJDJTIwNDAlMjUpJTNCJTBBbGV0JTIwY19va2xjaCUyMCUzRCUyMG9rbGNoKDAuNSUyMDAuMTglMjAyNyklM0IlMEFsZXQlMjBjX2h3YiUyMCUyMCUyMCUzRCUyMGh3YigwJTIwMCUyNSUyMDIwJTI1KSUzQiUwQWxldCUyMGNfbGFiJTIwJTIwJTIwJTNEJTIwbGFiKDQyJTIwNjAlMjA1MCklM0IlMEFsZXQlMjBjX29rbGFiJTIwJTNEJTIwb2tsYWIoMC41JTIwMC4xMyUyMDAuMDgpJTNCJTBBJTBBbGV0JTIwY29sb3JzJTIwJTNEJTIwJTVCY19oZXglMkMlMjBjX3JnYiUyQyUyMGNfaHNsJTJDJTIwY19va2xjaCUyQyUyMGNfaHdiJTJDJTIwY19sYWIlMkMlMjBjX29rbGFiJTVEJTNCJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwJTVCJyUyM2NjMDAwMCclMkMlMjAncmdiKDIwNCUyQyUyMDAlMkMlMjAwKSclMkMlMjAnaHNsKDAlMkMlMjAxMDAlMjUlMkMlMjA0MCUyNSknJTJDJTIwJ29rbGNoKDAuNSUyMDAuMTglMjAyNyknJTJDJTIwJ2h3YigwJTIwMCUyNSUyMDIwJTI1KSclMkMlMjAnbGFiKDQyJTIwNjAlMjA1MCknJTJDJTIwJ29rbGFiKDAuNSUyMDAuMTMlMjAwLjA4KSclNUQlM0IlMEFsZXQlMjBzcGFjZV9uYW1lcyUyMCUzRCUyMCU1QidIZXgnJTJDJTIwJ3NSR0InJTJDJTIwJ0hTTCclMkMlMjAnT0tMQ0gnJTJDJTIwJ0hXQiclMkMlMjAnQ0lFJTIwTGFiJyUyQyUyMCdPS0xhYiclNUQlM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBHcmlkJTIwbGF5b3V0JTIwJUUyJTgwJTk0JTIwMiUyMGNvbHVtbnMlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBjb2xzJTIwJTNEJTIwMiUzQiUwQWxldCUyMHN4JTIwJTNEJTIwNTAlM0IlMEFsZXQlMjBzeSUyMCUzRCUyMDgwJTNCJTBBbGV0JTIwY29sX3clMjAlM0QlMjAyNjAlM0IlMEFsZXQlMjByb3dfaCUyMCUzRCUyMDYwJTNCJTBBbGV0JTIwc3clMjAlM0QlMjA0MCUzQiUwQWxldCUyMHNoJTIwJTNEJTIwNDAlM0IlMEFsZXQlMjBzciUyMCUzRCUyMDQlM0IlMEElMEFsZXQlMjBzcGFjZV9sYWJlbCUyMCUzRCUyMFRleHRMYXllcignc3BhY2UtbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEElMEFsZXQlMjBjb2RlX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdjb2RlLWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQSUwQWZvciUyMCglNUJjb2xvciUyQyUyMGklNUQlMjBpbiUyMGNvbG9ycyklMjAlN0IlMEElMjAlMjBsZXQlMjBjb2wlMjAlM0QlMjBjYWxjKGklMjAlMjUlMjBjb2xzKSUzQiUwQSUyMCUyMGxldCUyMHJvdyUyMCUzRCUyMGNhbGMoKGklMjAtJTIwY29sKSUyMCUyRiUyMGNvbHMpJTNCJTBBJTIwJTIwbGV0JTIweCUyMCUzRCUyMGNhbGMoc3glMjAlMkIlMjBjb2wlMjAqJTIwY29sX3cpJTNCJTBBJTIwJTIwbGV0JTIweSUyMCUzRCUyMGNhbGMoc3klMjAlMkIlMjByb3clMjAqJTIwcm93X2gpJTNCJTBBJTBBJTIwJTIwJTJGJTJGJTIwU3dhdGNoJTBBJTIwJTIwbGV0JTIwc3dhdGNoJTIwJTNEJTIwUGF0aExheWVyKCU2MGNzXyUyNCU3QmklN0QlNjApJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNvbG9yJTNCJTIwc3Ryb2tlJTNBJTIwJTIzNDc1NTY5JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQSUyMCUyMHN3YXRjaC5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4JTJDJTIweSUyQyUyMHN3JTJDJTIwc2glMkMlMjBzciklMjAlN0QlMEElMEElMjAlMjAlMkYlMkYlMjBTcGFjZSUyMG5hbWUlMEElMjAlMjBzcGFjZV9sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMCUyMCUyMHRleHQoY2FsYyh4JTIwJTJCJTIwc3clMjAlMkIlMjAxMiklMkMlMjBjYWxjKHklMjAlMkIlMjAxNikpJTYwJTI0JTdCc3BhY2VfbmFtZXMlNUJpJTVEJTdEJTYwJTBBJTIwJTIwJTdEJTBBJTBBJTIwJTIwJTJGJTJGJTIwQ29kZSUyMHN5bnRheCUwQSUyMCUyMGNvZGVfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjAlMjAlMjB0ZXh0KGNhbGMoeCUyMCUyQiUyMHN3JTIwJTJCJTIwMTIpJTJDJTIwY2FsYyh5JTIwJTJCJTIwMzApKSU2MCUyNCU3QmxhYmVscyU1QmklNUQlN0QlNjAlMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBDb252ZXJnZW5jZSUyMGFubm90YXRpb24lMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBhcnJvd19sYWJlbCUyMCUzRCUyMFRleHRMYXllcignYXJyb3ctbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzMzhiZGY4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFhcnJvd19sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjgwJTJDJTIwMzEyKSU2MEFsbCUyMGNvbnZlcmdlJTIwJUUyJTg2JTkyJTIwT0tMQ0glMjBpbnRlcm5hbGx5JTYwJTBBJTdEJTBBJTBBbGV0JTIwYXJyb3dfbGluZSUyMCUzRCUyMFBhdGhMYXllcignYXJyb3ctbGluZScpJTIwJTI0JTdCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwJTIzMzhiZGY4JTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTIwJTIwb3BhY2l0eSUzQSUyMDAuNCUzQiUwQSU3RCUzQiUwQWFycm93X2xpbmUuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwMTAwJTIwMzAwJTIwaCUyMDM2MCUwQSU3RCUwQQ==" code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 560 340&quot;</span>
+<span class="hljs-comment">// Color Spaces — The same red expressed in 7 CSS color function syntaxes</span>
+<span class="hljs-comment">// All produce the same ColorValue internally</span>
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Background</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">560</span>, <span class="hljs-number">340</span>) }
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Title</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`CSS Color Function Literals\`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`One red, seven ways — all first-class expressions\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Colors — all expressing the same red</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> c_hex   = #cc0000;
+<span class="hljs-keyword">let</span> c_rgb   = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">204</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> c_hsl   = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">40</span>%);
+<span class="hljs-keyword">let</span> c_oklch = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.5</span> <span class="hljs-number">0.18</span> <span class="hljs-number">27</span>);
+<span class="hljs-keyword">let</span> c_hwb   = <span class="hljs-title function_">hwb</span>(<span class="hljs-number">0</span> <span class="hljs-number">0</span>% <span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> c_lab   = <span class="hljs-title function_">lab</span>(<span class="hljs-number">42</span> <span class="hljs-number">60</span> <span class="hljs-number">50</span>);
+<span class="hljs-keyword">let</span> c_oklab = <span class="hljs-title function_">oklab</span>(<span class="hljs-number">0.5</span> <span class="hljs-number">0.13</span> <span class="hljs-number">0.08</span>);
+
+<span class="hljs-keyword">let</span> colors = [c_hex, c_rgb, c_hsl, c_oklch, c_hwb, c_lab, c_oklab];
+<span class="hljs-keyword">let</span> labels = [<span class="hljs-string">&#x27;#cc0000&#x27;</span>, <span class="hljs-string">&#x27;rgb(204, 0, 0)&#x27;</span>, <span class="hljs-string">&#x27;hsl(0, 100%, 40%)&#x27;</span>, <span class="hljs-string">&#x27;oklch(0.5 0.18 27)&#x27;</span>, <span class="hljs-string">&#x27;hwb(0 0% 20%)&#x27;</span>, <span class="hljs-string">&#x27;lab(42 60 50)&#x27;</span>, <span class="hljs-string">&#x27;oklab(0.5 0.13 0.08)&#x27;</span>];
+<span class="hljs-keyword">let</span> space_names = [<span class="hljs-string">&#x27;Hex&#x27;</span>, <span class="hljs-string">&#x27;sRGB&#x27;</span>, <span class="hljs-string">&#x27;HSL&#x27;</span>, <span class="hljs-string">&#x27;OKLCH&#x27;</span>, <span class="hljs-string">&#x27;HWB&#x27;</span>, <span class="hljs-string">&#x27;CIE Lab&#x27;</span>, <span class="hljs-string">&#x27;OKLab&#x27;</span>];
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Grid layout — 2 columns</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> cols = <span class="hljs-number">2</span>;
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">50</span>;
+<span class="hljs-keyword">let</span> sy = <span class="hljs-number">80</span>;
+<span class="hljs-keyword">let</span> col_w = <span class="hljs-number">260</span>;
+<span class="hljs-keyword">let</span> row_h = <span class="hljs-number">60</span>;
+<span class="hljs-keyword">let</span> sw = <span class="hljs-number">40</span>;
+<span class="hljs-keyword">let</span> sh = <span class="hljs-number">40</span>;
+<span class="hljs-keyword">let</span> sr = <span class="hljs-number">4</span>;
+
+<span class="hljs-keyword">let</span> space_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;space-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+
+<span class="hljs-keyword">let</span> code_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> colors) {
+  <span class="hljs-keyword">let</span> col = <span class="hljs-title function_">calc</span>(i % cols);
+  <span class="hljs-keyword">let</span> row = <span class="hljs-title function_">calc</span>((i - col) / cols);
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + col * col_w);
+  <span class="hljs-keyword">let</span> y = <span class="hljs-title function_">calc</span>(sy + row * row_h);
+
+  <span class="hljs-comment">// Swatch</span>
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`cs_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, y, sw, sh, sr) }
+
+  <span class="hljs-comment">// Space name</span>
+  space_label.<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(x + sw + <span class="hljs-number">12</span>), <span class="hljs-title function_">calc</span>(y + <span class="hljs-number">16</span>))<span class="hljs-string">\`<span class="hljs-subst">\${space_names[i]}</span>\`</span>
+  }
+
+  <span class="hljs-comment">// Code syntax</span>
+  code_label.<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(x + sw + <span class="hljs-number">12</span>), <span class="hljs-title function_">calc</span>(y + <span class="hljs-number">30</span>))<span class="hljs-string">\`<span class="hljs-subst">\${labels[i]}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Convergence annotation</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> arrow_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;arrow-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #38bdf8;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+arrow_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">280</span>, <span class="hljs-number">312</span>)<span class="hljs-string">\`All converge → OKLCH internally\`</span>
+}
+
+<span class="hljs-keyword">let</span> arrow_line = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arrow-line&#x27;</span>) \${
+  <span class="hljs-attr">stroke</span>: #38bdf8;
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  <span class="hljs-attr">fill</span>: none;
+  <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.4</span>;
+};
+arrow_line.<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">100</span> <span class="hljs-number">300</span> h <span class="hljs-number">360</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post10/color-spaces.svg" alt="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally" loading="lazy">
+</mini-workspace></p>
+<blockquote>
+<p><strong>Note:</strong> CSS color function names (<code>rgb</code>, <code>rgba</code>, <code>hsl</code>, <code>hsla</code>, <code>oklch</code>, <code>hwb</code>, <code>lab</code>, <code>lch</code>, <code>oklab</code>) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The <code>a</code>-suffixed legacy forms (<code>rgba</code>, <code>hsla</code>) are also supported. See the <a href="/pathogen/docs#syntax-color-literals">syntax reference</a> for the full list.</p>
+</blockquote>
+<h2>The Percent Suffix</h2>
+<p>The <code>%</code> suffix converts a number to its decimal form: <code>20%</code> becomes <code>0.2</code>, <code>50%</code> becomes <code>0.5</code>. This reads naturally with color methods — &quot;lighten by 20%&quot; instead of &quot;lighten by 0.2&quot;:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = #e63946;
+<span class="hljs-keyword">let</span> tint  = c.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);      <span class="hljs-comment">// 20% → 0.2</span>
+<span class="hljs-keyword">let</span> shade = c.<span class="hljs-title function_">darken</span>(<span class="hljs-number">15</span>%);       <span class="hljs-comment">// 15% → 0.15</span>
+<span class="hljs-keyword">let</span> faded = c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);        <span class="hljs-comment">// 50% → 0.5</span>
+<span class="hljs-keyword">let</span> muted = c.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">40</span>%);   <span class="hljs-comment">// 40% → 0.4</span>
+</code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
+<p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/pathogen/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMzAwJTIyJTBBJTJGJTJGJTIwUGVyY2VudCUyMFRpbnRzJTIwJUUyJTgwJTk0JTIwVXNpbmclMjAlMjUlMjBzdWZmaXglMjB3aXRoJTIwY29sb3IlMjBtZXRob2RzJTIwZm9yJTIwdGludCUyRnNoYWRlJTIwc2NhbGVzJTBBJTJGJTJGJTIwMjAlMjUlMjBiZWNvbWVzJTIwMC4yJTJDJTIwcmVhZHMlMjBuYXR1cmFsbHklM0ElMjAlMjJsaWdodGVuJTIwYnklMjAyMCUyNSUyMiUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEJhY2tncm91bmQlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNTIwJTJDJTIwMzAwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFRpdGxlJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxNCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzApJTYwVGhlJTIwUGVyY2VudCUyMFN1ZmZpeCU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXN1YnRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDQ2KSU2MDIwJTI1JTIwJUUyJTg2JTkyJTIwMC4yJTIwJTIwJUUyJTgwJUEyJTIwJTIwJTIybGlnaHRlbiUyMGJ5JTIwMjAlMjUlMjIlMjByZWFkcyUyMG5hdHVyYWxseSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFRpbnQlMjBzY2FsZSUyMCVFMiU4MCU5NCUyMGxpZ2h0ZW4lMjBieSUyMDAlMjUlMjB0byUyMDQwJTI1JTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwYmFzZSUyMCUzRCUyMCUyM2U2Mzk0NiUzQiUwQSUwQWxldCUyMHRpbnRzJTIwJTNEJTIwJTVCJTBBJTIwJTIwYmFzZSUyQyUwQSUyMCUyMChiYXNlKS5saWdodGVuKDEwJTI1KSUyQyUwQSUyMCUyMChiYXNlKS5saWdodGVuKDIwJTI1KSUyQyUwQSUyMCUyMChiYXNlKS5saWdodGVuKDMwJTI1KSUyQyUwQSUyMCUyMChiYXNlKS5saWdodGVuKDQwJTI1KSUwQSU1RCUzQiUwQWxldCUyMHRpbnRfbGFiZWxzJTIwJTNEJTIwJTVCJzAlMjUnJTJDJTIwJzEwJTI1JyUyQyUyMCcyMCUyNSclMkMlMjAnMzAlMjUnJTJDJTIwJzQwJTI1JyU1RCUzQiUwQSUwQSUyRiUyRiUyMCVFMiU5NCU4MCVFMiU5NCU4MCUyMFNoYWRlJTIwc2NhbGUlMjAlRTIlODAlOTQlMjBkYXJrZW4lMjBieSUyMDAlMjUlMjB0byUyMDQwJTI1JTIwJUUyJTk0JTgwJUUyJTk0JTgwJTBBJTBBbGV0JTIwc2hhZGVzJTIwJTNEJTIwJTVCJTBBJTIwJTIwYmFzZSUyQyUwQSUyMCUyMChiYXNlKS5kYXJrZW4oMTAlMjUpJTJDJTBBJTIwJTIwKGJhc2UpLmRhcmtlbigyMCUyNSklMkMlMEElMjAlMjAoYmFzZSkuZGFya2VuKDMwJTI1KSUyQyUwQSUyMCUyMChiYXNlKS5kYXJrZW4oNDAlMjUpJTBBJTVEJTNCJTBBbGV0JTIwc2hhZGVfbGFiZWxzJTIwJTNEJTIwJTVCJzAlMjUnJTJDJTIwJzEwJTI1JyUyQyUyMCcyMCUyNSclMkMlMjAnMzAlMjUnJTJDJTIwJzQwJTI1JyU1RCUzQiUwQSUwQSUyRiUyRiUyMCVFMiU5NCU4MCVFMiU5NCU4MCUyMEFscGhhJTIwc2NhbGUlMjAlRTIlODAlOTQlMjBhbHBoYSUyMGZyb20lMjAxMDAlMjUlMjB0byUyMDIwJTI1JTIwJUUyJTk0JTgwJUUyJTk0JTgwJTBBJTBBbGV0JTIwYWxwaGFzJTIwJTNEJTIwJTVCJTBBJTIwJTIwYmFzZSUyQyUwQSUyMCUyMChiYXNlKS5hbHBoYSg4MCUyNSklMkMlMEElMjAlMjAoYmFzZSkuYWxwaGEoNjAlMjUpJTJDJTBBJTIwJTIwKGJhc2UpLmFscGhhKDQwJTI1KSUyQyUwQSUyMCUyMChiYXNlKS5hbHBoYSgyMCUyNSklMEElNUQlM0IlMEFsZXQlMjBhbHBoYV9sYWJlbHMlMjAlM0QlMjAlNUInMTAwJTI1JyUyQyUyMCc4MCUyNSclMkMlMjAnNjAlMjUnJTJDJTIwJzQwJTI1JyUyQyUyMCcyMCUyNSclNUQlM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBMYXlvdXQlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBzeCUyMCUzRCUyMDkwJTNCJTBBbGV0JTIwc3AlMjAlM0QlMjA4OCUzQiUwQWxldCUyMHN3JTIwJTNEJTIwNTQlM0IlMEFsZXQlMjBzaCUyMCUzRCUyMDQwJTNCJTBBbGV0JTIwc3IlMjAlM0QlMjA0JTNCJTBBJTBBbGV0JTIwcm93X2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdyb3ctbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwZW5kJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwc3dfbGFiZWwlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N3LWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAlRTIlOTQlODAlRTIlOTQlODAlMjBSb3clMjAxJTNBJTIwVGludHMlMjAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlMEElMEFsZXQlMjByb3cxX3klMjAlM0QlMjA4MCUzQiUwQSUwQXJvd19sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNTglMkMlMjBjYWxjKHJvdzFfeSUyMCUyQiUyMHNoJTIwJTJGJTIwMiUyMCUyQiUyMDMpKSU2MGxpZ2h0ZW4lNjAlMEElN0QlMEElMEFmb3IlMjAoJTVCY29sb3IlMkMlMjBpJTVEJTIwaW4lMjB0aW50cyklMjAlN0IlMEElMjAlMjBsZXQlMjB4JTIwJTNEJTIwY2FsYyhzeCUyMCUyQiUyMGklMjAqJTIwc3ApJTNCJTBBJTIwJTIwbGV0JTIwc3dhdGNoJTIwJTNEJTIwUGF0aExheWVyKCU2MHRfJTI0JTdCaSU3RCU2MCklMjAlMjQlN0IlMjBmaWxsJTNBJTIwY29sb3IlM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBJTIwJTIwc3dhdGNoLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KGNhbGMoeCUyMC0lMjBzdyUyMCUyRiUyMDIpJTJDJTIwcm93MV95JTJDJTIwc3clMkMlMjBzaCUyQyUyMHNyKSUyMCU3RCUwQSU3RCUwQSUwQXN3X2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKCU1Qm5hbWUlMkMlMjBpJTVEJTIwaW4lMjB0aW50X2xhYmVscyklMjAlN0IlMEElMjAlMjAlMjAlMjB0ZXh0KGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUyQyUyMGNhbGMocm93MV95JTIwJTJCJTIwc2glMjAlMkIlMjAxMikpJTYwJTI0JTdCbmFtZSU3RCU2MCUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NCU4MCVFMiU5NCU4MCUyMFJvdyUyMDIlM0ElMjBTaGFkZXMlMjAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlRTIlOTQlODAlMEElMEFsZXQlMjByb3cyX3klMjAlM0QlMjAxNTAlM0IlMEElMEFyb3dfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDU4JTJDJTIwY2FsYyhyb3cyX3klMjAlMkIlMjBzaCUyMCUyRiUyMDIlMjAlMkIlMjAzKSklNjBkYXJrZW4lNjAlMEElN0QlMEElMEFmb3IlMjAoJTVCY29sb3IlMkMlMjBpJTVEJTIwaW4lMjBzaGFkZXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIweCUyMCUzRCUyMGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUzQiUwQSUyMCUyMGxldCUyMHN3YXRjaCUyMCUzRCUyMFBhdGhMYXllciglNjBkXyUyNCU3QmklN0QlNjApJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNvbG9yJTNCJTIwc3Ryb2tlJTNBJTIwJTIzNDc1NTY5JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQSUyMCUyMHN3YXRjaC5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdChjYWxjKHglMjAtJTIwc3clMjAlMkYlMjAyKSUyQyUyMHJvdzJfeSUyQyUyMHN3JTJDJTIwc2glMkMlMjBzciklMjAlN0QlMEElN0QlMEElMEFzd19sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMCglNUJuYW1lJTJDJTIwaSU1RCUyMGluJTIwc2hhZGVfbGFiZWxzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMHRleHQoY2FsYyhzeCUyMCUyQiUyMGklMjAqJTIwc3ApJTJDJTIwY2FsYyhyb3cyX3klMjAlMkIlMjBzaCUyMCUyQiUyMDEyKSklNjAlMjQlN0JuYW1lJTdEJTYwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk0JTgwJUUyJTk0JTgwJTIwUm93JTIwMyUzQSUyMEFscGhhJTIwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJUUyJTk0JTgwJTBBJTBBbGV0JTIwcm93M195JTIwJTNEJTIwMjIwJTNCJTBBJTBBcm93X2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg1OCUyQyUyMGNhbGMocm93M195JTIwJTJCJTIwc2glMjAlMkYlMjAyJTIwJTJCJTIwMykpJTYwYWxwaGElNjAlMEElN0QlMEElMEElMkYlMkYlMjBXaGl0ZSUyMGJhY2tncm91bmQlMjBiZWhpbmQlMjBhbHBoYSUyMHJvdyUyMHNvJTIwb3BhY2l0eSUyMGdyYWRpZW50JTIwaXMlMjB2aXNpYmxlJTBBZm9yJTIwKCU1Ql8lMkMlMjBpJTVEJTIwaW4lMjBhbHBoYXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIweCUyMCUzRCUyMGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwJTIwLSUyMHN3JTIwJTJGJTIwMiklM0IlMEElMjAlMjBsZXQlMjBjaGVja2VyJTIwJTNEJTIwUGF0aExheWVyKCU2MGNrXyUyNCU3QmklN0QlNjApJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyM2ZmZmZmZiUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEElMjAlMjBjaGVja2VyLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KHglMkMlMjByb3czX3klMkMlMjBzdyUyQyUyMHNoJTJDJTIwc3IpJTIwJTdEJTBBJTdEJTBBJTBBZm9yJTIwKCU1QmNvbG9yJTJDJTIwaSU1RCUyMGluJTIwYWxwaGFzKSUyMCU3QiUwQSUyMCUyMGxldCUyMHglMjAlM0QlMjBjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklM0IlMEElMjAlMjBsZXQlMjBzd2F0Y2glMjAlM0QlMjBQYXRoTGF5ZXIoJTYwYV8lMjQlN0JpJTdEJTYwKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBjb2xvciUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ3NTU2OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEElMjAlMjBzd2F0Y2guYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoY2FsYyh4JTIwLSUyMHN3JTIwJTJGJTIwMiklMkMlMjByb3czX3klMkMlMjBzdyUyQyUyMHNoJTJDJTIwc3IpJTIwJTdEJTBBJTdEJTBBJTBBc3dfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoJTVCbmFtZSUyQyUyMGklNUQlMjBpbiUyMGFscGhhX2xhYmVscyklMjAlN0IlMEElMjAlMjAlMjAlMjB0ZXh0KGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUyQyUyMGNhbGMocm93M195JTIwJTJCJTIwc2glMjAlMkIlMjAxMikpJTYwJTI0JTdCbmFtZSU3RCU2MCUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEJhc2UlMjBpbmRpY2F0b3IlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBiYXNlX2luZCUyMCUzRCUyMFRleHRMYXllcignYmFzZS1pbmQnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjMzOGJkZjglM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQWJhc2VfaW5kLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dChzeCUyQyUyMGNhbGMocm93MV95JTIwLSUyMDgpKSU2MCUyM2U2Mzk0NiU2MCUwQSU3RCUwQQ==" code-open caption="Tint, shade, and alpha scales using the percent suffix">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 300&quot;</span>
+<span class="hljs-comment">// Percent Tints — Using % suffix with color methods for tint/shade scales</span>
+<span class="hljs-comment">// 20% becomes 0.2, reads naturally: &quot;lighten by 20%&quot;</span>
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Background</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">300</span>) }
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Title</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`The Percent Suffix\`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`20% → 0.2  •  &quot;lighten by 20%&quot; reads naturally\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Tint scale — lighten by 0% to 40%</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base = #e63946;
+
+<span class="hljs-keyword">let</span> tints = [
+  base,
+  (base).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">10</span>%),
+  (base).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%),
+  (base).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">30</span>%),
+  (base).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">40</span>%)
+];
+<span class="hljs-keyword">let</span> tint_labels = [<span class="hljs-string">&#x27;0%&#x27;</span>, <span class="hljs-string">&#x27;10%&#x27;</span>, <span class="hljs-string">&#x27;20%&#x27;</span>, <span class="hljs-string">&#x27;30%&#x27;</span>, <span class="hljs-string">&#x27;40%&#x27;</span>];
+
+<span class="hljs-comment">// ── Shade scale — darken by 0% to 40% ──</span>
+
+<span class="hljs-keyword">let</span> shades = [
+  base,
+  (base).<span class="hljs-title function_">darken</span>(<span class="hljs-number">10</span>%),
+  (base).<span class="hljs-title function_">darken</span>(<span class="hljs-number">20</span>%),
+  (base).<span class="hljs-title function_">darken</span>(<span class="hljs-number">30</span>%),
+  (base).<span class="hljs-title function_">darken</span>(<span class="hljs-number">40</span>%)
+];
+<span class="hljs-keyword">let</span> shade_labels = [<span class="hljs-string">&#x27;0%&#x27;</span>, <span class="hljs-string">&#x27;10%&#x27;</span>, <span class="hljs-string">&#x27;20%&#x27;</span>, <span class="hljs-string">&#x27;30%&#x27;</span>, <span class="hljs-string">&#x27;40%&#x27;</span>];
+
+<span class="hljs-comment">// ── Alpha scale — alpha from 100% to 20% ──</span>
+
+<span class="hljs-keyword">let</span> alphas = [
+  base,
+  (base).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">80</span>%),
+  (base).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">60</span>%),
+  (base).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">40</span>%),
+  (base).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">20</span>%)
+];
+<span class="hljs-keyword">let</span> alpha_labels = [<span class="hljs-string">&#x27;100%&#x27;</span>, <span class="hljs-string">&#x27;80%&#x27;</span>, <span class="hljs-string">&#x27;60%&#x27;</span>, <span class="hljs-string">&#x27;40%&#x27;</span>, <span class="hljs-string">&#x27;20%&#x27;</span>];
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Layout</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">90</span>;
+<span class="hljs-keyword">let</span> sp = <span class="hljs-number">88</span>;
+<span class="hljs-keyword">let</span> sw = <span class="hljs-number">54</span>;
+<span class="hljs-keyword">let</span> sh = <span class="hljs-number">40</span>;
+<span class="hljs-keyword">let</span> sr = <span class="hljs-number">4</span>;
+
+<span class="hljs-keyword">let</span> row_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;row-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: end;
+};
+
+<span class="hljs-keyword">let</span> sw_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;sw-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+
+<span class="hljs-comment">// ── Row 1: Tints ────────────────────</span>
+
+<span class="hljs-keyword">let</span> row1_y = <span class="hljs-number">80</span>;
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">58</span>, <span class="hljs-title function_">calc</span>(row1_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`lighten\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> tints) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`t_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row1_y, sw, sh, sr) }
+}
+
+sw_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> tint_labels) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row1_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ── Row 2: Shades ───────────────────</span>
+
+<span class="hljs-keyword">let</span> row2_y = <span class="hljs-number">150</span>;
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">58</span>, <span class="hljs-title function_">calc</span>(row2_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`darken\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> shades) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`d_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row2_y, sw, sh, sr) }
+}
+
+sw_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> shade_labels) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row2_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ── Row 3: Alpha ────────────────────</span>
+
+<span class="hljs-keyword">let</span> row3_y = <span class="hljs-number">220</span>;
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">58</span>, <span class="hljs-title function_">calc</span>(row3_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`alpha\`</span>
+}
+
+<span class="hljs-comment">// White background behind alpha row so opacity gradient is visible</span>
+<span class="hljs-keyword">for</span> ([_, i] <span class="hljs-keyword">in</span> alphas) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp - sw / <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">let</span> checker = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`ck_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: #ffffff; <span class="hljs-attr">stroke</span>: none; };
+  checker.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, row3_y, sw, sh, sr) }
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> alphas) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`a_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row3_y, sw, sh, sr) }
+}
+
+sw_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> alpha_labels) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row3_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Base indicator</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base_ind = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;base-ind&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #38bdf8;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+base_ind.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(sx, <span class="hljs-title function_">calc</span>(row1_y - <span class="hljs-number">8</span>))<span class="hljs-string">\`#e63946\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post10/percent-tints.svg" alt="Tint, shade, and alpha scales using the percent suffix" loading="lazy">
+</mini-workspace></p>
+<h2>Reactive Colors</h2>
+<p>Color literals compose naturally with Pathogen&#39;s <a href="/pathogen/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, #0066ff));
+<span class="hljs-keyword">let</span> light = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> comp = base.<span class="hljs-title function_">complement</span>();
+<span class="hljs-keyword">let</span> triad = base.<span class="hljs-title function_">triadic</span>();
+</code></pre><p>Change <code>--base-color</code> and every derived value recalculates — lighten, complement, triadic harmony, everything. The compiler emits <code>@property</code> declarations so the browser knows these are interpolatable <code>&lt;color&gt;</code> values.</p>
+<p>The first demo below shows a full reactive palette — lightness ramp, color transformations, and triadic harmony, all driven by a single CSS variable. Use the color picker to change <code>--base-color</code> and watch every swatch update:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMzQwJTIyJTBBJTJGJTJGJTIwUmVhY3RpdmUlMjBQYWxldHRlJTIwJUUyJTgwJTk0JTIwQ1NTVmFyJTIwYmFzZSUyMGNvbG9yJTIwJTJCJTIwaGV4JTIwbGl0ZXJhbHMlMjAlMkIlMjAlMjUlMjBzdWZmaXglMEElMkYlMkYlMjBDaGFuZ2UlMjAtLWJhc2UtY29sb3IlMjBpbiUyMHRoZSUyMHBsYXlncm91bmQlMjB0byUyMHJlY29sb3IlMjBldmVyeSUyMHN3YXRjaCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEJhY2tncm91bmQlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNTIwJTJDJTIwMzQwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFRpdGxlJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxNCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzApJTYwUmVhY3RpdmUlMjBQYWxldHRlJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDYpJTYwQ2hhbmdlJTIwLS1iYXNlLWNvbG9yJTIwdG8lMjB1cGRhdGUlMjBhbGwlMjBzd2F0Y2hlcyU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFJlYWN0aXZlJTIwYmFzZSUyMGNvbG9yJTIwJUUyJTgwJTk0JTIwdHJ5JTIwY2hhbmdpbmclMjBpdCElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBiYXNlJTIwJTNEJTIwQ29sb3IoQ1NTVmFyKCctLWJhc2UtY29sb3InJTJDJTIwJTIzMDA2NmZmKSklM0IlMEElMEElMkYlMkYlMjAlRTIlOTQlODAlRTIlOTQlODAlMjBEZXJpdmVkJTIwcGFsZXR0ZSUyMCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCVFMiU5NCU4MCUwQSUwQWxldCUyMGRhcmtlciUyMCUyMCUzRCUyMGJhc2UuZGFya2VuKDIwJTI1KSUzQiUwQWxldCUyMGRhcmslMjAlMjAlMjAlMjAlM0QlMjBiYXNlLmRhcmtlbigxMCUyNSklM0IlMEFsZXQlMjBsaWdodCUyMCUyMCUyMCUzRCUyMGJhc2UubGlnaHRlbigxMCUyNSklM0IlMEFsZXQlMjBsaWdodGVyJTIwJTNEJTIwYmFzZS5saWdodGVuKDIwJTI1KSUzQiUwQWxldCUyMHBhbGUlMjAlMjAlMjAlMjAlM0QlMjBiYXNlLmxpZ2h0ZW4oMzAlMjUpJTNCJTBBJTBBbGV0JTIwY29tcCUyMCUyMCUyMCUyMCUyMCUzRCUyMGJhc2UuY29tcGxlbWVudCgpJTNCJTBBbGV0JTIwc2hpZnRlZCUyMCUyMCUzRCUyMGJhc2UuaHVlU2hpZnQoNjApJTNCJTBBbGV0JTIwbXV0ZWQlMjAlMjAlMjAlMjAlM0QlMjBiYXNlLmRlc2F0dXJhdGUoNTAlMjUpJTNCJTBBbGV0JTIwc2VtaSUyMCUyMCUyMCUyMCUyMCUzRCUyMGJhc2UuYWxwaGEoNTAlMjUpJTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwUm93JTIwMSUzQSUyMExpZ2h0bmVzcyUyMHJhbXAlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBzeCUyMCUzRCUyMDY1JTNCJTBBbGV0JTIwc3AlMjAlM0QlMjA4MCUzQiUwQWxldCUyMHN3JTIwJTNEJTIwNTQlM0IlMEFsZXQlMjBzaCUyMCUzRCUyMDQ0JTNCJTBBbGV0JTIwc3IlMjAlM0QlMjA1JTNCJTBBJTBBbGV0JTIwcm93X2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdyb3ctbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwZW5kJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwc3dfbGFiZWwlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N3LWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDclM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEElMEFsZXQlMjByb3cxX3klMjAlM0QlMjA4MCUzQiUwQWxldCUyMHJhbXAlMjAlM0QlMjAlNUJkYXJrZXIlMkMlMjBkYXJrJTJDJTIwYmFzZSUyQyUyMGxpZ2h0JTJDJTIwbGlnaHRlciUyQyUyMHBhbGUlNUQlM0IlMEFsZXQlMjByYW1wX25hbWVzJTIwJTNEJTIwJTVCJy0yMCUyNSclMkMlMjAnLTEwJTI1JyUyQyUyMCdiYXNlJyUyQyUyMCclMkIxMCUyNSclMkMlMjAnJTJCMjAlMjUnJTJDJTIwJyUyQjMwJTI1JyU1RCUzQiUwQSUwQXJvd19sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjBjYWxjKHJvdzFfeSUyMCUyQiUyMHNoJTIwJTJGJTIwMiUyMCUyQiUyMDMpKSU2MGxpZ2h0JTYwJTBBJTdEJTBBJTBBZm9yJTIwKCU1QmNvbG9yJTJDJTIwaSU1RCUyMGluJTIwcmFtcCklMjAlN0IlMEElMjAlMjBsZXQlMjB4JTIwJTNEJTIwY2FsYyhzeCUyMCUyQiUyMGklMjAqJTIwc3ApJTNCJTBBJTIwJTIwbGV0JTIwc3dhdGNoJTIwJTNEJTIwUGF0aExheWVyKCU2MHJfJTI0JTdCaSU3RCU2MCklMjAlMjQlN0IlMjBmaWxsJTNBJTIwY29sb3IlM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBJTIwJTIwc3dhdGNoLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KGNhbGMoeCUyMC0lMjBzdyUyMCUyRiUyMDIpJTJDJTIwcm93MV95JTJDJTIwc3clMkMlMjBzaCUyQyUyMHNyKSUyMCU3RCUwQSU3RCUwQSUwQXN3X2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKCU1Qm5hbWUlMkMlMjBpJTVEJTIwaW4lMjByYW1wX25hbWVzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMHRleHQoY2FsYyhzeCUyMCUyQiUyMGklMjAqJTIwc3ApJTJDJTIwY2FsYyhyb3cxX3klMjAlMkIlMjBzaCUyMCUyQiUyMDEyKSklNjAlMjQlN0JuYW1lJTdEJTYwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwUm93JTIwMiUzQSUyMFRyYW5zZm9ybWF0aW9ucyUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMHJvdzJfeSUyMCUzRCUyMDE2MCUzQiUwQWxldCUyMHRyYW5zZm9ybXMlMjAlM0QlMjAlNUJiYXNlJTJDJTIwY29tcCUyQyUyMHNoaWZ0ZWQlMkMlMjBtdXRlZCUyQyUyMHNlbWklNUQlM0IlMEFsZXQlMjB4Zm9ybV9uYW1lcyUyMCUzRCUyMCU1QidiYXNlJyUyQyUyMCdjb21wbGVtZW50JyUyQyUyMCdodWUlMjAlMkI2MCclMkMlMjAnZGVzYXQlMjA1MCUyNSclMkMlMjAnYWxwaGElMjA1MCUyNSclNUQlM0IlMEElMEFyb3dfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwY2FsYyhyb3cyX3klMjAlMkIlMjBzaCUyMCUyRiUyMDIlMjAlMkIlMjAzKSklNjB4Zm9ybSU2MCUwQSU3RCUwQSUwQWZvciUyMCglNUJjb2xvciUyQyUyMGklNUQlMjBpbiUyMHRyYW5zZm9ybXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIweCUyMCUzRCUyMGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUzQiUwQSUyMCUyMGxldCUyMHN3YXRjaCUyMCUzRCUyMFBhdGhMYXllciglNjB4XyUyNCU3QmklN0QlNjApJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNvbG9yJTNCJTIwc3Ryb2tlJTNBJTIwJTIzNDc1NTY5JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQSUyMCUyMHN3YXRjaC5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdChjYWxjKHglMjAtJTIwc3clMjAlMkYlMjAyKSUyQyUyMHJvdzJfeSUyQyUyMHN3JTJDJTIwc2glMkMlMjBzciklMjAlN0QlMEElN0QlMEElMEFzd19sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMCglNUJuYW1lJTJDJTIwaSU1RCUyMGluJTIweGZvcm1fbmFtZXMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdGV4dChjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklMkMlMjBjYWxjKHJvdzJfeSUyMCUyQiUyMHNoJTIwJTJCJTIwMTIpKSU2MCUyNCU3Qm5hbWUlN0QlNjAlMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBSb3clMjAzJTNBJTIwVHJpYWRpYyUyMGhhcm1vbnklMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjByb3czX3klMjAlM0QlMjAyNDAlM0IlMEFsZXQlMjB0cmlhZCUyMCUzRCUyMGJhc2UudHJpYWRpYygpJTNCJTBBJTBBcm93X2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMGNhbGMocm93M195JTIwJTJCJTIwc2glMjAlMkYlMjAyJTIwJTJCJTIwMykpJTYwdHJpYWQlNjAlMEElN0QlMEElMEFmb3IlMjAoJTVCY29sb3IlMkMlMjBpJTVEJTIwaW4lMjB0cmlhZCklMjAlN0IlMEElMjAlMjBsZXQlMjB4JTIwJTNEJTIwY2FsYyhzeCUyMCUyQiUyMGklMjAqJTIwc3ApJTNCJTBBJTIwJTIwbGV0JTIwc3dhdGNoJTIwJTNEJTIwUGF0aExheWVyKCU2MHRyaV8lMjQlN0JpJTdEJTYwKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBjb2xvciUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ3NTU2OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEElMjAlMjBzd2F0Y2guYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoY2FsYyh4JTIwLSUyMHN3JTIwJTJGJTIwMiklMkMlMjByb3czX3klMkMlMjBzdyUyQyUyMHNoJTJDJTIwc3IpJTIwJTdEJTBBJTdEJTBBJTBBbGV0JTIwdHJpYWRfbmFtZXMlMjAlM0QlMjAlNUInMCVDMiVCMCclMkMlMjAnJTJCMTIwJUMyJUIwJyUyQyUyMCclMkIyNDAlQzIlQjAnJTVEJTNCJTBBc3dfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoJTVCbmFtZSUyQyUyMGklNUQlMjBpbiUyMHRyaWFkX25hbWVzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMHRleHQoY2FsYyhzeCUyMCUyQiUyMGklMjAqJTIwc3ApJTJDJTIwY2FsYyhyb3czX3klMjAlMkIlMjBzaCUyMCUyQiUyMDEyKSklNjAlMjQlN0JuYW1lJTdEJTYwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwQ29kZSUyMGFubm90YXRpb24lMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBjb2RlX2JnJTIwJTNEJTIwUGF0aExheWVyKCdjb2RlLWJnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMWUyOTNiJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzM0MTU1JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWNvZGVfYmcuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMzAlMkMlMjAzMDAlMkMlMjA0NjAlMkMlMjAyOCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwY29kZSUyMCUzRCUyMFRleHRMYXllcignY29kZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFjb2RlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDMxOCklNjBsZXQlMjBiYXNlJTIwJTNEJTIwQ29sb3IoQ1NTVmFyKCctLWJhc2UtY29sb3InJTJDJTIwJTIzMDA2NmZmKSklM0IlNjAlMEElN0QlMEElMEFsZXQlMjBjb2RlX2t3JTIwJTNEJTIwVGV4dExheWVyKCdjb2RlLWt3JyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzYzA4NGZjJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWNvZGVfa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMzE4KSU2MGxldCU2MCUwQSU3RCUwQQ==" code-open caption="Reactive palette — change --base-color to update all swatches">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 340&quot;</span>
+<span class="hljs-comment">// Reactive Palette — CSSVar base color + hex literals + % suffix</span>
+<span class="hljs-comment">// Change --base-color in the playground to recolor every swatch</span>
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Background</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">340</span>) }
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Title</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`Reactive Palette\`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`Change --base-color to update all swatches\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Reactive base color — try changing it!</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, #0066ff));
+
+<span class="hljs-comment">// ── Derived palette ─────────────────</span>
+
+<span class="hljs-keyword">let</span> darker  = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> dark    = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">10</span>%);
+<span class="hljs-keyword">let</span> light   = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">10</span>%);
+<span class="hljs-keyword">let</span> lighter = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> pale    = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">30</span>%);
+
+<span class="hljs-keyword">let</span> comp     = base.<span class="hljs-title function_">complement</span>();
+<span class="hljs-keyword">let</span> shifted  = base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+<span class="hljs-keyword">let</span> muted    = base.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
+<span class="hljs-keyword">let</span> semi     = base.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Row 1: Lightness ramp</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">65</span>;
+<span class="hljs-keyword">let</span> sp = <span class="hljs-number">80</span>;
+<span class="hljs-keyword">let</span> sw = <span class="hljs-number">54</span>;
+<span class="hljs-keyword">let</span> sh = <span class="hljs-number">44</span>;
+<span class="hljs-keyword">let</span> sr = <span class="hljs-number">5</span>;
+
+<span class="hljs-keyword">let</span> row_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;row-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: end;
+};
+
+<span class="hljs-keyword">let</span> sw_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;sw-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+
+<span class="hljs-keyword">let</span> row1_y = <span class="hljs-number">80</span>;
+<span class="hljs-keyword">let</span> ramp = [darker, dark, base, light, lighter, pale];
+<span class="hljs-keyword">let</span> ramp_names = [<span class="hljs-string">&#x27;-20%&#x27;</span>, <span class="hljs-string">&#x27;-10%&#x27;</span>, <span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;+10%&#x27;</span>, <span class="hljs-string">&#x27;+20%&#x27;</span>, <span class="hljs-string">&#x27;+30%&#x27;</span>];
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-title function_">calc</span>(row1_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`light\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> ramp) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`r_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row1_y, sw, sh, sr) }
+}
+
+sw_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> ramp_names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row1_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Row 2: Transformations</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> row2_y = <span class="hljs-number">160</span>;
+<span class="hljs-keyword">let</span> transforms = [base, comp, shifted, muted, semi];
+<span class="hljs-keyword">let</span> xform_names = [<span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;complement&#x27;</span>, <span class="hljs-string">&#x27;hue +60&#x27;</span>, <span class="hljs-string">&#x27;desat 50%&#x27;</span>, <span class="hljs-string">&#x27;alpha 50%&#x27;</span>];
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-title function_">calc</span>(row2_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`xform\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> transforms) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`x_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row2_y, sw, sh, sr) }
+}
+
+sw_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> xform_names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row2_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Row 3: Triadic harmony</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> row3_y = <span class="hljs-number">240</span>;
+<span class="hljs-keyword">let</span> triad = base.<span class="hljs-title function_">triadic</span>();
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-title function_">calc</span>(row3_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`triad\`</span>
+}
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> triad) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`tri_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row3_y, sw, sh, sr) }
+}
+
+<span class="hljs-keyword">let</span> triad_names = [<span class="hljs-string">&#x27;0°&#x27;</span>, <span class="hljs-string">&#x27;+120°&#x27;</span>, <span class="hljs-string">&#x27;+240°&#x27;</span>];
+sw_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> triad_names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row3_y + sh + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Code annotation</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> code_bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;code-bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #1e293b; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">334155</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+code_bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">300</span>, <span class="hljs-number">460</span>, <span class="hljs-number">28</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">318</span>)<span class="hljs-string">\`let base = Color(CSSVar(&#x27;--base-color&#x27;, #0066ff));\`</span>
+}
+
+<span class="hljs-keyword">let</span> code_kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code-kw&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #c084fc;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code_kw.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">318</span>)<span class="hljs-string">\`let\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post10/reactive-palette.svg" alt="Reactive palette — change --base-color to update all swatches" loading="lazy">
+</mini-workspace></p>
+<p>The second demo shows a tint/shade scale — seven lighten steps and seven darken steps from a single reactive base:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMjgwJTIyJTBBJTJGJTJGJTIwUmVhY3RpdmUlMjBUaW50cyUyMCVFMiU4MCU5NCUyMENTU1ZhciUyMCUyQiUyMHBlcmNlbnQlMjBzdWZmaXglMjBmb3IlMjB0aW50JTJGc2hhZGUlMjBzY2FsZXMlMEElMkYlMkYlMjBDaGFuZ2UlMjAtLXRpbnQtY29sb3IlMjB0byUyMHVwZGF0ZSUyMGV2ZXJ5JTIwcm93JTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwQmFja2dyb3VuZCUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzBmMTcyYSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1MjAlMkMlMjAyODApJTIwJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwVGl0bGUlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEF0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjAzMCklNjBSZWFjdGl2ZSUyMFRpbnQlMjAlMkYlMjBTaGFkZSUyMFNjYWxlJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDYpJTYwQ2hhbmdlJTIwLS10aW50LWNvbG9yJTIwJUUyJTgwJTk0JTIwZXZlcnklMjBzd2F0Y2glMjB1cGRhdGVzJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwUmVhY3RpdmUlMjBiYXNlJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwYmFzZSUyMCUzRCUyMENvbG9yKENTU1ZhcignLS10aW50LWNvbG9yJyUyQyUyMCUyM2U2Mzk0NikpJTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwTGF5b3V0JTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwc3glMjAlM0QlMjA3MCUzQiUwQWxldCUyMHNwJTIwJTNEJTIwNTglM0IlMEFsZXQlMjBzdyUyMCUzRCUyMDQ0JTNCJTBBbGV0JTIwc2glMjAlM0QlMjA0NCUzQiUwQWxldCUyMHNyJTIwJTNEJTIwNCUzQiUwQWxldCUyMHN0ZXBzJTIwJTNEJTIwNyUzQiUwQSUwQWxldCUyMHJvd19sYWJlbCUyMCUzRCUyMFRleHRMYXllcigncm93LWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMGVuZCUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHBjdF9sYWJlbCUyMCUzRCUyMFRleHRMYXllcigncGN0LWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDclM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBSb3clMjAxJTNBJTIwTGlnaHRlbiUyMDAlMjUlMjAlRTIlODYlOTIlMjA2MCUyNSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMHJvdzFfeSUyMCUzRCUyMDc2JTNCJTBBJTBBcm93X2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMGNhbGMocm93MV95JTIwJTJCJTIwc2glMjAlMkYlMjAyJTIwJTJCJTIwMykpJTYwbGlnaHRlbiU2MCUwQSU3RCUwQSUwQWxldCUyMHRpbnRzJTIwJTNEJTIwJTVCJTBBJTIwJTIwYmFzZSUyQyUwQSUyMCUyMGJhc2UubGlnaHRlbigxMCUyNSklMkMlMEElMjAlMjBiYXNlLmxpZ2h0ZW4oMjAlMjUpJTJDJTBBJTIwJTIwYmFzZS5saWdodGVuKDMwJTI1KSUyQyUwQSUyMCUyMGJhc2UubGlnaHRlbig0MCUyNSklMkMlMEElMjAlMjBiYXNlLmxpZ2h0ZW4oNTAlMjUpJTJDJTBBJTIwJTIwYmFzZS5saWdodGVuKDYwJTI1KSUwQSU1RCUzQiUwQSUwQWZvciUyMCglNUJjb2xvciUyQyUyMGklNUQlMjBpbiUyMHRpbnRzKSUyMCU3QiUwQSUyMCUyMGxldCUyMHglMjAlM0QlMjBjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklM0IlMEElMjAlMjBsZXQlMjBzd2F0Y2glMjAlM0QlMjBQYXRoTGF5ZXIoJTYwbHRfJTI0JTdCaSU3RCU2MCklMjAlMjQlN0IlMjBmaWxsJTNBJTIwY29sb3IlM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBJTIwJTIwc3dhdGNoLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KGNhbGMoeCUyMC0lMjBzdyUyMCUyRiUyMDIpJTJDJTIwcm93MV95JTJDJTIwc3clMkMlMjBzaCUyQyUyMHNyKSUyMCU3RCUwQSU3RCUwQSUwQWxldCUyMHRpbnRfcGN0cyUyMCUzRCUyMCU1QicwJTI1JyUyQyUyMCcxMCUyNSclMkMlMjAnMjAlMjUnJTJDJTIwJzMwJTI1JyUyQyUyMCc0MCUyNSclMkMlMjAnNTAlMjUnJTJDJTIwJzYwJTI1JyU1RCUzQiUwQXBjdF9sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMCglNUJwY3QlMkMlMjBpJTVEJTIwaW4lMjB0aW50X3BjdHMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdGV4dChjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklMkMlMjBjYWxjKHJvdzFfeSUyMCUyQiUyMHNoJTIwJTJCJTIwMTEpKSU2MCUyNCU3QnBjdCU3RCU2MCUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMFJvdyUyMDIlM0ElMjBEYXJrZW4lMjAwJTI1JTIwJUUyJTg2JTkyJTIwNjAlMjUlMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjByb3cyX3klMjAlM0QlMjAxNTIlM0IlMEElMEFyb3dfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDQyJTJDJTIwY2FsYyhyb3cyX3klMjAlMkIlMjBzaCUyMCUyRiUyMDIlMjAlMkIlMjAzKSklNjBkYXJrZW4lNjAlMEElN0QlMEElMEFsZXQlMjBzaGFkZXMlMjAlM0QlMjAlNUIlMEElMjAlMjBiYXNlJTJDJTBBJTIwJTIwYmFzZS5kYXJrZW4oMTAlMjUpJTJDJTBBJTIwJTIwYmFzZS5kYXJrZW4oMjAlMjUpJTJDJTBBJTIwJTIwYmFzZS5kYXJrZW4oMzAlMjUpJTJDJTBBJTIwJTIwYmFzZS5kYXJrZW4oNDAlMjUpJTJDJTBBJTIwJTIwYmFzZS5kYXJrZW4oNTAlMjUpJTJDJTBBJTIwJTIwYmFzZS5kYXJrZW4oNjAlMjUpJTBBJTVEJTNCJTBBJTBBZm9yJTIwKCU1QmNvbG9yJTJDJTIwaSU1RCUyMGluJTIwc2hhZGVzKSUyMCU3QiUwQSUyMCUyMGxldCUyMHglMjAlM0QlMjBjYWxjKHN4JTIwJTJCJTIwaSUyMColMjBzcCklM0IlMEElMjAlMjBsZXQlMjBzd2F0Y2glMjAlM0QlMjBQYXRoTGF5ZXIoJTYwZGtfJTI0JTdCaSU3RCU2MCklMjAlMjQlN0IlMjBmaWxsJTNBJTIwY29sb3IlM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBJTIwJTIwc3dhdGNoLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KGNhbGMoeCUyMC0lMjBzdyUyMCUyRiUyMDIpJTJDJTIwcm93Ml95JTJDJTIwc3clMkMlMjBzaCUyQyUyMHNyKSUyMCU3RCUwQSU3RCUwQSUwQWxldCUyMHNoYWRlX3BjdHMlMjAlM0QlMjAlNUInMCUyNSclMkMlMjAnMTAlMjUnJTJDJTIwJzIwJTI1JyUyQyUyMCczMCUyNSclMkMlMjAnNDAlMjUnJTJDJTIwJzUwJTI1JyUyQyUyMCc2MCUyNSclNUQlM0IlMEFwY3RfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoJTVCcGN0JTJDJTIwaSU1RCUyMGluJTIwc2hhZGVfcGN0cyklMjAlN0IlMEElMjAlMjAlMjAlMjB0ZXh0KGNhbGMoc3glMjAlMkIlMjBpJTIwKiUyMHNwKSUyQyUyMGNhbGMocm93Ml95JTIwJTJCJTIwc2glMjAlMkIlMjAxMSkpJTYwJTI0JTdCcGN0JTdEJTYwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwQ29kZSUyMGFubm90YXRpb24lMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBjb2RlX2JnJTIwJTNEJTIwUGF0aExheWVyKCdjb2RlLWJnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMWUyOTNiJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzM0MTU1JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWNvZGVfYmcuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMzAlMkMlMjAyMjglMkMlMjA0NjAlMkMlMjA0MCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwY29kZSUyMCUzRCUyMFRleHRMYXllcignY29kZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFjb2RlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDI0NSklNjBsZXQlMjBiYXNlJTIwJTNEJTIwQ29sb3IoQ1NTVmFyKCctLXRpbnQtY29sb3InJTJDJTIwJTIzZTYzOTQ2KSklM0IlNjAlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMjU5KSU2MGxldCUyMHRpbnQlMjAlM0QlMjBiYXNlLmxpZ2h0ZW4oMjAlMjUpJTNCJTYwJTBBJTdEJTBBJTBBbGV0JTIwY29kZV9rdyUyMCUzRCUyMFRleHRMYXllcignY29kZS1rdycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2MwODRmYyUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFjb2RlX2t3LmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDI0NSklNjBsZXQlNjAlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMjU5KSU2MGxldCU2MCUwQSU3RCUwQSUwQWxldCUyMGNvZGVfY29tbWVudCUyMCUzRCUyMFRleHRMYXllcignY29kZS1jb21tZW50JyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWNvZGVfY29tbWVudC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjc0JTJDJTIwMjU5KSU2MCUyRiUyRiUyMDIwJTI1JTIwJUUyJTg2JTkyJTIwMC4yJTYwJTBBJTdEJTBB" code-open caption="Reactive tint/shade scale — change --tint-color to update every swatch">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 280&quot;</span>
+<span class="hljs-comment">// Reactive Tints — CSSVar + percent suffix for tint/shade scales</span>
+<span class="hljs-comment">// Change --tint-color to update every row</span>
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Background</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">280</span>) }
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Title</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
+  <span class="hljs-attr">fill</span>: #e2e8f0;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+title.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`Reactive Tint / Shade Scale\`</span>
+}
+
+<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+subtitle.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`Change --tint-color — every swatch updates\`</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Reactive base</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--tint-color&#x27;</span>, #e63946));
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Layout</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">70</span>;
+<span class="hljs-keyword">let</span> sp = <span class="hljs-number">58</span>;
+<span class="hljs-keyword">let</span> sw = <span class="hljs-number">44</span>;
+<span class="hljs-keyword">let</span> sh = <span class="hljs-number">44</span>;
+<span class="hljs-keyword">let</span> sr = <span class="hljs-number">4</span>;
+<span class="hljs-keyword">let</span> steps = <span class="hljs-number">7</span>;
+
+<span class="hljs-keyword">let</span> row_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;row-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: end;
+};
+
+<span class="hljs-keyword">let</span> pct_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;pct-label&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: middle;
+};
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Row 1: Lighten 0% → 60%</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> row1_y = <span class="hljs-number">76</span>;
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-title function_">calc</span>(row1_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`lighten\`</span>
+}
+
+<span class="hljs-keyword">let</span> tints = [
+  base,
+  base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">10</span>%),
+  base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%),
+  base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">30</span>%),
+  base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">40</span>%),
+  base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">50</span>%),
+  base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">60</span>%)
+];
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> tints) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`lt_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row1_y, sw, sh, sr) }
+}
+
+<span class="hljs-keyword">let</span> tint_pcts = [<span class="hljs-string">&#x27;0%&#x27;</span>, <span class="hljs-string">&#x27;10%&#x27;</span>, <span class="hljs-string">&#x27;20%&#x27;</span>, <span class="hljs-string">&#x27;30%&#x27;</span>, <span class="hljs-string">&#x27;40%&#x27;</span>, <span class="hljs-string">&#x27;50%&#x27;</span>, <span class="hljs-string">&#x27;60%&#x27;</span>];
+pct_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([pct, i] <span class="hljs-keyword">in</span> tint_pcts) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row1_y + sh + <span class="hljs-number">11</span>))<span class="hljs-string">\`<span class="hljs-subst">\${pct}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Row 2: Darken 0% → 60%</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> row2_y = <span class="hljs-number">152</span>;
+
+row_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-title function_">calc</span>(row2_y + sh / <span class="hljs-number">2</span> + <span class="hljs-number">3</span>))<span class="hljs-string">\`darken\`</span>
+}
+
+<span class="hljs-keyword">let</span> shades = [
+  base,
+  base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">10</span>%),
+  base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">20</span>%),
+  base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">30</span>%),
+  base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">40</span>%),
+  base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">50</span>%),
+  base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">60</span>%)
+];
+
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> shades) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  <span class="hljs-keyword">let</span> swatch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`dk_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+  swatch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), row2_y, sw, sh, sr) }
+}
+
+<span class="hljs-keyword">let</span> shade_pcts = [<span class="hljs-string">&#x27;0%&#x27;</span>, <span class="hljs-string">&#x27;10%&#x27;</span>, <span class="hljs-string">&#x27;20%&#x27;</span>, <span class="hljs-string">&#x27;30%&#x27;</span>, <span class="hljs-string">&#x27;40%&#x27;</span>, <span class="hljs-string">&#x27;50%&#x27;</span>, <span class="hljs-string">&#x27;60%&#x27;</span>];
+pct_label.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([pct, i] <span class="hljs-keyword">in</span> shade_pcts) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(row2_y + sh + <span class="hljs-number">11</span>))<span class="hljs-string">\`<span class="hljs-subst">\${pct}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+<span class="hljs-comment">// Code annotation</span>
+<span class="hljs-comment">// ═══════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> code_bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;code-bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #1e293b; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">334155</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
+code_bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">228</span>, <span class="hljs-number">460</span>, <span class="hljs-number">40</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">245</span>)<span class="hljs-string">\`let base = Color(CSSVar(&#x27;--tint-color&#x27;, #e63946));\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">259</span>)<span class="hljs-string">\`let tint = base.lighten(20%);\`</span>
+}
+
+<span class="hljs-keyword">let</span> code_kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code-kw&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #c084fc;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code_kw.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">245</span>)<span class="hljs-string">\`let\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">259</span>)<span class="hljs-string">\`let\`</span>
+}
+
+<span class="hljs-keyword">let</span> code_comment = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code-comment&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: monospace;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+code_comment.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">274</span>, <span class="hljs-number">259</span>)<span class="hljs-string">\`// 20% → 0.2\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post10/reactive-tints.svg" alt="Reactive tint/shade scale — change --tint-color to update every swatch" loading="lazy">
+</mini-workspace></p>
+<h2>What Still Needs <code>Color()</code></h2>
+<p>The <code>Color()</code> wrapper isn&#39;t going away. You still need it for:</p>
+<ul>
+<li><strong>Named colors</strong>: <code>Color(&#39;coral&#39;)</code>, <code>Color(&#39;dodgerblue&#39;)</code> — all <a href="/pathogen/docs#stdlib-color">148 CSS named colors</a></li>
+<li><strong>Direct OKLCH construction</strong>: <code>Color(0.6, 0.15, 30)</code> — numeric L, C, H values</li>
+<li><strong>String-based input</strong>: <code>Color(&#39;rgb(255, 0, 0)&#39;)</code> — when the color format is in a string variable</li>
+</ul>
+<p>Everything is backwards-compatible. Existing <code>Color(&#39;#cc0000&#39;)</code> calls continue to work — <code>Color()</code> now accepts a bare <code>ColorValue</code> as a pass-through.</p>
+<h2>Try It</h2>
+<p>Open the <a href="/pathogen/">Pathogen playground</a>, start from <code>#0066ff</code>, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the <a href="/pathogen/docs#stdlib-color">Color documentation</a>, and the syntax details are in the <a href="/pathogen/docs#syntax-color-literals">Color Literals</a> and <a href="/pathogen/docs#syntax-percent-suffix">Percent Suffix</a> sections.</p>
 `,
   'gradient-conic': `<p>CSS has <code>conic-gradient()</code>. SVG does not. This is not an oversight — the SVG spec simply never included angular gradients. If you want a color wheel, a gauge, or a pie chart rendered as an SVG gradient, you are out of luck. You can fake it with dozens of wedge-shaped paths, or you can embed a rasterized image and lose the vector benefits.</p>
 <p>Pathogen takes a different approach. <code>ConicGradient</code> is a first-class gradient type that compiles to a base64-encoded <code>&lt;pattern&gt;</code> element. The rasterization happens at compile time via WebGPU (or Canvas 2D as a fallback), producing a pixel-perfect image embedded directly in the SVG. The author writes gradient code. The viewer sees a standard SVG.</p>

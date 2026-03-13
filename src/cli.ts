@@ -100,6 +100,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
                 child.dx != null ? `dx="${child.dx}"` : '',
                 child.dy != null ? `dy="${child.dy}"` : '',
                 child.rotation != null ? `rotate="${radToDeg(child.rotation)}"` : '',
+                ...Object.entries(child.styles || {}).map(([k, v]) => `${k}="${escapeXml(String(v))}"`),
               ]
                 .filter(Boolean)
                 .join(' ');

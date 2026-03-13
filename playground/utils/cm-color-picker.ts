@@ -859,11 +859,46 @@ function findColorRanges(docText: string): ColorRange[] {
     ) {
       continue; // parseColor returned default — not a real color
     }
-    // Position chip on the string argument (including quotes)
+    // Position chip on just the color string INSIDE quotes (not including quotes)
+    // This ensures the color picker replaces only the color value, preserving quotes
     const quote = colorCallMatch[1];
-    const argStart = colorCallMatch.index + colorCallMatch[0].indexOf(quote + colorStr + quote);
-    const argEnd = argStart + colorStr.length + 2; // +2 for quotes
+    const quotedStr = quote + colorStr + quote;
+    const argStart = colorCallMatch.index + colorCallMatch[0].indexOf(quotedStr) + 1; // +1 to skip opening quote
+    const argEnd = argStart + colorStr.length;
     results.push({ from: argStart, to: argEnd, color: colorStr });
+  }
+
+  // Scan for bare hex color literals: #cc0000, #f00, etc. (not inside quotes or style blocks)
+  const bareHexRegex = /(?<!['"$])#[0-9a-fA-F]{3,8}\b/g;
+  let bareHexMatch: RegExpExecArray | null;
+  while ((bareHexMatch = bareHexRegex.exec(docText)) !== null) {
+    const hex = bareHexMatch[0];
+    const hexDigits = hex.slice(1);
+    // Only valid lengths
+    if (hexDigits.length !== 3 && hexDigits.length !== 4 && hexDigits.length !== 6 && hexDigits.length !== 8) continue;
+    const from = bareHexMatch.index;
+    const to = from + hex.length;
+    // Skip if this position is already covered by a style block or Color() match
+    if (results.some((r) => from >= r.from && to <= r.to)) continue;
+    results.push({ from, to, color: hex });
+  }
+
+  // Scan for bare CSS color function literals: rgb(255, 0, 0), hsl(0, 100%, 50%), oklch(0.6 0.15 30), etc.
+  const cssColorFuncRegex = /\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\s*\([^)]*\)/g;
+  let cssColorFuncMatch: RegExpExecArray | null;
+  while ((cssColorFuncMatch = cssColorFuncRegex.exec(docText)) !== null) {
+    const colorStr = cssColorFuncMatch[0];
+    const from = cssColorFuncMatch.index;
+    const to = from + colorStr.length;
+    // Skip if already covered by a style block match or Color() match
+    if (results.some((r) => from >= r.from && to <= r.to)) continue;
+    // Validate it's a parseable color
+    try {
+      parseColor(colorStr);
+      results.push({ from, to, color: colorStr });
+    } catch {
+      // Not a valid color function — skip
+    }
   }
 
   // Scan for CSSVar('--name', 'fallback') where fallback is a color

@@ -1502,4 +1502,121 @@ describe('Evaluator', () => {
       expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue', opacity: '0.5' });
     });
   });
+
+  describe('color literals', () => {
+    it('evaluates 6-digit hex literal to ColorValue', () => {
+      const result = compile('let c = #cc0000; log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#cc0000');
+    });
+
+    it('evaluates 3-digit hex literal to ColorValue', () => {
+      const result = compile('let c = #f00; log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+    });
+
+    it('evaluates 8-digit hex literal with alpha', () => {
+      const result = compile('let c = #ff000080; log(c.a);');
+      const alpha = parseFloat(result.logs[0].parts[0].value);
+      expect(alpha).toBeCloseTo(0.502, 1);
+    });
+
+    it('evaluates 4-digit hex literal with alpha', () => {
+      const result = compile('let c = #f008; log(c.a);');
+      const alpha = parseFloat(result.logs[0].parts[0].value);
+      expect(alpha).toBeCloseTo(0.533, 1);
+    });
+
+    it('supports method chaining on hex literal via parens', () => {
+      const result = compile('let c = (#cc0000).lighten(0.2); log(c.hex);');
+      // Lightened red should be a lighter shade
+      expect(result.logs[0].parts[0].value).not.toBe('#cc0000');
+      expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('Color() accepts ColorValue pass-through', () => {
+      const result = compile('let c = Color(#cc0000); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#cc0000');
+    });
+
+    it('hex literal properties work', () => {
+      const result = compile('let c = #00ff00; log(c.hex); log(c.css);');
+      expect(result.logs[0].parts[0].value).toBe('#00ff00');
+      expect(result.logs[1].parts[0].value).toMatch(/^#00ff00|rgb/);
+    });
+
+    it('lighten with percent suffix on hex literal', () => {
+      const result = compile('let c = (#cc0000).lighten(20%); log(c.hex);');
+      // 20% = 0.2, lighten by 0.2
+      expect(result.logs[0].parts[0].value).not.toBe('#cc0000');
+      expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
+    });
+  });
+
+  describe('CSS color function literals', () => {
+    it('evaluates rgb() to ColorValue', () => {
+      const result = compile('let c = rgb(255, 0, 0); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+    });
+
+    it('evaluates rgba() with alpha', () => {
+      const result = compile('let c = rgba(255, 0, 0, 0.5); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 2);
+    });
+
+    it('evaluates hsl() to ColorValue', () => {
+      const result = compile('let c = hsl(0, 100%, 50%); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+    });
+
+    it('evaluates oklch() to ColorValue', () => {
+      const result = compile('let c = oklch(0.6 0.15 30); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
+    });
+
+    it('method chaining on CSS color function', () => {
+      const result = compile('let c = rgb(255, 0, 0).lighten(0.2); log(c.hex);');
+      expect(result.logs[0].parts[0].value).not.toBe('#ff0000');
+      expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('CSS color function shadows user-defined function of same name', () => {
+      // rgb() is always a color literal, even if user defines fn rgb()
+      const result = compile('let c = rgb(255, 0, 0); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+    });
+  });
+
+  describe('percent suffix', () => {
+    it('converts percent to decimal', () => {
+      const result = compile('let x = 50%; log(x);');
+      expect(result.logs[0].parts[0].value).toBe('0.5');
+    });
+
+    it('works with zero percent', () => {
+      const result = compile('let x = 0%; log(x);');
+      expect(result.logs[0].parts[0].value).toBe('0');
+    });
+
+    it('works with 100 percent', () => {
+      const result = compile('let x = 100%; log(x);');
+      expect(result.logs[0].parts[0].value).toBe('1');
+    });
+
+    it('modulus with spaces still works', () => {
+      const result = compile('let x = calc(10 % 3); log(x);');
+      expect(result.logs[0].parts[0].value).toBe('1');
+    });
+
+    it('percent suffix and modulus together: calc(20% % 2%)', () => {
+      // 20% = 0.2, 2% = 0.02, 0.2 % 0.02 ≈ 0
+      const result = compile('let x = calc(20% % 2%); log(x);');
+      const val = parseFloat(result.logs[0].parts[0].value);
+      expect(val).toBeCloseTo(0, 10);
+    });
+
+    it('percent in arithmetic: 50% + 0.25', () => {
+      const result = compile('let x = calc(50% + 0.25); log(x);');
+      expect(result.logs[0].parts[0].value).toBe('0.75');
+    });
+  });
 });

@@ -353,16 +353,21 @@ function setVariable(scope: Scope, name: string, value: Value): void {
 }
 
 /**
- * Convert angle value based on unit suffix
+ * Convert value based on unit suffix
  * - 'deg': converts degrees to radians
+ * - 'pi': multiplies by Math.PI
+ * - '%': divides by 100 (20% → 0.2)
  * - 'rad' or undefined: returns value unchanged (radians are internal standard)
  */
-function convertAngleUnit(value: number, unit?: 'deg' | 'rad' | 'pi'): number {
+function convertUnitSuffix(value: number, unit?: 'deg' | 'rad' | 'pi' | '%'): number {
   if (unit === 'deg') {
     return (value * Math.PI) / 180;
   }
   if (unit === 'pi') {
     return value * Math.PI;
+  }
+  if (unit === '%') {
+    return value / 100;
   }
   return value; // rad or no unit = radians (internal standard)
 }
@@ -423,7 +428,7 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
   const numericArgs: number[] = [];
   for (const arg of args) {
     if (arg.type === 'NumberLiteral') {
-      numericArgs.push(convertAngleUnit(arg.value, arg.unit));
+      numericArgs.push(convertUnitSuffix(arg.value, arg.unit));
     } else if (arg.type === 'Identifier') {
       const value = lookupVariable(scope, arg.name);
       if (typeof value === 'number') {
@@ -1930,7 +1935,18 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
   switch (expr.type) {
     case 'NumberLiteral':
-      return convertAngleUnit(expr.value, expr.unit);
+      return convertUnitSuffix(expr.value, expr.unit);
+
+    case 'ColorLiteral': {
+      const raw = expr.raw;
+      if (raw.startsWith('#')) {
+        const digits = raw.slice(1);
+        if (digits.length !== 3 && digits.length !== 4 && digits.length !== 6 && digits.length !== 8) {
+          throw new Error(`Invalid hex color: '${raw}' (must be 3, 4, 6, or 8 hex digits)`);
+        }
+      }
+      return { type: 'ColorValue' as const, oklch: parseColor(raw) };
+    }
 
     case 'NullLiteral':
       return null;
@@ -2414,8 +2430,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
           cssVar: { varName: arg.varName, fallback: arg.fallback },
         };
       }
+      if (isColorValue(arg)) return arg; // Color(#cc0000) → pass-through
       if (typeof arg !== 'string')
-        throw new Error(formatError('Color() with 1 argument expects a color string or CSSVar', cLine, cCol));
+        throw new Error(formatError('Color() with 1 argument expects a color string, CSSVar, or Color', cLine, cCol));
       return { type: 'ColorValue' as const, oklch: parseColor(arg) };
     }
     if (call.args.length === 3 || call.args.length === 4) {
@@ -2720,7 +2737,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
 function evaluatePathArg(arg: PathArg, scope: Scope): string {
   switch (arg.type) {
     case 'NumberLiteral':
-      return String(convertAngleUnit(arg.value, arg.unit));
+      return String(convertUnitSuffix(arg.value, arg.unit));
 
     case 'Identifier': {
       const argLoc = (arg as { loc?: { line: number; column: number } }).loc;

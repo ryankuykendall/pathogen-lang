@@ -1,0 +1,172 @@
+// viewBox="0 0 520 340"
+// Reactive Palette — CSSVar base color + hex literals + % suffix
+// Change --base-color in the playground to recolor every swatch
+
+// ═══════════════════════════════════════
+// Background
+// ═══════════════════════════════════════
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 520, 340) }
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`Reactive Palette`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #64748b;
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`Change --base-color to update all swatches`
+}
+
+// ═══════════════════════════════════════
+// Reactive base color — try changing it!
+// ═══════════════════════════════════════
+
+let base = Color(CSSVar('--base-color', #0066ff));
+
+// ── Derived palette ─────────────────
+
+let darker  = base.darken(20%);
+let dark    = base.darken(10%);
+let light   = base.lighten(10%);
+let lighter = base.lighten(20%);
+let pale    = base.lighten(30%);
+
+let comp     = base.complement();
+let shifted  = base.hueShift(60);
+let muted    = base.desaturate(50%);
+let semi     = base.alpha(50%);
+
+// ═══════════════════════════════════════
+// Row 1: Lightness ramp
+// ═══════════════════════════════════════
+
+let sx = 65;
+let sp = 80;
+let sw = 54;
+let sh = 44;
+let sr = 5;
+
+let row_label = TextLayer('row-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: end;
+};
+
+let sw_label = TextLayer('sw-label') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: #64748b;
+  text-anchor: middle;
+};
+
+let row1_y = 80;
+let ramp = [darker, dark, base, light, lighter, pale];
+let ramp_names = ['-20%', '-10%', 'base', '+10%', '+20%', '+30%'];
+
+row_label.apply {
+  text(30, calc(row1_y + sh / 2 + 3))`light`
+}
+
+for ([color, i] in ramp) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`r_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+}
+
+sw_label.apply {
+  for ([name, i] in ramp_names) {
+    text(calc(sx + i * sp), calc(row1_y + sh + 12))`${name}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Row 2: Transformations
+// ═══════════════════════════════════════
+
+let row2_y = 160;
+let transforms = [base, comp, shifted, muted, semi];
+let xform_names = ['base', 'complement', 'hue +60', 'desat 50%', 'alpha 50%'];
+
+row_label.apply {
+  text(30, calc(row2_y + sh / 2 + 3))`xform`
+}
+
+for ([color, i] in transforms) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`x_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+}
+
+sw_label.apply {
+  for ([name, i] in xform_names) {
+    text(calc(sx + i * sp), calc(row2_y + sh + 12))`${name}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Row 3: Triadic harmony
+// ═══════════════════════════════════════
+
+let row3_y = 240;
+let triad = base.triadic();
+
+row_label.apply {
+  text(30, calc(row3_y + sh / 2 + 3))`triad`
+}
+
+for ([color, i] in triad) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`tri_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+}
+
+let triad_names = ['0°', '+120°', '+240°'];
+sw_label.apply {
+  for ([name, i] in triad_names) {
+    text(calc(sx + i * sp), calc(row3_y + sh + 12))`${name}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Code annotation
+// ═══════════════════════════════════════
+
+let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+code_bg.apply { roundRect(30, 300, 460, 28, 4) }
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+code.apply {
+  text(42, 318)`let base = Color(CSSVar('--base-color', #0066ff));`
+}
+
+let code_kw = TextLayer('code-kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+  text-anchor: start;
+};
+code_kw.apply {
+  text(42, 318)`let`
+}

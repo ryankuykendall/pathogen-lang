@@ -202,7 +202,23 @@ M x y L <span class="hljs-number">100</span> <span class="hljs-number">100</span
 <span class="hljs-keyword">let</span> sub = str.<span class="hljs-title function_">slice</span>(<span class="hljs-number">0</span>, <span class="hljs-number">5</span>);    <span class="hljs-comment">// &quot;Hello&quot;</span>
 <span class="hljs-keyword">let</span> end = str.<span class="hljs-title function_">slice</span>(<span class="hljs-number">6</span>, <span class="hljs-number">11</span>);   <span class="hljs-comment">// &quot;World&quot;</span>
 <span class="hljs-keyword">let</span> last3 = str.<span class="hljs-title function_">slice</span>(-<span class="hljs-number">3</span>, <span class="hljs-number">11</span>); <span class="hljs-comment">// &quot;rld&quot;</span>
-</code></pre><h2 id="syntax-expressions-with-calc">Expressions with calc()</h2>
+</code></pre><h2 id="syntax-color-literals">Color Literals</h2>
+<p>Hex color codes and CSS color functions are first-class expressions:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = #cc0000;                      <span class="hljs-comment">// 6-digit hex</span>
+<span class="hljs-keyword">let</span> c = #f00;                         <span class="hljs-comment">// 3-digit shorthand</span>
+<span class="hljs-keyword">let</span> c = #cc000080;                    <span class="hljs-comment">// 8-digit with alpha</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);              <span class="hljs-comment">// CSS color function</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">50</span>%);           <span class="hljs-comment">// % is literal inside parens</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span>);          <span class="hljs-comment">// any CSS color space</span>
+<span class="hljs-keyword">let</span> lighter = (#cc0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%); <span class="hljs-comment">// method chaining via parens</span>
+</code></pre><p>See the <a href="color.md">Color documentation</a> for full details.</p>
+<h2 id="syntax-percent-suffix">Percent Suffix</h2>
+<p>The <code>%</code> suffix converts a number to a fraction: <code>50%</code> becomes <code>0.5</code>.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> half = <span class="hljs-number">50</span>%;          <span class="hljs-comment">// 0.5</span>
+<span class="hljs-keyword">let</span> third = <span class="hljs-number">33.3</span>%;       <span class="hljs-comment">// 0.333</span>
+<span class="hljs-keyword">let</span> c = (#ff0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);  <span class="hljs-comment">// lighten by 0.2</span>
+</code></pre><p><strong>Disambiguation</strong>: <code>20%</code> (no space) is a percent literal (= 0.2). <code>20 % 5</code> (with spaces) is the modulus operator (= 0).</p>
+<h2 id="syntax-expressions-with-calc">Expressions with calc()</h2>
 <p>For mathematical expressions, wrap them in <code>calc()</code>:</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> r = <span class="hljs-number">50</span>;
 M <span class="hljs-title function_">calc</span>(<span class="hljs-number">100</span> - r) <span class="hljs-number">100</span>
@@ -233,7 +249,7 @@ L <span class="hljs-title function_">calc</span>(<span class="hljs-number">100</
 </tr>
 <tr>
 <td><code>%</code></td>
-<td>Modulo</td>
+<td>Modulo (use spaces: <code>a % b</code>)</td>
 </tr>
 <tr>
 <td><code>&lt;</code></td>
@@ -2666,6 +2682,16 @@ export const tocData = JSON.parse(`[
         "id": "syntax-slicestart-end",
         "title": ".slice(start, end)",
         "level": 3
+      },
+      {
+        "id": "syntax-color-literals",
+        "title": "Color Literals",
+        "level": 2
+      },
+      {
+        "id": "syntax-percent-suffix",
+        "title": "Percent Suffix",
+        "level": 2
       },
       {
         "id": "syntax-expressions-with-calc",

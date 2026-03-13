@@ -1,0 +1,122 @@
+// viewBox="0 0 560 340"
+// Color Spaces — The same red expressed in 7 CSS color function syntaxes
+// All produce the same ColorValue internally
+
+// ═══════════════════════════════════════
+// Background
+// ═══════════════════════════════════════
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 560, 340) }
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`CSS Color Function Literals`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #64748b;
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`One red, seven ways — all first-class expressions`
+}
+
+// ═══════════════════════════════════════
+// Colors — all expressing the same red
+// ═══════════════════════════════════════
+
+let c_hex   = #cc0000;
+let c_rgb   = rgb(204, 0, 0);
+let c_hsl   = hsl(0, 100%, 40%);
+let c_oklch = oklch(0.5 0.18 27);
+let c_hwb   = hwb(0 0% 20%);
+let c_lab   = lab(42 60 50);
+let c_oklab = oklab(0.5 0.13 0.08);
+
+let colors = [c_hex, c_rgb, c_hsl, c_oklch, c_hwb, c_lab, c_oklab];
+let labels = ['#cc0000', 'rgb(204, 0, 0)', 'hsl(0, 100%, 40%)', 'oklch(0.5 0.18 27)', 'hwb(0 0% 20%)', 'lab(42 60 50)', 'oklab(0.5 0.13 0.08)'];
+let space_names = ['Hex', 'sRGB', 'HSL', 'OKLCH', 'HWB', 'CIE Lab', 'OKLab'];
+
+// ═══════════════════════════════════════
+// Grid layout — 2 columns
+// ═══════════════════════════════════════
+
+let cols = 2;
+let sx = 50;
+let sy = 80;
+let col_w = 260;
+let row_h = 60;
+let sw = 40;
+let sh = 40;
+let sr = 4;
+
+let space_label = TextLayer('space-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+
+let code_label = TextLayer('code-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+
+for ([color, i] in colors) {
+  let col = calc(i % cols);
+  let row = calc((i - col) / cols);
+  let x = calc(sx + col * col_w);
+  let y = calc(sy + row * row_h);
+
+  // Swatch
+  let swatch = PathLayer(`cs_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(x, y, sw, sh, sr) }
+
+  // Space name
+  space_label.apply {
+    text(calc(x + sw + 12), calc(y + 16))`${space_names[i]}`
+  }
+
+  // Code syntax
+  code_label.apply {
+    text(calc(x + sw + 12), calc(y + 30))`${labels[i]}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Convergence annotation
+// ═══════════════════════════════════════
+
+let arrow_label = TextLayer('arrow-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: #38bdf8;
+  text-anchor: middle;
+};
+arrow_label.apply {
+  text(280, 312)`All converge → OKLCH internally`
+}
+
+let arrow_line = PathLayer('arrow-line') ${
+  stroke: #38bdf8;
+  stroke-width: 1;
+  fill: none;
+  opacity: 0.4;
+};
+arrow_line.apply {
+  M 100 300 h 360
+}

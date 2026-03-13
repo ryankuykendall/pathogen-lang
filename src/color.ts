@@ -179,6 +179,11 @@ function hexToSRGB(hex: string): SRGB {
     r = parseInt(hex[0] + hex[0], 16) / 255;
     g = parseInt(hex[1] + hex[1], 16) / 255;
     b = parseInt(hex[2] + hex[2], 16) / 255;
+  } else if (hex.length === 4) {
+    r = parseInt(hex[0] + hex[0], 16) / 255;
+    g = parseInt(hex[1] + hex[1], 16) / 255;
+    b = parseInt(hex[2] + hex[2], 16) / 255;
+    a = parseInt(hex[3] + hex[3], 16) / 255;
   } else if (hex.length === 6) {
     r = parseInt(hex.slice(0, 2), 16) / 255;
     g = parseInt(hex.slice(2, 4), 16) / 255;
@@ -374,6 +379,72 @@ export function setLightnessCSS(source: string, lightness: number): string {
   return `oklch(from ${source} ${lightness} c h)`;
 }
 
+// ── HWB ↔ sRGB ───────────────────────────────────────────────────────
+
+function hwbToSRGB(h: number, w: number, b: number, alpha: number): SRGB {
+  // w and b in [0,1]; if w + b > 1, normalize
+  if (w + b > 1) {
+    const sum = w + b;
+    w = w / sum;
+    b = b / sum;
+  }
+  const rgb = hslToSRGB(h, 1, 0.5, alpha);
+  return {
+    r: rgb.r * (1 - w - b) + w,
+    g: rgb.g * (1 - w - b) + w,
+    b: rgb.b * (1 - w - b) + w,
+    alpha,
+  };
+}
+
+// ── CIE Lab/LCH → OKLCH conversion chains ──────────────────────────────
+
+// D65 white point
+const D65_X = 0.95047;
+const D65_Y = 1.0;
+const D65_Z = 1.08883;
+
+function labFInv(t: number): number {
+  const delta = 6 / 29;
+  return t > delta ? t * t * t : 3 * delta * delta * (t - 4 / 29);
+}
+
+function cieLabToXYZ(L: number, a: number, b: number): { x: number; y: number; z: number } {
+  const fy = (L + 16) / 116;
+  const fx = a / 500 + fy;
+  const fz = fy - b / 200;
+  return {
+    x: D65_X * labFInv(fx),
+    y: D65_Y * labFInv(fy),
+    z: D65_Z * labFInv(fz),
+  };
+}
+
+function xyzToLinearSRGB(x: number, y: number, z: number): LinearRGB {
+  // XYZ (D65) → linear sRGB matrix
+  return {
+    r: 3.2404542 * x - 1.5371385 * y - 0.4985314 * z,
+    g: -0.969266 * x + 1.8760108 * y + 0.041556 * z,
+    b: 0.0556434 * x - 0.2040259 * y + 1.0572252 * z,
+    alpha: 1,
+  };
+}
+
+function cieLabToOKLCH(L: number, a: number, b: number, alpha: number): OKLCH {
+  const xyz = cieLabToXYZ(L, a, b);
+  const linRGB = xyzToLinearSRGB(xyz.x, xyz.y, xyz.z);
+  linRGB.alpha = alpha;
+  const oklab = linearSRGBToOKLab(linRGB);
+  return oklabToOKLCH(oklab);
+}
+
+function cieLCHToOKLCH(L: number, C: number, H: number, alpha: number): OKLCH {
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+  return cieLabToOKLCH(L, a, b, alpha);
+}
+
 // ── Unified parser ─────────────────────────────────────────────────────
 
 export function parseColor(input: string): OKLCH {
@@ -419,6 +490,48 @@ export function parseColor(input: string): OKLCH {
       H: parseFloat(oklchMatch[3]),
       alpha: oklchMatch[4] !== undefined ? parseFloat(oklchMatch[4]) : 1,
     };
+  }
+
+  // oklab()
+  const oklabMatch = /^oklab\(\s*([\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  if (oklabMatch) {
+    const lab: OKLab = {
+      L: parseFloat(oklabMatch[1]),
+      a: parseFloat(oklabMatch[2]),
+      b: parseFloat(oklabMatch[3]),
+      alpha: oklabMatch[4] !== undefined ? parseFloat(oklabMatch[4]) : 1,
+    };
+    return oklabToOKLCH(lab);
+  }
+
+  // hwb() / hwba()
+  const hwbMatch = /^hwba?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  if (hwbMatch) {
+    const h = parseFloat(hwbMatch[1]);
+    const w = parseFloat(hwbMatch[2]) / 100;
+    const b = parseFloat(hwbMatch[3]) / 100;
+    const a = hwbMatch[4] !== undefined ? parseFloat(hwbMatch[4]) : 1;
+    return srgbToOKLCH(hwbToSRGB(h, w, b, a));
+  }
+
+  // lab() — CIE Lab
+  const labMatch = /^lab\(\s*([\d.]+)%?\s+([-\d.]+)\s+([-\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  if (labMatch) {
+    const L = parseFloat(labMatch[1]);
+    const a = parseFloat(labMatch[2]);
+    const b = parseFloat(labMatch[3]);
+    const alpha = labMatch[4] !== undefined ? parseFloat(labMatch[4]) : 1;
+    return cieLabToOKLCH(L, a, b, alpha);
+  }
+
+  // lch() — CIE LCH
+  const lchMatch = /^lch\(\s*([\d.]+)%?\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  if (lchMatch) {
+    const L = parseFloat(lchMatch[1]);
+    const C = parseFloat(lchMatch[2]);
+    const H = parseFloat(lchMatch[3]);
+    const alpha = lchMatch[4] !== undefined ? parseFloat(lchMatch[4]) : 1;
+    return cieLCHToOKLCH(L, C, H, alpha);
   }
 
   throw new Error(`Invalid color: '${input}'`);

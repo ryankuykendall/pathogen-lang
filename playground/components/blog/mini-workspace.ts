@@ -256,7 +256,7 @@ export class MiniWorkspace extends HTMLElement {
     let match;
     while ((match = propRegex.exec(styleMatch[1])) !== null) {
       const body = match[2];
-      if (!body.includes('"<color>"')) continue;
+      if (!body.includes('"<color>"') && !body.includes('"&lt;color&gt;"')) continue;
       const valMatch = body.match(/initial-value:\s*(#[\da-fA-F]{3,8})/);
       if (valMatch) {
         vars.push({ name: match[1], defaultValue: valMatch[1] });

@@ -1,0 +1,186 @@
+// viewBox="0 0 520 320"
+// Hex Palette — Building a color palette from a single hex literal
+// Demonstrates method chaining on hex color literals
+
+// ═══════════════════════════════════════
+// Background
+// ═══════════════════════════════════════
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 520, 320) }
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`Palette from a Single Hex Literal`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #64748b;
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`Method chaining: (#0066ff).lighten(20%), (#0066ff).hueShift(60)`
+}
+
+// ═══════════════════════════════════════
+// Base color
+// ═══════════════════════════════════════
+
+let base = #0066ff;
+
+// ── Lightness ramp ──────────────────
+
+let dark2  = (base).darken(30%);
+let dark1  = (base).darken(15%);
+let light1 = (base).lighten(15%);
+let light2 = (base).lighten(30%);
+
+let lightness_row = [dark2, dark1, base, light1, light2];
+let lightness_names = ['darken 30%', 'darken 15%', 'base', 'lighten 15%', 'lighten 30%'];
+
+// ── Hue shift ramp ─────────────────
+
+let hue1 = (base).hueShift(-60);
+let hue2 = (base).hueShift(-30);
+let hue3 = (base).hueShift(30);
+let hue4 = (base).hueShift(60);
+
+let hue_row = [hue1, hue2, base, hue3, hue4];
+let hue_names = ['-60°', '-30°', 'base', '+30°', '+60°'];
+
+// ── Saturation ramp ────────────────
+
+let desat2 = (base).desaturate(25%);
+let desat1 = (base).desaturate(50%);
+let sat1   = (base).saturate(1.3);
+let sat2   = (base).saturate(1.6);
+
+let sat_row = [desat1, desat2, base, sat1, sat2];
+let sat_names = ['desat 50%', 'desat 25%', 'base', 'sat 1.3×', 'sat 1.6×'];
+
+// ═══════════════════════════════════════
+// Swatch grid
+// ═══════════════════════════════════════
+
+let sx = 65;
+let sp = 98;
+let sw = 60;
+let sh = 44;
+let sr = 5;
+
+// ── Row labels ──────────────────────
+
+let row_labels = TextLayer('row-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: end;
+};
+
+// ── Swatch labels ───────────────────
+
+let sw_labels = TextLayer('sw-labels') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: #64748b;
+  text-anchor: middle;
+};
+
+// ── Row 1: Lightness ────────────────
+
+let row1_y = 90;
+
+row_labels.apply {
+  text(24, calc(row1_y + sh / 2 + 3))`Lightness`
+}
+
+for ([color, i] in lightness_row) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`l_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+}
+
+sw_labels.apply {
+  for ([name, i] in lightness_names) {
+    text(calc(sx + i * sp), calc(row1_y + sh + 12))`${name}`
+  }
+}
+
+// ── Row 2: Hue Shift ────────────────
+
+let row2_y = 160;
+
+row_labels.apply {
+  text(24, calc(row2_y + sh / 2 + 3))`Hue`
+}
+
+for ([color, i] in hue_row) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`h_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+}
+
+sw_labels.apply {
+  for ([name, i] in hue_names) {
+    text(calc(sx + i * sp), calc(row2_y + sh + 12))`${name}`
+  }
+}
+
+// ── Row 3: Saturation ───────────────
+
+let row3_y = 230;
+
+row_labels.apply {
+  text(24, calc(row3_y + sh / 2 + 3))`Chroma`
+}
+
+for ([color, i] in sat_row) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`s_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+}
+
+sw_labels.apply {
+  for ([name, i] in sat_names) {
+    text(calc(sx + i * sp), calc(row3_y + sh + 12))`${name}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Base indicator
+// ═══════════════════════════════════════
+
+let base_indicator = TextLayer('base-indicator') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #38bdf8;
+  text-anchor: middle;
+};
+base_indicator.apply {
+  text(calc(sx + 2 * sp), calc(row1_y - 8))`#0066ff`
+}
+
+// ── Vertical base line ──────────────
+
+let base_line = PathLayer('base-line') ${
+  stroke: #38bdf8;
+  stroke-width: 1;
+  stroke-dasharray: "3 3";
+  fill: none;
+  opacity: 0.5;
+};
+base_line.apply {
+  M calc(sx + 2 * sp) row1_y
+  v calc(row3_y + sh - row1_y)
+}

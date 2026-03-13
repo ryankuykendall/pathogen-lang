@@ -1,0 +1,170 @@
+// viewBox="0 0 520 280"
+// Reactive Tints — CSSVar + percent suffix for tint/shade scales
+// Change --tint-color to update every row
+
+// ═══════════════════════════════════════
+// Background
+// ═══════════════════════════════════════
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 520, 280) }
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`Reactive Tint / Shade Scale`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #64748b;
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`Change --tint-color — every swatch updates`
+}
+
+// ═══════════════════════════════════════
+// Reactive base
+// ═══════════════════════════════════════
+
+let base = Color(CSSVar('--tint-color', #e63946));
+
+// ═══════════════════════════════════════
+// Layout
+// ═══════════════════════════════════════
+
+let sx = 70;
+let sp = 58;
+let sw = 44;
+let sh = 44;
+let sr = 4;
+let steps = 7;
+
+let row_label = TextLayer('row-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: end;
+};
+
+let pct_label = TextLayer('pct-label') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: #64748b;
+  text-anchor: middle;
+};
+
+// ═══════════════════════════════════════
+// Row 1: Lighten 0% → 60%
+// ═══════════════════════════════════════
+
+let row1_y = 76;
+
+row_label.apply {
+  text(42, calc(row1_y + sh / 2 + 3))`lighten`
+}
+
+let tints = [
+  base,
+  base.lighten(10%),
+  base.lighten(20%),
+  base.lighten(30%),
+  base.lighten(40%),
+  base.lighten(50%),
+  base.lighten(60%)
+];
+
+for ([color, i] in tints) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`lt_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+}
+
+let tint_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
+pct_label.apply {
+  for ([pct, i] in tint_pcts) {
+    text(calc(sx + i * sp), calc(row1_y + sh + 11))`${pct}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Row 2: Darken 0% → 60%
+// ═══════════════════════════════════════
+
+let row2_y = 152;
+
+row_label.apply {
+  text(42, calc(row2_y + sh / 2 + 3))`darken`
+}
+
+let shades = [
+  base,
+  base.darken(10%),
+  base.darken(20%),
+  base.darken(30%),
+  base.darken(40%),
+  base.darken(50%),
+  base.darken(60%)
+];
+
+for ([color, i] in shades) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`dk_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+}
+
+let shade_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
+pct_label.apply {
+  for ([pct, i] in shade_pcts) {
+    text(calc(sx + i * sp), calc(row2_y + sh + 11))`${pct}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Code annotation
+// ═══════════════════════════════════════
+
+let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+code_bg.apply { roundRect(30, 228, 460, 40, 4) }
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+code.apply {
+  text(42, 245)`let base = Color(CSSVar('--tint-color', #e63946));`
+  text(42, 259)`let tint = base.lighten(20%);`
+}
+
+let code_kw = TextLayer('code-kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+  text-anchor: start;
+};
+code_kw.apply {
+  text(42, 245)`let`
+  text(42, 259)`let`
+}
+
+let code_comment = TextLayer('code-comment') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #64748b;
+  text-anchor: start;
+};
+code_comment.apply {
+  text(274, 259)`// 20% → 0.2`
+}

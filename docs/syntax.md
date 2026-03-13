@@ -153,6 +153,34 @@ let end = str.slice(6, 11);   // "World"
 let last3 = str.slice(-3, 11); // "rld"
 ```
 
+## Color Literals
+
+Hex color codes and CSS color functions are first-class expressions:
+
+```
+let c = #cc0000;                      // 6-digit hex
+let c = #f00;                         // 3-digit shorthand
+let c = #cc000080;                    // 8-digit with alpha
+let c = rgb(255, 0, 0);              // CSS color function
+let c = hsl(0, 100%, 50%);           // % is literal inside parens
+let c = oklch(0.6 0.15 30);          // any CSS color space
+let lighter = (#cc0000).lighten(20%); // method chaining via parens
+```
+
+See the [Color documentation](color.md) for full details.
+
+## Percent Suffix
+
+The `%` suffix converts a number to a fraction: `50%` becomes `0.5`.
+
+```
+let half = 50%;          // 0.5
+let third = 33.3%;       // 0.333
+let c = (#ff0000).lighten(20%);  // lighten by 0.2
+```
+
+**Disambiguation**: `20%` (no space) is a percent literal (= 0.2). `20 % 5` (with spaces) is the modulus operator (= 0).
+
 ## Expressions with calc()
 
 For mathematical expressions, wrap them in `calc()`:
@@ -171,7 +199,7 @@ L calc(100 + r) 100
 | `-` | Subtraction |
 | `*` | Multiplication |
 | `/` | Division |
-| `%` | Modulo |
+| `%` | Modulo (use spaces: `a % b`) |
 | `<` | Less than |
 | `>` | Greater than |
 | `<=` | Less than or equal |

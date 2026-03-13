@@ -1,0 +1,212 @@
+// viewBox="0 0 540 280"
+// Before/After — Color('#cc0000') vs #cc0000
+// Shows that both produce identical output, but the literal is cleaner
+
+// ═══════════════════════════════════════
+// Style variables
+// ═══════════════════════════════════════
+
+let kw   = ${ fill: #c084fc; };
+let str  = ${ fill: #a3e635; };
+let hex  = ${ fill: #fb923c; };
+let pct  = ${ fill: #38bdf8; };
+let base = ${ fill: #94a3b8; };
+
+// ═══════════════════════════════════════
+// Background
+// ═══════════════════════════════════════
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 540, 280) }
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`Before & After`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #64748b;
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`Same output — less ceremony`
+}
+
+// ═══════════════════════════════════════
+// Divider
+// ═══════════════════════════════════════
+
+let divider = PathLayer('divider') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: "4 4";
+  fill: none;
+};
+divider.apply {
+  M 270 66 v 196
+}
+
+// ═══════════════════════════════════════
+// "Before" panel (left)
+// ═══════════════════════════════════════
+
+let before_label = TextLayer('before-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+before_label.apply {
+  text(150, 78)`Before`
+}
+
+// Code block background
+let before_code_bg = PathLayer('before-code-bg') ${
+  fill: #1e293b;
+  stroke: #334155;
+  stroke-width: 1;
+};
+before_code_bg.apply { roundRect(30, 90, 225, 80, 6) }
+
+// Code text with tspan-based syntax coloring
+let before_code = TextLayer('before-code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+before_code.apply {
+  text(42, 111) {
+    tspan(0, 0, 0, kw)`let`
+    tspan(0, 0, 0, base)` c = Color(`
+    tspan(0, 0, 0, str)`'#cc0000'`
+    tspan(0, 0, 0, base)`);`
+  }
+  text(42, 127) {
+    tspan(0, 0, 0, kw)`let`
+    tspan(0, 0, 0, base)` light = c.lighten(0.2);`
+  }
+  text(42, 143) {
+    tspan(0, 0, 0, kw)`let`
+    tspan(0, 0, 0, base)` faded = c.alpha(0.5);`
+  }
+}
+
+// Swatches for before
+let b_swatch1 = PathLayer('b-sw1') ${ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
+b_swatch1.apply { roundRect(48, 183, 55, 40, 4) }
+
+let b_swatch2 = PathLayer('b-sw2') ${ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
+b_swatch2.apply { roundRect(113, 183, 55, 40, 4) }
+
+let b_swatch3 = PathLayer('b-sw3') ${ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
+b_swatch3.apply { roundRect(178, 183, 55, 40, 4) }
+
+let b_sw_labels = TextLayer('b-sw-labels') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #64748b;
+  text-anchor: middle;
+};
+b_sw_labels.apply {
+  text(75, 238)`c`
+  text(140, 238)`light`
+  text(205, 238)`faded`
+}
+
+// ═══════════════════════════════════════
+// "After" panel (right)
+// ═══════════════════════════════════════
+
+let after_label = TextLayer('after-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #38bdf8;
+  text-anchor: middle;
+};
+after_label.apply {
+  text(400, 78)`After`
+}
+
+// Code block background
+let after_code_bg = PathLayer('after-code-bg') ${
+  fill: #1e293b;
+  stroke: #38bdf8;
+  stroke-width: 1;
+};
+after_code_bg.apply { roundRect(285, 90, 225, 80, 6) }
+
+// Code text with tspan-based syntax coloring
+let after_code = TextLayer('after-code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+after_code.apply {
+  text(297, 111) {
+    tspan(0, 0, 0, kw)`let`
+    tspan(0, 0, 0, base)` c = `
+    tspan(0, 0, 0, hex)`#cc0000`
+    tspan(0, 0, 0, base)`;`
+  }
+  text(297, 127) {
+    tspan(0, 0, 0, kw)`let`
+    tspan(0, 0, 0, base)` light = c.lighten(`
+    tspan(0, 0, 0, pct)`20%`
+    tspan(0, 0, 0, base)`);`
+  }
+  text(297, 143) {
+    tspan(0, 0, 0, kw)`let`
+    tspan(0, 0, 0, base)` faded = c.alpha(`
+    tspan(0, 0, 0, pct)`50%`
+    tspan(0, 0, 0, base)`);`
+  }
+}
+
+// Swatches for after
+let a_swatch1 = PathLayer('a-sw1') ${ fill: #cc0000; stroke: #475569; stroke-width: 1; };
+a_swatch1.apply { roundRect(298, 183, 55, 40, 4) }
+
+let a_swatch2 = PathLayer('a-sw2') ${ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
+a_swatch2.apply { roundRect(363, 183, 55, 40, 4) }
+
+let a_swatch3 = PathLayer('a-sw3') ${ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
+a_swatch3.apply { roundRect(428, 183, 55, 40, 4) }
+
+let a_sw_labels = TextLayer('a-sw-labels') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #64748b;
+  text-anchor: middle;
+};
+a_sw_labels.apply {
+  text(325, 238)`c`
+  text(390, 238)`light`
+  text(455, 238)`faded`
+}
+
+// ═══════════════════════════════════════
+// Equals sign between swatches
+// ═══════════════════════════════════════
+
+let equals = TextLayer('equals') ${
+  font-family: system-ui, sans-serif;
+  font-size: 20;
+  fill: #38bdf8;
+  text-anchor: middle;
+};
+equals.apply {
+  text(270, 210)`=`
+}

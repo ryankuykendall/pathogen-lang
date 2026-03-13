@@ -1,0 +1,176 @@
+// viewBox="0 0 520 300"
+// Percent Tints — Using % suffix with color methods for tint/shade scales
+// 20% becomes 0.2, reads naturally: "lighten by 20%"
+
+// ═══════════════════════════════════════
+// Background
+// ═══════════════════════════════════════
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 520, 300) }
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #e2e8f0;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 30)`The Percent Suffix`
+}
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #64748b;
+  text-anchor: start;
+};
+subtitle.apply {
+  text(30, 46)`20% → 0.2  •  "lighten by 20%" reads naturally`
+}
+
+// ═══════════════════════════════════════
+// Tint scale — lighten by 0% to 40%
+// ═══════════════════════════════════════
+
+let base = #e63946;
+
+let tints = [
+  base,
+  (base).lighten(10%),
+  (base).lighten(20%),
+  (base).lighten(30%),
+  (base).lighten(40%)
+];
+let tint_labels = ['0%', '10%', '20%', '30%', '40%'];
+
+// ── Shade scale — darken by 0% to 40% ──
+
+let shades = [
+  base,
+  (base).darken(10%),
+  (base).darken(20%),
+  (base).darken(30%),
+  (base).darken(40%)
+];
+let shade_labels = ['0%', '10%', '20%', '30%', '40%'];
+
+// ── Alpha scale — alpha from 100% to 20% ──
+
+let alphas = [
+  base,
+  (base).alpha(80%),
+  (base).alpha(60%),
+  (base).alpha(40%),
+  (base).alpha(20%)
+];
+let alpha_labels = ['100%', '80%', '60%', '40%', '20%'];
+
+// ═══════════════════════════════════════
+// Layout
+// ═══════════════════════════════════════
+
+let sx = 90;
+let sp = 88;
+let sw = 54;
+let sh = 40;
+let sr = 4;
+
+let row_label = TextLayer('row-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: end;
+};
+
+let sw_label = TextLayer('sw-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #64748b;
+  text-anchor: middle;
+};
+
+// ── Row 1: Tints ────────────────────
+
+let row1_y = 80;
+
+row_label.apply {
+  text(58, calc(row1_y + sh / 2 + 3))`lighten`
+}
+
+for ([color, i] in tints) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`t_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+}
+
+sw_label.apply {
+  for ([name, i] in tint_labels) {
+    text(calc(sx + i * sp), calc(row1_y + sh + 12))`${name}`
+  }
+}
+
+// ── Row 2: Shades ───────────────────
+
+let row2_y = 150;
+
+row_label.apply {
+  text(58, calc(row2_y + sh / 2 + 3))`darken`
+}
+
+for ([color, i] in shades) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`d_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+}
+
+sw_label.apply {
+  for ([name, i] in shade_labels) {
+    text(calc(sx + i * sp), calc(row2_y + sh + 12))`${name}`
+  }
+}
+
+// ── Row 3: Alpha ────────────────────
+
+let row3_y = 220;
+
+row_label.apply {
+  text(58, calc(row3_y + sh / 2 + 3))`alpha`
+}
+
+// White background behind alpha row so opacity gradient is visible
+for ([_, i] in alphas) {
+  let x = calc(sx + i * sp - sw / 2);
+  let checker = PathLayer(`ck_${i}`) ${ fill: #ffffff; stroke: none; };
+  checker.apply { roundRect(x, row3_y, sw, sh, sr) }
+}
+
+for ([color, i] in alphas) {
+  let x = calc(sx + i * sp);
+  let swatch = PathLayer(`a_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+}
+
+sw_label.apply {
+  for ([name, i] in alpha_labels) {
+    text(calc(sx + i * sp), calc(row3_y + sh + 12))`${name}`
+  }
+}
+
+// ═══════════════════════════════════════
+// Base indicator
+// ═══════════════════════════════════════
+
+let base_ind = TextLayer('base-ind') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #38bdf8;
+  text-anchor: middle;
+};
+base_ind.apply {
+  text(sx, calc(row1_y - 8))`#e63946`
+}

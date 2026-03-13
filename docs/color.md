@@ -2,9 +2,58 @@
 
 The `Color` type provides first-class color manipulation in OKLCH color space. Colors are resolved at compile time to concrete CSS values.
 
+## Color Literals
+
+Hex color codes are first-class expressions — no quotes or `Color()` wrapper needed:
+
+```
+let c = #cc0000;                      // 6-digit hex → ColorValue
+let c = #f00;                         // 3-digit shorthand
+let c = #cc000080;                    // 8-digit with alpha
+let c = #f008;                        // 4-digit with alpha
+```
+
+Color literals support method chaining via parentheses:
+
+```
+let lighter = (#cc0000).lighten(20%); // 20% → 0.2
+let faded = (#0066ff).alpha(50%);     // 50% → 0.5
+```
+
+`Color()` accepts color literals as pass-through (no-op for backwards compatibility):
+
+```
+let c = Color(#cc0000);               // same as: let c = #cc0000;
+```
+
+## CSS Color Function Literals
+
+CSS color functions are first-class expressions with raw capture (content between parens is captured as-is):
+
+```
+let c = rgb(255, 0, 0);
+let c = rgba(255, 0, 0, 0.5);
+let c = hsl(0, 100%, 50%);           // % inside parens is literal
+let c = hsla(0, 100%, 50%, 0.5);
+let c = oklch(0.6 0.15 30);
+let c = oklch(0.6 0.15 30 / 0.5);    // / for alpha is literal
+let c = oklab(0.6 -0.1 0.15);
+let c = hwb(0 0% 0%);
+let c = lab(50 40 59.5);
+let c = lch(50 64 30);
+```
+
+Method chaining works directly:
+
+```
+let lighter = rgb(255, 0, 0).lighten(20%);
+```
+
+> **Note:** CSS color function names (`rgb`, `hsl`, `oklch`, etc.) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists.
+
 ## Constructor
 
-Create colors from any CSS color format:
+The `Color()` wrapper is still available for string-based construction and named colors:
 
 ```
 let c = Color('#e63946');              // hex (3, 6, or 8 digit)
@@ -14,6 +63,7 @@ let c = Color('hsl(0, 100%, 50%)');    // hsl/hsla
 let c = Color('oklch(0.6 0.15 30)');   // oklch
 let c = Color(0.6, 0.15, 30);         // direct OKLCH (L, C, H)
 let c = Color(0.6, 0.15, 30, 0.5);    // OKLCH + alpha
+let c = Color(#cc0000);               // pass-through (accepts ColorValue)
 ```
 
 All input formats are converted to OKLCH internally for perceptually uniform manipulation.

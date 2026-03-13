@@ -23,6 +23,15 @@ describe('Color type', () => {
       expect(alpha).toBeCloseTo(0.502, 1);
     });
 
+    it('creates from 4-digit hex with alpha', () => {
+      const result = compile('let c = Color("#f008"); log(c.hex);');
+      // #f008 = #ff000088, alpha ≈ 0.533
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+      const result2 = compile('let c = Color("#f008"); log(c.a);');
+      const alpha = parseFloat(result2.logs[0].parts[0].value);
+      expect(alpha).toBeCloseTo(0.533, 1);
+    });
+
     it('creates from named color', () => {
       const result = compile('let c = Color("red"); log(c.hex);');
       expect(result.logs[0].parts[0].value).toBe('#ff0000');
@@ -76,6 +85,66 @@ describe('Color type', () => {
     it('creates from 4-number OKLCH (L, C, H, alpha)', () => {
       const result = compile('let c = Color(0.6, 0.15, 30, 0.5); log(c.a);');
       expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 2);
+    });
+
+    it('creates from oklab()', () => {
+      // oklab(0.6 -0.1 0.15) — should produce a valid color
+      const result = compile('let c = Color("oklab(0.6 -0.1 0.15)"); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
+    });
+
+    it('creates from hwb()', () => {
+      // hwb(0 0% 0%) = pure red
+      const result = compile('let c = Color("hwb(0 0% 0%)"); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+    });
+
+    it('creates from hwb() with whiteness', () => {
+      // hwb(0 100% 0%) = white
+      const result = compile('let c = Color("hwb(0 100% 0%)"); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ffffff');
+    });
+
+    it('creates from lab()', () => {
+      // CIE Lab — should produce a valid color
+      const result = compile('let c = Color("lab(50 40 59.5)"); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
+    });
+
+    it('creates from lch()', () => {
+      // CIE LCH — should produce a valid color
+      const result = compile('let c = Color("lch(50 64 30)"); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
+    });
+
+    it('creates from oklab() with alpha', () => {
+      const result = compile('let c = Color("oklab(0.6 -0.1 0.15 / 0.5)"); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 2);
+    });
+
+    it('creates from hwb() with alpha', () => {
+      const result = compile('let c = Color("hwb(0 0% 0% / 0.5)"); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 2);
+    });
+
+    it('bare hwb() literal', () => {
+      const result = compile('let c = hwb(0 0% 0%); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff0000');
+    });
+
+    it('bare oklab() literal', () => {
+      const result = compile('let c = oklab(0.6 -0.1 0.15); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
+    });
+
+    it('bare lab() literal', () => {
+      const result = compile('let c = lab(50 40 59.5); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
+    });
+
+    it('bare lch() literal', () => {
+      const result = compile('let c = lch(50 64 30); log(c.css);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
     });
 
     it('throws on invalid color string', () => {

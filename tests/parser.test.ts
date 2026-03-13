@@ -981,4 +981,170 @@ L 10 20 // end point`;
       });
     });
   });
+
+  describe('color literals', () => {
+    it('parses 6-digit hex color literal', () => {
+      const ast = parse('let c = #cc0000;');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: '#cc0000',
+      });
+    });
+
+    it('parses 3-digit hex color literal', () => {
+      const ast = parse('let c = #f00;');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: '#f00',
+      });
+    });
+
+    it('parses 8-digit hex color literal (with alpha)', () => {
+      const ast = parse('let c = #cc000080;');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: '#cc000080',
+      });
+    });
+
+    it('parses 4-digit hex color literal (with alpha)', () => {
+      const ast = parse('let c = #f008;');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: '#f008',
+      });
+    });
+
+    it('parses hex literal with method chaining', () => {
+      const ast = parse('let c = (#cc0000).lighten(0.2);');
+      const decl = ast.body[0] as any;
+      // The parenthesized expr gets parsed, then .lighten() via withPostfix
+      // The outer expression is a MethodCallExpression
+      expect(decl.value.type).toBe('MethodCallExpression');
+      expect(decl.value.method).toBe('lighten');
+    });
+
+    it('parses hex literal inside Color()', () => {
+      const ast = parse('let c = Color(#cc0000);');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'FunctionCall',
+        name: 'Color',
+      });
+      expect(decl.value.args[0]).toMatchObject({
+        type: 'ColorLiteral',
+        raw: '#cc0000',
+      });
+    });
+  });
+
+  describe('CSS color function literals', () => {
+    it('parses rgb() as ColorLiteral', () => {
+      const ast = parse('let c = rgb(255, 0, 0);');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'rgb(255, 0, 0)',
+      });
+    });
+
+    it('parses rgba() as ColorLiteral', () => {
+      const ast = parse('let c = rgba(255, 0, 0, 0.5);');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'rgba(255, 0, 0, 0.5)',
+      });
+    });
+
+    it('parses hsl() as ColorLiteral', () => {
+      const ast = parse('let c = hsl(0, 100%, 50%);');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'hsl(0, 100%, 50%)',
+      });
+    });
+
+    it('parses oklch() as ColorLiteral', () => {
+      const ast = parse('let c = oklch(0.6 0.15 30);');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'oklch(0.6 0.15 30)',
+      });
+    });
+
+    it('parses oklch() with alpha as ColorLiteral', () => {
+      const ast = parse('let c = oklch(0.6 0.15 30 / 0.5);');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'oklch(0.6 0.15 30 / 0.5)',
+      });
+    });
+
+    it('parses CSS color function with method chaining', () => {
+      const ast = parse('let c = rgb(255, 0, 0).lighten(0.2);');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('MethodCallExpression');
+      expect(decl.value.method).toBe('lighten');
+      expect(decl.value.object).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'rgb(255, 0, 0)',
+      });
+    });
+  });
+
+  describe('percent suffix', () => {
+    it('parses number with percent suffix', () => {
+      const ast = parse('let x = 20%;');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'NumberLiteral',
+        value: 20,
+        unit: '%',
+      });
+    });
+
+    it('parses percent suffix with decimal', () => {
+      const ast = parse('let x = 50.5%;');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'NumberLiteral',
+        value: 50.5,
+        unit: '%',
+      });
+    });
+
+    it('parses modulus operator with spaces', () => {
+      const ast = parse('let x = calc(10 % 3);');
+      const decl = ast.body[0] as any;
+      const calcExpr = decl.value;
+      expect(calcExpr.type).toBe('CalcExpression');
+      expect(calcExpr.expression).toMatchObject({
+        type: 'BinaryExpression',
+        operator: '%',
+        left: { type: 'NumberLiteral', value: 10 },
+        right: { type: 'NumberLiteral', value: 3 },
+      });
+    });
+
+    it('parses percent suffix and modulus together', () => {
+      const ast = parse('let x = calc(20% % 2%);');
+      const decl = ast.body[0] as any;
+      const calcExpr = decl.value;
+      expect(calcExpr.type).toBe('CalcExpression');
+      expect(calcExpr.expression).toMatchObject({
+        type: 'BinaryExpression',
+        operator: '%',
+        left: { type: 'NumberLiteral', value: 20, unit: '%' },
+        right: { type: 'NumberLiteral', value: 2, unit: '%' },
+      });
+    });
+  });
 });

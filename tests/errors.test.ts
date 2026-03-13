@@ -542,3 +542,13 @@ describe('Void function calls', () => {
     expect(result.layers.length).toBeGreaterThan(0);
   });
 });
+
+describe('Color literal errors', () => {
+  it('rejects 5-digit hex literal', () => {
+    expect(() => compile('let c = #abcde;')).toThrow(/Invalid hex color.*must be 3, 4, 6, or 8 hex digits/);
+  });
+
+  it('rejects 7-digit hex literal', () => {
+    expect(() => compile('let c = #abcdef0;')).toThrow(/Invalid hex color.*must be 3, 4, 6, or 8 hex digits/);
+  });
+});

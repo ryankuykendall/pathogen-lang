@@ -120,6 +120,7 @@ function wrapSvgInHtml(
     <p>Roadmap: ${meta.roadmap} | Generated: ${meta.timestamp.replace(/-(\d{2}:\d{2}:\d{2})$/, ' $1')} | ${renderLabel} | viewBox: ${meta.viewBox}</p>
   </div>
   <div class="svg-container">
+    <!-- prettier-ignore -->
 ${svgContent}
   </div>
 </body>
@@ -166,6 +167,7 @@ function wrapMiniWorkspaceHtml(
     <theme-toggle></theme-toggle>
   </div>
   <div class="workspace-container">
+    <!-- prettier-ignore -->
     <mini-workspace code-data="${codeData}" code-open>
 ${svgContent}
     </mini-workspace>

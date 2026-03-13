@@ -5,6 +5,7 @@ import type {
   AssignmentStatement,
   BinaryExpression,
   CalcExpression,
+  ColorLiteral,
   Comment,
   Expression,
   ExpressionStatement,
@@ -70,16 +71,16 @@ function keyword(str: string): Parsimmon.Parser<string> {
   return token(P.regexp(new RegExp(`${str}(?![a-zA-Z0-9_])`)));
 }
 
-// Number literal: 123, 45.67, -89, .5, optionally with angle unit suffix (deg/rad/pi)
+// Number literal: 123, 45.67, -89, .5, optionally with unit suffix (deg/rad/pi/%)
 // Uses negative lookahead to avoid consuming '.' when followed by '..' (range operator)
 const numberLiteral: Parsimmon.Parser<NumberLiteral> = token(
-  P.regexp(/-?(?:\d+(?:\.(?!\.))\d*|\.\d+|\d+)(deg|rad|pi)?/),
+  P.regexp(/-?(?:\d+(?:\.(?!\.))\d*|\.\d+|\d+)(deg|rad|pi|%)?/),
 ).map((str) => {
-  const match = /^(-?(?:\d+(?:\.\d*)?|\.\d+|\d+))(deg|rad|pi)?$/.exec(str);
+  const match = /^(-?(?:\d+(?:\.\d*)?|\.\d+|\d+))(deg|rad|pi|%)?$/.exec(str);
   return {
     type: 'NumberLiteral' as const,
     value: parseFloat(match![1]),
-    unit: match![2] as 'deg' | 'rad' | 'pi' | undefined,
+    unit: match![2] as 'deg' | 'rad' | 'pi' | '%' | undefined,
   };
 });
 
@@ -99,6 +100,37 @@ const stringLiteral: Parsimmon.Parser<StringLiteral> = token(
     .replace(/\\'/g, "'")
     .replace(/\\\\/g, '\\'),
 }));
+
+// Color literal: #cc0000, #f00, #cc000080, #f008
+const colorLiteral: Parsimmon.Parser<ColorLiteral> = P.seqMap(
+  P.index,
+  token(P.regexp(/#[0-9a-fA-F]{3,8}\b/)),
+  (startIndex, raw) => ({
+    type: 'ColorLiteral' as const,
+    raw,
+    loc: indexToLoc(startIndex),
+  }),
+);
+
+// CSS color function names that produce color literals via raw capture
+const cssColorFunctionNames = ['rgb', 'rgba', 'hsl', 'hsla', 'hwb', 'lab', 'lch', 'oklab', 'oklch'];
+
+// CSS color function literal: rgb(255, 0, 0), hsl(0, 100%, 50%), oklch(0.6 0.15 30), etc.
+// Uses raw capture for arguments to avoid conflicts with % and / inside parens.
+const cssColorLiteral: Parsimmon.Parser<ColorLiteral> = P.seqMap(
+  P.index,
+  token(P.regexp(new RegExp(`(${cssColorFunctionNames.join('|')})\\s*\\(`))),
+  P.regexp(/[^)]*/),
+  P.string(')').skip(optWhitespace),
+  (startIndex, funcOpen, rawArgs, _close) => {
+    const funcName = funcOpen.trim().replace('(', '');
+    return {
+      type: 'ColorLiteral' as const,
+      raw: `${funcName}(${rawArgs.trim()})`,
+      loc: indexToLoc(startIndex),
+    };
+  },
+);
 
 // Identifier: x, myVar, _private (for general use)
 const identifier: Parsimmon.Parser<Identifier> = P.seqMap(
@@ -574,13 +606,15 @@ const layerConstructorExpression: Parsimmon.Parser<LayerConstructorExpression> =
   }),
 );
 
-// Primary expression: style block, path block, number, string, template literal, calc, null, array, object, layer constructor, identifier (with optional postfix), function call (with optional postfix), or parenthesized expression
+// Primary expression: style block, path block, color literal, number, string, template literal, calc, null, array, object, layer constructor, identifier (with optional postfix), function call (with optional postfix), or parenthesized expression
 const primaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
   P.alt(
     withPostfix(styleBlockLiteral),
     withPostfix(pathBlockExpression as Parsimmon.Parser<Expression>),
     nullLiteral,
     withPostfix(arrayLiteral as Parsimmon.Parser<Expression>),
+    withPostfix(colorLiteral as Parsimmon.Parser<Expression>),
+    withPostfix(cssColorLiteral as Parsimmon.Parser<Expression>),
     numberLiteral,
     stringLiteral,
     templateLiteral,
@@ -589,7 +623,7 @@ const primaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
     withPostfix(functionCall),
     withPostfix(objectLiteral as Parsimmon.Parser<Expression>),
     withPostfix(nonReservedIdentifier),
-    P.seq(word('('), expression, word(')')).map(([, expr]) => expr),
+    withPostfix(P.seq(word('('), expression, word(')')).map(([, expr]) => expr)),
   ),
 );
 

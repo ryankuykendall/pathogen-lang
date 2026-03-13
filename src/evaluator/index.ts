@@ -232,6 +232,8 @@ function expressionToSource(expr: Expression): string {
   switch (expr.type) {
     case 'NumberLiteral':
       return String(expr.value) + (expr.unit || '');
+    case 'ColorLiteral':
+      return expr.raw;
     case 'StringLiteral':
       return `"${expr.value}"`;
     case 'Identifier':
@@ -349,26 +351,31 @@ function updateVariable(scope: Scope, name: string, value: Value, line?: number)
 }
 
 /**
- * Convert angle value based on unit suffix
+ * Convert value based on unit suffix
  * - 'deg': converts degrees to radians
+ * - 'pi': multiplies by Math.PI
+ * - '%': divides by 100 (20% → 0.2)
  * - 'rad' or undefined: returns value unchanged (radians are internal standard)
  */
-function convertAngleUnit(value: number, unit?: 'deg' | 'rad' | 'pi'): number {
+function convertUnitSuffix(value: number, unit?: 'deg' | 'rad' | 'pi' | '%'): number {
   if (unit === 'deg') {
     return (value * Math.PI) / 180;
   }
   if (unit === 'pi') {
     return value * Math.PI;
   }
+  if (unit === '%') {
+    return value / 100;
+  }
   return value; // rad or no unit = radians (internal standard)
 }
 
 /**
- * Check if an expression is a NumberLiteral with an angle unit (deg/rad)
+ * Check if an expression is a NumberLiteral with an angle unit (deg/rad/pi)
  */
 function hasAngleUnit(expr: Expression): boolean {
   if (expr.type === 'NumberLiteral') {
-    return expr.unit !== undefined;
+    return expr.unit === 'deg' || expr.unit === 'rad' || expr.unit === 'pi';
   }
   // For unary minus on a number with unit: -45deg
   if (expr.type === 'UnaryExpression' && expr.operator === '-') {
@@ -653,6 +660,12 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status) {
+        // If the expression is a bare color literal (#hex), preserve raw value in style blocks
+        if (parseResult.value.type === 'ColorLiteral') {
+          resolvedValue = parseResult.value.raw;
+          properties[prop.name] = resolvedValue;
+          continue;
+        }
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
           resolvedValue = formatNum(evaluated);
@@ -695,7 +708,24 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
 function evaluateExpression(expr: Expression, scope: Scope): Value {
   switch (expr.type) {
     case 'NumberLiteral':
-      return convertAngleUnit(expr.value, expr.unit);
+      return convertUnitSuffix(expr.value, expr.unit);
+
+    case 'ColorLiteral': {
+      const raw = expr.raw;
+      if (raw.startsWith('#')) {
+        const digits = raw.slice(1);
+        if (digits.length !== 3 && digits.length !== 4 && digits.length !== 6 && digits.length !== 8) {
+          throw new Error(
+            formatError(
+              `Invalid hex color: '${raw}' (must be 3, 4, 6, or 8 hex digits)`,
+              getLine(expr),
+              getCol(expr),
+            ),
+          );
+        }
+      }
+      return { type: 'ColorValue' as const, oklch: parseColor(raw) };
+    }
 
     case 'StringLiteral':
       return expr.value;
@@ -3905,8 +3935,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         }
         return { type: 'ColorValue' as const, oklch, cssVar: { varName: arg.varName, fallback: arg.fallback } };
       }
+      if (isColorValue(arg)) return arg; // Color(#cc0000) → pass-through
       if (typeof arg !== 'string')
-        throw new Error(formatError('Color() with 1 argument expects a color string or CSSVar', cLine, cCol));
+        throw new Error(formatError('Color() with 1 argument expects a color string, CSSVar, or Color', cLine, cCol));
       return { type: 'ColorValue' as const, oklch: parseColor(arg) };
     }
     if (call.args.length === 3 || call.args.length === 4) {
@@ -4030,7 +4061,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 function evaluatePathArg(arg: PathArg, scope: Scope): string {
   switch (arg.type) {
     case 'NumberLiteral':
-      return formatNum(convertAngleUnit(arg.value, arg.unit));
+      return formatNum(convertUnitSuffix(arg.value, arg.unit));
 
     case 'Identifier': {
       const value = lookupVariable(scope, arg.name, getLine(arg), getCol(arg));
@@ -4132,7 +4163,7 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
   const numericArgs: number[] = [];
   for (const arg of args) {
     if (arg.type === 'NumberLiteral') {
-      numericArgs.push(convertAngleUnit(arg.value, arg.unit));
+      numericArgs.push(convertUnitSuffix(arg.value, arg.unit));
     } else if (arg.type === 'Identifier') {
       const value = lookupVariable(scope, arg.name);
       if (typeof value === 'number') {
