@@ -1,6 +1,9 @@
 // Compiler Worker Manager
 // Manages Web Worker for async compilation with fallback to sync
 
+import { extractFontReferences, resolveFontBinaries } from './font-loader.js';
+import type { FontBinaryEntry } from './font-loader.js';
+
 declare const window: Window & { SvgPathExtended?: Record<string, Function> };
 
 type CompilationType = 'compile' | 'compileAnnotated' | 'compileWithContext';
@@ -76,13 +79,8 @@ export function terminateWorker(): void {
 }
 
 /**
- * Send a compilation request to the worker
- * @param type - 'compile', 'compileAnnotated', or 'compileWithContext'
- * @param source - The source code to compile
- * @param compilationId - The compilation ID to check for staleness
- * @param isStale - Function to check if this request is stale
- * @param options - Compilation options (e.g. { toFixed: 2 })
- * @returns The compilation result
+ * Send a compilation request to the worker, optionally with font buffers.
+ * Font buffers are transferred (zero-copy) to the worker.
  */
 async function sendRequest(
   type: CompilationType,
@@ -90,6 +88,7 @@ async function sendRequest(
   compilationId: number,
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
+  fontBuffers?: FontBinaryEntry[],
 ): Promise<unknown> {
   const w = initWorker();
 
@@ -114,7 +113,15 @@ async function sendRequest(
       compilationId,
     });
 
-    w.postMessage({ id, type, source, options });
+    const message: Record<string, unknown> = { id, type, source, options };
+    if (fontBuffers && fontBuffers.length > 0) {
+      message.fontBuffers = fontBuffers;
+      // Transfer ArrayBuffers for zero-copy
+      const transferables = fontBuffers.map((fb) => fb.buffer);
+      w.postMessage(message, transferables);
+    } else {
+      w.postMessage(message);
+    }
   });
 }
 
@@ -143,6 +150,22 @@ function fallbackSync(
 }
 
 /**
+ * Resolve font binaries from source code before compilation.
+ * Only fetches fonts that aren't already cached.
+ */
+async function resolveFontsForSource(source: string): Promise<FontBinaryEntry[]> {
+  const refs = extractFontReferences(source);
+  if (refs.length === 0) return [];
+
+  try {
+    return await resolveFontBinaries(refs);
+  } catch (err) {
+    console.warn('[compiler-worker] Font resolution failed:', err);
+    return [];
+  }
+}
+
+/**
  * Compile source code to SVG path
  * @param source - The source code
  * @param compilationId - Current compilation ID
@@ -150,13 +173,14 @@ function fallbackSync(
  * @param options - Compilation options (e.g. { toFixed: 2 })
  * @returns Promise resolving to compilation result
  */
-export function compile(
+export async function compile(
   source: string,
   compilationId: number,
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
 ): Promise<unknown> {
-  return sendRequest('compile', source, compilationId, isStale, options);
+  const fontBuffers = await resolveFontsForSource(source);
+  return sendRequest('compile', source, compilationId, isStale, options, fontBuffers);
 }
 
 /**
@@ -182,13 +206,14 @@ export function compileAnnotated(
  * @param options - Compilation options (e.g. { toFixed: 2 })
  * @returns Promise resolving to context compilation result
  */
-export function compileWithContext(
+export async function compileWithContext(
   source: string,
   compilationId: number,
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
 ): Promise<unknown> {
-  return sendRequest('compileWithContext', source, compilationId, isStale, options);
+  const fontBuffers = await resolveFontsForSource(source);
+  return sendRequest('compileWithContext', source, compilationId, isStale, options, fontBuffers);
 }
 
 /**

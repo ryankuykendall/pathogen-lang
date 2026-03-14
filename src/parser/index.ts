@@ -11,6 +11,7 @@ import type {
   EnumDefinition,
   Expression,
   ExpressionStatement,
+  FontDirective,
   ForEachLoop,
   ForLoop,
   FunctionCall,
@@ -37,6 +38,7 @@ import type {
   StyleBlockLiteral,
   StyleProperty,
   TemplateLiteral,
+  TextBlockExpression,
   TextBodyItem,
   TextStatement,
   TspanStatement,
@@ -600,6 +602,19 @@ const pathBlockExpression: Parsimmon.Parser<PathBlockExpression> = P.seqMap(
   }),
 );
 
+// Text block expression: &{ text statements }
+const textBlockExpression: Parsimmon.Parser<TextBlockExpression> = P.seqMap(
+  P.index,
+  token(P.string('&{')),
+  P.lazy(() => statement).many(),
+  word('}'),
+  (startIndex, _amp, body, _close) => ({
+    type: 'TextBlockExpression' as const,
+    body,
+    loc: indexToLoc(startIndex),
+  }),
+);
+
 // Layer constructor expression: PathLayer('name') or PathLayer('name') ${ ... }
 const layerConstructorExpression: Parsimmon.Parser<LayerConstructorExpression> = P.seqMap(
   P.index,
@@ -622,6 +637,7 @@ const primaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
   P.alt(
     withPostfix(styleBlockLiteral),
     withPostfix(pathBlockExpression as Parsimmon.Parser<Expression>),
+    withPostfix(textBlockExpression as Parsimmon.Parser<Expression>),
     nullLiteral,
     booleanLiteral,
     withPostfix(arrayLiteral as Parsimmon.Parser<Expression>),
@@ -1229,11 +1245,30 @@ const enumDefinition: Parsimmon.Parser<EnumDefinition> = P.seqMap(
   }),
 );
 
+// @font directive: @font "Inter" or @font "./fonts/Custom.ttf" 700
+const fontDirective: Parsimmon.Parser<FontDirective> = P.seqMap(
+  P.index,
+  token(P.string('@font')),
+  token(P.alt(
+    P.regexp(/"(?:[^"\\]|\\.)*"/).map((s) => s.slice(1, -1)),
+    P.regexp(/'(?:[^'\\]|\\.)*'/).map((s) => s.slice(1, -1)),
+  )),
+  token(P.regexp(/[0-9]+/).map(Number)).fallback(undefined as number | undefined),
+  word(';').fallback(';'), // optional semicolon
+  (startIndex, _at, source, weight, _semi) => ({
+    type: 'FontDirective' as const,
+    source,
+    ...(weight !== undefined ? { weight } : {}),
+    loc: indexToLoc(startIndex),
+  }),
+);
+
 // Statement
 // Important: functionCallStatement must come BEFORE pathCommand to avoid
 // 'circle(...)' being parsed as path command 'c' + 'ircle(...)'
 // forLoop (range) tried before forEachLoop (for-each) — disambiguated by '..'
 const statement: Parsimmon.Parser<Statement> = P.alt(
+  fontDirective,
   layerDefinition,
   layerApplyBlock,
   textStatement,

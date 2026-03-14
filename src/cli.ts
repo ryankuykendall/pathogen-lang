@@ -1,12 +1,12 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { dirname, extname, join } from 'node:path';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile, compileAnnotated } from '.';
+import { compile, compileAnnotated, parse, createFontRegistry, addFont } from '.';
 import { renderConicToWedges } from './conic-renderer';
 
-import type { CompileResult } from '.';
+import type { CompileResult, CompileOptions, FontRegistry } from '.';
 
 interface CliOptions {
   svgOutput?: string;
@@ -519,6 +519,115 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
   }
 }
 
+/**
+ * Scan parsed AST for @font directives and load local font files.
+ * Returns a FontRegistry if any fonts were loaded, undefined otherwise.
+ */
+function loadFontsFromDirectives(source: string, sourceFile?: string): FontRegistry | undefined {
+  let ast;
+  try {
+    ast = parse(source);
+  } catch {
+    return undefined; // Parse errors will be caught later by compile()
+  }
+
+  const fontDirectives = ast.body.filter(
+    (stmt): stmt is { type: 'FontDirective'; source: string; weight?: number } =>
+      stmt.type === 'FontDirective',
+  );
+
+  if (fontDirectives.length === 0) return undefined;
+
+  const registry = createFontRegistry();
+  const baseDir = sourceFile ? dirname(resolve(sourceFile)) : process.cwd();
+
+  for (const directive of fontDirectives) {
+    const fontSource = directive.source;
+    const weight = directive.weight ?? 400;
+
+    // Check if it's a file path (starts with ./ or ../ or / or contains file extension)
+    const isFilePath = /^[./]|^[a-zA-Z]:\\|\.(ttf|otf|woff|woff2)$/i.test(fontSource);
+
+    if (isFilePath) {
+      const fontPath = resolve(baseDir, fontSource);
+      if (!existsSync(fontPath)) {
+        console.warn(`[svg-path-extended] Font file not found: ${fontPath}`);
+        continue;
+      }
+      try {
+        const buffer = readFileSync(fontPath);
+        const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+        // Derive family name from filename if not obvious
+        const family = fontSource.replace(/^.*[\\/]/, '').replace(/\.(ttf|otf|woff|woff2)$/i, '');
+        addFont(registry, family, weight, 'normal', arrayBuffer);
+      } catch (err) {
+        console.warn(`[svg-path-extended] Failed to load font: ${fontPath} — ${(err as Error).message}`);
+      }
+    } else {
+      // Named font (e.g., "Inter") — check system font directories
+      const systemDirs = getSystemFontDirs();
+      let found = false;
+      for (const dir of systemDirs) {
+        // Try common filename patterns
+        const candidates = [
+          join(dir, `${fontSource}.ttf`),
+          join(dir, `${fontSource}.otf`),
+          join(dir, `${fontSource.replace(/\s+/g, '')}.ttf`),
+          join(dir, `${fontSource.replace(/\s+/g, '')}.otf`),
+          join(dir, `${fontSource.replace(/\s+/g, '-')}.ttf`),
+          join(dir, `${fontSource.replace(/\s+/g, '-')}.otf`),
+        ];
+        for (const candidate of candidates) {
+          if (existsSync(candidate)) {
+            try {
+              const buffer = readFileSync(candidate);
+              const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+              addFont(registry, fontSource, weight, 'normal', arrayBuffer);
+              found = true;
+              break;
+            } catch {
+              // Try next candidate
+            }
+          }
+        }
+        if (found) break;
+      }
+      if (!found) {
+        console.warn(`[svg-path-extended] Font '${fontSource}' not found locally. CLI Google Fonts download coming in a future release.`);
+      }
+    }
+  }
+
+  return registry.fonts.size > 0 ? registry : undefined;
+}
+
+/**
+ * Get platform-specific system font directories.
+ */
+function getSystemFontDirs(): string[] {
+  switch (process.platform) {
+    case 'darwin':
+      return [
+        '/Library/Fonts',
+        '/System/Library/Fonts',
+        join(process.env.HOME || '', 'Library/Fonts'),
+      ];
+    case 'linux':
+      return [
+        '/usr/share/fonts',
+        '/usr/local/share/fonts',
+        join(process.env.HOME || '', '.fonts'),
+        join(process.env.HOME || '', '.local/share/fonts'),
+      ];
+    case 'win32':
+      return [
+        join(process.env.WINDIR || 'C:\\Windows', 'Fonts'),
+      ];
+    default:
+      return [];
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
 
@@ -544,8 +653,12 @@ function main() {
       return;
     }
 
-    const compileOptions = options.toFixed != null ? { toFixed: options.toFixed } : undefined;
-    const result = compile(source, compileOptions);
+    const fontRegistry = loadFontsFromDirectives(source);
+    const compileOptions: CompileOptions = {
+      ...(options.toFixed != null ? { toFixed: options.toFixed } : {}),
+      ...(fontRegistry ? { fonts: fontRegistry } : {}),
+    };
+    const result = compile(source, Object.keys(compileOptions).length > 0 ? compileOptions : undefined);
     const defaultPath = result.layers[0]?.data ?? '';
 
     // Output as SVG file

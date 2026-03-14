@@ -36,6 +36,7 @@ export type Value =
   | ObjectValue
   | ObjectNamespace
   | PathBlockValue
+  | PathBlockNamespace
   | ProjectedPathValue
   | CyclerValue
   | SVGFragmentValue
@@ -46,7 +47,9 @@ export type Value =
   | MeshPointValue
   | ColorValue
   | ColorNamespace
-  | CSSVarValue;
+  | CSSVarValue
+  | TextBlockValue
+  | ProjectedTextValue;
 
 // ---------------------------------------------------------------------------
 // Core value interfaces
@@ -268,6 +271,13 @@ export interface ObjectNamespace {
   type: 'ObjectNamespace';
 }
 
+/**
+ * Sentinel for PathBlock namespace (PathBlock.fromGlyph, etc.)
+ */
+export interface PathBlockNamespace {
+  type: 'PathBlockNamespace';
+}
+
 // ---------------------------------------------------------------------------
 // Path block types
 // ---------------------------------------------------------------------------
@@ -301,6 +311,40 @@ export interface ProjectedPathValue {
   commands: PathBlockCommand[]; // commands with absolute coordinates
   startPoint: Point;
   endPoint: Point;
+}
+
+// ---------------------------------------------------------------------------
+// Text block types
+// ---------------------------------------------------------------------------
+
+/**
+ * A single text element within a TextBlock — position relative to block origin
+ */
+export interface TextBlockElement {
+  x: number;
+  y: number;
+  rotation?: number; // radians
+  styles?: Record<string, string>;
+  children: TextChild[];
+}
+
+/**
+ * Represents a text block value — a reusable, measurable text composition in relative coordinates
+ */
+export interface TextBlockValue {
+  type: 'TextBlockValue';
+  elements: TextBlockElement[];
+  styles: Record<string, string>; // block-level styles (font-size, font-family, etc.)
+}
+
+/**
+ * Represents a projected text block — a TextBlock projected into absolute coordinate space
+ */
+export interface ProjectedTextValue {
+  type: 'ProjectedTextValue';
+  elements: TextBlockElement[]; // elements with absolute coordinates
+  styles: Record<string, string>;
+  origin: Point; // projection origin
 }
 
 /**
@@ -525,6 +569,29 @@ export interface CompileResult {
 }
 
 // ---------------------------------------------------------------------------
+// Font types
+// ---------------------------------------------------------------------------
+
+/**
+ * Parsed font data from a font file (TTF/OTF/WOFF)
+ */
+export interface FontData {
+  family: string;
+  weight: number; // 100-900
+  style: 'normal' | 'italic';
+  buffer: ArrayBuffer;
+  _parsed?: unknown; // lazily parsed opentype.js Font object
+}
+
+/**
+ * Registry of loaded font data, injected into compilation via CompileOptions
+ */
+export interface FontRegistry {
+  fonts: Map<string, FontData[]>; // family → variants
+  get(family: string, weight?: number, style?: string): FontData | null;
+}
+
+// ---------------------------------------------------------------------------
 // Function / evaluation types
 // ---------------------------------------------------------------------------
 
@@ -556,6 +623,7 @@ export interface EvaluationState {
   gradients: Map<string, GradientValue>; // Gradient definitions by ID
   patterns: Map<string, PatternValue>; // Pattern definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
+  fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
 }
 
 export interface Scope {

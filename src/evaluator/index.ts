@@ -50,6 +50,8 @@ import {
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
+import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints } from './font-metrics';
+import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
 
 import type { PathContext, TransformState } from './context';
 import type { OKLCH } from '../color';
@@ -65,6 +67,7 @@ import type {
   CSSVarValue,
   CyclerValue,
   EvaluationState,
+  FontRegistry,
   FragmentLayerState,
   GradientOutput,
   GradientStop,
@@ -82,6 +85,7 @@ import type {
   ObjectNamespace,
   ObjectValue,
   PathBlockCommand,
+  PathBlockNamespace,
   PathBlockValue,
   PathLayerState,
   PathSegment,
@@ -89,10 +93,14 @@ import type {
   PatternValue,
   PointValue,
   ProjectedPathValue,
+  ProjectedTextValue,
   Scope,
   StyleBlockValue,
   SVGFragmentValue,
+  TextBlockElement,
+  TextBlockValue,
   TextChild,
+  TextElement,
   TextLayerState,
   UserFunction,
   Value,
@@ -111,6 +119,7 @@ import type {
   Statement,
   StyleBlockLiteral,
   TemplateLiteral,
+  TextBlockExpression,
   TextBodyItem,
 } from '../parser/ast';
 
@@ -128,6 +137,8 @@ export type {
   CSSVarValue,
   CyclerValue,
   EvaluationState,
+  FontData,
+  FontRegistry,
   FragmentLayerState,
   FreeformPoint,
   GradientOutput,
@@ -147,6 +158,7 @@ export type {
   ObjectNamespace,
   ObjectValue,
   PathBlockCommand,
+  PathBlockNamespace,
   PathBlockValue,
   PathLayerState,
   PathSegment,
@@ -155,9 +167,12 @@ export type {
   PatternValue,
   PointValue,
   ProjectedPathValue,
+  ProjectedTextValue,
   Scope,
   StyleBlockValue,
   SVGFragmentValue,
+  TextBlockElement,
+  TextBlockValue,
   TextChild,
   TextElement,
   TextLayerState,
@@ -227,6 +242,14 @@ export function isProjectedPathValue(value: Value): value is ProjectedPathValue 
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
 }
 
+export function isTextBlockValue(value: Value): value is TextBlockValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'TextBlockValue';
+}
+
+export function isProjectedTextValue(value: Value): value is ProjectedTextValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedTextValue';
+}
+
 export function isBooleanValue(value: Value): value is BooleanValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'BooleanValue';
 }
@@ -256,6 +279,7 @@ const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
   InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
   TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
+  BBoxAnchor: { TopLeft: 'top-left', Top: 'top', TopRight: 'top-right', Right: 'right', BottomRight: 'bottom-right', Bottom: 'bottom', BottomLeft: 'bottom-left', Left: 'left', Center: 'center' },
 };
 
 /**
@@ -361,6 +385,10 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   // Color namespace
   if (name === 'Color') {
     return { type: 'ColorNamespace' } as ColorNamespace;
+  }
+  // PathBlock namespace
+  if (name === 'PathBlock') {
+    return { type: 'PathBlockNamespace' } as PathBlockNamespace;
   }
   // Built-in enums
   if (name in BUILTIN_ENUMS) {
@@ -830,6 +858,12 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
         }
+        if (isTextBlockValue(left) && isStyleBlock(right)) {
+          return { type: 'TextBlockValue' as const, elements: left.elements, styles: { ...left.styles, ...right.properties } };
+        }
+        if (isProjectedTextValue(left) && isStyleBlock(right)) {
+          return { type: 'ProjectedTextValue' as const, elements: left.elements, styles: { ...left.styles, ...right.properties }, origin: left.origin };
+        }
         if (isStyleBlock(left) && isStyleBlock(right)) {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
@@ -840,7 +874,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         }
         throw new Error(
           formatError(
-            'Operator << requires matching operand types (both style blocks or both path blocks)',
+            'Operator << requires matching operand types (both style blocks, both path blocks, or text block << style block)',
             getLine(expr),
           ),
         );
@@ -943,6 +977,9 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'PathBlockExpression':
       return evaluatePathBlockExpression(expr, scope);
+
+    case 'TextBlockExpression':
+      return evaluateTextBlockExpression(expr, scope);
 
     case 'LayerConstructorExpression':
       return evaluateLayerConstructor(expr, scope);
@@ -1103,6 +1140,154 @@ function evaluatePathBlockStatement(stmt: Statement, scope: Scope, accum: string
     }
   }
   evaluateStatementToAccum(stmt, scope, accum);
+}
+
+/**
+ * Evaluate a TextBlockExpression — captures text elements into a TextBlockValue
+ */
+function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): TextBlockValue {
+  // Runtime restriction: no nesting text blocks
+  if (scope.evalState && (scope.evalState as EvaluationState & { _insideTextBlock?: boolean })._insideTextBlock) {
+    throw new Error(formatError('Cannot nest text blocks', getLine(expr)));
+  }
+
+  // Create a child scope for the block body
+  const blockScope = createScope(scope);
+
+  // Create an isolated evaluation state for the block
+  const blockEvalState: EvaluationState & { _insideTextBlock: boolean } = {
+    pathContext: scope.evalState?.pathContext ?? createPathContext({}),
+    logs: scope.evalState?.logs ?? [],
+    calledStdlibFunctions: scope.evalState?.calledStdlibFunctions ?? new Set(),
+    layers: new Map(), // Empty — layer definitions not allowed
+    layerOrder: [],
+    activeLayerName: null,
+    defaultLayerName: null,
+    transformState: createTransformState(),
+    masks: scope.evalState?.masks ?? new Map(),
+    clipPaths: scope.evalState?.clipPaths ?? new Map(),
+    gradients: scope.evalState?.gradients ?? new Map(),
+    patterns: scope.evalState?.patterns ?? new Map(),
+    cssProperties: scope.evalState?.cssProperties ?? new Map(),
+    _insideTextBlock: true,
+  };
+  blockScope.evalState = blockEvalState;
+
+  // Accumulate TextBlockElements from text statements
+  const elements: TextBlockElement[] = [];
+  const blockStyles: Record<string, string> = {};
+
+  evaluateTextBlockBody(expr.body, blockScope, elements);
+
+  return {
+    type: 'TextBlockValue',
+    elements,
+    styles: blockStyles,
+  };
+}
+
+/**
+ * Recursively evaluate statements inside a text block, accumulating TextBlockElements.
+ * Handles text statements directly and recurses into for/if control flow.
+ */
+function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextBlockElement[]): void {
+  for (const stmt of stmts) {
+    if (stmt.type === 'LayerDefinition') {
+      throw new Error(formatError('Layer definitions are not allowed inside text blocks', getLine(stmt)));
+    }
+    if (stmt.type === 'LayerApplyBlock') {
+      throw new Error(formatError('Layer apply blocks are not allowed inside text blocks', getLine(stmt)));
+    }
+    if (stmt.type === 'PathCommand') {
+      throw new Error(formatError('Path commands are not allowed inside text blocks', getLine(stmt)));
+    }
+
+    if (stmt.type === 'TextStatement') {
+      const x = requireNumber(evaluateExpression(stmt.x, scope), 'text() x');
+      const y = requireNumber(evaluateExpression(stmt.y, scope), 'text() y');
+      const rotation = stmt.rotation
+        ? requireNumber(evaluateExpression(stmt.rotation, scope), 'text() rotation')
+        : undefined;
+      let textStyles: Record<string, string> | undefined;
+      if (stmt.styles) {
+        const sv = evaluateExpression(stmt.styles, scope);
+        if (!isStyleBlock(sv)) throw new Error(formatError('text() styles must be a style block', getLine(stmt)));
+        textStyles = sv.properties;
+      }
+      if (stmt.content) {
+        const text = evaluateTemplateLiteral(stmt.content, scope);
+        elements.push({ x, y, rotation, styles: textStyles, children: [{ type: 'run', text }] });
+      } else if (stmt.body) {
+        const children: TextChild[] = [];
+        evaluateTextBody(stmt.body, scope, children);
+        elements.push({ x, y, rotation, styles: textStyles, children });
+      }
+      continue;
+    }
+
+    if (stmt.type === 'ForLoop') {
+      const start = requireNumber(evaluateExpression(stmt.start, scope), 'for loop start');
+      const end = requireNumber(evaluateExpression(stmt.end, scope), 'for loop end');
+      if (!isFinite(start) || !isFinite(end)) throw new Error('for loop bounds must be finite');
+      const count = Math.abs(end - start) + 1;
+      if (count > 10000) throw new Error('for loop exceeds 10000 iteration limit');
+      const step = start <= end ? 1 : -1;
+      for (let i = start; step > 0 ? i <= end : i >= end; i += step) {
+        const loopScope = createScope(scope);
+        loopScope.evalState = scope.evalState;
+        setVariable(loopScope, stmt.variable, i);
+        evaluateTextBlockBody(stmt.body, loopScope, elements);
+      }
+      continue;
+    }
+
+    if (stmt.type === 'ForEachLoop') {
+      const iterVal = evaluateExpression(stmt.iterable, scope);
+      if (!isArrayValue(iterVal)) throw new Error('for-each requires an array');
+      for (let idx = 0; idx < iterVal.elements.length; idx++) {
+        const loopScope = createScope(scope);
+        loopScope.evalState = scope.evalState;
+        setVariable(loopScope, stmt.variable, iterVal.elements[idx]);
+        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, idx);
+        evaluateTextBlockBody(stmt.body, loopScope, elements);
+      }
+      continue;
+    }
+
+    if (stmt.type === 'IfStatement') {
+      const cond = evaluateExpression(stmt.condition, scope);
+      const truthValue = typeof cond === 'number' ? cond !== 0 : (isBooleanValue(cond) ? cond.value !== 0 : cond !== null);
+      if (truthValue) {
+        evaluateTextBlockBody(stmt.consequent, scope, elements);
+      } else if (stmt.alternate) {
+        evaluateTextBlockBody(stmt.alternate, scope, elements);
+      }
+      continue;
+    }
+
+    if (stmt.type === 'LetDeclaration') {
+      const value = evaluateExpression(stmt.value, scope);
+      setVariable(scope, stmt.name, value);
+      continue;
+    }
+
+    if (stmt.type === 'AssignmentStatement') {
+      const value = evaluateExpression(stmt.value, scope);
+      setVariable(scope, stmt.name, value);
+      continue;
+    }
+
+    if (stmt.type === 'ExpressionStatement') {
+      evaluateExpression(stmt.expression, scope);
+      continue;
+    }
+
+    // Other statement types silently skipped (e.g., EnumDefinition, FunctionDefinition)
+    if (stmt.type === 'FunctionDefinition') {
+      setVariable(scope, stmt.name, { type: 'UserFunction' as const, params: stmt.params, body: stmt.body });
+      continue;
+    }
+  }
 }
 
 function evaluateIndexExpression(expr: IndexExpression, scope: Scope): Value {
@@ -2188,6 +2373,294 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // TextBlockValue methods
+  if (isTextBlockValue(obj)) {
+    switch (expr.method) {
+      case 'boundingBox': {
+        if (expr.args.length !== 0) throw mError('boundingBox() expects 0 arguments');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+          ]),
+        };
+      }
+      case 'polarProject': {
+        if (expr.args.length !== 5) throw mError('polarProject() expects 5 arguments (px, py, angle, distance, anchor)');
+        const ppx = evaluateExpression(expr.args[0], scope);
+        const ppy = evaluateExpression(expr.args[1], scope);
+        const ppAngle = evaluateExpression(expr.args[2], scope);
+        const ppDist = evaluateExpression(expr.args[3], scope);
+        const ppAnchor = evaluateExpression(expr.args[4], scope);
+        if (typeof ppx !== 'number') throw mError('polarProject() px must be a number');
+        if (typeof ppy !== 'number') throw mError('polarProject() py must be a number');
+        if (typeof ppAngle !== 'number') throw mError('polarProject() angle must be a number');
+        if (typeof ppDist !== 'number') throw mError('polarProject() distance must be a number');
+        if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a BBoxAnchor enum value');
+        const targetX = ppx + ppDist * Math.cos(ppAngle);
+        const targetY = ppy + ppDist * Math.sin(ppAngle);
+        const originBB = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        const anchorOffset = resolveAnchorPoint(originBB, ppAnchor, mError);
+        const projOriginX = targetX - anchorOffset.x;
+        const projOriginY = targetY - anchorOffset.y;
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + projOriginX, y: el.y + projOriginY })),
+          styles: { ...obj.styles },
+          origin: { x: projOriginX, y: projOriginY },
+        };
+      }
+      case 'project': {
+        if (expr.args.length !== 2) throw mError('project() expects 2 arguments (x, y)');
+        const px = evaluateExpression(expr.args[0], scope);
+        const py = evaluateExpression(expr.args[1], scope);
+        if (typeof px !== 'number') throw mError('project() x must be a number');
+        if (typeof py !== 'number') throw mError('project() y must be a number');
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + px, y: el.y + py })),
+          styles: { ...obj.styles },
+          origin: { x: px, y: py },
+        };
+      }
+      case 'drawTo': {
+        if (expr.args.length < 2 || expr.args.length > 3) throw mError('drawTo() expects 2-3 arguments (x, y, rotation?)');
+        if (!scope.evalState) throw mError('drawTo() requires evaluation context');
+        const dtX = evaluateExpression(expr.args[0], scope);
+        const dtY = evaluateExpression(expr.args[1], scope);
+        if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
+        if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
+        let dtRotation: number | undefined;
+        if (expr.args.length === 3) {
+          dtRotation = evaluateExpression(expr.args[2], scope) as number;
+          if (typeof dtRotation !== 'number') throw mError('drawTo() rotation must be a number');
+        }
+        const activeTextLayer = getActiveTextLayer(scope);
+        if (!activeTextLayer) {
+          throw mError('drawTo() can only be used inside a TextLayer apply block');
+        }
+        // Emit text elements to the active text layer
+        for (const el of obj.elements) {
+          const emitted: TextElement = {
+            x: el.x + dtX,
+            y: el.y + dtY,
+            rotation: dtRotation ?? el.rotation,
+            styles: el.styles ? { ...obj.styles, ...el.styles } : (Object.keys(obj.styles).length > 0 ? { ...obj.styles } : undefined),
+            children: [...el.children],
+          };
+          activeTextLayer.textElements.push(emitted);
+        }
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + dtX, y: el.y + dtY })),
+          styles: { ...obj.styles },
+          origin: { x: dtX, y: dtY },
+        };
+      }
+      default:
+        throw mError(`Unknown TextBlock method: ${expr.method}`);
+    }
+  }
+
+  // ProjectedTextValue methods
+  if (isProjectedTextValue(obj)) {
+    switch (expr.method) {
+      case 'boundingBox': {
+        if (expr.args.length !== 0) throw mError('boundingBox() expects 0 arguments');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+          ]),
+        };
+      }
+      case 'anchor': {
+        if (expr.args.length !== 1) throw mError('anchor() expects 1 argument (BBoxAnchor)');
+        const anchorVal = evaluateExpression(expr.args[0], scope);
+        if (typeof anchorVal !== 'string') throw mError('anchor() argument must be a BBoxAnchor enum value');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        const pt = resolveAnchorPoint(bb, anchorVal, mError);
+        return { type: 'PointValue' as const, x: pt.x, y: pt.y };
+      }
+      case 'polarProject': {
+        if (expr.args.length !== 5) throw mError('polarProject() expects 5 arguments (px, py, angle, distance, anchor)');
+        const ppx = evaluateExpression(expr.args[0], scope);
+        const ppy = evaluateExpression(expr.args[1], scope);
+        const ppAngle = evaluateExpression(expr.args[2], scope);
+        const ppDist = evaluateExpression(expr.args[3], scope);
+        const ppAnchor = evaluateExpression(expr.args[4], scope);
+        if (typeof ppx !== 'number') throw mError('polarProject() px must be a number');
+        if (typeof ppy !== 'number') throw mError('polarProject() py must be a number');
+        if (typeof ppAngle !== 'number') throw mError('polarProject() angle must be a number');
+        if (typeof ppDist !== 'number') throw mError('polarProject() distance must be a number');
+        if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a BBoxAnchor enum value');
+        // Compute target point
+        const targetX = ppx + ppDist * Math.cos(ppAngle);
+        const targetY = ppy + ppDist * Math.sin(ppAngle);
+        // Estimate bbox at origin to find anchor offset
+        const originBB = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        const anchorOffset = resolveAnchorPoint(originBB, ppAnchor, mError);
+        // Projection origin = target - anchorOffset
+        const projOriginX = targetX - anchorOffset.x;
+        const projOriginY = targetY - anchorOffset.y;
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + projOriginX, y: el.y + projOriginY })),
+          styles: { ...obj.styles },
+          origin: { x: projOriginX, y: projOriginY },
+        };
+      }
+      case 'paddedBoundingBox': {
+        if (expr.args.length !== 2) throw mError('paddedBoundingBox() expects 2 arguments (blockPad, inlinePad)');
+        const blockPad = evaluateExpression(expr.args[0], scope);
+        const inlinePad = evaluateExpression(expr.args[1], scope);
+        if (typeof blockPad !== 'number') throw mError('paddedBoundingBox() blockPad must be a number');
+        if (typeof inlinePad !== 'number') throw mError('paddedBoundingBox() inlinePad must be a number');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['x', bb.x - inlinePad],
+            ['y', bb.y - blockPad],
+            ['width', bb.width + 2 * inlinePad],
+            ['height', bb.height + 2 * blockPad],
+          ]),
+        };
+      }
+      case 'intersects': {
+        if (expr.args.length !== 1) throw mError('intersects() expects 1 argument');
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        const myBB = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        if (isProjectedTextValue(otherVal)) {
+          const otherBB = estimateTextBoundingBox(otherVal.elements, otherVal.styles, scope.evalState?.fontRegistry);
+          return boolVal(bboxOverlaps(myBB, otherBB));
+        }
+        if (isObjectValue(otherVal)) {
+          const ox = otherVal.properties.get('x');
+          const oy = otherVal.properties.get('y');
+          const ow = otherVal.properties.get('width');
+          const oh = otherVal.properties.get('height');
+          if (typeof ox === 'number' && typeof oy === 'number' && typeof ow === 'number' && typeof oh === 'number') {
+            return boolVal(bboxOverlaps(myBB, { x: ox, y: oy, width: ow, height: oh }));
+          }
+        }
+        if (isProjectedPathValue(otherVal)) {
+          const pathSegs = otherVal.commands.map((c) => ({ start: c.start, end: c.end }));
+          return boolVal(bboxPathIntersects(myBB, pathSegs));
+        }
+        throw mError('intersects() argument must be a ProjectedText, ProjectedPath, or {x, y, width, height} object');
+      }
+      case 'intersectionPoints': {
+        if (expr.args.length !== 1) throw mError('intersectionPoints() expects 1 argument');
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        const myBB = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        if (isProjectedPathValue(otherVal)) {
+          const pathSegs = otherVal.commands.map((c) => ({ start: c.start, end: c.end }));
+          const pts = bboxPathIntersectionPoints(myBB, pathSegs);
+          return {
+            type: 'ArrayValue' as const,
+            elements: pts.map((p) => ({ type: 'PointValue' as const, x: p.x, y: p.y })),
+          };
+        }
+        if (isProjectedTextValue(otherVal)) {
+          // Two AABBs: intersection perimeter points are the overlap rectangle corners
+          const otherBB = estimateTextBoundingBox(otherVal.elements, otherVal.styles, scope.evalState?.fontRegistry);
+          if (!bboxOverlaps(myBB, otherBB)) {
+            return { type: 'ArrayValue' as const, elements: [] };
+          }
+          // Return the 4 corners of the overlap rectangle
+          const overlapX = Math.max(myBB.x, otherBB.x);
+          const overlapY = Math.max(myBB.y, otherBB.y);
+          const overlapX2 = Math.min(myBB.x + myBB.width, otherBB.x + otherBB.width);
+          const overlapY2 = Math.min(myBB.y + myBB.height, otherBB.y + otherBB.height);
+          return {
+            type: 'ArrayValue' as const,
+            elements: [
+              { type: 'PointValue' as const, x: overlapX, y: overlapY },
+              { type: 'PointValue' as const, x: overlapX2, y: overlapY },
+              { type: 'PointValue' as const, x: overlapX2, y: overlapY2 },
+              { type: 'PointValue' as const, x: overlapX, y: overlapY2 },
+            ],
+          };
+        }
+        throw mError('intersectionPoints() argument must be a ProjectedText or ProjectedPath');
+      }
+      case 'draw': {
+        if (expr.args.length !== 0) throw mError('draw() expects 0 arguments');
+        if (!scope.evalState) throw mError('draw() requires evaluation context');
+        const activeTextLayer = getActiveTextLayer(scope);
+        if (!activeTextLayer) {
+          throw mError('draw() can only be used inside a TextLayer apply block');
+        }
+        for (const el of obj.elements) {
+          const emitted: TextElement = {
+            x: el.x,
+            y: el.y,
+            rotation: el.rotation,
+            styles: el.styles ? { ...obj.styles, ...el.styles } : (Object.keys(obj.styles).length > 0 ? { ...obj.styles } : undefined),
+            children: [...el.children],
+          };
+          activeTextLayer.textElements.push(emitted);
+        }
+        return obj;
+      }
+      case 'drawTo': {
+        if (expr.args.length < 2 || expr.args.length > 3) throw mError('drawTo() expects 2-3 arguments (x, y, rotation?)');
+        if (!scope.evalState) throw mError('drawTo() requires evaluation context');
+        const dtX = evaluateExpression(expr.args[0], scope);
+        const dtY = evaluateExpression(expr.args[1], scope);
+        if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
+        if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
+        let dtRotation: number | undefined;
+        if (expr.args.length === 3) {
+          dtRotation = evaluateExpression(expr.args[2], scope) as number;
+          if (typeof dtRotation !== 'number') throw mError('drawTo() rotation must be a number');
+        }
+        const activeTextLayer = getActiveTextLayer(scope);
+        if (!activeTextLayer) {
+          throw mError('drawTo() can only be used inside a TextLayer apply block');
+        }
+        // Re-project: compute offset from current origin to new position
+        const offsetX = dtX - obj.origin.x;
+        const offsetY = dtY - obj.origin.y;
+        const reProjected = obj.elements.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY }));
+        for (const el of reProjected) {
+          const emitted: TextElement = {
+            x: el.x,
+            y: el.y,
+            rotation: dtRotation ?? el.rotation,
+            styles: el.styles ? { ...obj.styles, ...el.styles } : (Object.keys(obj.styles).length > 0 ? { ...obj.styles } : undefined),
+            children: [...el.children],
+          };
+          activeTextLayer.textElements.push(emitted);
+        }
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: reProjected,
+          styles: { ...obj.styles },
+          origin: { x: dtX, y: dtY },
+        };
+      }
+      case 'translate': {
+        if (expr.args.length !== 2) throw mError('translate() expects 2 arguments (dx, dy)');
+        const dx = evaluateExpression(expr.args[0], scope);
+        const dy = evaluateExpression(expr.args[1], scope);
+        if (typeof dx !== 'number') throw mError('translate() dx must be a number');
+        if (typeof dy !== 'number') throw mError('translate() dy must be a number');
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + dx, y: el.y + dy })),
+          styles: { ...obj.styles },
+          origin: { x: obj.origin.x + dx, y: obj.origin.y + dy },
+        };
+      }
+      default:
+        throw mError(`Unknown ProjectedText method: ${expr.method}`);
+    }
+  }
+
   // Point methods
   if (isPointValue(obj)) {
     switch (expr.method) {
@@ -2817,6 +3290,69 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // PathBlockNamespace methods (PathBlock.fromGlyph)
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'PathBlockNamespace') {
+    switch (expr.method) {
+      case 'fromGlyph': {
+        if (expr.args.length !== 2) throw mError('PathBlock.fromGlyph() expects 2 arguments (text, styles)');
+        const textArg = evaluateExpression(expr.args[0], scope);
+        const stylesArg = evaluateExpression(expr.args[1], scope);
+        if (typeof textArg !== 'string') throw mError('PathBlock.fromGlyph() first argument must be a string');
+        if (typeof stylesArg !== 'object' || stylesArg === null || !('type' in stylesArg) || stylesArg.type !== 'StyleBlockValue') {
+          throw mError('PathBlock.fromGlyph() second argument must be a style block');
+        }
+        const styles = (stylesArg as StyleBlockValue).properties;
+        const fontFamily = styles['font-family']?.split(',')[0]?.trim()?.replace(/^['"]|['"]$/g, '');
+        const fontSize = parseFloat(styles['font-size'] ?? '16') || 16;
+        const fontWeight = parseInt(styles['font-weight'] ?? '400', 10) || 400;
+
+        if (!fontFamily) throw mError('PathBlock.fromGlyph() requires font-family in style block');
+
+        const registry = scope.evalState?.fontRegistry;
+        if (!registry) {
+          throw mError('PathBlock.fromGlyph() requires font data. Use @font directive to load a font.');
+        }
+
+        const fontData = getFont(registry, fontFamily, fontWeight);
+        if (!fontData) {
+          const available = Array.from(registry.fonts.keys()).join(', ');
+          throw mError(`Font '${fontFamily}' not found in font registry. Available fonts: ${available || 'none'}`);
+        }
+
+        // Convert each character to a PathBlockValue
+        const glyphs: Value[] = [];
+        for (const char of textArg) {
+          const { commands, advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+
+          if (commands.length === 0) {
+            // Space or empty glyph — return an empty PathBlockValue with advanceWidth
+            const pb: PathBlockValue = {
+              type: 'PathBlockValue' as const,
+              commands: [],
+              pathStrings: [],
+              startPoint: { x: 0, y: 0 },
+              endPoint: { x: 0, y: 0 },
+            };
+            // Store advanceWidth as expando property
+            (pb as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+            glyphs.push(pb);
+            continue;
+          }
+
+          // Normalize to (0,0) origin
+          const normalized = buildPathBlockFromCommands(commands, { x: 0, y: 0 });
+          // Attach advanceWidth as expando property
+          (normalized as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+          glyphs.push(normalized);
+        }
+
+        return { type: 'ArrayValue' as const, elements: glyphs };
+      }
+      default:
+        throw mError(`Unknown PathBlock method: ${expr.method}`);
+    }
+  }
+
   // ObjectValue methods
   if (isObjectValue(obj)) {
     if (expr.method === 'has') {
@@ -2923,6 +3459,12 @@ function formatValueForDisplay(val: Value): string {
   if (isProjectedPathValue(val)) {
     return `ProjectedPath(${formatNum(val.startPoint.x)}, ${formatNum(val.startPoint.y)} → ${formatNum(val.endPoint.x)}, ${formatNum(val.endPoint.y)})`;
   }
+  if (isTextBlockValue(val)) {
+    return `TextBlock(${val.elements.length} elements)`;
+  }
+  if (isProjectedTextValue(val)) {
+    return `ProjectedText(${formatNum(val.origin.x)}, ${formatNum(val.origin.y)}, ${val.elements.length} elements)`;
+  }
   if (isObjectValue(val)) {
     const entries = Array.from(val.properties.entries()).map(([k, v]) => `${k}: ${formatValueForDisplay(v)}`);
     return `{${entries.join(', ')}}`;
@@ -3019,8 +3561,46 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return { type: 'PointValue' as const, x: obj.startPoint.x, y: obj.startPoint.y };
       case 'endPoint':
         return { type: 'PointValue' as const, x: obj.endPoint.x, y: obj.endPoint.y };
+      case 'advanceWidth': {
+        const aw = (obj as PathBlockValue & { advanceWidth?: number }).advanceWidth;
+        return aw !== undefined ? aw : 0;
+      }
+      case 'contours': {
+        // Decompose a multi-contour glyph into individual PathBlockValues
+        const contourGroups = splitContours(obj.commands);
+        const contourBlocks: Value[] = contourGroups.map((cmds) =>
+          buildPathBlockFromCommands(cmds, { x: 0, y: 0 }),
+        );
+        return { type: 'ArrayValue' as const, elements: contourBlocks };
+      }
       default:
         throw new Error(`Property '${expr.property}' does not exist on PathBlock`);
+    }
+  }
+
+  // Handle TextBlockValue property access
+  if (isTextBlockValue(obj)) {
+    switch (expr.property) {
+      case 'elementCount':
+        return obj.elements.length;
+      case 'styles':
+        return { type: 'StyleBlockValue' as const, properties: { ...obj.styles } };
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on TextBlock`);
+    }
+  }
+
+  // Handle ProjectedTextValue property access
+  if (isProjectedTextValue(obj)) {
+    switch (expr.property) {
+      case 'elementCount':
+        return obj.elements.length;
+      case 'styles':
+        return { type: 'StyleBlockValue' as const, properties: { ...obj.styles } };
+      case 'origin':
+        return { type: 'PointValue' as const, x: obj.origin.x, y: obj.origin.y };
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on ProjectedText`);
     }
   }
 
@@ -3419,6 +3999,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         } else if (isColorValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isCSSVarValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (isTextBlockValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (isProjectedTextValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (typeof value === 'object' && value !== null && 'type' in value) {
           const typed = value as { type: string; value?: unknown };
@@ -4303,6 +4887,28 @@ function updateCtxVariable(scope: Scope): void {
       type: 'ContextObject' as const,
       value: contextToObject(scope.evalState.pathContext, transformState),
     });
+  }
+}
+
+/**
+ * Resolve a BBoxAnchor string to a point within the given bounding box.
+ */
+function resolveAnchorPoint(
+  bb: { x: number; y: number; width: number; height: number },
+  anchor: string,
+  mError: (msg: string) => Error,
+): { x: number; y: number } {
+  switch (anchor) {
+    case 'top-left': return { x: bb.x, y: bb.y };
+    case 'top': return { x: bb.x + bb.width / 2, y: bb.y };
+    case 'top-right': return { x: bb.x + bb.width, y: bb.y };
+    case 'right': return { x: bb.x + bb.width, y: bb.y + bb.height / 2 };
+    case 'bottom-right': return { x: bb.x + bb.width, y: bb.y + bb.height };
+    case 'bottom': return { x: bb.x + bb.width / 2, y: bb.y + bb.height };
+    case 'bottom-left': return { x: bb.x, y: bb.y + bb.height };
+    case 'left': return { x: bb.x, y: bb.y + bb.height / 2 };
+    case 'center': return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+    default: throw mError(`Invalid BBoxAnchor value: '${anchor}'. Expected one of: top-left, top, top-right, right, bottom-right, bottom, bottom-left, left, center`);
   }
 }
 
@@ -5367,6 +5973,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       throw new ReturnSignal(value);
     }
 
+    case 'FontDirective':
+      // Declarative metadata — font loading handled by host environment before compilation
+      return;
+
     default:
       throw new Error(`Unknown statement type: ${(stmt as Statement).type}`);
   }
@@ -5825,7 +6435,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
   };
 }
 
-export function evaluate(program: Program, options?: { toFixed?: number }): CompileResult {
+export function evaluate(program: Program, options?: { toFixed?: number; fonts?: FontRegistry }): CompileResult {
   setNumberFormat(options?.toFixed);
   try {
     const pathContext = createPathContext();
@@ -5845,6 +6455,7 @@ export function evaluate(program: Program, options?: { toFixed?: number }): Comp
       gradients: new Map(),
       patterns: new Map(),
       cssProperties: new Map(),
+      fontRegistry: options?.fonts,
     };
 
     const scope = createScope();

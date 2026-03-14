@@ -6,6 +6,7 @@ import type { CompileResult } from './evaluator';
 export { parse, parseWithComments } from './parser';
 export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated } from './evaluator';
 export { stdlib } from './stdlib';
+export { createFontRegistry, addFont, getFont as getFontFromRegistry } from './evaluator/font-provider';
 
 export type {
   ArrayLiteral,
@@ -13,6 +14,7 @@ export type {
   Comment,
   EnumDefinition,
   Expression,
+  FontDirective,
   ForEachLoop,
   IndexedAssignmentStatement,
   IndexExpression,
@@ -29,6 +31,7 @@ export type {
   StyleBlockLiteral,
   StyleProperty,
   TemplateLiteral,
+  TextBlockExpression,
   TextBodyItem,
   TextStatement,
   TspanStatement,
@@ -47,6 +50,8 @@ export type {
   CSSVarValue,
   EvaluateWithContextOptions,
   EvaluateWithContextResult,
+  FontData,
+  FontRegistry,
   FragmentLayerState,
   GradientOutput,
   GradientStop,
@@ -67,8 +72,11 @@ export type {
   Point,
   PointValue,
   ProjectedPathValue,
+  ProjectedTextValue,
   StyleBlockValue,
   SVGFragmentValue,
+  TextBlockElement,
+  TextBlockValue,
   TextChild,
   TextElement,
   TextLayerState,
@@ -84,7 +92,9 @@ export {
   isPathBlockValue,
   isPointValue,
   isProjectedPathValue,
+  isProjectedTextValue,
   isSVGFragmentValue,
+  isTextBlockValue,
 } from './evaluator';
 export type { FormatOptions } from './evaluator/formatter';
 
@@ -94,6 +104,8 @@ export type { FormatOptions } from './evaluator/formatter';
 export interface CompileOptions {
   /** Fixed decimal precision for number formatting (0-20) */
   toFixed?: number;
+  /** Font registry with loaded font data for precise metrics and glyph extraction */
+  fonts?: import('./evaluator/types').FontRegistry;
 }
 
 /**
@@ -117,7 +129,7 @@ export interface CompileOptions {
  */
 export function compile(source: string, options?: CompileOptions): CompileResult {
   const ast = parse(source);
-  return evaluate(ast, options);
+  return evaluate(ast, options as { toFixed?: number; fonts?: import('./evaluator/types').FontRegistry });
 }
 
 /**

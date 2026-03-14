@@ -49,7 +49,9 @@ export type Node =
   | StringLiteral
   | TemplateLiteral
   | StyleBlockLiteral
-  | PathBlockExpression;
+  | PathBlockExpression
+  | TextBlockExpression
+  | FontDirective;
 
 export interface Program {
   type: 'Program';
@@ -72,7 +74,8 @@ export type Statement =
   | PathCommand
   | LayerDefinition
   | LayerApplyBlock
-  | TextStatement;
+  | TextStatement
+  | FontDirective;
 
 // let x = 10;
 export interface LetDeclaration {
@@ -366,6 +369,21 @@ export interface PathBlockExpression {
   loc?: SourceLocation;
 }
 
+// Text block expression: &{ text statements }
+export interface TextBlockExpression {
+  type: 'TextBlockExpression';
+  body: Statement[];
+  loc?: SourceLocation;
+}
+
+// @font "Inter" or @font "./fonts/Custom.ttf" or @font "Inter" 700
+export interface FontDirective {
+  type: 'FontDirective';
+  source: string; // Font family name or file path
+  weight?: number; // Optional specific weight (100-900)
+  loc?: SourceLocation;
+}
+
 export type Expression =
   | BinaryExpression
   | UnaryExpression
@@ -385,4 +403,5 @@ export type Expression =
   | StringLiteral
   | TemplateLiteral
   | StyleBlockLiteral
-  | PathBlockExpression;
+  | PathBlockExpression
+  | TextBlockExpression;

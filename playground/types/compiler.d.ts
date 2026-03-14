@@ -125,6 +125,27 @@ export interface GradientOutput {
   topoBaseColorOklch?: OKLCH;
 }
 
+export interface TextBlockElement {
+  x: number;
+  y: number;
+  rotation?: number;
+  styles?: Record<string, string>;
+  children: TextChild[];
+}
+
+export interface TextBlockValue {
+  type: 'TextBlockValue';
+  elements: TextBlockElement[];
+  styles: Record<string, string>;
+}
+
+export interface ProjectedTextValue {
+  type: 'ProjectedTextValue';
+  elements: TextBlockElement[];
+  styles: Record<string, string>;
+  origin: { x: number; y: number };
+}
+
 export interface CompileResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
@@ -136,8 +157,22 @@ export interface CompileResult {
   calledStdlibFunctions: string[];
 }
 
+export interface FontData {
+  family: string;
+  weight: number;
+  style: 'normal' | 'italic';
+  buffer: ArrayBuffer;
+  _parsed?: unknown;
+}
+
+export interface FontRegistry {
+  fonts: Map<string, FontData[]>;
+  get(family: string, weight?: number, style?: string): FontData | null;
+}
+
 export interface CompileOptions {
   toFixed?: number;
+  fonts?: FontRegistry;
 }
 
 export interface CompileWithContextOptions {

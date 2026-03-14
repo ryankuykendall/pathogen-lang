@@ -19,6 +19,8 @@ import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-
 import { sanitizeSVGFragment } from './svg-sanitize';
 import { expression as expressionParser } from '../parser';
 import { partitionPath, samplePathAtFraction } from './sampling';
+import { estimateTextBoundingBox } from './font-metrics';
+import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
 import {
   cssSourceExpr,
   darken,
@@ -46,7 +48,7 @@ import {
 
 import type { PathContext } from './context';
 import type { OKLCH } from '../color';
-import type { PathBlockCommand, Point } from './types';
+import type { PathBlockCommand, Point, TextBlockElement, TextBlockValue, ProjectedTextValue, TextChild } from './types';
 import type {
   Comment,
   Expression,
@@ -59,6 +61,9 @@ import type {
   Program,
   Statement,
   StyleBlockLiteral,
+  TemplateLiteral,
+  TextBlockExpression,
+  TextBodyItem,
 } from '../parser/ast';
 
 // Types for annotated output
@@ -124,6 +129,7 @@ export type Value =
   | ArrayValue
   | ObjectValue
   | ObjectNamespace
+  | PathBlockNamespace
   | PathBlockValue
   | ProjectedPathValue
   | SVGFragmentValue
@@ -131,7 +137,9 @@ export type Value =
   | PatternValue
   | ColorValue
   | ColorNamespace
-  | CSSVarValue;
+  | CSSVarValue
+  | TextBlockValue
+  | ProjectedTextValue;
 
 export interface SVGFragmentValue {
   type: 'SVGFragmentValue';
@@ -231,6 +239,10 @@ export interface ObjectNamespace {
   type: 'ObjectNamespace';
 }
 
+export interface PathBlockNamespace {
+  type: 'PathBlockNamespace';
+}
+
 export interface PathBlockValue {
   type: 'PathBlockValue';
   commands: PathBlockCommand[];
@@ -252,6 +264,33 @@ export interface ProjectedPathValue {
 
 function isProjectedPathValue(value: Value): value is ProjectedPathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
+}
+
+function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
+  if (cmds.length === 0) {
+    return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+  }
+  const originX = origin ? origin.x : cmds[0].start.x;
+  const originY = origin ? origin.y : cmds[0].start.y;
+  const normalized = cmds.map((cmd) => ({
+    command: cmd.command, args: [...cmd.args],
+    start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
+    end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
+  }));
+  const last = normalized[normalized.length - 1];
+  return {
+    type: 'PathBlockValue' as const, commands: normalized,
+    pathStrings: normalized.map((c) => commandToPathString(c)),
+    startPoint: { x: 0, y: 0 }, endPoint: { x: last.end.x, y: last.end.y },
+  };
+}
+
+function isTextBlockValue(value: Value): value is TextBlockValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'TextBlockValue';
+}
+
+function isProjectedTextValue(value: Value): value is ProjectedTextValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedTextValue';
 }
 
 function projectCommands(commands: PathBlockCommand[], originX: number, originY: number): PathBlockCommand[] {
@@ -346,6 +385,7 @@ class ReturnSignal {
  */
 export interface EvaluationState {
   pathContext: PathContext;
+  fontRegistry?: import('./types').FontRegistry;
 }
 
 export interface Scope {
@@ -374,6 +414,9 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   }
   if (name === 'Color') {
     return { type: 'ColorNamespace' } as ColorNamespace;
+  }
+  if (name === 'PathBlock') {
+    return { type: 'PathBlockNamespace' } as PathBlockNamespace;
   }
   // Built-in enums
   if (name in BUILTIN_ENUMS) {
@@ -1572,6 +1615,176 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     throw mError(`Unknown ProjectedPath method: ${expr.method}`);
   }
 
+  // TextBlockValue methods
+  if (isTextBlockValue(obj)) {
+    switch (expr.method) {
+      case 'project': {
+        if (expr.args.length !== 2) throw mError('project() expects 2 arguments (x, y)');
+        const px = evaluateExpression(expr.args[0], scope);
+        const py = evaluateExpression(expr.args[1], scope);
+        if (typeof px !== 'number') throw mError('project() x must be a number');
+        if (typeof py !== 'number') throw mError('project() y must be a number');
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + px, y: el.y + py })),
+          styles: { ...obj.styles },
+          origin: { x: px, y: py },
+        };
+      }
+      case 'drawTo': {
+        // In annotated mode, no actual layer emit — just return ProjectedTextValue
+        if (expr.args.length < 2) throw mError('drawTo() expects at least 2 arguments (x, y)');
+        const dtX = evaluateExpression(expr.args[0], scope);
+        const dtY = evaluateExpression(expr.args[1], scope);
+        if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
+        if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + dtX, y: el.y + dtY })),
+          styles: { ...obj.styles },
+          origin: { x: dtX, y: dtY },
+        };
+      }
+      case 'boundingBox': {
+        if (expr.args.length !== 0) throw mError('boundingBox() expects 0 arguments');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles);
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+          ]),
+        };
+      }
+      case 'polarProject': {
+        if (expr.args.length !== 5) throw mError('polarProject() expects 5 arguments');
+        const ppx = evaluateExpression(expr.args[0], scope);
+        const ppy = evaluateExpression(expr.args[1], scope);
+        const ppAngle = evaluateExpression(expr.args[2], scope);
+        const ppDist = evaluateExpression(expr.args[3], scope);
+        const ppAnchor = evaluateExpression(expr.args[4], scope);
+        if (typeof ppx !== 'number' || typeof ppy !== 'number' || typeof ppAngle !== 'number' || typeof ppDist !== 'number') {
+          throw mError('polarProject() numeric arguments must be numbers');
+        }
+        if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a string');
+        const targetX = ppx + ppDist * Math.cos(ppAngle);
+        const targetY = ppy + ppDist * Math.sin(ppAngle);
+        // Simplified: project to target without anchor resolution (annotated mode is minimal)
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + targetX, y: el.y + targetY })),
+          styles: { ...obj.styles },
+          origin: { x: targetX, y: targetY },
+        };
+      }
+      default:
+        throw mError(`Unknown TextBlock method: ${expr.method}`);
+    }
+  }
+
+  // ProjectedTextValue methods
+  if (isProjectedTextValue(obj)) {
+    switch (expr.method) {
+      case 'draw': {
+        // In annotated mode, no actual layer emit — just return the projected value
+        return obj;
+      }
+      case 'drawTo': {
+        if (expr.args.length < 2) throw mError('drawTo() expects at least 2 arguments (x, y)');
+        const dtX = evaluateExpression(expr.args[0], scope);
+        const dtY = evaluateExpression(expr.args[1], scope);
+        if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
+        if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
+        const offsetX = dtX - obj.origin.x;
+        const offsetY = dtY - obj.origin.y;
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY })),
+          styles: { ...obj.styles },
+          origin: { x: dtX, y: dtY },
+        };
+      }
+      case 'translate': {
+        if (expr.args.length !== 2) throw mError('translate() expects 2 arguments (dx, dy)');
+        const dx = evaluateExpression(expr.args[0], scope);
+        const dy = evaluateExpression(expr.args[1], scope);
+        if (typeof dx !== 'number') throw mError('translate() dx must be a number');
+        if (typeof dy !== 'number') throw mError('translate() dy must be a number');
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + dx, y: el.y + dy })),
+          styles: { ...obj.styles },
+          origin: { x: obj.origin.x + dx, y: obj.origin.y + dy },
+        };
+      }
+      case 'boundingBox': {
+        if (expr.args.length !== 0) throw mError('boundingBox() expects 0 arguments');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles);
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+          ]),
+        };
+      }
+      case 'anchor': {
+        if (expr.args.length !== 1) throw mError('anchor() expects 1 argument');
+        // In annotated mode, return a dummy point
+        evaluateExpression(expr.args[0], scope);
+        return { type: 'ContextObject' as const, value: { x: obj.origin.x, y: obj.origin.y } };
+      }
+      case 'polarProject': {
+        if (expr.args.length !== 5) throw mError('polarProject() expects 5 arguments');
+        const ppx = evaluateExpression(expr.args[0], scope);
+        const ppy = evaluateExpression(expr.args[1], scope);
+        const ppAngle = evaluateExpression(expr.args[2], scope);
+        const ppDist = evaluateExpression(expr.args[3], scope);
+        const ppAnchor = evaluateExpression(expr.args[4], scope);
+        if (typeof ppx !== 'number' || typeof ppy !== 'number' || typeof ppAngle !== 'number' || typeof ppDist !== 'number') {
+          throw mError('polarProject() numeric arguments must be numbers');
+        }
+        if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a string');
+        const targetX = ppx + ppDist * Math.cos(ppAngle);
+        const targetY = ppy + ppDist * Math.sin(ppAngle);
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + targetX, y: el.y + targetY })),
+          styles: { ...obj.styles },
+          origin: { x: targetX, y: targetY },
+        };
+      }
+      case 'intersects': {
+        // Evaluate argument but return false in annotated mode (minimal)
+        if (expr.args.length !== 1) throw mError('intersects() expects 1 argument');
+        evaluateExpression(expr.args[0], scope);
+        return boolVal(false);
+      }
+      case 'intersectionPoints': {
+        if (expr.args.length !== 1) throw mError('intersectionPoints() expects 1 argument');
+        evaluateExpression(expr.args[0], scope);
+        return { type: 'ArrayValue' as const, elements: [] };
+      }
+      case 'paddedBoundingBox': {
+        if (expr.args.length !== 2) throw mError('paddedBoundingBox() expects 2 arguments (blockPad, inlinePad)');
+        const blockPad = evaluateExpression(expr.args[0], scope);
+        const inlinePad = evaluateExpression(expr.args[1], scope);
+        if (typeof blockPad !== 'number') throw mError('paddedBoundingBox() blockPad must be a number');
+        if (typeof inlinePad !== 'number') throw mError('paddedBoundingBox() inlinePad must be a number');
+        const bb = estimateTextBoundingBox(obj.elements, obj.styles);
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['x', bb.x - inlinePad],
+            ['y', bb.y - blockPad],
+            ['width', bb.width + 2 * inlinePad],
+            ['height', bb.height + 2 * blockPad],
+          ]),
+        };
+      }
+      default:
+        throw mError(`Unknown ProjectedText method: ${expr.method}`);
+    }
+  }
+
   // PatternValue methods
   if (isPatternValue(obj)) {
     switch (expr.method) {
@@ -1916,6 +2129,62 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // PathBlockNamespace methods (PathBlock.fromGlyph)
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'PathBlockNamespace') {
+    switch (expr.method) {
+      case 'fromGlyph': {
+        if (expr.args.length !== 2) throw mError('PathBlock.fromGlyph() expects 2 arguments (text, styles)');
+        const textArg = evaluateExpression(expr.args[0], scope);
+        const stylesArg = evaluateExpression(expr.args[1], scope);
+        if (typeof textArg !== 'string') throw mError('PathBlock.fromGlyph() first argument must be a string');
+        if (typeof stylesArg !== 'object' || stylesArg === null || !('type' in stylesArg) || stylesArg.type !== 'StyleBlockValue') {
+          throw mError('PathBlock.fromGlyph() second argument must be a style block');
+        }
+        const styles = (stylesArg as StyleBlockValue).properties;
+        const fontFamily = styles['font-family']?.split(',')[0]?.trim()?.replace(/^['"]|['"]$/g, '');
+        const fontSize = parseFloat(styles['font-size'] ?? '16') || 16;
+        const fontWeight = parseInt(styles['font-weight'] ?? '400', 10) || 400;
+
+        if (!fontFamily) throw mError('PathBlock.fromGlyph() requires font-family in style block');
+
+        const registry = scope.evalState?.fontRegistry;
+        if (!registry) {
+          throw mError('PathBlock.fromGlyph() requires font data. Use @font directive to load a font.');
+        }
+
+        const fontData = getFont(registry, fontFamily, fontWeight);
+        if (!fontData) {
+          const available = Array.from(registry.fonts.keys()).join(', ');
+          throw mError(`Font '${fontFamily}' not found in font registry. Available fonts: ${available || 'none'}`);
+        }
+
+        const glyphs: Value[] = [];
+        for (const char of textArg) {
+          const { commands, advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+          if (commands.length === 0) {
+            const pb: PathBlockValue = {
+              type: 'PathBlockValue' as const,
+              commands: [],
+              pathStrings: [],
+              startPoint: { x: 0, y: 0 },
+              endPoint: { x: 0, y: 0 },
+            };
+            (pb as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+            glyphs.push(pb);
+            continue;
+          }
+          const normalized = buildPathBlockFromCommands(commands, { x: 0, y: 0 });
+          (normalized as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+          glyphs.push(normalized);
+        }
+
+        return { type: 'ArrayValue' as const, elements: glyphs };
+      }
+      default:
+        throw mError(`Unknown PathBlock method: ${expr.method}`);
+    }
+  }
+
   // SVGFragmentValue methods
   if (isSVGFragmentValue(obj)) {
     if (expr.method === 'insert') {
@@ -2043,6 +2312,12 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
         }
+        if (isTextBlockValue(left) && isStyleBlock(right)) {
+          return { type: 'TextBlockValue' as const, elements: left.elements, styles: { ...left.styles, ...right.properties } };
+        }
+        if (isProjectedTextValue(left) && isStyleBlock(right)) {
+          return { type: 'ProjectedTextValue' as const, elements: left.elements, styles: { ...left.styles, ...right.properties }, origin: left.origin };
+        }
         if (isStyleBlock(left) && isStyleBlock(right)) {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
@@ -2050,7 +2325,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return left; // Return same ref, no real layer state in annotated mode
         }
         throw new Error(
-          formatError('Operator << requires matching operand types (both style blocks or both path blocks)', line),
+          formatError('Operator << requires matching operand types (both style blocks, both path blocks, or text block << style block)', line),
         );
       }
 
@@ -2169,6 +2444,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
                 return String(e);
               })
               .join(', ')}]`;
+          if (isTextBlockValue(val)) return `TextBlock(${val.elements.length} elements)`;
+          if (isProjectedTextValue(val)) return `ProjectedText(${val.origin.x}, ${val.origin.y}, ${val.elements.length} elements)`;
           return String(val);
         })
         .join('');
@@ -2178,6 +2455,9 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'PathBlockExpression':
       return evaluatePathBlockExpression(expr, scope);
+
+    case 'TextBlockExpression':
+      return evaluateTextBlockExpression(expr, scope);
 
     case 'LayerConstructorExpression':
       // In annotated mode, return a dummy LayerReference
@@ -2236,6 +2516,144 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   };
 }
 
+/**
+ * Evaluate a TextBlockExpression in annotated mode — minimal state, silent skip for forbidden constructs
+ */
+function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): TextBlockValue {
+  // Create a child scope with _insideTextBlock flag
+  const blockScope = createScope(scope);
+  const blockEvalState = {
+    ...(scope.evalState || { pathContext: createPathContext() }),
+    _insideTextBlock: true,
+  };
+  blockScope.evalState = blockEvalState as EvaluationState;
+
+  const elements: TextBlockElement[] = [];
+  const blockStyles: Record<string, string> = {};
+
+  for (const stmt of expr.body) {
+    // Silently skip forbidden constructs (annotated mode pattern)
+    if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'PathCommand') {
+      continue;
+    }
+
+    // TextStatement: accumulate elements
+    if (stmt.type === 'TextStatement') {
+      const x = evaluateExpression(stmt.x, blockScope);
+      const y = evaluateExpression(stmt.y, blockScope);
+      if (typeof x !== 'number' || typeof y !== 'number') continue;
+      const rotation = stmt.rotation
+        ? (evaluateExpression(stmt.rotation, blockScope) as number)
+        : undefined;
+      let textStyles: Record<string, string> | undefined;
+      if (stmt.styles) {
+        const sv = evaluateExpression(stmt.styles, blockScope);
+        if (isStyleBlock(sv)) textStyles = sv.properties;
+      }
+
+      if (stmt.content) {
+        const text = evaluateAnnotatedTemplateLiteral(stmt.content, blockScope);
+        elements.push({ x, y, rotation, styles: textStyles, children: [{ type: 'run', text }] });
+      } else if (stmt.body) {
+        const children: TextChild[] = [];
+        evaluateAnnotatedTextBody(stmt.body, blockScope, children);
+        elements.push({ x, y, rotation, styles: textStyles, children });
+      }
+      continue;
+    }
+
+    // Other statements (let, for, if, expression) for control flow
+    evaluateStatementPlain(stmt, blockScope);
+  }
+
+  return {
+    type: 'TextBlockValue',
+    elements,
+    styles: blockStyles,
+  };
+}
+
+/**
+ * Evaluate a TemplateLiteral to string in annotated mode
+ */
+function evaluateAnnotatedTemplateLiteral(tl: TemplateLiteral, scope: Scope): string {
+  return tl.parts
+    .map((part) => {
+      if (typeof part === 'string') return part;
+      const val = evaluateExpression(part, scope);
+      if (val === null) return 'null';
+      if (isBooleanValue(val)) return val.value ? 'true' : 'false';
+      if (typeof val === 'number') return String(val);
+      if (typeof val === 'string') return val;
+      if (isTextBlockValue(val)) return `TextBlock(${val.elements.length} elements)`;
+      if (isProjectedTextValue(val)) return `ProjectedText(${val.origin.x}, ${val.origin.y}, ${val.elements.length} elements)`;
+      return String(val);
+    })
+    .join('');
+}
+
+/**
+ * Evaluate text body items (TemplateLiteral, TspanStatement, loops, etc.) in annotated mode
+ */
+function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children: TextChild[]): void {
+  for (const item of items) {
+    if (item.type === 'TemplateLiteral') {
+      const text = evaluateAnnotatedTemplateLiteral(item, scope);
+      children.push({ type: 'run', text });
+    } else if (item.type === 'TspanStatement') {
+      const text = evaluateAnnotatedTemplateLiteral(item.content, scope);
+      const dx = item.dx ? (evaluateExpression(item.dx, scope) as number) : undefined;
+      const dy = item.dy ? (evaluateExpression(item.dy, scope) as number) : undefined;
+      const rot = item.rotation ? (evaluateExpression(item.rotation, scope) as number) : undefined;
+      let tspanStyles: Record<string, string> | undefined;
+      if (item.styles) {
+        const sv = evaluateExpression(item.styles, scope);
+        if (isStyleBlock(sv)) tspanStyles = sv.properties;
+      }
+      children.push({ type: 'tspan', text, dx, dy, rotation: rot, styles: tspanStyles });
+    } else if (item.type === 'ForLoop') {
+      const start = evaluateExpression(item.start, scope);
+      const end = evaluateExpression(item.end, scope);
+      if (typeof start !== 'number' || typeof end !== 'number') continue;
+      const ascending = start <= end;
+      if (ascending) {
+        for (let i = start; i <= end; i++) {
+          const loopScope = createScope(scope);
+          setVariable(loopScope, item.variable, i);
+          evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+        }
+      } else {
+        for (let i = start; i >= end; i--) {
+          const loopScope = createScope(scope);
+          setVariable(loopScope, item.variable, i);
+          evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+        }
+      }
+    } else if (item.type === 'ForEachLoop') {
+      const arr = evaluateExpression(item.iterable, scope);
+      if (isArrayValue(arr)) {
+        for (let idx = 0; idx < arr.elements.length; idx++) {
+          const loopScope = createScope(scope);
+          setVariable(loopScope, item.variable, arr.elements[idx]);
+          if (item.indexVariable) setVariable(loopScope, item.indexVariable, idx);
+          evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+        }
+      }
+    } else if (item.type === 'IfStatement') {
+      const condition = evaluateExpression(item.condition, scope);
+      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      if (isTruthy) {
+        evaluateAnnotatedTextBody(item.consequent as TextBodyItem[], scope, children);
+      } else if (item.alternate) {
+        evaluateAnnotatedTextBody(item.alternate as TextBodyItem[], scope, children);
+      }
+    } else if (item.type === 'LetDeclaration') {
+      const value = evaluateExpression(item.value, scope);
+      setVariable(scope, item.name, value);
+    }
+  }
+}
+
 function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   const line = (expr as { loc?: { line: number } }).loc?.line;
   const obj = evaluateExpression(expr.object, scope);
@@ -2270,6 +2688,17 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return { type: 'ArrayValue' as const, elements: [] };
       case 'subPathCommands':
         return { type: 'ArrayValue' as const, elements: [] };
+      case 'advanceWidth': {
+        const aw = (obj as PathBlockValue & { advanceWidth?: number }).advanceWidth;
+        return aw !== undefined ? aw : 0;
+      }
+      case 'contours': {
+        const contourGroups = splitContours(obj.commands);
+        const contourBlocks: Value[] = contourGroups.map((cmds) =>
+          buildPathBlockFromCommands(cmds, { x: 0, y: 0 }),
+        );
+        return { type: 'ArrayValue' as const, elements: contourBlocks };
+      }
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on PathBlock`, line));
     }
@@ -2299,6 +2728,32 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return { type: 'ArrayValue' as const, elements: [] };
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on ProjectedPath`, line));
+    }
+  }
+
+  // Handle TextBlockValue property access
+  if (isTextBlockValue(obj)) {
+    switch (expr.property) {
+      case 'elementCount':
+        return obj.elements.length;
+      case 'styles':
+        return { type: 'StyleBlockValue' as const, properties: { ...obj.styles } };
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on TextBlock`, line));
+    }
+  }
+
+  // Handle ProjectedTextValue property access
+  if (isProjectedTextValue(obj)) {
+    switch (expr.property) {
+      case 'elementCount':
+        return obj.elements.length;
+      case 'styles':
+        return { type: 'StyleBlockValue' as const, properties: { ...obj.styles } };
+      case 'origin':
+        return { type: 'ContextObject' as const, value: { x: obj.origin.x, y: obj.origin.y } };
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on ProjectedText`, line));
     }
   }
 
@@ -3158,6 +3613,9 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       throw new ReturnSignal(value);
     }
 
+    case 'FontDirective':
+      return '';
+
     default:
       throw new Error(`Unknown statement type: ${(stmt as Statement).type}`);
   }
@@ -3716,6 +4174,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const value = evaluateExpression(stmt.value, scope);
       throw new ReturnSignal(value);
     }
+
+    case 'FontDirective':
+      // Declarative metadata — no annotated output
+      break;
 
     default:
       throw new Error(`Unknown statement type: ${(stmt as Statement).type}`);
