@@ -683,3 +683,113 @@ let exclusive = a.project(50, 50).xor(b.project(70, 50));
 - Multi-component results produce multiple subpaths (`M...z M...z`).
 - All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.
 - Results are always returned as PathBlock values (normalized to `(0, 0)` origin).
+
+## Font Integration
+
+Font integration lets you convert text characters into PathBlock values — turning each glyph into vector paths you can draw, transform, sample, and combine with boolean operations.
+
+### @font Directive
+
+The `@font` directive declares a font for use in the program. It must appear at the top level (not inside a function or block).
+
+```
+@font "Inter";
+@font "Roboto Mono" 700;
+@font "./fonts/CustomFont.ttf";
+```
+
+**Syntax:**
+
+```
+@font "family-or-path" [weight];
+```
+
+| Part | Required | Description |
+|------|----------|-------------|
+| Source | Yes | Font family name (e.g., `"Inter"`) or file path (e.g., `"./fonts/Custom.ttf"`) |
+| Weight | No | Numeric weight 100–900 (default: 400) |
+
+**Font loading by environment:**
+
+- **CLI**: Loads from local file paths (relative to source file) or searches system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows)
+- **Playground**: Fetches from Google Fonts CDN automatically
+
+The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, a warning is logged and compilation continues.
+
+### PathBlock.fromGlyph(text, styles)
+
+Converts text into an array of PathBlock values — one per character. Each PathBlock contains the glyph's vector outline as relative path commands.
+
+```
+@font "Inter";
+
+let glyphs = PathBlock.fromGlyph("A", ${ font-family: Inter; font-size: 48; });
+
+M 50 100
+glyphs[0].draw()
+```
+
+**Arguments:**
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `text` | string | Characters to convert (each becomes a separate PathBlock) |
+| `styles` | style block | Must contain `font-family`; optionally `font-size` (default 16) and `font-weight` (default 400) |
+
+**Returns:** Array of PathBlock values. Each element has all standard PathBlock properties and methods (`draw()`, `project()`, `get()`, `tangent()`, `boundingBox()`, `scale()`, boolean operations, etc.).
+
+```
+@font "Inter";
+let styles = ${ font-family: Inter; font-size: 48; };
+let glyphs = PathBlock.fromGlyph("Hi", styles);
+log(glyphs.length);    // 2
+```
+
+### advanceWidth
+
+Each glyph PathBlock has an `.advanceWidth` property — the horizontal distance to advance the cursor after drawing the glyph. This enables manual text layout:
+
+```
+@font "Inter";
+let styles = ${ font-family: Inter; font-size: 48; };
+let glyphs = PathBlock.fromGlyph("Hello", styles);
+
+let x = 10;
+let y = 100;
+for (g in glyphs) {
+  M x y
+  g.draw()
+  let x = calc(x + g.advanceWidth);
+}
+```
+
+Space characters return an empty PathBlock (no path commands) but still have a non-zero `advanceWidth`.
+
+### contours
+
+Glyphs with multiple contours (e.g., "O" has an outer ring and inner hole) can be decomposed with the `.contours` property. This returns an array of PathBlock values, one per contour:
+
+```
+@font "Inter";
+let styles = ${ font-family: Inter; font-size: 48; };
+let glyphs = PathBlock.fromGlyph("O", styles);
+let contours = glyphs[0].contours;
+log(contours.length);              // 2 (outer + inner)
+
+for (c in contours) {
+  c.drawTo(100, 100)
+}
+```
+
+Each contour is a closed PathBlock with all standard properties and methods.
+
+### Error cases
+
+| Condition | Error message |
+|-----------|---------------|
+| Wrong number of arguments | `PathBlock.fromGlyph() expects 2 arguments (text, styles)` |
+| First argument not a string | `PathBlock.fromGlyph() first argument must be a string` |
+| Second argument not a style block | `PathBlock.fromGlyph() second argument must be a style block` |
+| Style block missing font-family | `PathBlock.fromGlyph() requires font-family in style block` |
+| No fonts loaded | `PathBlock.fromGlyph() requires font data. Use @font directive to load a font.` |
+| Font not in registry | `Font 'X' not found in font registry. Available fonts: [list]` |

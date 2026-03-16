@@ -1,0 +1,104 @@
+// viewBox="0 0 600 320"
+// DIAGNOSTIC #2: Mirror the ORIGINAL sample's exact styles to catch mismatches.
+// The original uses ${ font-size: N; } without font-family in <<,
+// but renders via TextLayer('labels') ${ font-family: monospace; }.
+
+// --- Reproduce original style setup ---
+
+// These match the original sample EXACTLY:
+let small_text = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; };
+let med_text = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; };
+let large_text = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; };
+
+// These are what .boundingBox() sees (sans-serif defaults, no font-family specified):
+let bb_s = small_text.boundingBox();
+let bb_m = med_text.boundingBox();
+let bb_l = large_text.boundingBox();
+
+log("=== SANS-SERIF ESTIMATION (what original uses) ===");
+log("small w:", bb_s.width, "h:", bb_s.height);
+log("med   w:", bb_m.width, "h:", bb_m.height);
+log("large w:", bb_l.width, "h:", bb_l.height);
+
+// Now measure the SAME text with monospace (what the browser actually renders):
+let small_mono = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; font-family: monospace; };
+let med_mono = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; font-family: monospace; };
+let large_mono = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; font-family: monospace; };
+
+let bb_s_mono = small_mono.boundingBox();
+let bb_m_mono = med_mono.boundingBox();
+let bb_l_mono = large_mono.boundingBox();
+
+log("");
+log("=== MONOSPACE ESTIMATION (what browser renders) ===");
+log("small w:", bb_s_mono.width, "h:", bb_s_mono.height);
+log("med   w:", bb_m_mono.width, "h:", bb_m_mono.height);
+log("large w:", bb_l_mono.width, "h:", bb_l_mono.height);
+
+// Show the error — how many pixels the bounding box is UNDERSIZED
+log("");
+log("=== WIDTH UNDERESTIMATE (monospace - sans) ===");
+log("small: off by", calc(bb_s_mono.width - bb_s.width), "px (", calc((bb_s_mono.width - bb_s.width) / bb_s_mono.width * 100), "%)");
+log("med:   off by", calc(bb_m_mono.width - bb_m.width), "px (", calc((bb_m_mono.width - bb_m.width) / bb_m_mono.width * 100), "%)");
+log("large: off by", calc(bb_l_mono.width - bb_l.width), "px (", calc((bb_l_mono.width - bb_l.width) / bb_l_mono.width * 100), "%)");
+
+// --- Collision checks using the CORRECT monospace bounding boxes ---
+
+let x0 = 60;
+let y_s = 80;
+let y_m = 150;
+let y_l = 240;
+
+// The bounding box RECT as drawn in the original uses sans-serif bb values,
+// but the actual rendered text occupies monospace-sized space.
+// Check: does the monospace-sized text overflow the sans-serif-sized rect?
+
+log("");
+log("=== TEXT OVERFLOW CHECK ===");
+log("small: rect right edge =", calc(x0 + bb_s.width), " text right edge =", calc(x0 + bb_s_mono.width), " OVERFLOW:", calc(bb_s_mono.width > bb_s.width));
+log("med:   rect right edge =", calc(x0 + bb_m.width), " text right edge =", calc(x0 + bb_m_mono.width), " OVERFLOW:", calc(bb_m_mono.width > bb_m.width));
+log("large: rect right edge =", calc(x0 + bb_l.width), " text right edge =", calc(x0 + bb_l_mono.width), " OVERFLOW:", calc(bb_l_mono.width > bb_l.width));
+
+// --- Check dimension label positions vs actual text ---
+
+// Width labels are positioned centered on the (too-narrow) sans-serif bbox.
+// Height labels are positioned to the right of the (too-narrow) sans-serif bbox.
+// If the actual text is wider, the height labels may overlap the text content.
+
+log("");
+log("=== HEIGHT LABEL vs ACTUAL TEXT OVERLAP ===");
+
+// Height label x position in original: x0 + bb.width + 12
+// Actual text right edge: x0 + bb_mono.width
+// Gap = (x0 + bb.width + 12) - (x0 + bb_mono.width) = bb.width + 12 - bb_mono.width
+log("small: h-label x =", calc(x0 + bb_s.width + 12), " text right =", calc(x0 + bb_s_mono.width), " gap =", calc(bb_s.width + 12 - bb_s_mono.width));
+log("med:   h-label x =", calc(x0 + bb_m.width + 12), " text right =", calc(x0 + bb_m_mono.width), " gap =", calc(bb_m.width + 12 - bb_m_mono.width));
+log("large: h-label x =", calc(x0 + bb_l.width + 12), " text right =", calc(x0 + bb_l_mono.width), " gap =", calc(bb_l.width + 12 - bb_l_mono.width));
+
+// --- Use ProjectedTextValue.intersects() to confirm collisions ---
+
+log("");
+log("=== PROJECTED TEXT INTERSECTION CHECKS ===");
+
+// Project the actual monospace text
+let s_proj = small_mono.project(x0, y_s);
+let m_proj = med_mono.project(x0, y_m);
+let l_proj = large_mono.project(x0, y_l);
+
+// Project the height labels at their original positions
+let h_label_s = &{ text(0, 8)`h = ${bb_s.height}` } << ${ font-size: 8; font-family: monospace; };
+let h_label_m = &{ text(0, 8)`h = ${bb_m.height}` } << ${ font-size: 8; font-family: monospace; };
+let h_label_l = &{ text(0, 8)`h = ${bb_l.height}` } << ${ font-size: 8; font-family: monospace; };
+
+let hl_s_proj = h_label_s.project(calc(x0 + bb_s.width + 12), calc(y_s + bb_s.y + bb_s.height / 2 + 3));
+let hl_m_proj = h_label_m.project(calc(x0 + bb_m.width + 12), calc(y_m + bb_m.y + bb_m.height / 2 + 3));
+let hl_l_proj = h_label_l.project(calc(x0 + bb_l.width + 12), calc(y_l + bb_l.y + bb_l.height / 2 + 3));
+
+log("small h-label intersects text:", hl_s_proj.intersects(s_proj));
+log("med   h-label intersects text:", hl_m_proj.intersects(m_proj));
+log("large h-label intersects text:", hl_l_proj.intersects(l_proj));
+
+// Width dimension labels
+let w_label_s = &{ text(0, 8)`w = ${bb_s.width}` } << ${ font-size: 8; font-family: monospace; };
+let wl_s_proj = w_label_s.project(calc(x0 + bb_s.width / 2), calc(y_s + bb_s.y - 12));
+log("small w-label intersects text:", wl_s_proj.intersects(s_proj));

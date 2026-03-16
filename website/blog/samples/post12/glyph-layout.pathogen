@@ -1,0 +1,148 @@
+// viewBox="0 0 600 300"
+// Hello World glyph layout — advance-width loop placing each letter
+
+@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 300) }
+
+// ─── Glyph layout with advance widths ────────────────────────────
+
+let word = "PATHOGEN";
+let styles = ${ font-family: BebasNeue-Regular; font-size: 64; };
+let glyphs = PathBlock.fromGlyph(word, styles);
+
+// Place glyphs using advance width accumulation
+let glyph_layer = PathLayer('glyphs') ${
+  fill: Color('#3b82f6');
+  stroke: none;
+};
+
+let baseline_y = 140;
+let start_x = 60;
+let cursor_x = start_x;
+
+glyph_layer.apply {
+  for (g in glyphs) {
+    g.drawTo(cursor_x, baseline_y)
+    cursor_x = calc(cursor_x + g.advanceWidth);
+  }
+}
+
+// --- Baseline and advance width markers ---
+
+let markers = PathLayer('markers') ${
+  stroke: Color('#f59e0b');
+  stroke-width: 0.75;
+  fill: none;
+};
+
+// Baseline
+markers.apply {
+  M start_x baseline_y h calc(cursor_x - start_x)
+}
+
+// Advance width ticks
+let ticks = PathLayer('ticks') ${
+  stroke: Color('#f59e0b60');
+  stroke-width: 0.5;
+  stroke-dasharray: "2 3";
+  fill: none;
+};
+
+let tick_x = start_x;
+ticks.apply {
+  for (g in glyphs) {
+    M tick_x calc(baseline_y - 70) v 80
+    let tick_x = calc(tick_x + g.advanceWidth);
+  }
+  M tick_x calc(baseline_y - 70) v 80
+}
+
+// --- Second row: Inconsolata (monospace) ---
+
+let word2 = "PATHOGEN";
+let styles2 = ${ font-family: Inconsolata-Regular; font-size: 48; };
+let glyphs2 = PathBlock.fromGlyph(word2, styles2);
+
+let glyph_layer2 = PathLayer('glyphs2') ${
+  fill: Color('#22c55e');
+  stroke: none;
+};
+
+let baseline_y2 = 230;
+let cursor_x2 = start_x;
+
+glyph_layer2.apply {
+  for (g in glyphs2) {
+    g.drawTo(cursor_x2, baseline_y2)
+    cursor_x2 = calc(cursor_x2 + g.advanceWidth);
+  }
+}
+
+// Baseline 2
+let markers2 = PathLayer('markers2') ${
+  stroke: Color('#22c55e');
+  stroke-width: 0.75;
+  fill: none;
+};
+markers2.apply {
+  M start_x baseline_y2 h calc(cursor_x2 - start_x)
+}
+
+// --- Font labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+labels.apply {
+  text(start_x, calc(baseline_y + 16))`Bebas Neue · 64px · advanceWidth layout`
+  text(start_x, calc(baseline_y2 + 16))`Inconsolata · 48px · uniform advance widths`
+}
+
+// --- Title ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply { text(30, 30)`Glyph Layout with Advance Widths` }
+
+// --- Code snippet ---
+
+let code_group = GroupLayer('code-block') ${ translate-x: 350; translate-y: 20; };
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(0, 0)`let cursor_x = start_x;`
+  text(0, 12)`for (g in glyphs) {`
+  text(8, 24)`g.drawTo(cursor_x, baseline)`
+  text(8, 36)`cursor_x += g.advanceWidth`
+  text(0, 48)`}`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(0, 0)`let`
+  text(0, 12)`for`
+}
+
+code_group.append(code, kw);

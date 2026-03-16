@@ -6,7 +6,7 @@ import type { CompileResult } from './evaluator';
 export { parse, parseWithComments } from './parser';
 export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated } from './evaluator';
 export { stdlib } from './stdlib';
-export { createFontRegistry, addFont, getFont as getFontFromRegistry } from './evaluator/font-provider';
+export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
 
 export type {
   ArrayLiteral,

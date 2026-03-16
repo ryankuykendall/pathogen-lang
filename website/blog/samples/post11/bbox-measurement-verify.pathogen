@@ -1,0 +1,84 @@
+// viewBox="0 0 600 320"
+// VERIFICATION: Confirm all collisions resolved after fix
+
+// --- Recreate the FIXED text blocks (with font-family: monospace) ---
+
+let small_text = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; font-family: monospace; };
+let med_text = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; font-family: monospace; };
+let large_text = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; font-family: monospace; };
+
+let bb_s = small_text.boundingBox();
+let bb_m = med_text.boundingBox();
+let bb_l = large_text.boundingBox();
+
+let x0 = 60;
+let y_s = 80;
+let y_m = 155;
+let y_l = 250;
+
+log("=== FIXED BOUNDING BOX VALUES (monospace) ===");
+log("small w:", bb_s.width, "h:", bb_s.height);
+log("med   w:", bb_m.width, "h:", bb_m.height);
+log("large w:", bb_l.width, "h:", bb_l.height);
+
+// --- Project all text content ---
+
+let s_proj = small_text.project(x0, y_s);
+let m_proj = med_text.project(x0, y_m);
+let l_proj = large_text.project(x0, y_l);
+
+// --- Project height labels at FIXED positions (offset 16px instead of 12px) ---
+
+let anno_style = ${ font-size: 8; font-family: monospace; };
+
+let hl_s = (&{ text(0, 8)`h = ${round(bb_s.height)}` } << anno_style).project(calc(x0 + bb_s.width + 16), calc(y_s + bb_s.y + bb_s.height / 2 + 3));
+let hl_m = (&{ text(0, 8)`h = ${round(bb_m.height * 10) / 10}` } << anno_style).project(calc(x0 + bb_m.width + 16), calc(y_m + bb_m.y + bb_m.height / 2 + 3));
+let hl_l = (&{ text(0, 8)`h = ${round(bb_l.height * 10) / 10}` } << anno_style).project(calc(x0 + bb_l.width + 16), calc(y_l + bb_l.y + bb_l.height / 2 + 3));
+
+log("");
+log("=== HEIGHT LABEL COLLISION CHECK (post-fix) ===");
+log("small h-label intersects text:", hl_s.intersects(s_proj));
+log("med   h-label intersects text:", hl_m.intersects(m_proj));
+log("large h-label intersects text:", hl_l.intersects(l_proj));
+
+// --- Project width labels at FIXED positions (offset 16px instead of 12px) ---
+
+let wl_s = (&{ text(0, 8)`w = ${round(bb_s.width)}` } << anno_style).project(calc(x0 + bb_s.width / 2), calc(y_s + bb_s.y - 16));
+let wl_m = (&{ text(0, 8)`w = ${round(bb_m.width * 10) / 10}` } << anno_style).project(calc(x0 + bb_m.width / 2), calc(y_m + bb_m.y - 16));
+let wl_l = (&{ text(0, 8)`w = ${round(bb_l.width * 10) / 10}` } << anno_style).project(calc(x0 + bb_l.width / 2), calc(y_l + bb_l.y - 16));
+
+log("");
+log("=== WIDTH LABEL COLLISION CHECK (post-fix) ===");
+log("small w-label intersects text:", wl_s.intersects(s_proj));
+log("med   w-label intersects text:", wl_m.intersects(m_proj));
+log("large w-label intersects text:", wl_l.intersects(l_proj));
+
+// --- Check dimension labels against each other ---
+
+log("");
+log("=== CROSS-LABEL COLLISIONS ===");
+log("small w-label intersects small h-label:", wl_s.intersects(hl_s));
+log("med w-label intersects med h-label:", wl_m.intersects(hl_m));
+log("large w-label intersects large h-label:", wl_l.intersects(hl_l));
+
+// --- Check gap between bbox rect and dimension lines ---
+
+log("");
+log("=== GAPS (dimension line to text top) ===");
+log("small: dim_line_y =", calc(y_s + bb_s.y - 10), "text_top =", calc(y_s + bb_s.y), "gap = 10px");
+log("med:   dim_line_y =", calc(y_m + bb_m.y - 10), "text_top =", calc(y_m + bb_m.y), "gap = 10px");
+log("large: dim_line_y =", calc(y_l + bb_l.y - 10), "text_top =", calc(y_l + bb_l.y), "gap = 10px");
+
+// --- Check row spacing (no vertical overlap between rows) ---
+
+log("");
+log("=== ROW SPACING ===");
+log("small bottom:", calc(y_s + bb_s.y + bb_s.height), "med top:", calc(y_m + bb_m.y), "gap:", calc(y_m + bb_m.y - y_s - bb_s.y - bb_s.height));
+log("med bottom:", calc(y_m + bb_m.y + bb_m.height), "large top:", calc(y_l + bb_l.y), "gap:", calc(y_l + bb_l.y - y_m - bb_m.y - bb_m.height));
+log("small row intersects med row:", s_proj.intersects(m_proj));
+log("med row intersects large row:", m_proj.intersects(l_proj));
+
+log("");
+log("=== DISPLAYED VALUES (rounded) ===");
+log("w labels:", round(bb_s.width), round(bb_m.width * 10) / 10, round(bb_l.width * 10) / 10);
+log("h labels:", round(bb_s.height), round(bb_m.height * 10) / 10, round(bb_l.height * 10) / 10);

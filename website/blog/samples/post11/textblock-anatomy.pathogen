@@ -1,0 +1,217 @@
+// viewBox="0 0 600 340"
+// TextBlock Anatomy — compose text at relative coordinates, then position
+
+// ─── Background ─────────────────────────────────────────────────────
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 340) }
+
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
+};
+grid.apply {
+  for (i in 0..17) { M 0 calc(i * 20) h 600 }
+  for (j in 0..30) { M calc(j * 20) 0 v 340 }
+}
+
+// ─── Define a TextBlock at relative coordinates ─────────────────────
+
+let mono_styles = ${ font-family: monospace; font-size: 11; };
+
+let card = &{
+  text(0, 14)`Server Node`
+  text(0, 32)`Status: online`
+  text(0, 48)`Latency: 12ms`
+} << mono_styles;
+
+// Measure the block with correct monospace metrics
+let bb = card.boundingBox();
+
+// ─── Card 1: First placement ────────────────────────────────────────
+
+let g1 = GroupLayer('card1') ${ translate-x: 80; translate-y: 100; };
+
+let demo1 = TextLayer('demo1') ${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+demo1.apply { card.drawTo(0, 0); }
+
+// Bounding box overlay
+let bb1_layer = PathLayer('bb1') ${
+  fill: none;
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+};
+bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+
+// Origin crosshair
+let cross1 = PathLayer('cross1') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
+};
+cross1.apply { M -7 0 h 14  M 0 -7 v 14 }
+
+// Collision check: bbox overlay vs text content
+let card1_proj = card.project(0, 0);
+let card1_bbox_rect = { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+if (card1_proj.intersects(card1_bbox_rect)) {
+  // Expected: bounding box encloses the text — no clipping
+} else {
+  log("WARN: card1 bbox does not contain text — possible clipping");
+}
+
+g1.append(demo1, bb1_layer, cross1);
+
+// ─── Card 2: Second placement ───────────────────────────────────────
+
+let g2 = GroupLayer('card2') ${ translate-x: 360; translate-y: 180; };
+
+let demo2 = TextLayer('demo2') ${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+demo2.apply { card.drawTo(0, 0); }
+
+// Bounding box overlay
+let bb2_layer = PathLayer('bb2') ${
+  fill: none;
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+};
+bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+
+// Origin crosshair
+let cross2 = PathLayer('cross2') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
+};
+cross2.apply { M -7 0 h 14  M 0 -7 v 14 }
+
+// Collision check: bbox overlay vs text content
+let card2_proj = card.project(0, 0);
+if (card2_proj.intersects(card1_bbox_rect)) {
+  // Expected: same block, same bbox — should match
+} else {
+  log("WARN: card2 bbox does not contain text — possible clipping");
+}
+
+g2.append(demo2, bb2_layer, cross2);
+
+// ─── Leader lines and connection arrow ──────────────────────────────
+
+let leader_group = GroupLayer('leaders-group') ${};
+
+let leaders = PathLayer('leaders') ${
+  fill: none;
+  stroke: Color('#475569');
+  stroke-width: 0.5;
+};
+leaders.apply {
+  // Card 1 origin → annotation label
+  M 80 100 L 40 60
+  // Card 2 origin → annotation label
+  M 360 180 L 320 260
+  // Connection between placements
+  M 200 120 L 340 180
+}
+
+// Arrowhead at connection endpoint
+let arrow_layer = PathLayer('arrow') ${
+  fill: Color('#818cf8');
+  stroke: none;
+};
+arrow_layer.apply {
+  M 332 176 l 10 4 l -10 4 z
+}
+
+leader_group.append(leaders, arrow_layer);
+
+// ─── Annotations ────────────────────────────────────────────────────
+
+let anno_group = GroupLayer('anno-group') ${};
+
+let anno = TextLayer('anno') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+anno.apply {
+  text(15, 55)`origin (80, 100)`
+  text(175, 170)`same block, different position`
+  text(295, 270)`origin (360, 180)`
+}
+
+anno_group.append(anno);
+
+// ─── Code block (top-right) ─────────────────────────────────────────
+
+let code_group = GroupLayer('code-block') ${ translate-x: 400; translate-y: 22; };
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(0, 12)`let card = &{`
+  text(12, 24)`text(0, 14)\`Server Node\``
+  text(12, 36)`text(0, 32)\`Status: online\``
+  text(12, 48)`text(0, 48)\`Latency: 12ms\``
+  text(0, 60)`} << monospace styles;`
+  text(0, 80)`card.drawTo(80, 100)`
+  text(0, 92)`card.drawTo(360, 180)`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(0, 12)`let`
+}
+
+code_group.append(code, kw);
+
+// ─── Title ──────────────────────────────────────────────────────────
+
+let title_group = GroupLayer('title-group') ${};
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply {
+  text(30, 310)`TextBlock — Compose Once, Place Anywhere`
+}
+
+title_group.append(title);
+
+// ─── Legend ──────────────────────────────────────────────────────────
+
+let legend_group = GroupLayer('legend-group') ${ translate-x: 400; translate-y: 300; };
+
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
+
+leg_o.apply { rect(0, 0, 8, 8) }
+leg_b.apply { rect(0, 14, 8, 8) }
+
+leg.apply {
+  text(12, 7)`Origin`
+  text(12, 21)`Bounding box`
+}
+
+legend_group.append(leg_o, leg_b, leg);

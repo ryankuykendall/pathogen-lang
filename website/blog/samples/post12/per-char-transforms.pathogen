@@ -1,0 +1,243 @@
+// viewBox="0 0 600 220"
+// Per-character transforms — wave, scale, and arc effects on individual glyphs
+
+@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 220) }
+
+// Shared font styles
+let styles = ${ font-family: BebasNeue-Regular; font-size: 72; };
+let label_styles = ${ font-family: monospace; font-size: 8; };
+
+// Column geometry: three equal columns across 600px
+// Each column ~200px wide, starting at x=0, x=200, x=400
+let col_w = 200;
+
+// Track all labels for intersection checks
+let placed_labels = [];
+
+// ═══════════════════════════════════════════════════════════════════
+// WAVE — sin() vertical offset per character (left column)
+// ═══════════════════════════════════════════════════════════════════
+
+let g_wave = GroupLayer('wave-group') ${ translate-x: 20; translate-y: 30; };
+
+// Effect name
+let wave_title = TextLayer('wave-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+wave_title.apply { text(0, 0)`WAVE` }
+
+let word = "WAVE";
+let glyphs = PathBlock.fromGlyph(word, styles);
+
+let wave_layer = PathLayer('wave') ${
+  fill: Color('#3b82f6');
+  stroke: none;
+};
+
+let wave_x = 0;
+let wave_baseline = 90;
+
+wave_layer.apply {
+  let idx = 0;
+  for (g in glyphs) {
+    let y_offset = calc(sin(idx * 0.8) * 15);
+    g.drawTo(wave_x, calc(wave_baseline + y_offset))
+    wave_x = calc(wave_x + g.advanceWidth);
+    idx = calc(idx + 1);
+  }
+}
+
+// Description label
+let wave_label_block = &{ text(0, 8)`sin(i) vertical offset` } << label_styles;
+let wave_label_proj = wave_label_block.project(0, 120);
+
+let wave_label = TextLayer('wave-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+wave_label.apply {
+  wave_label_proj.draw();
+}
+
+placed_labels.push(wave_label_proj);
+
+g_wave.append(wave_title, wave_layer, wave_label);
+
+// ═══════════════════════════════════════════════════════════════════
+// GROW — increasing scale per character (center column)
+// ═══════════════════════════════════════════════════════════════════
+
+let g_scale = GroupLayer('scale-group') ${ translate-x: 210; translate-y: 30; };
+
+// Effect name
+let grow_title = TextLayer('grow-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+grow_title.apply { text(0, 0)`GROW` }
+
+let word2 = "GROW";
+let glyphs2 = PathBlock.fromGlyph(word2, styles);
+
+let scale_layer = PathLayer('scale') ${
+  fill: Color('#22c55e');
+  stroke: none;
+};
+
+let scale_x = 0;
+
+scale_layer.apply {
+  let idx2 = 0;
+  for (g in glyphs2) {
+    let s = calc(0.5 + idx2 * 0.25);
+    let scaled = g.scale(s, s);
+    scaled.drawTo(scale_x, 90)
+    scale_x = calc(scale_x + g.advanceWidth * s);
+    idx2 = calc(idx2 + 1);
+  }
+}
+
+// Description label
+let scale_label_block = &{ text(0, 8)`scale(0.5 + i * 0.25)` } << label_styles;
+let scale_label_proj = scale_label_block.project(0, 120);
+
+let scale_label = TextLayer('scale-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+scale_label.apply {
+  scale_label_proj.draw();
+}
+
+placed_labels.push(scale_label_proj);
+
+g_scale.append(grow_title, scale_layer, scale_label);
+
+// ═══════════════════════════════════════════════════════════════════
+// CIRCULAR — characters along a circular arc (right column)
+// ═══════════════════════════════════════════════════════════════════
+
+let g_arc = GroupLayer('arc-group') ${ translate-x: 400; translate-y: 30; };
+
+// Effect name
+let arc_title = TextLayer('arc-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+arc_title.apply { text(0, 0)`CIRCULAR` }
+
+let word3 = "CIRCULAR";
+let arc_styles = ${ font-family: BebasNeue-Regular; font-size: 30; };
+let glyphs3 = PathBlock.fromGlyph(word3, arc_styles);
+
+// Compute total width for arc distribution
+let total_width = 0;
+for (g in glyphs3) {
+  total_width = calc(total_width + g.advanceWidth);
+}
+
+let arc_layer = PathLayer('arc') ${
+  fill: Color('#f59e0b');
+  stroke: none;
+};
+
+// Center the arc in the column: column is ~180px usable, center at 90
+let arc_cx = 90;
+let arc_cy = 75;
+let arc_r = 55;
+// Spread characters over an arc
+let arc_span = calc(total_width / arc_r);
+let arc_start = calc(-0.5 * 3.14159265358979 - arc_span / 2);
+let arc_cursor = 0;
+
+arc_layer.apply {
+  for (g in glyphs3) {
+    let char_mid = calc(arc_cursor + g.advanceWidth / 2);
+    let angle = calc(arc_start + char_mid / arc_r);
+
+    let cx = calc(arc_cx + cos(angle) * arc_r);
+    let cy = calc(arc_cy + sin(angle) * arc_r);
+
+    // Rotate glyph to follow the arc tangent
+    let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5 * 3.14159265358979));
+    rotated.drawTo(cx, cy)
+
+    arc_cursor = calc(arc_cursor + g.advanceWidth);
+  }
+}
+
+// Guide arc (dashed circle)
+let guide = PathLayer('guide') ${
+  stroke: Color('#334155');
+  stroke-width: 0.5;
+  stroke-dasharray: "2 3";
+  fill: none;
+};
+guide.apply { circle(calc(arc_cx), calc(arc_cy), arc_r) }
+
+// Description label
+let arc_label_block = &{ text(0, 8)`rotateAtVertexIndex along arc` } << label_styles;
+let arc_label_proj = arc_label_block.project(calc(arc_cx - 50), 140);
+
+let arc_label = TextLayer('arc-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+arc_label.apply {
+  arc_label_proj.draw();
+}
+
+placed_labels.push(arc_label_proj);
+
+g_arc.append(arc_title, arc_layer, guide, arc_label);
+
+// ═══════════════════════════════════════════════════════════════════
+// Collision verification — check all label pairs
+// ═══════════════════════════════════════════════════════════════════
+
+let collision_count = 0;
+let ci = 0;
+for (a in placed_labels) {
+  let cj = 0;
+  for (b in placed_labels) {
+    if (cj > ci) {
+      if (a.intersects(b)) {
+        collision_count = calc(collision_count + 1);
+        log("WARN: label collision detected between labels ", ci, " and ", cj);
+      }
+    }
+    cj = calc(cj + 1);
+  }
+  ci = calc(ci + 1);
+}
+log("Label collisions: ", collision_count, " (0 expected)");
+
+// ═══════════════════════════════════════════════════════════════════
+// Title (bottom)
+// ═══════════════════════════════════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply { text(30, 205)`Per-Character Transforms` }

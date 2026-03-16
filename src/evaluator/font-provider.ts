@@ -14,14 +14,33 @@
 import type { FontData, FontRegistry, PathBlockCommand } from './types';
 import type { Point } from './context';
 
-// opentype.js has CJS/ESM interop issues with static imports in vitest.
-// Use a lazy require/import pattern that works across all environments.
+// opentype.js lazy loader — works across vitest, tsx (ESM), and tsup bundle.
+// Uses dynamic import() with a synchronous cache. The first call to
+// ensureOpentype() must be awaited; subsequent calls to getOpentype() are sync.
 let _opentype: typeof import('opentype.js') | null = null;
+
+export async function ensureOpentype(): Promise<void> {
+  if (!_opentype) {
+    _opentype = await import('opentype.js');
+    // Handle CJS default export wrapping
+    if (_opentype && typeof (_opentype as any).default?.parse === 'function') {
+      _opentype = (_opentype as any).default;
+    }
+  }
+}
 
 function getOpentype(): typeof import('opentype.js') {
   if (!_opentype) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _opentype = require('opentype.js');
+    // Fallback for environments where ensureOpentype() wasn't called first
+    // (e.g., vitest which handles ESM/CJS interop natively)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      _opentype = require('opentype.js');
+    } catch {
+      throw new Error(
+        'opentype.js not loaded. Call ensureOpentype() before using font features.',
+      );
+    }
   }
   return _opentype!;
 }

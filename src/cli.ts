@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile, compileAnnotated, parse, createFontRegistry, addFont } from '.';
+import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype } from '.';
 import { renderConicToWedges } from './conic-renderer';
 
 import type { CompileResult, CompileOptions, FontRegistry } from '.';
@@ -267,10 +267,11 @@ ${elements}
 </svg>`;
 }
 
-function parseArgs(args: string[]): { source: string; options: CliOptions; outputFile?: string } {
+function parseArgs(args: string[]): { source: string; options: CliOptions; outputFile?: string; sourceFile?: string } {
   const options: CliOptions = {};
   let source: string | null = null;
   let outputFile: string | undefined;
+  let sourceFile: string | undefined;
   let i = 0;
 
   while (i < args.length) {
@@ -306,6 +307,7 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
       const srcFile = arg.split('=')[1];
       try {
         source = readFileSync(srcFile, 'utf-8');
+        sourceFile = srcFile;
       } catch (err) {
         console.error(`Error: Could not read file '${srcFile}'`);
         process.exit(1);
@@ -398,6 +400,7 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
     } else if (!arg.startsWith('-')) {
       try {
         source = readFileSync(arg, 'utf-8');
+        sourceFile = arg;
       } catch (err) {
         console.error(`Error: Could not read file '${arg}'`);
         process.exit(1);
@@ -411,7 +414,7 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
     process.exit(1);
   }
 
-  return { source, options, outputFile };
+  return { source, options, outputFile, sourceFile };
 }
 
 const MIME_TYPES: Record<string, string> = {
@@ -523,7 +526,7 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
  * Scan parsed AST for @font directives and load local font files.
  * Returns a FontRegistry if any fonts were loaded, undefined otherwise.
  */
-function loadFontsFromDirectives(source: string, sourceFile?: string): FontRegistry | undefined {
+async function loadFontsFromDirectives(source: string, sourceFile?: string): Promise<FontRegistry | undefined> {
   let ast;
   try {
     ast = parse(source);
@@ -537,6 +540,9 @@ function loadFontsFromDirectives(source: string, sourceFile?: string): FontRegis
   );
 
   if (fontDirectives.length === 0) return undefined;
+
+  // Ensure opentype.js is loaded before parsing font files
+  await ensureOpentype();
 
   const registry = createFontRegistry();
   const baseDir = sourceFile ? dirname(resolve(sourceFile)) : process.cwd();
@@ -628,7 +634,7 @@ function getSystemFontDirs(): string[] {
   }
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
@@ -636,7 +642,7 @@ function main() {
     process.exit(0);
   }
 
-  const { source, options, outputFile } = parseArgs(args);
+  const { source, options, outputFile, sourceFile } = parseArgs(args);
 
   try {
     // Annotated output mode
@@ -653,7 +659,7 @@ function main() {
       return;
     }
 
-    const fontRegistry = loadFontsFromDirectives(source);
+    const fontRegistry = await loadFontsFromDirectives(source, sourceFile);
     const compileOptions: CompileOptions = {
       ...(options.toFixed != null ? { toFixed: options.toFixed } : {}),
       ...(fontRegistry ? { fonts: fontRegistry } : {}),

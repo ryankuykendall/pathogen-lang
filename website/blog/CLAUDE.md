@@ -134,9 +134,10 @@ Author the final version of the blog post incorporating all feedback compiled fr
 
 ### 6. Publish and Verify
 
-1. Push to `dev:website` so all links (on new posts, existing posts, and documentation) can be checked by Puppeteer.
-2. Fix all broken links.
-3. Rebuild the post from its parts.
+1. Start local server: `npm run dev:website`
+2. Run link checker: `npm run check-links`
+3. Fix all broken links.
+4. Rebuild the post from its parts.
 
 ## Multi-Part Series
 

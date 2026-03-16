@@ -1,0 +1,84 @@
+// viewBox="0 0 600 320"
+// DIAGNOSTIC #3: Precisely check the remaining collision in the small row.
+// The screenshot shows the height bracket line and 'h = 12' text
+// overlapping with the '10' at the end of 'font-size: 10'.
+
+let styles = ${ font-size: 10; font-family: monospace; };
+let t = &{ text(0, 10)`font-size: 10` } << styles;
+let bb = t.boundingBox();
+
+let x0 = 60;
+let y_s = 80;
+
+log("=== SMALL ROW GEOMETRY ===");
+log("text bbox: x=", bb.x, "y=", bb.y, "w=", bb.width, "h=", bb.height);
+log("text right edge (absolute):", calc(x0 + bb.width));
+
+// Height bracket position
+let bracket_x = calc(x0 + bb.width + 10);
+log("bracket line x:", bracket_x);
+log("gap from text right to bracket:", calc(bracket_x - x0 - bb.width));
+
+// Height label position
+let h_label_x = calc(x0 + bb.width + 16);
+log("h-label text starts at x:", h_label_x);
+
+// The text 'font-size: 10' has 13 characters.
+// Monospace estimate: 13 * 0.60 * 10 = 78px
+// But actual Courier New / monospace at 10px may differ.
+// Let's check what the per-character width is:
+log("estimated char width:", calc(bb.width / 13));
+log("expected 0.60 * fontSize:", calc(0.60 * 10));
+
+// The REAL problem: at font-size 10, the text is small, and the
+// height bracket + label at x=148/154 may appear to overlap because
+// the browser's actual monospace width is different from our 0.60 estimate.
+
+// Let's also check: is the bracket y-range overlapping the text y-range?
+let text_top = calc(y_s + bb.y);
+let text_bot = calc(y_s + bb.y + bb.height);
+let bracket_top = calc(y_s + bb.y);
+let bracket_bot = calc(y_s + bb.y + bb.height);
+log("");
+log("text y-range:", text_top, "to", text_bot);
+log("bracket y-range:", bracket_top, "to", bracket_bot);
+log("bracket serifs span x:", calc(bracket_x - 3), "to", calc(bracket_x + 3));
+
+// The bracket top serif is a horizontal line from (bracket_x - 3, text_top) to (bracket_x + 3, text_top)
+// If the actual rendered text extends past x = bracket_x - 3 = 145, the serif overlaps the text.
+// Our estimate says text ends at 138, so gap = 7px. Should be fine...
+// UNLESS the browser renders wider.
+
+// Check the h-label vs the text projected as a rect
+let t_proj = t.project(x0, y_s);
+let h_label = &{ text(0, 8)`h = ${round(bb.height)}` } << ${ font-size: 8; font-family: monospace; };
+let h_proj = h_label.project(h_label_x, calc(y_s + bb.y + bb.height / 2 + 3));
+log("");
+log("h-label bbox:", h_proj.boundingBox().x, h_proj.boundingBox().y, h_proj.boundingBox().width, h_proj.boundingBox().height);
+log("h-label intersects text:", h_proj.intersects(t_proj));
+
+// Key question: what is the ACTUAL y position of 'h = 12'?
+// h_label_x = 154, y = 80 + 0 + 6 + 3 = 89
+// h-label bbox: top = 89 - 8 = 81, bottom = 81 + 9.6 = 90.6
+// text bbox: top = 80, bottom = 92
+// So vertically they overlap (81 < 92 and 90.6 > 80)
+// Horizontally: h-label starts at 154, text ends at 138 → no horizontal overlap
+// .intersects() correctly says false
+
+// BUT the bracket PATH geometry sits between them:
+// bracket vertical line: x = 148, from y=80 to y=92
+// bracket top serif: (145, 80) to (151, 80)
+// bracket bottom serif: (145, 92) to (151, 92)
+// These paths are NOT checked by text .intersects()
+
+log("");
+log("=== THE REAL ISSUE ===");
+log("The height bracket is PATH geometry, not text.");
+log("TextBlock.intersects() checks text-vs-text bounding boxes.");
+log("It does NOT detect text-vs-path collisions in this context.");
+log("The bracket serif at x=145..151 may visually overlap the text");
+log("if the browser renders wider than our 78px estimate.");
+
+// What if we widen the gap?
+// Moving bracket to x0 + bb.width + 20 and label to x0 + bb.width + 26
+// would give a 20px gap from estimated text edge — plenty of room.

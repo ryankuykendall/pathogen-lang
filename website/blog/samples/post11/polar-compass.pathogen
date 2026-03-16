@@ -1,0 +1,179 @@
+// viewBox="0 0 500 500"
+// Polar projection — labels placed at compass positions around a shape
+// Uses GroupLayers per Code Example Guideline §9
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 500, 500) }
+
+// --- Title (top-level) ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: Color('#e2e8f0');
+  text-anchor: end;
+};
+title.apply {
+  text(475, 30)`Polar Projection with BBoxAnchor`
+}
+
+// --- Annotations (top-level) ---
+
+let anno = TextLayer('anno') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+anno.apply {
+  text(30, 470)`polarProject(cx, cy, angle, distance, anchor)`
+  text(30, 482)`anchor faces center — text stays outside`
+}
+
+// ─── Compass group ── hexagon + center + guide + radials + dots + labels ───
+
+let compass = GroupLayer('compass') ${ translate-x: 250; translate-y: 250; };
+
+// Central hexagon (coordinates relative to group origin)
+let hex = PathLayer('hex') ${
+  fill: Color('#3b82f615');
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+};
+hex.apply { polygon(0, 0, 80, 6) }
+
+// Center marker
+let center_dot = PathLayer('center-dot') ${
+  fill: Color('#22c55e');
+  stroke: none;
+};
+center_dot.apply { circle(0, 0, 3) }
+
+// Guide circle
+let guide = PathLayer('guide') ${
+  stroke: Color('#334155');
+  stroke-width: 0.5;
+  stroke-dasharray: "3 4";
+  fill: none;
+};
+guide.apply { circle(0, 0, 140) }
+
+// Radial lines from hex edge to guide circle
+let radials = PathLayer('radials') ${
+  stroke: Color('#475569');
+  stroke-width: 0.5;
+  fill: none;
+};
+radials.apply {
+  for (i in 0..7) {
+    let angle = calc(i * 0.7854 - 1.5708);
+    let inner_x = calc(cos(angle) * 85);
+    let inner_y = calc(sin(angle) * 85);
+    let outer_x = calc(cos(angle) * 130);
+    let outer_y = calc(sin(angle) * 130);
+    M inner_x inner_y L outer_x outer_y
+  }
+}
+
+// Anchor dots ON the guide circle (r=140)
+let dots = PathLayer('dots') ${
+  fill: Color('#f59e0b');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+dots.apply {
+  for (i in 0..7) {
+    let angle = calc(i * 0.7854 - 1.5708);
+    let dx = calc(cos(angle) * 140);
+    let dy = calc(sin(angle) * 140);
+    circle(dx, dy, 3)
+  }
+}
+
+// Labels placed beyond the guide circle (r=160) so they don't overlap dots
+let names = ["North", "NE", "East", "SE", "South", "SW", "West", "NW"];
+let anchors = [
+  BBoxAnchor.Bottom,
+  BBoxAnchor.BottomLeft,
+  BBoxAnchor.Left,
+  BBoxAnchor.TopLeft,
+  BBoxAnchor.Top,
+  BBoxAnchor.TopRight,
+  BBoxAnchor.Right,
+  BBoxAnchor.BottomRight,
+];
+
+let label_styles = ${ font-family: monospace; font-size: 11; };
+
+define TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+}
+
+// Hex bounding box for central shape intersection check
+let hex_bb = { x: -80, y: -80, width: 160, height: 160 };
+
+let placed_labels = [];
+let label_distance = 160;
+
+layer('labels').apply {
+  for (i in 0..7) {
+    let angle = calc(i * 0.7854 - 1.5708);
+    let label = &{ text(0, 11)`${names[i]}` } << label_styles;
+    let proj = label.polarProject(0, 0, angle, label_distance, anchors[i]);
+
+    // Verify label doesn't overlap central hexagon
+    if (proj.intersects(hex_bb)) {
+      log(`WARN: label "${names[i]}" intersects central hexagon`)
+    }
+
+    // Verify label doesn't overlap any previously placed label
+    for (prev in placed_labels) {
+      if (proj.intersects(prev)) {
+        log(`WARN: label "${names[i]}" intersects a previously placed label`)
+      }
+    }
+
+    proj.draw();
+    placed_labels.push(proj);
+  }
+}
+
+compass.append(hex, center_dot, guide, radials, dots, layer('labels'));
+
+// ─── Code block group ── code snippet at top-left ────────────────────
+
+let code_group = GroupLayer('code-block') ${ translate-x: 30; translate-y: 22; };
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(0, 8)`label.polarProject(`
+  text(12, 20)`250, 250,`
+  text(12, 32)`angle,`
+  text(12, 44)`140,`
+  text(12, 56)`BBoxAnchor.Left`
+  text(0, 68)`)`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+kw.apply {
+  text(120, 20)`// center`
+  text(120, 32)`// radians`
+  text(120, 44)`// distance`
+  text(120, 56)`// anchor`
+}
+
+code_group.append(code, kw);

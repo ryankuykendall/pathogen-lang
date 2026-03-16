@@ -1,0 +1,338 @@
+// viewBox="0 0 600 400"
+// Collision avoidance — before/after with .polarProject() + .intersects()
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 400) }
+
+// --- Divider ---
+
+let divider = PathLayer('divider') ${
+  stroke: Color('#334155');
+  stroke-width: 1;
+  fill: none;
+};
+divider.apply { M 300 50 v 300 }
+
+// --- Data points (same for both panels) ---
+
+let points = [
+  { x: 65,  y: 100, name: "alpha" },
+  { x: 75,  y: 110, name: "beta" },
+  { x: 85,  y: 100, name: "gamma" },
+  { x: 140, y: 175, name: "delta" },
+  { x: 150, y: 185, name: "epsilon" },
+  { x: 145, y: 195, name: "zeta" },
+  { x: 200, y: 130, name: "eta" },
+  { x: 210, y: 140, name: "theta" },
+];
+
+let label_styles = ${ font-family: monospace; font-size: 9; };
+let dot_r = 3.5;
+let label_dist = 10;
+
+// Anchors that face inward per angle bracket (8 directions)
+let try_anchors = [
+  BBoxAnchor.Left,
+  BBoxAnchor.BottomLeft,
+  BBoxAnchor.Bottom,
+  BBoxAnchor.BottomRight,
+  BBoxAnchor.Right,
+  BBoxAnchor.TopRight,
+  BBoxAnchor.Top,
+  BBoxAnchor.TopLeft,
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// LEFT PANEL — Naive: all labels offset to the right (shows collisions)
+// ═══════════════════════════════════════════════════════════════════
+
+let left = GroupLayer('left-panel') ${ translate-x: 10; translate-y: 0; };
+
+let left_title = TextLayer('l-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+left_title.apply { text(140, 42)`Naive Placement` }
+
+let left_sub = TextLayer('l-sub') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#ef4444');
+  text-anchor: middle;
+};
+left_sub.apply { text(140, 54)`fixed offset — labels collide` }
+
+// Dots
+let l_dots = PathLayer('l-dots') ${
+  fill: Color('#3b82f6');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+l_dots.apply {
+  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+}
+
+// Labels — all placed to the right (naive)
+let l_labels = TextLayer('l-labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+};
+
+let naive_placed = [];
+let naive_collisions = 0;
+
+l_labels.apply {
+  for (pt in points) {
+    let label = &{ text(0, 9)`${pt.name}` } << label_styles;
+    let proj = label.project(calc(pt.x + 8), calc(pt.y - 3));
+
+    // Check for collisions with previously placed labels
+    for (prev in naive_placed) {
+      if (proj.intersects(prev)) {
+        naive_collisions = calc(naive_collisions + 1);
+      }
+    }
+
+    proj.draw();
+    naive_placed.push(proj);
+  }
+}
+
+// Collision markers — red boxes around overlapping labels
+let l_collision_boxes = PathLayer('l-collisions') ${
+  fill: Color('#ef444410');
+  stroke: Color('#ef4444');
+  stroke-width: 1;
+  stroke-dasharray: "3 2";
+};
+
+// Check all pairs and draw red boxes around colliding ones
+let collision_indices = [];
+l_collision_boxes.apply {
+  let ci = 0;
+  for (a in naive_placed) {
+    let cj = 0;
+    for (b in naive_placed) {
+      if (cj > ci) {
+        if (a.intersects(b)) {
+          let abb = a.boundingBox();
+          let bbb = b.boundingBox();
+          rect(abb.x, abb.y, abb.width, abb.height)
+          rect(bbb.x, bbb.y, bbb.width, bbb.height)
+        }
+      }
+      cj = calc(cj + 1);
+    }
+    ci = calc(ci + 1);
+  }
+}
+
+left.append(left_title, left_sub, l_dots, l_labels, l_collision_boxes);
+
+log("Naive placement: ", naive_collisions, " collisions detected");
+
+// ═══════════════════════════════════════════════════════════════════
+// RIGHT PANEL — Smart: .polarProject() tries 8 angles per label
+// ═══════════════════════════════════════════════════════════════════
+
+let right = GroupLayer('right-panel') ${ translate-x: 300; translate-y: 0; };
+
+let right_title = TextLayer('r-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+right_title.apply { text(140, 42)`Smart Placement` }
+
+let right_sub = TextLayer('r-sub') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#22c55e');
+  text-anchor: middle;
+};
+right_sub.apply { text(140, 54)`polarProject tries 8 angles` }
+
+// Dots
+let r_dots = PathLayer('r-dots') ${
+  fill: Color('#3b82f6');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
+};
+r_dots.apply {
+  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+}
+
+// Labels — smart placement using polarProject with collision avoidance
+let r_labels = TextLayer('r-labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+};
+
+let smart_placed = [];
+let smart_bboxes = [];
+
+// Leader lines from dot to label anchor point
+let r_leaders = PathLayer('r-leaders') ${
+  stroke: Color('#47556950');
+  stroke-width: 0.5;
+  fill: none;
+};
+
+r_labels.apply {
+  for (pt in points) {
+    let label = &{ text(0, 9)`${pt.name}` } << label_styles;
+    let found = false;
+    let best_proj = label.polarProject(pt.x, pt.y, 0, label_dist, BBoxAnchor.Left);
+
+    // Try 8 angles around the point
+    for (ai in 0..7) {
+      if (found == false) {
+        let angle = calc(ai * 0.7854);
+        let candidate = label.polarProject(pt.x, pt.y, angle, label_dist, try_anchors[ai]);
+
+        // Check against all previously placed labels
+        let ok = true;
+        for (prev in smart_placed) {
+          if (candidate.intersects(prev)) {
+            ok = false;
+          }
+        }
+
+        // Also check against all dot positions (as rects)
+        if (ok) {
+          for (dpt in points) {
+            let dot_rect = { x: calc(dpt.x - dot_r), y: calc(dpt.y - dot_r), width: calc(dot_r * 2), height: calc(dot_r * 2) };
+            if (candidate.intersects(dot_rect)) {
+              ok = false;
+            }
+          }
+        }
+
+        if (ok) {
+          best_proj = candidate;
+          found = true;
+        }
+      }
+    }
+
+    best_proj.draw();
+    smart_placed.push(best_proj);
+    smart_bboxes.push(best_proj.boundingBox());
+  }
+}
+
+// Draw green bboxes around smartly placed labels
+let r_ok_rects = PathLayer('r-ok') ${
+  fill: Color('#22c55e08');
+  stroke: Color('#22c55e');
+  stroke-width: 0.75;
+};
+r_ok_rects.apply {
+  for (sbb in smart_bboxes) {
+    rect(sbb.x, sbb.y, sbb.width, sbb.height)
+  }
+}
+
+// Draw leader lines
+r_leaders.apply {
+  for (si in 0..7) {
+    let sbb = smart_bboxes[si];
+    let pt = points[si];
+    let anchor_x = calc(sbb.x + sbb.width / 2);
+    let anchor_y = calc(sbb.y + sbb.height / 2);
+    M pt.x pt.y L anchor_x anchor_y
+  }
+}
+
+right.append(right_title, right_sub, r_dots, r_labels, r_ok_rects, r_leaders);
+
+// Post-placement verification
+let smart_collisions = 0;
+let svi = 0;
+for (a in smart_placed) {
+  let svj = 0;
+  for (b in smart_placed) {
+    if (svj > svi) {
+      if (a.intersects(b)) {
+        smart_collisions = calc(smart_collisions + 1);
+        log("WARN: smart placement collision between labels");
+      }
+    }
+    svj = calc(svj + 1);
+  }
+  svi = calc(svi + 1);
+}
+log("Smart placement: ", smart_collisions, " collisions (0 expected)");
+
+// ═══════════════════════════════════════════════════════════════════
+// Shared: Title + Code block
+// ═══════════════════════════════════════════════════════════════════
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+title.apply { text(300, 385)`Label Placement: Naive vs polarProject()` }
+
+// Code snippet
+let code_group = GroupLayer('code-block') ${ translate-x: 330; translate-y: 270; };
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+code.apply {
+  text(0, 0)`for (ai in 0..7) {`
+  text(8, 10)`let angle = ai * 0.7854;`
+  text(8, 20)`let c = label.polarProject(`
+  text(16, 30)`pt.x, pt.y, angle,`
+  text(16, 40)`dist, anchors[ai]);`
+  text(8, 50)`if (!c.intersects(prev))`
+  text(16, 60)`best = c; // found!`
+  text(0, 70)`}`
+}
+
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(0, 0)`for`
+  text(8, 50)`if`
+}
+
+code_group.append(code, kw);
+
+// Legend
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 7;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+let leg_red = PathLayer('leg-red') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_green = PathLayer('leg-green') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_blue = PathLayer('leg-blue') ${ fill: Color('#3b82f6'); stroke: none; };
+
+leg_red.apply { rect(20, 370, 6, 6) }
+leg_green.apply { rect(20, 380, 6, 6) }
+leg_blue.apply { rect(110, 370, 6, 6) }
+
+leg.apply {
+  text(30, 375)`Collision detected`
+  text(30, 385)`No collision`
+  text(120, 375)`Data point`
+}

@@ -10,6 +10,11 @@ Public-facing documentation — every `.md` file here is compiled into the site.
 - Build: `npm run build:docs`
 - Plans, primers, and internal reference docs live in `project-docs/`
 
+## Publishing
+
+- **Important**: After creating a new `.md` file in `docs/`, add it to the `DOC_FILES` mapping in `scripts/build-docs.ts` or it will not be published
+- Verify with `npm run build:docs` and `npm run check-links`
+
 ## Shared Content Guidelines
 
 The following shared guidelines apply to documentation content:

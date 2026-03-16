@@ -1,0 +1,298 @@
+// viewBox="0 0 600 400"
+// Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
+
+@font "../../../../fonts/Raleway/Raleway-Bold.ttf"
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 400) }
+
+// --- Contour color palette (12 colors for 12 contours) ---
+
+let colors = [
+  Color('#3b82f6'), Color('#22c55e'), Color('#f59e0b'),
+  Color('#ef4444'), Color('#a855f7'), Color('#ec4899'),
+  Color('#06b6d4'), Color('#84cc16'), Color('#f97316'),
+  Color('#6366f1'), Color('#14b8a6'), Color('#e879f9'),
+];
+
+let fills = [
+  Color('#3b82f630'), Color('#22c55e30'), Color('#f59e0b30'),
+  Color('#ef444430'), Color('#a855f730'), Color('#ec489930'),
+  Color('#06b6d430'), Color('#84cc1630'), Color('#f9731630'),
+  Color('#6366f130'), Color('#14b8a630'), Color('#e879f930'),
+];
+
+// --- Font setup ---
+
+let word = "Bingo!";
+
+// ─── LEFT COLUMN ─────────────────────────────────────────────────
+
+let g_left = GroupLayer('left-col') ${ translate-x: 30; translate-y: 0; };
+
+// Title
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply { text(0, 30)`Contour Decomposition` }
+
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+subtitle.apply { text(0, 44)`.contours splits glyphs into individual PathBlocks` }
+
+// Assembled word — size to fit within ~290px column
+let asm_styles = ${ font-family: Raleway-Bold; font-size: 72; };
+let asm_glyphs = PathBlock.fromGlyph(word, asm_styles);
+
+let asm_layer = PathLayer('assembled') ${
+  fill: Color('#3b82f6');
+  stroke: none;
+};
+
+let asm_cursor = 0;
+asm_layer.apply {
+  for (g in asm_glyphs) {
+    g.drawTo(asm_cursor, 115)
+    asm_cursor = calc(asm_cursor + g.advanceWidth);
+  }
+}
+
+let asm_label = TextLayer('asm-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+asm_label.apply { text(0, 148)`Assembled — 6 characters, solid fill` }
+
+g_left.append(title, subtitle, asm_layer, asm_label);
+
+// ─── Decomposed contours — smaller size to fit all 6 letters ────
+
+let g_decomp = GroupLayer('decomposed') ${ translate-x: 30; translate-y: 176; };
+
+let dec_styles = ${ font-family: Raleway-Bold; font-size: 56; };
+let dec_glyphs = PathBlock.fromGlyph(word, dec_styles);
+
+let letter_gap = 6;
+
+// Compute each letter's x position
+let x_B = 0;
+let x_i = calc(x_B + dec_glyphs[0].advanceWidth + letter_gap);
+let x_n = calc(x_i + dec_glyphs[1].advanceWidth + letter_gap);
+let x_g = calc(x_n + dec_glyphs[2].advanceWidth + letter_gap);
+let x_o = calc(x_g + dec_glyphs[3].advanceWidth + letter_gap);
+let x_ex = calc(x_o + dec_glyphs[4].advanceWidth + letter_gap);
+
+let dec_y = 70;
+
+// --- B: 3 contours (outer + 2 holes) ---
+let contours_B = dec_glyphs[0].contours;
+let cB0 = PathLayer('cB0') ${ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
+let cB1 = PathLayer('cB1') ${ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
+let cB2 = PathLayer('cB2') ${ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
+cB0.apply { contours_B[0].drawTo(x_B, dec_y) }
+cB1.apply { contours_B[1].drawTo(x_B, dec_y) }
+cB2.apply { contours_B[2].drawTo(x_B, dec_y) }
+g_decomp.append(cB0, cB1, cB2);
+
+// --- i: 2 contours (body + dot) ---
+let contours_i = dec_glyphs[1].contours;
+let ci0 = PathLayer('ci0') ${ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
+let ci1 = PathLayer('ci1') ${ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
+ci0.apply { contours_i[0].drawTo(x_i, dec_y) }
+ci1.apply { contours_i[1].drawTo(x_i, dec_y) }
+g_decomp.append(ci0, ci1);
+
+// --- n: 1 contour ---
+let contours_n = dec_glyphs[2].contours;
+let cn0 = PathLayer('cn0') ${ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
+cn0.apply { contours_n[0].drawTo(x_n, dec_y) }
+g_decomp.append(cn0);
+
+// --- g: 2 contours (body + tail) ---
+let contours_g = dec_glyphs[3].contours;
+let cg0 = PathLayer('cg0') ${ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
+let cg1 = PathLayer('cg1') ${ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
+cg0.apply { contours_g[0].drawTo(x_g, dec_y) }
+cg1.apply { contours_g[1].drawTo(x_g, dec_y) }
+g_decomp.append(cg0, cg1);
+
+// --- o: 2 contours (outer + hole) ---
+let contours_o = dec_glyphs[4].contours;
+let co0 = PathLayer('co0') ${ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
+let co1 = PathLayer('co1') ${ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
+co0.apply { contours_o[0].drawTo(x_o, dec_y) }
+co1.apply { contours_o[1].drawTo(x_o, dec_y) }
+g_decomp.append(co0, co1);
+
+// --- !: 2 contours (body + dot) ---
+let contours_ex = dec_glyphs[5].contours;
+let cex0 = PathLayer('cex0') ${ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
+let cex1 = PathLayer('cex1') ${ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
+cex0.apply { contours_ex[0].drawTo(x_ex, dec_y) }
+cex1.apply { contours_ex[1].drawTo(x_ex, dec_y) }
+g_decomp.append(cex0, cex1);
+
+// --- Letter labels and contour counts ---
+
+let char_labels = ["B", "i", "n", "g", "o", "!"];
+let char_counts = ["3", "2", "1", "2", "2", "2"];
+let x_positions = [x_B, x_i, x_n, x_g, x_o, x_ex];
+
+let lbl_layer = TextLayer('char-labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+let cnt_layer = TextLayer('char-counts') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: Color('#64748b');
+  text-anchor: middle;
+};
+
+lbl_layer.apply {
+  text(calc(x_B + dec_glyphs[0].advanceWidth / 2), 100)`B`
+  text(calc(x_i + dec_glyphs[1].advanceWidth / 2), 100)`i`
+  text(calc(x_n + dec_glyphs[2].advanceWidth / 2), 100)`n`
+  text(calc(x_g + dec_glyphs[3].advanceWidth / 2), 100)`g`
+  text(calc(x_o + dec_glyphs[4].advanceWidth / 2), 100)`o`
+  text(calc(x_ex + dec_glyphs[5].advanceWidth / 2), 100)`!`
+}
+
+cnt_layer.apply {
+  text(calc(x_B + dec_glyphs[0].advanceWidth / 2), 112)`3`
+  text(calc(x_i + dec_glyphs[1].advanceWidth / 2), 112)`2`
+  text(calc(x_n + dec_glyphs[2].advanceWidth / 2), 112)`1`
+  text(calc(x_g + dec_glyphs[3].advanceWidth / 2), 112)`2`
+  text(calc(x_o + dec_glyphs[4].advanceWidth / 2), 112)`2`
+  text(calc(x_ex + dec_glyphs[5].advanceWidth / 2), 112)`2`
+}
+
+g_decomp.append(lbl_layer, cnt_layer);
+
+// Decomposed section footer
+let dec_footer = TextLayer('dec-footer') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+dec_footer.apply { text(0, 135)`12 contours across 6 characters` }
+g_decomp.append(dec_footer);
+
+// ─── RIGHT COLUMN ────────────────────────────────────────────────
+
+let g_right = GroupLayer('right-col') ${ translate-x: 360; translate-y: 0; };
+
+// Contour Color Key title
+let leg_title = TextLayer('leg-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+leg_title.apply { text(0, 30)`Contour Color Key` }
+
+// Legend entries — 12 rows
+let leg_top = 44;
+let leg_h = 14;
+
+let ld0 = PathLayer('ld0') ${ fill: colors[0]; stroke: none; };
+let ld1 = PathLayer('ld1') ${ fill: colors[1]; stroke: none; };
+let ld2 = PathLayer('ld2') ${ fill: colors[2]; stroke: none; };
+let ld3 = PathLayer('ld3') ${ fill: colors[3]; stroke: none; };
+let ld4 = PathLayer('ld4') ${ fill: colors[4]; stroke: none; };
+let ld5 = PathLayer('ld5') ${ fill: colors[5]; stroke: none; };
+let ld6 = PathLayer('ld6') ${ fill: colors[6]; stroke: none; };
+let ld7 = PathLayer('ld7') ${ fill: colors[7]; stroke: none; };
+let ld8 = PathLayer('ld8') ${ fill: colors[8]; stroke: none; };
+let ld9 = PathLayer('ld9') ${ fill: colors[9]; stroke: none; };
+let ld10 = PathLayer('ld10') ${ fill: colors[10]; stroke: none; };
+let ld11 = PathLayer('ld11') ${ fill: colors[11]; stroke: none; };
+
+ld0.apply { rect(0, leg_top, 8, 8) }
+ld1.apply { rect(0, calc(leg_top + leg_h), 8, 8) }
+ld2.apply { rect(0, calc(leg_top + leg_h * 2), 8, 8) }
+ld3.apply { rect(0, calc(leg_top + leg_h * 3), 8, 8) }
+ld4.apply { rect(0, calc(leg_top + leg_h * 4), 8, 8) }
+ld5.apply { rect(0, calc(leg_top + leg_h * 5), 8, 8) }
+ld6.apply { rect(0, calc(leg_top + leg_h * 6), 8, 8) }
+ld7.apply { rect(0, calc(leg_top + leg_h * 7), 8, 8) }
+ld8.apply { rect(0, calc(leg_top + leg_h * 8), 8, 8) }
+ld9.apply { rect(0, calc(leg_top + leg_h * 9), 8, 8) }
+ld10.apply { rect(0, calc(leg_top + leg_h * 10), 8, 8) }
+ld11.apply { rect(0, calc(leg_top + leg_h * 11), 8, 8) }
+
+let leg_text = TextLayer('leg-text') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+let ty = calc(leg_top + 7);
+leg_text.apply {
+  text(14, ty)`B outer`
+  text(14, calc(ty + leg_h))`B hole 1`
+  text(14, calc(ty + leg_h * 2))`B hole 2`
+  text(14, calc(ty + leg_h * 3))`i body`
+  text(14, calc(ty + leg_h * 4))`i dot`
+  text(14, calc(ty + leg_h * 5))`n body`
+  text(14, calc(ty + leg_h * 6))`g body`
+  text(14, calc(ty + leg_h * 7))`g tail`
+  text(14, calc(ty + leg_h * 8))`o outer`
+  text(14, calc(ty + leg_h * 9))`o hole`
+  text(14, calc(ty + leg_h * 10))`! body`
+  text(14, calc(ty + leg_h * 11))`! dot`
+}
+
+g_right.append(leg_title, ld0, ld1, ld2, ld3, ld4, ld5, ld6, ld7, ld8, ld9, ld10, ld11, leg_text);
+
+// Code snippet — well below the legend
+let code_top = calc(leg_top + leg_h * 12 + 30);
+
+let code_title = TextLayer('code-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+code_title.apply { text(0, code_top)`Usage` }
+
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+let cl = calc(code_top + 18);
+code.apply {
+  text(0, cl)`let glyphs = PathBlock`
+  text(0, calc(cl + 12))`  .fromGlyph("Bingo!", s);`
+  text(0, calc(cl + 30))`for (g in glyphs) {`
+  text(0, calc(cl + 42))`  let parts = g.contours;`
+  text(0, calc(cl + 54))`  // each part is a PathBlock`
+  text(0, calc(cl + 66))`}`
+}
+
+g_right.append(code_title, code);
+
+// ─── Divider ─────────────────────────────────────────────────────
+
+let divider = PathLayer('divider') ${
+  stroke: Color('#1e293b');
+  stroke-width: 1;
+  fill: none;
+};
+divider.apply { M 345 20 v 360 }

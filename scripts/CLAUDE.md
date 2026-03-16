@@ -39,6 +39,7 @@ program.parse();
 | `compile-bbwp.ts` | Compile `.pathogen` → SVG → HTML artifact in `website/bbwp/` |
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
+| `check-links.ts` | Puppeteer link checker for blog posts and documentation pages |
 
 ## Git Hooks
 

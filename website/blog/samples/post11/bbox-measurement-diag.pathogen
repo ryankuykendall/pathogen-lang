@@ -1,0 +1,147 @@
+// viewBox="0 0 600 320"
+// DIAGNOSTIC: bbox-measurement overlap detection
+// Uses .boundingBox() and .intersects() to find collisions
+
+let styles = ${ font-family: monospace; };
+
+// --- Recreate the three labels exactly as in the original ---
+
+let small_text = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; font-family: monospace; };
+let med_text = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; font-family: monospace; };
+let large_text = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; font-family: monospace; };
+
+let bb_s = small_text.boundingBox();
+let bb_m = med_text.boundingBox();
+let bb_l = large_text.boundingBox();
+
+let x0 = 60;
+let y_s = 80;
+let y_m = 150;
+let y_l = 240;
+
+// --- Log raw bounding box values ---
+
+log("=== RAW BOUNDING BOX VALUES ===");
+log("small: x=", bb_s.x, "y=", bb_s.y, "w=", bb_s.width, "h=", bb_s.height);
+log("med:   x=", bb_m.x, "y=", bb_m.y, "w=", bb_m.width, "h=", bb_m.height);
+log("large: x=", bb_l.x, "y=", bb_l.y, "w=", bb_l.width, "h=", bb_l.height);
+
+// --- Project the width dimension labels and check for collisions ---
+
+log("");
+log("=== WIDTH LABEL vs BOUNDING BOX COLLISION CHECK ===");
+
+// Width labels sit at: y = (placement_y + bb.y - 12), centered on bbox width
+// Small width label
+let w_label_s = &{ text(0, 8)`w = ${bb_s.width}` } << ${ font-size: 8; font-family: monospace; };
+let w_label_s_proj = w_label_s.project(
+  calc(x0 + bb_s.width / 2 - w_label_s.boundingBox().width / 2),
+  calc(y_s + bb_s.y - 12)
+);
+let w_label_s_bb = w_label_s_proj.boundingBox();
+
+// The bounding box rect for the small label
+let bbox_rect_s = { x: calc(x0 + bb_s.x), y: calc(y_s + bb_s.y), width: bb_s.width, height: bb_s.height };
+
+log("small w-label bbox: x=", w_label_s_bb.x, "y=", w_label_s_bb.y, "w=", w_label_s_bb.width, "h=", w_label_s_bb.height);
+log("small shape bbox:   x=", bbox_rect_s.x, "y=", bbox_rect_s.y, "w=", bbox_rect_s.width, "h=", bbox_rect_s.height);
+log("small w-label bottom:", calc(w_label_s_bb.y + w_label_s_bb.height));
+log("small shape top:     ", bbox_rect_s.y);
+log("small GAP (shape top - label bottom):", calc(bbox_rect_s.y - w_label_s_bb.y - w_label_s_bb.height));
+
+// Check if label intersects the bounding box rect
+log("small w-label intersects bbox:", w_label_s_proj.intersects(bbox_rect_s));
+
+// Medium width label
+let w_label_m = &{ text(0, 8)`w = ${bb_m.width}` } << ${ font-size: 8; font-family: monospace; };
+let w_label_m_proj = w_label_m.project(
+  calc(x0 + bb_m.width / 2 - w_label_m.boundingBox().width / 2),
+  calc(y_m + bb_m.y - 12)
+);
+let w_label_m_bb = w_label_m_proj.boundingBox();
+let bbox_rect_m = { x: calc(x0 + bb_m.x), y: calc(y_m + bb_m.y), width: bb_m.width, height: bb_m.height };
+
+log("");
+log("med w-label bbox: x=", w_label_m_bb.x, "y=", w_label_m_bb.y, "w=", w_label_m_bb.width, "h=", w_label_m_bb.height);
+log("med shape bbox:   x=", bbox_rect_m.x, "y=", bbox_rect_m.y, "w=", bbox_rect_m.width, "h=", bbox_rect_m.height);
+log("med GAP:", calc(bbox_rect_m.y - w_label_m_bb.y - w_label_m_bb.height));
+log("med w-label intersects bbox:", w_label_m_proj.intersects(bbox_rect_m));
+
+// Large width label
+let w_label_l = &{ text(0, 8)`w = ${bb_l.width}` } << ${ font-size: 8; font-family: monospace; };
+let w_label_l_proj = w_label_l.project(
+  calc(x0 + bb_l.width / 2 - w_label_l.boundingBox().width / 2),
+  calc(y_l + bb_l.y - 12)
+);
+let w_label_l_bb = w_label_l_proj.boundingBox();
+let bbox_rect_l = { x: calc(x0 + bb_l.x), y: calc(y_l + bb_l.y), width: bb_l.width, height: bb_l.height };
+
+log("");
+log("large w-label bbox: x=", w_label_l_bb.x, "y=", w_label_l_bb.y, "w=", w_label_l_bb.width, "h=", w_label_l_bb.height);
+log("large shape bbox:   x=", bbox_rect_l.x, "y=", bbox_rect_l.y, "w=", bbox_rect_l.width, "h=", bbox_rect_l.height);
+log("large GAP:", calc(bbox_rect_l.y - w_label_l_bb.y - w_label_l_bb.height));
+log("large w-label intersects bbox:", w_label_l_proj.intersects(bbox_rect_l));
+
+// --- Height label vs bounding box collision ---
+
+log("");
+log("=== HEIGHT LABEL vs BOUNDING BOX COLLISION CHECK ===");
+
+let h_label_s = &{ text(0, 8)`h = ${bb_s.height}` } << ${ font-size: 8; font-family: monospace; };
+let h_label_s_proj = h_label_s.project(
+  calc(x0 + bb_s.width + 12),
+  calc(y_s + bb_s.y + bb_s.height / 2 + 3)
+);
+log("small h-label intersects bbox:", h_label_s_proj.intersects(bbox_rect_s));
+
+let h_label_m = &{ text(0, 8)`h = ${bb_m.height}` } << ${ font-size: 8; font-family: monospace; };
+let h_label_m_proj = h_label_m.project(
+  calc(x0 + bb_m.width + 12),
+  calc(y_m + bb_m.y + bb_m.height / 2 + 3)
+);
+log("med h-label intersects bbox:", h_label_m_proj.intersects(bbox_rect_m));
+
+let h_label_l = &{ text(0, 8)`h = ${bb_l.height}` } << ${ font-size: 8; font-family: monospace; };
+let h_label_l_proj = h_label_l.project(
+  calc(x0 + bb_l.width + 12),
+  calc(y_l + bb_l.y + bb_l.height / 2 + 3)
+);
+log("large h-label intersects bbox:", h_label_l_proj.intersects(bbox_rect_l));
+
+// --- Width dimension line vs text content collision ---
+
+log("");
+log("=== DIMENSION LINE vs TEXT COLLISION ===");
+
+// The dimension line for width sits at y = (placement_y + bb.y - 6)
+// The text content baseline is at placement_y
+// So the gap between text top and dimension line is:
+// text_top = placement_y + bb.y = placement_y - fontSize
+// dim_line_y = placement_y + bb.y - 6 = text_top - 6
+log("small: dim_line_y =", calc(y_s + bb_s.y - 6), "text_top =", calc(y_s + bb_s.y), "gap = 6px");
+log("med:   dim_line_y =", calc(y_m + bb_m.y - 6), "text_top =", calc(y_m + bb_m.y), "gap = 6px");
+log("large: dim_line_y =", calc(y_l + bb_l.y - 6), "text_top =", calc(y_l + bb_l.y), "gap = 6px");
+
+// --- Code block vs subtitle collision ---
+
+log("");
+log("=== CODE BLOCK vs OTHER ELEMENTS ===");
+
+let code_line1 = &{ text(0, 9)`let label = &{` } << ${ font-size: 9; font-family: monospace; };
+let code_proj1 = code_line1.project(360, 50);
+let subtitle_text = &{ text(0, 9)`.boundingBox() returns { x, y, width, height }` } << ${ font-size: 9; font-family: system-ui, sans-serif; };
+let subtitle_proj = subtitle_text.project(30, 44);
+
+log("code line 1 intersects subtitle:", code_proj1.intersects(subtitle_proj));
+
+// Check code block vs the medium text row
+let code_bb_line = &{ text(0, 9)`let bb = label.boundingBox();` } << ${ font-size: 9; font-family: monospace; };
+let code_bb_proj = code_bb_line.project(360, 94);
+log("code 'let bb' y-range:", calc(code_bb_proj.boundingBox().y), "to", calc(code_bb_proj.boundingBox().y + code_bb_proj.boundingBox().height));
+
+// Check width label text length vs available dimension line width
+log("");
+log("=== WIDTH LABEL TEXT LENGTH vs DIMENSION LINE WIDTH ===");
+log("small dim line width:", bb_s.width, "small w-label width:", w_label_s.boundingBox().width, "fits:", calc(bb_s.width > w_label_s.boundingBox().width));
+log("med dim line width:", bb_m.width, "med w-label width:", w_label_m.boundingBox().width, "fits:", calc(bb_m.width > w_label_m.boundingBox().width));
+log("large dim line width:", bb_l.width, "large w-label width:", w_label_l.boundingBox().width, "fits:", calc(bb_l.width > w_label_l.boundingBox().width));

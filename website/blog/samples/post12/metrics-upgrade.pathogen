@@ -1,0 +1,200 @@
+// viewBox="0 0 600 340"
+// @font precision — fromGlyph() uses the exact same font for both paths and metrics
+
+@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 340) }
+
+// ─── Left: fromGlyph() — paths AND metrics from the same font ──
+
+let g_left = GroupLayer('glyph-side') ${ translate-x: 30; translate-y: 50; };
+
+let word = "LAYOUT";
+let styles = ${ font-family: BebasNeue-Regular; font-size: 56; };
+let glyphs = PathBlock.fromGlyph(word, styles);
+
+let path_layer = PathLayer('glyph-paths') ${
+  fill: Color('#3b82f6');
+  stroke: none;
+};
+
+// Draw glyphs using advanceWidth — inherently precise
+let cursor = 0;
+let glyph_bboxes = [];
+path_layer.apply {
+  for (g in glyphs) {
+    let proj = g.drawTo(cursor, 60);
+    glyph_bboxes.push(proj.boundingBox());
+    cursor = calc(cursor + g.advanceWidth);
+  }
+}
+
+// Total width from advance widths
+let total_w = cursor;
+
+// Bounding box from summed advance widths — matches perfectly
+let total_bbox = PathLayer('total-bbox') ${
+  fill: none;
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+};
+
+// Get overall bounding box from first and last glyph
+let first_bb = glyph_bboxes[0];
+let last_bb = glyph_bboxes[calc(glyph_bboxes.length - 1)];
+let combined_w = calc(last_bb.x + last_bb.width - first_bb.x);
+let combined_h = calc(first_bb.height);
+
+total_bbox.apply {
+  rect(first_bb.x, first_bb.y, combined_w, combined_h)
+}
+
+// Per-glyph advance width markers
+let tick_layer = PathLayer('ticks') ${
+  stroke: Color('#22c55e50');
+  stroke-width: 0.5;
+  stroke-dasharray: "2 3";
+  fill: none;
+};
+let tick_cursor = 0;
+tick_layer.apply {
+  for (g in glyphs) {
+    M tick_cursor calc(first_bb.y - 2) v calc(combined_h + 4)
+    let tick_cursor = calc(tick_cursor + g.advanceWidth);
+  }
+  M tick_cursor calc(first_bb.y - 2) v calc(combined_h + 4)
+}
+
+let left_label = TextLayer('left-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#22c55e');
+  text-anchor: start;
+};
+left_label.apply {
+  text(0, 100)`advanceWidth layout = ${round(total_w * 10) / 10}px total`
+  text(0, 112)`paths + metrics from same font file`
+}
+
+g_left.append(path_layer, total_bbox, tick_layer, left_label);
+
+// ─── Right: same word as SVG text (browser font) ───────────────
+
+let g_right = GroupLayer('text-side') ${ translate-x: 310; translate-y: 50; };
+
+// Render as SVG <text> — browser picks its own font
+let text_layer = TextLayer('svg-text') ${
+  font-family: monospace;
+  font-size: 24;
+  fill: Color('#94a3b8');
+};
+text_layer.apply {
+  text(0, 60)`LAYOUT`
+}
+
+// Measure with monospace table — use same y coordinate as rendering
+let text_label_block = &{ text(0, 60)`LAYOUT` } << ${ font-size: 24; font-family: monospace; };
+let text_bb = text_label_block.boundingBox();
+
+let text_bbox = PathLayer('text-bbox') ${
+  fill: none;
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+};
+text_bbox.apply {
+  rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height)
+}
+
+let right_label = TextLayer('right-label') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#f59e0b');
+  text-anchor: start;
+};
+right_label.apply {
+  text(0, 100)`estimation table = ${round(text_bb.width * 10) / 10}px`
+  text(0, 112)`browser picks its own monospace font`
+}
+
+// Note about the mismatch
+let note = TextLayer('note') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: Color('#64748b');
+  text-anchor: start;
+};
+note.apply {
+  text(0, 132)`bbox may not match — different font`
+  text(0, 144)`than what the browser renders`
+}
+
+g_right.append(text_layer, text_bbox, right_label, note);
+
+// ─── Section titles ─────────────────────────────────────────────
+
+let left_title = TextLayer('l-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#22c55e');
+  text-anchor: start;
+};
+left_title.apply { text(30, 42)`PathBlock.fromGlyph() — exact` }
+
+let right_title = TextLayer('r-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#f59e0b');
+  text-anchor: start;
+};
+right_title.apply { text(310, 42)`SVG <text> — estimated` }
+
+// ─── Divider ─────────────────────────────────────────────────────
+
+let divider = PathLayer('divider') ${
+  stroke: Color('#334155');
+  stroke-width: 1;
+  fill: none;
+};
+divider.apply { M 295 40 v 170 }
+
+// ─── Title ───────────────────────────────────────────────────────
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
+};
+title.apply { text(30, 25)`Why @font Matters: Paths vs Text` }
+
+// ─── Bottom annotation ──────────────────────────────────────────
+
+let anno = TextLayer('anno') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#94a3b8');
+  text-anchor: start;
+};
+anno.apply {
+  text(30, 270)`fromGlyph() renders text AS paths — the loaded font is`
+  text(30, 282)`both the renderer and the measurer. No mismatch possible.`
+  text(30, 300)`SVG <text> relies on the browser's font — estimation tables`
+  text(30, 312)`or a different @font can diverge from what's rendered.`
+}
+
+// ─── Key insight callout ────────────────────────────────────────
+
+let insight = TextLayer('insight') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#3b82f6');
+  text-anchor: start;
+};
+insight.apply {
+  text(30, 332)`Paths = single source of truth for geometry AND metrics`
+}

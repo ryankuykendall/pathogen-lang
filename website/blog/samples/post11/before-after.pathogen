@@ -1,0 +1,234 @@
+// viewBox="0 0 600 400"
+// Before/After — manual offset math vs .polarProject()
+// Uses GroupLayers per Code Example Guideline §9
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 400) }
+
+// --- Divider ---
+
+let divider = PathLayer('divider') ${
+  stroke: Color('#334155');
+  stroke-width: 1;
+  fill: none;
+};
+divider.apply { M 300 40 v 320 }
+
+// --- Title (top-level, not in a panel) ---
+
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+title.apply {
+  text(300, 385)`Magic Numbers vs Semantic Anchors`
+}
+
+// --- Guide circles (top-level) ---
+
+let guides = PathLayer('guides') ${
+  stroke: Color('#334155');
+  stroke-width: 0.5;
+  stroke-dasharray: "2 3";
+  fill: none;
+};
+guides.apply {
+  circle(150, 210, 75)
+  circle(450, 210, 75)
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LEFT PANEL — Manual positioning with hardcoded magic-number offsets
+// ═══════════════════════════════════════════════════════════════════
+
+let left_panel = GroupLayer('left-panel') ${ translate-x: 0; translate-y: 0; };
+
+// Section heading
+let left_title = TextLayer('left-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+left_title.apply { text(150, 50)`Manual Offsets` }
+
+let left_sub = TextLayer('left-sub') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#ef4444');
+  text-anchor: middle;
+};
+left_sub.apply { text(150, 64)`fragile, breaks with font changes` }
+
+// Hex shape
+let hex_left = PathLayer('hex-l') ${
+  fill: Color('#3b82f615');
+  stroke: Color('#3b82f6');
+  stroke-width: 1.5;
+};
+hex_left.apply { polygon(150, 210, 55, 6) }
+
+// Manual labels — hardcoded positions with magic numbers
+let manual_labels = TextLayer('manual') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+};
+manual_labels.apply {
+  // Top: text width ~35px, centered → x = 150 - 17 = 133
+  text(133, 138)`Top`
+  // Right: anchor at left edge → x = 210 + 8 = 218
+  text(218, 213)`Right`
+  // Bottom: text width ~52px, centered → x = 150 - 26 = 124
+  text(124, 290)`Bottom`
+  // Left: text width ~30px, anchor at right → x = 90 - 38 = 52
+  text(57, 213)`Left`
+}
+
+// Red annotations showing the hardcoded offset math
+// Positioned along radial lines, further out from labels to avoid overlap
+let offset_anno = TextLayer('offsets') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: Color('#ef4444');
+  text-anchor: middle;
+};
+offset_anno.apply {
+  // Top annotation: above and to the left of "Top" label, along the radial
+  text(150, 118)`x = 150 - 17 ???`
+  // Right annotation: further right of "Right" label
+  text(240, 236)`x = 210 + 8`
+  // Bottom annotation: below "Bottom" label
+  text(150, 310)`x = 150 - 26 ???`
+  // Left annotation: further left of "Left" label
+  text(45, 236)`x = 90 - 38`
+}
+
+// --- Collision checks for left panel ---
+
+let mono_styles = ${ font-family: monospace; font-size: 10; };
+let anno_styles = ${ font-family: monospace; font-size: 7; };
+
+// Top label vs top annotation
+let l_top_label = (&{ text(0, 10)`Top` } << mono_styles).project(133, 138);
+let l_top_anno = (&{ text(0, 7)`x = 150 - 17 ???` } << anno_styles).project(calc(150 - 43), 118);
+if (l_top_label.intersects(l_top_anno)) { log("WARN: left Top label intersects top annotation"); }
+
+// Right label vs right annotation
+let l_right_label = (&{ text(0, 10)`Right` } << mono_styles).project(218, 213);
+let l_right_anno = (&{ text(0, 7)`x = 210 + 8` } << anno_styles).project(calc(240 - 28), 236);
+if (l_right_label.intersects(l_right_anno)) { log("WARN: left Right label intersects right annotation"); }
+
+// Bottom label vs bottom annotation
+let l_bot_label = (&{ text(0, 10)`Bottom` } << mono_styles).project(124, 290);
+let l_bot_anno = (&{ text(0, 7)`x = 150 - 26 ???` } << anno_styles).project(calc(150 - 43), 310);
+if (l_bot_label.intersects(l_bot_anno)) { log("WARN: left Bottom label intersects bottom annotation"); }
+
+// Left label vs left annotation
+let l_left_label = (&{ text(0, 10)`Left` } << mono_styles).project(57, 213);
+let l_left_anno = (&{ text(0, 7)`x = 90 - 38` } << anno_styles).project(calc(45 - 28), 236);
+if (l_left_label.intersects(l_left_anno)) { log("WARN: left Left label intersects left annotation"); }
+
+left_panel.append(left_title, left_sub, hex_left, manual_labels, offset_anno);
+
+// ═══════════════════════════════════════════════════════════════════
+// RIGHT PANEL — polarProject with BBoxAnchor (automatic alignment)
+// ═══════════════════════════════════════════════════════════════════
+
+let right_panel = GroupLayer('right-panel') ${ translate-x: 0; translate-y: 0; };
+
+// Section heading
+let right_title = TextLayer('right-title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
+};
+right_title.apply { text(450, 50)`polarProject()` }
+
+let right_sub = TextLayer('right-sub') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#22c55e');
+  text-anchor: middle;
+};
+right_sub.apply { text(450, 64)`adapts to any text or font size` }
+
+// Hex shape
+let hex_right = PathLayer('hex-r') ${
+  fill: Color('#3b82f615');
+  stroke: Color('#3b82f6');
+  stroke-width: 1.5;
+};
+hex_right.apply { polygon(450, 210, 55, 6) }
+
+// Polar-projected labels
+let styles = ${ font-family: monospace; font-size: 10; };
+
+let top_label = &{ text(0, 10)`Top` } << styles;
+let right_label = &{ text(0, 10)`Right` } << styles;
+let bottom_label = &{ text(0, 10)`Bottom` } << styles;
+let left_label = &{ text(0, 10)`Left` } << styles;
+
+let polar_labels = TextLayer('polar') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+};
+
+// Project labels at cardinal directions, radius 75, with semantic anchors
+let top_proj = top_label.polarProject(450, 210, calc(-0.5 * 3.14159265358979), 75, BBoxAnchor.Bottom);
+let right_proj = right_label.polarProject(450, 210, 0, 75, BBoxAnchor.Left);
+let bottom_proj = bottom_label.polarProject(450, 210, calc(0.5 * 3.14159265358979), 75, BBoxAnchor.Top);
+let left_proj = left_label.polarProject(450, 210, calc(3.14159265358979), 75, BBoxAnchor.Right);
+
+polar_labels.apply {
+  top_proj.draw()
+  right_proj.draw()
+  bottom_proj.draw()
+  left_proj.draw()
+}
+
+// Green annotations showing BBoxAnchor names
+// Placed further along the radial than the labels, with offset to avoid overlap
+let anchor_anno = TextLayer('anchors') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: Color('#22c55e');
+  text-anchor: middle;
+};
+anchor_anno.apply {
+  // Top annotation: above the "Top" label
+  text(450, 112)`BBoxAnchor.Bottom`
+  // Right annotation: further right
+  text(540, 236)`BBoxAnchor.Left`
+  // Bottom annotation: below the "Bottom" label
+  text(450, 310)`BBoxAnchor.Top`
+  // Left annotation: further left
+  text(352, 236)`BBoxAnchor.Right`
+}
+
+// --- Collision checks for right panel ---
+
+// Top label vs top annotation
+let r_top_bb = top_proj.boundingBox();
+let r_top_anno = (&{ text(0, 7)`BBoxAnchor.Bottom` } << anno_styles).project(calc(450 - 45), 112);
+if (top_proj.intersects(r_top_anno)) { log("WARN: right Top label intersects top annotation"); }
+
+// Right label vs right annotation
+let r_right_anno = (&{ text(0, 7)`BBoxAnchor.Left` } << anno_styles).project(calc(540 - 42), 236);
+if (right_proj.intersects(r_right_anno)) { log("WARN: right Right label intersects right annotation"); }
+
+// Bottom label vs bottom annotation
+let r_bot_anno = (&{ text(0, 7)`BBoxAnchor.Top` } << anno_styles).project(calc(450 - 38), 310);
+if (bottom_proj.intersects(r_bot_anno)) { log("WARN: right Bottom label intersects bottom annotation"); }
+
+// Left label vs left annotation
+let r_left_anno = (&{ text(0, 7)`BBoxAnchor.Right` } << anno_styles).project(calc(352 - 42), 236);
+if (left_proj.intersects(r_left_anno)) { log("WARN: right Left label intersects left annotation"); }
+
+right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno);

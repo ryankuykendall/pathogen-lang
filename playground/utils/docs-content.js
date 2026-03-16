@@ -340,6 +340,106 @@ L <span class="hljs-title function_">calc</span>(<span class="hljs-number">100</
 <pre><code class="hljs"><span class="hljs-keyword">let</span> x = <span class="hljs-literal">null</span>;
 <span class="hljs-keyword">let</span> y = x + <span class="hljs-number">1</span>;     <span class="hljs-comment">// Error: Cannot use null in arithmetic expression</span>
 M x <span class="hljs-number">0</span>               <span class="hljs-comment">// Error: Cannot use null as a path argument</span>
+</code></pre><h2 id="syntax-booleans">Booleans</h2>
+<p>The <code>true</code> and <code>false</code> keywords represent boolean values. They are a semantic subtype of number — <code>true</code> is <code>1</code>, <code>false</code> is <code>0</code> — but display as <code>true</code>/<code>false</code> in logs and template literals.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> flag = <span class="hljs-literal">true</span>;
+<span class="hljs-keyword">let</span> check = <span class="hljs-literal">false</span>;
+</code></pre><h3 id="syntax-numeric-equivalence">Numeric Equivalence</h3>
+<p>Booleans participate in arithmetic as their numeric values:</p>
+<pre><code class="hljs"><span class="hljs-literal">true</span> + <span class="hljs-number">1</span>     <span class="hljs-comment">// 2</span>
+<span class="hljs-literal">true</span> + <span class="hljs-literal">true</span>  <span class="hljs-comment">// 2</span>
+<span class="hljs-literal">false</span> + <span class="hljs-number">1</span>    <span class="hljs-comment">// 1</span>
+<span class="hljs-literal">true</span> == <span class="hljs-number">1</span>    <span class="hljs-comment">// true</span>
+<span class="hljs-literal">false</span> == <span class="hljs-number">0</span>   <span class="hljs-comment">// true</span>
+</code></pre><h3 id="syntax-display">Display</h3>
+<p>Booleans display as <code>true</code> or <code>false</code>, and comparisons return booleans:</p>
+<pre><code class="hljs"><span class="hljs-built_in">log</span>(<span class="hljs-literal">true</span>);       // <span class="hljs-literal">true</span>
+<span class="hljs-built_in">log</span>(5 &gt; 3);      // <span class="hljs-literal">true</span>
+<span class="hljs-built_in">log</span>(1 &gt; 5);      // <span class="hljs-literal">false</span>
+<span class="hljs-built_in">log</span>(\`<span class="hljs-variable">\${true}</span>\`);  // <span class="hljs-literal">true</span>
+</code></pre><h3 id="syntax-truthiness-2">Truthiness</h3>
+<p><code>false</code> is falsy (like <code>0</code> and <code>null</code>); <code>true</code> is truthy:</p>
+<pre><code class="hljs"><span class="hljs-keyword">if</span> (<span class="hljs-literal">true</span>) { <span class="hljs-comment">/* runs */</span> }
+<span class="hljs-keyword">if</span> (<span class="hljs-literal">false</span>) { <span class="hljs-comment">/* skipped */</span> }
+
+<span class="hljs-keyword">let</span> result = <span class="hljs-number">5</span> &gt; <span class="hljs-number">3</span>;  <span class="hljs-comment">// true (BooleanValue)</span>
+<span class="hljs-keyword">if</span> (result) { <span class="hljs-comment">/* runs */</span> }
+</code></pre><h3 id="syntax-logical-operators">Logical Operators</h3>
+<pre><code class="hljs">!<span class="hljs-literal">true</span>         <span class="hljs-comment">// false</span>
+!<span class="hljs-literal">false</span>        <span class="hljs-comment">// true</span>
+<span class="hljs-literal">true</span> &amp;&amp; <span class="hljs-literal">false</span> <span class="hljs-comment">// false</span>
+<span class="hljs-literal">false</span> || <span class="hljs-literal">true</span> <span class="hljs-comment">// true</span>
+</code></pre><h3 id="syntax-arc-flags">Arc Flags</h3>
+<p>Booleans can be used directly as arc flag arguments, converting to <code>1</code>/<code>0</code> in the SVG output:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> largeArc = <span class="hljs-literal">true</span>;
+<span class="hljs-keyword">let</span> sweep = <span class="hljs-literal">false</span>;
+M <span class="hljs-number">0</span> <span class="hljs-number">0</span> A <span class="hljs-number">50</span> <span class="hljs-number">50</span> <span class="hljs-number">0</span> largeArc sweep <span class="hljs-number">100</span> <span class="hljs-number">0</span>
+<span class="hljs-comment">// → M 0 0 A 50 50 0 1 0 100 0</span>
+</code></pre><h2 id="syntax-enums">Enums</h2>
+<h3 id="syntax-built-in-enums">Built-in Enums</h3>
+<p>Pathogen provides built-in enums for gradient and geometry properties. Enum members resolve to the string values accepted by these properties:</p>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Members</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Easing</code></td>
+<td><code>Linear</code>, <code>Smoothstep</code>, <code>EaseIn</code>, <code>EaseOut</code>, <code>EaseInOut</code></td>
+</tr>
+<tr>
+<td><code>Interpolation</code></td>
+<td><code>SRGB</code>, <code>OKLCH</code>, <code>LinearRGB</code></td>
+</tr>
+<tr>
+<td><code>SpreadMethod</code></td>
+<td><code>Pad</code>, <code>Reflect</code>, <code>Repeat</code></td>
+</tr>
+<tr>
+<td><code>GradientUnits</code></td>
+<td><code>ObjectBoundingBox</code>, <code>UserSpaceOnUse</code></td>
+</tr>
+<tr>
+<td><code>Direction</code></td>
+<td><code>CW</code>, <code>CCW</code></td>
+</tr>
+<tr>
+<td><code>ConicSpread</code></td>
+<td><code>Clamp</code>, <code>Repeat</code>, <code>Transparent</code></td>
+</tr>
+<tr>
+<td><code>InnerFill</code></td>
+<td><code>Transparent</code>, <code>TransparentBlend</code>, <code>Center</code></td>
+</tr>
+<tr>
+<td><code>TopoMethod</code></td>
+<td><code>Distance</code>, <code>Laplace</code></td>
+</tr>
+</tbody></table>
+<pre><code class="hljs">topo.<span class="hljs-property">easing</span> = <span class="hljs-title class_">Easing</span>.<span class="hljs-property">Smoothstep</span>;       <span class="hljs-comment">// equivalent to &#x27;smoothstep&#x27;</span>
+grad.<span class="hljs-property">interpolation</span> = <span class="hljs-title class_">Interpolation</span>.<span class="hljs-property">OKLCH</span>;
+</code></pre><p>Enum values are interchangeable with their string equivalents:</p>
+<pre><code class="hljs"><span class="hljs-title class_">Easing</span>.<span class="hljs-property">Linear</span> == <span class="hljs-string">&#x27;linear&#x27;</span>  <span class="hljs-comment">// true</span>
+</code></pre><h3 id="syntax-user-defined-enums">User-Defined Enums</h3>
+<p>Define custom enums with <code>enum</code>:</p>
+<pre><code class="hljs">// Auto-valued — member name lowercased to a string
+enum Symmetry { None, Bilateral, Radial, Rotational }
+<span class="hljs-built_in">log</span>(Symmetry.Bilateral);  // bilateral
+
+// Explicit string values
+enum Season { Spring = <span class="hljs-string">&#x27;vernal&#x27;</span>, Summer = <span class="hljs-string">&#x27;estival&#x27;</span> }
+
+// Explicit typed values — number, angle, color, boolean
+enum Angle { Quarter = 90deg, Half = 180deg, Full = 360deg }
+enum Palette { Primary = <span class="hljs-comment">#0066ff, Accent = #ff6600, Muted = #999 }</span>
+enum Weight { Thin = 1, Normal = 2, Bold = 4 }
+enum Toggle { On = <span class="hljs-literal">true</span>, Off = <span class="hljs-literal">false</span> }
+</code></pre><p>Auto-valued members always produce the lowercase string of the member name. Other types require an explicit <code>= value</code>.</p>
+<p>Enum members are accessed with dot notation and can be used in conditionals:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> d = <span class="hljs-title class_">Dir</span>.<span class="hljs-property">Up</span>;
+<span class="hljs-keyword">if</span> (d == <span class="hljs-string">&#x27;up&#x27;</span>) { M <span class="hljs-number">10</span> <span class="hljs-number">20</span> }
 </code></pre><h2 id="syntax-points">Points</h2>
 <p>Points represent 2D coordinates and provide geometric operations for SVG path construction.</p>
 <h3 id="syntax-constructor">Constructor</h3>
@@ -405,7 +505,7 @@ L <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">
 <pre><code class="hljs"><span class="hljs-keyword">let</span> a = <span class="hljs-title class_">Point</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
 <span class="hljs-keyword">let</span> b = <span class="hljs-title class_">Point</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>);
 <span class="hljs-title function_">log</span>(a.<span class="hljs-title function_">angleTo</span>(b));  <span class="hljs-comment">// 0 (pointing right)</span>
-</code></pre><h3 id="syntax-display">Display</h3>
+</code></pre><h3 id="syntax-display-2">Display</h3>
 <p><code>log()</code> shows points in a readable format:</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> pt = <span class="hljs-title class_">Point</span>(<span class="hljs-number">100</span>, <span class="hljs-number">200</span>);
 <span class="hljs-title function_">log</span>(pt);  <span class="hljs-comment">// Point(100, 200)</span>
@@ -2081,7 +2181,2340 @@ one.<span class="hljs-title function_">draw</span>()
 <li>All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.</li>
 <li>Results are always returned as PathBlock values (normalized to <code>(0, 0)</code> origin).</li>
 </ul>
+<h2 id="path-blocks-font-integration">Font Integration</h2>
+<p>Font integration lets you convert text characters into PathBlock values — turning each glyph into vector paths you can draw, transform, sample, and combine with boolean operations.</p>
+<h3 id="path-blocks-font-directive">@font Directive</h3>
+<p>The <code>@font</code> directive declares a font for use in the program. It must appear at the top level (not inside a function or block).</p>
+<pre><code class="hljs">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+@font <span class="hljs-string">&quot;Roboto Mono&quot;</span> <span class="hljs-number">700</span>;
+@font <span class="hljs-string">&quot;./fonts/CustomFont.ttf&quot;</span>;
+</code></pre><p><strong>Syntax:</strong></p>
+<pre><code class="hljs">@font <span class="hljs-string">&quot;family-or-path&quot;</span> [weight];
+</code></pre><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Source</td>
+<td>Yes</td>
+<td>Font family name (e.g., <code>&quot;Inter&quot;</code>) or file path (e.g., <code>&quot;./fonts/Custom.ttf&quot;</code>)</td>
+</tr>
+<tr>
+<td>Weight</td>
+<td>No</td>
+<td>Numeric weight 100–900 (default: 400)</td>
+</tr>
+</tbody></table>
+<p><strong>Font loading by environment:</strong></p>
+<ul>
+<li><strong>CLI</strong>: Loads from local file paths (relative to source file) or searches system font directories (<code>/Library/Fonts</code>, <code>/System/Library/Fonts</code>, <code>~/Library/Fonts</code> on macOS; equivalent paths on Linux/Windows)</li>
+<li><strong>Playground</strong>: Fetches from Google Fonts CDN automatically</li>
+</ul>
+<p>The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, a warning is logged and compilation continues.</p>
+<h3 id="path-blocks-pathblockfromglyphtext-styles">PathBlock.fromGlyph(text, styles)</h3>
+<p>Converts text into an array of PathBlock values — one per character. Each PathBlock contains the glyph&#39;s vector outline as relative path commands.</p>
+<pre><code class="hljs">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+
+<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;A&quot;</span>, \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; });
+
+M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
+glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">draw</span>()
+</code></pre><p><strong>Arguments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>text</code></td>
+<td>string</td>
+<td>Characters to convert (each becomes a separate PathBlock)</td>
+</tr>
+<tr>
+<td><code>styles</code></td>
+<td>style block</td>
+<td>Must contain <code>font-family</code>; optionally <code>font-size</code> (default 16) and <code>font-weight</code> (default 400)</td>
+</tr>
+</tbody></table>
+<p><strong>Returns:</strong> Array of PathBlock values. Each element has all standard PathBlock properties and methods (<code>draw()</code>, <code>project()</code>, <code>get()</code>, <code>tangent()</code>, <code>boundingBox()</code>, <code>scale()</code>, boolean operations, etc.).</p>
+<pre><code class="hljs">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
+<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;Hi&quot;</span>, styles);
+<span class="hljs-title function_">log</span>(glyphs.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 2</span>
+</code></pre><h3 id="path-blocks-advancewidth">advanceWidth</h3>
+<p>Each glyph PathBlock has an <code>.advanceWidth</code> property — the horizontal distance to advance the cursor after drawing the glyph. This enables manual text layout:</p>
+<pre><code class="hljs">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
+<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;Hello&quot;</span>, styles);
+
+<span class="hljs-keyword">let</span> x = <span class="hljs-number">10</span>;
+<span class="hljs-keyword">let</span> y = <span class="hljs-number">100</span>;
+<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
+  M x y
+  g.<span class="hljs-title function_">draw</span>()
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(x + g.<span class="hljs-property">advanceWidth</span>);
+}
+</code></pre><p>Space characters return an empty PathBlock (no path commands) but still have a non-zero <code>advanceWidth</code>.</p>
+<h3 id="path-blocks-contours">contours</h3>
+<p>Glyphs with multiple contours (e.g., &quot;O&quot; has an outer ring and inner hole) can be decomposed with the <code>.contours</code> property. This returns an array of PathBlock values, one per contour:</p>
+<pre><code class="hljs">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
+<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;O&quot;</span>, styles);
+<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
+<span class="hljs-title function_">log</span>(contours.<span class="hljs-property">length</span>);              <span class="hljs-comment">// 2 (outer + inner)</span>
+
+<span class="hljs-keyword">for</span> (c <span class="hljs-keyword">in</span> contours) {
+  c.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>)
+}
+</code></pre><p>Each contour is a closed PathBlock with all standard properties and methods.</p>
+<h3 id="path-blocks-error-cases">Error cases</h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Error message</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Wrong number of arguments</td>
+<td><code>PathBlock.fromGlyph() expects 2 arguments (text, styles)</code></td>
+</tr>
+<tr>
+<td>First argument not a string</td>
+<td><code>PathBlock.fromGlyph() first argument must be a string</code></td>
+</tr>
+<tr>
+<td>Second argument not a style block</td>
+<td><code>PathBlock.fromGlyph() second argument must be a style block</code></td>
+</tr>
+<tr>
+<td>Style block missing font-family</td>
+<td><code>PathBlock.fromGlyph() requires font-family in style block</code></td>
+</tr>
+<tr>
+<td>No fonts loaded</td>
+<td><code>PathBlock.fromGlyph() requires font data. Use @font directive to load a font.</code></td>
+</tr>
+<tr>
+<td>Font not in registry</td>
+<td><code>Font &#39;X&#39; not found in font registry. Available fonts: [list]</code></td>
+</tr>
+</tbody></table>
 `;
+
+export const textBlock = `<h1 id="text-block-textblock">TextBlock</h1>
+<p>TextBlock is a composition-first text primitive that lets you <strong>compose, measure, and position</strong> text before drawing it. This is essential for diagrams and schematics where labels must be positioned relative to geometry without overlapping.</p>
+<p>TextBlock parallels PathBlock: both follow the pattern <strong>compose -&gt; measure -&gt; position -&gt; draw</strong>.</p>
+<h2 id="text-block-quick-overview">Quick Overview</h2>
+<pre><code class="hljs language-pathogen">// Compose text at relative coordinates
+<span class="hljs-built_in">let</span> label = &amp;{
+  text(0, 14)\`Title\`
+  text(0, 30)\`Subtitle\`
+} &lt;&lt; <span class="hljs-variable">\${ font-size: 14; fill: #333; }</span>;
+
+// Measure before placing
+<span class="hljs-built_in">let</span> bb = label.boundingBox();
+
+// Project into absolute coordinates
+<span class="hljs-built_in">let</span> placed = label.project(50, 100);
+
+// Draw to a TextLayer
+define TextLayer(<span class="hljs-string">&#x27;labels&#x27;</span>) <span class="hljs-variable">\${}</span>
+layer(<span class="hljs-string">&#x27;labels&#x27;</span>).apply {
+  placed.draw();
+}
+</code></pre><h2 id="text-block-syntax">Syntax</h2>
+<p>TextBlock uses the <code>&amp;{ }</code> sigil:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> t = &amp;{
+  <span class="hljs-title function_">text</span>(x, y)<span class="hljs-string">\`content\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-params">x, y</span>) {
+    <span class="hljs-title function_">tspan</span>()<span class="hljs-string">\`first\`</span>
+    <span class="hljs-title function_">tspan</span>(<span class="hljs-number">0</span>, <span class="hljs-number">16</span>)<span class="hljs-string">\`second\`</span>
+  }
+};
+</code></pre><p>Inside a text block you can use:</p>
+<ul>
+<li><strong><code>text()</code> statements</strong> — the core text elements</li>
+<li><strong><code>let</code>, <code>for</code>, <code>if</code></strong> — control flow for dynamic content</li>
+<li><strong>User-defined functions</strong> — called as expressions</li>
+</ul>
+<p>Not allowed inside text blocks:</p>
+<ul>
+<li>Path commands (<code>M</code>, <code>L</code>, etc.)</li>
+<li>Layer definitions or apply blocks</li>
+<li>Nested text blocks</li>
+</ul>
+<h2 id="text-block-types">Types</h2>
+<h3 id="text-block-textblockvalue">TextBlockValue</h3>
+<p>Created by the <code>&amp;{ }</code> expression. All coordinates are <strong>relative to origin (0, 0)</strong>.</p>
+<h3 id="text-block-projectedtextvalue">ProjectedTextValue</h3>
+<p>Created by <code>.project()</code>, <code>.drawTo()</code>, <code>.polarProject()</code>, or <code>.translate()</code>. Contains text elements with <strong>absolute coordinates</strong> and tracks the projection origin.</p>
+<h2 id="text-block-methods">Methods</h2>
+<h3 id="text-block-textblockvalue-2">TextBlockValue</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.project(x, y)</code></td>
+<td>ProjectedTextValue</td>
+<td>Offset all elements to absolute coordinates</td>
+</tr>
+<tr>
+<td><code>.drawTo(x, y [, rotation])</code></td>
+<td>ProjectedTextValue</td>
+<td>Emit to active TextLayer at position</td>
+</tr>
+<tr>
+<td><code>.boundingBox()</code></td>
+<td>Object <code>{x, y, width, height}</code></td>
+<td>Estimated bounding box</td>
+</tr>
+<tr>
+<td><code>.polarProject(px, py, angle, distance, anchor)</code></td>
+<td>ProjectedTextValue</td>
+<td>Project along polar vector with anchor alignment</td>
+</tr>
+</tbody></table>
+<h3 id="text-block-projectedtextvalue-2">ProjectedTextValue</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.draw()</code></td>
+<td>ProjectedTextValue</td>
+<td>Emit to active TextLayer at projected position</td>
+</tr>
+<tr>
+<td><code>.drawTo(x, y [, rotation])</code></td>
+<td>ProjectedTextValue</td>
+<td>Re-project and emit at new position</td>
+</tr>
+<tr>
+<td><code>.translate(dx, dy)</code></td>
+<td>ProjectedTextValue</td>
+<td>Return new value with shifted origin</td>
+</tr>
+<tr>
+<td><code>.boundingBox()</code></td>
+<td>Object <code>{x, y, width, height}</code></td>
+<td>Estimated bounding box</td>
+</tr>
+<tr>
+<td><code>.paddedBoundingBox(blockPad, inlinePad)</code></td>
+<td>Object <code>{x, y, width, height}</code></td>
+<td>Bbox expanded by padding</td>
+</tr>
+<tr>
+<td><code>.anchor(BBoxAnchor)</code></td>
+<td>PointValue</td>
+<td>Point at named position on bbox</td>
+</tr>
+<tr>
+<td><code>.intersects(geometry)</code></td>
+<td>Boolean</td>
+<td>AABB overlap test</td>
+</tr>
+<tr>
+<td><code>.intersectionPoints(geometry)</code></td>
+<td>Array&lt;PointValue&gt;</td>
+<td>Intersection points between bbox and geometry</td>
+</tr>
+</tbody></table>
+<h2 id="text-block-properties">Properties</h2>
+<h3 id="text-block-textblockvalue-3">TextBlockValue</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.elementCount</code></td>
+<td>number</td>
+<td>Number of text elements</td>
+</tr>
+<tr>
+<td><code>.styles</code></td>
+<td>StyleBlockValue</td>
+<td>Block-level styles</td>
+</tr>
+</tbody></table>
+<h3 id="text-block-projectedtextvalue-3">ProjectedTextValue</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.elementCount</code></td>
+<td>number</td>
+<td>Number of text elements</td>
+</tr>
+<tr>
+<td><code>.styles</code></td>
+<td>StyleBlockValue</td>
+<td>Block-level styles</td>
+</tr>
+<tr>
+<td><code>.origin</code></td>
+<td>PointValue</td>
+<td>Projection origin</td>
+</tr>
+</tbody></table>
+<h2 id="text-block-style-merging">Style Merging</h2>
+<p>Use the <code>&lt;&lt;</code> operator to merge styles into a TextBlock:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-built_in">let</span> t = &amp;{ text(0, 16)\`Hello\` } &lt;&lt; <span class="hljs-variable">\${ font-size: 24; fill: #333; }</span>;
+</code></pre><p>This sets block-level styles that apply to all elements unless overridden by element-level styles.</p>
+<h2 id="text-block-bboxanchor-enum">BBoxAnchor Enum</h2>
+<p>The <code>BBoxAnchor</code> enum provides named positions on a bounding box:</p>
+<pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
+BBoxAnchor.Left         BBoxAnchor.Center    BBoxAnchor.Right
+BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
+</code></pre><p>Used with <code>.anchor()</code> and <code>.polarProject()</code>.</p>
+<h2 id="text-block-font-metrics">Font Metrics</h2>
+<p>TextBlock uses built-in character width tables for bounding box estimation:</p>
+<ul>
+<li><strong>Sans-serif</strong> (default): per-character widths approximating Arial/Helvetica</li>
+<li><strong>Serif</strong>: per-character widths approximating Times New Roman</li>
+<li><strong>Monospace</strong>: uniform character width approximating Courier New</li>
+</ul>
+<p>Set the font category via the <code>font-family</code> style property. Accuracy is ~85-90% for Latin text, sufficient for layout decisions.</p>
+<p>Font metrics respect:</p>
+<ul>
+<li><code>font-size</code> (default 16)</li>
+<li><code>font-family</code> (category detection)</li>
+<li><code>font-weight</code> (bold applies ~6% width increase)</li>
+<li><code>letter-spacing</code></li>
+<li>tspan <code>dx</code>/<code>dy</code> offsets</li>
+</ul>
+<h2 id="text-block-polar-projection">Polar Projection</h2>
+<p>Place text along a polar vector with anchor alignment:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Node A\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
+
+<span class="hljs-comment">// Place label 80px from center at 45 degrees, anchored at center-left</span>
+<span class="hljs-keyword">let</span> placed = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, 45deg, <span class="hljs-number">80</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
+</code></pre><p>The anchor determines which point of the text&#39;s bounding box is placed at the target location. For example, <code>BBoxAnchor.Left</code> means the left-center of the text bbox lands on the polar target point.</p>
+<h2 id="text-block-intersection-detection">Intersection Detection</h2>
+<p>Check if text bounding boxes overlap to avoid label collisions:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label1 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`First\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; }).<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
+<span class="hljs-keyword">let</span> label2 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Second\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; }).<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>);
+
+<span class="hljs-keyword">if</span> (label1.<span class="hljs-title function_">intersects</span>(label2)) {
+  <span class="hljs-comment">// Labels overlap — adjust position</span>
+  label2 = label2.<span class="hljs-title function_">translate</span>(<span class="hljs-number">0</span>, <span class="hljs-number">20</span>);
+}
+</code></pre><p><code>.intersects()</code> accepts:</p>
+<ul>
+<li>Another <code>ProjectedTextValue</code> (AABB overlap test)</li>
+<li>A <code>ProjectedPathValue</code> (bbox-edge vs path-segment intersection)</li>
+<li>An object with <code>{x, y, width, height}</code> (AABB overlap test)</li>
+</ul>
+<h2 id="text-block-examples">Examples</h2>
+<h3 id="text-block-label-placement-around-a-shape">Label placement around a shape</h3>
+<pre><code class="hljs language-pathogen">define PathLayer(<span class="hljs-string">&#x27;shape&#x27;</span>) <span class="hljs-variable">\${ stroke: #333; fill: none; }</span>
+define TextLayer(<span class="hljs-string">&#x27;labels&#x27;</span>) <span class="hljs-variable">\${ font-size: 12; fill: #666; }</span>
+
+<span class="hljs-built_in">let</span> shape = @{ l 80 0 l 0 60 l -80 0 z };
+
+// Place labels at compass positions around the shape
+<span class="hljs-built_in">let</span> top = &amp;{ text(0, 12)\`Top\` } &lt;&lt; <span class="hljs-variable">\${ font-size: 12; }</span>;
+<span class="hljs-built_in">let</span> right = &amp;{ text(0, 12)\`Right\` } &lt;&lt; <span class="hljs-variable">\${ font-size: 12; }</span>;
+
+layer(<span class="hljs-string">&#x27;shape&#x27;</span>).apply { shape.drawTo(60, 70); }
+
+layer(<span class="hljs-string">&#x27;labels&#x27;</span>).apply {
+  top.polarProject(100, 100, -90deg, 50, BBoxAnchor.Bottom).draw();
+  right.polarProject(100, 100, 0, 60, BBoxAnchor.Left).draw();
+}
+</code></pre><h3 id="text-block-dynamic-labels-with-collision-avoidance">Dynamic labels with collision avoidance</h3>
+<pre><code class="hljs language-pathogen">define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; }
+
+<span class="hljs-keyword">let</span> points = [
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;A&quot;</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">55</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;B&quot;</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">120</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;C&quot;</span> },
+];
+
+<span class="hljs-keyword">let</span> placed = [];
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (pt <span class="hljs-keyword">in</span> points) {
+    <span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">11</span>)<span class="hljs-string">\`<span class="hljs-subst">\${pt.name}</span>\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; };
+    <span class="hljs-keyword">let</span> proj = label.<span class="hljs-title function_">project</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-number">5</span>, pt.<span class="hljs-property">y</span>);
+
+    <span class="hljs-comment">// Check against all previously placed labels</span>
+    <span class="hljs-keyword">let</span> ok = <span class="hljs-literal">true</span>;
+    <span class="hljs-keyword">for</span> (prev <span class="hljs-keyword">in</span> placed) {
+      <span class="hljs-keyword">if</span> (proj.<span class="hljs-title function_">intersects</span>(prev)) {
+        ok = <span class="hljs-literal">false</span>;
+      }
+    }
+
+    <span class="hljs-keyword">if</span> (ok) {
+      proj.<span class="hljs-title function_">draw</span>();
+      placed.<span class="hljs-title function_">push</span>(proj);
+    } <span class="hljs-keyword">else</span> {
+      <span class="hljs-comment">// Try below instead</span>
+      <span class="hljs-keyword">let</span> alt = label.<span class="hljs-title function_">project</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-number">5</span>, <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-number">15</span>));
+      alt.<span class="hljs-title function_">draw</span>();
+      placed.<span class="hljs-title function_">push</span>(alt);
+    }
+  }
+}
+</code></pre>`;
+
+export const color = `<h1 id="color-color-type">Color Type</h1>
+<p>The <code>Color</code> type provides first-class color manipulation in OKLCH color space. Colors are resolved at compile time to concrete CSS values.</p>
+<h2 id="color-color-literals">Color Literals</h2>
+<p>Hex color codes are first-class expressions — no quotes or <code>Color()</code> wrapper needed:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = #cc0000;                      <span class="hljs-comment">// 6-digit hex → ColorValue</span>
+<span class="hljs-keyword">let</span> c = #f00;                         <span class="hljs-comment">// 3-digit shorthand</span>
+<span class="hljs-keyword">let</span> c = #cc000080;                    <span class="hljs-comment">// 8-digit with alpha</span>
+<span class="hljs-keyword">let</span> c = #f008;                        <span class="hljs-comment">// 4-digit with alpha</span>
+</code></pre><p>Color literals support method chaining via parentheses:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> lighter = (#cc0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%); <span class="hljs-comment">// 20% → 0.2</span>
+<span class="hljs-keyword">let</span> faded = (#0066ff).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);     <span class="hljs-comment">// 50% → 0.5</span>
+</code></pre><p><code>Color()</code> accepts color literals as pass-through (no-op for backwards compatibility):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(#cc0000);               <span class="hljs-comment">// same as: let c = #cc0000;</span>
+</code></pre><h2 id="color-css-color-function-literals">CSS Color Function Literals</h2>
+<p>CSS color functions are first-class expressions with raw capture (content between parens is captured as-is):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">rgba</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">50</span>%);           <span class="hljs-comment">// % inside parens is literal</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hsla</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">50</span>%, <span class="hljs-number">0.5</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span> / <span class="hljs-number">0.5</span>);    <span class="hljs-comment">// / for alpha is literal</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklab</span>(<span class="hljs-number">0.6</span> -<span class="hljs-number">0.1</span> <span class="hljs-number">0.15</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hwb</span>(<span class="hljs-number">0</span> <span class="hljs-number">0</span>% <span class="hljs-number">0</span>%);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lab</span>(<span class="hljs-number">50</span> <span class="hljs-number">40</span> <span class="hljs-number">59.5</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lch</span>(<span class="hljs-number">50</span> <span class="hljs-number">64</span> <span class="hljs-number">30</span>);
+</code></pre><p>Method chaining works directly:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> lighter = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
+</code></pre><blockquote>
+<p><strong>Note:</strong> CSS color function names (<code>rgb</code>, <code>hsl</code>, <code>oklch</code>, etc.) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists.</p>
+</blockquote>
+<h2 id="color-constructor">Constructor</h2>
+<p>The <code>Color()</code> wrapper is still available for string-based construction and named colors:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);              <span class="hljs-comment">// hex (3, 6, or 8 digit)</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;red&#x27;</span>);                  <span class="hljs-comment">// named CSS color (all 148)</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;rgb(255, 0, 0)&#x27;</span>);       <span class="hljs-comment">// rgb/rgba</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;hsl(0, 100%, 50%)&#x27;</span>);    <span class="hljs-comment">// hsl/hsla</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;oklch(0.6 0.15 30)&#x27;</span>);   <span class="hljs-comment">// oklch</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-number">0.6</span>, <span class="hljs-number">0.15</span>, <span class="hljs-number">30</span>);         <span class="hljs-comment">// direct OKLCH (L, C, H)</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-number">0.6</span>, <span class="hljs-number">0.15</span>, <span class="hljs-number">30</span>, <span class="hljs-number">0.5</span>);    <span class="hljs-comment">// OKLCH + alpha</span>
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(#cc0000);               <span class="hljs-comment">// pass-through (accepts ColorValue)</span>
+</code></pre><p>All input formats are converted to OKLCH internally for perceptually uniform manipulation.</p>
+<h2 id="color-properties">Properties</h2>
+<p>Read-only properties for inspecting color values:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.css</code></td>
+<td>string</td>
+<td>Hex if opaque, <code>rgba()</code> if transparent</td>
+</tr>
+<tr>
+<td><code>.hex</code></td>
+<td>string</td>
+<td><code>#rrggbb</code> (ignores alpha)</td>
+</tr>
+<tr>
+<td><code>.oklch</code></td>
+<td>string</td>
+<td><code>oklch(L C H)</code> or <code>oklch(L C H / a)</code></td>
+</tr>
+<tr>
+<td><code>.hsl</code></td>
+<td>string</td>
+<td><code>hsl(H, S%, L%)</code></td>
+</tr>
+<tr>
+<td><code>.rgb</code></td>
+<td>string</td>
+<td><code>rgb(R, G, B)</code></td>
+</tr>
+<tr>
+<td><code>.lightness</code></td>
+<td>number</td>
+<td>OKLCH lightness (0–1)</td>
+</tr>
+<tr>
+<td><code>.chroma</code></td>
+<td>number</td>
+<td>OKLCH chroma (0–~0.4)</td>
+</tr>
+<tr>
+<td><code>.hue</code></td>
+<td>number</td>
+<td>OKLCH hue (0–360)</td>
+</tr>
+<tr>
+<td><code>.a</code></td>
+<td>number</td>
+<td>Alpha (0–1)</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-title function_">log</span>(c.<span class="hljs-property">hex</span>);        <span class="hljs-comment">// #e63946</span>
+<span class="hljs-title function_">log</span>(c.<span class="hljs-property">lightness</span>);  <span class="hljs-comment">// ~0.52</span>
+<span class="hljs-title function_">log</span>(c.<span class="hljs-property">hue</span>);        <span class="hljs-comment">// ~27</span>
+<span class="hljs-title function_">log</span>(c.<span class="hljs-property">a</span>);          <span class="hljs-comment">// 1</span>
+</code></pre><h2 id="color-methods">Methods</h2>
+<p>All methods return a new Color — they never mutate the original.</p>
+<h3 id="color-lightness">Lightness</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> lighter = c.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.2</span>);   <span class="hljs-comment">// increase L by 0.2</span>
+<span class="hljs-keyword">let</span> darker = c.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);    <span class="hljs-comment">// decrease L by 0.15</span>
+<span class="hljs-title function_">log</span>(lighter.<span class="hljs-property">hex</span>);  <span class="hljs-comment">// lighter red</span>
+<span class="hljs-title function_">log</span>(darker.<span class="hljs-property">hex</span>);   <span class="hljs-comment">// darker red</span>
+</code></pre><h3 id="color-saturation">Saturation</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> vivid = c.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.5</span>);     <span class="hljs-comment">// multiply chroma by 1.5</span>
+<span class="hljs-keyword">let</span> muted = c.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);   <span class="hljs-comment">// multiply chroma by 0.5</span>
+</code></pre><h3 id="color-alpha">Alpha</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> semi = c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.5</span>);
+<span class="hljs-title function_">log</span>(semi.<span class="hljs-property">css</span>);  <span class="hljs-comment">// rgba(230, 57, 70, 0.5)</span>
+</code></pre><h3 id="color-hue">Hue</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> shifted = c.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">180</span>);   <span class="hljs-comment">// shift hue by 180°</span>
+<span class="hljs-keyword">let</span> comp = c.<span class="hljs-title function_">complement</span>();       <span class="hljs-comment">// shorthand for hueShift(180)</span>
+</code></pre><h3 id="color-mixing">Mixing</h3>
+<p>Mix two colors in OKLCH space:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> b = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>);
+<span class="hljs-keyword">let</span> mid = a.<span class="hljs-title function_">mix</span>(b, <span class="hljs-number">0.5</span>);         <span class="hljs-comment">// 50/50 mix</span>
+<span class="hljs-keyword">let</span> mostly_a = a.<span class="hljs-title function_">mix</span>(b, <span class="hljs-number">0.2</span>);    <span class="hljs-comment">// 80% a, 20% b</span>
+</code></pre><h3 id="color-method-chaining">Method Chaining</h3>
+<p>Methods return new Colors, so they chain naturally:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>)
+  .<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.1</span>)
+  .<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.8</span>)
+  .<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.9</span>);
+</code></pre><h2 id="color-color-harmonies">Color Harmonies</h2>
+<p>Generate sets of harmonious colors based on color theory. All harmony methods return an array of Colors, preserving lightness, chroma, and alpha.</p>
+<h3 id="color-analogousangle">.analogous(angle?)</h3>
+<p>Returns 3 colors: <code>[hue - angle, self, hue + angle]</code>. Default angle: 30.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> colors = c.<span class="hljs-title function_">analogous</span>();       <span class="hljs-comment">// 3 colors at -30°, 0°, +30°</span>
+<span class="hljs-keyword">let</span> wide = c.<span class="hljs-title function_">analogous</span>(<span class="hljs-number">45</span>);       <span class="hljs-comment">// wider spread at ±45°</span>
+</code></pre><h3 id="color-triadic">.triadic()</h3>
+<p>Returns 3 colors evenly spaced at 120° intervals: <code>[self, hue + 120, hue + 240]</code>.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> colors = c.<span class="hljs-title function_">triadic</span>();
+</code></pre><h3 id="color-tetradic">.tetradic()</h3>
+<p>Returns 4 colors evenly spaced at 90° intervals: <code>[self, hue + 90, hue + 180, hue + 270]</code>.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> colors = c.<span class="hljs-title function_">tetradic</span>();
+</code></pre><h3 id="color-splitcomplementaryangle">.splitComplementary(angle?)</h3>
+<p>Returns 3 colors: <code>[self, hue + 180 - angle, hue + 180 + angle]</code>. Default angle: 30.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> colors = c.<span class="hljs-title function_">splitComplementary</span>();     <span class="hljs-comment">// flanks of complement at ±30°</span>
+<span class="hljs-keyword">let</span> narrow = c.<span class="hljs-title function_">splitComplementary</span>(<span class="hljs-number">15</span>);   <span class="hljs-comment">// tighter split</span>
+</code></pre><h3 id="color-using-harmonies">Using Harmonies</h3>
+<p>Harmony methods return arrays, so use <code>for-each</code> to iterate:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> c.<span class="hljs-title function_">triadic</span>()) {
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`p<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: none; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`p<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + i * <span class="hljs-number">60</span>), <span class="hljs-number">100</span>, <span class="hljs-number">25</span>) }
+}
+</code></pre><h3 id="color-complete-example">Complete Example</h3>
+<p>A full color swatch showcase demonstrating base methods, harmonies, palettes, and derived colors across multiple tiers. Uses <code>CSSVar</code>-backed Colors so that changing <code>--base-color</code> or <code>--accent-color</code> in the playground&#39;s CSS var panel reactively updates every swatch. Connecting lines show how colors flow from a single base color through transformations.</p>
+<p>Canvas: <code>600 × 700</code> viewBox with four sections flowing top-to-bottom.</p>
+<pre><code class="hljs"><span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+<span class="hljs-comment">// Color Swatch Showcase — full demo of Color manipulation,</span>
+<span class="hljs-comment">// harmonies, palettes, and derived colors</span>
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+
+<span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
+<span class="hljs-keyword">let</span> accent = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent-color&#x27;</span>, <span class="hljs-string">&#x27;#457b9d&#x27;</span>));
+
+<span class="hljs-comment">// ── Tier 0: Base Methods ──────────────────────────────────</span>
+
+<span class="hljs-keyword">let</span> lighter   = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
+<span class="hljs-keyword">let</span> darker    = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
+<span class="hljs-keyword">let</span> vivid     = base.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.4</span>);
+<span class="hljs-keyword">let</span> muted     = base.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
+<span class="hljs-keyword">let</span> shifted   = base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+<span class="hljs-keyword">let</span> comp      = base.<span class="hljs-title function_">complement</span>();
+<span class="hljs-keyword">let</span> semi      = base.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.6</span>);
+<span class="hljs-keyword">let</span> mixed     = base.<span class="hljs-title function_">mix</span>(accent, <span class="hljs-number">0.5</span>);
+
+<span class="hljs-comment">// ── Tier 1: Harmonies ────────────────────────────────────</span>
+
+<span class="hljs-keyword">let</span> analog  = base.<span class="hljs-title function_">analogous</span>();
+<span class="hljs-keyword">let</span> triad   = base.<span class="hljs-title function_">triadic</span>();
+<span class="hljs-keyword">let</span> tetrad  = base.<span class="hljs-title function_">tetradic</span>();
+<span class="hljs-keyword">let</span> split   = base.<span class="hljs-title function_">splitComplementary</span>();
+
+<span class="hljs-comment">// ── Tier 1b: Palettes ────────────────────────────────────</span>
+
+<span class="hljs-keyword">let</span> ramp   = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, <span class="hljs-number">5</span>);
+<span class="hljs-keyword">let</span> interp = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);
+
+<span class="hljs-comment">// ── Tier 2: Derived Colors ───────────────────────────────</span>
+
+<span class="hljs-keyword">let</span> tri1       = triad[<span class="hljs-number">1</span>];
+<span class="hljs-keyword">let</span> tri1Light  = tri1.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
+<span class="hljs-keyword">let</span> tri1Dark   = tri1.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
+<span class="hljs-keyword">let</span> tri1Vivid  = tri1.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.4</span>);
+
+<span class="hljs-keyword">let</span> rampMid      = ramp[<span class="hljs-number">2</span>];
+<span class="hljs-keyword">let</span> rampShifted  = rampMid.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+<span class="hljs-keyword">let</span> rampComp     = rampMid.<span class="hljs-title function_">complement</span>();
+<span class="hljs-keyword">let</span> rampAlpha    = rampMid.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.5</span>);
+
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+<span class="hljs-comment">// Layers</span>
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;connectors&#x27;</span>) \${
+  <span class="hljs-attr">stroke</span>: #<span class="hljs-number">999</span>;
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  <span class="hljs-attr">fill</span>: none;
+}
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;section-labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
+  font-<span class="hljs-attr">weight</span>: bold;
+  <span class="hljs-attr">fill</span>: #<span class="hljs-number">555</span>;
+}
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #<span class="hljs-number">777</span>;
+  text-<span class="hljs-attr">anchor</span>: middle;
+}
+
+<span class="hljs-comment">// ── Swatch sizing ────────────────────────────────────────</span>
+
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">64</span>;
+<span class="hljs-keyword">let</span> sp = <span class="hljs-number">96</span>;
+<span class="hljs-keyword">let</span> sw = <span class="hljs-number">36</span>;
+<span class="hljs-keyword">let</span> sh = <span class="hljs-number">36</span>;
+<span class="hljs-keyword">let</span> sr = <span class="hljs-number">6</span>;
+
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+<span class="hljs-comment">// Tier 0: Base Method Swatches</span>
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+
+<span class="hljs-comment">// Row 1: base, lighten, darken, saturate, desaturate</span>
+<span class="hljs-keyword">let</span> row1 = [base, lighter, darker, vivid, muted];
+<span class="hljs-keyword">let</span> row1names = [<span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;lighten&#x27;</span>, <span class="hljs-string">&#x27;darken&#x27;</span>, <span class="hljs-string">&#x27;saturate&#x27;</span>, <span class="hljs-string">&#x27;desat&#x27;</span>];
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> row1) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`t0r1_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`t0r1_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> - sh / <span class="hljs-number">2</span>), sw, sh, sr) }
+}
+
+<span class="hljs-comment">// Row 2: hueShift, complement, alpha, mix, accent</span>
+<span class="hljs-keyword">let</span> row2 = [shifted, comp, semi, mixed, accent];
+<span class="hljs-keyword">let</span> row2names = [<span class="hljs-string">&#x27;hueShift&#x27;</span>, <span class="hljs-string">&#x27;compl.&#x27;</span>, <span class="hljs-string">&#x27;alpha&#x27;</span>, <span class="hljs-string">&#x27;mix&#x27;</span>, <span class="hljs-string">&#x27;accent&#x27;</span>];
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> row2) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(sx + i * sp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`t0r2_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`t0r2_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">115</span> - sh / <span class="hljs-number">2</span>), sw, sh, sr) }
+}
+
+<span class="hljs-comment">// Section header</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section-labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Base Methods\`</span>
+}
+
+<span class="hljs-comment">// Row 1 labels</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> row1names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + sh / <span class="hljs-number">2</span> + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// Row 2 labels</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> row2names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx + i * sp), <span class="hljs-title function_">calc</span>(<span class="hljs-number">115</span> + sh / <span class="hljs-number">2</span> + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// Section divider</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;connectors&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">10</span> <span class="hljs-number">170</span>
+  L <span class="hljs-number">590</span> <span class="hljs-number">170</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+<span class="hljs-comment">// Tier 1: Harmonies</span>
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section-labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">10</span>, <span class="hljs-number">195</span>)<span class="hljs-string">\`Harmonies\`</span>
+}
+
+<span class="hljs-keyword">let</span> hsx = <span class="hljs-number">160</span>;
+<span class="hljs-keyword">let</span> hsp = <span class="hljs-number">55</span>;
+<span class="hljs-keyword">let</span> hsw = <span class="hljs-number">30</span>;
+<span class="hljs-keyword">let</span> hsh = <span class="hljs-number">30</span>;
+<span class="hljs-keyword">let</span> hsr = <span class="hljs-number">5</span>;
+
+<span class="hljs-comment">// Row 3: analogous</span>
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> analog) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(hsx + i * hsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`analog_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`analog_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">220</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Row 4: triadic</span>
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> triad) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(hsx + i * hsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`triad_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`triad_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">275</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Row 5: tetradic</span>
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> tetrad) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(hsx + i * hsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`tetrad_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`tetrad_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">330</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Row 6: splitComplementary</span>
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> split) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(hsx + i * hsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`split_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`split_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">385</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Harmony row labels</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;hlabels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
+  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
+}
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;hlabels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">224</span>)<span class="hljs-string">\`analogous\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">279</span>)<span class="hljs-string">\`triadic\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">334</span>)<span class="hljs-string">\`tetradic\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">389</span>)<span class="hljs-string">\`splitComp.\`</span>
+}
+
+<span class="hljs-comment">// Section divider</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;connectors&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">10</span> <span class="hljs-number">420</span>
+  L <span class="hljs-number">590</span> <span class="hljs-number">420</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+<span class="hljs-comment">// Tier 1b: Palettes</span>
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section-labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">10</span>, <span class="hljs-number">445</span>)<span class="hljs-string">\`Palettes\`</span>
+}
+
+<span class="hljs-comment">// Row 7: lightness ramp</span>
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> ramp) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(hsx + i * hsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`ramp_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`ramp_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">470</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Row 8: interpolation</span>
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> interp) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(hsx + i * hsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`interp_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`interp_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">525</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Palette row labels</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;hlabels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">474</span>)<span class="hljs-string">\`palette(c,5)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">529</span>)<span class="hljs-string">\`palette(a,b,5)\`</span>
+}
+
+<span class="hljs-comment">// Section divider</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;connectors&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">10</span> <span class="hljs-number">560</span>
+  L <span class="hljs-number">590</span> <span class="hljs-number">560</span>
+}
+
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+<span class="hljs-comment">// Tier 2: Derived Colors</span>
+<span class="hljs-comment">// ═══════════════════════════════════════════════════════════</span>
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section-labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">10</span>, <span class="hljs-number">583</span>)<span class="hljs-string">\`Derived Colors\`</span>
+}
+
+<span class="hljs-keyword">let</span> dsx = <span class="hljs-number">260</span>;
+<span class="hljs-keyword">let</span> dsp = <span class="hljs-number">70</span>;
+
+<span class="hljs-comment">// Row 9: triadic[1] → lighten, darken, saturate</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tri1_parent&#x27;</span>) \${ <span class="hljs-attr">fill</span>: tri1; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">666</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;tri1_parent&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(hsx - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">605</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+}
+
+<span class="hljs-keyword">let</span> derived1 = [tri1Light, tri1Dark, tri1Vivid];
+<span class="hljs-keyword">let</span> derived1names = [<span class="hljs-string">&#x27;lighten&#x27;</span>, <span class="hljs-string">&#x27;darken&#x27;</span>, <span class="hljs-string">&#x27;saturate&#x27;</span>];
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> derived1) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(dsx + i * dsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`d1_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`d1_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">605</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Row 10: ramp[2] → hueShift, complement, alpha</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ramp2_parent&#x27;</span>) \${ <span class="hljs-attr">fill</span>: rampMid; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">666</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;ramp2_parent&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(hsx - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">660</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+}
+
+<span class="hljs-keyword">let</span> derived2 = [rampShifted, rampComp, rampAlpha];
+<span class="hljs-keyword">let</span> derived2names = [<span class="hljs-string">&#x27;hueShift&#x27;</span>, <span class="hljs-string">&#x27;compl.&#x27;</span>, <span class="hljs-string">&#x27;alpha&#x27;</span>];
+<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> derived2) {
+  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(dsx + i * dsp);
+  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`d2_<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">\`d2_<span class="hljs-subst">\${i}</span>\`</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(x - hsw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">660</span> - hsh / <span class="hljs-number">2</span>), hsw, hsh, hsr)
+  }
+}
+
+<span class="hljs-comment">// Derived row labels</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;hlabels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">609</span>)<span class="hljs-string">\`triad[1] →\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">664</span>)<span class="hljs-string">\`ramp[2] →\`</span>
+}
+
+<span class="hljs-comment">// Derived swatch labels</span>
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> derived1names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(dsx + i * dsp), <span class="hljs-title function_">calc</span>(<span class="hljs-number">605</span> + hsh / <span class="hljs-number">2</span> + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> derived2names) {
+    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(dsx + i * dsp), <span class="hljs-title function_">calc</span>(<span class="hljs-number">660</span> + hsh / <span class="hljs-number">2</span> + <span class="hljs-number">12</span>))<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span>
+  }
+}
+
+<span class="hljs-comment">// ── Connecting lines (reactivity chain) ──────────────────</span>
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;connectors&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-comment">// Vertical from base swatch down to tier 1 divider</span>
+  M sx <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + sh / <span class="hljs-number">2</span>)
+  L sx <span class="hljs-number">170</span>
+
+  <span class="hljs-comment">// Connector: triadic[1] down to derived row 9</span>
+  M <span class="hljs-title function_">calc</span>(hsx + <span class="hljs-number">1</span> * hsp) <span class="hljs-title function_">calc</span>(<span class="hljs-number">275</span> + hsh / <span class="hljs-number">2</span>)
+  L <span class="hljs-title function_">calc</span>(hsx + <span class="hljs-number">1</span> * hsp) <span class="hljs-title function_">calc</span>(<span class="hljs-number">605</span> - hsh / <span class="hljs-number">2</span> - <span class="hljs-number">5</span>)
+  L hsx <span class="hljs-title function_">calc</span>(<span class="hljs-number">605</span> - hsh / <span class="hljs-number">2</span> - <span class="hljs-number">5</span>)
+  L hsx <span class="hljs-title function_">calc</span>(<span class="hljs-number">605</span> - hsh / <span class="hljs-number">2</span>)
+
+  <span class="hljs-comment">// Arrow: parent → derived in row 9</span>
+  M <span class="hljs-title function_">calc</span>(hsx + hsw / <span class="hljs-number">2</span>) <span class="hljs-number">605</span>
+  L <span class="hljs-title function_">calc</span>(dsx - hsw / <span class="hljs-number">2</span>) <span class="hljs-number">605</span>
+
+  <span class="hljs-comment">// Connector: ramp[2] down to derived row 10</span>
+  M <span class="hljs-title function_">calc</span>(hsx + <span class="hljs-number">2</span> * hsp) <span class="hljs-title function_">calc</span>(<span class="hljs-number">470</span> + hsh / <span class="hljs-number">2</span>)
+  L <span class="hljs-title function_">calc</span>(hsx + <span class="hljs-number">2</span> * hsp) <span class="hljs-title function_">calc</span>(<span class="hljs-number">660</span> - hsh / <span class="hljs-number">2</span> - <span class="hljs-number">5</span>)
+  L hsx <span class="hljs-title function_">calc</span>(<span class="hljs-number">660</span> - hsh / <span class="hljs-number">2</span> - <span class="hljs-number">5</span>)
+  L hsx <span class="hljs-title function_">calc</span>(<span class="hljs-number">660</span> - hsh / <span class="hljs-number">2</span>)
+
+  <span class="hljs-comment">// Arrow: parent → derived in row 10</span>
+  M <span class="hljs-title function_">calc</span>(hsx + hsw / <span class="hljs-number">2</span>) <span class="hljs-number">660</span>
+  L <span class="hljs-title function_">calc</span>(dsx - hsw / <span class="hljs-number">2</span>) <span class="hljs-number">660</span>
+}
+</code></pre><p>Compile with: <code>svg-path-extended --output-svg-file=swatches.svg --viewBox=&quot;0 0 600 700&quot; --width=&quot;600&quot; --height=&quot;700&quot;</code></p>
+<h2 id="color-static-methods">Static Methods</h2>
+<h3 id="color-colormixc1-c2-ratio">Color.mix(c1, c2, ratio)</h3>
+<p>Mix two colors at a given ratio (0 = all c1, 1 = all c2):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> b = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>);
+<span class="hljs-keyword">let</span> mid = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">mix</span>(a, b, <span class="hljs-number">0.5</span>);
+</code></pre><h3 id="color-colorpalettecolor-n">Color.palette(color, n)</h3>
+<p>Generate a lightness ramp of <code>n</code> colors from dark (L=0.15) to light (L=0.95), preserving hue and chroma:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> shades = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(c, <span class="hljs-number">5</span>);   <span class="hljs-comment">// 5 shades from dark to light</span>
+</code></pre><h3 id="color-colorpalettec1-c2-n">Color.palette(c1, c2, n)</h3>
+<p>Generate <code>n</code> evenly interpolated colors between two colors:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> b = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>);
+<span class="hljs-keyword">let</span> gradient = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(a, b, <span class="hljs-number">7</span>);   <span class="hljs-comment">// 7-step gradient</span>
+</code></pre><p><code>n</code> must be an integer &gt;= 2.</p>
+<h3 id="color-colorlightdarklight-dark">Color.lightDark(light, dark)</h3>
+<p>Create a theme-aware color that uses CSS <code>light-dark()</code> in style output:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> fg = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#333&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eee&#x27;</span>));
+<span class="hljs-comment">// Style output: light-dark(#333333, #eeeeee)</span>
+</code></pre><p>Works with CSSVar-backed colors for full customizability:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> fg = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(
+  <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--fg-light&#x27;</span>, <span class="hljs-string">&#x27;#333&#x27;</span>)),
+  <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--fg-dark&#x27;</span>, <span class="hljs-string">&#x27;#eee&#x27;</span>))
+);
+<span class="hljs-comment">// Style output: light-dark(var(--fg-light, #333), var(--fg-dark, #eee))</span>
+</code></pre><p>Both arguments must be Colors. At compile time, <code>.hex</code>, <code>.lightness</code>, and other properties resolve to the <strong>light</strong> variant. Method calls (<code>.lighten()</code>, <code>.hueShift()</code>, etc.) operate on the light variant and lose the light-dark semantics.</p>
+<h2 id="color-property-declarations">@property Declarations</h2>
+<p>When you create a <code>Color(CSSVar(&#39;--name&#39;, fallback))</code>, the compiler automatically collects a CSS <code>@property</code> declaration for that custom property. This enables browsers to interpolate the property in transitions and animations.</p>
+<p>The collected declarations appear in <code>CompileResult.cssProperties</code> and are emitted as a <code>&lt;style&gt;</code> block in CLI SVG output:</p>
+<pre><code class="hljs language-xml">&lt;svg ...&gt;
+  &lt;style&gt;
+    @property --base-color {
+      syntax: <span class="hljs-string">&quot;&lt;color&gt;&quot;</span>;
+      inherits: <span class="hljs-literal">true</span>;
+      initial-value: <span class="hljs-comment">#e63946;</span>
+    }
+  &lt;/style&gt;
+  ...
+&lt;/svg&gt;
+</code></pre><p>Only Color-typed CSSVars produce <code>@property</code> declarations — plain <code>CSSVar(&#39;--width&#39;, 2)</code> does not. When the same variable name appears multiple times, the first occurrence wins.</p>
+<h2 id="color-style-block-auto-conversion">Style Block Auto-Conversion</h2>
+<p>Colors auto-convert to CSS strings when used in style blocks:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> primary = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> light = primary.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.2</span>);
+
+layer <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;main&#x27;</span>) \${
+  <span class="hljs-attr">stroke</span>: primary;
+  <span class="hljs-attr">fill</span>: light;
+}
+</code></pre><p>This outputs <code>stroke=&quot;#e63946&quot;</code> and <code>fill</code> as the lightened hex value — no <code>.css</code> property needed.</p>
+<h2 id="color-template-literals">Template Literals</h2>
+<p>Colors display as <code>Color(#hex)</code> in template literals and <code>log()</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-title function_">log</span>(c);              <span class="hljs-comment">// Color(#e63946)</span>
+<span class="hljs-title function_">log</span>(<span class="hljs-string">\`color: <span class="hljs-subst">\${c}</span>\`</span>);  <span class="hljs-comment">// color: Color(#e63946)</span>
+</code></pre><h2 id="color-roundtrip-fidelity">Roundtrip Fidelity</h2>
+<p>Standard CSS colors roundtrip exactly:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ff0000&#x27;</span>);
+<span class="hljs-title function_">log</span>(c.<span class="hljs-property">hex</span>);  <span class="hljs-comment">// #ff0000</span>
+</code></pre><h2 id="color-named-colors">Named Colors</h2>
+<p>All 148 CSS named colors are supported:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;coral&#x27;</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;dodgerblue&#x27;</span>);
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;mediumseagreen&#x27;</span>);
+</code></pre><p>Named color lookup is case-insensitive.</p>
+`;
+
+export const gradients = `<h1 id="gradients-gradients">Gradients</h1>
+<p>Gradients define SVG paint servers (<code>&lt;linearGradient&gt;</code> and <code>&lt;radialGradient&gt;</code>) that can be used as <code>fill</code> or <code>stroke</code> values on layers.</p>
+<h2 id="gradients-lineargradient">LinearGradient</h2>
+<p>Create a linear gradient with an ID and coordinates defining the gradient axis:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> fade = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;fade&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+</code></pre><p>Constructor signature: <code>LinearGradient(id, x1, y1, x2, y2)</code> — coordinates are in <code>objectBoundingBox</code> units by default (0–1 range).</p>
+<h2 id="gradients-radialgradient">RadialGradient</h2>
+<p>Create a radial gradient with an ID, center point, and radius:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> glow = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;glow&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#000000&#x27;</span>).<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0</span>));
+};
+</code></pre><p>Constructor signature: <code>RadialGradient(id, cx, cy, r)</code> — optional focal point: <code>RadialGradient(id, cx, cy, r, fx, fy)</code>.</p>
+<h2 id="gradients-trailing-block-syntax">Trailing Block Syntax</h2>
+<p>Both constructors accept a trailing block <code>{|g| ... }</code> where <code>g</code> is bound to the newly created gradient. Use <code>g.stop(offset, color)</code> inside the block to add color stops:</p>
+<ul>
+<li><strong>offset</strong> — a number from 0 to 1 (position along the gradient axis)</li>
+<li><strong>color</strong> — any Color value (<code>Color(&#39;#hex&#39;)</code>, <code>Color(&#39;named&#39;)</code>, OKLCH constructor, etc.)</li>
+</ul>
+<p>The block is optional — you can create an empty gradient and add stops later or use <code>.inherit()</code> to derive from another gradient.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> empty = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;empty&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>);
+</code></pre><h2 id="gradients-using-gradients-in-styles">Using Gradients in Styles</h2>
+<p>Reference a gradient in <code>fill</code> or <code>stroke</code> style properties. The compiler automatically wraps the gradient ID as <code>url(#id)</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> g = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;sunset&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: g; <span class="hljs-attr">stroke</span>: none; }
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">200</span> <span class="hljs-number">0</span> L <span class="hljs-number">200</span> <span class="hljs-number">200</span> L <span class="hljs-number">0</span> <span class="hljs-number">200</span> Z
+}
+</code></pre><p>This produces <code>fill=&quot;url(#sunset)&quot;</code> on the output <code>&lt;path&gt;</code> element, with a <code>&lt;linearGradient id=&quot;sunset&quot;&gt;</code> in <code>&lt;defs&gt;</code>.</p>
+<h2 id="gradients-gradient-attributes">Gradient Attributes</h2>
+<p>Set optional attributes via property assignment after creation:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> g = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;repeat-fade&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.25</span>, <span class="hljs-number">0</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+
+g.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;repeat&#x27;</span>;
+g.<span class="hljs-property">gradientUnits</span> = <span class="hljs-string">&#x27;userSpaceOnUse&#x27;</span>;
+g.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(45)&#x27;</span>;
+</code></pre><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>spreadMethod</code></td>
+<td><code>&#39;pad&#39;</code>, <code>&#39;reflect&#39;</code>, <code>&#39;repeat&#39;</code></td>
+<td><code>&#39;pad&#39;</code></td>
+</tr>
+<tr>
+<td><code>gradientUnits</code></td>
+<td><code>&#39;objectBoundingBox&#39;</code>, <code>&#39;userSpaceOnUse&#39;</code></td>
+<td><code>&#39;objectBoundingBox&#39;</code></td>
+</tr>
+<tr>
+<td><code>gradientTransform</code></td>
+<td>SVG transform string</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>interpolation</code></td>
+<td><code>&#39;srgb&#39;</code>, <code>&#39;oklch&#39;</code>, <code>&#39;linearRGB&#39;</code></td>
+<td><code>&#39;srgb&#39;</code></td>
+</tr>
+<tr>
+<td><code>steps</code></td>
+<td>Number of intermediate stops per unit offset</td>
+<td><code>10</code></td>
+</tr>
+</tbody></table>
+<h2 id="gradients-color-interpolation">Color Interpolation</h2>
+<p>Control how colors transition between stops using the <code>interpolation</code> property.</p>
+<h3 id="gradients-oklch-interpolation">OKLCh Interpolation</h3>
+<p>Set <code>interpolation = &#39;oklch&#39;</code> for perceptually uniform transitions. The compiler expands stops at compile time using OKLCh color mixing, avoiding the muddy midpoints common with sRGB interpolation:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> smooth = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;smooth&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+smooth.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+smooth.<span class="hljs-property">steps</span> = <span class="hljs-number">12</span>;  <span class="hljs-comment">// 12 intermediate stops per unit offset (default: 10)</span>
+</code></pre><p>The <code>steps</code> property controls the density of generated intermediate stops. Higher values produce smoother transitions but increase SVG output size. The compiler:</p>
+<ol>
+<li>Iterates adjacent stop pairs</li>
+<li>Generates <code>ceil(steps * offsetSpan) - 1</code> intermediate stops between each pair</li>
+<li>Uses <code>mixColors()</code> for shortest-arc hue interpolation in OKLCh space</li>
+<li>Always preserves the original stops at their exact offsets</li>
+</ol>
+<h3 id="gradients-linearrgb-interpolation">linearRGB Interpolation</h3>
+<p>Set <code>interpolation = &#39;linearRGB&#39;</code> for physically linear color transitions. This uses the native SVG <code>color-interpolation</code> attribute — no stop expansion is needed:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> physical = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;physical&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ff0000&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0000ff&#x27;</span>));
+};
+physical.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;linearRGB&#x27;</span>;
+</code></pre><p>This emits <code>color-interpolation=&quot;linearRGB&quot;</code> on the gradient element. The browser handles the interpolation natively.</p>
+<h3 id="gradients-default-srgb">Default (sRGB)</h3>
+<p>When <code>interpolation</code> is not set (or set to <code>&#39;srgb&#39;</code>), the browser&#39;s default sRGB interpolation is used. No additional attributes or stop expansion occur.</p>
+<h2 id="gradients-reactive-gradient-stops">Reactive Gradient Stops</h2>
+<p>Use <code>Color(CSSVar(...))</code> in gradient stops to create live-updating gradients that respond to CSS custom property changes:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> accent = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
+<span class="hljs-keyword">let</span> reactive = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;reactive&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, accent);            <span class="hljs-comment">// → stop-color=&quot;var(--accent, #e63946)&quot;</span>
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+</code></pre><p>The compiler preserves the <code>var()</code> reference in the <code>stop-color</code> attribute, allowing the gradient to update when the custom property changes at runtime.</p>
+<p>CSSVar stops are skipped during OKLCh expansion — since their actual color is determined at runtime, the compiler cannot interpolate them at compile time. Non-CSSVar stops adjacent to CSSVar stops will not have intermediate stops generated between them.</p>
+<h2 id="gradients-pattern-paint-server">Pattern Paint Server</h2>
+<p>Create a tiling pattern with an ID, position, and tile dimensions:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> dot = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>, <span class="hljs-number">3</span>) };
+<span class="hljs-keyword">let</span> dots = <span class="hljs-title class_">Pattern</span>(<span class="hljs-string">&#x27;dots&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">20</span>, <span class="hljs-number">20</span>) {|p|
+  p.<span class="hljs-title function_">append</span>(dot, \${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>); });
+};
+dots.<span class="hljs-property">patternUnits</span> = <span class="hljs-string">&#x27;userSpaceOnUse&#x27;</span>;
+</code></pre><p>Constructor signature: <code>Pattern(id, x, y, width, height)</code> — defines the tile origin and size.</p>
+<h3 id="gradients-pattern-methods">Pattern Methods</h3>
+<p>Use <code>.append(pathBlock, styles?)</code> inside the trailing block to add path elements to the pattern. This works the same way as <code>Mask.append()</code>:</p>
+<ul>
+<li><strong>pathBlock</strong> — a PathBlock (<code>@{ ... }</code>) or ProjectedPath</li>
+<li><strong>styles</strong> — optional style block for the path element</li>
+</ul>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> line = @{ m <span class="hljs-number">0</span> <span class="hljs-number">0</span> l <span class="hljs-number">20</span> <span class="hljs-number">20</span> };
+<span class="hljs-keyword">let</span> hatch = <span class="hljs-title class_">Pattern</span>(<span class="hljs-string">&#x27;hatch&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">20</span>, <span class="hljs-number">20</span>) {|p|
+  p.<span class="hljs-title function_">append</span>(line, \${ <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#999&#x27;</span>); stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; });
+};
+</code></pre><h3 id="gradients-pattern-properties">Pattern Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>patternUnits</code></td>
+<td><code>&#39;objectBoundingBox&#39;</code>, <code>&#39;userSpaceOnUse&#39;</code></td>
+<td><code>&#39;objectBoundingBox&#39;</code></td>
+</tr>
+<tr>
+<td><code>patternTransform</code></td>
+<td>SVG transform string</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>patternContentUnits</code></td>
+<td><code>&#39;objectBoundingBox&#39;</code>, <code>&#39;userSpaceOnUse&#39;</code></td>
+<td><code>&#39;userSpaceOnUse&#39;</code></td>
+</tr>
+</tbody></table>
+<h3 id="gradients-using-patterns-in-styles">Using Patterns in Styles</h3>
+<p>Reference a pattern in <code>fill</code> or <code>stroke</code> style properties, just like gradients:</p>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;bg&#x27;</span>) <span class="hljs-variable">\${ fill: dots; stroke: none; }</span>
+layer(<span class="hljs-string">&#x27;bg&#x27;</span>).apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
+</code></pre><p>This produces <code>fill=&quot;url(#dots)&quot;</code> on the output <code>&lt;path&gt;</code> element.</p>
+<h3 id="gradients-pattern-svg-output">Pattern SVG Output</h3>
+<pre><code class="hljs language-xml">&lt;defs&gt;
+  &lt;pattern <span class="hljs-built_in">id</span>=<span class="hljs-string">&quot;dots&quot;</span> x=<span class="hljs-string">&quot;0&quot;</span> y=<span class="hljs-string">&quot;0&quot;</span> width=<span class="hljs-string">&quot;20&quot;</span> height=<span class="hljs-string">&quot;20&quot;</span> patternUnits=<span class="hljs-string">&quot;userSpaceOnUse&quot;</span>&gt;
+    &lt;path d=<span class="hljs-string">&quot;M 7 10 A 3 3 0 0 1 13 10 A 3 3 0 0 1 7 10&quot;</span> fill=<span class="hljs-string">&quot;#e63946&quot;</span>/&gt;
+  &lt;/pattern&gt;
+&lt;/defs&gt;
+</code></pre><h2 id="gradients-conic-gradient">Conic Gradient</h2>
+<p>Create a conic (angular) gradient with an ID and center point:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> wheel = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;wheel&#x27;</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+};
+</code></pre><p>Constructor signature: <code>ConicGradient(id, cx, cy)</code> — center coordinates in user space.</p>
+<p>Conic gradients use the same <code>.stop(offset, color)</code> method as linear and radial gradients. Stops map to the angular sweep: offset 0 is the start angle, offset 1 is the end angle.</p>
+<h3 id="gradients-conic-gradient-properties">Conic Gradient Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>from</code></td>
+<td>Start angle (requires unit: <code>deg</code>, <code>rad</code>, <code>pi</code>)</td>
+<td><code>0rad</code> (3 o&#39;clock)</td>
+</tr>
+<tr>
+<td><code>to</code></td>
+<td>End angle (requires unit)</td>
+<td><code>from + 2pi</code> (full revolution)</td>
+</tr>
+<tr>
+<td><code>direction</code></td>
+<td><code>&#39;cw&#39;</code>, <code>&#39;ccw&#39;</code></td>
+<td><code>&#39;cw&#39;</code></td>
+</tr>
+<tr>
+<td><code>spread</code></td>
+<td><code>&#39;clamp&#39;</code>, <code>&#39;repeat&#39;</code>, <code>&#39;transparent&#39;</code></td>
+<td><code>&#39;clamp&#39;</code></td>
+</tr>
+<tr>
+<td><code>innerRadius</code></td>
+<td>Number (pixels)</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>innerFill</code></td>
+<td><code>&#39;transparent&#39;</code>, <code>&#39;transparent-blend&#39;</code>, <code>&#39;center&#39;</code>, or <code>Color(...)</code></td>
+<td><code>&#39;transparent&#39;</code></td>
+</tr>
+<tr>
+<td><code>interpolation</code></td>
+<td><code>&#39;srgb&#39;</code>, <code>&#39;oklch&#39;</code>, <code>&#39;linearRGB&#39;</code></td>
+<td><code>&#39;srgb&#39;</code></td>
+</tr>
+<tr>
+<td><code>steps</code></td>
+<td>Intermediate stop density</td>
+<td><code>10</code></td>
+</tr>
+</tbody></table>
+<h3 id="gradients-angle-units-required">Angle Units Required</h3>
+<p>The <code>from</code> and <code>to</code> properties <strong>require</strong> an angle unit suffix on literal numbers:</p>
+<pre><code class="hljs">gauge.<span class="hljs-property">from</span> = 135deg;     <span class="hljs-comment">// degrees → converted to radians</span>
+gauge.<span class="hljs-property">to</span> = <span class="hljs-number">2.</span>356rad;     <span class="hljs-comment">// radians (used as-is)</span>
+gauge.<span class="hljs-property">from</span> = <span class="hljs-number">0.</span>75pi;     <span class="hljs-comment">// multiples of π</span>
+
+gauge.<span class="hljs-property">from</span> = <span class="hljs-number">135</span>;        <span class="hljs-comment">// ERROR: requires angle unit. Use 135deg</span>
+</code></pre><p>Computed expressions and function results are accepted without unit checks (they are assumed to already be in radians):</p>
+<pre><code class="hljs">gauge.<span class="hljs-property">from</span> = <span class="hljs-title function_">rad</span>(<span class="hljs-number">135</span>);   <span class="hljs-comment">// OK — rad() returns radians</span>
+</code></pre><h3 id="gradients-partial-sweep">Partial Sweep</h3>
+<p>Set <code>from</code> and <code>to</code> for arcs less than (or greater than) a full revolution:</p>
+<pre><code class="hljs"><span class="hljs-comment">// Gauge: 270° arc with gap at bottom</span>
+<span class="hljs-keyword">let</span> gauge = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;gauge&#x27;</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+};
+gauge.<span class="hljs-property">from</span> = 135deg;
+gauge.<span class="hljs-property">to</span> = 405deg;
+</code></pre><h3 id="gradients-direction">Direction</h3>
+<p><code>direction</code> controls which way colors sweep within the arc:</p>
+<ul>
+<li><code>&#39;cw&#39;</code> (default) — colors flow clockwise from <code>from</code> to <code>to</code></li>
+<li><code>&#39;ccw&#39;</code> — colors flow counter-clockwise (stop offsets are reversed)</li>
+</ul>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> reversed = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;rev&#x27;</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#000&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#fff&#x27;</span>));
+};
+reversed.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
+</code></pre><h3 id="gradients-spread-modes">Spread Modes</h3>
+<p><code>spread</code> controls what happens outside the <code>[from, to]</code> arc for partial sweeps:</p>
+<table>
+<thead>
+<tr>
+<th>Spread</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&#39;clamp&#39;</code></td>
+<td>Edge colors extend to fill remaining area</td>
+</tr>
+<tr>
+<td><code>&#39;repeat&#39;</code></td>
+<td>Pattern tiles to fill remaining area</td>
+</tr>
+<tr>
+<td><code>&#39;transparent&#39;</code></td>
+<td>Outside-arc area is empty (no wedges emitted)</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-inner-radius">Inner Radius</h3>
+<p>Set <code>innerRadius</code> to create a smooth center plateau — the area within <code>innerRadius</code> pixels of the center blends smoothly into the angular sweep:</p>
+<pre><code class="hljs">gauge.innerRadius = 30;
+</code></pre><p>By default, the center area is transparent with a hard edge (a &quot;donut hole&quot;). Use <code>innerFill</code> to control what fills inside the inner radius:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&#39;transparent&#39;</code></td>
+<td>Hard cutoff — empty center (default)</td>
+</tr>
+<tr>
+<td><code>&#39;transparent-blend&#39;</code></td>
+<td>Smooth blend from transparent at center to gradient at edge</td>
+</tr>
+<tr>
+<td><code>&#39;center&#39;</code></td>
+<td>Smooth blend from first stop color at center to gradient at edge</td>
+</tr>
+<tr>
+<td><code>Color(...)</code></td>
+<td>Smooth blend from custom color at center to gradient at edge</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs">gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;        <span class="hljs-comment">// hard donut hole (default)</span>
+gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;  <span class="hljs-comment">// soft transparent fade</span>
+gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;             <span class="hljs-comment">// first-stop color, blends outward</span>
+gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a1a2e&#x27;</span>);     <span class="hljs-comment">// custom color, blends outward</span>
+</code></pre><p>This is useful for donut-style gauges and ring charts. Inner radius rendering requires WebGPU, which is only available in the playground. The CLI wedge-path renderer ignores <code>innerRadius</code> and emits a warning when it is set.</p>
+<pre><code class="hljs"><span class="hljs-comment">// Ring gauge with transparent center and partial sweep</span>
+<span class="hljs-keyword">let</span> ring = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;ring&#x27;</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+};
+ring.<span class="hljs-property">from</span> = 135deg;
+ring.<span class="hljs-property">to</span> = 405deg;
+ring.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">30</span>;
+ring.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;  <span class="hljs-comment">// donut hole</span>
+</code></pre><h3 id="gradients-rendering">Rendering</h3>
+<p>Since SVG has no native conic gradient element, the output depends on the consumer:</p>
+<ul>
+<li><strong>CLI</strong> (<code>--output-svg-file</code>): Wedge-path SVG approximation wrapped in <code>&lt;pattern&gt;</code>. Each ~1° slice is an individual <code>&lt;path&gt;</code> element with an interpolated fill color.</li>
+<li><strong>Playground</strong>: Canvas 2D <code>createConicGradient()</code> → rendered to a PNG image → injected as <code>&lt;pattern&gt;&lt;image/&gt;&lt;/pattern&gt;</code> for higher quality.</li>
+</ul>
+<p>Both approaches are referenced via <code>url(#id)</code> in <code>fill</code>/<code>stroke</code>, identical to native gradients.</p>
+<h3 id="gradients-oklch-interpolation-2">OKLCh Interpolation</h3>
+<p>Conic gradients support OKLCh interpolation via the shared <code>interpolation</code> and <code>steps</code> properties:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> smooth = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;smooth&#x27;</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+smooth.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+smooth.<span class="hljs-property">steps</span> = <span class="hljs-number">15</span>;
+</code></pre><h3 id="gradients-conic-gradient-css-variable-limitation">Conic Gradient CSS Variable Limitation</h3>
+<p>Conic gradients are rasterized at compile time (Canvas 2D in the playground, wedge-path approximation in the CLI). This means <code>Color(CSSVar(...))</code> stops in conic gradients are <strong>baked out</strong> — the fallback color is extracted and used directly in the rasterized output.</p>
+<p>Unlike linear and radial gradients, which use native SVG elements with live <code>var()</code> references, conic gradients will <strong>not</strong> update when CSS custom properties change at runtime.</p>
+<p>Unfortunately, live-updating CSS variable colors is only available in the playground at this time. The compiler emits a warning when conic gradients contain CSSVar stops.</p>
+<h3 id="gradients-conic-gradient-inheritance">Conic Gradient Inheritance</h3>
+<p>Use <code>.inherit(newId)</code> to create child conic gradients. All conic-specific properties (<code>from</code>, <code>to</code>, <code>direction</code>, <code>spread</code>, <code>innerRadius</code>, <code>innerFill</code>) propagate to the child:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> child = wheel.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;child-wheel&#x27;</span>);
+child.<span class="hljs-property">from</span> = 90deg;
+</code></pre><h2 id="gradients-gradient-inheritance">Gradient Inheritance</h2>
+<p>Create a new gradient that inherits stops and attributes from an existing one using <code>.inherit(newId)</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+};
+
+<span class="hljs-keyword">let</span> rotated = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;rotated&#x27;</span>);
+rotated.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
+</code></pre><p>The inherited gradient uses SVG&#39;s <code>href</code> attribute to reference the parent. It inherits all stops and attributes from the parent, and you can override specific attributes on the child. Inherited gradients with no stops of their own produce self-closing elements.</p>
+<h2 id="gradients-property-access">Property Access</h2>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>gradient.id</code></td>
+<td>The gradient&#39;s string ID</td>
+</tr>
+<tr>
+<td><code>gradient.spreadMethod</code></td>
+<td>Current spreadMethod or <code>undefined</code></td>
+</tr>
+<tr>
+<td><code>gradient.gradientUnits</code></td>
+<td>Current gradientUnits or <code>undefined</code></td>
+</tr>
+<tr>
+<td><code>gradient.gradientTransform</code></td>
+<td>Current gradientTransform or <code>undefined</code></td>
+</tr>
+<tr>
+<td><code>gradient.interpolation</code></td>
+<td>Current interpolation mode or <code>null</code></td>
+</tr>
+<tr>
+<td><code>gradient.steps</code></td>
+<td>Current steps value or <code>null</code></td>
+</tr>
+<tr>
+<td><code>gradient.from</code></td>
+<td>Conic: start angle in radians (default <code>0</code>)</td>
+</tr>
+<tr>
+<td><code>gradient.to</code></td>
+<td>Conic: end angle in radians (default <code>2π</code>)</td>
+</tr>
+<tr>
+<td><code>gradient.direction</code></td>
+<td>Conic: <code>&#39;cw&#39;</code> or <code>&#39;ccw&#39;</code> (default <code>&#39;cw&#39;</code>)</td>
+</tr>
+<tr>
+<td><code>gradient.spread</code></td>
+<td>Conic: spread mode (default <code>&#39;clamp&#39;</code>)</td>
+</tr>
+<tr>
+<td><code>gradient.innerRadius</code></td>
+<td>Conic: center plateau radius in pixels (default <code>0</code>)</td>
+</tr>
+<tr>
+<td><code>gradient.innerFill</code></td>
+<td>Conic: inner fill mode — <code>&#39;transparent&#39;</code>, <code>&#39;transparent-blend&#39;</code>, <code>&#39;center&#39;</code>, or Color value</td>
+</tr>
+<tr>
+<td><code>pattern.id</code></td>
+<td>The pattern&#39;s string ID</td>
+</tr>
+<tr>
+<td><code>pattern.patternUnits</code></td>
+<td>Current patternUnits or <code>null</code></td>
+</tr>
+<tr>
+<td><code>pattern.patternTransform</code></td>
+<td>Current patternTransform or <code>null</code></td>
+</tr>
+<tr>
+<td><code>pattern.patternContentUnits</code></td>
+<td>Current patternContentUnits or <code>null</code></td>
+</tr>
+</tbody></table>
+<h2 id="gradients-dynamic-stop-generation">Dynamic Stop Generation</h2>
+<p>Use loops and expressions inside the trailing block for programmatic stops:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> ramp = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;ramp&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
+  <span class="hljs-keyword">let</span> colors = [<span class="hljs-string">&#x27;#e63946&#x27;</span>, <span class="hljs-string">&#x27;#f4a261&#x27;</span>, <span class="hljs-string">&#x27;#2a9d8f&#x27;</span>, <span class="hljs-string">&#x27;#264653&#x27;</span>, <span class="hljs-string">&#x27;#e9c46a&#x27;</span>];
+  <span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> colors) {
+    g.<span class="hljs-title function_">stop</span>(<span class="hljs-title function_">calc</span>(i / <span class="hljs-number">4</span>), <span class="hljs-title class_">Color</span>(color));
+  }
+};
+</code></pre><p>Any statement valid in the language can appear inside the block — <code>for</code> loops, <code>if</code> statements, <code>let</code> bindings, function calls, etc.</p>
+<h2 id="gradients-svg-output">SVG Output</h2>
+<p>The compiler produces gradient definitions in the <code>&lt;defs&gt;</code> section:</p>
+<pre><code class="hljs language-xml">&lt;defs&gt;
+  &lt;linearGradient <span class="hljs-built_in">id</span>=<span class="hljs-string">&quot;fade&quot;</span> x1=<span class="hljs-string">&quot;0&quot;</span> y1=<span class="hljs-string">&quot;0&quot;</span> x2=<span class="hljs-string">&quot;1&quot;</span> y2=<span class="hljs-string">&quot;1&quot;</span>&gt;
+    &lt;stop offset=<span class="hljs-string">&quot;0&quot;</span> stop-color=<span class="hljs-string">&quot;rgb(89.56% 22.41% 27.51%)&quot;</span>/&gt;
+    &lt;stop offset=<span class="hljs-string">&quot;0.5&quot;</span> stop-color=<span class="hljs-string">&quot;rgb(95.69% 63.53% 38.04%)&quot;</span>/&gt;
+    &lt;stop offset=<span class="hljs-string">&quot;1&quot;</span> stop-color=<span class="hljs-string">&quot;rgb(16.47% 61.57% 56.08%)&quot;</span>/&gt;
+  &lt;/linearGradient&gt;
+&lt;/defs&gt;
+</code></pre><p>Radial gradients use the <code>&lt;radialGradient&gt;</code> tag with <code>cx</code>, <code>cy</code>, <code>r</code> (and optionally <code>fx</code>, <code>fy</code>) attributes.</p>
+<p>Inherited gradients use <code>href</code>:</p>
+<pre><code class="hljs language-xml">&lt;linearGradient <span class="hljs-built_in">id</span>=<span class="hljs-string">&quot;rotated&quot;</span> href=<span class="hljs-string">&quot;#base&quot;</span> gradientTransform=<span class="hljs-string">&quot;rotate(90, 0.5, 0.5)&quot;</span>/&gt;
+</code></pre><h2 id="gradients-output-format">Output Format</h2>
+<p>When using the JavaScript API, gradients appear in <code>result.gradients</code>:</p>
+<pre><code class="hljs language-js"><span class="hljs-keyword">const</span> result = <span class="hljs-title function_">compile</span>(<span class="hljs-string">\`
+  let g = LinearGradient(&#x27;fade&#x27;, 0, 0, 1, 1) {|g|
+    g.stop(0, Color(&#x27;#e63946&#x27;));
+    g.stop(1, Color(&#x27;#2a9d8f&#x27;));
+  };
+\`</span>);
+
+<span class="hljs-comment">// result.gradients:</span>
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   {</span>
+<span class="hljs-comment">//     id: &#x27;fade&#x27;,</span>
+<span class="hljs-comment">//     type: &#x27;linear&#x27;,</span>
+<span class="hljs-comment">//     attrs: { x1: &#x27;0&#x27;, y1: &#x27;0&#x27;, x2: &#x27;1&#x27;, y2: &#x27;1&#x27; },</span>
+<span class="hljs-comment">//     stops: [</span>
+<span class="hljs-comment">//       { offset: 0, color: &#x27;rgb(89.56% 22.41% 27.51%)&#x27; },</span>
+<span class="hljs-comment">//       { offset: 1, color: &#x27;rgb(16.47% 61.57% 56.08%)&#x27; }</span>
+<span class="hljs-comment">//     ]</span>
+<span class="hljs-comment">//   }</span>
+<span class="hljs-comment">// ]</span>
+</code></pre><h2 id="gradients-error-handling">Error Handling</h2>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Duplicate defs ID &#39;x&#39;</code></td>
+<td>ID conflicts with another gradient, mask, clipPath, or pattern</td>
+</tr>
+<tr>
+<td><code>LinearGradient() expects 5 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>RadialGradient() expects 4-6 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>ConicGradient() expects 3 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>Pattern() expects 5 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>First argument must be a string</code></td>
+<td>Non-string ID</td>
+</tr>
+<tr>
+<td><code>stop() offset must be a number</code></td>
+<td>Non-numeric stop offset</td>
+</tr>
+<tr>
+<td><code>stop() color must be a Color value</code></td>
+<td>Non-Color stop color</td>
+</tr>
+<tr>
+<td><code>requires an angle unit</code></td>
+<td>Bare number on conic <code>from</code>/<code>to</code> (use <code>135deg</code>)</td>
+</tr>
+<tr>
+<td><code>direction must be &#39;cw&#39; or &#39;ccw&#39;</code></td>
+<td>Invalid conic direction</td>
+</tr>
+<tr>
+<td><code>spread must be &#39;clamp&#39;, &#39;repeat&#39;, or &#39;transparent&#39;</code></td>
+<td>Invalid conic spread</td>
+</tr>
+<tr>
+<td><code>innerRadius must be a number</code></td>
+<td>Non-numeric innerRadius</td>
+</tr>
+<tr>
+<td><code>innerRadius must be &gt;= 0</code></td>
+<td>Negative innerRadius</td>
+</tr>
+<tr>
+<td><code>innerFill must be &#39;transparent&#39;, &#39;transparent-blend&#39;, &#39;center&#39;, or a Color value</code></td>
+<td>Invalid innerFill</td>
+</tr>
+</tbody></table>
+<h2 id="gradients-full-example">Full Example</h2>
+<pre><code class="hljs"><span class="hljs-comment">// Define a gradient palette</span>
+<span class="hljs-keyword">let</span> warm = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;warm&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
+};
+
+<span class="hljs-keyword">let</span> cool = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;cool&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+};
+
+<span class="hljs-comment">// Use in layer styles</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: warm; <span class="hljs-attr">stroke</span>: none; }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;circle&#x27;</span>) \${ <span class="hljs-attr">fill</span>: cool; <span class="hljs-attr">stroke</span>: none; }
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">200</span> <span class="hljs-number">0</span> L <span class="hljs-number">200</span> <span class="hljs-number">200</span> L <span class="hljs-number">0</span> <span class="hljs-number">200</span> Z
+}
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;circle&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">60</span>)
+}
+</code></pre><h2 id="gradients-conic-gradient-rendering">Conic Gradient Rendering</h2>
+<p>Conic gradients are rasterized to bitmap and injected as SVG <code>&lt;pattern&gt;</code> elements because SVG has no native conic gradient primitive.</p>
+<p><strong>Playground (browser):</strong> When WebGPU is available (Chrome 113+), all conic gradients render through a WGSL fragment shader. This enables <code>innerRadius</code>/<code>innerFill</code> and consistent quality. Rendered textures are cached — unchanged gradients skip re-rendering. When WebGPU is unavailable (Firefox, Safari), the playground falls back to Canvas 2D&#39;s <code>createConicGradient()</code>, which does not support <code>innerRadius</code> or <code>innerFill</code>.</p>
+<p><strong>CLI:</strong> Conic gradients render as wedge-shaped SVG paths (pure math, no GPU). The <code>innerRadius</code> and <code>innerFill</code> properties are ignored with a warning.</p>
+<h2 id="gradients-mesh-gradient">Mesh Gradient</h2>
+<p>Create a mesh gradient with an ID, dimensions, and grid size:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> mesh = <span class="hljs-title class_">MeshGradient</span>(<span class="hljs-string">&#x27;terrain&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">4</span>, <span class="hljs-number">3</span>) {|g|
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">3</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">2</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">2</span>, <span class="hljs-number">3</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+};
+</code></pre><p>Constructor signature: <code>MeshGradient(id, width, height, cols, rows)</code> — creates a <code>rows × cols</code> grid of control points evenly spaced across the given dimensions.</p>
+<ul>
+<li><code>cols</code> and <code>rows</code> must be &gt;= 2 (at least one patch)</li>
+<li>All points start transparent (<code>oklch(0 0 0 / 0)</code>)</li>
+<li>The trailing block <code>{|g| ... }</code> is optional</li>
+</ul>
+<h3 id="gradients-grid-access-methods">Grid Access Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Arguments</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>getPoint(row, col)</code></td>
+<td>row, col (numbers)</td>
+<td>MeshPoint</td>
+<td>Single control point at grid position</td>
+</tr>
+<tr>
+<td><code>getRow(row)</code></td>
+<td>row (number)</td>
+<td>Array of MeshPoints</td>
+<td>All points in a row</td>
+</tr>
+<tr>
+<td><code>getCol(col)</code></td>
+<td>col (number)</td>
+<td>Array of MeshPoints</td>
+<td>All points in a column</td>
+</tr>
+<tr>
+<td><code>colorAll(color)</code></td>
+<td>Color value</td>
+<td>—</td>
+<td>Set every point to the same color</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-meshpoint-properties">MeshPoint Properties</h3>
+<p>Each point returned by <code>getPoint</code>, <code>getRow</code>, or <code>getCol</code> has:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Read</th>
+<th>Write</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>number</td>
+</tr>
+<tr>
+<td><code>y</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>number</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>Color</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-meshpoint-methods">MeshPoint Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Arguments</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>translate(dx, dy)</code></td>
+<td>numbers</td>
+<td>Shift the point position</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-mesh-gradient-properties">Mesh Gradient Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mesh.id</code></td>
+<td>The gradient&#39;s string ID</td>
+</tr>
+<tr>
+<td><code>mesh.cols</code></td>
+<td>Number of columns</td>
+</tr>
+<tr>
+<td><code>mesh.rows</code></td>
+<td>Number of rows</td>
+</tr>
+<tr>
+<td><code>mesh.width</code></td>
+<td>Width in user-space units</td>
+</tr>
+<tr>
+<td><code>mesh.height</code></td>
+<td>Height in user-space units</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-mesh-gradient-example">Mesh Gradient Example</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> m = <span class="hljs-title class_">MeshGradient</span>(<span class="hljs-string">&#x27;heat&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">3</span>, <span class="hljs-number">3</span>) {|g|
+  <span class="hljs-comment">// Color the corners</span>
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">2</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">2</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">2</span>, <span class="hljs-number">2</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+
+  <span class="hljs-comment">// Shift a point for artistic control</span>
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">10</span>, -<span class="hljs-number">5</span>);
+  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>);
+};
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: m; <span class="hljs-attr">stroke</span>: none; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">200</span> <span class="hljs-number">0</span> L <span class="hljs-number">200</span> <span class="hljs-number">200</span> L <span class="hljs-number">0</span> <span class="hljs-number">200</span> Z
+}
+</code></pre><h3 id="gradients-rendering-2">Rendering</h3>
+<p>Mesh gradients are rasterized via WebGPU using bilinear patch interpolation. Each quad cell in the grid is rendered as a smooth color blend between its four corner points.</p>
+<ul>
+<li><strong>Playground</strong>: WebGPU shader renders each patch; the result is injected as <code>&lt;pattern&gt;&lt;image/&gt;&lt;/pattern&gt;</code>, same as conic gradients.</li>
+<li><strong>CLI</strong>: Mesh gradients are not supported in the CLI wedge-path renderer. A warning is emitted and the gradient renders as transparent.</li>
+</ul>
+<h2 id="gradients-freeform-gradient">Freeform Gradient</h2>
+<p>Create a freeform (scattered-point) gradient with an ID and dimensions:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> ff = <span class="hljs-title class_">FreeformGradient</span>(<span class="hljs-string">&#x27;glow&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">200</span>, <span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">0</span>, <span class="hljs-number">200</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
+};
+</code></pre><p>Constructor signature: <code>FreeformGradient(id, width, height)</code> — creates an empty gradient canvas. Add points with <code>.point(x, y, color)</code>.</p>
+<h3 id="gradients-methods">Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Arguments</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>point(x, y, color)</code></td>
+<td>x, y (numbers), color (Color)</td>
+<td>Add a color point at the given position</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-freeform-gradient-properties">Freeform Gradient Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ff.id</code></td>
+<td>The gradient&#39;s string ID</td>
+</tr>
+<tr>
+<td><code>ff.width</code></td>
+<td>Width in user-space units</td>
+</tr>
+<tr>
+<td><code>ff.height</code></td>
+<td>Height in user-space units</td>
+</tr>
+<tr>
+<td><code>ff.falloff</code></td>
+<td>Distance falloff exponent (default <code>2.0</code>)</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-falloff">Falloff</h3>
+<p>The <code>falloff</code> property controls how quickly colors blend with distance. Higher values create sharper boundaries around each point; lower values create smoother blends:</p>
+<pre><code class="hljs">ff.<span class="hljs-property">falloff</span> = <span class="hljs-number">1.0</span>;   <span class="hljs-comment">// very smooth, linear falloff</span>
+ff.<span class="hljs-property">falloff</span> = <span class="hljs-number">2.0</span>;   <span class="hljs-comment">// default — inverse-square (natural)</span>
+ff.<span class="hljs-property">falloff</span> = <span class="hljs-number">4.0</span>;   <span class="hljs-comment">// tight halos around each point</span>
+</code></pre><p><code>falloff</code> must be a positive number.</p>
+<h3 id="gradients-freeform-gradient-example">Freeform Gradient Example</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> nebula = <span class="hljs-title class_">FreeformGradient</span>(<span class="hljs-string">&#x27;nebula&#x27;</span>, <span class="hljs-number">300</span>, <span class="hljs-number">300</span>) {|g|
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">150</span>, <span class="hljs-number">150</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">50</span>, <span class="hljs-number">80</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">250</span>, <span class="hljs-number">80</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">80</span>, <span class="hljs-number">250</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">220</span>, <span class="hljs-number">250</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+};
+nebula.<span class="hljs-property">falloff</span> = <span class="hljs-number">3.0</span>;
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: nebula; <span class="hljs-attr">stroke</span>: none; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">300</span> <span class="hljs-number">0</span> L <span class="hljs-number">300</span> <span class="hljs-number">300</span> L <span class="hljs-number">0</span> <span class="hljs-number">300</span> Z
+}
+</code></pre><h3 id="gradients-rendering-3">Rendering</h3>
+<p>Freeform gradients are rasterized via WebGPU using inverse-distance weighted interpolation. Each pixel&#39;s color is a weighted average of all control points, where the weight is <code>1 / distance^falloff</code>.</p>
+<ul>
+<li><strong>Playground</strong>: WebGPU shader computes IDW per-pixel; the result is injected as <code>&lt;pattern&gt;&lt;image/&gt;&lt;/pattern&gt;</code>.</li>
+<li><strong>CLI</strong>: Freeform gradients are not supported in the CLI. A warning is emitted and the gradient renders as transparent.</li>
+</ul>
+<p>A warning is also emitted at compile time if a freeform gradient has fewer than 2 points.</p>
+<h3 id="gradients-error-handling-2">Error Handling</h3>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MeshGradient() expects 5 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>MeshGradient() first argument must be a string</code></td>
+<td>Non-string ID</td>
+</tr>
+<tr>
+<td><code>MeshGradient() width, height, cols, rows must be numbers</code></td>
+<td>Non-numeric dimensions</td>
+</tr>
+<tr>
+<td><code>MeshGradient() cols and rows must be &gt;= 2</code></td>
+<td>Grid too small</td>
+</tr>
+<tr>
+<td><code>FreeformGradient() expects 3 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>FreeformGradient() first argument must be a string</code></td>
+<td>Non-string ID</td>
+</tr>
+<tr>
+<td><code>FreeformGradient() width and height must be numbers</code></td>
+<td>Non-numeric dimensions</td>
+</tr>
+<tr>
+<td><code>getPoint(row, col) out of bounds</code></td>
+<td>Index outside grid</td>
+</tr>
+<tr>
+<td><code>getRow(row) out of bounds</code></td>
+<td>Row index outside grid</td>
+</tr>
+<tr>
+<td><code>getCol(col) out of bounds</code></td>
+<td>Column index outside grid</td>
+</tr>
+<tr>
+<td><code>point() expects 3 arguments (x, y, color)</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>FreeformGradient falloff must be positive</code></td>
+<td>Non-positive falloff</td>
+</tr>
+</tbody></table>
+<h2 id="gradients-topogradient">TopoGradient</h2>
+<p>Topological gradients define smooth surfaces using closed-path contours at specific elevations, like topographic map contour lines rendered as a smooth gradient. Each contour carries its own color, creating a natural mapping from shape to color.</p>
+<h3 id="gradients-constructor">Constructor</h3>
+<pre><code class="hljs">TopoGradient(<span class="hljs-built_in">id</span>, width, height)
+</code></pre><table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>string</td>
+<td>Unique gradient identifier</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>number</td>
+<td>Gradient coordinate width</td>
+</tr>
+<tr>
+<td><code>height</code></td>
+<td>number</td>
+<td>Gradient coordinate height</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-contours">Contours</h3>
+<p>Each contour defines a closed path at a specific elevation with a color. Contours are the color stops of a topological gradient — the gradient interpolates between them based on distance.</p>
+<pre><code class="hljs">g.contour(projectedPath, elevation, color)
+</code></pre><table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>projectedPath</code></td>
+<td>ProjectedPathValue</td>
+<td>Closed path from <code>.project(x, y)</code></td>
+</tr>
+<tr>
+<td><code>elevation</code></td>
+<td>number</td>
+<td>Elevation level (0–1)</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>Color</td>
+<td>Color at this elevation</td>
+</tr>
+</tbody></table>
+<p>The path must be closed (end with <code>closePath()</code>). Use <code>@{ ... }</code> path blocks with <code>.project(x, y)</code> to position contours in absolute space.</p>
+<h3 id="gradients-properties">Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Read</th>
+<th>Write</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>yes</td>
+<td>no</td>
+<td>string</td>
+<td>—</td>
+<td>Gradient ID</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>yes</td>
+<td>no</td>
+<td>number</td>
+<td>—</td>
+<td>Render width</td>
+</tr>
+<tr>
+<td><code>height</code></td>
+<td>yes</td>
+<td>no</td>
+<td>number</td>
+<td>—</td>
+<td>Render height</td>
+</tr>
+<tr>
+<td><code>easing</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>string</td>
+<td><code>&#39;linear&#39;</code></td>
+<td>Easing: <code>linear</code>, <code>smoothstep</code>, <code>ease-in</code>, <code>ease-out</code>, <code>ease-in-out</code></td>
+</tr>
+<tr>
+<td><code>interpolation</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>string</td>
+<td><code>&#39;srgb&#39;</code></td>
+<td>Color interpolation space</td>
+</tr>
+<tr>
+<td><code>method</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>string</td>
+<td><code>&#39;distance&#39;</code></td>
+<td>Solver: <code>&#39;distance&#39;</code> (SDF-based) or <code>&#39;laplace&#39;</code> (Jacobi iteration)</td>
+</tr>
+<tr>
+<td><code>iterations</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>number</td>
+<td><code>200</code></td>
+<td>Jacobi iterations for Laplace solver (range: 1–2000). Only meaningful when <code>method = &#39;laplace&#39;</code>; ignored by <code>&#39;distance&#39;</code>. Higher values produce smoother results but take longer to compute.</td>
+</tr>
+<tr>
+<td><code>baseColor</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>Color</td>
+<td>—</td>
+<td>Color outside all contours (elevation 0)</td>
+</tr>
+</tbody></table>
+<h3 id="gradients-basic-example">Basic Example</h3>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Define contour shapes</span>
+<span class="hljs-keyword">let</span> shore = @{
+  <span class="hljs-title function_">M</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+  <span class="hljs-title function_">C</span>(<span class="hljs-number">100</span>, -<span class="hljs-number">40</span>, <span class="hljs-number">250</span>, <span class="hljs-number">30</span>, <span class="hljs-number">300</span>, <span class="hljs-number">100</span>)
+  <span class="hljs-title function_">C</span>(<span class="hljs-number">270</span>, <span class="hljs-number">210</span>, <span class="hljs-number">30</span>, <span class="hljs-number">220</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+  <span class="hljs-title function_">closePath</span>()
+};
+
+<span class="hljs-keyword">let</span> peak = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">40</span>); <span class="hljs-title function_">closePath</span>() };
+
+<span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;terrain&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) {|g|
+  g.<span class="hljs-title function_">contour</span>(shore.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>), <span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
+  g.<span class="hljs-title function_">contour</span>(shore.<span class="hljs-title function_">scale</span>(<span class="hljs-number">0.7</span>, <span class="hljs-number">0.7</span>).<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">90</span>), <span class="hljs-number">0.55</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#27ae60&#x27;</span>))
+  g.<span class="hljs-title function_">contour</span>(peak.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">150</span>), <span class="hljs-number">0.8</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6e2c00&#x27;</span>))
+};
+topo.<span class="hljs-property">baseColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a5276&#x27;</span>);
+topo.<span class="hljs-property">easing</span> = <span class="hljs-string">&#x27;smoothstep&#x27;</span>;
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: topo; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+</code></pre><h3 id="gradients-programmatic-contours">Programmatic Contours</h3>
+<p>Contours can be generated procedurally using loops:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;rings&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) {|g|
+  <span class="hljs-keyword">for</span> ([level, i] <span class="hljs-keyword">in</span> [<span class="hljs-number">0.2</span>, <span class="hljs-number">0.4</span>, <span class="hljs-number">0.6</span>, <span class="hljs-number">0.8</span>]) {
+    <span class="hljs-keyword">let</span> r = <span class="hljs-title function_">calc</span>(<span class="hljs-number">150</span> - i * <span class="hljs-number">35</span>);
+    <span class="hljs-keyword">let</span> ring = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, r); <span class="hljs-title function_">closePath</span>() };
+    g.<span class="hljs-title function_">contour</span>(ring.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>), level, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#27ae60&#x27;</span>))
+  }
+};
+topo.<span class="hljs-property">baseColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a5276&#x27;</span>);
+</code></pre><h3 id="gradients-multiple-peaks-islands">Multiple Peaks / Islands</h3>
+<p>Non-nested contours at the same elevation create separate features. Each pixel&#39;s elevation is determined by its innermost containing contour.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;archipelago&#x27;</span>, <span class="hljs-number">600</span>, <span class="hljs-number">400</span>) {|g|
+  <span class="hljs-comment">// Main island</span>
+  g.<span class="hljs-title function_">contour</span>(mainIsland.<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>), <span class="hljs-number">0.35</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
+  g.<span class="hljs-title function_">contour</span>(mainPeak.<span class="hljs-title function_">project</span>(<span class="hljs-number">180</span>, <span class="hljs-number">160</span>), <span class="hljs-number">0.7</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6e2c00&#x27;</span>))
+
+  <span class="hljs-comment">// Small island (separate, not nested)</span>
+  g.<span class="hljs-title function_">contour</span>(smallIsland.<span class="hljs-title function_">project</span>(<span class="hljs-number">450</span>, <span class="hljs-number">280</span>), <span class="hljs-number">0.35</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
+  g.<span class="hljs-title function_">contour</span>(smallPeak.<span class="hljs-title function_">project</span>(<span class="hljs-number">460</span>, <span class="hljs-number">290</span>), <span class="hljs-number">0.6</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#27ae60&#x27;</span>))
+};
+topo.<span class="hljs-property">baseColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a5276&#x27;</span>);
+</code></pre><h3 id="gradients-algorithm">Algorithm</h3>
+<p>TopoGradient supports two solver methods for computing the elevation field.</p>
+<h4 id="gradients-distance-solver-method-distance">Distance Solver (<code>method = &#39;distance&#39;</code>)</h4>
+<p>The default method uses distance-based SDF (Signed Distance Field) interpolation:</p>
+<ol>
+<li><strong>Containment test</strong>: For each contour, ray-cast to determine if the pixel is inside (even-odd rule)</li>
+<li><strong>Floor elevation</strong>: Highest elevation among all contours containing the pixel</li>
+<li><strong>Ceiling elevation</strong>: Lowest elevation among contours NOT containing the pixel but above the floor</li>
+<li><strong>Distance interpolation</strong>: Compute minimum distances to floor and ceiling boundaries, interpolate elevation</li>
+<li><strong>Easing</strong>: Apply the easing function to the interpolation parameter</li>
+<li><strong>Color lookup</strong>: Sample the color ramp (built from contour colors sorted by elevation)</li>
+</ol>
+<h4 id="gradients-laplace-solver-method-laplace">Laplace Solver (<code>method = &#39;laplace&#39;</code>)</h4>
+<p>The Laplace solver computes the mathematically smoothest possible surface between contours by solving the Laplace equation ∇²h = 0 with contour pixels as boundary conditions. This produces results like a rubber sheet stretched between fixed-elevation boundaries.</p>
+<p>The solver uses Jacobi iteration: each non-boundary pixel is repeatedly replaced with the average of its 4 neighbors until the field converges. The <code>iterations</code> property controls how many passes are performed (default: 200).</p>
+<p><strong>Distance vs Laplace comparison:</strong></p>
+<ul>
+<li><strong>Distance (SDF)</strong>: Fast, uses signed distance blending with smooth transition zones. Produces concentric-like gradients that follow contour shapes. Best for: decorative gradients, radial-style effects.</li>
+<li><strong>Laplace</strong>: Solves for the harmonic function, producing physically correct potential field flow. Elevation changes smoothly around corners and between non-nested contours. Best for: terrain/height maps, natural-looking blends, multi-peak topologies.</li>
+</ul>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">80</span>); <span class="hljs-title function_">closePath</span>() };
+<span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;terrain&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) {|g|
+  g.<span class="hljs-title function_">contour</span>(s.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">150</span>), <span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2ecc71&#x27;</span>))
+  g.<span class="hljs-title function_">contour</span>(s.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">150</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>), <span class="hljs-number">0.7</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e74c3c&#x27;</span>))
+};
+topo.<span class="hljs-property">method</span> = <span class="hljs-string">&#x27;laplace&#x27;</span>;
+topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">300</span>;
+topo.<span class="hljs-property">baseColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a5276&#x27;</span>);
+</code></pre><h3 id="gradients-rendering-4">Rendering</h3>
+<p>TopoGradient is rasterized per-pixel:</p>
+<ul>
+<li><strong>Playground</strong>: WebGPU shader with SDF computation (fast); Canvas 2D fallback on Firefox/Safari (slower)</li>
+<li><strong>CLI</strong>: Warning emitted, solid-color approximation rendered</li>
+</ul>
+<h3 id="gradients-error-handling-3">Error Handling</h3>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TopoGradient() expects 3 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>TopoGradient() first argument must be a string</code></td>
+<td>Non-string ID</td>
+</tr>
+<tr>
+<td><code>TopoGradient() width and height must be numbers</code></td>
+<td>Non-numeric dimensions</td>
+</tr>
+<tr>
+<td><code>.contour() expects 3 arguments</code></td>
+<td>Wrong argument count</td>
+</tr>
+<tr>
+<td><code>.contour() first argument must be a ProjectedPathValue</code></td>
+<td>Non-projected path</td>
+</tr>
+<tr>
+<td><code>.contour() elevation must be between 0 and 1</code></td>
+<td>Out-of-range elevation</td>
+</tr>
+<tr>
+<td><code>.contour() third argument must be a Color value</code></td>
+<td>Non-Color color</td>
+</tr>
+<tr>
+<td><code>.contour() path must be closed</code></td>
+<td>Path not ending with closePath()</td>
+</tr>
+<tr>
+<td><code>TopoGradient easing must be one of: ...</code></td>
+<td>Invalid easing value</td>
+</tr>
+<tr>
+<td><code>TopoGradient iterations must be a number</code></td>
+<td>When setting iterations to a non-number</td>
+</tr>
+<tr>
+<td><code>TopoGradient iterations must be between 1 and 2000</code></td>
+<td>When iterations is out of range</td>
+</tr>
+</tbody></table>
+`;
+
+export const cssVar = `<h1 id="css-var-cssvar-type">CSSVar Type</h1>
+<p><code>CSSVar</code> creates CSS custom property references (<code>var()</code>) that can be used in style blocks. This lets SVGs generated by Pathogen be parameterized by the consuming page&#39;s CSS.</p>
+<h2 id="css-var-constructor">Constructor</h2>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> v = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>);                    <span class="hljs-comment">// no fallback</span>
+<span class="hljs-keyword">let</span> v = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>);         <span class="hljs-comment">// string fallback</span>
+<span class="hljs-keyword">let</span> v = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));  <span class="hljs-comment">// Color fallback</span>
+</code></pre><p>The variable name must start with <code>--</code>. The optional fallback can be a plain string or a <code>Color</code> value (which auto-converts to its CSS representation).</p>
+<h2 id="css-var-properties">Properties</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.var</code></td>
+<td>string</td>
+<td>The variable name (e.g. <code>--primary</code>)</td>
+</tr>
+<tr>
+<td><code>.fallback</code></td>
+<td>string or null</td>
+<td>The fallback value, or null if none</td>
+</tr>
+<tr>
+<td><code>.css</code></td>
+<td>string</td>
+<td>The full <code>var()</code> expression</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> v = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-title function_">log</span>(v.<span class="hljs-property">var</span>);       <span class="hljs-comment">// --primary</span>
+<span class="hljs-title function_">log</span>(v.<span class="hljs-property">fallback</span>);  <span class="hljs-comment">// #e63946</span>
+<span class="hljs-title function_">log</span>(v.<span class="hljs-property">css</span>);       <span class="hljs-comment">// var(--primary, #e63946)</span>
+</code></pre><h2 id="css-var-style-blocks">Style Blocks</h2>
+<p>CSSVar values auto-convert in style blocks — no <code>.css</code> needed:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> fg = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--foreground&#x27;</span>, <span class="hljs-string">&#x27;#333&#x27;</span>);
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;main&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: fg; <span class="hljs-attr">fill</span>: <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--fill&#x27;</span>, <span class="hljs-string">&#x27;none&#x27;</span>); }
+</code></pre><p>This produces <code>stroke=&quot;var(--foreground, #333)&quot;</code> and <code>fill=&quot;var(--fill, none)&quot;</code> in the SVG output.</p>
+<h2 id="css-var-composition-with-color">Composition with Color</h2>
+<p>CSSVar composes with the Color type for typed fallbacks:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> brand = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-keyword">let</span> fg = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, brand);
+<span class="hljs-comment">// fg.css → var(--primary, #e63946)</span>
+</code></pre><h2 id="css-var-display">Display</h2>
+<p><code>log()</code> displays CSSVar values in constructor form:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> v = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-title function_">log</span>(v);  <span class="hljs-comment">// CSSVar(--primary, #e63946)</span>
+
+<span class="hljs-keyword">let</span> v2 = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg&#x27;</span>);
+<span class="hljs-title function_">log</span>(v2);  <span class="hljs-comment">// CSSVar(--bg)</span>
+</code></pre><p>Template literals also use this form:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> v = <span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>);
+<span class="hljs-title function_">log</span>(<span class="hljs-string">\`color: <span class="hljs-subst">\${v}</span>\`</span>);  <span class="hljs-comment">// color: CSSVar(--primary, #e63946)</span>
+</code></pre>`;
+
+export const masks = `<h1 id="masks-masks-and-clip-paths">Masks and Clip Paths</h1>
+<p>Masks and clip paths are SVG <code>&lt;defs&gt;</code> elements that control visibility of layers. They&#39;re created with <code>Mask()</code> and <code>ClipPath()</code> constructors and referenced from layer style blocks.</p>
+<h2 id="masks-masks">Masks</h2>
+<p>A mask uses luminance to control visibility — white areas are fully visible, black areas are hidden, and gray values create partial transparency.</p>
+<h3 id="masks-creating-a-mask">Creating a Mask</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> m = <span class="hljs-title class_">Mask</span>(<span class="hljs-string">&#x27;my-mask&#x27;</span>);
+</code></pre><p>The argument is the mask&#39;s ID string. IDs must be unique across all masks and clip paths.</p>
+<h3 id="masks-appending-paths">Appending Paths</h3>
+<p>Use <code>.append(path, styles?)</code> to add path elements to the mask:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> base = @{ m <span class="hljs-number">0</span> <span class="hljs-number">0</span> l <span class="hljs-number">200</span> <span class="hljs-number">0</span> l <span class="hljs-number">0</span> <span class="hljs-number">200</span> l -<span class="hljs-number">200</span> <span class="hljs-number">0</span> z };
+<span class="hljs-keyword">let</span> hole = @{ m <span class="hljs-number">50</span> <span class="hljs-number">50</span> l <span class="hljs-number">100</span> <span class="hljs-number">0</span> l <span class="hljs-number">0</span> <span class="hljs-number">100</span> l -<span class="hljs-number">100</span> <span class="hljs-number">0</span> z };
+
+<span class="hljs-keyword">let</span> m = <span class="hljs-title class_">Mask</span>(<span class="hljs-string">&#x27;reveal&#x27;</span>);
+m.<span class="hljs-title function_">append</span>(base, \${ <span class="hljs-attr">fill</span>: white; });    <span class="hljs-comment">// visible area</span>
+m.<span class="hljs-title function_">append</span>(hole, \${ <span class="hljs-attr">fill</span>: black; });    <span class="hljs-comment">// hidden cutout</span>
+</code></pre><p>The first argument accepts either a <code>PathBlock</code> or a <code>ProjectedPath</code>. PathBlocks are automatically projected at the origin (0, 0). The optional second argument is a style block for the path element.</p>
+<h3 id="masks-using-a-mask">Using a Mask</h3>
+<p>Reference the mask from a layer&#39;s style block using the <code>.id</code> property:</p>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;art&#x27;</span>) <span class="hljs-variable">\${ mask: m.id; }</span>
+layer(<span class="hljs-string">&#x27;art&#x27;</span>).apply {
+  M 10 10 L 190 190
+}
+</code></pre><p>The <code>mask</code> property automatically wraps the ID with <code>url(#...)</code>, so <code>m.id</code> (which returns <code>&#39;reveal&#39;</code>) becomes <code>mask: url(#reveal)</code> in the output.</p>
+<h3 id="masks-full-example">Full Example</h3>
+<pre><code class="hljs"><span class="hljs-comment">// Define mask geometry</span>
+<span class="hljs-keyword">let</span> fullRect = @{ m <span class="hljs-number">0</span> <span class="hljs-number">0</span> l <span class="hljs-number">200</span> <span class="hljs-number">0</span> l <span class="hljs-number">0</span> <span class="hljs-number">200</span> l -<span class="hljs-number">200</span> <span class="hljs-number">0</span> z };
+<span class="hljs-keyword">let</span> circle = @{ m <span class="hljs-number">100</span> <span class="hljs-number">50</span> a <span class="hljs-number">50</span> <span class="hljs-number">50</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">0</span> <span class="hljs-number">100</span> a <span class="hljs-number">50</span> <span class="hljs-number">50</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">0</span> -<span class="hljs-number">100</span> };
+
+<span class="hljs-comment">// Create mask: white = visible, black = hidden</span>
+<span class="hljs-keyword">let</span> m = <span class="hljs-title class_">Mask</span>(<span class="hljs-string">&#x27;circle-reveal&#x27;</span>);
+m.<span class="hljs-title function_">append</span>(fullRect, \${ <span class="hljs-attr">fill</span>: black; });
+m.<span class="hljs-title function_">append</span>(circle, \${ <span class="hljs-attr">fill</span>: white; });
+
+<span class="hljs-comment">// Apply mask to layer</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;drawing&#x27;</span>) \${ <span class="hljs-attr">mask</span>: m.<span class="hljs-property">id</span>; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;drawing&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.20</span>) {
+    M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">10</span>)
+    L <span class="hljs-number">200</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">10</span>)
+  }
+}
+</code></pre><p>This draws horizontal lines that are only visible inside the circular mask.</p>
+<h2 id="masks-clip-paths">Clip Paths</h2>
+<p>A clip path uses geometry to clip content — anything inside the path is visible, everything outside is hidden. Unlike masks, clip paths don&#39;t use styles (they&#39;re purely geometric).</p>
+<h3 id="masks-creating-a-clip-path">Creating a Clip Path</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> c = <span class="hljs-title class_">ClipPath</span>(<span class="hljs-string">&#x27;my-clip&#x27;</span>);
+</code></pre><h3 id="masks-appending-paths-2">Appending Paths</h3>
+<p>Use <code>.append(path)</code> to add path elements. No styles parameter — clip paths are geometry-only:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> shape = @{ m <span class="hljs-number">20</span> <span class="hljs-number">20</span> l <span class="hljs-number">160</span> <span class="hljs-number">0</span> l <span class="hljs-number">0</span> <span class="hljs-number">160</span> l -<span class="hljs-number">160</span> <span class="hljs-number">0</span> z };
+<span class="hljs-keyword">let</span> c = <span class="hljs-title class_">ClipPath</span>(<span class="hljs-string">&#x27;frame&#x27;</span>);
+c.<span class="hljs-title function_">append</span>(shape);
+</code></pre><h3 id="masks-using-a-clip-path">Using a Clip Path</h3>
+<pre><code class="hljs">define PathLayer(<span class="hljs-string">&#x27;scene&#x27;</span>) <span class="hljs-variable">\${ clip-path: c.id; }</span>
+layer(<span class="hljs-string">&#x27;scene&#x27;</span>).apply {
+  M 0 0 L 200 200
+}
+</code></pre><p>Like masks, the <code>clip-path</code> property automatically wraps the ID with <code>url(#...)</code>.</p>
+<h2 id="masks-auto-wrapping">Auto-Wrapping</h2>
+<p>The following CSS properties automatically wrap bare ID strings with <code>url(#...)</code>:</p>
+<ul>
+<li><code>mask</code></li>
+<li><code>clip-path</code></li>
+<li><code>filter</code></li>
+<li><code>marker-start</code></li>
+<li><code>marker-mid</code></li>
+<li><code>marker-end</code></li>
+</ul>
+<p>If the value already starts with <code>url(</code>, it&#39;s left as-is:</p>
+<pre><code class="hljs"><span class="hljs-comment">// These produce the same output:</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;a&#x27;</span>) \${ <span class="hljs-attr">mask</span>: m.<span class="hljs-property">id</span>; }         <span class="hljs-comment">// m.id → &#x27;my-mask&#x27; → url(#my-mask)</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;b&#x27;</span>) \${ <span class="hljs-attr">mask</span>: <span class="hljs-title function_">url</span>(#my-mask); } <span class="hljs-comment">// already wrapped, left as-is</span>
+</code></pre><h2 id="masks-properties">Properties</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.id</code></td>
+<td>string</td>
+<td>The raw ID string passed to the constructor</td>
+</tr>
+</tbody></table>
+<h2 id="masks-methods">Methods</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Applies To</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.append(path, styles?)</code></td>
+<td>Mask</td>
+<td>Add a path element with optional styles</td>
+</tr>
+<tr>
+<td><code>.append(path)</code></td>
+<td>ClipPath</td>
+<td>Add a path element (no styles)</td>
+</tr>
+</tbody></table>
+<h2 id="masks-error-handling">Error Handling</h2>
+<ul>
+<li>Duplicate IDs across masks and clip paths throw an error</li>
+<li>Constructor requires exactly one string argument</li>
+<li><code>.append()</code> requires a PathBlock or ProjectedPath as the first argument</li>
+<li>Mask <code>.append()</code> requires a style block as the optional second argument</li>
+</ul>
+`;
+
+export const objects = `<h1 id="objects-objects">Objects</h1>
+<p>Objects are key-value containers for grouping related data — coordinates, configuration, metadata, or any structured values.</p>
+<h2 id="objects-object-literals">Object Literals</h2>
+<p>Create objects with curly braces and <code>key: value</code> pairs:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = {};
+<span class="hljs-keyword">let</span> point = { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">80</span> };
+<span class="hljs-keyword">let</span> config = { <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Dave&#x27;</span>, <span class="hljs-attr">age</span>: <span class="hljs-number">32</span>, <span class="hljs-attr">cats</span>: [<span class="hljs-string">&#x27;foo&#x27;</span>, <span class="hljs-string">&#x27;bar&#x27;</span>, <span class="hljs-string">&#x27;baz&#x27;</span>] };
+</code></pre><p>Keys can be identifiers or string literals. Trailing commas are allowed:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = {
+  <span class="hljs-string">&#x27;first-name&#x27;</span>: <span class="hljs-string">&#x27;Alice&#x27;</span>,
+  <span class="hljs-attr">lastName</span>: <span class="hljs-string">&#x27;Smith&#x27;</span>,
+  <span class="hljs-attr">age</span>: <span class="hljs-number">30</span>,
+};
+</code></pre><p>Objects can be nested:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> shape = {
+  <span class="hljs-attr">center</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> },
+  <span class="hljs-attr">radius</span>: <span class="hljs-number">50</span>,
+};
+</code></pre><h2 id="objects-reading-properties">Reading Properties</h2>
+<p><strong>Dot notation</strong> — for identifier keys:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> x = point.<span class="hljs-property">x</span>;       <span class="hljs-comment">// 50</span>
+<span class="hljs-keyword">let</span> r = shape.<span class="hljs-property">radius</span>;   <span class="hljs-comment">// 50</span>
+</code></pre><p><strong>Bracket notation</strong> — for any string key, including dynamic expressions:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> x = point[<span class="hljs-string">&#x27;x&#x27;</span>];     <span class="hljs-comment">// 50</span>
+
+<span class="hljs-keyword">let</span> key = <span class="hljs-string">&#x27;name&#x27;</span>;
+<span class="hljs-keyword">let</span> val = config[key];   <span class="hljs-comment">// &#x27;Dave&#x27;</span>
+</code></pre><p>Accessing a key that doesn&#39;t exist returns <code>null</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> missing = point.<span class="hljs-property">z</span>;       <span class="hljs-comment">// null</span>
+<span class="hljs-keyword">let</span> also = point[<span class="hljs-string">&#x27;nope&#x27;</span>];    <span class="hljs-comment">// null</span>
+</code></pre><p>The <code>length</code> property returns the number of keys:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> size = point.<span class="hljs-property">length</span>;  <span class="hljs-comment">// 2</span>
+</code></pre><h2 id="objects-writing-properties">Writing Properties</h2>
+<p>Use bracket notation to set or update properties:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = {};
+obj[<span class="hljs-string">&#x27;x&#x27;</span>] = <span class="hljs-number">10</span>;
+obj[<span class="hljs-string">&#x27;y&#x27;</span>] = <span class="hljs-number">20</span>;
+obj[<span class="hljs-string">&#x27;x&#x27;</span>] = <span class="hljs-number">99</span>;  <span class="hljs-comment">// overwrite</span>
+</code></pre><p>This also works for updating array elements:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> arr = [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>];
+arr[<span class="hljs-number">0</span>] = <span class="hljs-number">99</span>;  <span class="hljs-comment">// arr is now [99, 2, 3]</span>
+</code></pre><h2 id="objects-checking-key-existence">Checking Key Existence</h2>
+<p>Use <code>.has()</code> to check if a key exists:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = { <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Alice&#x27;</span> };
+<span class="hljs-keyword">if</span> (obj.<span class="hljs-title function_">has</span>(<span class="hljs-string">&#x27;name&#x27;</span>)) {
+  <span class="hljs-comment">// true</span>
+}
+<span class="hljs-keyword">if</span> (obj.<span class="hljs-title function_">has</span>(<span class="hljs-string">&#x27;age&#x27;</span>)) {
+  <span class="hljs-comment">// false</span>
+}
+</code></pre><h2 id="objects-object-namespace-functions">Object Namespace Functions</h2>
+<p>The <code>Object</code> namespace provides utility functions:</p>
+<h3 id="objects-objectkeysobj">Object.keys(obj)</h3>
+<p>Returns an array of all keys:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = { <span class="hljs-attr">a</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">b</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">c</span>: <span class="hljs-number">3</span> };
+<span class="hljs-keyword">let</span> keys = <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">keys</span>(obj);  <span class="hljs-comment">// [&#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27;]</span>
+</code></pre><h3 id="objects-objectvaluesobj">Object.values(obj)</h3>
+<p>Returns an array of all values:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> vals = <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">values</span>(obj);  <span class="hljs-comment">// [1, 2, 3]</span>
+</code></pre><h3 id="objects-objectentriesobj">Object.entries(obj)</h3>
+<p>Returns an array of <code>[key, value]</code> pairs:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> entries = <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">entries</span>(obj);  <span class="hljs-comment">// [[&#x27;a&#x27;, 1], [&#x27;b&#x27;, 2], [&#x27;c&#x27;, 3]]</span>
+</code></pre><h3 id="objects-objectdeleteobj-key">Object.delete(obj, key)</h3>
+<p>Removes a key from the object. Returns the deleted value, or <code>null</code> if the key didn&#39;t exist:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = { <span class="hljs-attr">x</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">20</span> };
+<span class="hljs-keyword">let</span> deleted = <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">delete</span>(obj, <span class="hljs-string">&#x27;x&#x27;</span>);  <span class="hljs-comment">// 10</span>
+<span class="hljs-comment">// obj is now { y: 20 }</span>
+</code></pre><h2 id="objects-iterating-over-objects">Iterating Over Objects</h2>
+<h3 id="objects-keys-only">Keys only</h3>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> obj = { <span class="hljs-attr">x</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">20</span> };
+<span class="hljs-keyword">for</span> (key <span class="hljs-keyword">in</span> obj) {
+  <span class="hljs-title function_">log</span>(key);  <span class="hljs-comment">// &#x27;x&#x27;, then &#x27;y&#x27;</span>
+}
+</code></pre><h3 id="objects-key-value-pairs">Key-value pairs</h3>
+<pre><code class="hljs"><span class="hljs-keyword">for</span> ([key, value] <span class="hljs-keyword">in</span> obj) {
+  <span class="hljs-title function_">log</span>(key, value);  <span class="hljs-comment">// &#x27;x&#x27; 10, then &#x27;y&#x27; 20</span>
+}
+</code></pre><p>This also works with <code>Object.entries()</code>:</p>
+<pre><code class="hljs"><span class="hljs-keyword">for</span> ([key, value] <span class="hljs-keyword">in</span> <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">entries</span>(obj)) {
+  <span class="hljs-title function_">log</span>(key, value);
+}
+</code></pre><h2 id="objects-reference-semantics">Reference Semantics</h2>
+<p>Objects use reference semantics (like arrays). Assigning an object to another variable shares the same underlying data:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = { <span class="hljs-attr">x</span>: <span class="hljs-number">1</span> };
+<span class="hljs-keyword">let</span> b = a;
+b[<span class="hljs-string">&#x27;x&#x27;</span>] = <span class="hljs-number">99</span>;
+<span class="hljs-title function_">log</span>(a.<span class="hljs-property">x</span>);  <span class="hljs-comment">// 99 — both a and b point to the same object</span>
+</code></pre><h2 id="objects-using-objects-with-path-commands">Using Objects with Path Commands</h2>
+<p>Objects are natural containers for coordinates and configuration:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> start = { <span class="hljs-attr">x</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">20</span> };
+<span class="hljs-keyword">let</span> end = { <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">160</span> };
+
+M start.<span class="hljs-property">x</span> start.<span class="hljs-property">y</span>
+L end.<span class="hljs-property">x</span> end.<span class="hljs-property">y</span>
+</code></pre>`;
 
 export const debug = `<h1 id="debug-debug-console">Debug &amp; Console</h1>
 <p>The playground includes debugging tools to help you understand how your code executes and inspect values during evaluation.</p>
@@ -2566,6 +4999,12 @@ export const sections = {
   stdlib,
   layers,
   pathBlocks,
+  textBlock,
+  color,
+  gradients,
+  cssVar,
+  masks,
+  objects,
   debug,
   cli,
   examples,
@@ -2749,6 +5188,51 @@ export const tocData = JSON.parse(`[
         "level": 3
       },
       {
+        "id": "syntax-booleans",
+        "title": "Booleans",
+        "level": 2
+      },
+      {
+        "id": "syntax-numeric-equivalence",
+        "title": "Numeric Equivalence",
+        "level": 3
+      },
+      {
+        "id": "syntax-display",
+        "title": "Display",
+        "level": 3
+      },
+      {
+        "id": "syntax-truthiness-2",
+        "title": "Truthiness",
+        "level": 3
+      },
+      {
+        "id": "syntax-logical-operators",
+        "title": "Logical Operators",
+        "level": 3
+      },
+      {
+        "id": "syntax-arc-flags",
+        "title": "Arc Flags",
+        "level": 3
+      },
+      {
+        "id": "syntax-enums",
+        "title": "Enums",
+        "level": 2
+      },
+      {
+        "id": "syntax-built-in-enums",
+        "title": "Built-in Enums",
+        "level": 3
+      },
+      {
+        "id": "syntax-user-defined-enums",
+        "title": "User-Defined Enums",
+        "level": 3
+      },
+      {
         "id": "syntax-points",
         "title": "Points",
         "level": 2
@@ -2804,7 +5288,7 @@ export const tocData = JSON.parse(`[
         "level": 4
       },
       {
-        "id": "syntax-display",
+        "id": "syntax-display-2",
         "title": "Display",
         "level": 3
       },
@@ -3670,6 +6154,767 @@ export const tocData = JSON.parse(`[
         "id": "path-blocks-requirements-and-behavior",
         "title": "Requirements and behavior",
         "level": 3
+      },
+      {
+        "id": "path-blocks-font-integration",
+        "title": "Font Integration",
+        "level": 2
+      },
+      {
+        "id": "path-blocks-font-directive",
+        "title": "@font Directive",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-pathblockfromglyphtext-styles",
+        "title": "PathBlock.fromGlyph(text, styles)",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-advancewidth",
+        "title": "advanceWidth",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-contours",
+        "title": "contours",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-error-cases",
+        "title": "Error cases",
+        "level": 3
+      }
+    ]
+  },
+  {
+    "key": "textBlock",
+    "title": "TextBlock",
+    "headings": [
+      {
+        "id": "text-block-quick-overview",
+        "title": "Quick Overview",
+        "level": 2
+      },
+      {
+        "id": "text-block-syntax",
+        "title": "Syntax",
+        "level": 2
+      },
+      {
+        "id": "text-block-types",
+        "title": "Types",
+        "level": 2
+      },
+      {
+        "id": "text-block-textblockvalue",
+        "title": "TextBlockValue",
+        "level": 3
+      },
+      {
+        "id": "text-block-projectedtextvalue",
+        "title": "ProjectedTextValue",
+        "level": 3
+      },
+      {
+        "id": "text-block-methods",
+        "title": "Methods",
+        "level": 2
+      },
+      {
+        "id": "text-block-textblockvalue-2",
+        "title": "TextBlockValue",
+        "level": 3
+      },
+      {
+        "id": "text-block-projectedtextvalue-2",
+        "title": "ProjectedTextValue",
+        "level": 3
+      },
+      {
+        "id": "text-block-properties",
+        "title": "Properties",
+        "level": 2
+      },
+      {
+        "id": "text-block-textblockvalue-3",
+        "title": "TextBlockValue",
+        "level": 3
+      },
+      {
+        "id": "text-block-projectedtextvalue-3",
+        "title": "ProjectedTextValue",
+        "level": 3
+      },
+      {
+        "id": "text-block-style-merging",
+        "title": "Style Merging",
+        "level": 2
+      },
+      {
+        "id": "text-block-bboxanchor-enum",
+        "title": "BBoxAnchor Enum",
+        "level": 2
+      },
+      {
+        "id": "text-block-font-metrics",
+        "title": "Font Metrics",
+        "level": 2
+      },
+      {
+        "id": "text-block-polar-projection",
+        "title": "Polar Projection",
+        "level": 2
+      },
+      {
+        "id": "text-block-intersection-detection",
+        "title": "Intersection Detection",
+        "level": 2
+      },
+      {
+        "id": "text-block-examples",
+        "title": "Examples",
+        "level": 2
+      },
+      {
+        "id": "text-block-label-placement-around-a-shape",
+        "title": "Label placement around a shape",
+        "level": 3
+      },
+      {
+        "id": "text-block-dynamic-labels-with-collision-avoidance",
+        "title": "Dynamic labels with collision avoidance",
+        "level": 3
+      }
+    ]
+  },
+  {
+    "key": "color",
+    "title": "Color Type",
+    "headings": [
+      {
+        "id": "color-color-literals",
+        "title": "Color Literals",
+        "level": 2
+      },
+      {
+        "id": "color-css-color-function-literals",
+        "title": "CSS Color Function Literals",
+        "level": 2
+      },
+      {
+        "id": "color-constructor",
+        "title": "Constructor",
+        "level": 2
+      },
+      {
+        "id": "color-properties",
+        "title": "Properties",
+        "level": 2
+      },
+      {
+        "id": "color-methods",
+        "title": "Methods",
+        "level": 2
+      },
+      {
+        "id": "color-lightness",
+        "title": "Lightness",
+        "level": 3
+      },
+      {
+        "id": "color-saturation",
+        "title": "Saturation",
+        "level": 3
+      },
+      {
+        "id": "color-alpha",
+        "title": "Alpha",
+        "level": 3
+      },
+      {
+        "id": "color-hue",
+        "title": "Hue",
+        "level": 3
+      },
+      {
+        "id": "color-mixing",
+        "title": "Mixing",
+        "level": 3
+      },
+      {
+        "id": "color-method-chaining",
+        "title": "Method Chaining",
+        "level": 3
+      },
+      {
+        "id": "color-color-harmonies",
+        "title": "Color Harmonies",
+        "level": 2
+      },
+      {
+        "id": "color-analogousangle",
+        "title": ".analogous(angle?)",
+        "level": 3
+      },
+      {
+        "id": "color-triadic",
+        "title": ".triadic()",
+        "level": 3
+      },
+      {
+        "id": "color-tetradic",
+        "title": ".tetradic()",
+        "level": 3
+      },
+      {
+        "id": "color-splitcomplementaryangle",
+        "title": ".splitComplementary(angle?)",
+        "level": 3
+      },
+      {
+        "id": "color-using-harmonies",
+        "title": "Using Harmonies",
+        "level": 3
+      },
+      {
+        "id": "color-complete-example",
+        "title": "Complete Example",
+        "level": 3
+      },
+      {
+        "id": "color-static-methods",
+        "title": "Static Methods",
+        "level": 2
+      },
+      {
+        "id": "color-colormixc1-c2-ratio",
+        "title": "Color.mix(c1, c2, ratio)",
+        "level": 3
+      },
+      {
+        "id": "color-colorpalettecolor-n",
+        "title": "Color.palette(color, n)",
+        "level": 3
+      },
+      {
+        "id": "color-colorpalettec1-c2-n",
+        "title": "Color.palette(c1, c2, n)",
+        "level": 3
+      },
+      {
+        "id": "color-colorlightdarklight-dark",
+        "title": "Color.lightDark(light, dark)",
+        "level": 3
+      },
+      {
+        "id": "color-property-declarations",
+        "title": "@property Declarations",
+        "level": 2
+      },
+      {
+        "id": "color-style-block-auto-conversion",
+        "title": "Style Block Auto-Conversion",
+        "level": 2
+      },
+      {
+        "id": "color-template-literals",
+        "title": "Template Literals",
+        "level": 2
+      },
+      {
+        "id": "color-roundtrip-fidelity",
+        "title": "Roundtrip Fidelity",
+        "level": 2
+      },
+      {
+        "id": "color-named-colors",
+        "title": "Named Colors",
+        "level": 2
+      }
+    ]
+  },
+  {
+    "key": "gradients",
+    "title": "Gradients",
+    "headings": [
+      {
+        "id": "gradients-lineargradient",
+        "title": "LinearGradient",
+        "level": 2
+      },
+      {
+        "id": "gradients-radialgradient",
+        "title": "RadialGradient",
+        "level": 2
+      },
+      {
+        "id": "gradients-trailing-block-syntax",
+        "title": "Trailing Block Syntax",
+        "level": 2
+      },
+      {
+        "id": "gradients-using-gradients-in-styles",
+        "title": "Using Gradients in Styles",
+        "level": 2
+      },
+      {
+        "id": "gradients-gradient-attributes",
+        "title": "Gradient Attributes",
+        "level": 2
+      },
+      {
+        "id": "gradients-color-interpolation",
+        "title": "Color Interpolation",
+        "level": 2
+      },
+      {
+        "id": "gradients-oklch-interpolation",
+        "title": "OKLCh Interpolation",
+        "level": 3
+      },
+      {
+        "id": "gradients-linearrgb-interpolation",
+        "title": "linearRGB Interpolation",
+        "level": 3
+      },
+      {
+        "id": "gradients-default-srgb",
+        "title": "Default (sRGB)",
+        "level": 3
+      },
+      {
+        "id": "gradients-reactive-gradient-stops",
+        "title": "Reactive Gradient Stops",
+        "level": 2
+      },
+      {
+        "id": "gradients-pattern-paint-server",
+        "title": "Pattern Paint Server",
+        "level": 2
+      },
+      {
+        "id": "gradients-pattern-methods",
+        "title": "Pattern Methods",
+        "level": 3
+      },
+      {
+        "id": "gradients-pattern-properties",
+        "title": "Pattern Properties",
+        "level": 3
+      },
+      {
+        "id": "gradients-using-patterns-in-styles",
+        "title": "Using Patterns in Styles",
+        "level": 3
+      },
+      {
+        "id": "gradients-pattern-svg-output",
+        "title": "Pattern SVG Output",
+        "level": 3
+      },
+      {
+        "id": "gradients-conic-gradient",
+        "title": "Conic Gradient",
+        "level": 2
+      },
+      {
+        "id": "gradients-conic-gradient-properties",
+        "title": "Conic Gradient Properties",
+        "level": 3
+      },
+      {
+        "id": "gradients-angle-units-required",
+        "title": "Angle Units Required",
+        "level": 3
+      },
+      {
+        "id": "gradients-partial-sweep",
+        "title": "Partial Sweep",
+        "level": 3
+      },
+      {
+        "id": "gradients-direction",
+        "title": "Direction",
+        "level": 3
+      },
+      {
+        "id": "gradients-spread-modes",
+        "title": "Spread Modes",
+        "level": 3
+      },
+      {
+        "id": "gradients-inner-radius",
+        "title": "Inner Radius",
+        "level": 3
+      },
+      {
+        "id": "gradients-rendering",
+        "title": "Rendering",
+        "level": 3
+      },
+      {
+        "id": "gradients-oklch-interpolation-2",
+        "title": "OKLCh Interpolation",
+        "level": 3
+      },
+      {
+        "id": "gradients-conic-gradient-css-variable-limitation",
+        "title": "Conic Gradient CSS Variable Limitation",
+        "level": 3
+      },
+      {
+        "id": "gradients-conic-gradient-inheritance",
+        "title": "Conic Gradient Inheritance",
+        "level": 3
+      },
+      {
+        "id": "gradients-gradient-inheritance",
+        "title": "Gradient Inheritance",
+        "level": 2
+      },
+      {
+        "id": "gradients-property-access",
+        "title": "Property Access",
+        "level": 2
+      },
+      {
+        "id": "gradients-dynamic-stop-generation",
+        "title": "Dynamic Stop Generation",
+        "level": 2
+      },
+      {
+        "id": "gradients-svg-output",
+        "title": "SVG Output",
+        "level": 2
+      },
+      {
+        "id": "gradients-output-format",
+        "title": "Output Format",
+        "level": 2
+      },
+      {
+        "id": "gradients-error-handling",
+        "title": "Error Handling",
+        "level": 2
+      },
+      {
+        "id": "gradients-full-example",
+        "title": "Full Example",
+        "level": 2
+      },
+      {
+        "id": "gradients-conic-gradient-rendering",
+        "title": "Conic Gradient Rendering",
+        "level": 2
+      },
+      {
+        "id": "gradients-mesh-gradient",
+        "title": "Mesh Gradient",
+        "level": 2
+      },
+      {
+        "id": "gradients-grid-access-methods",
+        "title": "Grid Access Methods",
+        "level": 3
+      },
+      {
+        "id": "gradients-meshpoint-properties",
+        "title": "MeshPoint Properties",
+        "level": 3
+      },
+      {
+        "id": "gradients-meshpoint-methods",
+        "title": "MeshPoint Methods",
+        "level": 3
+      },
+      {
+        "id": "gradients-mesh-gradient-properties",
+        "title": "Mesh Gradient Properties",
+        "level": 3
+      },
+      {
+        "id": "gradients-mesh-gradient-example",
+        "title": "Mesh Gradient Example",
+        "level": 3
+      },
+      {
+        "id": "gradients-rendering-2",
+        "title": "Rendering",
+        "level": 3
+      },
+      {
+        "id": "gradients-freeform-gradient",
+        "title": "Freeform Gradient",
+        "level": 2
+      },
+      {
+        "id": "gradients-methods",
+        "title": "Methods",
+        "level": 3
+      },
+      {
+        "id": "gradients-freeform-gradient-properties",
+        "title": "Freeform Gradient Properties",
+        "level": 3
+      },
+      {
+        "id": "gradients-falloff",
+        "title": "Falloff",
+        "level": 3
+      },
+      {
+        "id": "gradients-freeform-gradient-example",
+        "title": "Freeform Gradient Example",
+        "level": 3
+      },
+      {
+        "id": "gradients-rendering-3",
+        "title": "Rendering",
+        "level": 3
+      },
+      {
+        "id": "gradients-error-handling-2",
+        "title": "Error Handling",
+        "level": 3
+      },
+      {
+        "id": "gradients-topogradient",
+        "title": "TopoGradient",
+        "level": 2
+      },
+      {
+        "id": "gradients-constructor",
+        "title": "Constructor",
+        "level": 3
+      },
+      {
+        "id": "gradients-contours",
+        "title": "Contours",
+        "level": 3
+      },
+      {
+        "id": "gradients-properties",
+        "title": "Properties",
+        "level": 3
+      },
+      {
+        "id": "gradients-basic-example",
+        "title": "Basic Example",
+        "level": 3
+      },
+      {
+        "id": "gradients-programmatic-contours",
+        "title": "Programmatic Contours",
+        "level": 3
+      },
+      {
+        "id": "gradients-multiple-peaks-islands",
+        "title": "Multiple Peaks / Islands",
+        "level": 3
+      },
+      {
+        "id": "gradients-algorithm",
+        "title": "Algorithm",
+        "level": 3
+      },
+      {
+        "id": "gradients-distance-solver-method-distance",
+        "title": "Distance Solver (method = 'distance')",
+        "level": 4
+      },
+      {
+        "id": "gradients-laplace-solver-method-laplace",
+        "title": "Laplace Solver (method = 'laplace')",
+        "level": 4
+      },
+      {
+        "id": "gradients-rendering-4",
+        "title": "Rendering",
+        "level": 3
+      },
+      {
+        "id": "gradients-error-handling-3",
+        "title": "Error Handling",
+        "level": 3
+      }
+    ]
+  },
+  {
+    "key": "cssVar",
+    "title": "CSSVar Type",
+    "headings": [
+      {
+        "id": "css-var-constructor",
+        "title": "Constructor",
+        "level": 2
+      },
+      {
+        "id": "css-var-properties",
+        "title": "Properties",
+        "level": 2
+      },
+      {
+        "id": "css-var-style-blocks",
+        "title": "Style Blocks",
+        "level": 2
+      },
+      {
+        "id": "css-var-composition-with-color",
+        "title": "Composition with Color",
+        "level": 2
+      },
+      {
+        "id": "css-var-display",
+        "title": "Display",
+        "level": 2
+      }
+    ]
+  },
+  {
+    "key": "masks",
+    "title": "Masks and Clip Paths",
+    "headings": [
+      {
+        "id": "masks-masks",
+        "title": "Masks",
+        "level": 2
+      },
+      {
+        "id": "masks-creating-a-mask",
+        "title": "Creating a Mask",
+        "level": 3
+      },
+      {
+        "id": "masks-appending-paths",
+        "title": "Appending Paths",
+        "level": 3
+      },
+      {
+        "id": "masks-using-a-mask",
+        "title": "Using a Mask",
+        "level": 3
+      },
+      {
+        "id": "masks-full-example",
+        "title": "Full Example",
+        "level": 3
+      },
+      {
+        "id": "masks-clip-paths",
+        "title": "Clip Paths",
+        "level": 2
+      },
+      {
+        "id": "masks-creating-a-clip-path",
+        "title": "Creating a Clip Path",
+        "level": 3
+      },
+      {
+        "id": "masks-appending-paths-2",
+        "title": "Appending Paths",
+        "level": 3
+      },
+      {
+        "id": "masks-using-a-clip-path",
+        "title": "Using a Clip Path",
+        "level": 3
+      },
+      {
+        "id": "masks-auto-wrapping",
+        "title": "Auto-Wrapping",
+        "level": 2
+      },
+      {
+        "id": "masks-properties",
+        "title": "Properties",
+        "level": 2
+      },
+      {
+        "id": "masks-methods",
+        "title": "Methods",
+        "level": 2
+      },
+      {
+        "id": "masks-error-handling",
+        "title": "Error Handling",
+        "level": 2
+      }
+    ]
+  },
+  {
+    "key": "objects",
+    "title": "Objects",
+    "headings": [
+      {
+        "id": "objects-object-literals",
+        "title": "Object Literals",
+        "level": 2
+      },
+      {
+        "id": "objects-reading-properties",
+        "title": "Reading Properties",
+        "level": 2
+      },
+      {
+        "id": "objects-writing-properties",
+        "title": "Writing Properties",
+        "level": 2
+      },
+      {
+        "id": "objects-checking-key-existence",
+        "title": "Checking Key Existence",
+        "level": 2
+      },
+      {
+        "id": "objects-object-namespace-functions",
+        "title": "Object Namespace Functions",
+        "level": 2
+      },
+      {
+        "id": "objects-objectkeysobj",
+        "title": "Object.keys(obj)",
+        "level": 3
+      },
+      {
+        "id": "objects-objectvaluesobj",
+        "title": "Object.values(obj)",
+        "level": 3
+      },
+      {
+        "id": "objects-objectentriesobj",
+        "title": "Object.entries(obj)",
+        "level": 3
+      },
+      {
+        "id": "objects-objectdeleteobj-key",
+        "title": "Object.delete(obj, key)",
+        "level": 3
+      },
+      {
+        "id": "objects-iterating-over-objects",
+        "title": "Iterating Over Objects",
+        "level": 2
+      },
+      {
+        "id": "objects-keys-only",
+        "title": "Keys only",
+        "level": 3
+      },
+      {
+        "id": "objects-key-value-pairs",
+        "title": "Key-value pairs",
+        "level": 3
+      },
+      {
+        "id": "objects-reference-semantics",
+        "title": "Reference Semantics",
+        "level": 2
+      },
+      {
+        "id": "objects-using-objects-with-path-commands",
+        "title": "Using Objects with Path Commands",
+        "level": 2
       }
     ]
   },
