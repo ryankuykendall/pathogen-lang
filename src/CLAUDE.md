@@ -114,6 +114,8 @@ svg-path-extended -e <code>        Compile inline code
 svg-path-extended --src=<file>     Compile a file (explicit flag)
 
 --annotated                        Output annotated/debug format with comments
+--print-logs                       Print log() output to stderr
+--log-file=<file>                  Write structured log data as JSON to file
 --to-fixed=<N>                     Round decimals to N digits (0-20)
 --output-svg-file=<file>           Output as complete SVG file
 -o, --output <file>                Write path output to file

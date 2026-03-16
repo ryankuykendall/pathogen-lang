@@ -37,7 +37,7 @@ describe('CLI', () => {
 
   afterAll(() => {
     // Cleanup tmp files
-    const files = ['test-input.svgx', 'test-output.txt', 'test-output.svg'];
+    const files = ['test-input.svgx', 'test-output.txt', 'test-output.svg', 'test-logs.json'];
     for (const file of files) {
       const path = join(TMP_DIR, file);
       if (existsSync(path)) {
@@ -278,6 +278,71 @@ describe('CLI', () => {
       expect(result.stdout).toContain('M 0 10');
       expect(result.stdout).toContain('M 10 0');
       expect(result.stdout).toContain('M 10 10');
+    });
+  });
+
+  describe('--print-logs', () => {
+    it('prints log output to stderr', () => {
+      const result = runCli(['-e', 'let x = 42; log(x); M x 0', '--print-logs']);
+      expect(result.stderr).toContain('x = 42');
+      // Path data still goes to stdout
+      expect(result.stdout.trim()).toBe('M 42 0');
+    });
+
+    it('prints multiple log entries', () => {
+      const result = runCli(['-e', 'log("hello"); log("world"); M 0 0', '--print-logs']);
+      expect(result.stderr).toContain('hello');
+      expect(result.stderr).toContain('world');
+    });
+
+    it('includes line numbers in log output', () => {
+      const result = runCli(['-e', 'log("test"); M 0 0', '--print-logs']);
+      expect(result.stderr).toMatch(/\[line \d+\]/);
+    });
+
+    it('produces no stderr log output without --print-logs', () => {
+      const result = runCli(['-e', 'log("secret"); M 0 0']);
+      expect(result.stderr).not.toContain('secret');
+    });
+  });
+
+  describe('--log-file', () => {
+    const logFile = join(TMP_DIR, 'test-logs.json');
+
+    beforeEach(() => {
+      if (existsSync(logFile)) unlinkSync(logFile);
+    });
+
+    it('writes structured JSON log file', () => {
+      runCli(['-e', 'let x = 42; log(x); M x 0', `--log-file=${logFile}`]);
+      expect(existsSync(logFile)).toBe(true);
+      const content = JSON.parse(readFileSync(logFile, 'utf-8'));
+      expect(Array.isArray(content)).toBe(true);
+      expect(content.length).toBe(1);
+      expect(content[0].parts[0].value).toBe('42');
+      expect(content[0].parts[0].label).toBe('x');
+      expect(content[0].parts[0].type).toBe('value');
+    });
+
+    it('writes empty array when no logs', () => {
+      runCli(['-e', 'M 0 0', `--log-file=${logFile}`]);
+      expect(existsSync(logFile)).toBe(true);
+      const content = JSON.parse(readFileSync(logFile, 'utf-8'));
+      expect(content).toEqual([]);
+    });
+
+    it('includes line numbers in JSON', () => {
+      runCli(['-e', 'log("test"); M 0 0', `--log-file=${logFile}`]);
+      const content = JSON.parse(readFileSync(logFile, 'utf-8'));
+      expect(content[0].line).toBeTypeOf('number');
+    });
+
+    it('works combined with --print-logs', () => {
+      const result = runCli(['-e', 'log("both"); M 0 0', '--print-logs', `--log-file=${logFile}`]);
+      expect(result.stderr).toContain('both');
+      expect(existsSync(logFile)).toBe(true);
+      const content = JSON.parse(readFileSync(logFile, 'utf-8'));
+      expect(content[0].parts[0].value).toBe('both');
     });
   });
 

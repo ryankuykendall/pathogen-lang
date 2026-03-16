@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype } from '.';
 import { renderConicToWedges } from './conic-renderer';
 
-import type { CompileResult, CompileOptions, FontRegistry } from '.';
+import type { CompileResult, CompileOptions, FontRegistry, LogEntry } from '.';
 
 interface CliOptions {
   svgOutput?: string;
@@ -20,6 +20,8 @@ interface CliOptions {
   toFixed?: number;
   renderGpu?: boolean;
   scale?: number;
+  printLogs?: boolean;
+  logFile?: string;
 }
 
 function printUsage() {
@@ -46,6 +48,8 @@ Options:
   --fill=<color>                 Path fill color (default: "none")
   --stroke-width=<w>             Path stroke width (default: "2")
   --to-fixed=<N>                 Round decimals to N digits (0-20)
+  --print-logs                   Print log() output to stderr
+  --log-file=<file>              Write structured log data as JSON to file
   --render-gpu                   Use headless browser for GPU gradient rendering
   --scale=<N>                    GPU render resolution multiplier (1-4, default: 2)
 
@@ -364,6 +368,18 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
       continue;
     }
 
+    if (arg === '--print-logs') {
+      options.printLogs = true;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('--log-file=')) {
+      options.logFile = arg.split('=').slice(1).join('=');
+      i++;
+      continue;
+    }
+
     if (arg === '--render-gpu') {
       options.renderGpu = true;
       i++;
@@ -634,6 +650,26 @@ function getSystemFontDirs(): string[] {
   }
 }
 
+function formatLogEntry(entry: LogEntry): string {
+  const parts = entry.parts.map((p) => {
+    if (p.type === 'value' && p.label) return `${p.label} = ${p.value}`;
+    return p.value;
+  });
+  const msg = parts.join(' ');
+  return entry.line != null ? `[line ${entry.line}] ${msg}` : msg;
+}
+
+function outputLogs(logs: LogEntry[], options: CliOptions): void {
+  if (options.printLogs && logs.length > 0) {
+    for (const entry of logs) {
+      process.stderr.write(formatLogEntry(entry) + '\n');
+    }
+  }
+  if (options.logFile) {
+    writeFileSync(options.logFile, JSON.stringify(logs, null, 2));
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -665,6 +701,7 @@ async function main() {
       ...(fontRegistry ? { fonts: fontRegistry } : {}),
     };
     const result = compile(source, Object.keys(compileOptions).length > 0 ? compileOptions : undefined);
+    outputLogs(result.logs, options);
     const defaultPath = result.layers[0]?.data ?? '';
 
     // Output as SVG file

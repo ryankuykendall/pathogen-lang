@@ -63,6 +63,52 @@ svg-path-extended --src=input.svgx --output-svg-file=output.svg
 
 This creates a ready-to-use SVG file that can be opened in any browser or image viewer.
 
+## Log Output
+
+Pathogen programs can use `log()` to produce diagnostic output. By default, the CLI discards log entries. Two flags expose them:
+
+### Print to stderr
+
+```bash
+svg-path-extended -e 'let x = 42; log(x); M x 0' --print-logs
+```
+
+Output on stderr:
+```
+[line 1] x = 42
+```
+
+The path data still goes to stdout, so logs don't interfere with piping:
+
+```bash
+svg-path-extended -e 'log("hello"); circle(50, 50, 25)' --print-logs > output.txt
+```
+
+### Write structured JSON
+
+```bash
+svg-path-extended --src=input.pathogen --log-file=logs.json
+```
+
+This writes the full `LogEntry[]` array with line numbers and typed parts:
+
+```json
+[
+  {
+    "line": 3,
+    "parts": [
+      { "type": "value", "label": "x", "value": "42" }
+    ]
+  }
+]
+```
+
+Both flags can be combined:
+
+```bash
+svg-path-extended --src=debug.pathogen --print-logs --log-file=logs.json --output-svg-file=out.svg
+```
+
 ## Annotated Output
 
 Use `--annotated` to get a human-readable debug output that shows:
