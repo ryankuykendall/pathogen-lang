@@ -1286,20 +1286,29 @@ function segmentCrossings(pt: Point, cmd: TransformCmd): number {
   return lineCrossing(pt, cmd.start, cmd.end);
 }
 
+/**
+ * Winding number contribution from a line segment, using the Dan Sunday algorithm.
+ * Uses asymmetric endpoint convention (start-inclusive, end-exclusive for upward;
+ * start-exclusive, end-inclusive for downward) to ensure each vertex crossing
+ * is counted exactly once, even when the query y-line passes through vertices.
+ */
 function lineCrossing(pt: Point, p0: Point, p1: Point): number {
   const y0 = p0.y - pt.y, y1 = p1.y - pt.y;
-  if (y0 * y1 > 0) return 0; // both above or both below
-  if (y0 === 0 && y1 === 0) return 0; // horizontal
 
-  // Intersection with horizontal ray at pt.y going right
-  const t = y0 / (y0 - y1);
-  if (t < 0 || t >= 1) return 0;
-  const x = p0.x + t * (p1.x - p0.x);
-  if (x <= pt.x) return 0;
-
-  // Determine crossing direction
-  if (y0 < 0 && y1 >= 0) return 1;   // upward crossing
-  if (y0 >= 0 && y1 < 0) return -1;  // downward crossing
+  if (y0 <= 0) {
+    if (y1 > 0) {
+      // Upward crossing candidate: p0 is on or below, p1 is strictly above
+      // Check if pt is to the left of the directed edge p0→p1 (isLeft test)
+      const cross = (p1.x - p0.x) * (-y0) - (pt.x - p0.x) * (p1.y - p0.y);
+      if (cross > 0) return 1;
+    }
+  } else {
+    if (y1 <= 0) {
+      // Downward crossing candidate: p0 is strictly above, p1 is on or below
+      const cross = (p1.x - p0.x) * (-y0) - (pt.x - p0.x) * (p1.y - p0.y);
+      if (cross < 0) return -1;
+    }
+  }
   return 0;
 }
 
@@ -1441,104 +1450,383 @@ function reverseCmd(cmd: TransformCmd): TransformCmd {
   return { command: 'l', args: [e.x - s.x, e.y - s.y], start: s, end: e };
 }
 
+// ─── Ring-Based Assembly (Weiler-Atherton style) ────────────────────────────
+
+interface RingEntry {
+  cmd: TransformCmd;
+  action: 'keep' | 'gap' | 'degenerate';
+}
+
+interface KeptRun {
+  cmds: TransformCmd[];
+  entryPoint: Point;   // start of first cmd
+  exitPoint: Point;    // end of last cmd
+  isComplete: boolean; // true if entire ring is kept (no gaps)
+  source: 'A' | 'B';
+}
+
+/** Compute the tangent direction at the end of a segment (t=1). */
+function tangentAtEnd(cmd: TransformCmd): Point {
+  const u = cmd.command.toLowerCase();
+  if (u === 'q') {
+    const [dx1, dy1] = cmd.args;
+    const cp = { x: cmd.start.x + dx1, y: cmd.start.y + dy1 };
+    const tx = cmd.end.x - cp.x, ty = cmd.end.y - cp.y;
+    const len = Math.sqrt(tx * tx + ty * ty);
+    return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+  }
+  if (u === 'c') {
+    const [, , dx2, dy2] = cmd.args;
+    const cp2 = { x: cmd.start.x + dx2, y: cmd.start.y + dy2 };
+    const tx = cmd.end.x - cp2.x, ty = cmd.end.y - cp2.y;
+    const len = Math.sqrt(tx * tx + ty * ty);
+    return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+  }
+  const tx = cmd.end.x - cmd.start.x, ty = cmd.end.y - cmd.start.y;
+  const len = Math.sqrt(tx * tx + ty * ty);
+  return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+}
+
+/** Compute the tangent direction at the start of a segment (t=0). */
+function tangentAtStart(cmd: TransformCmd): Point {
+  const u = cmd.command.toLowerCase();
+  if (u === 'q') {
+    const [dx1, dy1] = cmd.args;
+    const cp = { x: cmd.start.x + dx1, y: cmd.start.y + dy1 };
+    const tx = cp.x - cmd.start.x, ty = cp.y - cmd.start.y;
+    const len = Math.sqrt(tx * tx + ty * ty);
+    return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+  }
+  if (u === 'c') {
+    const [dx1, dy1] = cmd.args;
+    const cp1 = { x: cmd.start.x + dx1, y: cmd.start.y + dy1 };
+    const tx = cp1.x - cmd.start.x, ty = cp1.y - cmd.start.y;
+    const len = Math.sqrt(tx * tx + ty * ty);
+    return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+  }
+  const tx = cmd.end.x - cmd.start.x, ty = cmd.end.y - cmd.start.y;
+  const len = Math.sqrt(tx * tx + ty * ty);
+  return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+}
+
 /**
- * Assemble the result path from classified segments.
- * Returns one or more subpaths (each ending with z).
+ * Build ordered rings from split segments, grouped by subpath.
+ * Each ring is an ordered array of entries with keep/gap/degenerate classification.
+ * For difference-B, rings are reversed so traversal follows the correct winding.
+ */
+function buildRings(
+  splits: SplitSegment[], classes: SegmentClass[],
+  op: BooleanOp, source: 'A' | 'B',
+): RingEntry[][] {
+  const reverseB = source === 'B' && op === 'difference';
+
+  // Determine keep/gap per segment
+  const entries: { cmd: TransformCmd; action: 'keep' | 'gap' | 'degenerate' }[] = [];
+  for (let i = 0; i < splits.length; i++) {
+    const cls = classes[i];
+    let keep: boolean;
+    if (source === 'A') {
+      const sel = selectSegments(cls, 'outside', op);
+      keep = sel.keepA;
+    } else {
+      const sel = selectSegments('outside', cls, op);
+      keep = sel.keepB;
+    }
+    const cmd = splits[i].cmd;
+    const degenerate = ptEq(cmd.start, cmd.end);
+    entries.push({
+      cmd,
+      action: degenerate ? 'degenerate' : (keep ? 'keep' : 'gap'),
+    });
+  }
+
+  // Group into subpath rings by endpoint discontinuity
+  const rings: RingEntry[][] = [];
+  let currentRing: RingEntry[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    currentRing.push(entries[i]);
+    const isLast = i === entries.length - 1;
+    const nextDiscontinuous = !isLast && !ptEq(entries[i].cmd.end, entries[i + 1].cmd.start);
+    if (isLast || nextDiscontinuous) {
+      rings.push(currentRing);
+      currentRing = [];
+    }
+  }
+
+  // For difference-B: reverse each ring and each segment
+  if (reverseB) {
+    for (let r = 0; r < rings.length; r++) {
+      rings[r] = rings[r].reverse().map(entry => ({
+        ...entry,
+        cmd: reverseCmd(entry.cmd),
+      }));
+    }
+  }
+
+  return rings;
+}
+
+/**
+ * Extract maximal contiguous runs of kept (non-degenerate) entries from a ring.
+ * Handles wraparound: starts iteration from the first gap so a run spanning
+ * the ring boundary is captured as one contiguous run.
+ */
+function extractKeptRuns(ring: RingEntry[], source: 'A' | 'B'): KeptRun[] {
+  // Check if the entire ring is kept (no gaps)
+  const hasGap = ring.some(e => e.action === 'gap');
+  if (!hasGap) {
+    // All kept or degenerate — emit as one complete run
+    const cmds = ring.filter(e => e.action === 'keep').map(e => e.cmd);
+    if (cmds.length === 0) return [];
+    return [{
+      cmds,
+      entryPoint: cmds[0].start,
+      exitPoint: cmds[cmds.length - 1].end,
+      isComplete: true,
+      source,
+    }];
+  }
+
+  // Find the first gap to start iteration (so runs spanning the boundary are merged)
+  let firstGap = -1;
+  for (let i = 0; i < ring.length; i++) {
+    if (ring[i].action === 'gap') { firstGap = i; break; }
+  }
+
+  const runs: KeptRun[] = [];
+  let currentCmds: TransformCmd[] = [];
+
+  for (let offset = 1; offset <= ring.length; offset++) {
+    const idx = (firstGap + offset) % ring.length;
+    const entry = ring[idx];
+
+    if (entry.action === 'keep') {
+      currentCmds.push(entry.cmd);
+    } else {
+      // gap or degenerate — flush current run if non-empty
+      if (entry.action === 'gap' && currentCmds.length > 0) {
+        runs.push({
+          cmds: currentCmds,
+          entryPoint: currentCmds[0].start,
+          exitPoint: currentCmds[currentCmds.length - 1].end,
+          isComplete: false,
+          source,
+        });
+        currentCmds = [];
+      }
+      // degenerate entries are skipped but don't break runs
+    }
+  }
+  // Flush any remaining run
+  if (currentCmds.length > 0) {
+    runs.push({
+      cmds: currentCmds,
+      entryPoint: currentCmds[0].start,
+      exitPoint: currentCmds[currentCmds.length - 1].end,
+      isComplete: false,
+      source,
+    });
+  }
+
+  return runs;
+}
+
+/**
+ * Build intersection links: map each run's exit point to the matching run's
+ * entry point on the other path. At intersection points, multiple segment
+ * endpoints converge — use tangent dot product to pick smoothest continuation
+ * when there are multiple candidates.
+ */
+function buildIntersectionLinks(
+  runsA: KeptRun[], runsB: KeptRun[],
+): Map<KeptRun, KeptRun> {
+  const LINK_TOL = GEOMETRIC_EPSILON * 1000;
+  const links = new Map<KeptRun, KeptRun>();
+
+  function findBestEntry(
+    exitPoint: Point, exitCmd: TransformCmd,
+    candidates: KeptRun[],
+  ): KeptRun | null {
+    // Find all runs whose entry is within tolerance
+    const matches: { run: KeptRun; d: number }[] = [];
+    for (const run of candidates) {
+      const d = dist(exitPoint, run.entryPoint);
+      if (d < LINK_TOL) {
+        matches.push({ run, d });
+      }
+    }
+    if (matches.length === 0) return null;
+    if (matches.length === 1) return matches[0].run;
+
+    // Multiple candidates — use tangent alignment for smoothest continuation
+    const exitTan = tangentAtEnd(exitCmd);
+    let best: KeptRun | null = null;
+    let bestDot = -Infinity;
+    for (const m of matches) {
+      const entryTan = tangentAtStart(m.run.cmds[0]);
+      const dot = exitTan.x * entryTan.x + exitTan.y * entryTan.y;
+      if (dot > bestDot) {
+        bestDot = dot;
+        best = m.run;
+      }
+    }
+    return best;
+  }
+
+  // Link A exits → B entries
+  for (const aRun of runsA) {
+    if (aRun.isComplete) continue;
+    const exitCmd = aRun.cmds[aRun.cmds.length - 1];
+    const match = findBestEntry(aRun.exitPoint, exitCmd, runsB);
+    if (match) links.set(aRun, match);
+  }
+
+  // Link B exits → A entries
+  for (const bRun of runsB) {
+    if (bRun.isComplete) continue;
+    const exitCmd = bRun.cmds[bRun.cmds.length - 1];
+    const match = findBestEntry(bRun.exitPoint, exitCmd, runsA);
+    if (match) links.set(bRun, match);
+  }
+
+  // Fallback: for any unlinked run, find the nearest unlinked entry on the
+  // other path. This handles collinear shared boundary edges where the gap
+  // endpoints from each path don't coincide (e.g., two paths sharing a
+  // boundary segment at y=-42 where both sides classify it as "gap").
+  const linkedTargets = new Set(links.values());
+  for (const aRun of runsA) {
+    if (aRun.isComplete || links.has(aRun)) continue;
+    let bestRun: KeptRun | null = null;
+    let bestDist = Infinity;
+    for (const bRun of runsB) {
+      if (linkedTargets.has(bRun)) continue;
+      const d = dist(aRun.exitPoint, bRun.entryPoint);
+      if (d < bestDist) { bestDist = d; bestRun = bRun; }
+    }
+    if (bestRun) { links.set(aRun, bestRun); linkedTargets.add(bestRun); }
+  }
+  for (const bRun of runsB) {
+    if (bRun.isComplete || links.has(bRun)) continue;
+    let bestRun: KeptRun | null = null;
+    let bestDist = Infinity;
+    for (const aRun of runsA) {
+      if (linkedTargets.has(aRun)) continue;
+      const d = dist(bRun.exitPoint, aRun.entryPoint);
+      if (d < bestDist) { bestDist = d; bestRun = aRun; }
+    }
+    if (bestRun) { links.set(bRun, bestRun); linkedTargets.add(bestRun); }
+  }
+
+  return links;
+}
+
+/**
+ * Trace closed contours by following kept runs and intersection links.
+ * Complete rings (no gaps) are emitted directly. Partial runs are chained
+ * via links: A-run → B-run → A-run → ... until the contour closes.
+ */
+function traceContours(
+  allRuns: KeptRun[], links: Map<KeptRun, KeptRun>,
+): TransformCmd[][] {
+  const visited = new Set<KeptRun>();
+  const contours: TransformCmd[][] = [];
+
+  for (const run of allRuns) {
+    if (visited.has(run)) continue;
+
+    if (run.isComplete) {
+      // Standalone contour — emit directly
+      visited.add(run);
+      contours.push([...run.cmds]);
+      continue;
+    }
+
+    // Trace through links
+    const contour: TransformCmd[] = [];
+    let current: KeptRun | undefined = run;
+    while (current && !visited.has(current)) {
+      visited.add(current);
+      // Bridge gap between previous run's exit and this run's entry
+      if (contour.length > 0) {
+        const prevEnd = contour[contour.length - 1].end;
+        const nextStart = current.cmds[0].start;
+        if (!ptEq(prevEnd, nextStart)) {
+          // Insert connecting line segment for shared boundary gaps
+          contour.push({
+            command: 'l',
+            args: [nextStart.x - prevEnd.x, nextStart.y - prevEnd.y],
+            start: { ...prevEnd },
+            end: { ...nextStart },
+          });
+        }
+      }
+      for (const cmd of current.cmds) {
+        contour.push(cmd);
+      }
+      current = links.get(current);
+    }
+
+    if (contour.length > 0) {
+      contours.push(contour);
+    }
+  }
+
+  return contours;
+}
+
+/**
+ * Assemble the result path from classified segments using ring-based traversal.
+ * Replaces greedy endpoint matching with Weiler-Atherton style ordered traversal
+ * that uses explicit intersection links between path rings.
  */
 function assembleResult(
   splitsA: SplitSegment[], classesA: SegmentClass[],
   splitsB: SplitSegment[], classesB: SegmentClass[],
   op: BooleanOp,
 ): TransformCmd[] {
-  // Collect segments to include
-  const keptCmds: TransformCmd[] = [];
+  // Step 1: Build ordered rings
+  const ringsA = buildRings(splitsA, classesA, op, 'A');
+  const ringsB = buildRings(splitsB, classesB, op, 'B');
 
-  for (let i = 0; i < splitsA.length; i++) {
-    const sel = selectSegments(classesA[i], 'outside', op);
-    if (sel.keepA) {
-      const cmd = sel.reverseA ? reverseCmd(splitsA[i].cmd) : { ...splitsA[i].cmd };
-      keptCmds.push(cmd);
-    }
+  // Step 2: Extract kept runs from each ring
+  const allRunsA: KeptRun[] = [];
+  const allRunsB: KeptRun[] = [];
+  for (const ring of ringsA) {
+    allRunsA.push(...extractKeptRuns(ring, 'A'));
+  }
+  for (const ring of ringsB) {
+    allRunsB.push(...extractKeptRuns(ring, 'B'));
   }
 
-  for (let i = 0; i < splitsB.length; i++) {
-    const sel = selectSegments('outside', classesB[i], op);
-    if (sel.keepB) {
-      const cmd = sel.reverseB ? reverseCmd(splitsB[i].cmd) : { ...splitsB[i].cmd };
-      keptCmds.push(cmd);
-    }
-  }
+  const allRuns = [...allRunsA, ...allRunsB];
+  if (allRuns.length === 0) return [];
 
-  if (keptCmds.length === 0) return [];
+  // Step 3: Build intersection links between runs
+  const nonCompleteA = allRunsA.filter(r => !r.isComplete);
+  const nonCompleteB = allRunsB.filter(r => !r.isComplete);
+  const links = buildIntersectionLinks(nonCompleteA, nonCompleteB);
 
-  // Chain segments into subpaths by connecting endpoints
-  return chainSegments(keptCmds);
-}
+  // Step 4: Trace contours
+  const contours = traceContours(allRuns, links);
 
-function chainSegments(cmds: TransformCmd[]): TransformCmd[] {
-  if (cmds.length === 0) return [];
-
-  const used = new Array(cmds.length).fill(false);
+  // Step 5: Emit output with m/z wrapping
   const result: TransformCmd[] = [];
-
-  // Repeatedly find chains
-  while (true) {
-    // Find an unused segment to start a chain
-    let startIdx = -1;
-    for (let i = 0; i < cmds.length; i++) {
-      if (!used[i]) { startIdx = i; break; }
-    }
-    if (startIdx === -1) break;
-
-    const chain: TransformCmd[] = [];
-    let current = startIdx;
-    used[current] = true;
-    chain.push(cmds[current]);
-
-    // Try to extend the chain
-    let searching = true;
-    while (searching) {
-      searching = false;
-      const tail = chain[chain.length - 1].end;
-      let bestIdx = -1;
-      let bestDist = GEOMETRIC_EPSILON * 100;
-
-      for (let i = 0; i < cmds.length; i++) {
-        if (used[i]) continue;
-        const d = dist(tail, cmds[i].start);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIdx = i;
-        }
-      }
-
-      if (bestIdx !== -1) {
-        used[bestIdx] = true;
-        // Fix up start point to ensure continuity
-        const fixedCmd = { ...cmds[bestIdx], start: { ...chain[chain.length - 1].end } };
-        // Adjust args for the start shift
-        const fixedArgs = adjustArgsForStart(cmds[bestIdx], fixedCmd.start);
-        fixedCmd.args = fixedArgs;
-        chain.push(fixedCmd);
-        searching = true;
-      }
-    }
-
-    // Emit moveTo + chain + closePath
-    const first = chain[0];
+  for (const contour of contours) {
+    if (contour.length === 0) continue;
+    const first = contour[0];
+    // MoveTo
     result.push({
       command: 'm',
       args: [first.start.x, first.start.y],
       start: { x: 0, y: 0 },
       end: { ...first.start },
     });
-
-    for (const cmd of chain) {
+    // Draw commands
+    for (const cmd of contour) {
       result.push(cmd);
     }
-
-    // Close the path
-    const last = chain[chain.length - 1];
+    // ClosePath
+    const last = contour[contour.length - 1];
     result.push({
       command: 'z',
       args: [],
@@ -1614,6 +1902,23 @@ function validateClosedPath(cmds: TransformCmd[], label: string): void {
   }
 }
 
+/** Split a command array into per-subpath groups.
+ *  Splits after each 'z' command, since PathBlock commands may not include
+ *  explicit 'm' commands between subpaths. Each resulting subpath ends with 'z'. */
+function splitCmdsIntoSubpaths(cmds: TransformCmd[]): TransformCmd[][] {
+  const subpaths: TransformCmd[][] = [];
+  let current: TransformCmd[] = [];
+  for (const cmd of cmds) {
+    current.push(cmd);
+    if (cmd.command.toLowerCase() === 'z') {
+      subpaths.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) subpaths.push(current);
+  return subpaths;
+}
+
 /** Extract just the drawing commands (no move, no close) for intersection work. */
 function extractDrawCmds(cmds: TransformCmd[]): TransformCmd[] {
   const result: TransformCmd[] = [];
@@ -1637,22 +1942,31 @@ function extractDrawCmds(cmds: TransformCmd[]): TransformCmd[] {
   return result;
 }
 
-/** Reconstruct full path commands including 'z' closings from draw commands. */
+/** Reconstruct full path commands including 'z' closings from draw commands.
+ *  Handles multi-subpath inputs by detecting endpoint discontinuities and
+ *  closing each subpath individually. */
 function includeClosingSegment(cmds: TransformCmd[]): TransformCmd[] {
-  const result = [...cmds];
-  // If the path doesn't have an explicit z, add one
-  if (result.length > 0) {
-    const last = result[result.length - 1];
-    if (last.command.toLowerCase() !== 'z') {
-      const first = result[0];
-      if (!ptEq(last.end, first.start)) {
+  if (cmds.length === 0) return [];
+  const result: TransformCmd[] = [];
+  let subpathStartIdx = 0;
+
+  for (let i = 0; i < cmds.length; i++) {
+    result.push(cmds[i]);
+    const isLast = i === cmds.length - 1;
+    const isSubpathEnd = isLast || !ptEq(cmds[i].end, cmds[i + 1].start);
+
+    if (isSubpathEnd) {
+      const first = cmds[subpathStartIdx];
+      const current = cmds[i];
+      if (!ptEq(current.end, first.start)) {
         result.push({
           command: 'l',
-          args: [first.start.x - last.end.x, first.start.y - last.end.y],
-          start: { ...last.end },
+          args: [first.start.x - current.end.x, first.start.y - current.end.y],
+          start: { ...current.end },
           end: { ...first.start },
         });
       }
+      subpathStartIdx = i + 1;
     }
   }
   return result;
@@ -1742,6 +2056,15 @@ function handleNoIntersections(
 }
 
 function reverseEntirePath(cmds: TransformCmd[]): TransformCmd[] {
+  const subpaths = splitCmdsIntoSubpaths(cmds);
+  const result: TransformCmd[] = [];
+  for (const subpath of subpaths) {
+    result.push(...reverseSingleSubpath(subpath));
+  }
+  return result;
+}
+
+function reverseSingleSubpath(cmds: TransformCmd[]): TransformCmd[] {
   const drawCmds = extractDrawCmds(cmds);
   if (drawCmds.length === 0) return [];
 
@@ -1776,6 +2099,8 @@ function reverseEntirePath(cmds: TransformCmd[]): TransformCmd[] {
 /**
  * Compute the union of two closed SVG paths.
  * The result contains the area covered by either path.
+ * Multi-subpath inputs (e.g. glyphs with counters) are passed through intact —
+ * booleanOp preserves winding-based holes via includeClosingSegment.
  */
 export function pathUnion(cmdsA: TransformCmd[], cmdsB: TransformCmd[]): TransformCmd[] {
   return booleanOp(cmdsA, cmdsB, 'union');
@@ -1784,6 +2109,8 @@ export function pathUnion(cmdsA: TransformCmd[], cmdsB: TransformCmd[]): Transfo
 /**
  * Compute the difference of two closed SVG paths (A minus B).
  * The result contains the area of A that is not covered by B.
+ * Multi-subpath B (e.g. glyphs with counters) is handled as a unit so that
+ * inner holes are preserved via reverseEntirePath's per-subpath reversal.
  */
 export function pathDifference(cmdsA: TransformCmd[], cmdsB: TransformCmd[]): TransformCmd[] {
   return booleanOp(cmdsA, cmdsB, 'difference');
