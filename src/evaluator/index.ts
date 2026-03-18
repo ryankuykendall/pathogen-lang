@@ -50,8 +50,9 @@ import {
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
-import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints } from './font-metrics';
+import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints, resolveFontFamily, resolveFontWeight, resolveEffectiveFontSize } from './font-metrics';
 import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
+import { normalizeCodeText, tokenizeLine, getTokenColor } from './code-snippet';
 
 import type { PathContext, TransformState } from './context';
 import type { OKLCH } from '../color';
@@ -592,6 +593,104 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
     start: { x: cmd.start.x + originX, y: cmd.start.y + originY },
     end: { x: cmd.end.x + originX, y: cmd.end.y + originY },
   }));
+}
+
+/**
+ * Generate the GroupLayer, PathLayer (bg), and TextLayer (code) for toCodeSnippetBlock().
+ */
+function generateCodeSnippetLayers(
+  name: string,
+  codeLines: string[],
+  fontSize: number,
+  padding: number,
+  evalState: EvaluationState,
+): { groupLayer: GroupLayerState; bgLayer: PathLayerState; codeLayer: TextLayerState } {
+  const lineHeight = fontSize * 1.6;
+  const charWidth = fontSize * 0.6; // monospace approximation
+
+  // Measure max line width
+  let maxLineLen = 0;
+  for (const line of codeLines) {
+    if (line.length > maxLineLen) maxLineLen = line.length;
+  }
+
+  const bgWidth = maxLineLen * charWidth + 2 * padding;
+  const bgHeight = codeLines.length * lineHeight + 2 * padding;
+
+  // Create background PathLayer with roundRect
+  const bgName = `${name}-bg`;
+  const bgLayerState: PathLayerState = {
+    name: bgName,
+    layerType: 'PathLayer',
+    isDefault: false,
+    styles: { fill: '#1e293b', stroke: '#334155', 'stroke-width': '1' },
+    pathContext: createPathContext(),
+    accum: [],
+    transformState: createTransformState(),
+  };
+  // Generate roundRect path
+  const r = 6;
+  const rr = Math.min(r, bgWidth / 2, bgHeight / 2);
+  const rrPath = `M ${rr} 0 L ${bgWidth - rr} 0 Q ${bgWidth} 0 ${bgWidth} ${rr} L ${bgWidth} ${bgHeight - rr} Q ${bgWidth} ${bgHeight} ${bgWidth - rr} ${bgHeight} L ${rr} ${bgHeight} Q 0 ${bgHeight} 0 ${bgHeight - rr} L 0 ${rr} Q 0 0 ${rr} 0 Z`;
+  bgLayerState.accum.push(rrPath);
+
+  // Create code TextLayer with tokenized text
+  const codeName = `${name}-code`;
+  const codeLayerState: TextLayerState = {
+    name: codeName,
+    layerType: 'TextLayer',
+    isDefault: false,
+    styles: { 'font-family': 'monospace', 'font-size': String(fontSize) },
+    textElements: [],
+  };
+
+  for (let i = 0; i < codeLines.length; i++) {
+    const line = codeLines[i];
+    // Measure leading whitespace and convert to x-offset (SVG collapses whitespace in text)
+    const leadingMatch = line.match(/^( *)/);
+    const leadingSpaces = leadingMatch ? leadingMatch[1].length : 0;
+    const trimmedLine = line.slice(leadingSpaces);
+    const indentOffset = leadingSpaces * charWidth;
+
+    const tokens = tokenizeLine(trimmedLine);
+    const children: TextChild[] = [];
+    for (const token of tokens) {
+      const color = getTokenColor(token.type);
+      children.push({
+        type: 'tspan',
+        text: token.value,
+        styles: { fill: color },
+      });
+    }
+    // If line is empty, add a single space run so the element exists
+    if (children.length === 0) {
+      children.push({ type: 'run', text: ' ' });
+    }
+    codeLayerState.textElements.push({
+      x: padding + indentOffset,
+      y: padding + i * lineHeight + fontSize,
+      children,
+    });
+  }
+
+  // Create GroupLayer containing both
+  const groupLayer: GroupLayerState = {
+    name,
+    layerType: 'GroupLayer',
+    isDefault: false as const,
+    styles: {},
+    transformState: createTransformState(),
+    children: [bgName, codeName],
+  };
+
+  // Register all layers
+  evalState.layers.set(bgName, bgLayerState);
+  evalState.layers.set(codeName, codeLayerState);
+  evalState.layers.set(name, groupLayer);
+  evalState.layerOrder.push(name);
+  // Don't push children to layerOrder — they're children of the group
+
+  return { groupLayer, bgLayer: bgLayerState, codeLayer: codeLayerState };
 }
 
 /**
@@ -2573,6 +2672,119 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           styles: { ...obj.styles },
           origin: { x: dtX, y: dtY },
         };
+      }
+      case 'toPathBlock': {
+        if (expr.args.length !== 0) throw mError('toPathBlock() expects 0 arguments');
+        const fontRegistry = scope.evalState?.fontRegistry;
+        if (!fontRegistry) {
+          throw mError('toPathBlock() requires fonts to be loaded — use @font directive or pass fonts in compile options');
+        }
+
+        const allCommands: PathBlockCommand[] = [];
+        for (const el of obj.elements) {
+          const mergedStyles = el.styles ? { ...obj.styles, ...el.styles } : { ...obj.styles };
+          let cursorX = el.x;
+          let cursorY = el.y;
+
+          for (const child of el.children) {
+            let childStyles = mergedStyles;
+            let text: string;
+            if (child.type === 'tspan') {
+              if (child.dx !== undefined) cursorX += child.dx;
+              if (child.dy !== undefined) cursorY += child.dy;
+              childStyles = child.styles ? { ...mergedStyles, ...child.styles } : mergedStyles;
+              text = child.text;
+            } else {
+              text = child.text;
+            }
+
+            const fontFamily = resolveFontFamily(childStyles);
+            const fontWeight = resolveFontWeight(childStyles) ?? 400;
+            const fontSize = resolveEffectiveFontSize(childStyles);
+            const letterSpacing = parseFloat(childStyles['letter-spacing'] ?? '0') || 0;
+
+            if (!fontFamily) {
+              throw mError('toPathBlock() requires font-family to be set in styles');
+            }
+            const fontData = getFont(fontRegistry, fontFamily, fontWeight);
+            if (!fontData) {
+              const available = Array.from(fontRegistry.fonts.keys()).join(', ');
+              throw mError(`toPathBlock() font '${fontFamily}' not loaded. Available: ${available || 'none'}`);
+            }
+
+            for (const char of text) {
+              if (char === ' ' || char === '\t') {
+                // Space: advance cursor without generating outline commands
+                const { advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+                cursorX += advanceWidth + letterSpacing;
+                continue;
+              }
+              const { commands: glyphCmds, advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+              // Offset glyph commands by cursor position
+              for (const cmd of glyphCmds) {
+                allCommands.push({
+                  command: cmd.command,
+                  args: [...cmd.args],
+                  start: { x: cmd.start.x + cursorX, y: cmd.start.y + cursorY },
+                  end: { x: cmd.end.x + cursorX, y: cmd.end.y + cursorY },
+                });
+              }
+              cursorX += advanceWidth + letterSpacing;
+            }
+          }
+        }
+
+        return buildPathBlockFromCommands(allCommands, { x: 0, y: 0 });
+      }
+      case 'toCodeSnippetBlock': {
+        if (expr.args.length < 1 || expr.args.length > 3) throw mError('toCodeSnippetBlock() expects 1-3 arguments (name [, fontSize, padding])');
+        if (!scope.evalState) throw mError('toCodeSnippetBlock() requires evaluation context');
+        const snippetName = evaluateExpression(expr.args[0], scope);
+        if (typeof snippetName !== 'string') throw mError('toCodeSnippetBlock() name must be a string');
+
+        let snippetFontSize = 10;
+        if (expr.args.length >= 2) {
+          const fsVal = evaluateExpression(expr.args[1], scope);
+          if (typeof fsVal !== 'number') throw mError('toCodeSnippetBlock() fontSize must be a number');
+          snippetFontSize = fsVal;
+        }
+        let snippetPadding = 12;
+        if (expr.args.length >= 3) {
+          const padVal = evaluateExpression(expr.args[2], scope);
+          if (typeof padVal !== 'number') throw mError('toCodeSnippetBlock() padding must be a number');
+          snippetPadding = padVal;
+        }
+
+        // Check for layer name collision
+        if (scope.evalState.layers.has(snippetName)) {
+          throw mError(`toCodeSnippetBlock() layer name '${snippetName}' already exists`);
+        }
+        if (scope.evalState.layers.has(`${snippetName}-bg`)) {
+          throw mError(`toCodeSnippetBlock() layer name '${snippetName}-bg' already exists`);
+        }
+        if (scope.evalState.layers.has(`${snippetName}-code`)) {
+          throw mError(`toCodeSnippetBlock() layer name '${snippetName}-code' already exists`);
+        }
+
+        // Extract all text content from the TextBlock
+        const textParts: string[] = [];
+        for (const el of obj.elements) {
+          for (const child of el.children) {
+            textParts.push(child.text);
+          }
+        }
+        const rawCode = textParts.join('');
+
+        // Normalize: dedent, trim blank leading/trailing lines, tabs → 2 spaces
+        const normalized = normalizeCodeText(rawCode);
+        const codeLines = normalized.split('\n');
+
+        // Tokenize and generate layers
+        const { groupLayer } = generateCodeSnippetLayers(
+          snippetName, codeLines, snippetFontSize, snippetPadding, scope.evalState,
+        );
+
+        return { type: 'LayerReference', layer: groupLayer };
       }
       default:
         throw mError(`Unknown TextBlock method: ${expr.method}`);

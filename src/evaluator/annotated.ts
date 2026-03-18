@@ -1676,6 +1676,20 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           origin: { x: targetX, y: targetY },
         };
       }
+      case 'toPathBlock': {
+        // In annotated mode, return an empty PathBlock (no font registry available)
+        return {
+          type: 'PathBlockValue' as const,
+          commands: [],
+          pathStrings: [],
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: 0, y: 0 },
+        };
+      }
+      case 'toCodeSnippetBlock': {
+        // In annotated mode, return a dummy LayerReference
+        return { type: 'LayerReference' } as Value;
+      }
       default:
         throw mError(`Unknown TextBlock method: ${expr.method}`);
     }

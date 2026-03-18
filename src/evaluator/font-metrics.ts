@@ -166,7 +166,7 @@ function isBold(styles: Record<string, string>): boolean {
 /**
  * Resolve font-family from a styles map (first family in comma-separated list).
  */
-function resolveFontFamily(styles: Record<string, string>): string | undefined {
+export function resolveFontFamily(styles: Record<string, string>): string | undefined {
   const raw = styles['font-family'];
   if (!raw) return undefined;
   // Extract first family name, stripping quotes
@@ -177,7 +177,7 @@ function resolveFontFamily(styles: Record<string, string>): string | undefined {
 /**
  * Resolve font-weight as a number from styles.
  */
-function resolveFontWeight(styles: Record<string, string>): number | undefined {
+export function resolveFontWeight(styles: Record<string, string>): number | undefined {
   const w = styles['font-weight'];
   if (!w) return undefined;
   if (w === 'bold' || w === 'bolder') return 700;

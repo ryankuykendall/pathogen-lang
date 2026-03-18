@@ -1,0 +1,132 @@
+// viewBox="0 0 800 500"
+// TextBlock.toCodeSnippetBlock() — syntax-highlighted code snippet generation
+
+// --- Palette ---
+
+let c_bg     = Color('#0f172a');
+let c_text   = Color('#e2e8f0');
+let c_muted  = Color('#64748b');
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: c_bg; stroke: none; };
+bg.apply { rect(0, 0, 800, 500) }
+
+// ═══════════════════════════════════════
+// Snippet 1: Shapes with control flow
+// ═══════════════════════════════════════
+
+let code1 = &{
+  text(0, 0)`// Shape construction with boolean ops
+let r1 = rect(0, 0, 80, 60);
+let r2 = rect(20, 20, 80, 60);
+
+let projA = r1.project(50, 50);
+let projB = r2.project(50, 50);
+
+if (mode == "union") {
+  let result = projA.union(projB);
+  result.draw();
+} else {
+  let result = projA.difference(projB);
+  result.draw();
+}`
+};
+
+let snippet1 = code1.toCodeSnippetBlock('snippet1', 10, 14);
+snippet1 << ${ translate-x: 30; translate-y: 70; };
+
+// ═══════════════════════════════════════
+// Snippet 2: Loop and polar math
+// ═══════════════════════════════════════
+
+let code2 = &{
+  text(0, 0)`// Polar point placement
+for (i in 0..8) {
+  let angle = calc(i * 45);
+  let r = 60;
+  let x = calc(cx + r * cos(angle));
+  let y = calc(cy + r * sin(angle));
+  if (i == 0) {
+    M x y
+  } else {
+    L x y
+  }
+}`
+};
+
+let snippet2 = code2.toCodeSnippetBlock('snippet2', 11, 16);
+snippet2 << ${ translate-x: 420; translate-y: 70; };
+
+// ═══════════════════════════════════════
+// Snippet 3: Layer setup
+// ═══════════════════════════════════════
+
+let code3 = &{
+  text(0, 0)`// Multi-layer diagram setup
+let shape = rect(0, 0, 120, 80);
+let placed = shape.project(40, 40);
+
+for (i in 0..3) {
+  let offset = calc(i * 30);
+  let scaled = placed.scale(0.8, 0.8);
+  scaled.drawTo(offset, offset);
+}
+
+// Measure and log
+let bb = placed.boundingBox();
+log(bb.width, bb.height);`
+};
+
+let snippet3 = code3.toCodeSnippetBlock('snippet3', 10, 14);
+snippet3 << ${ translate-x: 30; translate-y: 310; };
+
+// ═══════════════════════════════════════
+// Snippet 4: Glyph layout with nesting
+// ═══════════════════════════════════════
+
+let code4 = &{
+  text(0, 0)`// Glyph layout with collision check
+let glyphs = PathBlock.fromGlyph("HELLO", styles);
+let placed = [];
+
+for (g in glyphs) {
+  let proj = g.project(cursor, baseline);
+  let ok = true;
+  for (prev in placed) {
+    if (proj.intersects(prev)) {
+      ok = false;
+    }
+  }
+  if (ok) {
+    proj.draw();
+    placed.push(proj);
+  }
+  cursor = calc(cursor + g.advanceWidth);
+}`
+};
+
+let snippet4 = code4.toCodeSnippetBlock('snippet4', 10, 14);
+snippet4 << ${ translate-x: 420; translate-y: 290; };
+
+// ═══════════════════════════════════════
+// Labels
+// ═══════════════════════════════════════
+
+let labels = TextLayer('labels') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
+labels.apply {
+  text(30, 62)`Snippet 1 — if/else blocks, default params`
+  text(420, 62)`Snippet 2 — nested if inside for, custom size`
+  text(30, 302)`Snippet 3 — for loop with transforms`
+  text(420, 282)`Snippet 4 — nested loops + conditionals`
+}
+
+// ═══════════════════════════════════════
+// Title
+// ═══════════════════════════════════════
+
+let title = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 15; fill: c_text; text-anchor: start; };
+title.apply { text(30, 30)`TextBlock.toCodeSnippetBlock() — Syntax-Highlighted Code Snippets` }
+
+let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: c_muted; text-anchor: start; };
+subtitle.apply { text(30, 45)`Auto-generated GroupLayer with dark background, rounded corners, and Pathogen-aware token coloring` }

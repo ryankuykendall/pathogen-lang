@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBWP: to-code-snippet-block-demo — textblock-new-methods</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #1e1e2e;
+        color: #cdd6f4;
+        font-family: system-ui, sans-serif;
+      }
+      .header {
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #313244;
+      }
+      .header h1 {
+        font-size: 1rem;
+        color: #89b4fa;
+        margin-bottom: 0.25rem;
+      }
+      .header p {
+        font-size: 0.75rem;
+        color: #a6adc8;
+      }
+      .svg-container {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .svg-container svg {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>to-code-snippet-block-demo</h1>
+      <p>
+        Roadmap: textblock-new-methods | Generated: 2026-03-18 13:51:34 | string-based (no GPU) | viewBox: 0 0 800 500
+      </p>
+    </div>
+    <div class="svg-container">
+      <!-- prettier-ignore -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+
+  <path d="M 0 0 L 800 0 L 800 500 L 0 500 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g transform="translate(30, 70)">
+    <path d="M 6 0 L 256 0 Q 262 0 262 6 L 262 246 Q 262 252 256 252 L 6 252 Q 0 252 0 246 L 0 6 Q 0 0 6 0 Z" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="14" y="24" font-family="monospace" font-size="10"><tspan fill="#64748b">// Shape construction with boolean ops</tspan></text>
+    <text x="14" y="40" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r1</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">rect</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">0</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">0</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">80</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">60</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="56" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r2</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">rect</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">20</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">20</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">80</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">60</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="72" font-family="monospace" font-size="10"> </text>
+    <text x="14" y="88" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">projA</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r1</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">project</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">50</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">50</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="104" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">projB</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r2</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">project</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">50</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">50</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="120" font-family="monospace" font-size="10"> </text>
+    <text x="14" y="136" font-family="monospace" font-size="10"><tspan fill="#c084fc">if</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">mode</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">==</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#22c55e">&quot;union&quot;</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="26" y="152" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">result</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">projA</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">union</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">projB</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="168" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">result</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">draw</tspan><tspan fill="#64748b">(</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="184" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">else</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="26" y="200" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">result</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">projA</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">difference</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">projB</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="216" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">result</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">draw</tspan><tspan fill="#64748b">(</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="232" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan></text>
+  </g>
+  <g transform="translate(420, 70)">
+    <path d="M 6 0 L 263.6 0 Q 269.6 0 269.6 6 L 269.6 237.20000000000002 Q 269.6 243.20000000000002 263.6 243.20000000000002 L 6 243.20000000000002 Q 0 243.20000000000002 0 237.20000000000002 L 0 6 Q 0 0 6 0 Z" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="16" y="27" font-family="monospace" font-size="11"><tspan fill="#64748b">// Polar point placement</tspan></text>
+    <text x="16" y="44.6" font-family="monospace" font-size="11"><tspan fill="#c084fc">for</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">i</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">in</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">0.</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">8</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="29.2" y="62.2" font-family="monospace" font-size="11"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">angle</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">calc</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">i</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">*</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">45</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="29.2" y="79.80000000000001" font-family="monospace" font-size="11"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">60</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="29.2" y="97.4" font-family="monospace" font-size="11"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">x</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">calc</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">cx</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">+</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">*</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">cos</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">angle</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="29.2" y="115" font-family="monospace" font-size="11"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">y</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">calc</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">cy</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">+</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">r</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">*</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">sin</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">angle</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="29.2" y="132.60000000000002" font-family="monospace" font-size="11"><tspan fill="#c084fc">if</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">i</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">==</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">0</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="42.4" y="150.20000000000002" font-family="monospace" font-size="11"><tspan fill="#e2e8f0">M</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">x</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">y</tspan></text>
+    <text x="29.2" y="167.8" font-family="monospace" font-size="11"><tspan fill="#64748b">}</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">else</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="42.4" y="185.4" font-family="monospace" font-size="11"><tspan fill="#e2e8f0">L</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">x</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">y</tspan></text>
+    <text x="29.2" y="203" font-family="monospace" font-size="11"><tspan fill="#64748b">}</tspan></text>
+    <text x="16" y="220.60000000000002" font-family="monospace" font-size="11"><tspan fill="#64748b">}</tspan></text>
+  </g>
+  <g transform="translate(30, 310)">
+    <path d="M 6 0 L 250 0 Q 256 0 256 6 L 256 230 Q 256 236 250 236 L 6 236 Q 0 236 0 230 L 0 6 Q 0 0 6 0 Z" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="14" y="24" font-family="monospace" font-size="10"><tspan fill="#64748b">// Multi-layer diagram setup</tspan></text>
+    <text x="14" y="40" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">shape</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">rect</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">0</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">0</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">120</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">80</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="56" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">placed</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">shape</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">project</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">40</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">40</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="72" font-family="monospace" font-size="10"> </text>
+    <text x="14" y="88" font-family="monospace" font-size="10"><tspan fill="#c084fc">for</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">i</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">in</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">0.</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">3</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="26" y="104" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">offset</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">calc</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">i</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">*</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">30</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="120" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">scaled</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">placed</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">scale</tspan><tspan fill="#64748b">(</tspan><tspan fill="#f59e0b">0.8</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#f59e0b">0.8</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="136" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">scaled</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">drawTo</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">offset</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">offset</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="152" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan></text>
+    <text x="14" y="168" font-family="monospace" font-size="10"> </text>
+    <text x="14" y="184" font-family="monospace" font-size="10"><tspan fill="#64748b">// Measure and log</tspan></text>
+    <text x="14" y="200" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">bb</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">placed</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">boundingBox</tspan><tspan fill="#64748b">(</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="216" font-family="monospace" font-size="10"><tspan fill="#c084fc">log</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">bb</tspan><tspan fill="#64748b">.</tspan><tspan fill="#e2e8f0">width</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">bb</tspan><tspan fill="#64748b">.</tspan><tspan fill="#e2e8f0">height</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+  </g>
+  <g transform="translate(420, 290)">
+    <path d="M 6 0 L 322 0 Q 328 0 328 6 L 328 310 Q 328 316 322 316 L 6 316 Q 0 316 0 310 L 0 6 Q 0 0 6 0 Z" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="14" y="24" font-family="monospace" font-size="10"><tspan fill="#64748b">// Glyph layout with collision check</tspan></text>
+    <text x="14" y="40" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">glyphs</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">PathBlock</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">fromGlyph</tspan><tspan fill="#64748b">(</tspan><tspan fill="#22c55e">&quot;HELLO&quot;</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">styles</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="56" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">placed</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">[</tspan><tspan fill="#64748b">]</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="72" font-family="monospace" font-size="10"> </text>
+    <text x="14" y="88" font-family="monospace" font-size="10"><tspan fill="#c084fc">for</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">g</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">in</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">glyphs</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="26" y="104" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">proj</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">g</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">project</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">cursor</tspan><tspan fill="#64748b">,</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">baseline</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="120" font-family="monospace" font-size="10"><tspan fill="#c084fc">let</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">ok</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">true</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="136" font-family="monospace" font-size="10"><tspan fill="#c084fc">for</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">prev</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">in</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">placed</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="38" y="152" font-family="monospace" font-size="10"><tspan fill="#c084fc">if</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">proj</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">intersects</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">prev</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="50" y="168" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">ok</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">false</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="38" y="184" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan></text>
+    <text x="26" y="200" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan></text>
+    <text x="26" y="216" font-family="monospace" font-size="10"><tspan fill="#c084fc">if</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">ok</tspan><tspan fill="#64748b">)</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#64748b">{</tspan></text>
+    <text x="38" y="232" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">proj</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">draw</tspan><tspan fill="#64748b">(</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="38" y="248" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">placed</tspan><tspan fill="#64748b">.</tspan><tspan fill="#f59e0b">push</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">proj</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="26" y="264" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan></text>
+    <text x="26" y="280" font-family="monospace" font-size="10"><tspan fill="#e2e8f0">cursor</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">=</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#c084fc">calc</tspan><tspan fill="#64748b">(</tspan><tspan fill="#e2e8f0">cursor</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#94a3b8">+</tspan><tspan fill="#e2e8f0"> </tspan><tspan fill="#e2e8f0">g</tspan><tspan fill="#64748b">.</tspan><tspan fill="#e2e8f0">advanceWidth</tspan><tspan fill="#64748b">)</tspan><tspan fill="#64748b">;</tspan></text>
+    <text x="14" y="296" font-family="monospace" font-size="10"><tspan fill="#64748b">}</tspan></text>
+  </g>
+  <text x="30" y="62" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">Snippet 1 — if/else blocks, default params</text>
+  <text x="420" y="62" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">Snippet 2 — nested if inside for, custom size</text>
+  <text x="30" y="302" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">Snippet 3 — for loop with transforms</text>
+  <text x="420" y="282" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">Snippet 4 — nested loops + conditionals</text>
+  <text x="30" y="30" font-family="system-ui, sans-serif" font-size="15" fill="#e2e8f0" text-anchor="start">TextBlock.toCodeSnippetBlock() — Syntax-Highlighted Code Snippets</text>
+  <text x="30" y="45" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Auto-generated GroupLayer with dark background, rounded corners, and Pathogen-aware token coloring</text>
+</svg>
+    </div>
+  </body>
+</html>
