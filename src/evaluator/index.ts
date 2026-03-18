@@ -2001,6 +2001,64 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
       }
 
+      case 'intersects': {
+        if (expr.args.length !== 1) throw mError('intersects() expects 1 argument');
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        const myBB = computeBoundingBox(obj.commands);
+        if (isPathBlockValue(otherVal) || isProjectedPathValue(otherVal)) {
+          const otherBB = computeBoundingBox(otherVal.commands);
+          return boolVal(bboxOverlaps(myBB, otherBB));
+        }
+        if (isProjectedTextValue(otherVal)) {
+          const otherBB = estimateTextBoundingBox(otherVal.elements, otherVal.styles, scope.evalState?.fontRegistry);
+          return boolVal(bboxOverlaps(myBB, otherBB));
+        }
+        if (isObjectValue(otherVal)) {
+          const ox = otherVal.properties.get('x');
+          const oy = otherVal.properties.get('y');
+          const ow = otherVal.properties.get('width');
+          const oh = otherVal.properties.get('height');
+          if (typeof ox === 'number' && typeof oy === 'number' && typeof ow === 'number' && typeof oh === 'number') {
+            return boolVal(bboxOverlaps(myBB, { x: ox, y: oy, width: ow, height: oh }));
+          }
+        }
+        throw mError('intersects() argument must be a PathBlock, ProjectedPath, ProjectedText, or {x, y, width, height} object');
+      }
+
+      case 'intersectionPoints': {
+        if (expr.args.length !== 1) throw mError('intersectionPoints() expects 1 argument');
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        const myBB = computeBoundingBox(obj.commands);
+        if (isPathBlockValue(otherVal) || isProjectedPathValue(otherVal)) {
+          const pathSegs = otherVal.commands.map((c) => ({ start: c.start, end: c.end }));
+          const pts = bboxPathIntersectionPoints(myBB, pathSegs);
+          return {
+            type: 'ArrayValue' as const,
+            elements: pts.map((p) => ({ type: 'PointValue' as const, x: p.x, y: p.y })),
+          };
+        }
+        if (isProjectedTextValue(otherVal)) {
+          const otherBB = estimateTextBoundingBox(otherVal.elements, otherVal.styles, scope.evalState?.fontRegistry);
+          if (!bboxOverlaps(myBB, otherBB)) {
+            return { type: 'ArrayValue' as const, elements: [] };
+          }
+          const overlapX = Math.max(myBB.x, otherBB.x);
+          const overlapY = Math.max(myBB.y, otherBB.y);
+          const overlapX2 = Math.min(myBB.x + myBB.width, otherBB.x + otherBB.width);
+          const overlapY2 = Math.min(myBB.y + myBB.height, otherBB.y + otherBB.height);
+          return {
+            type: 'ArrayValue' as const,
+            elements: [
+              { type: 'PointValue' as const, x: overlapX, y: overlapY },
+              { type: 'PointValue' as const, x: overlapX2, y: overlapY },
+              { type: 'PointValue' as const, x: overlapX2, y: overlapY2 },
+              { type: 'PointValue' as const, x: overlapX, y: overlapY2 },
+            ],
+          };
+        }
+        throw mError('intersectionPoints() argument must be a PathBlock, ProjectedPath, or ProjectedText');
+      }
+
       default:
         throw mError(`Unknown PathBlock method: ${expr.method}`);
     }
@@ -2366,6 +2424,64 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           default: resultCmds = [];
         }
         return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
+      }
+
+      case 'intersects': {
+        if (expr.args.length !== 1) throw mError('intersects() expects 1 argument');
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        const myBB = computeBoundingBox(obj.commands);
+        if (isPathBlockValue(otherVal) || isProjectedPathValue(otherVal)) {
+          const otherBB = computeBoundingBox(otherVal.commands);
+          return boolVal(bboxOverlaps(myBB, otherBB));
+        }
+        if (isProjectedTextValue(otherVal)) {
+          const otherBB = estimateTextBoundingBox(otherVal.elements, otherVal.styles, scope.evalState?.fontRegistry);
+          return boolVal(bboxOverlaps(myBB, otherBB));
+        }
+        if (isObjectValue(otherVal)) {
+          const ox = otherVal.properties.get('x');
+          const oy = otherVal.properties.get('y');
+          const ow = otherVal.properties.get('width');
+          const oh = otherVal.properties.get('height');
+          if (typeof ox === 'number' && typeof oy === 'number' && typeof ow === 'number' && typeof oh === 'number') {
+            return boolVal(bboxOverlaps(myBB, { x: ox, y: oy, width: ow, height: oh }));
+          }
+        }
+        throw mError('intersects() argument must be a PathBlock, ProjectedPath, ProjectedText, or {x, y, width, height} object');
+      }
+
+      case 'intersectionPoints': {
+        if (expr.args.length !== 1) throw mError('intersectionPoints() expects 1 argument');
+        const otherVal = evaluateExpression(expr.args[0], scope);
+        const myBB = computeBoundingBox(obj.commands);
+        if (isPathBlockValue(otherVal) || isProjectedPathValue(otherVal)) {
+          const pathSegs = otherVal.commands.map((c) => ({ start: c.start, end: c.end }));
+          const pts = bboxPathIntersectionPoints(myBB, pathSegs);
+          return {
+            type: 'ArrayValue' as const,
+            elements: pts.map((p) => ({ type: 'PointValue' as const, x: p.x, y: p.y })),
+          };
+        }
+        if (isProjectedTextValue(otherVal)) {
+          const otherBB = estimateTextBoundingBox(otherVal.elements, otherVal.styles, scope.evalState?.fontRegistry);
+          if (!bboxOverlaps(myBB, otherBB)) {
+            return { type: 'ArrayValue' as const, elements: [] };
+          }
+          const overlapX = Math.max(myBB.x, otherBB.x);
+          const overlapY = Math.max(myBB.y, otherBB.y);
+          const overlapX2 = Math.min(myBB.x + myBB.width, otherBB.x + otherBB.width);
+          const overlapY2 = Math.min(myBB.y + myBB.height, otherBB.y + otherBB.height);
+          return {
+            type: 'ArrayValue' as const,
+            elements: [
+              { type: 'PointValue' as const, x: overlapX, y: overlapY },
+              { type: 'PointValue' as const, x: overlapX2, y: overlapY },
+              { type: 'PointValue' as const, x: overlapX2, y: overlapY2 },
+              { type: 'PointValue' as const, x: overlapX, y: overlapY2 },
+            ],
+          };
+        }
+        throw mError('intersectionPoints() argument must be a PathBlock, ProjectedPath, or ProjectedText');
       }
 
       default:

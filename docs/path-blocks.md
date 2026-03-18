@@ -286,6 +286,81 @@ let bb = line.boundingBox();
 // bb = { x: 0, y: 0, width: 100, height: 0 }
 ```
 
+### `intersects(geometry)` → Boolean
+
+AABB overlap test — returns `true` if this path's bounding box overlaps the argument's bounding box. Works on both PathBlock and ProjectedPath values.
+
+**Accepted arguments:**
+
+| Argument type | Comparison |
+|---|---|
+| PathBlock or ProjectedPath | Bounding box vs bounding box |
+| ProjectedText | Path bbox vs text bbox |
+| `{x, y, width, height}` object | Path bbox vs rectangle |
+
+```
+let a = @{ h 60 v 40 h -60 z };
+let b = @{ h 40 v 30 h -40 z };
+
+// Overlapping — both start at origin
+let projA = a.project(0, 0);
+let projB = b.project(10, 10);
+log(projA.intersects(projB));        // true
+
+// Non-overlapping
+let projC = b.project(200, 200);
+log(projA.intersects(projC));        // false
+```
+
+Testing against a rectangle object:
+
+```
+let shape = @{ h 50 v 50 h -50 z };
+let proj = shape.project(10, 10);
+log(proj.intersects({x: 0, y: 0, width: 100, height: 100}));    // true
+log(proj.intersects({x: 200, y: 200, width: 10, height: 10}));  // false
+```
+
+Works on unprojected PathBlocks too (bounding box computed from relative coordinates):
+
+```
+let a = @{ h 60 v 40 h -60 z };
+let b = @{ h 40 v 30 h -40 z };
+log(a.intersects(b));                // true (both at origin)
+```
+
+### `intersectionPoints(geometry)` → Array\<Point\>
+
+Returns the intersection points between this path's bounding box edges and the geometry's line segments. Works on both PathBlock and ProjectedPath values.
+
+**Accepted arguments:**
+
+| Argument type | Returns |
+|---|---|
+| PathBlock or ProjectedPath | Points where bbox edges cross path segments |
+| ProjectedText | Corners of the overlap rectangle (4 points), or empty array if no overlap |
+
+```
+let box = @{ h 100 v 100 h -100 z };
+let line = @{ m -10 50 h 120 };
+
+let projBox = box.project(0, 0);
+let projLine = line.project(0, 0);
+let pts = projBox.intersectionPoints(projLine);
+// pts contains the points where the line crosses the box's bounding box edges
+```
+
+Non-overlapping paths return an empty array:
+
+```
+let a = @{ h 50 v 50 h -50 z };
+let b = @{ h 10 v 10 h -10 z };
+let projA = a.project(0, 0);
+let projB = b.project(200, 200);
+let pts = projA.intersectionPoints(projB);
+log(pts.length);                     // 0
+```
+
 ### `offset(distance)` → PathBlock / ProjectedPath
 
 Creates a parallel path offset by `distance` units. Positive values offset to the left of the travel direction, negative to the right.

@@ -2613,4 +2613,162 @@ describe('Path Blocks', () => {
       });
     });
   });
+
+  describe('intersects and intersectionPoints', () => {
+    describe('intersects()', () => {
+      it('PathBlock vs PathBlock — overlapping shapes at origin → true', () => {
+        const result = compile(`
+          let a = @{ h 60 v 40 h -60 z };
+          let b = @{ h 40 v 30 h -40 z };
+          log(a.intersects(b));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('true');
+      });
+
+      it('PathBlock vs ProjectedPath — non-overlapping shapes → false', () => {
+        const result = compile(`
+          let a = @{ h 10 v 10 h -10 z };
+          let b = @{ h 10 v 10 h -10 z };
+          let pb = b.project(100, 100);
+          log(a.intersects(pb));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('false');
+      });
+
+      it('PathBlock vs {x, y, width, height} object — overlapping → true', () => {
+        const result = compile(`
+          let a = @{ h 60 v 40 h -60 z };
+          log(a.intersects({x: 10, y: 10, width: 20, height: 20}));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('true');
+      });
+
+      it('PathBlock vs {x, y, width, height} object — non-overlapping → false', () => {
+        const result = compile(`
+          let a = @{ h 60 v 40 h -60 z };
+          log(a.intersects({x: 200, y: 200, width: 10, height: 10}));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('false');
+      });
+
+      it('ProjectedPath vs ProjectedPath — overlapping → true', () => {
+        const result = compile(`
+          let a = @{ h 60 v 40 h -60 z };
+          let b = @{ h 40 v 30 h -40 z };
+          let pa = a.project(0, 0);
+          let pb = b.project(10, 10);
+          log(pa.intersects(pb));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('true');
+      });
+
+      it('ProjectedPath vs ProjectedPath — non-overlapping → false', () => {
+        const result = compile(`
+          let a = @{ h 50 v 50 h -50 z };
+          let b = @{ h 10 v 10 h -10 z };
+          let pa = a.project(0, 0);
+          let pb = b.project(200, 200);
+          log(pa.intersects(pb));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('false');
+      });
+
+      it('PathBlock vs ProjectedPath — cross-type → true', () => {
+        const result = compile(`
+          let a = @{ h 60 v 40 h -60 z };
+          let b = @{ h 40 v 30 h -40 z };
+          let pb = b.project(5, 5);
+          log(a.intersects(pb));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('true');
+      });
+
+      it('error: wrong argument count', () => {
+        expect(() => compile(`
+          let a = @{ h 60 v 40 };
+          log(a.intersects());
+        `)).toThrow(/intersects\(\) expects 1 argument/);
+      });
+
+      it('error: invalid argument type (string)', () => {
+        expect(() => compile(`
+          let a = @{ h 60 v 40 };
+          log(a.intersects("hello"));
+        `)).toThrow(/intersects\(\) argument must be/);
+      });
+    });
+
+    describe('intersectionPoints()', () => {
+      it('PathBlock bbox vs another ProjectedPath segments — returns crossing points', () => {
+        // Box bbox (0,0,100,100). Line projected from (-10,50) going h 120 → (110,50)
+        // Should cross left edge at (0,50) and right edge at (100,50)
+        const result = compile(`
+          let box = @{ h 100 v 100 h -100 z };
+          let line = @{ h 120 };
+          let pLine = line.project(-10, 50);
+          let pts = box.intersectionPoints(pLine);
+          log(pts.length);
+          for (p in pts) {
+            log(p.x, p.y);
+          }
+        `);
+        expect(result.logs[0].parts[0].value).toBe('2');
+        const pts = result.logs.slice(1).map(l => ({
+          x: Number(l.parts[0].value),
+          y: Number(l.parts[1].value),
+        }));
+        const sorted = pts.sort((a, b) => a.x - b.x);
+        expect(sorted[0].x).toBeCloseTo(0, 5);
+        expect(sorted[0].y).toBeCloseTo(50, 5);
+        expect(sorted[1].x).toBeCloseTo(100, 5);
+        expect(sorted[1].y).toBeCloseTo(50, 5);
+      });
+
+      it('ProjectedPath bbox vs another ProjectedPath segments — absolute coords', () => {
+        // Box projected at (10,10), bbox (10,10,100,100)
+        // Line projected at (-10,60), goes h 130 → (120,60)
+        // Crosses left edge at x=10 and right edge at x=110, both at y=60
+        const result = compile(`
+          let box = @{ h 100 v 100 h -100 z };
+          let line = @{ h 130 };
+          let pBox = box.project(10, 10);
+          let pLine = line.project(-10, 60);
+          let pts = pBox.intersectionPoints(pLine);
+          log(pts.length);
+          for (p in pts) {
+            log(p.x, p.y);
+          }
+        `);
+        expect(result.logs[0].parts[0].value).toBe('2');
+        const pts = result.logs.slice(1).map(l => ({
+          x: Number(l.parts[0].value),
+          y: Number(l.parts[1].value),
+        }));
+        const sorted = pts.sort((a, b) => a.x - b.x);
+        expect(sorted[0].x).toBeCloseTo(10, 5);
+        expect(sorted[0].y).toBeCloseTo(60, 5);
+        expect(sorted[1].x).toBeCloseTo(110, 5);
+        expect(sorted[1].y).toBeCloseTo(60, 5);
+      });
+
+      it('non-overlapping → returns empty array', () => {
+        const result = compile(`
+          let a = @{ h 50 v 50 h -50 z };
+          let b = @{ h 10 v 10 h -10 z };
+          let pa = a.project(0, 0);
+          let pb = b.project(200, 200);
+          let pts = pa.intersectionPoints(pb);
+          log(pts.length);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('0');
+      });
+
+      it('error: wrong argument count', () => {
+        expect(() => compile(`
+          let a = @{ h 60 v 40 };
+          log(a.intersectionPoints());
+        `)).toThrow(/intersectionPoints\(\) expects 1 argument/);
+      });
+    });
+  });
 });

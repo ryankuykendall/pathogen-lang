@@ -1950,6 +1950,82 @@ r.<span class="hljs-title function_">draw</span>()                     <span cla
 <pre><code class="hljs"><span class="hljs-keyword">let</span> line = @{ h <span class="hljs-number">100</span> };
 <span class="hljs-keyword">let</span> bb = line.<span class="hljs-title function_">boundingBox</span>();
 <span class="hljs-comment">// bb = { x: 0, y: 0, width: 100, height: 0 }</span>
+</code></pre><h3 id="path-blocks-intersectsgeometry-boolean"><code>intersects(geometry)</code> → Boolean</h3>
+<p>AABB overlap test — returns <code>true</code> if this path&#39;s bounding box overlaps the argument&#39;s bounding box. Works on both PathBlock and ProjectedPath values.</p>
+<p><strong>Accepted arguments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument type</th>
+<th>Comparison</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PathBlock or ProjectedPath</td>
+<td>Bounding box vs bounding box</td>
+</tr>
+<tr>
+<td>ProjectedText</td>
+<td>Path bbox vs text bbox</td>
+</tr>
+<tr>
+<td><code>{x, y, width, height}</code> object</td>
+<td>Path bbox vs rectangle</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">40</span> v <span class="hljs-number">30</span> h -<span class="hljs-number">40</span> z };
+
+<span class="hljs-comment">// Overlapping — both start at origin</span>
+<span class="hljs-keyword">let</span> projA = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> projB = b.<span class="hljs-title function_">project</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>);
+<span class="hljs-title function_">log</span>(projA.<span class="hljs-title function_">intersects</span>(projB));        <span class="hljs-comment">// true</span>
+
+<span class="hljs-comment">// Non-overlapping</span>
+<span class="hljs-keyword">let</span> projC = b.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>);
+<span class="hljs-title function_">log</span>(projA.<span class="hljs-title function_">intersects</span>(projC));        <span class="hljs-comment">// false</span>
+</code></pre><p>Testing against a rectangle object:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> shape = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
+<span class="hljs-keyword">let</span> proj = shape.<span class="hljs-title function_">project</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>);
+<span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">intersects</span>({<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">width</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">height</span>: <span class="hljs-number">100</span>}));    <span class="hljs-comment">// true</span>
+<span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">intersects</span>({<span class="hljs-attr">x</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">width</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">height</span>: <span class="hljs-number">10</span>}));  <span class="hljs-comment">// false</span>
+</code></pre><p>Works on unprojected PathBlocks too (bounding box computed from relative coordinates):</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
+<span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">40</span> v <span class="hljs-number">30</span> h -<span class="hljs-number">40</span> z };
+<span class="hljs-title function_">log</span>(a.<span class="hljs-title function_">intersects</span>(b));                <span class="hljs-comment">// true (both at origin)</span>
+</code></pre><h3 id="path-blocks-intersectionpointsgeometry-arraypoint"><code>intersectionPoints(geometry)</code> → Array&lt;Point&gt;</h3>
+<p>Returns the intersection points between this path&#39;s bounding box edges and the geometry&#39;s line segments. Works on both PathBlock and ProjectedPath values.</p>
+<p><strong>Accepted arguments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument type</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PathBlock or ProjectedPath</td>
+<td>Points where bbox edges cross path segments</td>
+</tr>
+<tr>
+<td>ProjectedText</td>
+<td>Corners of the overlap rectangle (4 points), or empty array if no overlap</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">100</span> v <span class="hljs-number">100</span> h -<span class="hljs-number">100</span> z };
+<span class="hljs-keyword">let</span> line = @{ m -<span class="hljs-number">10</span> <span class="hljs-number">50</span> h <span class="hljs-number">120</span> };
+
+<span class="hljs-keyword">let</span> projBox = box.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> projLine = line.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> pts = projBox.<span class="hljs-title function_">intersectionPoints</span>(projLine);
+<span class="hljs-comment">// pts contains the points where the line crosses the box&#x27;s bounding box edges</span>
+</code></pre><p>Non-overlapping paths return an empty array:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
+<span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">10</span> v <span class="hljs-number">10</span> h -<span class="hljs-number">10</span> z };
+<span class="hljs-keyword">let</span> projA = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">let</span> projB = b.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>);
+<span class="hljs-keyword">let</span> pts = projA.<span class="hljs-title function_">intersectionPoints</span>(projB);
+<span class="hljs-title function_">log</span>(pts.<span class="hljs-property">length</span>);                     <span class="hljs-comment">// 0</span>
 </code></pre><h3 id="path-blocks-offsetdistance-pathblock-projectedpath"><code>offset(distance)</code> → PathBlock / ProjectedPath</h3>
 <p>Creates a parallel path offset by <code>distance</code> units. Positive values offset to the left of the travel direction, negative to the right.</p>
 <pre><code class="hljs"><span class="hljs-keyword">let</span> p = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> };
@@ -2490,7 +2566,7 @@ layer(<span class="hljs-string">&#x27;labels&#x27;</span>).apply {
 <h2 id="text-block-bboxanchor-enum">BBoxAnchor Enum</h2>
 <p>The <code>BBoxAnchor</code> enum provides named positions on a bounding box:</p>
 <pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
-BBoxAnchor.Left         BBoxAnchor.Center    BBoxAnchor.Right
+BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
 BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 </code></pre><p>Used with <code>.anchor()</code> and <code>.polarProject()</code>.</p>
 <h2 id="text-block-font-metrics">Font Metrics</h2>
@@ -4623,7 +4699,28 @@ svg-path-extended --src=input.svgx --output output.txt
 <p>Generate a complete SVG file with the path embedded:</p>
 <pre><code class="hljs language-bash">svg-path-extended --src=input.svgx --output-svg-file=output.svg
 </code></pre><p>This creates a ready-to-use SVG file that can be opened in any browser or image viewer.</p>
-<h2 id="cli-annotated-output">Annotated Output</h2>
+<h2 id="cli-log-output">Log Output</h2>
+<p>Pathogen programs can use <code>log()</code> to produce diagnostic output. By default, the CLI discards log entries. Two flags expose them:</p>
+<h3 id="cli-print-to-stderr">Print to stderr</h3>
+<pre><code class="hljs language-bash">svg-path-extended -e <span class="hljs-string">&#x27;let x = 42; log(x); M x 0&#x27;</span> --print-logs
+</code></pre><p>Output on stderr:</p>
+<pre><code class="hljs">[line 1] x = 42
+</code></pre><p>The path data still goes to stdout, so logs don&#39;t interfere with piping:</p>
+<pre><code class="hljs language-bash">svg-path-extended -e <span class="hljs-string">&#x27;log(&quot;hello&quot;); circle(50, 50, 25)&#x27;</span> --print-logs &gt; output.txt
+</code></pre><h3 id="cli-write-structured-json">Write structured JSON</h3>
+<pre><code class="hljs language-bash">svg-path-extended --src=input.pathogen --log-file=logs.json
+</code></pre><p>This writes the full <code>LogEntry[]</code> array with line numbers and typed parts:</p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">[</span>
+  <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;line&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;parts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;value&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;label&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;x&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;value&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;42&quot;</span> <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">]</span>
+</code></pre><p>Both flags can be combined:</p>
+<pre><code class="hljs language-bash">svg-path-extended --src=debug.pathogen --print-logs --log-file=logs.json --output-svg-file=out.svg
+</code></pre><h2 id="cli-annotated-output">Annotated Output</h2>
 <p>Use <code>--annotated</code> to get a human-readable debug output that shows:</p>
 <ul>
 <li>Original comments preserved in place</li>
@@ -6021,6 +6118,16 @@ export const tocData = JSON.parse(`[
         "level": 3
       },
       {
+        "id": "path-blocks-intersectsgeometry-boolean",
+        "title": "intersects(geometry) → Boolean",
+        "level": 3
+      },
+      {
+        "id": "path-blocks-intersectionpointsgeometry-arraypoint",
+        "title": "intersectionPoints(geometry) → Array<Point>",
+        "level": 3
+      },
+      {
         "id": "path-blocks-offsetdistance-pathblock-projectedpath",
         "title": "offset(distance) → PathBlock / ProjectedPath",
         "level": 3
@@ -7011,6 +7118,21 @@ export const tocData = JSON.parse(`[
       {
         "id": "cli-output-as-complete-svg-file",
         "title": "Output as Complete SVG File",
+        "level": 3
+      },
+      {
+        "id": "cli-log-output",
+        "title": "Log Output",
+        "level": 2
+      },
+      {
+        "id": "cli-print-to-stderr",
+        "title": "Print to stderr",
+        "level": 3
+      },
+      {
+        "id": "cli-write-structured-json",
+        "title": "Write structured JSON",
         "level": 3
       },
       {
