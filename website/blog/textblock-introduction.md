@@ -159,7 +159,7 @@ The nine anchor positions form a grid over the bounding box:
 
 ```
 BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
-BBoxAnchor.Left         BBoxAnchor.Center    BBoxAnchor.Right
+BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
 BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 ```
 

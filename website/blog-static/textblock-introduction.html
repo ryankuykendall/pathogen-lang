@@ -953,7 +953,7 @@ subtitle.<span class="hljs-property">apply</span> { <span class="hljs-title func
 </code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/pathogen/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
 <p>The nine anchor positions form a grid over the bounding box:</p>
 <pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
-BBoxAnchor.Left         BBoxAnchor.Center    BBoxAnchor.Right
+BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
 BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 </code></pre><p>The convention is that the <strong>anchor faces the center</strong> — so a label projected to the right of a shape uses <code>BBoxAnchor.Left</code> (the left edge of the text box is closest to the center), while a label above uses <code>BBoxAnchor.Bottom</code>. This keeps text radiating outward naturally.</p>
 <p>The compass demo below shows this in action. Eight labels are placed at 45-degree intervals around a central hexagon, each using the appropriate anchor. The amber dots mark the polar target points on the guide circle; the text stays clear of the shape at every position.</p>

@@ -1,36 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" width="600" height="340">
-  <path d="M 0 0 L 600 0 L 600 340 L 0 340 Z" fill="#0f172a" stroke="none"/>
+
+  <path d="M 0 0 L 600 0 L 600 340 L 0 340 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
   <g transform="translate(30, 50)">
-    <path d="M 0 60 m 2.2960000000000003 0 l 0 -39.2 l 6.159999999999999 0 l 0 33.6 l 10.136 0 l 0 5.6000000000000005 l -16.296 0 z M 19.264 60 m 0.672 0 l 6.384 -39.2 l 8.344000000000001 0 l 6.383999999999999 39.2 l -6.159999999999998 0 l -1.120000000000001 -7.784 l 0 0.11199999999999921 l -6.999999999999999 0 l -1.12 7.672000000000001 l -5.712000000000001 0 z m 7.56 -12.992 l 5.5440000000000005 0 l -2.7439999999999998 -19.376 l -0.1120000000000001 0 l -2.6880000000000006 19.376 z M 41.72 60 m 7.952 0 l 0 -16.688 l -7.448 -22.512000000000004 l 6.552 0 l 4.2 14.392000000000003 l 0.1120000000000001 0 l 4.199999999999999 -14.392000000000003 l 5.991999999999999 0 l -7.447999999999999 22.512000000000004 l 0 16.688 l -6.16 0 z M 63.784 60 m 11.200000000000001 0.56 q -4.536000000000001 0 -6.944000000000001 -2.576 q -2.4080000000000004 -2.5760000000000005 -2.4080000000000004 -7.279999999999999 l 0 0 l 0 -20.608 q 0 -4.704000000000004 2.4080000000000004 -7.279999999999998 q 2.4079999999999995 -2.5760000000000005 6.944000000000001 -2.5760000000000005 l 0 0 q 4.536 0 6.944000000000001 2.5760000000000005 q 2.4079999999999977 2.5759999999999934 2.4079999999999977 7.279999999999998 l 0 0 l 0 20.608 q 0 4.703999999999999 -2.4079999999999977 7.279999999999999 q -2.4080000000000013 2.576 -6.944000000000001 2.576 l 0 0 z m 0 -5.6 q 3.1919999999999984 0 3.1919999999999984 -3.864 l 0 0 l 0 -21.392 q 0 -3.8640000000000043 -3.1919999999999984 -3.8640000000000043 l 0 0 q -3.192 0 -3.192 3.8640000000000043 l 0 0 l 0 21.392 q 0 3.864 3.192 3.864 l 0 0 z M 86.184 60 m 11.256 0.56 q -4.48 0 -6.832 -2.548 q -2.3520000000000003 -2.5480000000000005 -2.3520000000000003 -7.308 l 0 0 l 0 -29.904000000000003 l 6.159999999999999 0 l 0 30.352000000000004 q 0 2.016000000000001 0.8120000000000012 2.912000000000001 q 0.8119999999999994 0.8959999999999999 2.324 0.8959999999999999 l 0 0 q 1.5120000000000005 0 2.324 -0.8959999999999999 q 0.8119999999999994 -0.8959999999999999 0.8119999999999994 -2.912000000000001 l 0 0 l 0 -30.352000000000004 l 5.936000000000002 0 l 0 29.904000000000003 q 0 4.759999999999999 -2.3520000000000003 7.308 q -2.3520000000000003 2.548 -6.832000000000001 2.548 l 0 0 z M 108.696 60 m 7.112 0 l 0 -33.6 l -6.44 0 l 0 -5.600000000000001 l 19.04 0 l 0 5.600000000000001 l -6.4399999999999995 0 l 0 33.6 l -6.16 0 z" fill="#3b82f6" stroke="none"/>
+    <path d="M 0 60 m 2.2960000000000003 0 l 0 -39.2 l 6.159999999999999 0 l 0 33.6 l 10.136 0 l 0 5.6000000000000005 l -16.296 0 z M 19.264 60 m 0.672 0 l 6.384 -39.2 l 8.344000000000001 0 l 6.383999999999999 39.2 l -6.159999999999998 0 l -1.120000000000001 -7.784 l 0 0.11199999999999921 l -6.999999999999999 0 l -1.12 7.672000000000001 l -5.712000000000001 0 z m 7.56 -12.992 l 5.5440000000000005 0 l -2.7439999999999998 -19.376 l -0.1120000000000001 0 l -2.6880000000000006 19.376 z M 41.72 60 m 7.952 0 l 0 -16.688 l -7.448 -22.512000000000004 l 6.552 0 l 4.2 14.392000000000003 l 0.1120000000000001 0 l 4.199999999999999 -14.392000000000003 l 5.991999999999999 0 l -7.447999999999999 22.512000000000004 l 0 16.688 l -6.16 0 z M 63.784 60 m 11.200000000000001 0.56 q -4.536000000000001 0 -6.944000000000001 -2.576 q -2.4080000000000004 -2.5760000000000005 -2.4080000000000004 -7.279999999999999 l 0 0 l 0 -20.608 q 0 -4.704000000000004 2.4080000000000004 -7.279999999999998 q 2.4079999999999995 -2.5760000000000005 6.944000000000001 -2.5760000000000005 l 0 0 q 4.536 0 6.944000000000001 2.5760000000000005 q 2.4079999999999977 2.5759999999999934 2.4079999999999977 7.279999999999998 l 0 0 l 0 20.608 q 0 4.703999999999999 -2.4079999999999977 7.279999999999999 q -2.4080000000000013 2.576 -6.944000000000001 2.576 l 0 0 z m 0 -5.6 q 3.1919999999999984 0 3.1919999999999984 -3.864 l 0 0 l 0 -21.392 q 0 -3.8640000000000043 -3.1919999999999984 -3.8640000000000043 l 0 0 q -3.192 0 -3.192 3.8640000000000043 l 0 0 l 0 21.392 q 0 3.864 3.192 3.864 l 0 0 z M 86.184 60 m 11.256 0.56 q -4.48 0 -6.832 -2.548 q -2.3520000000000003 -2.5480000000000005 -2.3520000000000003 -7.308 l 0 0 l 0 -29.904000000000003 l 6.159999999999999 0 l 0 30.352000000000004 q 0 2.016000000000001 0.8120000000000012 2.912000000000001 q 0.8119999999999994 0.8959999999999999 2.324 0.8959999999999999 l 0 0 q 1.5120000000000005 0 2.324 -0.8959999999999999 q 0.8119999999999994 -0.8959999999999999 0.8119999999999994 -2.912000000000001 l 0 0 l 0 -30.352000000000004 l 5.936000000000002 0 l 0 29.904000000000003 q 0 4.759999999999999 -2.3520000000000003 7.308 q -2.3520000000000003 2.548 -6.832000000000001 2.548 l 0 0 z M 108.696 60 m 7.112 0 l 0 -33.6 l -6.44 0 l 0 -5.600000000000001 l 19.04 0 l 0 5.600000000000001 l -6.4399999999999995 0 l 0 33.6 l -6.16 0 z" fill="#3b82f6" stroke="none" stroke-width="2"/>
     <path d="M 0 20.799999999999997 L 128.408 20.799999999999997 L 128.408 60 L 0 60 Z" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-    <path d="M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2" stroke="rgba(34, 197, 94, 0.314)" stroke-width="0.5" stroke-dasharray="2 3" fill="none"/>
-    <path d="advanceWidth layout = 129.1px total paths + metrics from same font file" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start"/>
-    <text x="0" y="100" >advanceWidth layout = 129.1px total</text>
-    <text x="0" y="112" >paths + metrics from same font file</text>
+    <path d="M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2 M 0 18.799999999999997 v 43.2" fill="none" stroke="rgba(34, 197, 94, 0.314)" stroke-width="0.5" stroke-dasharray="2 3"/>
+    <text x="0" y="100" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">advanceWidth layout = 129.1px total</text>
+    <text x="0" y="112" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">paths + metrics from same font file</text>
   </g>
   <g transform="translate(310, 50)">
-    <path d="LAYOUT" font-family="monospace" font-size="24" fill="#94a3b8"/>
-    <text x="0" y="60" >LAYOUT</text>
+    <text x="0" y="60" font-family="monospace" font-size="24" fill="#94a3b8">LAYOUT</text>
     <path d="M 0 36 L 86.39999999999999 36 L 86.39999999999999 64.8 L 0 64.8 Z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>
-    <path d="estimation table = 86.4px browser picks its own monospace font" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="start"/>
-    <text x="0" y="100" >estimation table = 86.4px</text>
-    <text x="0" y="112" >browser picks its own monospace font</text>
-    <path d="bbox may not match — different font than what the browser renders" font-family="monospace" font-size="7" fill="#64748b" text-anchor="start"/>
-    <text x="0" y="132" >bbox may not match — different font</text>
-    <text x="0" y="144" >than what the browser renders</text>
+    <text x="0" y="100" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="start">estimation table = 86.4px</text>
+    <text x="0" y="112" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="start">browser picks its own monospace font</text>
+    <text x="0" y="132" font-family="monospace" font-size="7" fill="#64748b" text-anchor="start">bbox may not match — different font</text>
+    <text x="0" y="144" font-family="monospace" font-size="7" fill="#64748b" text-anchor="start">than what the browser renders</text>
   </g>
-  <path d="PathBlock.fromGlyph() — exact" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="start"/>
-  <text x="30" y="42" >PathBlock.fromGlyph() — exact</text>
-  <path d="SVG <text> — estimated" font-family="system-ui, sans-serif" font-size="10" fill="#f59e0b" text-anchor="start"/>
-  <text x="310" y="42" >SVG <text> — estimated</text>
-  <path d="M 295 40 v 170" stroke="#334155" stroke-width="1" fill="none"/>
-  <path d="Why @font Matters: Paths vs Text" font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0" text-anchor="start"/>
-  <text x="30" y="25" >Why @font Matters: Paths vs Text</text>
-  <path d="fromGlyph() renders text AS paths — the loaded font is both the renderer and the measurer. No mismatch possible. SVG <text> relies on the browser's font — estimation tables or a different @font can diverge from what's rendered." font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start"/>
-  <text x="30" y="270" >fromGlyph() renders text AS paths — the loaded font is</text>
-  <text x="30" y="282" >both the renderer and the measurer. No mismatch possible.</text>
-  <text x="30" y="300" >SVG <text> relies on the browser's font — estimation tables</text>
-  <text x="30" y="312" >or a different @font can diverge from what's rendered.</text>
-  <path d="Paths = single source of truth for geometry AND metrics" font-family="monospace" font-size="9" fill="#3b82f6" text-anchor="start"/>
-  <text x="30" y="332" >Paths = single source of truth for geometry AND metrics</text>
+  <text x="30" y="42" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="start">PathBlock.fromGlyph() — exact</text>
+  <text x="310" y="42" font-family="system-ui, sans-serif" font-size="10" fill="#f59e0b" text-anchor="start">SVG &lt;text&gt; — estimated</text>
+  <path d="M 295 40 v 170" fill="none" stroke="#334155" stroke-width="1"/>
+  <text x="30" y="25" font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0" text-anchor="start">Why @font Matters: Paths vs Text</text>
+  <text x="30" y="270" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">fromGlyph() renders text AS paths — the loaded font is</text>
+  <text x="30" y="282" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">both the renderer and the measurer. No mismatch possible.</text>
+  <text x="30" y="300" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">SVG &lt;text&gt; relies on the browser's font — estimation tables</text>
+  <text x="30" y="312" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">or a different @font can diverge from what's rendered.</text>
+  <text x="30" y="332" font-family="monospace" font-size="9" fill="#3b82f6" text-anchor="start">Paths = single source of truth for geometry AND metrics</text>
 </svg>

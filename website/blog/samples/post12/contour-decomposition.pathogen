@@ -1,4 +1,4 @@
-// viewBox="0 0 600 400"
+// viewBox="0 0 660 400"
 // Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
 
 @font "../../../../fonts/Raleway/Raleway-Bold.ttf"
@@ -6,7 +6,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 660, 400) }
 
 // --- Contour color palette (12 colors for 12 contours) ---
 
@@ -278,15 +278,26 @@ let code = TextLayer('code') ${
 };
 let cl = calc(code_top + 18);
 code.apply {
-  text(0, cl)`let glyphs = PathBlock`
-  text(0, calc(cl + 12))`  .fromGlyph("Bingo!", s);`
-  text(0, calc(cl + 30))`for (g in glyphs) {`
-  text(0, calc(cl + 42))`  let parts = g.contours;`
-  text(0, calc(cl + 54))`  // each part is a PathBlock`
-  text(0, calc(cl + 66))`}`
+  text(0, cl)`let glyphs = PathBlock.fromGlyph("Bingo!", styles);`
+  text(0, calc(cl + 18))`for (g in glyphs) {`
+  text(10, calc(cl + 30))`let parts = g.contours;`
+  text(10, calc(cl + 42))`// each part is a PathBlock`
+  text(0, calc(cl + 54))`}`
 }
 
-g_right.append(code_title, code);
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#c084fc');
+  text-anchor: start;
+};
+kw.apply {
+  text(0, cl)`let`
+  text(0, calc(cl + 18))`for`
+  text(10, calc(cl + 30))`let`
+}
+
+g_right.append(code_title, code, kw);
 
 // ─── Divider ─────────────────────────────────────────────────────
 
@@ -295,4 +306,4 @@ let divider = PathLayer('divider') ${
   stroke-width: 1;
   fill: none;
 };
-divider.apply { M 345 20 v 360 }
+divider.apply { M 345 20 v 370 }

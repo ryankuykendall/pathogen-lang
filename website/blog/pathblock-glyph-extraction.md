@@ -11,6 +11,8 @@ description: "Turn font glyphs into PathBlock geometry — manual text layout, c
 > 1. [TextBlock: Measure-First Text for SVG Diagrams](/pathogen/blog/textblock-introduction)
 > 2. **From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()** (this post)
 
+> **Prerequisites:** This post assumes familiarity with PathBlock basics — the `@{}` sigil, `.draw()`, `.project()`, and boolean operations. If you're new to Pathogen, start with [Introduction to PathBlocks](/pathogen/blog/pathblock-introduction). For boolean operations, see [Boolean Operations](/pathogen/blog/pathblock-boolean-operations).
+
 [TextBlock](/pathogen/blog/textblock-introduction) gives you a compose-measure-position workflow for SVG text. You build text at relative coordinates, measure its bounding box, place it precisely, and draw it to a TextLayer. That covers most labeling and annotation work. But the result is still an SVG `<text>` element — a string the browser renders with its own font engine. You can't sample points along its outline, apply a fillet to its corners, or punch it out of a rectangle with a boolean difference.
 
 Where Part 1 made text measurable, this post makes it malleable — converting glyphs into path geometry you can transform, decompose, and combine.
@@ -229,7 +231,7 @@ for (g in glyphs) {
 }
 ```
 
-Each glyph is rotated to follow the arc's tangent direction using `.rotateAtVertexIndex(0, angle)`, then placed at the corresponding position on the circle. The advance widths are converted to angular offsets by dividing by the arc radius.
+Each glyph is rotated to follow the arc's tangent direction using `.rotateAtVertexIndex(0, angle)`, then placed at the corresponding position on the circle. The `0.5pi` uses Pathogen's numeric suffix notation — a shorthand for π/2 (a quarter turn) — which converts the radial angle to the tangent direction. The advance widths are converted to angular offsets by dividing by the arc radius.
 
 <mini-workspace src="samples/post12/per-char-transforms.pathogen" caption="Three per-character transform effects — wave, grow, and circular arc text"></mini-workspace>
 
@@ -249,25 +251,30 @@ The approach uses [`.union()`](/pathogen/docs#path-blocks-unionother-pathblock) 
 
 ```pathogen
 @font "Bebas Neue";
-let glyphs = PathBlock.fromGlyph("CUT", styles);
+let glyphs = PathBlock.fromGlyph("CUTTING", styles);
 
-// Project each glyph at its layout position
-let proj_C = glyphs[0].project(x0, 0);
-let proj_U = glyphs[1].project(x1, 0);
-let proj_T = glyphs[2].project(x2, 0);
+// Project each glyph at its layout position (advance-width loop)
+let tracking = 0.8;
+let cursor = 0;
+let projected = [];
+for (g in glyphs) {
+  projected.push(g.project(cursor, 0));
+  cursor = calc(cursor + g.advanceWidth * tracking);
+}
 
 // Union into a single path, then punch from a rectangle
-let combined = proj_C.union(proj_U).union(proj_T);
-let plate = @{ h plate_w v plate_h h calc(-plate_w) z };
+let combined = projected[0];
+for (i in 1..6) {  // remaining 6 of 7 glyphs
+  combined = combined.union(projected[i]);
+}
 let cutout = plate.project(px, py).difference(combined);
-cutout.drawTo(0, 0)
 ```
 
-The chaining works because every boolean operation returns a PathBlock, so the result of `.union()` feeds directly into the next `.union()` or `.difference()`. Because boolean operations [preserve curve types](/pathogen/blog/pathblock-boolean-operations), the glyph outlines stay smooth at any zoom level.
+The chaining works because every boolean operation returns a PathBlock, so the result of `.union()` feeds directly into the next `.union()` or `.difference()` — for any number of glyphs. Because boolean operations [preserve curve types](/pathogen/blog/pathblock-boolean-operations), the glyph outlines stay smooth at any zoom level.
 
-The demo below shows the full pipeline. Stage 1 lays out each glyph as a separate colored outline. Stage 2 unions them into a single solid path. Stage 3 punches the united text out of a green rectangle using `.difference()`.
+The demo below shows the full pipeline in five panels: individual glyph outlines, a `.union()` arrow, the combined path, a `.difference()` arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using `.difference()`.
 
-<mini-workspace src="samples/post12/text-cutout.pathogen" caption="Text cutout pipeline — glyph outlines → .union() → .difference() from a rectangle"></mini-workspace>
+<mini-workspace src="samples/post12/text-cutout.pathogen" caption="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle"></mini-workspace>
 
 Text cutouts are common in logo design, stencil art, and anywhere you need negative-space typography. The pipeline is `.union()` calls followed by `.difference()` — a few lines of code instead of manual path editing in a vector graphics tool.
 
@@ -275,7 +282,9 @@ You can extend the boolean pipeline further. Apply a [fillet](/pathogen/blog/pat
 
 ## Paths vs Text: Why @font Matters
 
-Converting text to paths produces more SVG data than `<text>` elements — a single glyph may contain 20+ Bezier segments. For short words and display text this is negligible; for paragraph-length content, prefer TextBlock.
+Converting text to paths produces more SVG data than `<text>` elements — a single glyph may contain 20+ Bezier segments. For short words and display text this is negligible; for paragraph-length content, prefer TextBlock. Glyph extraction runs once at compile time — the PathBlock values stored in variables are reused across parameter changes without re-extracting from the font.
+
+> **Accessibility note:** Glyph paths are not accessible to screen readers the way `<text>` elements are. For content that needs to be machine-readable or searchable, prefer TextBlock. Reserve `fromGlyph()` for decorative, logotype, and generative typography use cases where the visual treatment requires actual path geometry.
 
 There's a subtle but important benefit to the font integration model that's easy to overlook. When you use `PathBlock.fromGlyph()`, the loaded font is both the *renderer* and the *measurer*. The path commands that define each glyph's shape come from the same font file that provides the advance widths and bounding boxes. There's no mismatch — the geometry and the metrics are always in agreement.
 

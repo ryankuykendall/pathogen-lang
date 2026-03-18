@@ -163,7 +163,7 @@ let arc_cy = 75;
 let arc_r = 55;
 // Spread characters over an arc
 let arc_span = calc(total_width / arc_r);
-let arc_start = calc(-0.5 * 3.14159265358979 - arc_span / 2);
+let arc_start = calc(-0.5pi - arc_span / 2);
 let arc_cursor = 0;
 
 arc_layer.apply {
@@ -175,7 +175,7 @@ arc_layer.apply {
     let cy = calc(arc_cy + sin(angle) * arc_r);
 
     // Rotate glyph to follow the arc tangent
-    let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5 * 3.14159265358979));
+    let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5pi));
     rotated.drawTo(cx, cy)
 
     arc_cursor = calc(arc_cursor + g.advanceWidth);
