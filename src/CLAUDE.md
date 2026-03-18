@@ -139,7 +139,7 @@ compileWithContext(source, opts?)   // → { path, layers, context, logs }
 
 ## Development Lifecycle
 
-1. **Documentation first** — Update `docs/` before coding (except bug fixes). Start by writing the usage examples the end-user will see — these define the contract. The doc should answer: what does this look like in code, what does it produce, and when would you use it?
+1. **Documentation first** — Update `docs/` before coding (except bug fixes). Start by writing the usage examples the end-user will see — these define the contract. The doc should answer: what does this look like in code, what does it produce, and when would you use it? When adding, removing, or revising features, doc changes must go through [agentic review](../website/guidelines/agentic-review.md).
 2. **Write failing tests** — First, translate the doc examples from step 1 into happy-path tests that validate the documented experience. Then add edge case and error message tests to protect against surprising behavior. Target specific test files:
    - Syntax → `tests/parser.test.ts`
    - Behavior → `tests/evaluator.test.ts`
