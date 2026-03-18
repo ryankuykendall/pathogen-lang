@@ -23,6 +23,13 @@ Thumbs.db
 # Test coverage
 coverage/
 
+# Test scratch artifacts (screenshots, one-off scripts)
+tests/tmp/
+
+# BBWP render artifacts (compiled HTML previews — commit selectively with git add -f)
+website/bbwp/*.html
+!website/bbwp/index.html
+
 # Logs
 *.log
 npm-debug.log*
