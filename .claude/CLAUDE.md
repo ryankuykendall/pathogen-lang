@@ -52,6 +52,13 @@ Build library → scope components → identify reuse → storybook-driven desig
 - **Build gate**: `npm run build` is required after any `src/` change before playground testing
 - **Doc-first exploration**: When planning compiler features, explore `docs/` in parallel with `src/` since doc-first is the workflow
 
+## Agents
+
+Project agents in `.claude/agents/`:
+- **code-reviewer**: Run after implementation, before commit. Read-only code quality review.
+- **content-reviewer**: Multi-persona review for blog posts, docs, tutorials. Wraps the process at `website/guidelines/agentic-review.md`.
+- **test-runner**: Background agent that runs tests and analyzes failures.
+
 ## Live Playground
 
 - Local: `npm run dev:website` → http://localhost:3000

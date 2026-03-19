@@ -150,4 +150,5 @@ compileWithContext(source, opts?)   // → { path, layers, context, logs }
    - CLI → `tests/cli.test.ts`
 3. **Implement** — Make tests pass. Follow existing evaluator patterns for consistency — this is a language runtime, so predictability matters more than cleverness.
 4. **Visual verify** — Generate SVGs with `--output-svg-file` and confirm the output renders correctly, paths are smooth, and edge cases produce reasonable visual results.
-5. **Full test suite** — `npm run test:run` before commit. This is the regression safety net — verify existing user expectations aren't broken, not just that the new feature works.
+5. **Code review** — Run the `@code-reviewer` agent to get a read-only review of all changes before committing.
+6. **Full test suite** — `npm run test:run` before commit. This is the regression safety net — verify existing user expectations aren't broken, not just that the new feature works.
