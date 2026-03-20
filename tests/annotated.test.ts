@@ -272,4 +272,17 @@ M add(triple(2), 4) 0`);
       expect(result).toContain('L 150 200');
     });
   });
+
+  describe('heading and turn', () => {
+    it('heading() does not emit commands', () => {
+      const result = compileAnnotated('M 50 100\nheading(0)\ntangentLine(30)');
+      expect(result).toContain('M 50 100');
+      expect(result).toContain('L 80 100');
+    });
+
+    it('turn() adjusts heading', () => {
+      const result = compileAnnotated('M 0 0\nL 50 0\nturn(90deg)\ntangentLine(30)');
+      expect(result).toContain('L 50 30');
+    });
+  });
 });

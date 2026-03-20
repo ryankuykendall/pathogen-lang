@@ -853,6 +853,27 @@ function evaluateContextAwareFunction(
       };
     }
 
+    case 'heading': {
+      // heading(angle) → set tangent direction without emitting commands or moving cursor
+      const [angle] = args as [number];
+      setLastTangent(ctx, angle);
+      updateCtxVariable(scope);
+      return { type: 'PathSegment' as const, value: '' };
+    }
+
+    case 'turn': {
+      // turn(delta) → add delta to current tangent direction
+      const [delta] = args as [number];
+      if (ctx.lastTangent === undefined) {
+        throw new Error(
+          formatError('turn requires an existing heading — use heading(angle) first', loc?.line, loc?.column),
+        );
+      }
+      setLastTangent(ctx, ctx.lastTangent + delta);
+      updateCtxVariable(scope);
+      return { type: 'PathSegment' as const, value: '' };
+    }
+
     default:
       throw new Error(`Unknown context-aware function: ${name}`);
   }

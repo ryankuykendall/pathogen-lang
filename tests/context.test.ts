@@ -528,11 +528,11 @@ describe('Path Context Tracking', () => {
       expect(result.path).toContain('M 150 100');
     });
 
-    it('updates lastTangent', () => {
+    it('updates heading', () => {
       const result = compileWithContext(`
         M 100 100
         polarMove(90deg, 50)
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -549,11 +549,11 @@ describe('Path Context Tracking', () => {
       expect(result.path).toContain('L 150 100');
     });
 
-    it('updates position and lastTangent', () => {
+    it('updates position and heading', () => {
       const result = compileWithContext(`
         M 100 100
         polarLine(45deg, 50)
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -596,10 +596,10 @@ describe('Path Context Tracking', () => {
       expect(angle).toBeCloseTo(Math.PI, 5);
     });
 
-    it('sets lastTangent in context', () => {
+    it('sets heading in context', () => {
       const result = compileWithContext(`
         arcFromCenter(100, 100, 50, 0, 90deg, 1)
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -695,10 +695,10 @@ describe('Path Context Tracking', () => {
       expect(Math.sin(angle)).toBeCloseTo(0, 5);
     });
 
-    it('sets lastTangent in context', () => {
+    it('sets heading in context', () => {
       const result = compileWithContext(`
         arcFromPolarOffset(0, 50, 90deg)
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -756,7 +756,7 @@ describe('Path Context Tracking', () => {
       expect(result.context.position.y).toBeCloseTo(100, 5);
     });
 
-    it('throws if no lastTangent', () => {
+    it('throws if no heading', () => {
       expect(() => {
         compileWithContext(`
           M 100 100
@@ -805,12 +805,12 @@ describe('Path Context Tracking', () => {
       expect(result.context.position.y).toBeCloseTo(80, 5);
     });
 
-    it('updates lastTangent for chaining', () => {
+    it('updates heading for chaining', () => {
       const result = compileWithContext(`
         M 50 100
         polarLine(0, 50)
         tangentArc(20, 90deg)
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -818,7 +818,7 @@ describe('Path Context Tracking', () => {
       expect(tangent).toBeCloseTo(Math.PI / 2, 5);
     });
 
-    it('throws if no lastTangent', () => {
+    it('throws if no heading', () => {
       expect(() => {
         compileWithContext(`
           M 100 100
@@ -863,7 +863,7 @@ describe('Path Context Tracking', () => {
     });
   });
 
-  describe('lastTangent from native commands', () => {
+  describe('heading from native commands', () => {
     function getTangentFromLog(result: { logs: { parts: { value: string }[] }[] }): number {
       return parseFloat(result.logs[0].parts[0].value);
     }
@@ -872,7 +872,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -881,7 +881,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 50
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 4, 5);
     });
@@ -890,7 +890,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 0 -50
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(-Math.PI / 2, 5);
     });
@@ -899,7 +899,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         H 50
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -908,7 +908,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 50 0
         H -50
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // H -50 means go to x=-50, which is leftward from x=50
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI, 5);
@@ -918,7 +918,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         V 50
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 2, 5);
     });
@@ -927,7 +927,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         V -50
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(-Math.PI / 2, 5);
     });
@@ -937,7 +937,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         C 10 0 40 20 50 20
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // Direction from (40, 20) to (50, 20) is rightward (0)
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
@@ -948,7 +948,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         Q 25 50 50 0
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // Direction from (25, 50) to (50, 0) is atan2(-50, 25)
       expect(getTangentFromLog(result)).toBeCloseTo(Math.atan2(-50, 25), 5);
@@ -959,7 +959,7 @@ describe('Path Context Tracking', () => {
         M 0 0
         C 10 0 20 0 30 0
         S 50 20 60 20
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // S: CP2 at (50, 20), endpoint at (60, 20) → direction is rightward (0)
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
@@ -970,7 +970,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         A 50 50 0 0 1 100 0
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // Verify the tangent is defined and is a finite number
       const tangent = getTangentFromLog(result);
@@ -983,7 +983,7 @@ describe('Path Context Tracking', () => {
         L 100 0
         L 100 100
         Z
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // Z goes from (100, 100) back to (0, 0)
       // Direction: atan2(0-100, 0-100) = atan2(-100, -100)
@@ -996,8 +996,8 @@ describe('Path Context Tracking', () => {
         L 50 0
         M 100 100
       `);
-      // After M, lastTangent should be cleared
-      expect(result.context.lastTangent).toBeUndefined();
+      // After M, heading should be cleared
+      expect(result.context.heading).toBeUndefined();
     });
 
     it('M then tangentArc throws', () => {
@@ -1016,7 +1016,7 @@ describe('Path Context Tracking', () => {
         M 0 0
         L 50 0
         L 50 0
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       // Zero-length L should preserve previous tangent (0, rightward)
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
@@ -1026,7 +1026,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         l 20 0
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -1035,7 +1035,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         h 20
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -1044,7 +1044,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         v 20
-        log(ctx.lastTangent)
+        log(ctx.heading)
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 2, 5);
     });
@@ -1203,7 +1203,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         lineTo(100, 0)
       `);
-      expect(result.context.lastTangent).toBeCloseTo(0, 5);
+      expect(result.context.heading).toBeCloseTo(0, 5);
       expect(result.context.position.x).toBeCloseTo(100, 5);
       expect(result.context.position.y).toBeCloseTo(0, 5);
     });
@@ -1269,6 +1269,209 @@ describe('Path Context Tracking', () => {
       expect(() => {
         compileWithContext(`tangentArc(20, 90deg)`);
       }).toThrow(/Line.*tangentArc requires/);
+    });
+  });
+
+  describe('heading()', () => {
+    it('sets tangent without emitting commands or moving cursor', () => {
+      const result = compileWithContext(`
+        M 50 50
+        heading(0)
+      `);
+      // Position unchanged
+      expect(result.context.position).toEqual({ x: 50, y: 50 });
+      // Heading set
+      expect(result.context.heading).toBeCloseTo(0, 5);
+      // No extra commands emitted (only M)
+      expect(result.path).toBe('M 50 50');
+    });
+
+    it('followed by tangentArc produces correct geometry', () => {
+      const result = compileWithContext(`
+        M 50 100
+        heading(0)
+        tangentArc(20, 90deg)
+      `);
+      // heading(0) = rightward, tangentArc curves down
+      // Center at (50, 120), end at (70, 120)
+      expect(result.context.position.x).toBeCloseTo(70, 5);
+      expect(result.context.position.y).toBeCloseTo(120, 5);
+    });
+
+    it('followed by tangentLine produces correct geometry', () => {
+      const result = compileWithContext(`
+        M 50 100
+        heading(0)
+        tangentLine(30)
+      `);
+      // heading(0) = rightward, tangentLine draws 30px right
+      expect(result.context.position.x).toBeCloseTo(80, 5);
+      expect(result.context.position.y).toBeCloseTo(100, 5);
+    });
+
+    it('after M enables tangent functions without dummy segment', () => {
+      const result = compileWithContext(`
+        M 100 100
+        heading(90deg)
+        tangentLine(40)
+      `);
+      // heading(90deg) = downward, tangentLine draws 40px down
+      expect(result.context.position.x).toBeCloseTo(100, 5);
+      expect(result.context.position.y).toBeCloseTo(140, 5);
+      // No dummy segment — path is just M + L
+      expect(result.path).not.toContain('h 0.01');
+    });
+
+    it('works with radians', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(calc(PI() / 4))
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 4, 5);
+    });
+
+    it('works with deg suffix', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(45deg)
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 4, 5);
+    });
+
+    it('works with pi multiplier', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(0.5pi)
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    it('inside path block replaces h 0.01 hack', () => {
+      const result = compileWithContext(`
+        let p = @{
+          heading(0)
+          tangentArc(20, 90deg)
+        };
+        M 50 100
+        p.draw()
+      `);
+      // Path block with heading(0) + tangentArc — no h 0.01 in output
+      expect(result.path).not.toContain('h 0.01');
+      // Path blocks emit lowercase 'a' commands
+      expect(result.path).toContain('a');
+    });
+
+    it('path block with heading + arcs + z closes cleanly', () => {
+      const result = compileWithContext(`
+        let p = @{
+          heading(0)
+          tangentArc(20, 180deg)
+          z
+        };
+        M 50 100
+        p.draw()
+      `);
+      // No offset from dummy segment — z should close cleanly to (50, 100)
+      expect(result.path).not.toContain('h 0.01');
+      // Path blocks emit lowercase 'z'
+      expect(result.path).toContain('z');
+    });
+  });
+
+  describe('turn()', () => {
+    it('adds delta to current heading', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(0)
+        turn(90deg)
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    it('throws if no existing heading', () => {
+      expect(() => {
+        compileWithContext(`
+          M 100 100
+          turn(45deg)
+        `);
+      }).toThrow('turn requires an existing heading');
+    });
+
+    it('chains: heading(0) → turn(90deg) → read ctx.heading = π/2', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(0)
+        turn(90deg)
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    it('works with negative delta', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(90deg)
+        turn(-45deg)
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 4, 5);
+    });
+
+    it('works after a drawing command that sets tangent', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        turn(90deg)
+        tangentLine(30)
+      `);
+      // L 50 0 sets heading to 0, turn(90deg) sets to π/2 (downward)
+      // tangentLine(30) draws 30px down from (50, 0) → (50, 30)
+      expect(result.context.position.x).toBeCloseTo(50, 5);
+      expect(result.context.position.y).toBeCloseTo(30, 5);
+    });
+
+    it('multiple turns accumulate', () => {
+      const result = compileWithContext(`
+        M 0 0
+        heading(0)
+        turn(30deg)
+        turn(30deg)
+        turn(30deg)
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(Math.PI / 2, 5);
+    });
+  });
+
+  describe('ctx.heading property', () => {
+    it('readable after drawing command', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        log(ctx.heading)
+      `);
+      const heading = parseFloat(result.logs[0].parts[0].value);
+      expect(heading).toBeCloseTo(0, 5);
+    });
+
+    it('undefined after M (no heading)', () => {
+      const result = compileWithContext(`
+        M 0 0
+        L 50 0
+        M 100 100
+      `);
+      expect(result.context.heading).toBeUndefined();
     });
   });
 });

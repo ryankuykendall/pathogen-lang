@@ -391,9 +391,9 @@ export function contextToObject(ctx: PathContext, transformState?: TransformStat
         }))
       : [],
   };
-  // Include lastTangent if defined
+  // Include heading (user-facing name for lastTangent) if defined
   if (ctx.lastTangent !== undefined) {
-    obj.lastTangent = ctx.lastTangent;
+    obj.heading = ctx.lastTangent;
   }
 
   // Attach transform state (accessed via .transform in evaluator)

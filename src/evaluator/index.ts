@@ -5560,6 +5560,27 @@ function evaluateContextAwareFunction(
       };
     }
 
+    case 'heading': {
+      // heading(angle) → set tangent direction without emitting commands or moving cursor
+      const [angle] = args as [number];
+      setLastTangent(ctx, angle);
+      updateCtxVariable(scope);
+      return { type: 'PathSegment' as const, value: '' };
+    }
+
+    case 'turn': {
+      // turn(delta) → add delta to current tangent direction
+      const [delta] = args as [number];
+      if (ctx.lastTangent === undefined) {
+        throw new Error(
+          formatError('turn requires an existing heading — use heading(angle) first', loc?.line, loc?.column),
+        );
+      }
+      setLastTangent(ctx, ctx.lastTangent + delta);
+      updateCtxVariable(scope);
+      return { type: 'PathSegment' as const, value: '' };
+    }
+
     default:
       throw new Error(`Unknown context-aware function: ${name}`);
   }
@@ -6809,7 +6830,7 @@ export function evaluate(program: Program, options?: { toFixed?: number; fonts?:
  */
 export interface EvaluateWithContextResult {
   path: string;
-  context: PathContext;
+  context: PathContext & { heading?: number };
   logs: LogEntry[];
   calledStdlibFunctions: string[]; // Stdlib function names invoked during evaluation
   layers: LayerOutput[];
@@ -6876,9 +6897,19 @@ export function evaluateWithContext(
 
     const compileResult = buildCompileResult(accum, evalState);
 
+    // Expose heading as user-facing alias for internal lastTangent
+    const context = Object.create(pathContext, {
+      heading: {
+        get() {
+          return pathContext.lastTangent;
+        },
+        enumerable: true,
+      },
+    });
+
     return {
       path: compileResult.layers[0]?.data ?? '',
-      context: pathContext,
+      context,
       logs,
       calledStdlibFunctions: Array.from(calledStdlibFunctions),
       layers: compileResult.layers,

@@ -19,6 +19,8 @@ export const contextAwareFunctions = new Set([
   'arcFromPolarOffset',
   'tangentLine',
   'tangentArc',
+  'heading',
+  'turn',
 ]);
 
 export { mathFunctions } from './math';

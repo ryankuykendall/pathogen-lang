@@ -182,6 +182,8 @@ const contextAwareFunctionNames = [
   'arcFromCenter',
   'tangentLine',
   'tangentArc',
+  'heading',
+  'turn',
 ];
 
 const nonReservedIdentifier: Parsimmon.Parser<Identifier> = identifier.chain((id) =>

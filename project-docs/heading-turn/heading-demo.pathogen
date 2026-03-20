@@ -1,0 +1,41 @@
+// heading() and turn() demonstration
+// Shows how heading(0) replaces the old h 0.01 hack for tangent-dependent paths
+
+let r = 15;
+
+// C-like shape using heading — no dummy segment, clean z closure
+let cShape = @{
+  heading(-0.75pi)
+  tangentArc(r, 270deg)
+  z
+};
+
+// S-curve using heading + turn
+let sCurve = @{
+  heading(0)
+  tangentArc(r, 180deg)
+  turn(180deg)
+  tangentArc(r, 180deg)
+};
+
+// Zigzag using heading + repeated turns
+let zigzag = @{
+  heading(45deg)
+  tangentLine(20)
+  turn(-90deg)
+  tangentLine(20)
+  turn(90deg)
+  tangentLine(20)
+  turn(-90deg)
+  tangentLine(20)
+};
+
+// Draw all three shapes
+M 50 55
+cShape.draw()
+
+M 120 40
+sCurve.draw()
+
+M 30 130
+zigzag.draw()

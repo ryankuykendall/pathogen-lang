@@ -337,11 +337,70 @@ arcFromPolarOffset(0, 50, 90deg)
 | May emit L command | Yes, if position doesn't match | Never |
 | Best for | Arcs with known center offset | Continuous curved paths |
 
+### Heading Control
+
+Angles follow SVG coordinate conventions: 0 is rightward, positive angles rotate clockwise (toward the positive y-axis, which points down in SVG).
+
+#### heading(angle)
+
+Sets the heading to an absolute angle. No command is emitted and the cursor does not move. This enables `tangentArc` and `tangentLine` immediately after `M` without needing a dummy segment like `h 0.01`.
+
+```
+M 50 100
+heading(0)           // Set heading to rightward
+tangentArc(20, 90deg) // Works immediately — no dummy segment needed
+```
+
+Inside [path blocks](path-blocks.md), `heading()` avoids the offset artifacts that `h 0.01` causes with `z` closePath:
+
+```
+let cLike = @{
+  heading(0)
+  tangentArc(20, 90deg)
+  tangentArc(20, -90deg)
+  z  // Closes cleanly to start — no tiny offset
+};
+```
+
+#### turn(delta)
+
+Adds `delta` to the current heading (relative change). Requires an existing heading — either from `heading()` or from a previous drawing command. Negative deltas turn counter-clockwise.
+
+```
+M 50 100
+heading(0)          // Start heading rightward
+turn(90deg)         // Now heading downward
+tangentLine(30)     // Draws 30px down
+```
+
+After drawing commands:
+
+```
+M 0 0  L 50 0      // Heading is 0 (rightward)
+turn(45deg)         // Heading is now 45°
+tangentLine(20)     // Continues at 45°
+```
+
+#### ctx.heading
+
+The current heading (read-only), readable via the context object. Set by `heading()`, `turn()`, or any drawing command that establishes direction. `M` (moveTo) clears the heading.
+
+```
+M 0 0  L 50 0
+log(ctx.heading)   // 0 (rightward)
+heading(90deg)
+log(ctx.heading)   // π/2 (downward)
+M 200 200
+log(ctx.heading)   // undefined (M clears the heading)
+```
+
 ### Tangent Functions
 
-These functions continue from the previous drawing command's direction. Any path command that establishes a direction — including native SVG commands (`L`, `H`, `V`, `C`, `S`, `Q`, `T`, `A`, `Z`) and stdlib path functions — sets a tangent that `tangentLine` and `tangentArc` can follow.
+These functions continue from the current heading. Any path command that establishes a direction — including native SVG commands (`L`, `H`, `V`, `C`, `S`, `Q`, `T`, `A`, `Z`) and stdlib path functions — sets a heading that `tangentLine` and `tangentArc` can follow.
 
-`M` (moveTo) clears the tangent since a move does not establish a direction.
+You can also set the heading explicitly with `heading()`, adjust it with `turn()`, or read it via `ctx.heading`.
+
+`M` (moveTo) clears the heading since a move does not establish a direction.
 
 #### tangentLine(length)
 
