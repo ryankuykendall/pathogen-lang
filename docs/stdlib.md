@@ -146,6 +146,54 @@ let c = Cycler([1, 2, 3]);
 log(c.length);  // 3
 ```
 
+### PolarVector
+
+A `PolarVector` represents a direction and distance in polar coordinates. It is used to define bezier control point positions relative to anchor points — you specify "which direction and how far" rather than computing absolute x, y coordinates.
+
+#### PolarVector(angle, distance)
+
+Creates a polar vector. Angle is in radians (use `rad()` or `deg` suffix for degrees).
+
+```
+let pv = PolarVector(0.25 * PI(), 30);
+let pv2 = PolarVector(rad(45), 30);      // equivalent
+```
+
+#### .angle
+
+Returns the angle in radians.
+
+#### .distance
+
+Returns the distance.
+
+#### .turn(deltaAngle)
+
+Returns a new PolarVector with the angle rotated by `deltaAngle`. Distance is unchanged.
+
+```
+let pv = PolarVector(0, 20);
+let turned = pv.turn(0.5 * PI());  // angle is now π/2, distance still 20
+```
+
+#### .scale(factor)
+
+Returns a new PolarVector with the distance multiplied by `factor`. Angle is unchanged.
+
+```
+let pv = PolarVector(0, 20);
+let wider = pv.scale(1.5);  // angle still 0, distance is now 30
+```
+
+#### .mirror()
+
+Returns a new PolarVector with the angle rotated by π (180°). Distance is unchanged. This is the key operation for achieving C1 (smooth) continuity when chaining bezier curves — the outgoing handle mirrors the incoming handle.
+
+```
+let pv = PolarVector(0.25 * PI(), 20);
+let mirrored = pv.mirror();  // angle is now 1.25π, distance still 20
+```
+
 ---
 
 ## Path Functions
@@ -226,6 +274,32 @@ Draws a cubic bezier curve.
 
 ```
 cubic(0, 100, 25, 0, 75, 0, 100, 100)
+```
+
+### polarCubicBezier(start, pv1, pv2, end)
+
+Draws a cubic bezier curve where control points are defined as polar vectors relative to the start and end points. `start` and `end` are `Point` values; `pv1` and `pv2` are `PolarVector` values.
+
+- **pv1** — direction and distance from `start` to the first control point
+- **pv2** — direction and distance from `end` to the second control point
+
+```
+let a = Point(0, 100);
+let b = Point(100, 100);
+polarCubicBezier(a, PolarVector(rad(-60), 40), PolarVector(rad(-120), 40), b)
+```
+
+Output: `m` (relative move) followed by `c` (relative cubic) — matches the spline function convention.
+
+PolarVector methods compose naturally for handle manipulation:
+
+```
+let handle = PolarVector(rad(-45), 30);
+// Symmetric curve: mirror the handle for the other end
+polarCubicBezier(a, handle, handle.mirror(), b)
+
+// Wider version: scale the handle distance
+polarCubicBezier(a, handle.scale(1.5), handle.mirror().scale(1.5), b)
 ```
 
 ### moveTo(x, y)

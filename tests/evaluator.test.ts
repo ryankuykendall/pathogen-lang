@@ -2340,4 +2340,239 @@ describe('Evaluator', () => {
       });
     });
   });
+
+  describe('PolarVector', () => {
+    describe('constructor', () => {
+      it('creates a PolarVector with angle and distance', () => {
+        const result = compilePath(`
+          let pv = PolarVector(0.5, 20);
+          log(pv.angle);
+          log(pv.distance);
+          M 0 0
+        `);
+        expect(result).toBe('M 0 0');
+      });
+
+      it('displays correctly in log()', () => {
+        const result = compile('let pv = PolarVector(0.5, 20); log(pv);');
+        expect(result.logs[0].parts[0].value).toBe('PolarVector(0.5, 20)');
+      });
+
+      it('rejects wrong number of arguments', () => {
+        expect(() => compilePath('let pv = PolarVector(1);')).toThrow(/expects 2 arguments/);
+        expect(() => compilePath('let pv = PolarVector(1, 2, 3);')).toThrow(/expects 2 arguments/);
+      });
+
+      it('rejects non-numeric arguments', () => {
+        expect(() => compilePath('let pv = PolarVector("a", 1);')).toThrow(/angle must be a number/);
+        expect(() => compilePath('let pv = PolarVector(1, "b");')).toThrow(/distance must be a number/);
+      });
+    });
+
+    describe('property access', () => {
+      it('.angle returns the angle', () => {
+        const result = compilePath(`
+          let pv = PolarVector(1.5, 20);
+          M pv.angle 0
+        `);
+        expect(result).toBe('M 1.5 0');
+      });
+
+      it('.distance returns the distance', () => {
+        const result = compilePath(`
+          let pv = PolarVector(0, 42);
+          M 0 pv.distance
+        `);
+        expect(result).toBe('M 0 42');
+      });
+
+      it('rejects unknown properties', () => {
+        expect(() => compilePath('let pv = PolarVector(0, 1); M pv.foo 0')).toThrow(/does not exist/);
+      });
+    });
+
+    describe('.turn()', () => {
+      it('rotates angle by delta, preserving distance', () => {
+        const result = compilePath(`
+          let pv = PolarVector(1, 20);
+          let turned = pv.turn(0.5);
+          M turned.angle turned.distance
+        `);
+        expect(result).toBe('M 1.5 20');
+      });
+
+      it('supports negative delta', () => {
+        const result = compilePath(`
+          let pv = PolarVector(1, 10);
+          let turned = pv.turn(-0.5);
+          M turned.angle turned.distance
+        `);
+        expect(result).toBe('M 0.5 10');
+      });
+    });
+
+    describe('.scale()', () => {
+      it('multiplies distance by factor, preserving angle', () => {
+        const result = compilePath(`
+          let pv = PolarVector(2, 10);
+          let scaled = pv.scale(3);
+          M scaled.angle scaled.distance
+        `);
+        expect(result).toBe('M 2 30');
+      });
+
+      it('supports fractional factor', () => {
+        const result = compilePath(`
+          let pv = PolarVector(1, 20);
+          let scaled = pv.scale(0.5);
+          M scaled.angle scaled.distance
+        `);
+        expect(result).toBe('M 1 10');
+      });
+
+      it('rejects negative factor', () => {
+        expect(() => compilePath('let pv = PolarVector(0, 10); pv.scale(-1);')).toThrow(/non-negative.*mirror/);
+      });
+    });
+
+    describe('.mirror()', () => {
+      it('adds PI to the angle, preserving distance', () => {
+        const result = compilePath(`
+          let pv = PolarVector(0, 20);
+          let mirrored = pv.mirror();
+          M mirrored.distance 0
+        `);
+        // distance unchanged
+        expect(result).toBe('M 20 0');
+      });
+
+      it('angle is offset by PI', () => {
+        // angle=0.5, mirror → 0.5 + PI ≈ 3.641592653589793
+        const result = compilePath(`
+          let pv = PolarVector(0.5, 10);
+          let m = pv.mirror();
+          M calc(round(m.angle * 1000) / 1000) 0
+        `);
+        const expected = Math.round((0.5 + Math.PI) * 1000) / 1000;
+        expect(result).toBe(`M ${expected} 0`);
+      });
+    });
+
+    describe('method chaining', () => {
+      it('turn then scale', () => {
+        const result = compilePath(`
+          let pv = PolarVector(0, 10);
+          let r = pv.turn(1).scale(2);
+          M r.angle r.distance
+        `);
+        expect(result).toBe('M 1 20');
+      });
+
+      it('mirror then turn', () => {
+        const result = compilePath(`
+          let pv = PolarVector(0, 15);
+          let r = pv.mirror().turn(0.5);
+          M r.distance 0
+        `);
+        // distance preserved through mirror and turn
+        expect(result).toBe('M 15 0');
+      });
+    });
+  });
+
+  describe('polarCubicBezier', () => {
+    it('horizontal control points at angle 0', () => {
+      // start=(0,100), pv1=PolarVector(0, 30), pv2=PolarVector(PI, 30), end=(100,100)
+      // CP1 = (0+30*cos(0), 100+30*sin(0)) = (30, 100)
+      // CP2 = (100+30*cos(PI), 100+30*sin(PI)) = (70, 100)
+      // Relative: m 0 100 c 30 0 70 0 100 0
+      const result = compilePath(`
+        polarCubicBezier(
+          Point(0, 100),
+          PolarVector(0, 30),
+          PolarVector(PI(), 30),
+          Point(100, 100)
+        )
+      `);
+      expect(result).toBe('m 0 100 c 30 0 70 0 100 0');
+    });
+
+    it('vertical control points at angle PI/2', () => {
+      // start=(50,0), pv1=PolarVector(PI/2, 40), pv2=PolarVector(-PI/2, 40), end=(50,100)
+      // CP1 = (50+40*cos(PI/2), 0+40*sin(PI/2)) = (50, 40)
+      // CP2 = (50+40*cos(-PI/2), 100+40*sin(-PI/2)) = (50, 60)
+      // Relative c: CP1-start=(0,40), CP2-start=(0,60), end-start=(0,100)
+      const result = compilePath(`
+        polarCubicBezier(
+          Point(50, 0),
+          PolarVector(calc(PI() / 2), 40),
+          PolarVector(calc(-1 * PI() / 2), 40),
+          Point(50, 100)
+        )
+      `);
+      expect(result).toBe('m 50 0 c 0 40 0 60 0 100');
+    });
+
+    it('works with PolarVector.mirror() for symmetric curve', () => {
+      // handle = PolarVector(0, 25), mirror → PolarVector(PI, 25)
+      // start=(0,0), end=(100,0)
+      // CP1 = (0+25,0) = (25,0), CP2 = (100+25*cos(PI), 0) = (75,0)
+      // Relative: m 0 0 c 25 0 75 0 100 0
+      const result = compilePath(`
+        let handle = PolarVector(0, 25);
+        polarCubicBezier(Point(0, 0), handle, handle.mirror(), Point(100, 0))
+      `);
+      expectSVGPathCommandSequence(result, [
+        ['m', 0, 0],
+        ['c', 25, 0, 75, 0, 100, 0],
+      ], { precision: 10 });
+    });
+
+    it('works with PolarVector.scale()', () => {
+      // handle = PolarVector(0, 20), scale(1.5) → PolarVector(0, 30)
+      // start=(0,0), end=(100,0)
+      // CP1 = (30,0), CP2 = (100+20*cos(PI), 0) = (80,0)
+      // Relative: m 0 0 c 30 0 80 0 100 0
+      const result = compilePath(`
+        let h = PolarVector(0, 20);
+        polarCubicBezier(Point(0, 0), h.scale(1.5), h.mirror(), Point(100, 0))
+      `);
+      expectSVGPathCommandSequence(result, [
+        ['m', 0, 0],
+        ['c', 30, 0, 80, 0, 100, 0],
+      ], { precision: 10 });
+    });
+
+    it('works with PolarVector.turn()', () => {
+      // pv = PolarVector(0, 40).turn(PI/2) → PolarVector(PI/2, 40)
+      // start=(0,0), end=(100,0)
+      // CP1 = (0+40*cos(PI/2), 0+40*sin(PI/2)) = (0, 40)
+      // CP2 = (100+40*cos(PI/2), 0+40*sin(PI/2)) = (100, 40)
+      // Relative c: (0,40), (100,40), (100,0)
+      const result = compilePath(`
+        let pv = PolarVector(0, 40).turn(calc(PI() / 2));
+        polarCubicBezier(Point(0, 0), pv, pv, Point(100, 0))
+      `);
+      expectSVGPathCommandSequence(result, [
+        ['m', 0, 0],
+        ['c', 0, 40, 100, 40, 100, 0],
+      ], { precision: 10 });
+    });
+
+    it('rejects wrong number of arguments', () => {
+      expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1))')).toThrow(/expects 4 arguments/);
+    });
+
+    it('rejects non-Point start', () => {
+      expect(() => compilePath('polarCubicBezier(5, PolarVector(0,1), PolarVector(0,1), Point(1,1))')).toThrow(/must be a Point/);
+    });
+
+    it('rejects non-PolarVector control handles', () => {
+      expect(() => compilePath('polarCubicBezier(Point(0,0), 5, PolarVector(0,1), Point(1,1))')).toThrow(/must be a PolarVector/);
+    });
+
+    it('rejects non-Point end', () => {
+      expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1), 5)')).toThrow(/must be a Point/);
+    });
+  });
 });

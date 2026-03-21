@@ -1,7 +1,7 @@
 // Path helper functions that return PathSegment values
 
 import { formatNum } from '../evaluator/format';
-import type { ArrayValue, ObjectValue, Value } from '../evaluator/types';
+import type { ArrayValue, ObjectValue, PointValue, PolarVectorValue, Value } from '../evaluator/types';
 
 export interface PathSegment {
   type: 'PathSegment';
@@ -366,4 +366,42 @@ export const pathFunctions = {
 
     return segment(parts.join(' '));
   },
+
+  // ---------------------------------------------------------------------------
+  // Polar bezier functions
+  // ---------------------------------------------------------------------------
+
+  // polarCubicBezier(start, pv1, pv2, end) — cubic bezier with polar control points (relative commands)
+  // start/end: Point, pv1/pv2: PolarVector (direction + distance from anchor to control point)
+  polarCubicBezier: (...args: unknown[]): PathSegment => {
+    if (args.length !== 4) throw new Error('polarCubicBezier() expects 4 arguments');
+    const start = args[0];
+    const pv1 = args[1];
+    const pv2 = args[2];
+    const end = args[3];
+    if (!isPointArg(start)) throw new Error('polarCubicBezier: arg 1 (start) must be a Point');
+    if (!isPolarVectorArg(pv1)) throw new Error('polarCubicBezier: arg 2 must be a PolarVector');
+    if (!isPolarVectorArg(pv2)) throw new Error('polarCubicBezier: arg 3 must be a PolarVector');
+    if (!isPointArg(end)) throw new Error('polarCubicBezier: arg 4 (end) must be a Point');
+
+    // Compute absolute control points from polar vectors relative to anchors
+    const cp1x = start.x + pv1.distance * Math.cos(pv1.angle);
+    const cp1y = start.y + pv1.distance * Math.sin(pv1.angle);
+    const cp2x = end.x + pv2.distance * Math.cos(pv2.angle);
+    const cp2y = end.y + pv2.distance * Math.sin(pv2.angle);
+
+    // Emit relative path commands (m to start, c for cubic relative to start)
+    return segment(
+      `m ${formatNum(start.x)} ${formatNum(start.y)} c ${formatNum(cp1x - start.x)} ${formatNum(cp1y - start.y)} ${formatNum(cp2x - start.x)} ${formatNum(cp2y - start.y)} ${formatNum(end.x - start.x)} ${formatNum(end.y - start.y)}`,
+    );
+  },
 };
+
+// Local type guards to avoid circular imports from evaluator
+function isPointArg(v: unknown): v is PointValue {
+  return typeof v === 'object' && v !== null && 'type' in v && (v as PointValue).type === 'PointValue';
+}
+
+function isPolarVectorArg(v: unknown): v is PolarVectorValue {
+  return typeof v === 'object' && v !== null && 'type' in v && (v as PolarVectorValue).type === 'PolarVectorValue';
+}

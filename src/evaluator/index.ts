@@ -93,6 +93,7 @@ import type {
   PatternOutput,
   PatternValue,
   PointValue,
+  PolarVectorValue,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -167,6 +168,7 @@ export type {
   PatternOutput,
   PatternValue,
   PointValue,
+  PolarVectorValue,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -193,6 +195,10 @@ export function isArrayValue(value: Value): value is ArrayValue {
 
 export function isPointValue(value: Value): value is PointValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PointValue';
+}
+
+export function isPolarVectorValue(value: Value): value is PolarVectorValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PolarVectorValue';
 }
 
 export function isCyclerValue(value: Value): value is CyclerValue {
@@ -3053,6 +3059,31 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // PolarVector methods
+  if (isPolarVectorValue(obj)) {
+    switch (expr.method) {
+      case 'turn': {
+        if (expr.args.length !== 1) throw mError('turn() expects 1 argument');
+        const delta = evaluateExpression(expr.args[0], scope);
+        if (typeof delta !== 'number') throw mError('turn() argument must be a number');
+        return { type: 'PolarVectorValue' as const, angle: obj.angle + delta, distance: obj.distance };
+      }
+      case 'scale': {
+        if (expr.args.length !== 1) throw mError('scale() expects 1 argument');
+        const factor = evaluateExpression(expr.args[0], scope);
+        if (typeof factor !== 'number') throw mError('scale() argument must be a number');
+        if (factor < 0) throw mError('scale() factor must be non-negative — use mirror() to flip direction');
+        return { type: 'PolarVectorValue' as const, angle: obj.angle, distance: obj.distance * factor };
+      }
+      case 'mirror': {
+        if (expr.args.length !== 0) throw mError('mirror() expects no arguments');
+        return { type: 'PolarVectorValue' as const, angle: obj.angle + Math.PI, distance: obj.distance };
+      }
+      default:
+        throw mError(`Unknown PolarVector method: ${expr.method}`);
+    }
+  }
+
   // Cycler methods
   if (isCyclerValue(obj)) {
     switch (expr.method) {
@@ -3781,6 +3812,9 @@ function formatValueForDisplay(val: Value): string {
   if (isPointValue(val)) {
     return `Point(${formatNum(val.x)}, ${formatNum(val.y)})`;
   }
+  if (isPolarVectorValue(val)) {
+    return `PolarVector(${formatNum(val.angle)}, ${formatNum(val.distance)})`;
+  }
   if (isPathBlockValue(val)) {
     return `PathBlock(${val.commands.length} commands)`;
   }
@@ -3861,6 +3895,13 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     if (expr.property === 'x') return obj.x;
     if (expr.property === 'y') return obj.y;
     throw new Error(`Property '${expr.property}' does not exist on Point`);
+  }
+
+  // Handle PolarVectorValue property access
+  if (isPolarVectorValue(obj)) {
+    if (expr.property === 'angle') return obj.angle;
+    if (expr.property === 'distance') return obj.distance;
+    throw new Error(`Property '${expr.property}' does not exist on PolarVector`);
   }
 
   // Handle PathBlockValue property access
@@ -4306,6 +4347,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
           stringValue = formatValueForDisplay(value);
         } else if (isPointValue(value)) {
           stringValue = formatValueForDisplay(value);
+        } else if (isPolarVectorValue(value)) {
+          stringValue = formatValueForDisplay(value);
         } else if (isObjectValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isArrayValue(value)) {
@@ -4387,6 +4430,18 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (typeof x !== 'number') throw new Error('Point() x must be a number');
     if (typeof y !== 'number') throw new Error('Point() y must be a number');
     return { type: 'PointValue' as const, x, y };
+  }
+
+  // Handle PolarVector() constructor
+  if (call.name === 'PolarVector') {
+    if (call.args.length !== 2) {
+      throw new Error(`PolarVector() expects 2 arguments, got ${call.args.length}`);
+    }
+    const angle = evaluateExpression(call.args[0], scope);
+    const distance = evaluateExpression(call.args[1], scope);
+    if (typeof angle !== 'number') throw new Error('PolarVector() angle must be a number');
+    if (typeof distance !== 'number') throw new Error('PolarVector() distance must be a number');
+    return { type: 'PolarVectorValue' as const, angle, distance };
   }
 
   // Handle Cycler() constructor

@@ -31,6 +31,7 @@ export type Value =
   | StyleBlockValue
   | ArrayValue
   | PointValue
+  | PolarVectorValue
   | TransformReference
   | TransformPropertyReference
   | ObjectValue
@@ -78,6 +79,15 @@ export interface PointValue {
   type: 'PointValue';
   x: number;
   y: number;
+}
+
+/**
+ * Represents a polar vector (angle + distance) for defining bezier control points
+ */
+export interface PolarVectorValue {
+  type: 'PolarVectorValue';
+  angle: number;
+  distance: number;
 }
 
 /**
