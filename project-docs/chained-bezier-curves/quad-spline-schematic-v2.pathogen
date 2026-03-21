@@ -1,0 +1,163 @@
+// Set viewBox: 600 x 500, width: 600, height: 500
+// quadSpline Schematic — Implicit Angle Derivation
+// Phase 2: Uses stdlib quadSpline — no fn definition needed.
+//
+// Shows how tangent angles are inferred from geometry: the direction
+// from the previous CP through the current point determines the
+// outgoing angle. Only the start has an explicit angle.
+
+// =========================================================
+//  DIAGRAM 1 — quadSpline construction (top)
+// =========================================================
+
+let startPt = { x: 50, y: 160, angle: -30deg, exit: 70 };
+let midPts = [
+  { x: 180, y: 60,  exit: 65 },
+  { x: 320, y: 170, exit: 60 },
+  { x: 440, y: 50,  exit: 55 }
+];
+let endPt = { x: 560, y: 140 };
+
+// --- The curve ---
+define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
+layer('curve').apply { quadSpline(startPt, midPts, endPt) }
+
+// --- On-curve points ---
+define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
+layer('anchors').apply {
+  circle(startPt.x, startPt.y, 5)
+  for ([p, i] in midPts) { circle(p.x, p.y, 5) }
+  circle(endPt.x, endPt.y, 5)
+}
+
+// --- Shared CPs & tangent lines ---
+// We need to recompute CPs to draw them
+
+define PathLayer('shared-cp') ${ fill: #f97316; stroke: #7c2d12; stroke-width: 1 }
+define PathLayer('tangent-full') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
+define PathLayer('derived-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
+
+// First CP from explicit angle
+let cp0x = calc(startPt.x + startPt.exit * cos(startPt.angle));
+let cp0y = calc(startPt.y + startPt.exit * sin(startPt.angle));
+
+layer('shared-cp').apply { circle(cp0x, cp0y, 4) }
+layer('tangent-full').apply { M startPt.x startPt.y L cp0x cp0y }
+
+// Subsequent CPs from derived angles
+let prevCPx = cp0x;
+let prevCPy = cp0y;
+for ([pt, idx] in midPts) {
+  let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+  let newCPx = calc(pt.x + pt.exit * cos(angle));
+  let newCPy = calc(pt.y + pt.exit * sin(angle));
+
+  // Show derived direction: prevCP → pt (cyan dashed)
+  layer('derived-dir').apply { M prevCPx prevCPy L pt.x pt.y }
+  // Show tangent extension: pt → newCP (orange dashed)
+  layer('tangent-full').apply { M pt.x pt.y L newCPx newCPy }
+  // Shared CP marker
+  layer('shared-cp').apply { circle(newCPx, newCPy, 4) }
+
+  prevCPx = newCPx;
+  prevCPy = newCPy;
+}
+
+// --- Labels ---
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('labels').apply {
+  text(30, 178)`start`
+  text(165, 48)`P1`
+  text(305, 188)`P2`
+  text(425, 40)`P3`
+  text(548, 155)`end`
+}
+
+define TextLayer('title') ${ font-size: 12; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('title').apply {
+  text(50, 230)`quadSpline — Implicit Angle Derivation`
+}
+
+define TextLayer('subtitle') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+layer('subtitle').apply {
+  text(50, 248)`Only the start has an explicit angle. At each intermediate point, the tangent`
+  text(50, 262)`is derived from the direction of the previous CP through the current point.`
+}
+
+
+// =========================================================
+//  DIAGRAM 2 — Angle derivation close-up (bottom)
+// =========================================================
+
+// Show how prevCP → point determines the outgoing tangent
+let demoCP = { x: 130, y: 370 };
+let demoPt = { x: 260, y: 330 };
+let demoAngle = calc(atan2(demoPt.y - demoCP.y, demoPt.x - demoCP.x));
+let demoExit = 80;
+let demoNewCPx = calc(demoPt.x + demoExit * cos(demoAngle));
+let demoNewCPy = calc(demoPt.y + demoExit * sin(demoAngle));
+
+// Previous segment curve (arriving at demoPt)
+define PathLayer('demo-seg1') ${ fill: none; stroke: #6366f1; stroke-width: 2; stroke-dasharray: 6 3 }
+layer('demo-seg1').apply {
+  M 80 420 Q demoCP.x demoCP.y demoPt.x demoPt.y
+}
+
+// Next segment curve (departing from demoPt)
+define PathLayer('demo-seg2') ${ fill: none; stroke: #8b5cf6; stroke-width: 2.5 }
+layer('demo-seg2').apply {
+  M demoPt.x demoPt.y Q demoNewCPx demoNewCPy 420 400
+}
+
+// The full tangent line through the point
+define PathLayer('demo-tangent') ${ fill: none; stroke: #f97316; stroke-width: 1.5 }
+layer('demo-tangent').apply {
+  M demoCP.x demoCP.y L demoNewCPx demoNewCPy
+}
+
+// Points
+define PathLayer('demo-pts') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
+layer('demo-pts').apply {
+  circle(demoPt.x, demoPt.y, 6)
+  circle(80, 420, 4)
+  circle(420, 400, 4)
+}
+
+// CPs
+define PathLayer('demo-cps') ${ fill: #f97316; stroke: #7c2d12; stroke-width: 1 }
+layer('demo-cps').apply {
+  circle(demoCP.x, demoCP.y, 4)
+  circle(demoNewCPx, demoNewCPy, 4)
+}
+
+// Annotations
+define TextLayer('demo-labels') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+layer('demo-labels').apply {
+  text(100, 365)`prevCP`
+  text(245, 322)`current point`
+  text(calc(demoNewCPx + 5), calc(demoNewCPy - 8))`newCP`
+  text(55, 435)`prev point`
+  text(425, 410)`next point`
+}
+
+define TextLayer('demo-formula') ${ font-size: 10; fill: #22d3ee; font-family: monospace }
+layer('demo-formula').apply {
+  text(380, 330)`angle = atan2(`
+  text(380, 344)`  pt.y - prevCP.y,`
+  text(380, 358)`  pt.x - prevCP.x)`
+  text(380, 378)`newCP = pt + exit`
+  text(380, 392)`  * dir(angle)`
+}
+
+// Legend
+define PathLayer('leg-sq1') ${ fill: none; stroke: #6366f1; stroke-width: 2; stroke-dasharray: 6 3 }
+define PathLayer('leg-sq2') ${ fill: none; stroke: #8b5cf6; stroke-width: 2.5 }
+
+layer('leg-sq1').apply { M 50 460 L 70 460 }
+layer('leg-sq2').apply { M 50 478 L 70 478 }
+
+define TextLayer('leg-text') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+layer('leg-text').apply {
+  text(78, 464)`Previous segment (arriving)`
+  text(78, 482)`Next segment (departing) — angle inferred from prevCP direction`
+}

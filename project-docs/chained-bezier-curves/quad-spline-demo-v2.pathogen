@@ -1,0 +1,49 @@
+// quad-spline-demo-v2.pathogen
+// Demonstrates stdlib quadSpline — smooth curves with implicit angle derivation.
+// Phase 2: Uses stdlib quadSpline — no fn definition needed.
+
+// --- Example 1: Simple Arc ---
+
+define PathLayer('simple-arc') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+
+layer('simple-arc').apply {
+  quadSpline(
+    { x: 10, y: 80, angle: 0, exit: 40 },
+    [],
+    { x: 90, y: 80 }
+  )
+}
+
+
+// --- Example 2: Flowing Curve ---
+
+define PathLayer('flowing') ${ fill: none; stroke: #dc2626; stroke-width: 2 }
+
+layer('flowing').apply {
+  quadSpline(
+    { x: 110, y: 80, angle: -45deg, exit: 30 },
+    [
+      { x: 140, y: 20, exit: 25 },
+      { x: 180, y: 60, exit: 30 },
+      { x: 210, y: 20, exit: 25 }
+    ],
+    { x: 250, y: 80 }
+  )
+}
+
+
+// --- Example 3: Zigzag with Smooth Joins ---
+
+define PathLayer('zigzag') ${ fill: none; stroke: #16a34a; stroke-width: 2 }
+
+layer('zigzag').apply {
+  quadSpline(
+    { x: 270, y: 80, angle: -60deg, exit: 25 },
+    [
+      { x: 300, y: 20, exit: 25 },
+      { x: 330, y: 80, exit: 25 },
+      { x: 360, y: 20, exit: 25 }
+    ],
+    { x: 390, y: 80 }
+  )
+}

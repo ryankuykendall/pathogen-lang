@@ -1,0 +1,158 @@
+// Set viewBox: 600 x 520, width: 600, height: 520
+// cubicSpline Schematic — Explicit Angles & Handle Lengths
+// Phase 2: Uses stdlib cubicSpline — no fn definition needed.
+//
+// Shows a 4-point cubic spline with annotated control points,
+// tangent lines, angle arcs, and handle-length labels.
+
+// Helper: draw a small angle arc from the positive x-axis to the given angle
+fn angleArc(cx, cy, radius, angle) {
+  let ex = calc(cx + radius * cos(angle));
+  let ey = calc(cy + radius * sin(angle));
+  M calc(cx + radius) cy
+  A radius radius 0 0 1 ex ey
+}
+
+// =========================================================
+//  DIAGRAM 1 — Anatomy of a cubicSpline (top half)
+// =========================================================
+
+let pts = [
+  { x: 60,  y: 180, angle: -20deg, exit: 80 },
+  { x: 210, y: 60,  angle: 15deg,  entry: 70, exit: 65 },
+  { x: 370, y: 160, angle: -30deg, entry: 75, exit: 60 },
+  { x: 530, y: 80,  angle: 10deg,  entry: 70 }
+];
+
+// --- The curve itself ---
+define PathLayer('curve') ${ fill: none; stroke: #3b82f6; stroke-width: 3 }
+layer('curve').apply { cubicSpline(pts) }
+
+// --- On-curve points ---
+define PathLayer('anchors') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+layer('anchors').apply {
+  for ([p, i] in pts) { circle(p.x, p.y, 5) }
+}
+
+// --- Control points & tangent lines ---
+define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
+define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
+define PathLayer('tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
+define PathLayer('angle-arcs') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+
+let n = calc(pts.length - 1);
+for (i in 1..n) {
+  let prev = pts[calc(i - 1)];
+  let curr = pts[i];
+  let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+  let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+  let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+  let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+
+  // Exit CP (red diamond)
+  layer('cp-exit').apply { circle(c1x, c1y, 4) }
+  // Entry CP (green diamond)
+  layer('cp-entry').apply { circle(c2x, c2y, 4) }
+  // Tangent lines
+  layer('tangent').apply {
+    M prev.x prev.y L c1x c1y
+    M curr.x curr.y L c2x c2y
+  }
+}
+
+// Angle arcs at each point
+layer('angle-arcs').apply {
+  for ([p, i] in pts) {
+    angleArc(p.x, p.y, 18, p.angle)
+  }
+}
+
+// --- Labels ---
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+
+layer('labels').apply {
+  // Point labels
+  text(45, 200)`P0`
+  text(195, 48)`P1`
+  text(382, 168)`P2`
+  text(535, 72)`P3`
+
+  // Legend
+  text(60, 240)`Anatomy of cubicSpline()`
+}
+
+define TextLayer('legend') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+
+layer('legend').apply {
+  text(60, 258)`Each point specifies: x, y, angle, exit (handle forward), entry (handle backward)`
+  text(60, 273)`G1 continuity: exit CP and entry CP share the tangent line at every join`
+}
+
+// Legend color swatches
+define PathLayer('legend-marks') ${ fill: none; stroke: none }
+define PathLayer('swatch-curve') ${ fill: #3b82f6; stroke: none }
+define PathLayer('swatch-exit') ${ fill: #ef4444; stroke: none }
+define PathLayer('swatch-entry') ${ fill: #22c55e; stroke: none }
+define PathLayer('swatch-tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
+define PathLayer('swatch-angle') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+
+layer('swatch-curve').apply { rect(60, 290, 12, 3) }
+layer('swatch-exit').apply { circle(66, 310, 4) }
+layer('swatch-entry').apply { circle(66, 326, 4) }
+layer('swatch-tangent').apply { M 60 340 L 72 340 }
+layer('swatch-angle').apply { M 60 356 L 72 352 }
+
+define TextLayer('legend-text') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+
+layer('legend-text').apply {
+  text(80, 296)`Curve path`
+  text(80, 314)`Exit CP (outgoing handle)`
+  text(80, 330)`Entry CP (incoming handle)`
+  text(80, 345)`Tangent line`
+  text(80, 358)`Angle arc`
+}
+
+
+// =========================================================
+//  DIAGRAM 2 — G1 Proof (bottom half)
+// =========================================================
+
+// Show a single join point zoomed in, with collinear CPs
+
+let joinPt = { x: 370, y: 420 };
+let cpIn = { x: 310, y: 440 };
+let cpOut = { x: 430, y: 400 };
+
+define PathLayer('g1-line') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+layer('g1-line').apply {
+  M cpIn.x cpIn.y L cpOut.x cpOut.y
+}
+
+define PathLayer('g1-curves') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+layer('g1-curves').apply {
+  // Incoming segment
+  M 260 480 C 280 460 cpIn.x cpIn.y joinPt.x joinPt.y
+  // Outgoing segment
+  M joinPt.x joinPt.y C cpOut.x cpOut.y 470 380 510 430
+}
+
+define PathLayer('g1-anchor') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+layer('g1-anchor').apply { circle(joinPt.x, joinPt.y, 6) }
+
+define PathLayer('g1-cps') ${ fill: none; stroke: none }
+layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4) }
+layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4) }
+
+define TextLayer('g1-labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('g1-labels').apply {
+  text(350, 408)`join point`
+  text(275, 450)`CP₂ (entry)`
+  text(435, 392)`CP₁ (exit)`
+  text(260, 500)`incoming`
+  text(490, 445)`outgoing`
+}
+
+define TextLayer('g1-title') ${ font-size: 12; fill: #f59e0b; font-family: system-ui, sans-serif }
+layer('g1-title').apply {
+  text(260, 380)`G1 Continuity: CPs are collinear through the join point`
+}

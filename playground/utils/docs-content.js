@@ -1097,9 +1097,42 @@ L p.<span class="hljs-property">x</span> p.<span class="hljs-property">y</span> 
 <td>Continuous curved paths</td>
 </tr>
 </tbody></table>
-<h3 id="stdlib-tangent-functions">Tangent Functions</h3>
-<p>These functions continue from the previous drawing command&#39;s direction. Any path command that establishes a direction — including native SVG commands (<code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>) and stdlib path functions — sets a tangent that <code>tangentLine</code> and <code>tangentArc</code> can follow.</p>
-<p><code>M</code> (moveTo) clears the tangent since a move does not establish a direction.</p>
+<h3 id="stdlib-heading-control">Heading Control</h3>
+<p>Angles follow SVG coordinate conventions: 0 is rightward, positive angles rotate clockwise (toward the positive y-axis, which points down in SVG).</p>
+<h4 id="stdlib-headingangle">heading(angle)</h4>
+<p>Sets the heading to an absolute angle. No command is emitted and the cursor does not move. This enables <code>tangentArc</code> and <code>tangentLine</code> immediately after <code>M</code> without needing a dummy segment like <code>h 0.01</code>.</p>
+<pre><code class="hljs">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
+<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)           <span class="hljs-comment">// Set heading to rightward</span>
+<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg) <span class="hljs-comment">// Works immediately — no dummy segment needed</span>
+</code></pre><p>Inside <a href="path-blocks.md">path blocks</a>, <code>heading()</code> avoids the offset artifacts that <code>h 0.01</code> causes with <code>z</code> closePath:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> cLike = @{
+  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, -90deg)
+  z  <span class="hljs-comment">// Closes cleanly to start — no tiny offset</span>
+};
+</code></pre><h4 id="stdlib-turndelta">turn(delta)</h4>
+<p>Adds <code>delta</code> to the current heading (relative change). Requires an existing heading — either from <code>heading()</code> or from a previous drawing command. Negative deltas turn counter-clockwise.</p>
+<pre><code class="hljs">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
+<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)          <span class="hljs-comment">// Start heading rightward</span>
+<span class="hljs-title function_">turn</span>(90deg)         <span class="hljs-comment">// Now heading downward</span>
+<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">30</span>)     <span class="hljs-comment">// Draws 30px down</span>
+</code></pre><p>After drawing commands:</p>
+<pre><code class="hljs">M <span class="hljs-number">0</span> <span class="hljs-number">0</span>  L <span class="hljs-number">50</span> <span class="hljs-number">0</span>      <span class="hljs-comment">// Heading is 0 (rightward)</span>
+<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// Heading is now 45°</span>
+<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">20</span>)     <span class="hljs-comment">// Continues at 45°</span>
+</code></pre><h4 id="stdlib-ctxheading">ctx.heading</h4>
+<p>The current heading (read-only), readable via the context object. Set by <code>heading()</code>, <code>turn()</code>, or any drawing command that establishes direction. <code>M</code> (moveTo) clears the heading.</p>
+<pre><code class="hljs">M <span class="hljs-number">0</span> <span class="hljs-number">0</span>  L <span class="hljs-number">50</span> <span class="hljs-number">0</span>
+<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 0 (rightward)</span>
+<span class="hljs-title function_">heading</span>(90deg)
+<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// π/2 (downward)</span>
+M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
+<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// undefined (M clears the heading)</span>
+</code></pre><h3 id="stdlib-tangent-functions">Tangent Functions</h3>
+<p>These functions continue from the current heading. Any path command that establishes a direction — including native SVG commands (<code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>) and stdlib path functions — sets a heading that <code>tangentLine</code> and <code>tangentArc</code> can follow.</p>
+<p>You can also set the heading explicitly with <code>heading()</code>, adjust it with <code>turn()</code>, or read it via <code>ctx.heading</code>.</p>
+<p><code>M</code> (moveTo) clears the heading since a move does not establish a direction.</p>
 <h4 id="stdlib-tangentlinelength">tangentLine(length)</h4>
 <p>Draws a line continuing in the tangent direction from the previous command.</p>
 <pre><code class="hljs"><span class="hljs-title function_">arcFromPolarOffset</span>(<span class="hljs-number">0</span>, <span class="hljs-number">50</span>, 90deg)
@@ -2462,6 +2495,16 @@ layer(<span class="hljs-string">&#x27;labels&#x27;</span>).apply {
 <td>ProjectedTextValue</td>
 <td>Project along polar vector with anchor alignment</td>
 </tr>
+<tr>
+<td><code>.toPathBlock()</code></td>
+<td>PathBlockValue</td>
+<td>Flatten glyph outlines into a single PathBlock (requires <code>@font</code>)</td>
+</tr>
+<tr>
+<td><code>.toCodeSnippetBlock(name [, fontSize, padding])</code></td>
+<td>LayerReference</td>
+<td>Generate a syntax-highlighted code snippet GroupLayer</td>
+</tr>
 </tbody></table>
 <h3 id="text-block-projectedtextvalue-2">ProjectedTextValue</h3>
 <table>
@@ -2607,6 +2650,132 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 <li>A <code>ProjectedPathValue</code> (bbox-edge vs path-segment intersection)</li>
 <li>An object with <code>{x, y, width, height}</code> (AABB overlap test)</li>
 </ul>
+<h2 id="text-block-text-to-path-conversion">Text to Path Conversion</h2>
+<p>When you need text that renders identically without requiring fonts — or when you want to apply path transforms and boolean operations to text — <code>.toPathBlock()</code> converts glyph outlines into vector geometry. After conversion, the text is no longer a text element: it&#39;s path geometry that can be filled, stroked, scaled, mirrored, and combined with boolean operations like any other PathBlock.</p>
+<p>This is different from <code>PathBlock.fromGlyph()</code>, which returns an array of per-character PathBlocks. <code>.toPathBlock()</code> returns a single PathBlock containing all glyphs from the entire TextBlock, already laid out according to element positions, tspan offsets, and letter-spacing.</p>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Fonts must be loaded via <a href="cli.md"><code>@font</code> directive</a> or compile options</li>
+<li><code>font-family</code> must be set in the TextBlock&#39;s styles</li>
+<li>Only available on TextBlockValue (not ProjectedTextValue)</li>
+</ul>
+<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;./fonts/Baumans-Regular.ttf&quot;</span>;
+
+<span class="hljs-built_in">let</span> tb = &amp;{
+  text(0, 20)\`Hello\`
+  text(0, 40)\`World\`
+} &lt;&lt; <span class="hljs-variable">\${ font-family: Baumans-Regular; font-size: 24; }</span>;
+
+<span class="hljs-built_in">let</span> pb = tb.toPathBlock();
+
+define PathLayer(<span class="hljs-string">&#x27;text-as-path&#x27;</span>) <span class="hljs-variable">\${ fill: #333; stroke: none; }</span>
+layer(<span class="hljs-string">&#x27;text-as-path&#x27;</span>).apply {
+  pb.drawTo(20, 20);
+}
+</code></pre><p>The resulting PathBlock is normalized to a (0, 0) origin, so <code>.drawTo(x, y)</code> places the text geometry at absolute coordinates <code>(x, y)</code>. Space characters advance the cursor without generating outline commands.</p>
+<p>Since the result is a standard <a href="path-blocks.md">PathBlock</a>, you can chain any PathBlock operation:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Scale the text geometry down to 60%</span>
+<span class="hljs-keyword">let</span> small = pb.<span class="hljs-title function_">scale</span>(<span class="hljs-number">0.6</span>, <span class="hljs-number">0.6</span>);
+
+<span class="hljs-comment">// Mirror the text horizontally</span>
+<span class="hljs-keyword">let</span> flipped = pb.<span class="hljs-title function_">mirror</span>(<span class="hljs-number">0</span>);
+
+<span class="hljs-comment">// Use text as a boolean punch — cut text out of a rectangle</span>
+<span class="hljs-keyword">let</span> plate = @{ h <span class="hljs-number">200</span> v <span class="hljs-number">60</span> h -<span class="hljs-number">200</span> z }.<span class="hljs-title function_">project</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>);
+<span class="hljs-keyword">let</span> cutout = plate.<span class="hljs-title function_">difference</span>(pb.<span class="hljs-title function_">project</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>));
+</code></pre><p>Per-tspan style overrides (font-family, font-size) are respected, allowing mixed fonts within a single PathBlock output.</p>
+<h2 id="text-block-code-snippet-blocks">Code Snippet Blocks</h2>
+<p>For diagrams that need to show source code alongside visual output — tutorials, blog schematics, API documentation — <code>.toCodeSnippetBlock()</code> generates a self-contained code block as SVG layers with Pathogen-aware syntax highlighting.</p>
+<p><code>.toCodeSnippetBlock(name [, fontSize, padding])</code> transforms a TextBlock containing code text into a styled GroupLayer.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><code>name</code> (string) — name for the GroupLayer</li>
+<li><code>fontSize</code> (number, optional) — code font size, default 10</li>
+<li><code>padding</code> (number, optional) — padding around code, default 12</li>
+</ul>
+<p><strong>Returns:</strong> LayerReference to a GroupLayer containing:</p>
+<ul>
+<li><code>{name}-bg</code> — PathLayer with dark background (<code>#1e293b</code>), border (<code>#334155</code>), and rounded corners</li>
+<li><code>{name}-code</code> — TextLayer with per-token syntax-highlighted tspan elements</li>
+</ul>
+<p>The <code>name</code> must not collide with existing layer names (including the <code>-bg</code> and <code>-code</code> suffixed names).</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-built_in">let</span> code = &amp;{
+  text(0, 0)\`// Shape layer with styles
+define PathLayer(<span class="hljs-string">&#x27;main&#x27;</span>) \\<span class="hljs-variable">\${ fill: #3b82f6; }</span>
+
+<span class="hljs-built_in">let</span> shape = rect(0, 0, 80, 60);
+layer(<span class="hljs-string">&#x27;main&#x27;</span>).apply {
+  shape.drawTo(50, 50);
+}\`
+};
+
+<span class="hljs-built_in">let</span> snippet = code.toCodeSnippetBlock(<span class="hljs-string">&#x27;my-snippet&#x27;</span>, 10, 12);
+snippet &lt;&lt; <span class="hljs-variable">\${ translate-x: 400; translate-y: 100; }</span>;
+</code></pre><h3 id="text-block-escaping-in-code-text">Escaping <code>\${</code> in Code Text</h3>
+<p>Template literals in Pathogen treat <code>\${</code> as a string interpolation sequence. If your code text contains literal <code>\${</code> (e.g., style blocks), escape the dollar sign with a backslash:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// ✗ This fails — \${ triggers interpolation</span>
+<span class="hljs-keyword">let</span> code = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>)<span class="hljs-string">\`let s = <span class="hljs-subst">\${ fill: red; }</span>\`</span> };
+
+<span class="hljs-comment">// ✓ Escape the dollar sign</span>
+<span class="hljs-keyword">let</span> code = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>)<span class="hljs-string">\`let s = \\\${ fill: red; }\`</span> };
+</code></pre><p><code>@{</code> and <code>&amp;{</code> do <strong>not</strong> need escaping — they pass through template literals as plain text. Only <code>\${</code> requires the <code>\\$</code> escape.</p>
+<h3 id="text-block-syntax-highlighting-palette">Syntax Highlighting Palette</h3>
+<p>Keywords and builtins share the same color (<code>#c084fc</code>) — both represent language-level constructs.</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Color</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Keyword</td>
+<td><code>#c084fc</code> (purple)</td>
+<td><code>let</code>, <code>for</code>, <code>if</code>, <code>define</code>, <code>fn</code></td>
+</tr>
+<tr>
+<td>Builtin</td>
+<td><code>#c084fc</code> (purple)</td>
+<td><code>PathLayer</code>, <code>Color</code>, <code>circle</code>, <code>log</code></td>
+</tr>
+<tr>
+<td>Function</td>
+<td><code>#f59e0b</code> (amber)</td>
+<td>any identifier followed by <code>(</code></td>
+</tr>
+<tr>
+<td>Number</td>
+<td><code>#f59e0b</code> (amber)</td>
+<td><code>42</code>, <code>3.14</code>, <code>45deg</code></td>
+</tr>
+<tr>
+<td>String</td>
+<td><code>#22c55e</code> (green)</td>
+<td><code>\`hello\`</code>, <code>&quot;world&quot;</code></td>
+</tr>
+<tr>
+<td>Comment</td>
+<td><code>#64748b</code> (slate)</td>
+<td><code>// comment</code></td>
+</tr>
+<tr>
+<td>Operator</td>
+<td><code>#94a3b8</code> (gray)</td>
+<td><code>=</code>, <code>&lt;&lt;</code>, <code>+</code>, <code>-</code></td>
+</tr>
+<tr>
+<td>Punctuation</td>
+<td><code>#64748b</code> (slate)</td>
+<td><code>{ } ( ) ; ,</code></td>
+</tr>
+<tr>
+<td>Text</td>
+<td><code>#e2e8f0</code> (light)</td>
+<td>identifiers, whitespace</td>
+</tr>
+</tbody></table>
+<p>The code text is automatically normalized: common leading whitespace is removed (dedent), blank leading/trailing lines are trimmed, and tabs are converted to 2 spaces. Indentation within the code (for blocks, loops, conditionals) is preserved and rendered via x-coordinate offsets.</p>
 <h2 id="text-block-examples">Examples</h2>
 <h3 id="text-block-label-placement-around-a-shape">Label placement around a shape</h3>
 <pre><code class="hljs language-pathogen">define PathLayer(<span class="hljs-string">&#x27;shape&#x27;</span>) <span class="hljs-variable">\${ stroke: #333; fill: none; }</span>
@@ -5711,6 +5880,26 @@ export const tocData = JSON.parse(`[
         "level": 4
       },
       {
+        "id": "stdlib-heading-control",
+        "title": "Heading Control",
+        "level": 3
+      },
+      {
+        "id": "stdlib-headingangle",
+        "title": "heading(angle)",
+        "level": 4
+      },
+      {
+        "id": "stdlib-turndelta",
+        "title": "turn(delta)",
+        "level": 4
+      },
+      {
+        "id": "stdlib-ctxheading",
+        "title": "ctx.heading",
+        "level": 4
+      },
+      {
         "id": "stdlib-tangent-functions",
         "title": "Tangent Functions",
         "level": 3
@@ -6377,6 +6566,26 @@ export const tocData = JSON.parse(`[
         "id": "text-block-intersection-detection",
         "title": "Intersection Detection",
         "level": 2
+      },
+      {
+        "id": "text-block-text-to-path-conversion",
+        "title": "Text to Path Conversion",
+        "level": 2
+      },
+      {
+        "id": "text-block-code-snippet-blocks",
+        "title": "Code Snippet Blocks",
+        "level": 2
+      },
+      {
+        "id": "text-block-escaping-in-code-text",
+        "title": "Escaping \${ in Code Text",
+        "level": 3
+      },
+      {
+        "id": "text-block-syntax-highlighting-palette",
+        "title": "Syntax Highlighting Palette",
+        "level": 3
       },
       {
         "id": "text-block-examples",

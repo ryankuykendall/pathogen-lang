@@ -273,6 +273,41 @@ M add(triple(2), 4) 0`);
     });
   });
 
+  describe('spline stdlib functions', () => {
+    it('annotates cubicSpline call with relative path commands', () => {
+      const result = compileAnnotated(`cubicSpline([
+        { x: 0, y: 0, angle: 0, exit: 30 },
+        { x: 100, y: 0, angle: 0, entry: 30 }
+      ])`);
+      expect(result).toContain('//--- cubicSpline');
+      expect(result).toContain('called from line 1');
+      expect(result).toContain('m 0 0');
+      expect(result).toContain('c 30 0 70 0 100 0');
+    });
+
+    it('annotates quadSpline call', () => {
+      const result = compileAnnotated(`quadSpline(
+        { x: 0, y: 0, angle: 0, exit: 40 },
+        [],
+        { x: 100, y: 50 }
+      )`);
+      expect(result).toContain('//--- quadSpline');
+      expect(result).toContain('m 0 0');
+      expect(result).toContain('q 40 0 100 50');
+    });
+
+    it('annotates clippedQuadSpline call', () => {
+      const result = compileAnnotated(`clippedQuadSpline(
+        { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
+        [],
+        { x: 100, y: 0, entryTime: 1 }
+      )`);
+      expect(result).toContain('//--- clippedQuadSpline');
+      expect(result).toContain('m 0 0');
+      expect(result).toContain('c 50 0 50 0 100 0');
+    });
+  });
+
   describe('heading and turn', () => {
     it('heading() does not emit commands', () => {
       const result = compileAnnotated('M 50 100\nheading(0)\ntangentLine(30)');

@@ -252,6 +252,70 @@ Returns a close path command.
 closePath()
 ```
 
+### cubicSpline(points)
+
+Draws a chain of cubic bezier curves with explicit tangent angle and handle length at each point. Adjacent curves share a common tangent direction at join points, guaranteeing G1 (smooth) continuity.
+
+**Point schema:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `x` | number | X coordinate |
+| `y` | number | Y coordinate |
+| `angle` | number | Tangent angle (radians; use `rad()` or `deg` suffix for degrees) |
+| `exit` | number | Distance from point along tangent to outgoing control point (omit on last point) |
+| `entry` | number | Distance backward along tangent to incoming control point (omit on first point) |
+
+```
+cubicSpline([
+  { x: 0, y: 100, angle: 0, exit: 30 },
+  { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
+  { x: 100, y: 100, angle: 0, entry: 30 }
+])
+```
+
+Output: `m` (relative move) followed by one `c` (relative cubic) command per segment. A single-point array emits only `m`. All spline functions use relative commands so they work naturally inside path blocks.
+
+### quadSpline(start, points, end)
+
+Draws a chain of quadratic bezier curves with implicit angle derivation. Only the start point specifies an explicit angle; intermediate points derive their tangent angle from the geometry of the previous control point.
+
+**Start:** `{ x, y, angle, exit }`
+**Intermediate:** `{ x, y, exit }`
+**End:** `{ x, y }`
+
+```
+quadSpline(
+  { x: 0, y: 0, angle: 0, exit: 30 },
+  [{ x: 60, y: 0, exit: 30 }],
+  { x: 120, y: 0 }
+)
+```
+
+Output: `m` followed by one `q` (relative quadratic) command per segment.
+
+### clippedQuadSpline(start, points, end)
+
+Extends `quadSpline` by splitting the implicit shared control point into two cubic control points using time-based fractions (`exitTime`/`entryTime`). This allows dampening curve eccentricity while preserving the quadratic geometry.
+
+**Start:** `{ x, y, angle, exit, exitTime }`
+**Intermediate:** `{ x, y, exit, exitTime, entryTime }`
+**End:** `{ x, y, entryTime }`
+
+- `exitTime = 1`, `entryTime = 1`: mathematically equivalent to quadratic
+- `exitTime = 0.5`, `entryTime = 0.5`: control points at half arm length (moderate dampening)
+- `exitTime = 0`, `entryTime = 0`: linear segments
+
+```
+clippedQuadSpline(
+  { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
+  [],
+  { x: 200, y: 0, entryTime: 0.5 }
+)
+```
+
+Output: `m` followed by one `c` (relative cubic) command per segment — not `q`.
+
 ---
 
 ## Context-Aware Functions

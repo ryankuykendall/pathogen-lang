@@ -1,6 +1,7 @@
 // Path helper functions that return PathSegment values
 
 import { formatNum } from '../evaluator/format';
+import type { ArrayValue, ObjectValue, Value } from '../evaluator/types';
 
 export interface PathSegment {
   type: 'PathSegment';
@@ -9,6 +10,38 @@ export interface PathSegment {
 
 function segment(value: string): PathSegment {
   return { type: 'PathSegment', value };
+}
+
+// ---------------------------------------------------------------------------
+// Value extraction helpers for spline functions that accept complex arguments
+// ---------------------------------------------------------------------------
+
+function asNumber(v: Value): number {
+  if (typeof v === 'number') return v;
+  throw new Error(`Expected number, got ${typeof v}`);
+}
+
+function asArray(v: unknown, name: string): Value[] {
+  if (typeof v === 'object' && v !== null && 'type' in v && (v as ArrayValue).type === 'ArrayValue') {
+    return (v as ArrayValue).elements;
+  }
+  throw new Error(`${name}: expected an array`);
+}
+
+function getNum(obj: unknown, key: string): number {
+  if (typeof obj !== 'object' || obj === null || !('type' in obj) || (obj as ObjectValue).type !== 'ObjectValue') {
+    throw new Error(`Expected an object with property '${key}'`);
+  }
+  const val = (obj as ObjectValue).properties.get(key);
+  if (val === undefined || val === null) throw new Error(`Missing required property '${key}'`);
+  return asNumber(val);
+}
+
+function getNumOpt(obj: unknown, key: string, fallback: number): number {
+  if (typeof obj !== 'object' || obj === null || !('type' in obj) || (obj as ObjectValue).type !== 'ObjectValue') return fallback;
+  const val = (obj as ObjectValue).properties.get(key);
+  if (val === undefined || val === null) return fallback;
+  return asNumber(val);
 }
 
 export const pathFunctions = {
@@ -115,4 +148,222 @@ export const pathFunctions = {
 
   // Close path
   closePath: (): PathSegment => segment('Z'),
+
+  // ---------------------------------------------------------------------------
+  // Chained bezier spline functions
+  // ---------------------------------------------------------------------------
+
+  // cubicSpline(points) — cubic bezier chain with explicit tangent control (relative commands)
+  // Point: { x, y, angle, exit?, entry? }
+  // CP1 = P[i] + exit * dir(angle), CP2 = P[i+1] - entry * dir(angle)
+  cubicSpline: (...args: unknown[]): PathSegment => {
+    const points = asArray(args[0], 'cubicSpline');
+    const n = points.length;
+    if (n === 0) throw new Error('cubicSpline: points array must not be empty');
+
+    const p0x = getNum(points[0], 'x');
+    const p0y = getNum(points[0], 'y');
+    const parts: string[] = [`m ${formatNum(p0x)} ${formatNum(p0y)}`];
+
+    for (let i = 1; i < n; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const prevX = getNum(prev, 'x');
+      const prevY = getNum(prev, 'y');
+      const prevAngle = getNum(prev, 'angle');
+      const prevExit = getNumOpt(prev, 'exit', 0);
+      const currX = getNum(curr, 'x');
+      const currY = getNum(curr, 'y');
+      const currAngle = getNum(curr, 'angle');
+      const currEntry = getNumOpt(curr, 'entry', 0);
+
+      // Absolute positions of control points
+      const c1x = prevX + prevExit * Math.cos(prevAngle);
+      const c1y = prevY + prevExit * Math.sin(prevAngle);
+      const c2x = currX - currEntry * Math.cos(currAngle);
+      const c2y = currY - currEntry * Math.sin(currAngle);
+
+      // Convert to relative (offset from pen position = prev point)
+      parts.push(
+        `c ${formatNum(c1x - prevX)} ${formatNum(c1y - prevY)} ${formatNum(c2x - prevX)} ${formatNum(c2y - prevY)} ${formatNum(currX - prevX)} ${formatNum(currY - prevY)}`,
+      );
+    }
+
+    return segment(parts.join(' '));
+  },
+
+  // quadSpline(start, points, end) — quadratic bezier chain with implicit angle derivation (relative commands)
+  // Start: { x, y, angle, exit }, Intermediate: { x, y, exit }, End: { x, y }
+  quadSpline: (...args: unknown[]): PathSegment => {
+    const start = args[0];
+    const intermediates = asArray(args[1], 'quadSpline');
+    const end = args[2];
+
+    const sx = getNum(start, 'x');
+    const sy = getNum(start, 'y');
+    const startAngle = getNum(start, 'angle');
+    const startExit = getNum(start, 'exit');
+
+    let cpx = sx + startExit * Math.cos(startAngle);
+    let cpy = sy + startExit * Math.sin(startAngle);
+
+    const parts: string[] = [`m ${formatNum(sx)} ${formatNum(sy)}`];
+    // Pen is now at (sx, sy)
+    let penX = sx;
+    let penY = sy;
+
+    if (intermediates.length > 0) {
+      // First segment: start → intermediates[0]
+      const firstX = getNum(intermediates[0], 'x');
+      const firstY = getNum(intermediates[0], 'y');
+      parts.push(
+        `q ${formatNum(cpx - penX)} ${formatNum(cpy - penY)} ${formatNum(firstX - penX)} ${formatNum(firstY - penY)}`,
+      );
+      penX = firstX;
+      penY = firstY;
+
+      let prevCPx = cpx;
+      let prevCPy = cpy;
+
+      for (let idx = 0; idx < intermediates.length; idx++) {
+        const pt = intermediates[idx];
+        const ptx = getNum(pt, 'x');
+        const pty = getNum(pt, 'y');
+        const ptExit = getNum(pt, 'exit');
+
+        const angle = Math.atan2(pty - prevCPy, ptx - prevCPx);
+        const newCPx = ptx + ptExit * Math.cos(angle);
+        const newCPy = pty + ptExit * Math.sin(angle);
+
+        let destX: number, destY: number;
+        if (idx < intermediates.length - 1) {
+          const next = intermediates[idx + 1];
+          destX = getNum(next, 'x');
+          destY = getNum(next, 'y');
+        } else {
+          destX = getNum(end, 'x');
+          destY = getNum(end, 'y');
+        }
+
+        parts.push(
+          `q ${formatNum(newCPx - penX)} ${formatNum(newCPy - penY)} ${formatNum(destX - penX)} ${formatNum(destY - penY)}`,
+        );
+        penX = destX;
+        penY = destY;
+
+        prevCPx = newCPx;
+        prevCPy = newCPy;
+      }
+    } else {
+      // No intermediates: single q from start to end
+      const endX = getNum(end, 'x');
+      const endY = getNum(end, 'y');
+      parts.push(
+        `q ${formatNum(cpx - penX)} ${formatNum(cpy - penY)} ${formatNum(endX - penX)} ${formatNum(endY - penY)}`,
+      );
+    }
+
+    return segment(parts.join(' '));
+  },
+
+  // clippedQuadSpline(start, points, end) — time-clipped quadratic spline emitting cubic commands (relative)
+  // Start: { x, y, angle, exit, exitTime }, Intermediate: { x, y, exit, exitTime, entryTime }, End: { x, y, entryTime }
+  clippedQuadSpline: (...args: unknown[]): PathSegment => {
+    const start = args[0];
+    const intermediates = asArray(args[1], 'clippedQuadSpline');
+    const end = args[2];
+
+    const sx = getNum(start, 'x');
+    const sy = getNum(start, 'y');
+    const startAngle = getNum(start, 'angle');
+    const startExit = getNum(start, 'exit');
+    const startExitTime = getNum(start, 'exitTime');
+
+    let cpx = sx + startExit * Math.cos(startAngle);
+    let cpy = sy + startExit * Math.sin(startAngle);
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const parts: string[] = [`m ${formatNum(sx)} ${formatNum(sy)}`];
+    let penX = sx;
+    let penY = sy;
+
+    if (intermediates.length > 0) {
+      // First segment: start → intermediates[0]
+      const firstPt = intermediates[0];
+      const firstX = getNum(firstPt, 'x');
+      const firstY = getNum(firstPt, 'y');
+      const firstEntryTime = getNum(firstPt, 'entryTime');
+
+      const c1x = lerp(sx, cpx, startExitTime);
+      const c1y = lerp(sy, cpy, startExitTime);
+      const c2x = lerp(firstX, cpx, firstEntryTime);
+      const c2y = lerp(firstY, cpy, firstEntryTime);
+
+      parts.push(
+        `c ${formatNum(c1x - penX)} ${formatNum(c1y - penY)} ${formatNum(c2x - penX)} ${formatNum(c2y - penY)} ${formatNum(firstX - penX)} ${formatNum(firstY - penY)}`,
+      );
+      penX = firstX;
+      penY = firstY;
+
+      let prevCPx = cpx;
+      let prevCPy = cpy;
+
+      for (let idx = 0; idx < intermediates.length; idx++) {
+        const pt = intermediates[idx];
+        const ptx = getNum(pt, 'x');
+        const pty = getNum(pt, 'y');
+        const ptExit = getNum(pt, 'exit');
+        const ptExitTime = getNum(pt, 'exitTime');
+
+        const angle = Math.atan2(pty - prevCPy, ptx - prevCPx);
+        const newCPx = ptx + ptExit * Math.cos(angle);
+        const newCPy = pty + ptExit * Math.sin(angle);
+
+        const sc1x = lerp(ptx, newCPx, ptExitTime);
+        const sc1y = lerp(pty, newCPy, ptExitTime);
+
+        let destX: number, destY: number;
+        let sc2x: number, sc2y: number;
+        if (idx < intermediates.length - 1) {
+          const next = intermediates[idx + 1];
+          destX = getNum(next, 'x');
+          destY = getNum(next, 'y');
+          const nextEntryTime = getNum(next, 'entryTime');
+          sc2x = lerp(destX, newCPx, nextEntryTime);
+          sc2y = lerp(destY, newCPy, nextEntryTime);
+        } else {
+          destX = getNum(end, 'x');
+          destY = getNum(end, 'y');
+          const endEntryTime = getNum(end, 'entryTime');
+          sc2x = lerp(destX, newCPx, endEntryTime);
+          sc2y = lerp(destY, newCPy, endEntryTime);
+        }
+
+        parts.push(
+          `c ${formatNum(sc1x - penX)} ${formatNum(sc1y - penY)} ${formatNum(sc2x - penX)} ${formatNum(sc2y - penY)} ${formatNum(destX - penX)} ${formatNum(destY - penY)}`,
+        );
+        penX = destX;
+        penY = destY;
+
+        prevCPx = newCPx;
+        prevCPy = newCPy;
+      }
+    } else {
+      // No intermediates: single c from start to end
+      const endX = getNum(end, 'x');
+      const endY = getNum(end, 'y');
+      const endEntryTime = getNum(end, 'entryTime');
+
+      const c1x = lerp(sx, cpx, startExitTime);
+      const c1y = lerp(sy, cpy, startExitTime);
+      const c2x = lerp(endX, cpx, endEntryTime);
+      const c2y = lerp(endY, cpy, endEntryTime);
+
+      parts.push(
+        `c ${formatNum(c1x - penX)} ${formatNum(c1y - penY)} ${formatNum(c2x - penX)} ${formatNum(c2y - penY)} ${formatNum(endX - penX)} ${formatNum(endY - penY)}`,
+      );
+    }
+
+    return segment(parts.join(' '));
+  },
 };

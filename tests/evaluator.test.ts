@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../src';
-import { compilePath } from './helpers';
+import { compilePath, expectSVGPathCommandSequence, parseSVGPath } from './helpers';
 
 describe('Evaluator', () => {
   describe('path commands', () => {
@@ -1794,6 +1794,550 @@ describe('Evaluator', () => {
     it('percent in arithmetic: 50% + 0.25', () => {
       const result = compile('let x = calc(50% + 0.25); log(x);');
       expect(result.logs[0].parts[0].value).toBe('0.75');
+    });
+  });
+
+  describe('chained bezier splines', () => {
+    const cubicSplineFn = `
+      fn cubicSpline(points) {
+        M points[0].x points[0].y
+        let n = calc(points.length - 1);
+        if (n > 0) {
+          for (i in 1..n) {
+            let prev = points[calc(i - 1)];
+            let curr = points[i];
+            let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+            let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+            let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+            let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+            C c1x c1y c2x c2y curr.x curr.y
+          }
+        }
+      }
+    `;
+
+    const quadSplineFn = `
+      fn quadSpline(start, points, end) {
+        M start.x start.y
+        let cpx = calc(start.x + start.exit * cos(start.angle));
+        let cpy = calc(start.y + start.exit * sin(start.angle));
+        if (points.length > 0) {
+          Q cpx cpy points[0].x points[0].y
+          let prevCPx = cpx;
+          let prevCPy = cpy;
+          for ([pt, idx] in points) {
+            let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+            let newCPx = calc(pt.x + pt.exit * cos(angle));
+            let newCPy = calc(pt.y + pt.exit * sin(angle));
+            if (idx < calc(points.length - 1)) {
+              Q newCPx newCPy points[calc(idx + 1)].x points[calc(idx + 1)].y
+            } else {
+              Q newCPx newCPy end.x end.y
+            }
+            prevCPx = newCPx;
+            prevCPy = newCPy;
+          }
+        } else {
+          Q cpx cpy end.x end.y
+        }
+      }
+    `;
+
+    const clippedQuadSplineFn = `
+      fn clippedQuadSpline(start, points, end) {
+        M start.x start.y
+        let cpx = calc(start.x + start.exit * cos(start.angle));
+        let cpy = calc(start.y + start.exit * sin(start.angle));
+        if (points.length > 0) {
+          let c1x = calc(lerp(start.x, cpx, start.exitTime));
+          let c1y = calc(lerp(start.y, cpy, start.exitTime));
+          let c2x = calc(lerp(points[0].x, cpx, points[0].entryTime));
+          let c2y = calc(lerp(points[0].y, cpy, points[0].entryTime));
+          C c1x c1y c2x c2y points[0].x points[0].y
+          let prevCPx = cpx;
+          let prevCPy = cpy;
+          for ([pt, idx] in points) {
+            let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+            let newCPx = calc(pt.x + pt.exit * cos(angle));
+            let newCPy = calc(pt.y + pt.exit * sin(angle));
+            let c1x = calc(lerp(pt.x, newCPx, pt.exitTime));
+            let c1y = calc(lerp(pt.y, newCPy, pt.exitTime));
+            if (idx < calc(points.length - 1)) {
+              let nextIdx = calc(idx + 1);
+              let c2x = calc(lerp(points[nextIdx].x, newCPx, points[nextIdx].entryTime));
+              let c2y = calc(lerp(points[nextIdx].y, newCPy, points[nextIdx].entryTime));
+              C c1x c1y c2x c2y points[nextIdx].x points[nextIdx].y
+            } else {
+              let c2x = calc(lerp(end.x, newCPx, end.entryTime));
+              let c2y = calc(lerp(end.y, newCPy, end.entryTime));
+              C c1x c1y c2x c2y end.x end.y
+            }
+            prevCPx = newCPx;
+            prevCPy = newCPy;
+          }
+        } else {
+          let c1x = calc(lerp(start.x, cpx, start.exitTime));
+          let c1y = calc(lerp(start.y, cpy, start.exitTime));
+          let c2x = calc(lerp(end.x, cpx, end.entryTime));
+          let c2y = calc(lerp(end.y, cpy, end.entryTime));
+          C c1x c1y c2x c2y end.x end.y
+        }
+      }
+    `;
+
+    describe('cubicSpline', () => {
+      it('3-point chain: M + 2 C commands with computed CPs', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          cubicSpline([
+            { x: 0, y: 100, angle: 0, exit: 30 },
+            { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
+            { x: 100, y: 100, angle: 0, entry: 30 }
+          ])
+        `);
+        // angle=0: cos(0)=1, sin(0)=0
+        // Seg 1: CP1=(0+30,100+0)=(30,100), CP2=(50-20,0-0)=(30,0)
+        // Seg 2: CP1=(50+25,0+0)=(75,0), CP2=(100-30,100-0)=(70,100)
+        expect(result).toBe('M 0 100 C 30 100 30 0 50 0 C 75 0 70 100 100 100');
+      });
+
+      it('2-point chain: single cubic segment', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          cubicSpline([
+            { x: 0, y: 0, angle: 0, exit: 40 },
+            { x: 100, y: 50, angle: 0, entry: 30 }
+          ])
+        `);
+        // CP1=(0+40,0)=(40,0), CP2=(100-30,50)=(70,50)
+        expect(result).toBe('M 0 0 C 40 0 70 50 100 50');
+      });
+
+      it('G1 continuity: CPs at shared point are collinear', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          cubicSpline([
+            { x: 0, y: 100, angle: 0, exit: 30 },
+            { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
+            { x: 100, y: 100, angle: 0, entry: 30 }
+          ])
+        `);
+        const cmds = parseSVGPath(result);
+        // At shared point P1=(50,0):
+        // Seg 1 CP2=(30,0), Seg 2 CP1=(75,0) — both on y=0, collinear with P1
+        const seg1CP2 = { x: cmds[1].args[2], y: cmds[1].args[3] };
+        const seg2CP1 = { x: cmds[2].args[0], y: cmds[2].args[1] };
+        const sharedPt = { x: cmds[1].args[4], y: cmds[1].args[5] };
+        const inAngle = Math.atan2(sharedPt.y - seg1CP2.y, sharedPt.x - seg1CP2.x);
+        const outAngle = Math.atan2(seg2CP1.y - sharedPt.y, seg2CP1.x - sharedPt.x);
+        expect(inAngle).toBeCloseTo(outAngle, 10);
+      });
+
+      it('single-point array: emits only M', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          cubicSpline([{ x: 50, y: 50, angle: 0 }])
+        `);
+        expect(result).toBe('M 50 50');
+      });
+
+      it('no error when last point lacks exit and first point lacks entry', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          cubicSpline([
+            { x: 0, y: 0, angle: 0, exit: 20 },
+            { x: 100, y: 0, angle: 0, entry: 20 }
+          ])
+        `);
+        // exit on last and entry on first are never accessed by the algorithm
+        expect(result).toBe('M 0 0 C 20 0 80 0 100 0');
+      });
+    });
+
+    describe('quadSpline', () => {
+      it('start + end only (no intermediates): single Q segment', () => {
+        const result = compilePath(`
+          ${quadSplineFn}
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 40 },
+            [],
+            { x: 100, y: 50 }
+          )
+        `);
+        // cp = (0+40*1, 0+40*0) = (40, 0)
+        expect(result).toBe('M 0 0 Q 40 0 100 50');
+      });
+
+      it('one intermediate: verifies angle inference via atan2', () => {
+        const result = compilePath(`
+          ${quadSplineFn}
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 30 },
+            [{ x: 60, y: 0, exit: 30 }],
+            { x: 120, y: 0 }
+          )
+        `);
+        // First cp=(30,0), Q 30 0 60 0
+        // At (60,0): prevCP=(30,0), angle=atan2(0,30)=0
+        // newCP=(90,0), Q 90 0 120 0
+        expect(result).toBe('M 0 0 Q 30 0 60 0 Q 90 0 120 0');
+      });
+
+      it('angle inference with non-trivial geometry', () => {
+        const result = compilePath(`
+          ${quadSplineFn}
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 40 },
+            [{ x: 50, y: 30, exit: 30 }],
+            { x: 100, y: 50 }
+          )
+        `);
+        // First cp=(40,0), Q 40 0 50 30
+        // At (50,30): prevCP=(40,0), angle=atan2(30,10)
+        // cos(atan2(30,10))=10/√1000=1/√10, sin=3/√10
+        const sqrt10 = Math.sqrt(10);
+        const newCPx = 50 + 30 / sqrt10;
+        const newCPy = 30 + 90 / sqrt10;
+        expectSVGPathCommandSequence(result, [
+          ['M', 0, 0],
+          ['Q', 40, 0, 50, 30],
+          ['Q', newCPx, newCPy, 100, 50],
+        ], { precision: 4 });
+      });
+
+      it('symmetric collinear layout', () => {
+        const result = compilePath(`
+          ${quadSplineFn}
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 50 },
+            [{ x: 100, y: 0, exit: 50 }],
+            { x: 200, y: 0 }
+          )
+        `);
+        // cp1=(50,0), Q 50 0 100 0
+        // At (100,0): angle=0, newCP=(150,0), Q 150 0 200 0
+        expect(result).toBe('M 0 0 Q 50 0 100 0 Q 150 0 200 0');
+      });
+    });
+
+    describe('clippedQuadSpline', () => {
+      it('exitTime=1, entryTime=1: CPs at shared position (degenerate cubic)', () => {
+        const result = compilePath(`
+          ${clippedQuadSplineFn}
+          clippedQuadSpline(
+            { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
+            [],
+            { x: 100, y: 0, entryTime: 1 }
+          )
+        `);
+        // sharedCP=(50,0)
+        // CP1=lerp(0,50,1)=50, CP2=lerp(100,50,1)=50
+        expect(result).toBe('M 0 0 C 50 0 50 0 100 0');
+      });
+
+      it('exitTime=0.5: CPs at half arm length', () => {
+        const result = compilePath(`
+          ${clippedQuadSplineFn}
+          clippedQuadSpline(
+            { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
+            [],
+            { x: 200, y: 0, entryTime: 0.5 }
+          )
+        `);
+        // sharedCP=(100,0)
+        // CP1=lerp(0,100,0.5)=50, CP2=lerp(200,100,0.5)=150
+        expect(result).toBe('M 0 0 C 50 0 150 0 200 0');
+      });
+
+      it('emits C commands (not Q)', () => {
+        const result = compilePath(`
+          ${clippedQuadSplineFn}
+          clippedQuadSpline(
+            { x: 0, y: 0, angle: 0, exit: 40, exitTime: 0.8 },
+            [],
+            { x: 100, y: 0, entryTime: 0.8 }
+          )
+        `);
+        expect(result).toContainSVGCommands(['M', 'C']);
+        expect(result).not.toContain('Q ');
+      });
+    });
+
+    describe('integration', () => {
+      it('cubicSpline called inside a for loop with computed points', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          for (i in 0..1) {
+            let ox = calc(i * 100);
+            cubicSpline([
+              { x: ox, y: 0, angle: 0, exit: 20 },
+              { x: calc(ox + 50), y: 50, angle: 0, entry: 20 }
+            ])
+          }
+        `);
+        // i=0: M 0 0 C 20 0 30 50 50 50
+        // i=1: M 100 0 C 120 0 130 50 150 50
+        expect(result).toBe('M 0 0 C 20 0 30 50 50 50 M 100 0 C 120 0 130 50 150 50');
+      });
+
+      it('points defined using calc() expressions', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          let bx = 10;
+          let by = 20;
+          cubicSpline([
+            { x: bx, y: by, angle: 0, exit: 15 },
+            { x: calc(bx + 50), y: calc(by + 30), angle: 0, entry: 15 }
+          ])
+        `);
+        // P0=(10,20), P1=(60,50), CP1=(25,20), CP2=(45,50)
+        expect(result).toBe('M 10 20 C 25 20 45 50 60 50');
+      });
+
+      it('multiple spline types in sequence', () => {
+        const result = compilePath(`
+          ${cubicSplineFn}
+          ${quadSplineFn}
+          cubicSpline([
+            { x: 0, y: 0, angle: 0, exit: 20 },
+            { x: 50, y: 0, angle: 0, entry: 20 }
+          ])
+          quadSpline(
+            { x: 60, y: 0, angle: 0, exit: 20 },
+            [],
+            { x: 100, y: 0 }
+          )
+        `);
+        // cubicSpline: M 0 0 C 20 0 30 0 50 0
+        // quadSpline: M 60 0 Q 80 0 100 0
+        expect(result).toBe('M 0 0 C 20 0 30 0 50 0 M 60 0 Q 80 0 100 0');
+      });
+    });
+  });
+
+  describe('stdlib chained bezier splines', () => {
+    describe('cubicSpline', () => {
+      it('3-point chain: m + 2 c commands with computed CPs', () => {
+        const result = compilePath(`
+          cubicSpline([
+            { x: 0, y: 100, angle: 0, exit: 30 },
+            { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
+            { x: 100, y: 100, angle: 0, entry: 30 }
+          ])
+        `);
+        // angle=0: cos(0)=1, sin(0)=0
+        // Absolute: M(0,100) C(30,100)(30,0)(50,0) C(75,0)(70,100)(100,100)
+        // Seg 1 pen=(0,100): c1=(30,0) c2=(30,-100) end=(50,-100)
+        // Seg 2 pen=(50,0):  c1=(25,0) c2=(20,100)  end=(50,100)
+        expect(result).toBe('m 0 100 c 30 0 30 -100 50 -100 c 25 0 20 100 50 100');
+      });
+
+      it('single-point array: emits only m', () => {
+        const result = compilePath(`
+          cubicSpline([{ x: 50, y: 50, angle: 0 }])
+        `);
+        expect(result).toBe('m 50 50');
+      });
+
+      it('G1 continuity: CPs at shared point are collinear', () => {
+        const result = compilePath(`
+          cubicSpline([
+            { x: 0, y: 100, angle: 0, exit: 30 },
+            { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
+            { x: 100, y: 100, angle: 0, entry: 30 }
+          ])
+        `);
+        const cmds = parseSVGPath(result);
+        // Relative coords — convert to absolute for collinearity check
+        // m(0,100) → pen at (0,100)
+        // c(30,0)(30,-100)(50,-100) → abs CP2=(0+30, 100-100)=(30,0), abs end=(0+50, 100-100)=(50,0)
+        // c(25,0)(20,100)(50,100)   → abs CP1=(50+25, 0+0)=(75,0)
+        // At shared point (50,0): seg1 CP2 abs=(30,0), seg2 CP1 abs=(75,0) — collinear on y=0
+        const pen0x = cmds[0].args[0]; // 0
+        const pen0y = cmds[0].args[1]; // 100
+        const seg1CP2 = { x: pen0x + cmds[1].args[2], y: pen0y + cmds[1].args[3] };
+        const sharedPt = { x: pen0x + cmds[1].args[4], y: pen0y + cmds[1].args[5] };
+        const seg2CP1 = { x: sharedPt.x + cmds[2].args[0], y: sharedPt.y + cmds[2].args[1] };
+        const inAngle = Math.atan2(sharedPt.y - seg1CP2.y, sharedPt.x - seg1CP2.x);
+        const outAngle = Math.atan2(seg2CP1.y - sharedPt.y, seg2CP1.x - sharedPt.x);
+        expect(inAngle).toBeCloseTo(outAngle, 10);
+      });
+
+      it('non-zero angle produces correct CPs', () => {
+        const result = compilePath(`
+          cubicSpline([
+            { x: 0, y: 0, angle: calc(PI() / 2), exit: 40 },
+            { x: 100, y: 100, angle: calc(PI() / 2), entry: 30 }
+          ])
+        `);
+        // angle=π/2: cos≈0, sin=1
+        // Absolute: CP1=(0,40), CP2=(100,70), end=(100,100)
+        // Relative from pen (0,0): c (0,40)(100,70)(100,100)
+        expectSVGPathCommandSequence(result, [
+          ['m', 0, 0],
+          ['c', 0, 40, 100, 70, 100, 100],
+        ], { precision: 4 });
+      });
+    });
+
+    describe('quadSpline', () => {
+      it('start + end only (no intermediates): single q segment', () => {
+        const result = compilePath(`
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 40 },
+            [],
+            { x: 100, y: 50 }
+          )
+        `);
+        // Absolute: cp=(40,0), end=(100,50). Relative from pen (0,0): same values
+        expect(result).toBe('m 0 0 q 40 0 100 50');
+      });
+
+      it('one intermediate: verifies angle inference via atan2', () => {
+        const result = compilePath(`
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 30 },
+            [{ x: 60, y: 0, exit: 30 }],
+            { x: 120, y: 0 }
+          )
+        `);
+        // Absolute: M 0 0  Q(30,0)(60,0)  Q(90,0)(120,0)
+        // Seg 1 pen=(0,0):  q(30,0)(60,0)
+        // Seg 2 pen=(60,0): q(30,0)(60,0)
+        expect(result).toBe('m 0 0 q 30 0 60 0 q 30 0 60 0');
+      });
+
+      it('angle inference with non-trivial geometry', () => {
+        const result = compilePath(`
+          quadSpline(
+            { x: 0, y: 0, angle: 0, exit: 40 },
+            [{ x: 50, y: 30, exit: 30 }],
+            { x: 100, y: 50 }
+          )
+        `);
+        // Absolute: Q(40,0)(50,30)  then Q(newCPx, newCPy)(100,50)
+        // Seg 1 pen=(0,0):  q(40,0)(50,30)
+        // Seg 2 pen=(50,30): newCPx=50+30/√10, newCPy=30+90/√10
+        //   relative: (newCPx-50, newCPy-30) = (30/√10, 90/√10), end=(50,20)
+        const sqrt10 = Math.sqrt(10);
+        expectSVGPathCommandSequence(result, [
+          ['m', 0, 0],
+          ['q', 40, 0, 50, 30],
+          ['q', 30 / sqrt10, 90 / sqrt10, 50, 20],
+        ], { precision: 4 });
+      });
+    });
+
+    describe('clippedQuadSpline', () => {
+      it('exitTime=1, entryTime=1: CPs at shared position (degenerate cubic)', () => {
+        const result = compilePath(`
+          clippedQuadSpline(
+            { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
+            [],
+            { x: 100, y: 0, entryTime: 1 }
+          )
+        `);
+        // Absolute: CP1=(50,0), CP2=(50,0), end=(100,0)
+        // Relative from pen (0,0): same values
+        expect(result).toBe('m 0 0 c 50 0 50 0 100 0');
+      });
+
+      it('exitTime=0.5: CPs at half arm length', () => {
+        const result = compilePath(`
+          clippedQuadSpline(
+            { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
+            [],
+            { x: 200, y: 0, entryTime: 0.5 }
+          )
+        `);
+        // Absolute: CP1=(50,0), CP2=(150,0), end=(200,0)
+        // Relative from pen (0,0): same values
+        expect(result).toBe('m 0 0 c 50 0 150 0 200 0');
+      });
+
+      it('emits c commands (not q)', () => {
+        const result = compilePath(`
+          clippedQuadSpline(
+            { x: 0, y: 0, angle: 0, exit: 40, exitTime: 0.8 },
+            [],
+            { x: 100, y: 0, entryTime: 0.8 }
+          )
+        `);
+        expect(result).toContainSVGCommands(['m', 'c']);
+        expect(result).not.toContain('q ');
+        expect(result).not.toContain('Q ');
+      });
+    });
+
+    describe('user fn shadows stdlib', () => {
+      it('user-defined cubicSpline takes precedence over stdlib', () => {
+        const result = compilePath(`
+          fn cubicSpline(points) {
+            M points[0].x points[0].y
+            let n = calc(points.length - 1);
+            if (n > 0) {
+              for (i in 1..n) {
+                let prev = points[calc(i - 1)];
+                let curr = points[i];
+                let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+                let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+                let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+                let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+                C c1x c1y c2x c2y curr.x curr.y
+              }
+            }
+          }
+          cubicSpline([
+            { x: 0, y: 0, angle: 0, exit: 20 },
+            { x: 100, y: 0, angle: 0, entry: 20 }
+          ])
+        `);
+        // User fn emits absolute commands (M, C) — different from stdlib's relative (m, c)
+        expect(result).toBe('M 0 0 C 20 0 80 0 100 0');
+      });
+    });
+
+    describe('integration', () => {
+      it('cubicSpline inside a for loop', () => {
+        const result = compilePath(`
+          for (i in 0..1) {
+            let ox = calc(i * 100);
+            cubicSpline([
+              { x: ox, y: 0, angle: 0, exit: 20 },
+              { x: calc(ox + 50), y: 50, angle: 0, entry: 20 }
+            ])
+          }
+        `);
+        // i=0: m(0,0) c(20,0)(30,50)(50,50)  — pen at (0,0), rel from (0,0)
+        // i=1: m(100,0) c(20,0)(30,50)(50,50) — pen at (50,50), m(100,0) moves to (150,50)
+        //   Wait — m is relative to current pen. After i=0, pen is at abs (50,50).
+        //   i=1 points: ox=100, P0=(100,0), P1=(150,50)
+        //   m(100,0) relative to pen(50,50) would move to abs(150,50) — wrong.
+        //   But stdlib computes m(ox, 0) = m(100, 0). The evaluator tracks
+        //   position from the emitted path string, so m 100 0 from pen(50,50)
+        //   lands at abs(150,50). The c args are relative to each segment's start.
+        //   Seg: c1=(100+20,0)=(120,0), c2=(150-20,50)=(130,50), end=(150,50)
+        //   Rel from (100,0): c(20,0)(30,50)(50,50)
+        // So overall path: m 0 0 c 20 0 30 50 50 50 m 100 0 c 20 0 30 50 50 50
+        expect(result).toBe('m 0 0 c 20 0 30 50 50 50 m 100 0 c 20 0 30 50 50 50');
+      });
+
+      it('multiple spline types in sequence', () => {
+        const result = compilePath(`
+          cubicSpline([
+            { x: 0, y: 0, angle: 0, exit: 20 },
+            { x: 50, y: 0, angle: 0, entry: 20 }
+          ])
+          quadSpline(
+            { x: 60, y: 0, angle: 0, exit: 20 },
+            [],
+            { x: 100, y: 0 }
+          )
+        `);
+        // cubicSpline: m 0 0 c 20 0 30 0 50 0
+        // quadSpline:  m 60 0 q 20 0 40 0  (cp abs=80, end abs=100; rel from 60: 20, 40)
+        expect(result).toBe('m 0 0 c 20 0 30 0 50 0 m 60 0 q 20 0 40 0');
+      });
     });
   });
 });
