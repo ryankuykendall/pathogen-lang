@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-03-21
+
+### Added
+
+#### Core
+- PathBlock extensions: `drawTo(x, y)` convenience method, chamfers (symmetric, asymmetric, per-vertex corner beveling), fillets (circular arc rounding, elliptical arc rounding with optional rotation), and boolean operations (curve-preserving union, difference, intersection, xor).
+- Color literals: bare hex (`#cc0000`, `#f00`, `#cc000080`, `#f008`), CSS color function literals (`rgb`, `hsl`, `oklch`, `hwb`, `lab`, `lch`, `oklab`), and percent suffix (`20%` → `0.2`) disambiguated from modulus by spacing.
+- Booleans: `true`/`false` keywords as semantic subtypes of number, displaying as `"true"`/`"false"` in `log()` and template literals. Comparisons, logical ops, `has()`, `empty()`, `includes()` now return `BooleanValue`.
+- Built-in enums: `Easing`, `Interpolation`, `SpreadMethod`, `GradientUnits`, `Direction`, `ConicSpread`, `InnerFill`, `TopoMethod` with dot notation access (e.g., `Easing.Smoothstep`).
+- User-defined enums: `enum Name { Member, Member = value }` with auto-valued (lowercase string) and explicit typed values (string, number, angle, color, boolean).
+- Font integration: `@font` directive for declarative font loading and `PathBlock.fromGlyph()` for converting text to manipulable path geometry via opentype.js.
+- `TextBlock.toPathBlock()` for flattening text glyph outlines into a single PathBlock, removing font dependency at SVG render time.
+- `TextBlock.toCodeSnippetBlock()` for generating syntax-highlighted code snippets as a GroupLayer with Pathogen-aware token coloring.
+- `.intersects()` and `.intersectionPoints()` on PathBlock and ProjectedPath, mirroring the TextBlock intersection API.
+- `heading(angle)` and `turn(delta)` for tangent context control — enables tangent-dependent functions immediately after `M` without workarounds.
+- `cubicSpline`, `quadSpline`, `clippedQuadSpline` as stdlib functions (moved from userland definitions).
+- `PolarVector(angle, distance)` value type with `turn()`, `scale()`, `mirror()` methods and `polarCubicBezier` stdlib function.
+- Array `.map` with block syntax (`{|param| body}`) and `.slice` with inclusive end indexes and negative index support.
+- `Point.offset(other)` method returning `{dx, dy}` vector for calculating component-wise displacement between points.
+- `--print-logs` CLI flag to dump `log()` output to stderr and `--log-file=<path>` to write structured `LogEntry[]` as JSON.
+
+#### Playground
+- Consolidated inspector panel with stacked layers, palette, and CSS vars in a 2:3:1 flex layout.
+- GroupLayer expand/collapse with chevron toggle and full-row click targets.
+- Button bar in breadcrumb: Annotated/Console/Inspector as unified toggle group.
+- RadialGradient interactive examples in blog post with SVG CDATA fix.
+- Mobile inspector as fixed bottom drawer at 60vh.
+
+#### Documentation
+- PathBlock Extensions blog series (4 parts): introduction, parametric sampling, fillets & chamfers, boolean operations.
+- Color Literals blog post with 6 interactive mini-workspace demos.
+- TextBlock & Font Integration blog series (2 parts): measure-first text, glyph extraction with `PathBlock.fromGlyph()`.
+- Published 6 previously unpublished doc files: textblock, color, gradients, cssvar, masks, objects.
+- Font Integration section added to path-blocks.md.
+- Heading/turn and chained bezier spline documentation with visual demos.
+- PolarVector documentation and demo.
+
+### Fixed
+
+#### Core
+- Boolean assembly artifacts on overlapping curved paths — replaced greedy closest-endpoint matching with Weiler-Atherton style ring traversal using original path ordering and explicit intersection links.
+- Multi-subpath relative move compounding in `commandsToRelativeD` — after `z`, relative `m` deltas were computed from wrong start point, cascading holes in chained boolean operations.
+- Scientific notation parsing in `parseAndTrackPathString` — numbers like `1.83e-15` from stdlib functions were split incorrectly.
+- CLI tspan rendering now outputs style attributes on `<tspan>` elements.
+- CLI `@font` path resolution: font paths now resolve relative to the source file, not cwd.
+- opentype.js ESM loading: async initializer using dynamic `import()` with `require()` fallback for vitest compatibility.
+
+#### Playground
+- CSS 404s and CodeMirror error highlight crash.
+- Inherited GPU gradient stops: resolve stops from parent for rasterized gradient types (conic, mesh, freeform, topo) since they can't use SVG `xlink:href`.
+- Mini-workspace default background changed from white to transparent.
+- "Open in Playground" URL length limits — replaced URL state param with localStorage.
+- Navigator now walks all descendants to find paths inside `<g>` groups.
+
+#### Deployment
+- Cloudflare Pages build: downgrade `@eslint/js` from v10 to v9 to resolve peer dependency conflict with eslint 9 — blocked 13 deployments since Mar 9.
+
+### Changed
+
+#### Development
+- TypeScript & ESLint hardening: stricter `tsconfig` options, `eslint-config-airbnb-extended`, Prettier formatting, `~50` evaluator interfaces extracted to `evaluator/types.ts`.
+- Playground and website worker fully migrated from JavaScript to TypeScript.
+- Test infrastructure: SVG path parser, custom Vitest matchers (`toMatchSVGPath`, `toContainSVGCommands`, `toHaveSVGCommandCount`, `toClosePath`), and `~47` weak assertions remediated across 6 test files.
+- Project agents added for code review, content review, and test running.
+- Blogging playbook and website guidelines reorganized; Instructional Designer/Writer added as 4th review persona.
+- Text collision debugging guideline; agentic review now required before committing new features.
+- Removed old `.js` utility files replaced by TypeScript migration.
+- Gitignored `tests/tmp/` and `website/bbwp/` render artifacts.
+
 ## [Unreleased] - 2026-03-08
 
 ### Added
