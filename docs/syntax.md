@@ -621,6 +621,50 @@ let list = [1, 2, 3];
 let first = list.shift();  // first is 1, list is now [2, 3]
 ```
 
+#### `.slice(start, end?)`
+
+Returns a new array containing elements from `start` to `end` (inclusive). Negative indexes count from the end. If `end` is omitted, returns from `start` to the end of the array.
+
+> **Note:** Array `.slice()` uses inclusive end indexes, while string `.slice()` uses exclusive end indexes (matching JavaScript string behavior).
+
+```
+let arr = [10, 20, 30, 40, 50];
+
+let mid = arr.slice(1, 3);    // [20, 30, 40] — indices 1, 2, 3
+let tail = arr.slice(3);      // [40, 50]     — from index 3 to end
+let last2 = arr.slice(-2);    // [40, 50]     — last 2 elements
+let head = arr.slice(0, -2);  // [10, 20, 30, 40] — up to second-to-last
+```
+
+#### `.map {|item| ... }`
+
+Transforms each element using a trailing block, returning a new array. Use `return` to specify the mapped value. If no `return` is executed, the element maps to `null`.
+
+```
+let prices = [10, 25, 50];
+let doubled = prices.map {|price|
+  return calc(price * 2);
+};
+// doubled is [20, 50, 100]
+
+// Block body supports full language features
+let labels = [1, 2, 3].map {|n|
+  let prefix = `item-`;
+  return `${prefix}${n}`;
+};
+// labels is ["item-1", "item-2", "item-3"]
+```
+
+The block has access to variables from the enclosing scope:
+
+```
+let offset = 100;
+let shifted = [1, 2, 3].map {|x|
+  return calc(x + offset);
+};
+// shifted is [101, 102, 103]
+```
+
 ### Reference Semantics
 
 Arrays are passed by reference. Mutations through one binding are visible through all others:

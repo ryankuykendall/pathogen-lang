@@ -265,12 +265,13 @@ export interface IndexExpression {
   index: Expression;
 }
 
-// Method call: list.push(val)
+// Method call: list.push(val) or list.map {|item| ... }
 export interface MethodCallExpression {
   type: 'MethodCallExpression';
   object: Expression;
   method: string;
   args: Expression[];
+  block?: { param: string; body: Statement[] };
   loc?: SourceLocation;
 }
 

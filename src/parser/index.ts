@@ -205,11 +205,30 @@ const nonPathCommandIdentifier: Parsimmon.Parser<Identifier> = P.seqMap(
   return P.succeed({ type: 'Identifier' as const, name, loc: indexToLoc(startIndex) });
 });
 
-// Postfix operators: chains .method(args), .property, and [index] after a base expression
+// Postfix operators: chains .method(args), .method {|p| ...}, .property, and [index] after a base expression
 function withPostfix(base: Parsimmon.Parser<Expression>): Parsimmon.Parser<Expression> {
+  type MethodPostfix = { type: 'method'; method: string; args: Expression[]; block?: { param: string; body: Statement[] }; loc: SourceLocation };
+  type MemberPostfix = { type: 'member'; prop: string };
+  type IndexPostfix = { type: 'index'; index: Expression };
+  type Postfix = MethodPostfix | MemberPostfix | IndexPostfix;
+
   return base.chain((baseExpr) =>
-    P.alt(
-      // .name(args) → MethodCallExpression (try first — needs '(' after '.name')
+    P.alt<Postfix>(
+      // .name {|param| body} → block-only method call (no parens)
+      P.seqMap(
+        P.index,
+        P.string('.'),
+        token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
+        trailingBlock,
+        (startIndex, _dot, method, block): MethodPostfix => ({
+          type: 'method',
+          method,
+          args: [],
+          block,
+          loc: indexToLoc(startIndex),
+        }),
+      ),
+      // .name(args) {|param| body}? → MethodCallExpression with optional trailing block
       P.seqMap(
         P.index,
         P.string('.'),
@@ -220,32 +239,28 @@ function withPostfix(base: Parsimmon.Parser<Expression>): Parsimmon.Parser<Expre
           word(','),
         ),
         word(')'),
-        (
-          startIndex,
-          _dot,
-          method,
-          _open,
-          args,
-        ): { type: 'method'; method: string; args: Expression[]; loc: SourceLocation } => ({
+        trailingBlock.atMost(1),
+        (startIndex, _dot, method, _open, args, _close, block): MethodPostfix => ({
           type: 'method',
           method,
           args,
+          ...(block.length > 0 ? { block: block[0] } : {}),
           loc: indexToLoc(startIndex),
         }),
       ),
       // .name → MemberExpression
       P.seq(P.string('.'), token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/))).map(
-        ([, prop]): { type: 'member'; prop: string } => ({ type: 'member', prop }),
+        ([, prop]): MemberPostfix => ({ type: 'member', prop }),
       ),
       // [expr] → IndexExpression
       P.seq(
         P.string('[').skip(optWhitespace),
         P.lazy(() => expression),
         word(']'),
-      ).map(([, index]): { type: 'index'; index: Expression } => ({ type: 'index', index })),
+      ).map(([, index]): IndexPostfix => ({ type: 'index', index })),
     )
       .many()
-      .map((postfixes) =>
+      .map((postfixes: Postfix[]) =>
         postfixes.reduce<Expression>((obj, postfix) => {
           if (postfix.type === 'method') {
             return {
@@ -253,7 +268,8 @@ function withPostfix(base: Parsimmon.Parser<Expression>): Parsimmon.Parser<Expre
               object: obj,
               method: postfix.method,
               args: postfix.args,
-              loc: (postfix as { loc: SourceLocation }).loc,
+              ...(postfix.block ? { block: postfix.block } : {}),
+              loc: postfix.loc,
             };
           }
           if (postfix.type === 'member') {

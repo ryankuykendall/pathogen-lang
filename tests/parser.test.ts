@@ -956,6 +956,38 @@ L 10 20 // end point`;
       });
     });
 
+    it('parses method call with trailing block (no parens)', () => {
+      const ast = parse('let x = list.map {|item| return item; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'MethodCallExpression',
+        object: { type: 'Identifier', name: 'list' },
+        method: 'map',
+        args: [],
+        block: {
+          param: 'item',
+          body: expect.any(Array),
+        },
+      });
+      expect(decl.value.block.body).toHaveLength(1);
+      expect(decl.value.block.body[0].type).toBe('ReturnStatement');
+    });
+
+    it('parses method call with args and trailing block', () => {
+      const ast = parse('let x = list.reduce(0) {|acc| return acc; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'MethodCallExpression',
+        object: { type: 'Identifier', name: 'list' },
+        method: 'reduce',
+        args: [{ type: 'NumberLiteral', value: 0 }],
+        block: {
+          param: 'acc',
+          body: expect.any(Array),
+        },
+      });
+    });
+
     it('parses for-each loop', () => {
       const ast = parse('for (item in list) { M item 0 }');
       expect(ast.body[0]).toMatchObject({

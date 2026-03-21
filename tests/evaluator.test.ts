@@ -1290,6 +1290,140 @@ describe('Evaluator', () => {
     it('empty array literal has length 0', () => {
       expect(compilePath('let list = []; M list.length 0')).toBe('M 0 0');
     });
+
+    describe('map', () => {
+      it('transforms array elements', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30]; let doubled = arr.map {|x| return calc(x * 2); }; M doubled[0] doubled[1]',
+        )).toBe('M 20 40');
+      });
+
+      it('returns new array, does not mutate original', () => {
+        expect(compilePath(
+          'let arr = [1, 2, 3]; let b = arr.map {|x| return calc(x + 10); }; M arr[0] b[0]',
+        )).toBe('M 1 11');
+      });
+
+      it('empty array returns empty array', () => {
+        expect(compilePath(
+          'let arr = []; let b = arr.map {|x| return calc(x * 2); }; if (b.empty()) { M 1 0 } else { M 0 0 }',
+        )).toBe('M 1 0');
+      });
+
+      it('no return in block produces null', () => {
+        expect(compilePath(
+          'let arr = [1, 2]; let b = arr.map {|x| log(x); }; if (b[0] == null) { M 1 0 } else { M 0 0 }',
+        )).toBe('M 1 0');
+      });
+
+      it('result can be iterated with for-each', () => {
+        expect(compilePath(
+          'let arr = [1, 2, 3]; let doubled = arr.map {|x| return calc(x * 2); }; for (d in doubled) { M d 0 }',
+        )).toBe('M 2 0 M 4 0 M 6 0');
+      });
+
+      it('block can access outer scope variables', () => {
+        expect(compilePath(
+          'let offset = 100; let arr = [1, 2]; let b = arr.map {|x| return calc(x + offset); }; M b[0] b[1]',
+        )).toBe('M 101 102');
+      });
+
+      it('block can use let declarations and conditionals', () => {
+        expect(compilePath(
+          'let arr = [1, 2, 3]; let b = arr.map {|x| let y = calc(x * 10); if (y > 15) { return y; } else { return 0; } }; M b[0] b[1]',
+        )).toBe('M 0 20');
+      });
+
+      it('result length matches input length', () => {
+        expect(compilePath(
+          'let arr = [5, 10, 15, 20]; let b = arr.map {|x| return calc(x + 1); }; M b.length 0',
+        )).toBe('M 4 0');
+      });
+
+      it('without block throws', () => {
+        expect(() => compile('let arr = [1]; let b = arr.map();')).toThrow(/requires a trailing block/);
+      });
+
+      it('with args throws', () => {
+        expect(() => compile('let arr = [1]; let b = arr.map(1) {|x| return x; };')).toThrow(/does not take arguments/);
+      });
+    });
+
+    describe('slice', () => {
+      it('returns sub-array with inclusive end index', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40, 50]; let sub = arr.slice(1, 3); M sub[0] sub[1]',
+        )).toBe('M 20 30');
+      });
+
+      it('inclusive end returns correct length', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40, 50]; let sub = arr.slice(1, 3); M sub.length 0',
+        )).toBe('M 3 0');
+      });
+
+      it('single arg returns from start to end of array', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40]; let sub = arr.slice(2); M sub[0] sub[1]',
+        )).toBe('M 30 40');
+      });
+
+      it('single arg returns correct length', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40]; let sub = arr.slice(2); M sub.length 0',
+        )).toBe('M 2 0');
+      });
+
+      it('negative start index counts from end', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40]; let sub = arr.slice(-2); M sub[0] sub[1]',
+        )).toBe('M 30 40');
+      });
+
+      it('negative end index counts from end (inclusive)', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40, 50]; let sub = arr.slice(0, -2); M sub.length sub[3]',
+        )).toBe('M 4 40');
+      });
+
+      it('slice(0, 0) returns first element', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30]; let sub = arr.slice(0, 0); M sub.length sub[0]',
+        )).toBe('M 1 10');
+      });
+
+      it('returns new array (not a reference)', () => {
+        expect(compilePath(
+          'let arr = [1, 2, 3]; let sub = arr.slice(0, 1); sub.push(99); M arr.length sub.length',
+        )).toBe('M 3 3');
+      });
+
+      it('empty array returns empty array', () => {
+        expect(compilePath(
+          'let arr = []; let sub = arr.slice(0); if (sub.empty()) { M 1 0 } else { M 0 0 }',
+        )).toBe('M 1 0');
+      });
+
+      it('no args throws', () => {
+        expect(() => compile('let arr = [1]; let sub = arr.slice();')).toThrow(/expects 1-2 arguments/);
+      });
+
+      it('both negative indexes', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30, 40, 50]; let sub = arr.slice(-3, -1); M sub.length sub[0]',
+        )).toBe('M 3 30');
+      });
+
+      it('negative end exceeding length returns empty', () => {
+        expect(compilePath(
+          'let arr = [10, 20, 30]; let sub = arr.slice(0, -10); if (sub.empty()) { M 1 0 } else { M 0 0 }',
+        )).toBe('M 1 0');
+      });
+
+      it('non-number arg throws', () => {
+        expect(() => compile('let arr = [1]; let sub = arr.slice(`a`);')).toThrow(/start must be a number/);
+      });
+    });
   });
 
   describe('string operations', () => {

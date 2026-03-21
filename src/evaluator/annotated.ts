@@ -2268,6 +2268,44 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       if (expr.args.length !== 0) throw mError('empty() expects 0 arguments');
       return obj.elements.length === 0 ? 1 : 0;
     }
+    case 'map': {
+      if (expr.args.length !== 0) throw mError('map() does not take arguments — use map {|item| ... }');
+      if (!expr.block) throw mError('map() requires a trailing block: array.map {|item| return ...; }');
+      const result: Value[] = [];
+      for (let i = 0; i < obj.elements.length; i++) {
+        const blockScope = createScope(scope);
+        setVariable(blockScope, expr.block.param, obj.elements[i]);
+        try {
+          for (const stmt of expr.block.body) {
+            evaluateStatementPlain(stmt, blockScope);
+          }
+          result.push(null);
+        } catch (e) {
+          if (e instanceof ReturnSignal) {
+            result.push(e.value);
+          } else {
+            throw e;
+          }
+        }
+      }
+      return { type: 'ArrayValue' as const, elements: result };
+    }
+    case 'slice': {
+      if (expr.args.length < 1 || expr.args.length > 2) throw mError('slice() expects 1-2 arguments');
+      const startVal = evaluateExpression(expr.args[0], scope);
+      if (typeof startVal !== 'number') throw mError('slice() start must be a number');
+      let s = Math.round(startVal);
+      if (s < 0) s = Math.max(0, obj.elements.length + s);
+      if (expr.args.length === 2) {
+        const endVal = evaluateExpression(expr.args[1], scope);
+        if (typeof endVal !== 'number') throw mError('slice() end must be a number');
+        let e = Math.round(endVal);
+        if (e < 0) e = obj.elements.length + e;
+        if (e < 0) e = -1; // clamp: nothing before index 0 is valid
+        return { type: 'ArrayValue' as const, elements: obj.elements.slice(s, e + 1) };
+      }
+      return { type: 'ArrayValue' as const, elements: obj.elements.slice(s) };
+    }
     default:
       throw mError(`Unknown array method: ${expr.method}`);
   }
