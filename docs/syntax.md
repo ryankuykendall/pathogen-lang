@@ -518,6 +518,21 @@ let b = Point(1, 0);
 log(a.angleTo(b));  // 0 (pointing right)
 ```
 
+#### `.offset(other)`
+
+Returns an object with `dx` and `dy` properties representing the vector from this point to `other`. Useful for applying the same relative displacement to multiple points:
+
+```
+let ref = Point(200, 200);
+let target = Point(100, 300);
+let off = ref.offset(target);
+// off.dx = -100, off.dy = 100
+
+// Apply the same offset to a different point
+let other = Point(50, 75);
+M calc(other.x + off.dx) calc(other.y + off.dy)
+```
+
 ### Display
 
 `log()` shows points in a readable format:

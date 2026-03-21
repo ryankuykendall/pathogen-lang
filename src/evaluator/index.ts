@@ -3054,6 +3054,18 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (!isPointValue(other)) throw mError('angleTo() argument must be a Point');
         return Math.atan2(other.y - obj.y, other.x - obj.x);
       }
+      case 'offset': {
+        if (expr.args.length !== 1) throw mError('offset() expects 1 argument');
+        const other = evaluateExpression(expr.args[0], scope);
+        if (!isPointValue(other)) throw mError('offset() argument must be a Point');
+        return {
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['dx', other.x - obj.x],
+            ['dy', other.y - obj.y],
+          ]),
+        };
+      }
       default:
         throw mError(`Unknown Point method: ${expr.method}`);
     }

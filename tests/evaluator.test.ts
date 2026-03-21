@@ -1608,6 +1608,42 @@ describe('Evaluator', () => {
       expect(parseFloat(match![1])).toBeCloseTo(Math.PI / 2);
     });
 
+    it('.offset(other) returns dx and dy', () => {
+      expect(compilePath('let p1 = Point(200, 200); let p2 = Point(100, 300); let off = p1.offset(p2); M off.dx off.dy')).toBe(
+        'M -100 100',
+      );
+    });
+
+    it('.offset(other) reverse direction negates values', () => {
+      expect(compilePath('let p1 = Point(200, 200); let p2 = Point(100, 300); let off = p2.offset(p1); M off.dx off.dy')).toBe(
+        'M 100 -100',
+      );
+    });
+
+    it('.offset(self) returns zero', () => {
+      expect(compilePath('let pt = Point(50, 50); let off = pt.offset(pt); M off.dx off.dy')).toBe(
+        'M 0 0',
+      );
+    });
+
+    it('.offset(other) used in calc expression', () => {
+      expect(compilePath('let p1 = Point(10, 20); let p2 = Point(30, 50); let off = p1.offset(p2); M calc(p1.x + off.dx) calc(p1.y + off.dy)')).toBe(
+        'M 30 50',
+      );
+    });
+
+    it('.offset() with no argument throws', () => {
+      expect(() => compilePath('let pt = Point(0, 0); let off = pt.offset(); M 0 0')).toThrow('offset() expects 1 argument');
+    });
+
+    it('.offset() with non-Point argument throws', () => {
+      expect(() => compilePath('let pt = Point(0, 0); let off = pt.offset(5); M 0 0')).toThrow('offset() argument must be a Point');
+    });
+
+    it('.offset() with too many arguments throws', () => {
+      expect(() => compilePath('let p1 = Point(0, 0); let p2 = Point(1, 1); let off = p1.offset(p2, p2); M 0 0')).toThrow('offset() expects 1 argument');
+    });
+
     it('log(point) displays Point(x, y)', () => {
       const result = compile('let pt = Point(100, 200); log(pt);');
       expect(result.logs[0].parts[0].value).toBe('Point(100, 200)');
