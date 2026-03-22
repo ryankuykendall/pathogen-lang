@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 255" width="420" height="255">
+
+  <path d="M 0 0 L 420 0 L 420 255 L 0 255 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path d="M 0 0 h 420 M 0 20 h 420 M 0 40 h 420 M 0 60 h 420 M 0 80 h 420 M 0 100 h 420 M 0 120 h 420 M 0 140 h 420 M 0 160 h 420 M 0 180 h 420 M 0 200 h 420 M 0 220 h 420 M 0 240 h 420 M 0 0 v 255 M 20 0 v 255 M 40 0 v 255 M 60 0 v 255 M 80 0 v 255 M 100 0 v 255 M 120 0 v 255 M 140 0 v 255 M 160 0 v 255 M 180 0 v 255 M 200 0 v 255 M 220 0 v 255 M 240 0 v 255 M 260 0 v 255 M 280 0 v 255 M 300 0 v 255 M 320 0 v 255 M 340 0 v 255 M 360 0 v 255 M 380 0 v 255 M 400 0 v 255 M 420 0 v 255" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g transform="translate(0, 0)">
+    <text x="30" y="28" font-size="11" fill="#f59e0b">G1 continuity: CPs are collinear through the join</text>
+    <path d="M 135 135 L 265 95" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <path d="M 75 175 C 100 155 135 135 200 115 M 200 115 C 265 95 320 72 365 120" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    <path d="M 194 115 A 6 6 0 1 1 206 115 A 6 6 0 1 1 194 115" fill="#3b82f6" stroke="#1e3a5f" stroke-width="2"/>
+    <path d="M 131 135 A 4 4 0 1 1 139 135 A 4 4 0 1 1 131 135" fill="#22c55e" stroke="#14532d" stroke-width="2"/>
+    <path d="M 261 95 A 4 4 0 1 1 269 95 A 4 4 0 1 1 261 95" fill="#ef4444" stroke="#7f1d1d" stroke-width="2"/>
+    <path d="M 72 175 A 3 3 0 1 1 78 175 A 3 3 0 1 1 72 175 M 362 120 A 3 3 0 1 1 368 120 A 3 3 0 1 1 362 120" fill="#64748b" stroke="#334155" stroke-width="2"/>
+    <text x="175" y="98" font-size="11" fill="#e2e8f0">join point</text>
+    <text x="100" y="155" font-size="11" fill="#e2e8f0">entry CP</text>
+    <text x="272" y="84" font-size="11" fill="#e2e8f0">exit CP</text>
+    <text x="45" y="190" font-size="11" fill="#e2e8f0">incoming</text>
+    <text x="348" y="142" font-size="11" fill="#e2e8f0">outgoing</text>
+    <text x="30" y="218" font-size="10" fill="#94a3b8">Both CPs share the same tangent angle — the curve</text>
+    <text x="30" y="232" font-size="10" fill="#94a3b8">passes smoothly through the join.</text>
+  </g>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 270" width="460" height="270">
+
+  <path d="M 0 0 L 460 0 L 460 270 L 0 270 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path d="M 0 0 h 460 M 0 20 h 460 M 0 40 h 460 M 0 60 h 460 M 0 80 h 460 M 0 100 h 460 M 0 120 h 460 M 0 140 h 460 M 0 160 h 460 M 0 180 h 460 M 0 200 h 460 M 0 220 h 460 M 0 240 h 460 M 0 260 h 460 M 0 0 v 270 M 20 0 v 270 M 40 0 v 270 M 60 0 v 270 M 80 0 v 270 M 100 0 v 270 M 120 0 v 270 M 140 0 v 270 M 160 0 v 270 M 180 0 v 270 M 200 0 v 270 M 220 0 v 270 M 240 0 v 270 M 260 0 v 270 M 280 0 v 270 M 300 0 v 270 M 320 0 v 270 M 340 0 v 270 M 360 0 v 270 M 380 0 v 270 M 400 0 v 270 M 420 0 v 270 M 440 0 v 270 M 460 0 v 270" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <text x="30" y="26" font-size="11" fill="#f59e0b">Single segment (t = 0.6) — CPs pulled 60% toward shared CP</text>
+  <g transform="translate(0, 0)">
+    <path d="M 70 180 L 200 55 M 330 180 L 200 55" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+    <path d="M 200 49 L 206 55 L 200 61 L 194 55 Z" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <path d="M 143 105 A 5 5 0 1 1 153 105 A 5 5 0 1 1 143 105" fill="#ef4444" stroke="#7f1d1d" stroke-width="2"/>
+    <path d="M 247 105 A 5 5 0 1 1 257 105 A 5 5 0 1 1 247 105" fill="#22c55e" stroke="#14532d" stroke-width="2"/>
+    <path d="M 70 180 L 148 105" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <path d="M 330 180 L 252 105" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <path d="M 70 180 C 148 105 252 105 330 180" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <path d="M 70 180 Q 200 55 330 180" fill="none" stroke="#475569" stroke-width="1"/>
+    <path d="M 65 180 A 5 5 0 1 1 75 180 A 5 5 0 1 1 65 180 M 325 180 A 5 5 0 1 1 335 180 A 5 5 0 1 1 325 180" fill="#8b5cf6" stroke="#3b0764" stroke-width="2"/>
+    <text x="210" y="51" font-size="10" fill="#cbd5e1">virtual shared CP</text>
+    <text x="73" y="135" font-size="10" fill="#cbd5e1">CP1 (exit)</text>
+    <text x="264" y="109" font-size="10" fill="#cbd5e1">CP2 (entry)</text>
+    <text x="65" y="200" font-size="10" fill="#cbd5e1">start</text>
+    <text x="325" y="200" font-size="10" fill="#cbd5e1">end</text>
+  </g>
+  <g transform="translate(340, 55)">
+    <text x="0" y="10" font-size="10" fill="#94a3b8">CP1 = lerp(start,</text>
+    <text x="0" y="24" font-size="10" fill="#94a3b8">  sharedCP, exitTime)</text>
+    <text x="0" y="46" font-size="10" fill="#94a3b8">CP2 = lerp(end,</text>
+    <text x="0" y="60" font-size="10" fill="#94a3b8">  sharedCP, entryTime)</text>
+  </g>
+  <text x="130" y="250" font-size="9" fill="#475569">dashed gray: quadratic reference (t = 1.0)</text>
+</svg>

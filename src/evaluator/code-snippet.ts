@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------------------
 
 export interface CodeToken {
-  type: 'comment' | 'string' | 'keyword' | 'builtin' | 'function' | 'number' | 'operator' | 'punctuation' | 'text';
+  type: 'comment' | 'string' | 'keyword' | 'builtin' | 'function' | 'number' | 'unit' | 'operator' | 'punctuation' | 'text';
   value: string;
 }
 
@@ -21,6 +21,7 @@ const TOKEN_COLORS: Record<CodeToken['type'], string> = {
   builtin: '#c084fc',
   function: '#f59e0b',
   number: '#f59e0b',
+  unit: '#e2e8f0',
   operator: '#94a3b8',
   punctuation: '#64748b',
   text: '#e2e8f0',
@@ -57,8 +58,10 @@ const TOKEN_RULES: TokenRule[] = [
   { pattern: /^'[^']*'/, type: 'string' },
   // 4. Double-quoted strings
   { pattern: /^"[^"]*"/, type: 'string' },
-  // 5. Numbers (int, float, with optional unit like deg)
-  { pattern: /^-?\d+\.?\d*(?:deg)?/, type: 'number' },
+  // 5. Numbers (int, float — no unit suffix)
+  { pattern: /^-?\d+\.?\d*/, type: 'number' },
+  // 5b. Unit suffixes immediately after numbers
+  { pattern: /^(?:deg|rad|pi|%)/, type: 'unit' },
   // 6. Sigil blocks: @{}, &{}, ${}
   { pattern: /^[@&$]\{/, type: 'punctuation' },
   // 7. Operators

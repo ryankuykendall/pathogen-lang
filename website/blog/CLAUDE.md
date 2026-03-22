@@ -124,9 +124,34 @@ Author and review a draft blog post that incorporates code examples in mini-work
 - Posts should liberally link to other published blog posts and to the documentation site.
 - Posts should be available for review via `npm run dev:website`.
 
+### 3.5 Pre-Review Validation
+
+Before agentic review, run the sample validation script on all sample directories:
+
+```bash
+npx tsx scripts/validate-samples.ts website/blog/samples/postN/
+```
+
+This uses Puppeteer to load each compiled SVG, extract pixel-accurate `getBoundingClientRect()` for every element, and check:
+
+1. **Margin compliance** — all elements ≥15px from viewBox edges
+2. **Text-text collisions** — no overlapping text elements
+3. **Text-geometry collisions** — no text overlapping path/shape geometry
+4. **GroupLayer usage** — warns if >3 layers but no GroupLayer organization
+5. **ViewBox consistency** — source comment matches compiled SVG
+
+The script also generates **PNG previews** in `postN/previews/` for use during agentic review.
+
+Fix all warnings before proceeding. This is currently a soft gate (warnings only). If visual issues continue to reach agentic review unfixed, escalate to a hard gate by using `--strict`.
+
 ### 4. Agentic Review
 
 Draft blog posts go through a structured multi-persona review round table. See the full process in [`../guidelines/agentic-review.md`](../guidelines/agentic-review.md).
+
+When invoking the content-reviewer agent, provide:
+- Paths to blog post markdown and sample `.pathogen` files
+- Paths to **PNG preview images** (generated in step 3.5) for visual assessment
+- Instruct reviewers to Read each PNG and assess against the [schematic checklist](../guidelines/schematic-and-diagram-checklist-plus-antipatterns.md)
 
 ### 5. Final Version
 

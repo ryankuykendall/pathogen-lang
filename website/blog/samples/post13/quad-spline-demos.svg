@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 145" width="460" height="145">
+
+  <path d="M 0 0 L 460 0 L 460 145 L 0 145 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path d="M 0 0 h 460 M 0 20 h 460 M 0 40 h 460 M 0 60 h 460 M 0 80 h 460 M 0 100 h 460 M 0 120 h 460 M 0 140 h 460 M 0 0 v 145 M 20 0 v 145 M 40 0 v 145 M 60 0 v 145 M 80 0 v 145 M 100 0 v 145 M 120 0 v 145 M 140 0 v 145 M 160 0 v 145 M 180 0 v 145 M 200 0 v 145 M 220 0 v 145 M 240 0 v 145 M 260 0 v 145 M 280 0 v 145 M 300 0 v 145 M 320 0 v 145 M 340 0 v 145 M 360 0 v 145 M 380 0 v 145 M 400 0 v 145 M 420 0 v 145 M 440 0 v 145 M 460 0 v 145" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g transform="translate(0, 0)">
+    <g transform="translate(15, 8)">
+      <text x="23" y="20" font-size="10" fill="#94a3b8">Simple arc</text>
+      <path d="m 0 100 q 34.64101615137755 -20 100 0" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    </g>
+    <g transform="translate(145, 8)">
+      <text x="40" y="20" font-size="10" fill="#94a3b8">Flowing curve</text>
+      <path d="m 0 100 q 19.79898987322333 -19.79898987322332 30 -65 q 5.503611314882789 -24.386682072284742 40 45 q 12.465014497863265 25.072363541717777 30 -45 q 6.068893774141088 -24.252186053182744 40 65" fill="none" stroke="#ef4444" stroke-width="2"/>
+    </g>
+    <g transform="translate(310, 8)">
+      <text x="30" y="20" font-size="10" fill="#94a3b8">Zigzag</text>
+      <path d="m 0 100 q 12.500000000000004 -21.650635094610962 30 -65 q 9.358599354278162 -23.182247909253846 30 65 q 5.697897377787413 24.342020570860655 30 -65 q 6.561873625374304 -24.123470200711527 30 65" fill="none" stroke="#22c55e" stroke-width="2"/>
+    </g>
+  </g>
+</svg>

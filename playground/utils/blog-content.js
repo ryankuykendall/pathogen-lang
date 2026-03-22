@@ -3,6 +3,18 @@
 
 export const blogIndex = [
   {
+    "slug": "heading-turn",
+    "title": "Clean Tangent Control: heading() and turn() in Pathogen",
+    "date": "2026-03-22",
+    "description": "Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks."
+  },
+  {
+    "slug": "chained-bezier-splines",
+    "title": "Smooth Curves Made Simple: Chained Bézier Splines in Pathogen",
+    "date": "2026-03-21",
+    "description": "Three stdlib functions that turn waypoints into G1-continuous Bézier curves — cubicSpline for explicit tangent control, quadSpline for implicit angles, and clippedQuadSpline for eccentricity dampening."
+  },
+  {
     "slug": "pathblock-glyph-extraction",
     "title": "From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()",
     "date": "2026-03-17",
@@ -101,6 +113,879 @@ export const blogIndex = [
 ];
 
 export const posts = {
+  'chained-bezier-splines': `<p>Drawing a single cubic Bézier in SVG is straightforward: <code>C x1 y1 x2 y2 x y</code>. Drawing a <em>chain</em> of them that flows smoothly from one segment to the next is not. Each join point needs its incoming and outgoing control points to be collinear — lined up on the same tangent line — or the curve develops a visible kink. Get one control point wrong and the whole shape looks broken.</p>
+<p>Here&#39;s the kind of thing you&#39;d write by hand for a three-segment smooth curve — six control point coordinates per segment, each carefully calculated to maintain tangent continuity at the joins:</p>
+<pre><code class="hljs">M 50 150
+C 115.8 144.9  120 54.5  180 50
+C 233.1 45.9  255 137.5  320 140
+C 367.6 141.7  410.9 72.6  470 70
+</code></pre><p>In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen&#39;s new <a href="/pathogen/docs#stdlib-cubicsplinepoints">spline functions</a> replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">cubicSpline</span>([
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -20deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">angle</span>: 15deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">65</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">455</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 10deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span> }
+])
+</code></pre><p>Four waypoints, guaranteed smooth, and the intent is readable. The compiler handles all control point placement — you describe where the curve should go and how it should enter and leave each waypoint.</p>
+<p>Whether you&#39;re building animation paths, smooth data visualization curves, decorative borders, or logo outlines, chained Bézier splines turn what was tedious manual calculation into a declarative, readable specification.</p>
+<p>Three functions cover different tradeoffs between control and convenience:</p>
+<ul>
+<li><strong><code>cubicSpline</code></strong> — explicit angles at every point, full art-direction control</li>
+<li><strong><code>quadSpline</code></strong> — only the first angle is explicit, the rest are derived geometrically; produces quadratic Bézier segments (fewer degrees of freedom than cubic, but simpler to specify)</li>
+<li><strong><code>clippedQuadSpline</code></strong> — adds eccentricity dampening to control how much curves bulge</li>
+</ul>
+<h2>cubicSpline: Explicit Tangent Control</h2>
+<p><code>cubicSpline</code> takes an array of points, each specifying its position, tangent angle, and handle distances.</p>
+<p>Angles follow SVG&#39;s coordinate conventions: 0 is rightward, and positive angles rotate clockwise (toward the positive y-axis, which points downward in SVG). Use the <code>deg</code> suffix for degrees.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x</code></td>
+<td>number</td>
+<td>yes</td>
+<td>X coordinate</td>
+</tr>
+<tr>
+<td><code>y</code></td>
+<td>number</td>
+<td>yes</td>
+<td>Y coordinate</td>
+</tr>
+<tr>
+<td><code>angle</code></td>
+<td>number</td>
+<td>yes</td>
+<td>Tangent direction (radians; use <code>deg</code> suffix for degrees)</td>
+</tr>
+<tr>
+<td><code>exit</code></td>
+<td>number</td>
+<td>yes (except last point)</td>
+<td>Distance forward along tangent to outgoing CP</td>
+</tr>
+<tr>
+<td><code>entry</code></td>
+<td>number</td>
+<td>yes (except first point)</td>
+<td>Distance backward along tangent to incoming CP</td>
+</tr>
+</tbody></table>
+<p>The anatomy diagram below shows how these properties map to the geometry. Blue dots are the on-curve waypoints. Red circles are exit control points (placed <code>exit</code> distance forward along the tangent). Green circles are entry control points (placed <code>entry</code> distance backward). Orange arcs show the tangent angle at each point.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTQwJTIwMzMwJTIyJTBBJTJGJTJGJTIwY3ViaWNTcGxpbmUlMjBhbmF0b215JTIwJUUyJTgwJTk0JTIwY29udHJvbCUyMHBvaW50cyUyQyUyMHRhbmdlbnQlMjBsaW5lcyUyQyUyMGFuZ2xlJTIwYXJjcyUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNTQwJTJDJTIwMzMwKSUyMCU3RCUwQSUwQWxldCUyMGdyaWQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2dyaWQnKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMCUyMzFlMjkzYiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZ3JpZC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi4xNiklMjAlN0IlMjBNJTIwMCUyMGNhbGMoaSUyMColMjAyMCklMjBoJTIwNTQwJTIwJTdEJTBBJTIwJTIwZm9yJTIwKGolMjBpbiUyMDAuLjI3KSUyMCU3QiUyME0lMjBjYWxjKGolMjAqJTIwMjApJTIwMCUyMHYlMjAzMzAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBBbmdsZSUyMHdlZGdlJTNBJTIwZHJhd3MlMjBhJTIwZmlsbGVkJTIwd2VkZ2UlMjBmcm9tJTIwMCVDMiVCMCUyMHRvJTIwYW5nbGUlMjB3aXRoJTIwbGFiZWwlMEFmbiUyMGFuZ2xlV2VkZ2UoY3glMkMlMjBjeSUyQyUyMHJhZGl1cyUyQyUyMGFuZ2xlKSUyMCU3QiUwQSUyMCUyMGxldCUyMGV4JTIwJTNEJTIwY2FsYyhjeCUyMCUyQiUyMHJhZGl1cyUyMColMjBjb3MoYW5nbGUpKSUzQiUwQSUyMCUyMGxldCUyMGV5JTIwJTNEJTIwY2FsYyhjeSUyMCUyQiUyMHJhZGl1cyUyMColMjBzaW4oYW5nbGUpKSUzQiUwQSUyMCUyMGxldCUyMHN3ZWVwJTIwJTNEJTIwY2FsYyhtYXgoc2lnbihhbmdsZSklMkMlMjAwKSklM0IlMEElMjAlMjAlMkYlMkYlMjBXZWRnZSUyMGZpbGwlMEElMjAlMjBsYXllcignYW5nbGUtZmlsbHMnKS5hcHBseSUyMCU3QiUwQSUyMCUyMCUyMCUyME0lMjBjeCUyMGN5JTBBJTIwJTIwJTIwJTIwTCUyMGNhbGMoY3glMjAlMkIlMjByYWRpdXMpJTIwY3klMEElMjAlMjAlMjAlMjBBJTIwcmFkaXVzJTIwcmFkaXVzJTIwMCUyMDAlMjBzd2VlcCUyMGV4JTIwZXklMEElMjAlMjAlMjAlMjBaJTBBJTIwJTIwJTdEJTBBJTIwJTIwJTJGJTJGJTIwQXJjJTIwc3Ryb2tlJTBBJTIwJTIwbGF5ZXIoJ2FuZ2xlLWFyY3MnKS5hcHBseSUyMCU3QiUwQSUyMCUyMCUyMCUyME0lMjBjYWxjKGN4JTIwJTJCJTIwcmFkaXVzKSUyMGN5JTBBJTIwJTIwJTIwJTIwQSUyMHJhZGl1cyUyMHJhZGl1cyUyMDAlMjAwJTIwc3dlZXAlMjBleCUyMGV5JTBBJTIwJTIwJTdEJTBBJTIwJTIwJTJGJTJGJTIwQmFzZWxpbmUlMjB0aWNrJTIwKDAlQzIlQjAlMjByZWZlcmVuY2UpJTBBJTIwJTIwbGF5ZXIoJ2FuZ2xlLXRpY2tzJykuYXBwbHklMjAlN0IlMEElMjAlMjAlMjAlMjBNJTIwY3glMjBjeSUyMEwlMjBjYWxjKGN4JTIwJTJCJTIwcmFkaXVzJTIwJTJCJTIwNCklMjBjeSUwQSUyMCUyMCU3RCUwQSUyMCUyMCUyRiUyRiUyMEFuZ2xlJTIwbGFiZWwlMEElMjAlMjBsZXQlMjBsYWJlbFIlMjAlM0QlMjBjYWxjKHJhZGl1cyUyMCUyQiUyMDEyKSUzQiUwQSUyMCUyMGxldCUyMG1pZEFuZ2xlJTIwJTNEJTIwY2FsYyhhbmdsZSUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwbGV0JTIwbHglMjAlM0QlMjBjYWxjKGN4JTIwJTJCJTIwbGFiZWxSJTIwKiUyMGNvcyhtaWRBbmdsZSkpJTNCJTBBJTIwJTIwbGV0JTIwbHklMjAlM0QlMjBjYWxjKGN5JTIwJTJCJTIwbGFiZWxSJTIwKiUyMHNpbihtaWRBbmdsZSkpJTNCJTBBJTIwJTIwbGF5ZXIoJ2FuZ2xlLWxhYmVscycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwJTIwJTIwdGV4dChseCUyQyUyMGNhbGMobHklMjAlMkIlMjA0KSklNjAlMjQlN0Jyb3VuZChhYnMoYW5nbGUpJTIwKiUyMDE4MCUyMCUyRiUyMFBJKCkpJTdEJUMyJUIwJTYwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBbGV0JTIwcHRzJTIwJTNEJTIwJTVCJTBBJTIwJTIwJTdCJTIweCUzQSUyMDYwJTJDJTIwJTIweSUzQSUyMDE2MCUyQyUyMGFuZ2xlJTNBJTIwLTIwZGVnJTJDJTIwZXhpdCUzQSUyMDcwJTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIweCUzQSUyMDE5MCUyQyUyMHklM0ElMjA3MCUyQyUyMCUyMGFuZ2xlJTNBJTIwMTVkZWclMkMlMjAlMjBlbnRyeSUzQSUyMDYwJTJDJTIwZXhpdCUzQSUyMDU1JTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIweCUzQSUyMDMzMCUyQyUyMHklM0ElMjAxNTUlMkMlMjBhbmdsZSUzQSUyMC0zMGRlZyUyQyUyMGVudHJ5JTNBJTIwNjUlMkMlMjBleGl0JTNBJTIwNTUlMjAlN0QlMkMlMEElMjAlMjAlN0IlMjB4JTNBJTIwNDU1JTJDJTIweSUzQSUyMDg1JTJDJTIwJTIwYW5nbGUlM0ElMjAxMGRlZyUyQyUyMCUyMGVudHJ5JTNBJTIwNjAlMjAlN0QlMEElNUQlM0IlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBEaWFncmFtJTIwZ3JvdXAlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdkaWFncmFtJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMEElMkYlMkYlMjBUaXRsZSUwQWRlZmluZSUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTIwZmlsbCUzQSUyMCUyM2Y1OWUwYiUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdkaWFncmFtJykuYXBwZW5kKGxheWVyKCd0aXRsZScpKSUzQiUwQWxheWVyKCd0aXRsZScpLmFwcGx5JTIwJTdCJTIwdGV4dCgzMCUyQyUyMDI0KSU2MGN1YmljU3BsaW5lJTIwJUUyJTgwJTk0JTIwd2F5cG9pbnRzJTJDJTIwdGFuZ2VudCUyMGxpbmVzJTJDJTIwYW5kJTIwY29udHJvbCUyMHBvaW50cyU2MCUyMCU3RCUwQSUwQSUyRiUyRiUyMFRoZSUyMGN1cnZlJTBBZGVmaW5lJTIwUGF0aExheWVyKCdjdXJ2ZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjMzYjgyZjYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAzJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2N1cnZlJykpJTNCJTBBbGF5ZXIoJ2N1cnZlJykuYXBwbHklMjAlN0IlMjBjdWJpY1NwbGluZShwdHMpJTIwJTdEJTBBJTBBJTJGJTJGJTIwT24tY3VydmUlMjBwb2ludHMlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2FuY2hvcnMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMzYjgyZjYlM0IlMjBzdHJva2UlM0ElMjAlMjMxZTNhNWYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignYW5jaG9ycycpKSUzQiUwQWxheWVyKCdhbmNob3JzJykuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoJTVCcCUyQyUyMGklNUQlMjBpbiUyMHB0cyklMjAlN0IlMjBjaXJjbGUocC54JTJDJTIwcC55JTJDJTIwNSklMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBDb250cm9sJTIwcG9pbnRzJTIwYW5kJTIwdGFuZ2VudCUyMGxpbmVzJTBBZGVmaW5lJTIwUGF0aExheWVyKCdjcC1leGl0JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzZWY0NDQ0JTNCJTIwc3Ryb2tlJTNBJTIwJTIzN2YxZDFkJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignY3AtZW50cnknKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMyMmM1NWUlM0IlMjBzdHJva2UlM0ElMjAlMjMxNDUzMmQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTIwJTdEJTBBZGVmaW5lJTIwUGF0aExheWVyKCd0YW5nZW50JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzk0YTNiOCUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwNCUyMDMlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignY3AtZXhpdCcpJTJDJTIwbGF5ZXIoJ2NwLWVudHJ5JyklMkMlMjBsYXllcigndGFuZ2VudCcpKSUzQiUwQSUwQWxldCUyMG4lMjAlM0QlMjBjYWxjKHB0cy5sZW5ndGglMjAtJTIwMSklM0IlMEFmb3IlMjAoaSUyMGluJTIwMS4ubiklMjAlN0IlMEElMjAlMjBsZXQlMjBwcmV2JTIwJTNEJTIwcHRzJTVCY2FsYyhpJTIwLSUyMDEpJTVEJTNCJTBBJTIwJTIwbGV0JTIwY3VyciUyMCUzRCUyMHB0cyU1QmklNUQlM0IlMEElMjAlMjBsZXQlMjBjMXglMjAlM0QlMjBjYWxjKHByZXYueCUyMCUyQiUyMHByZXYuZXhpdCUyMColMjBjb3MocHJldi5hbmdsZSkpJTNCJTBBJTIwJTIwbGV0JTIwYzF5JTIwJTNEJTIwY2FsYyhwcmV2LnklMjAlMkIlMjBwcmV2LmV4aXQlMjAqJTIwc2luKHByZXYuYW5nbGUpKSUzQiUwQSUyMCUyMGxldCUyMGMyeCUyMCUzRCUyMGNhbGMoY3Vyci54JTIwLSUyMGN1cnIuZW50cnklMjAqJTIwY29zKGN1cnIuYW5nbGUpKSUzQiUwQSUyMCUyMGxldCUyMGMyeSUyMCUzRCUyMGNhbGMoY3Vyci55JTIwLSUyMGN1cnIuZW50cnklMjAqJTIwc2luKGN1cnIuYW5nbGUpKSUzQiUwQSUwQSUyMCUyMGxheWVyKCdjcC1leGl0JykuYXBwbHklMjAlN0IlMjBjaXJjbGUoYzF4JTJDJTIwYzF5JTJDJTIwNCklMjAlN0QlMEElMjAlMjBsYXllcignY3AtZW50cnknKS5hcHBseSUyMCU3QiUyMGNpcmNsZShjMnglMkMlMjBjMnklMkMlMjA0KSUyMCU3RCUwQSUyMCUyMGxheWVyKCd0YW5nZW50JykuYXBwbHklMjAlN0IlMEElMjAlMjAlMjAlMjBNJTIwcHJldi54JTIwcHJldi55JTIwTCUyMGMxeCUyMGMxeSUwQSUyMCUyMCUyMCUyME0lMjBjdXJyLnglMjBjdXJyLnklMjBMJTIwYzJ4JTIwYzJ5JTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwQW5nbGUlMjB2aXN1YWxpemF0aW9uJTIwbGF5ZXJzJTBBZGVmaW5lJTIwUGF0aExheWVyKCdhbmdsZS1maWxscycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHJnYmEoMjQ1JTJDJTIwMTU4JTJDJTIwMTElMkMlMjAwLjE1KSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlMjAlN0QlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2FuZ2xlLWFyY3MnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzZjU5ZTBiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTIwJTdEJTBBZGVmaW5lJTIwUGF0aExheWVyKCdhbmdsZS10aWNrcycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNmNTllMGIlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjglMjAlN0QlMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ2FuZ2xlLWxhYmVscycpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwOSUzQiUyMGZpbGwlM0ElMjAlMjNmNTllMGIlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignYW5nbGUtZmlsbHMnKSUyQyUyMGxheWVyKCdhbmdsZS1hcmNzJyklMkMlMjBsYXllcignYW5nbGUtdGlja3MnKSUyQyUyMGxheWVyKCdhbmdsZS1sYWJlbHMnKSklM0IlMEElMEFmb3IlMjAoJTVCcCUyQyUyMGklNUQlMjBpbiUyMHB0cyklMjAlN0IlMjBhbmdsZVdlZGdlKHAueCUyQyUyMHAueSUyQyUyMDI4JTJDJTIwcC5hbmdsZSklMjAlN0QlMEElMEElMkYlMkYlMjBQb2ludCUyMGxhYmVscyUwQWRlZmluZSUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMSUzQiUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignbGFiZWxzJykpJTNCJTBBbGF5ZXIoJ2xhYmVscycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzOCUyQyUyMDE4MiklNjBQMCU2MCUwQSUyMCUyMHRleHQoMTc4JTJDJTIwNTYpJTYwUDElNjAlMEElMjAlMjB0ZXh0KDM0MCUyQyUyMDE3NSklNjBQMiU2MCUwQSUyMCUyMHRleHQoNDYwJTJDJTIwNzIpJTYwUDMlNjAlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBMZWdlbmQlMjBncm91cCUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ2xlZ2VuZC1ncm91cCcpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAzMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMjMwJTNCJTIwJTdEJTBBJTBBZGVmaW5lJTIwUGF0aExheWVyKCdzdy1jdXJ2ZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzNiODJmNiUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlMjAlN0QlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3N3LWV4aXQnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjNlZjQ0NDQlM0IlMjBzdHJva2UlM0ElMjBub25lJTIwJTdEJTBBZGVmaW5lJTIwUGF0aExheWVyKCdzdy1lbnRyeScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzIyYzU1ZSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlMjAlN0QlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3N3LXRhbmdlbnQnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzOTRhM2I4JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjA0JTIwMyUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignc3ctYW5nbGUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjByZ2JhKDI0NSUyQyUyMDE1OCUyQyUyMDExJTJDJTIwMC4xNSklM0IlMjBzdHJva2UlM0ElMjAlMjNmNTllMGIlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTIwJTdEJTBBbGF5ZXIoJ2xlZ2VuZC1ncm91cCcpLmFwcGVuZChsYXllcignc3ctY3VydmUnKSUyQyUyMGxheWVyKCdzdy1leGl0JyklMkMlMjBsYXllcignc3ctZW50cnknKSUyQyUyMGxheWVyKCdzdy10YW5nZW50JyklMkMlMjBsYXllcignc3ctYW5nbGUnKSklM0IlMEElMEFsYXllcignc3ctY3VydmUnKS5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjAxMiUyQyUyMDMpJTIwJTdEJTBBbGF5ZXIoJ3N3LWV4aXQnKS5hcHBseSUyMCU3QiUyMGNpcmNsZSg2JTJDJTIwMjAlMkMlMjA0KSUyMCU3RCUwQWxheWVyKCdzdy1lbnRyeScpLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDYlMkMlMjAzNiUyQyUyMDQpJTIwJTdEJTBBbGF5ZXIoJ3N3LXRhbmdlbnQnKS5hcHBseSUyMCU3QiUyME0lMjAwJTIwNTAlMjBMJTIwMTIlMjA1MCUyMCU3RCUwQWxheWVyKCdzdy1hbmdsZScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMDAlMjA2NCUyMEwlMjAxMiUyMDY0JTIwQSUyMDYlMjA2JTIwMCUyMDAlMjAwJTIwNiUyMDU4JTIwWiUwQSU3RCUwQSUwQWRlZmluZSUyMFRleHRMYXllcignbGVnZW5kLXRleHQnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTIwZmlsbCUzQSUyMCUyM2NiZDVlMSUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdsZWdlbmQtZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ2xlZ2VuZC10ZXh0JykpJTNCJTBBbGF5ZXIoJ2xlZ2VuZC10ZXh0JykuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwJTJDJTIwNiklNjBDdXJ2ZSU2MCUwQSUyMCUyMHRleHQoMjAlMkMlMjAyNCklNjBFeGl0JTIwQ1AlMjAob3V0Z29pbmclMjBoYW5kbGUpJTYwJTBBJTIwJTIwdGV4dCgyMCUyQyUyMDQwKSU2MEVudHJ5JTIwQ1AlMjAoaW5jb21pbmclMjBoYW5kbGUpJTYwJTBBJTIwJTIwdGV4dCgyMCUyQyUyMDU0KSU2MFRhbmdlbnQlMjBsaW5lJTYwJTBBJTIwJTIwdGV4dCgyMCUyQyUyMDY4KSU2MEFuZ2xlJTIwd2VkZ2UlNjAlMEElN0QlMEE=" code-open caption="cubicSpline anatomy — waypoints, control points, tangent lines, and angle arcs">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 540 330&quot;</span>
+<span class="hljs-comment">// cubicSpline anatomy — control points, tangent lines, angle arcs</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">540</span>, <span class="hljs-number">330</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.16</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">540</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.27</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">330</span> }
+}
+
+<span class="hljs-comment">// Angle wedge: draws a filled wedge from 0° to angle with label</span>
+fn <span class="hljs-title function_">angleWedge</span>(<span class="hljs-params">cx, cy, radius, angle</span>) {
+  <span class="hljs-keyword">let</span> ex = <span class="hljs-title function_">calc</span>(cx + radius * <span class="hljs-title function_">cos</span>(angle));
+  <span class="hljs-keyword">let</span> ey = <span class="hljs-title function_">calc</span>(cy + radius * <span class="hljs-title function_">sin</span>(angle));
+  <span class="hljs-keyword">let</span> sweep = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">max</span>(<span class="hljs-title function_">sign</span>(angle), <span class="hljs-number">0</span>));
+  <span class="hljs-comment">// Wedge fill</span>
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-fills&#x27;</span>).<span class="hljs-property">apply</span> {
+    M cx cy
+    L <span class="hljs-title function_">calc</span>(cx + radius) cy
+    A radius radius <span class="hljs-number">0</span> <span class="hljs-number">0</span> sweep ex ey
+    Z
+  }
+  <span class="hljs-comment">// Arc stroke</span>
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-arcs&#x27;</span>).<span class="hljs-property">apply</span> {
+    M <span class="hljs-title function_">calc</span>(cx + radius) cy
+    A radius radius <span class="hljs-number">0</span> <span class="hljs-number">0</span> sweep ex ey
+  }
+  <span class="hljs-comment">// Baseline tick (0° reference)</span>
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-ticks&#x27;</span>).<span class="hljs-property">apply</span> {
+    M cx cy L <span class="hljs-title function_">calc</span>(cx + radius + <span class="hljs-number">4</span>) cy
+  }
+  <span class="hljs-comment">// Angle label</span>
+  <span class="hljs-keyword">let</span> labelR = <span class="hljs-title function_">calc</span>(radius + <span class="hljs-number">12</span>);
+  <span class="hljs-keyword">let</span> midAngle = <span class="hljs-title function_">calc</span>(angle / <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">let</span> lx = <span class="hljs-title function_">calc</span>(cx + labelR * <span class="hljs-title function_">cos</span>(midAngle));
+  <span class="hljs-keyword">let</span> ly = <span class="hljs-title function_">calc</span>(cy + labelR * <span class="hljs-title function_">sin</span>(midAngle));
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-labels&#x27;</span>).<span class="hljs-property">apply</span> {
+    <span class="hljs-title function_">text</span>(lx, <span class="hljs-title function_">calc</span>(ly + <span class="hljs-number">4</span>))<span class="hljs-string">\`<span class="hljs-subst">\${round(abs(angle) * <span class="hljs-number">180</span> / PI())}</span>°\`</span>
+  }
+}
+
+<span class="hljs-keyword">let</span> pts = [
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">160</span>, <span class="hljs-attr">angle</span>: -20deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">190</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">70</span>,  <span class="hljs-attr">angle</span>: 15deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">330</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">155</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">65</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">455</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">85</span>,  <span class="hljs-attr">angle</span>: 10deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span> }
+];
+
+<span class="hljs-comment">// === Diagram group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-comment">// Title</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #f59e0b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">24</span>)<span class="hljs-string">\`cubicSpline — waypoints, tangent lines, and control points\`</span> }
+
+<span class="hljs-comment">// The curve</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #3b82f6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">3</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">cubicSpline</span>(pts) }
+
+<span class="hljs-comment">// On-curve points</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;anchors&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #3b82f6; <span class="hljs-attr">stroke</span>: #1e3a5f; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;anchors&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;anchors&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> ([p, i] <span class="hljs-keyword">in</span> pts) { <span class="hljs-title function_">circle</span>(p.<span class="hljs-property">x</span>, p.<span class="hljs-property">y</span>, <span class="hljs-number">5</span>) }
+}
+
+<span class="hljs-comment">// Control points and tangent lines</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp-exit&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #ef4444; <span class="hljs-attr">stroke</span>: #7f1d1d; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp-entry&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #22c55e; <span class="hljs-attr">stroke</span>: #14532d; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tangent&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #94a3b8; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">4</span> <span class="hljs-number">3</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-exit&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-entry&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;tangent&#x27;</span>));
+
+<span class="hljs-keyword">let</span> n = <span class="hljs-title function_">calc</span>(pts.<span class="hljs-property">length</span> - <span class="hljs-number">1</span>);
+<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span>.<span class="hljs-property">n</span>) {
+  <span class="hljs-keyword">let</span> prev = pts[<span class="hljs-title function_">calc</span>(i - <span class="hljs-number">1</span>)];
+  <span class="hljs-keyword">let</span> curr = pts[i];
+  <span class="hljs-keyword">let</span> c1x = <span class="hljs-title function_">calc</span>(prev.<span class="hljs-property">x</span> + prev.<span class="hljs-property">exit</span> * <span class="hljs-title function_">cos</span>(prev.<span class="hljs-property">angle</span>));
+  <span class="hljs-keyword">let</span> c1y = <span class="hljs-title function_">calc</span>(prev.<span class="hljs-property">y</span> + prev.<span class="hljs-property">exit</span> * <span class="hljs-title function_">sin</span>(prev.<span class="hljs-property">angle</span>));
+  <span class="hljs-keyword">let</span> c2x = <span class="hljs-title function_">calc</span>(curr.<span class="hljs-property">x</span> - curr.<span class="hljs-property">entry</span> * <span class="hljs-title function_">cos</span>(curr.<span class="hljs-property">angle</span>));
+  <span class="hljs-keyword">let</span> c2y = <span class="hljs-title function_">calc</span>(curr.<span class="hljs-property">y</span> - curr.<span class="hljs-property">entry</span> * <span class="hljs-title function_">sin</span>(curr.<span class="hljs-property">angle</span>));
+
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-exit&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(c1x, c1y, <span class="hljs-number">4</span>) }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-entry&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(c2x, c2y, <span class="hljs-number">4</span>) }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;tangent&#x27;</span>).<span class="hljs-property">apply</span> {
+    M prev.<span class="hljs-property">x</span> prev.<span class="hljs-property">y</span> L c1x c1y
+    M curr.<span class="hljs-property">x</span> curr.<span class="hljs-property">y</span> L c2x c2y
+  }
+}
+
+<span class="hljs-comment">// Angle visualization layers</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;angle-fills&#x27;</span>) \${ <span class="hljs-attr">fill</span>: <span class="hljs-title function_">rgba</span>(<span class="hljs-number">245</span>, <span class="hljs-number">158</span>, <span class="hljs-number">11</span>, <span class="hljs-number">0.15</span>); <span class="hljs-attr">stroke</span>: none }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;angle-arcs&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f59e0b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;angle-ticks&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f59e0b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.8</span> }
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;angle-labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>; <span class="hljs-attr">fill</span>: #f59e0b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-fills&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-arcs&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-ticks&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;angle-labels&#x27;</span>));
+
+<span class="hljs-keyword">for</span> ([p, i] <span class="hljs-keyword">in</span> pts) { <span class="hljs-title function_">angleWedge</span>(p.<span class="hljs-property">x</span>, p.<span class="hljs-property">y</span>, <span class="hljs-number">28</span>, p.<span class="hljs-property">angle</span>) }
+
+<span class="hljs-comment">// Point labels</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">38</span>, <span class="hljs-number">182</span>)<span class="hljs-string">\`P0\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">178</span>, <span class="hljs-number">56</span>)<span class="hljs-string">\`P1\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">340</span>, <span class="hljs-number">175</span>)<span class="hljs-string">\`P2\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">460</span>, <span class="hljs-number">72</span>)<span class="hljs-string">\`P3\`</span>
+}
+
+<span class="hljs-comment">// === Legend group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">30</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">230</span>; }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sw-curve&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #3b82f6; <span class="hljs-attr">stroke</span>: none }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sw-exit&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #ef4444; <span class="hljs-attr">stroke</span>: none }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sw-entry&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #22c55e; <span class="hljs-attr">stroke</span>: none }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sw-tangent&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #94a3b8; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">4</span> <span class="hljs-number">3</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sw-angle&#x27;</span>) \${ <span class="hljs-attr">fill</span>: <span class="hljs-title function_">rgba</span>(<span class="hljs-number">245</span>, <span class="hljs-number">158</span>, <span class="hljs-number">11</span>, <span class="hljs-number">0.15</span>); <span class="hljs-attr">stroke</span>: #f59e0b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-curve&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-exit&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-entry&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-tangent&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-angle&#x27;</span>));
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-curve&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">12</span>, <span class="hljs-number">3</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-exit&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">6</span>, <span class="hljs-number">20</span>, <span class="hljs-number">4</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-entry&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">6</span>, <span class="hljs-number">36</span>, <span class="hljs-number">4</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-tangent&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">50</span> L <span class="hljs-number">12</span> <span class="hljs-number">50</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sw-angle&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">0</span> <span class="hljs-number">64</span> L <span class="hljs-number">12</span> <span class="hljs-number">64</span> A <span class="hljs-number">6</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">6</span> <span class="hljs-number">58</span> Z
+}
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;legend-text&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #cbd5e1; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-text&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-text&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">6</span>)<span class="hljs-string">\`Curve\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">24</span>)<span class="hljs-string">\`Exit CP (outgoing handle)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">40</span>)<span class="hljs-string">\`Entry CP (incoming handle)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">54</span>)<span class="hljs-string">\`Tangent line\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">68</span>)<span class="hljs-string">\`Angle wedge\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/cubic-spline-anatomy.svg" alt="cubicSpline anatomy — waypoints, control points, tangent lines, and angle arcs" loading="lazy">
+</mini-workspace></p>
+<h3>Why It&#39;s Smooth: G1 Continuity</h3>
+<p>The smoothness guarantee comes from a simple geometric constraint: at every join point, the exit control point of the outgoing segment and the entry control point of the incoming segment lie on the same line — the tangent line defined by <code>angle</code>. Because both control points are collinear through the join, the curve&#39;s direction doesn&#39;t change abruptly.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDIwJTIwMjU1JTIyJTBBJTJGJTJGJTIwRzElMjBjb250aW51aXR5JTIwYXQlMjBhJTIwam9pbiUyMHBvaW50JTIwJUUyJTgwJTk0JTIwY29sbGluZWFyJTIwY29udHJvbCUyMHBvaW50cyUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDIwJTJDJTIwMjU1KSUyMCU3RCUwQSUwQWxldCUyMGdyaWQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2dyaWQnKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMCUyMzFlMjkzYiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZ3JpZC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi4xMiklMjAlN0IlMjBNJTIwMCUyMGNhbGMoaSUyMColMjAyMCklMjBoJTIwNDIwJTIwJTdEJTBBJTIwJTIwZm9yJTIwKGolMjBpbiUyMDAuLjIxKSUyMCU3QiUyME0lMjBjYWxjKGolMjAqJTIwMjApJTIwMCUyMHYlMjAyNTUlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBEaWFncmFtJTIwZ3JvdXAlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdkaWFncmFtJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMEElMkYlMkYlMjBUaXRsZSUyMCVFMiU4MCU5NCUyMHRvcCUyQyUyMGNsZWFyJTIwb2YlMjBnZW9tZXRyeSUwQWRlZmluZSUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTIwZmlsbCUzQSUyMCUyM2Y1OWUwYiUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdkaWFncmFtJykuYXBwZW5kKGxheWVyKCd0aXRsZScpKSUzQiUwQWxheWVyKCd0aXRsZScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDI4KSU2MEcxJTIwY29udGludWl0eSUzQSUyMENQcyUyMGFyZSUyMGNvbGxpbmVhciUyMHRocm91Z2glMjB0aGUlMjBqb2luJTYwJTBBJTdEJTBBJTBBbGV0JTIwam9pblB0JTIwJTNEJTIwJTdCJTIweCUzQSUyMDIwMCUyQyUyMHklM0ElMjAxMTUlMjAlN0QlM0IlMEFsZXQlMjBjcEluJTIwJTIwJTIwJTNEJTIwJTdCJTIweCUzQSUyMDEzNSUyQyUyMHklM0ElMjAxMzUlMjAlN0QlM0IlMEFsZXQlMjBjcE91dCUyMCUyMCUzRCUyMCU3QiUyMHglM0ElMjAyNjUlMkMlMjB5JTNBJTIwOTUlMjAlN0QlM0IlMEElMEElMkYlMkYlMjBDb2xsaW5lYXIlMjBsaW5lJTIwdGhyb3VnaCUyMENQcyUwQWRlZmluZSUyMFBhdGhMYXllcignZzEtbGluZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNmNTllMGIlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignZzEtbGluZScpKSUzQiUwQWxheWVyKCdnMS1saW5lJykuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwY3BJbi54JTIwY3BJbi55JTIwTCUyMGNwT3V0LnglMjBjcE91dC55JTBBJTdEJTBBJTBBJTJGJTJGJTIwSW5jb21pbmclMjBhbmQlMjBvdXRnb2luZyUyMGN1cnZlJTIwc2VnbWVudHMlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2N1cnZlcycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjMzYjgyZjYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyLjUlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignY3VydmVzJykpJTNCJTBBbGF5ZXIoJ2N1cnZlcycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMDc1JTIwMTc1JTIwQyUyMDEwMCUyMDE1NSUyMGNwSW4ueCUyMGNwSW4ueSUyMGpvaW5QdC54JTIwam9pblB0LnklMEElMjAlMjBNJTIwam9pblB0LnglMjBqb2luUHQueSUyMEMlMjBjcE91dC54JTIwY3BPdXQueSUyMDMyMCUyMDcyJTIwMzY1JTIwMTIwJTBBJTdEJTBBJTBBJTJGJTJGJTIwSm9pbiUyMHBvaW50JTBBZGVmaW5lJTIwUGF0aExheWVyKCdhbmNob3InKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMzYjgyZjYlM0IlMjBzdHJva2UlM0ElMjAlMjMxZTNhNWYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignYW5jaG9yJykpJTNCJTBBbGF5ZXIoJ2FuY2hvcicpLmFwcGx5JTIwJTdCJTIwY2lyY2xlKGpvaW5QdC54JTJDJTIwam9pblB0LnklMkMlMjA2KSUyMCU3RCUwQSUwQSUyRiUyRiUyMENvbnRyb2wlMjBwb2ludHMlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2NwLWVudHJ5JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMjJjNTVlJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMTQ1MzJkJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignY3AtZXhpdCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyM2VmNDQ0NCUzQiUyMHN0cm9rZSUzQSUyMCUyMzdmMWQxZCUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignY3AtZW50cnknKSUyQyUyMGxheWVyKCdjcC1leGl0JykpJTNCJTBBbGF5ZXIoJ2NwLWVudHJ5JykuYXBwbHklMjAlN0IlMjBjaXJjbGUoY3BJbi54JTJDJTIwY3BJbi55JTJDJTIwNCklMjAlN0QlMEFsYXllcignY3AtZXhpdCcpLmFwcGx5JTIwJTdCJTIwY2lyY2xlKGNwT3V0LnglMkMlMjBjcE91dC55JTJDJTIwNCklMjAlN0QlMEElMEElMkYlMkYlMjBFbmRwb2ludCUyMG1hcmtlcnMlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2VuZHBvaW50cycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzY0NzQ4YiUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzNDE1NSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignZW5kcG9pbnRzJykpJTNCJTBBbGF5ZXIoJ2VuZHBvaW50cycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwY2lyY2xlKDc1JTJDJTIwMTc1JTJDJTIwMyklMEElMjAlMjBjaXJjbGUoMzY1JTJDJTIwMTIwJTJDJTIwMyklMEElN0QlMEElMEElMkYlMkYlMjBMYWJlbHMlMjAlRTIlODAlOTQlMjBwb3NpdGlvbmVkJTIwd2l0aCUyMGNsZWFyYW5jZSUyMGZyb20lMjBnZW9tZXRyeSUwQWRlZmluZSUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMSUzQiUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignbGFiZWxzJykpJTNCJTBBbGF5ZXIoJ2xhYmVscycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNzUlMkMlMjA5OCklNjBqb2luJTIwcG9pbnQlNjAlMEElMjAlMjB0ZXh0KDEwMCUyQyUyMDE1NSklNjBlbnRyeSUyMENQJTYwJTBBJTIwJTIwdGV4dCgyNzIlMkMlMjA4NCklNjBleGl0JTIwQ1AlNjAlMEElMjAlMjB0ZXh0KDQ1JTJDJTIwMTkwKSU2MGluY29taW5nJTYwJTBBJTIwJTIwdGV4dCgzNDglMkMlMjAxNDIpJTYwb3V0Z29pbmclNjAlMEElN0QlMEElMEElMkYlMkYlMjBFeHBsYW5hdGlvbiUyMCVFMiU4MCU5NCUyMHR3byUyMHNob3J0ZXIlMjBsaW5lcyUyMHdpdGglMjBzYWZlJTIwbWFyZ2lucyUwQWRlZmluZSUyMFRleHRMYXllcignbm90ZScpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ25vdGUnKSklM0IlMEFsYXllcignbm90ZScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDIxOCklNjBCb3RoJTIwQ1BzJTIwc2hhcmUlMjB0aGUlMjBzYW1lJTIwdGFuZ2VudCUyMGFuZ2xlJTIwJUUyJTgwJTk0JTIwdGhlJTIwY3VydmUlNjAlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjMyKSU2MHBhc3NlcyUyMHNtb290aGx5JTIwdGhyb3VnaCUyMHRoZSUyMGpvaW4uJTYwJTBBJTdEJTBB" code-open caption="G1 continuity — exit and entry CPs are collinear through the join point">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 420 255&quot;</span>
+<span class="hljs-comment">// G1 continuity at a join point — collinear control points</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">420</span>, <span class="hljs-number">255</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.12</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">420</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.21</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">255</span> }
+}
+
+<span class="hljs-comment">// === Diagram group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-comment">// Title — top, clear of geometry</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #f59e0b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">28</span>)<span class="hljs-string">\`G1 continuity: CPs are collinear through the join\`</span>
+}
+
+<span class="hljs-keyword">let</span> joinPt = { <span class="hljs-attr">x</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">115</span> };
+<span class="hljs-keyword">let</span> cpIn   = { <span class="hljs-attr">x</span>: <span class="hljs-number">135</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">135</span> };
+<span class="hljs-keyword">let</span> cpOut  = { <span class="hljs-attr">x</span>: <span class="hljs-number">265</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">95</span> };
+
+<span class="hljs-comment">// Collinear line through CPs</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;g1-line&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f59e0b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;g1-line&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;g1-line&#x27;</span>).<span class="hljs-property">apply</span> {
+  M cpIn.<span class="hljs-property">x</span> cpIn.<span class="hljs-property">y</span> L cpOut.<span class="hljs-property">x</span> cpOut.<span class="hljs-property">y</span>
+}
+
+<span class="hljs-comment">// Incoming and outgoing curve segments</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;curves&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #3b82f6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curves&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curves&#x27;</span>).<span class="hljs-property">apply</span> {
+  M <span class="hljs-number">75</span> <span class="hljs-number">175</span> C <span class="hljs-number">100</span> <span class="hljs-number">155</span> cpIn.<span class="hljs-property">x</span> cpIn.<span class="hljs-property">y</span> joinPt.<span class="hljs-property">x</span> joinPt.<span class="hljs-property">y</span>
+  M joinPt.<span class="hljs-property">x</span> joinPt.<span class="hljs-property">y</span> C cpOut.<span class="hljs-property">x</span> cpOut.<span class="hljs-property">y</span> <span class="hljs-number">320</span> <span class="hljs-number">72</span> <span class="hljs-number">365</span> <span class="hljs-number">120</span>
+}
+
+<span class="hljs-comment">// Join point</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;anchor&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #3b82f6; <span class="hljs-attr">stroke</span>: #1e3a5f; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;anchor&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;anchor&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(joinPt.<span class="hljs-property">x</span>, joinPt.<span class="hljs-property">y</span>, <span class="hljs-number">6</span>) }
+
+<span class="hljs-comment">// Control points</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp-entry&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #22c55e; <span class="hljs-attr">stroke</span>: #14532d; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp-exit&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #ef4444; <span class="hljs-attr">stroke</span>: #7f1d1d; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-entry&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-exit&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-entry&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cpIn.<span class="hljs-property">x</span>, cpIn.<span class="hljs-property">y</span>, <span class="hljs-number">4</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp-exit&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cpOut.<span class="hljs-property">x</span>, cpOut.<span class="hljs-property">y</span>, <span class="hljs-number">4</span>) }
+
+<span class="hljs-comment">// Endpoint markers</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #64748b; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">334155</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">75</span>, <span class="hljs-number">175</span>, <span class="hljs-number">3</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">365</span>, <span class="hljs-number">120</span>, <span class="hljs-number">3</span>)
+}
+
+<span class="hljs-comment">// Labels — positioned with clearance from geometry</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">175</span>, <span class="hljs-number">98</span>)<span class="hljs-string">\`join point\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">100</span>, <span class="hljs-number">155</span>)<span class="hljs-string">\`entry CP\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">272</span>, <span class="hljs-number">84</span>)<span class="hljs-string">\`exit CP\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">45</span>, <span class="hljs-number">190</span>)<span class="hljs-string">\`incoming\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">348</span>, <span class="hljs-number">142</span>)<span class="hljs-string">\`outgoing\`</span>
+}
+
+<span class="hljs-comment">// Explanation — two shorter lines with safe margins</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;note&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;note&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;note&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">218</span>)<span class="hljs-string">\`Both CPs share the same tangent angle — the curve\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">232</span>)<span class="hljs-string">\`passes smoothly through the join.\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/g1-continuity.svg" alt="G1 continuity — exit and entry CPs are collinear through the join point" loading="lazy">
+</mini-workspace></p>
+<h3>Examples</h3>
+<p>Three <code>cubicSpline</code> curves: a two-segment S-curve, a five-point sine wave approximation, and a closed loop where the first and last points coincide.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDYwJTIwMTQ1JTIyJTBBJTJGJTJGJTIwVGhyZWUlMjBjdWJpY1NwbGluZSUyMGV4YW1wbGVzJTNBJTIwUy1jdXJ2ZSUyQyUyMHNpbmUlMjB3YXZlJTJDJTIwY2xvc2VkJTIwbG9vcCUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDYwJTJDJTIwMTQ1KSUyMCU3RCUwQSUwQWxldCUyMGdyaWQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2dyaWQnKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMCUyMzFlMjkzYiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZ3JpZC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi43KSUyMCU3QiUyME0lMjAwJTIwY2FsYyhpJTIwKiUyMDIwKSUyMGglMjA0NjAlMjAlN0QlMEElMjAlMjBmb3IlMjAoaiUyMGluJTIwMC4uMjMpJTIwJTdCJTIwTSUyMGNhbGMoaiUyMColMjAyMCklMjAwJTIwdiUyMDE0NSUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMCUzRCUzRCUzRCUyMExheW91dCUyMGdyb3VwJTIwJTNEJTNEJTNEJTBBZGVmaW5lJTIwR3JvdXBMYXllcignbGF5b3V0JyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTLWN1cnZlJTIwZ3JvdXAlMjAtLS0lMEFkZWZpbmUlMjBHcm91cExheWVyKCdzLWN1cnZlLWdyb3VwJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDE1JTNCJTIwdHJhbnNsYXRlLXklM0ElMjA4JTNCJTIwJTdEJTBBbGF5ZXIoJ2xheW91dCcpLmFwcGVuZChsYXllcigncy1jdXJ2ZS1ncm91cCcpKSUzQiUwQSUwQWRlZmluZSUyMFRleHRMYXllcigncy1sYWJlbCcpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ3MtY3VydmUtZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ3MtbGFiZWwnKSklM0IlMEFsYXllcigncy1sYWJlbCcpLmFwcGx5JTIwJTdCJTIwdGV4dCgyNyUyQyUyMDIwKSU2MFMtY3VydmUlNjAlMjAlN0QlMEElMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3MtY3VydmUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzM2I4MmY2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMi41JTIwJTdEJTBBbGF5ZXIoJ3MtY3VydmUtZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ3MtY3VydmUnKSklM0IlMEFsYXllcigncy1jdXJ2ZScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwY3ViaWNTcGxpbmUoJTVCJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDAlMkMlMjAlMjB5JTNBJTIwMTA1JTJDJTIwYW5nbGUlM0ElMjAwJTJDJTIwZXhpdCUzQSUyMDMwJTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDUwJTJDJTIweSUzQSUyMDMwJTJDJTIwJTIwYW5nbGUlM0ElMjAwJTJDJTIwZW50cnklM0ElMjAzMCUyQyUyMGV4aXQlM0ElMjAzMCUyMCU3RCUyQyUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjAxMDAlMkMlMjB5JTNBJTIwMTA1JTJDJTIwYW5nbGUlM0ElMjAwJTJDJTIwZW50cnklM0ElMjAzMCUyMCU3RCUwQSUyMCUyMCU1RCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTaW5lJTIwd2F2ZSUyMGdyb3VwJTIwLS0tJTBBZGVmaW5lJTIwR3JvdXBMYXllcignc2luZS1ncm91cCcpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAxNDUlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDglM0IlMjAlN0QlMEFsYXllcignbGF5b3V0JykuYXBwZW5kKGxheWVyKCdzaW5lLWdyb3VwJykpJTNCJTBBJTBBZGVmaW5lJTIwVGV4dExheWVyKCdzaW5lLWxhYmVsJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMCUzQiUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignc2luZS1ncm91cCcpLmFwcGVuZChsYXllcignc2luZS1sYWJlbCcpKSUzQiUwQWxheWVyKCdzaW5lLWxhYmVsJykuYXBwbHklMjAlN0IlMjB0ZXh0KDI3JTJDJTIwMjApJTYwU2luZSUyMHdhdmUlNjAlMjAlN0QlMEElMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3NpbmUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzZWY0NDQ0JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMi41JTIwJTdEJTBBbGF5ZXIoJ3NpbmUtZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ3NpbmUnKSklM0IlMEFsYXllcignc2luZScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwY3ViaWNTcGxpbmUoJTVCJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDAlMkMlMjAlMjB5JTNBJTIwNjUlMkMlMjAlMjBhbmdsZSUzQSUyMDkwZGVnJTJDJTIwZXhpdCUzQSUyMDE4JTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDI1JTJDJTIweSUzQSUyMDEwMCUyQyUyMGFuZ2xlJTNBJTIwMCUyQyUyMCUyMCUyMCUyMCUyMGVudHJ5JTNBJTIwMTUlMkMlMjBleGl0JTNBJTIwMTUlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwNTAlMkMlMjB5JTNBJTIwNjUlMkMlMjAlMjBhbmdsZSUzQSUyMDkwZGVnJTJDJTIwZW50cnklM0ElMjAxOCUyQyUyMGV4aXQlM0ElMjAxOCUyMCU3RCUyQyUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjA3NSUyQyUyMHklM0ElMjAzMCUyQyUyMCUyMGFuZ2xlJTNBJTIwMCUyQyUyMCUyMCUyMCUyMCUyMGVudHJ5JTNBJTIwMTUlMkMlMjBleGl0JTNBJTIwMTUlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwMTAwJTJDJTIweSUzQSUyMDY1JTJDJTIwJTIwYW5nbGUlM0ElMjA5MGRlZyUyQyUyMGVudHJ5JTNBJTIwMTglMjAlN0QlMEElMjAlMjAlNUQpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ2xvc2VkJTIwbG9vcCUyMGdyb3VwJTIwLS0tJTBBZGVmaW5lJTIwR3JvdXBMYXllcignbG9vcC1ncm91cCcpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAyODAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDglM0IlMjAlN0QlMEFsYXllcignbGF5b3V0JykuYXBwZW5kKGxheWVyKCdsb29wLWdyb3VwJykpJTNCJTBBJTBBZGVmaW5lJTIwVGV4dExheWVyKCdsb29wLWxhYmVsJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMCUzQiUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignbG9vcC1ncm91cCcpLmFwcGVuZChsYXllcignbG9vcC1sYWJlbCcpKSUzQiUwQWxheWVyKCdsb29wLWxhYmVsJykuYXBwbHklMjAlN0IlMjB0ZXh0KDM4JTJDJTIwMjApJTYwQ2xvc2VkJTIwbG9vcCU2MCUyMCU3RCUwQSUwQWRlZmluZSUyMFBhdGhMYXllcignbG9vcCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHJnYmEoMzQlMkMlMjAxOTclMkMlMjA5NCUyQyUyMDAuMSklM0IlMjBzdHJva2UlM0ElMjAlMjMyMmM1NWUlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyLjUlMjAlN0QlMEFsYXllcignbG9vcC1ncm91cCcpLmFwcGVuZChsYXllcignbG9vcCcpKSUzQiUwQWxheWVyKCdsb29wJykuYXBwbHklMjAlN0IlMEElMjAlMjBjdWJpY1NwbGluZSglNUIlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwNjAlMkMlMjB5JTNBJTIwMjglMkMlMjAlMjBhbmdsZSUzQSUyMDAlMkMlMjAlMjAlMjAlMjAlMjAlMjBleGl0JTNBJTIwMjIlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwMTEwJTJDJTIweSUzQSUyMDY1JTJDJTIwJTIwYW5nbGUlM0ElMjA5MGRlZyUyQyUyMCUyMGVudHJ5JTNBJTIwMjIlMkMlMjBleGl0JTNBJTIwMjIlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwNjAlMkMlMjB5JTNBJTIwMTAyJTJDJTIwYW5nbGUlM0ElMjAxODBkZWclMkMlMjBlbnRyeSUzQSUyMDIyJTJDJTIwZXhpdCUzQSUyMDIyJTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDEwJTJDJTIweSUzQSUyMDY1JTJDJTIwJTIwYW5nbGUlM0ElMjAtOTBkZWclMkMlMjBlbnRyeSUzQSUyMDIyJTJDJTIwZXhpdCUzQSUyMDIyJTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDYwJTJDJTIweSUzQSUyMDI4JTJDJTIwJTIwYW5nbGUlM0ElMjAwJTJDJTIwJTIwJTIwJTIwJTIwJTIwZW50cnklM0ElMjAyMiUyMCU3RCUwQSUyMCUyMCU1RCklMEElN0QlMEE=" code-open caption="cubicSpline examples — S-curve, sine wave, and closed loop">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 460 145&quot;</span>
+<span class="hljs-comment">// Three cubicSpline examples: S-curve, sine wave, closed loop</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">460</span>, <span class="hljs-number">145</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">460</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.23</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">145</span> }
+}
+
+<span class="hljs-comment">// === Layout group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-comment">// --- S-curve group ---</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;s-curve-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">15</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">8</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-curve-group&#x27;</span>));
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s-label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-curve-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-label&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-label&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">27</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`S-curve\`</span> }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-curve&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #3b82f6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-curve-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-curve&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;s-curve&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">cubicSpline</span>([
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">105</span>, <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">30</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">30</span>,  <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">entry</span>: <span class="hljs-number">30</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">30</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">105</span>, <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">entry</span>: <span class="hljs-number">30</span> }
+  ])
+}
+
+<span class="hljs-comment">// --- Sine wave group ---</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;sine-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">145</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">8</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine-group&#x27;</span>));
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;sine-label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine-label&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine-label&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">27</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Sine wave\`</span> }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sine&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ef4444; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sine&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">cubicSpline</span>([
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 90deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">18</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">25</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>,     <span class="hljs-attr">entry</span>: <span class="hljs-number">15</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">15</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 90deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">18</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">18</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">75</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">30</span>,  <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>,     <span class="hljs-attr">entry</span>: <span class="hljs-number">15</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">15</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 90deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">18</span> }
+  ])
+}
+
+<span class="hljs-comment">// --- Closed loop group ---</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;loop-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">280</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">8</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop-group&#x27;</span>));
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;loop-label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop-label&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop-label&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">38</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Closed loop\`</span> }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;loop&#x27;</span>) \${ <span class="hljs-attr">fill</span>: <span class="hljs-title function_">rgba</span>(<span class="hljs-number">34</span>, <span class="hljs-number">197</span>, <span class="hljs-number">94</span>, <span class="hljs-number">0.1</span>); <span class="hljs-attr">stroke</span>: #22c55e; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;loop&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">cubicSpline</span>([
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">28</span>,  <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>,      <span class="hljs-attr">exit</span>: <span class="hljs-number">22</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">110</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 90deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">22</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">22</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">102</span>, <span class="hljs-attr">angle</span>: 180deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">22</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">22</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: -90deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">22</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">22</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">28</span>,  <span class="hljs-attr">angle</span>: <span class="hljs-number">0</span>,      <span class="hljs-attr">entry</span>: <span class="hljs-number">22</span> }
+  ])
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/cubic-spline-demos.svg" alt="cubicSpline examples — S-curve, sine wave, and closed loop" loading="lazy">
+</mini-workspace></p>
+<p>A single-point array emits only a move command. Two or more points are needed to produce curve segments.</p>
+<h2>quadSpline: Implicit Angles</h2>
+<p>If specifying an angle at every point feels like too much control, <code>quadSpline</code> derives intermediate tangents automatically. Only the start point needs an explicit angle — at each subsequent point, the tangent direction is inferred from the geometry: it points from the previous control point through the current waypoint. You don&#39;t need to think about the math — the curves just flow naturally from one segment to the next.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Properties</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>start</code></td>
+<td><code>{ x, y, angle, exit }</code></td>
+<td>First point with explicit angle</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td><code>[{ x, y, exit }, ...]</code></td>
+<td>Intermediate waypoints (angle derived)</td>
+</tr>
+<tr>
+<td><code>end</code></td>
+<td><code>{ x, y }</code></td>
+<td>Final waypoint</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">quadSpline</span>(
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">65</span> },   <span class="hljs-comment">// start: explicit angle</span>
+  [
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">170</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">60</span> },                <span class="hljs-comment">// intermediates: angle derived</span>
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">300</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">420</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">50</span> }
+  ],
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">500</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">120</span> }                              <span class="hljs-comment">// end: no angle needed</span>
+)
+</code></pre><p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTQwJTIwMzUwJTIyJTBBJTJGJTJGJTIwcXVhZFNwbGluZSUyMGFuYXRvbXklMjAlRTIlODAlOTQlMjBpbXBsaWNpdCUyMGFuZ2xlJTIwZGVyaXZhdGlvbiUyMGZyb20lMjBwcmV2aW91cyUyMENQJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzBmMTcyYSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1NDAlMkMlMjAzNTApJTIwJTdEJTBBJTBBbGV0JTIwZ3JpZCUyMCUzRCUyMFBhdGhMYXllcignZ3JpZCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwJTIzMWUyOTNiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC41JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFncmlkLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjE3KSUyMCU3QiUyME0lMjAwJTIwY2FsYyhpJTIwKiUyMDIwKSUyMGglMjA1NDAlMjAlN0QlMEElMjAlMjBmb3IlMjAoaiUyMGluJTIwMC4uMjcpJTIwJTdCJTIwTSUyMGNhbGMoaiUyMColMjAyMCklMjAwJTIwdiUyMDM1MCUyMCU3RCUwQSU3RCUwQSUwQWxldCUyMHN0YXJ0UHQlMjAlM0QlMjAlN0IlMjB4JTNBJTIwNTAlMkMlMjB5JTNBJTIwMTcwJTJDJTIwYW5nbGUlM0ElMjAtMjVkZWclMkMlMjBleGl0JTNBJTIwNjAlMjAlN0QlM0IlMEFsZXQlMjBtaWRQdHMlMjAlM0QlMjAlNUIlMEElMjAlMjAlN0IlMjB4JTNBJTIwMTcwJTJDJTIweSUzQSUyMDg1JTJDJTIwJTIwZXhpdCUzQSUyMDU1JTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIweCUzQSUyMDMwMCUyQyUyMHklM0ElMjAxNzUlMkMlMjBleGl0JTNBJTIwNTAlMjAlN0QlMkMlMEElMjAlMjAlN0IlMjB4JTNBJTIwNDIwJTJDJTIweSUzQSUyMDgwJTJDJTIwJTIwZXhpdCUzQSUyMDQ1JTIwJTdEJTBBJTVEJTNCJTBBbGV0JTIwZW5kUHQlMjAlM0QlMjAlN0IlMjB4JTNBJTIwNTAwJTJDJTIweSUzQSUyMDE1MCUyMCU3RCUzQiUwQSUwQSUyRiUyRiUyMCUzRCUzRCUzRCUyMERpYWdyYW0lMjBncm91cCUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ2RpYWdyYW0nKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMCUzQiUyMCU3RCUwQSUwQSUyRiUyRiUyMFRpdGxlJTBBZGVmaW5lJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMjBmaWxsJTNBJTIwJTIzZjU5ZTBiJTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ3RpdGxlJykpJTNCJTBBbGF5ZXIoJ3RpdGxlJykuYXBwbHklMjAlN0IlMjB0ZXh0KDMwJTJDJTIwMjQpJTYwcXVhZFNwbGluZSUyMCVFMiU4MCU5NCUyMGltcGxpY2l0JTIwYW5nbGUlMjBkZXJpdmF0aW9uJTYwJTIwJTdEJTBBJTBBJTJGJTJGJTIwVGhlJTIwY3VydmUlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2N1cnZlJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzhiNWNmNiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDMlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignY3VydmUnKSklM0IlMEFsYXllcignY3VydmUnKS5hcHBseSUyMCU3QiUyMHF1YWRTcGxpbmUoc3RhcnRQdCUyQyUyMG1pZFB0cyUyQyUyMGVuZFB0KSUyMCU3RCUwQSUwQSUyRiUyRiUyME9uLWN1cnZlJTIwcG9pbnRzJTBBZGVmaW5lJTIwUGF0aExheWVyKCdhbmNob3JzJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzOGI1Y2Y2JTNCJTIwc3Ryb2tlJTNBJTIwJTIzM2IwNzY0JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2FuY2hvcnMnKSklM0IlMEFsYXllcignYW5jaG9ycycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwY2lyY2xlKHN0YXJ0UHQueCUyQyUyMHN0YXJ0UHQueSUyQyUyMDUpJTBBJTIwJTIwZm9yJTIwKCU1QnAlMkMlMjBpJTVEJTIwaW4lMjBtaWRQdHMpJTIwJTdCJTIwY2lyY2xlKHAueCUyQyUyMHAueSUyQyUyMDUpJTIwJTdEJTBBJTIwJTIwY2lyY2xlKGVuZFB0LnglMkMlMjBlbmRQdC55JTJDJTIwNSklMEElN0QlMEElMEElMkYlMkYlMjBSZWNvbXB1dGUlMjBDUHMlMjBmb3IlMjB2aXN1YWxpemF0aW9uJTBBZGVmaW5lJTIwUGF0aExheWVyKCdzaGFyZWQtY3AnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjNmOTczMTYlM0IlMjBzdHJva2UlM0ElMjAlMjM3YzJkMTIlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTIwJTdEJTBBZGVmaW5lJTIwUGF0aExheWVyKCd0YW5nZW50LWxpbmUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzZjk3MzE2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjA1JTIwMyUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignZGVyaXZlZC1kaXInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMjJkM2VlJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTIwc3Ryb2tlLWRhc2hhcnJheSUzQSUyMDMlMjAyJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ3NoYXJlZC1jcCcpJTJDJTIwbGF5ZXIoJ3RhbmdlbnQtbGluZScpJTJDJTIwbGF5ZXIoJ2Rlcml2ZWQtZGlyJykpJTNCJTBBJTBBJTJGJTJGJTIwRmlyc3QlMjBDUCUyMGZyb20lMjBleHBsaWNpdCUyMGFuZ2xlJTBBbGV0JTIwY3AweCUyMCUzRCUyMGNhbGMoc3RhcnRQdC54JTIwJTJCJTIwc3RhcnRQdC5leGl0JTIwKiUyMGNvcyhzdGFydFB0LmFuZ2xlKSklM0IlMEFsZXQlMjBjcDB5JTIwJTNEJTIwY2FsYyhzdGFydFB0LnklMjAlMkIlMjBzdGFydFB0LmV4aXQlMjAqJTIwc2luKHN0YXJ0UHQuYW5nbGUpKSUzQiUwQSUwQWxheWVyKCdzaGFyZWQtY3AnKS5hcHBseSUyMCU3QiUyMGNpcmNsZShjcDB4JTJDJTIwY3AweSUyQyUyMDQpJTIwJTdEJTBBbGF5ZXIoJ3RhbmdlbnQtbGluZScpLmFwcGx5JTIwJTdCJTIwTSUyMHN0YXJ0UHQueCUyMHN0YXJ0UHQueSUyMEwlMjBjcDB4JTIwY3AweSUyMCU3RCUwQSUwQSUyRiUyRiUyMFN1YnNlcXVlbnQlMjBDUHMlMjBmcm9tJTIwZGVyaXZlZCUyMGFuZ2xlcyUwQWxldCUyMHByZXZDUHglMjAlM0QlMjBjcDB4JTNCJTBBbGV0JTIwcHJldkNQeSUyMCUzRCUyMGNwMHklM0IlMEFmb3IlMjAoJTVCcHQlMkMlMjBpZHglNUQlMjBpbiUyMG1pZFB0cyklMjAlN0IlMEElMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoYXRhbjIocHQueSUyMC0lMjBwcmV2Q1B5JTJDJTIwcHQueCUyMC0lMjBwcmV2Q1B4KSklM0IlMEElMjAlMjBsZXQlMjBuZXdDUHglMjAlM0QlMjBjYWxjKHB0LnglMjAlMkIlMjBwdC5leGl0JTIwKiUyMGNvcyhhbmdsZSkpJTNCJTBBJTIwJTIwbGV0JTIwbmV3Q1B5JTIwJTNEJTIwY2FsYyhwdC55JTIwJTJCJTIwcHQuZXhpdCUyMColMjBzaW4oYW5nbGUpKSUzQiUwQSUwQSUyMCUyMCUyRiUyRiUyMERlcml2ZWQlMjBkaXJlY3Rpb24lM0ElMjBwcmV2Q1AlMjAtJTNFJTIwcHQlMjAoY3lhbiUyMGRhc2hlZCklMEElMjAlMjBsYXllcignZGVyaXZlZC1kaXInKS5hcHBseSUyMCU3QiUyME0lMjBwcmV2Q1B4JTIwcHJldkNQeSUyMEwlMjBwdC54JTIwcHQueSUyMCU3RCUwQSUyMCUyMCUyRiUyRiUyMFRhbmdlbnQlMjBleHRlbnNpb24lM0ElMjBwdCUyMC0lM0UlMjBuZXdDUCUyMChvcmFuZ2UlMjBkYXNoZWQpJTBBJTIwJTIwbGF5ZXIoJ3RhbmdlbnQtbGluZScpLmFwcGx5JTIwJTdCJTIwTSUyMHB0LnglMjBwdC55JTIwTCUyMG5ld0NQeCUyMG5ld0NQeSUyMCU3RCUwQSUyMCUyMCUyRiUyRiUyMFNoYXJlZCUyMENQJTIwbWFya2VyJTBBJTIwJTIwbGF5ZXIoJ3NoYXJlZC1jcCcpLmFwcGx5JTIwJTdCJTIwY2lyY2xlKG5ld0NQeCUyQyUyMG5ld0NQeSUyQyUyMDQpJTIwJTdEJTBBJTBBJTIwJTIwcHJldkNQeCUyMCUzRCUyMG5ld0NQeCUzQiUwQSUyMCUyMHByZXZDUHklMjAlM0QlMjBuZXdDUHklM0IlMEElN0QlMEElMEElMkYlMkYlMjBMYWJlbHMlMjAlRTIlODAlOTQlMjBwb3NpdGlvbmVkJTIwd2l0aCUyMGNsZWFyYW5jZSUwQWRlZmluZSUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMSUzQiUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcignbGFiZWxzJykpJTNCJTBBbGF5ZXIoJ2xhYmVscycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyNiUyQyUyMDE2NSklNjBzdGFydCU2MCUwQSUyMCUyMHRleHQoMTU1JTJDJTIwNzIpJTYwUDElNjAlMEElMjAlMjB0ZXh0KDMxMCUyQyUyMDE2OCklNjBQMiU2MCUwQSUyMCUyMHRleHQoNDA1JTJDJTIwNzApJTYwUDMlNjAlMEElMjAlMjB0ZXh0KDQ4OCUyQyUyMDE2NSklNjBlbmQlNjAlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBMZWdlbmQlMjBncm91cCUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ2xlZ2VuZC1ncm91cCcpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAzMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMjQ4JTNCJTIwJTdEJTBBJTBBZGVmaW5lJTIwUGF0aExheWVyKCdsZy1jdXJ2ZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjM4YjVjZjYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyLjUlMjAlN0QlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2xnLWNwJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzZjk3MzE2JTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignbGctZGlyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzIyZDNlZSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjAzJTIwMiUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignbGctdGFuJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyM2Y5NzMxNiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwNSUyMDMlMjAlN0QlMEFsYXllcignbGVnZW5kLWdyb3VwJykuYXBwZW5kKGxheWVyKCdsZy1jdXJ2ZScpJTJDJTIwbGF5ZXIoJ2xnLWNwJyklMkMlMjBsYXllcignbGctZGlyJyklMkMlMjBsYXllcignbGctdGFuJykpJTNCJTBBJTBBbGF5ZXIoJ2xnLWN1cnZlJykuYXBwbHklMjAlN0IlMjBNJTIwMCUyMDAlMjBMJTIwMTYlMjAwJTIwJTdEJTBBbGF5ZXIoJ2xnLWNwJykuYXBwbHklMjAlN0IlMjBjaXJjbGUoOCUyQyUyMDE2JTJDJTIwNCklMjAlN0QlMEFsYXllcignbGctZGlyJykuYXBwbHklMjAlN0IlMjBNJTIwMCUyMDMwJTIwTCUyMDE2JTIwMzAlMjAlN0QlMEFsYXllcignbGctdGFuJykuYXBwbHklMjAlN0IlMjBNJTIwMCUyMDQ0JTIwTCUyMDE2JTIwNDQlMjAlN0QlMEElMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ2xlZ2VuZCcpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzY2JkNWUxJTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2xlZ2VuZC1ncm91cCcpLmFwcGVuZChsYXllcignbGVnZW5kJykpJTNCJTBBbGF5ZXIoJ2xlZ2VuZCcpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyNCUyQyUyMDQpJTYwQ3VydmUlNjAlMEElMjAlMjB0ZXh0KDI0JTJDJTIwMjApJTYwU2hhcmVkJTIwQ1AlNjAlMEElMjAlMjB0ZXh0KDI0JTJDJTIwMzQpJTYwRGVyaXZlZCUyMGRpcmVjdGlvbiUyMChwcmV2Q1AlMjAtJTNFJTIwcG9pbnQpJTYwJTBBJTIwJTIwdGV4dCgyNCUyQyUyMDQ4KSU2MFRhbmdlbnQlMjBleHRlbnNpb24lMjAocG9pbnQlMjAtJTNFJTIwbmV4dENQKSU2MCUwQSU3RCUwQSUwQWRlZmluZSUyMFRleHRMYXllcignbm90ZScpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2xlZ2VuZC1ncm91cCcpLmFwcGVuZChsYXllcignbm90ZScpKSUzQiUwQWxheWVyKCdub3RlJykuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDAlMkMlMjA2OCklNjBPbmx5JTIwdGhlJTIwc3RhcnQlMjBoYXMlMjBhbiUyMGV4cGxpY2l0JTIwYW5nbGUuJTYwJTBBJTIwJTIwdGV4dCgwJTJDJTIwODIpJTYwSW50ZXJtZWRpYXRlJTIwdGFuZ2VudHMlMjBkZXJpdmVkJTIwZ2VvbWV0cmljYWxseS4lNjAlMEElN0QlMEE=" code-open caption="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 540 350&quot;</span>
+<span class="hljs-comment">// quadSpline anatomy — implicit angle derivation from previous CP</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">540</span>, <span class="hljs-number">350</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.17</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">540</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.27</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">350</span> }
+}
+
+<span class="hljs-keyword">let</span> startPt = { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">170</span>, <span class="hljs-attr">angle</span>: -25deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">60</span> };
+<span class="hljs-keyword">let</span> midPts = [
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">170</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">85</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">300</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">175</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">50</span> },
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">420</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">80</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">45</span> }
+];
+<span class="hljs-keyword">let</span> endPt = { <span class="hljs-attr">x</span>: <span class="hljs-number">500</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span> };
+
+<span class="hljs-comment">// === Diagram group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-comment">// Title</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #f59e0b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">24</span>)<span class="hljs-string">\`quadSpline — implicit angle derivation\`</span> }
+
+<span class="hljs-comment">// The curve</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #8b5cf6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">3</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">quadSpline</span>(startPt, midPts, endPt) }
+
+<span class="hljs-comment">// On-curve points</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;anchors&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #8b5cf6; <span class="hljs-attr">stroke</span>: #3b0764; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;anchors&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;anchors&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(startPt.<span class="hljs-property">x</span>, startPt.<span class="hljs-property">y</span>, <span class="hljs-number">5</span>)
+  <span class="hljs-keyword">for</span> ([p, i] <span class="hljs-keyword">in</span> midPts) { <span class="hljs-title function_">circle</span>(p.<span class="hljs-property">x</span>, p.<span class="hljs-property">y</span>, <span class="hljs-number">5</span>) }
+  <span class="hljs-title function_">circle</span>(endPt.<span class="hljs-property">x</span>, endPt.<span class="hljs-property">y</span>, <span class="hljs-number">5</span>)
+}
+
+<span class="hljs-comment">// Recompute CPs for visualization</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;shared-cp&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #f97316; <span class="hljs-attr">stroke</span>: #7c2d12; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tangent-line&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f97316; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">5</span> <span class="hljs-number">3</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;derived-dir&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #22d3ee; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">3</span> <span class="hljs-number">2</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;shared-cp&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;tangent-line&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;derived-dir&#x27;</span>));
+
+<span class="hljs-comment">// First CP from explicit angle</span>
+<span class="hljs-keyword">let</span> cp0x = <span class="hljs-title function_">calc</span>(startPt.<span class="hljs-property">x</span> + startPt.<span class="hljs-property">exit</span> * <span class="hljs-title function_">cos</span>(startPt.<span class="hljs-property">angle</span>));
+<span class="hljs-keyword">let</span> cp0y = <span class="hljs-title function_">calc</span>(startPt.<span class="hljs-property">y</span> + startPt.<span class="hljs-property">exit</span> * <span class="hljs-title function_">sin</span>(startPt.<span class="hljs-property">angle</span>));
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;shared-cp&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cp0x, cp0y, <span class="hljs-number">4</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;tangent-line&#x27;</span>).<span class="hljs-property">apply</span> { M startPt.<span class="hljs-property">x</span> startPt.<span class="hljs-property">y</span> L cp0x cp0y }
+
+<span class="hljs-comment">// Subsequent CPs from derived angles</span>
+<span class="hljs-keyword">let</span> prevCPx = cp0x;
+<span class="hljs-keyword">let</span> prevCPy = cp0y;
+<span class="hljs-keyword">for</span> ([pt, idx] <span class="hljs-keyword">in</span> midPts) {
+  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">atan2</span>(pt.<span class="hljs-property">y</span> - prevCPy, pt.<span class="hljs-property">x</span> - prevCPx));
+  <span class="hljs-keyword">let</span> newCPx = <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + pt.<span class="hljs-property">exit</span> * <span class="hljs-title function_">cos</span>(angle));
+  <span class="hljs-keyword">let</span> newCPy = <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + pt.<span class="hljs-property">exit</span> * <span class="hljs-title function_">sin</span>(angle));
+
+  <span class="hljs-comment">// Derived direction: prevCP -&gt; pt (cyan dashed)</span>
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;derived-dir&#x27;</span>).<span class="hljs-property">apply</span> { M prevCPx prevCPy L pt.<span class="hljs-property">x</span> pt.<span class="hljs-property">y</span> }
+  <span class="hljs-comment">// Tangent extension: pt -&gt; newCP (orange dashed)</span>
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;tangent-line&#x27;</span>).<span class="hljs-property">apply</span> { M pt.<span class="hljs-property">x</span> pt.<span class="hljs-property">y</span> L newCPx newCPy }
+  <span class="hljs-comment">// Shared CP marker</span>
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;shared-cp&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(newCPx, newCPy, <span class="hljs-number">4</span>) }
+
+  prevCPx = newCPx;
+  prevCPy = newCPy;
+}
+
+<span class="hljs-comment">// Labels — positioned with clearance</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">26</span>, <span class="hljs-number">165</span>)<span class="hljs-string">\`start\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">155</span>, <span class="hljs-number">72</span>)<span class="hljs-string">\`P1\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">310</span>, <span class="hljs-number">168</span>)<span class="hljs-string">\`P2\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">405</span>, <span class="hljs-number">70</span>)<span class="hljs-string">\`P3\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">488</span>, <span class="hljs-number">165</span>)<span class="hljs-string">\`end\`</span>
+}
+
+<span class="hljs-comment">// === Legend group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">30</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">248</span>; }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg-curve&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #8b5cf6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg-cp&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #f97316; <span class="hljs-attr">stroke</span>: none }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg-dir&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #22d3ee; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">3</span> <span class="hljs-number">2</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg-tan&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f97316; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">5</span> <span class="hljs-number">3</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-curve&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-cp&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-dir&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-tan&#x27;</span>));
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-curve&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">16</span> <span class="hljs-number">0</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-cp&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">8</span>, <span class="hljs-number">16</span>, <span class="hljs-number">4</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-dir&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">30</span> L <span class="hljs-number">16</span> <span class="hljs-number">30</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg-tan&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">44</span> L <span class="hljs-number">16</span> <span class="hljs-number">44</span> }
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #cbd5e1; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-number">4</span>)<span class="hljs-string">\`Curve\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Shared CP\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-number">34</span>)<span class="hljs-string">\`Derived direction (prevCP -&gt; point)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">24</span>, <span class="hljs-number">48</span>)<span class="hljs-string">\`Tangent extension (point -&gt; nextCP)\`</span>
+}
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;note&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;note&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;note&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">68</span>)<span class="hljs-string">\`Only the start has an explicit angle.\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">82</span>)<span class="hljs-string">\`Intermediate tangents derived geometrically.\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/quad-spline-anatomy.svg" alt="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension" loading="lazy">
+</mini-workspace></p>
+<p>The signature is different from <code>cubicSpline</code>: start and end are separate arguments, with an array of intermediates between them. This reflects the asymmetry — only the start carries an explicit angle.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDYwJTIwMTQ1JTIyJTBBJTJGJTJGJTIwVGhyZWUlMjBxdWFkU3BsaW5lJTIwZXhhbXBsZXMlM0ElMjBzaW1wbGUlMjBhcmMlMkMlMjBmbG93aW5nJTIwY3VydmUlMkMlMjB6aWd6YWclMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGYxNzJhJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQ2MCUyQyUyMDE0NSklMjAlN0QlMEElMEFsZXQlMjBncmlkJTIwJTNEJTIwUGF0aExheWVyKCdncmlkJyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjAlMjMxZTI5M2IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWdyaWQuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uNyklMjAlN0IlMjBNJTIwMCUyMGNhbGMoaSUyMColMjAyMCklMjBoJTIwNDYwJTIwJTdEJTBBJTIwJTIwZm9yJTIwKGolMjBpbiUyMDAuLjIzKSUyMCU3QiUyME0lMjBjYWxjKGolMjAqJTIwMjApJTIwMCUyMHYlMjAxNDUlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBMYXlvdXQlMjBncm91cCUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ2xheW91dCcpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAwJTNCJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2ltcGxlJTIwYXJjJTIwZ3JvdXAlMjAtLS0lMEFkZWZpbmUlMjBHcm91cExheWVyKCdhcmMtZ3JvdXAnKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMTUlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDglM0IlMjAlN0QlMEFsYXllcignbGF5b3V0JykuYXBwZW5kKGxheWVyKCdhcmMtZ3JvdXAnKSklM0IlMEElMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ2FyYy1sYWJlbCcpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2FyYy1ncm91cCcpLmFwcGVuZChsYXllcignYXJjLWxhYmVsJykpJTNCJTBBbGF5ZXIoJ2FyYy1sYWJlbCcpLmFwcGx5JTIwJTdCJTIwdGV4dCgyMyUyQyUyMDIwKSU2MFNpbXBsZSUyMGFyYyU2MCUyMCU3RCUwQSUwQWRlZmluZSUyMFBhdGhMYXllcignYXJjJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzNiODJmNiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDIuNSUyMCU3RCUwQWxheWVyKCdhcmMtZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ2FyYycpKSUzQiUwQWxheWVyKCdhcmMnKS5hcHBseSUyMCU3QiUwQSUyMCUyMHF1YWRTcGxpbmUoJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDAlMkMlMjB5JTNBJTIwMTAwJTJDJTIwYW5nbGUlM0ElMjAtMzBkZWclMkMlMjBleGl0JTNBJTIwNDAlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlNUIlNUQlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwMTAwJTJDJTIweSUzQSUyMDEwMCUyMCU3RCUwQSUyMCUyMCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBGbG93aW5nJTIwY3VydmUlMjBncm91cCUyMC0tLSUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ2Zsb3ctZ3JvdXAnKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMTQ1JTNCJTIwdHJhbnNsYXRlLXklM0ElMjA4JTNCJTIwJTdEJTBBbGF5ZXIoJ2xheW91dCcpLmFwcGVuZChsYXllcignZmxvdy1ncm91cCcpKSUzQiUwQSUwQWRlZmluZSUyMFRleHRMYXllcignZmxvdy1sYWJlbCcpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2Zsb3ctZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ2Zsb3ctbGFiZWwnKSklM0IlMEFsYXllcignZmxvdy1sYWJlbCcpLmFwcGx5JTIwJTdCJTIwdGV4dCg0MCUyQyUyMDIwKSU2MEZsb3dpbmclMjBjdXJ2ZSU2MCUyMCU3RCUwQSUwQWRlZmluZSUyMFBhdGhMYXllcignZmxvd2luZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNlZjQ0NDQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyLjUlMjAlN0QlMEFsYXllcignZmxvdy1ncm91cCcpLmFwcGVuZChsYXllcignZmxvd2luZycpKSUzQiUwQWxheWVyKCdmbG93aW5nJykuYXBwbHklMjAlN0IlMEElMjAlMjBxdWFkU3BsaW5lKCUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjAwJTJDJTIwJTIwJTIweSUzQSUyMDEwMCUyQyUyMGFuZ2xlJTNBJTIwLTQ1ZGVnJTJDJTIwZXhpdCUzQSUyMDI4JTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTVCJTBBJTIwJTIwJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDMwJTJDJTIwJTIweSUzQSUyMDM1JTJDJTIwZXhpdCUzQSUyMDI1JTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDcwJTJDJTIwJTIweSUzQSUyMDgwJTJDJTIwZXhpdCUzQSUyMDI4JTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDEwMCUyQyUyMHklM0ElMjAzNSUyQyUyMGV4aXQlM0ElMjAyNSUyMCU3RCUwQSUyMCUyMCUyMCUyMCU1RCUyQyUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjAxNDAlMkMlMjB5JTNBJTIwMTAwJTIwJTdEJTBBJTIwJTIwKSUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFppZ3phZyUyMGdyb3VwJTIwLS0tJTBBZGVmaW5lJTIwR3JvdXBMYXllcignemlnLWdyb3VwJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDMxMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwOCUzQiUyMCU3RCUwQWxheWVyKCdsYXlvdXQnKS5hcHBlbmQobGF5ZXIoJ3ppZy1ncm91cCcpKSUzQiUwQSUwQWRlZmluZSUyMFRleHRMYXllcignemlnLWxhYmVsJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMCUzQiUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignemlnLWdyb3VwJykuYXBwZW5kKGxheWVyKCd6aWctbGFiZWwnKSklM0IlMEFsYXllcignemlnLWxhYmVsJykuYXBwbHklMjAlN0IlMjB0ZXh0KDMwJTJDJTIwMjApJTYwWmlnemFnJTYwJTIwJTdEJTBBJTBBZGVmaW5lJTIwUGF0aExheWVyKCd6aWd6YWcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMjJjNTVlJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMi41JTIwJTdEJTBBbGF5ZXIoJ3ppZy1ncm91cCcpLmFwcGVuZChsYXllcignemlnemFnJykpJTNCJTBBbGF5ZXIoJ3ppZ3phZycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwcXVhZFNwbGluZSglMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwMCUyQyUyMCUyMCUyMHklM0ElMjAxMDAlMkMlMjBhbmdsZSUzQSUyMC02MGRlZyUyQyUyMGV4aXQlM0ElMjAyNSUyMCU3RCUyQyUwQSUyMCUyMCUyMCUyMCU1QiUwQSUyMCUyMCUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjAzMCUyQyUyMCUyMHklM0ElMjAzNSUyQyUyMGV4aXQlM0ElMjAyNSUyMCU3RCUyQyUwQSUyMCUyMCUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjA2MCUyQyUyMCUyMHklM0ElMjAxMDAlMkMlMjBleGl0JTNBJTIwMjUlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwOTAlMkMlMjAlMjB5JTNBJTIwMzUlMkMlMjBleGl0JTNBJTIwMjUlMjAlN0QlMEElMjAlMjAlMjAlMjAlNUQlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwMTIwJTJDJTIweSUzQSUyMDEwMCUyMCU3RCUwQSUyMCUyMCklMEElN0QlMEE=" code-open caption="quadSpline examples — simple arc, flowing curve, and zigzag">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 460 145&quot;</span>
+<span class="hljs-comment">// Three quadSpline examples: simple arc, flowing curve, zigzag</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">460</span>, <span class="hljs-number">145</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">460</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.23</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">145</span> }
+}
+
+<span class="hljs-comment">// === Layout group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-comment">// --- Simple arc group ---</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;arc-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">15</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">8</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc-group&#x27;</span>));
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;arc-label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc-label&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc-label&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">23</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Simple arc\`</span> }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arc&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #3b82f6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arc&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">quadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">40</span> },
+    [],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
+  )
+}
+
+<span class="hljs-comment">// --- Flowing curve group ---</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;flow-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">145</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">8</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flow-group&#x27;</span>));
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;flow-label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flow-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flow-label&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flow-label&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">40</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Flowing curve\`</span> }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;flowing&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ef4444; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flow-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flowing&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;flowing&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">quadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>,   <span class="hljs-attr">y</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">angle</span>: -45deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">28</span> },
+    [
+      { <span class="hljs-attr">x</span>: <span class="hljs-number">30</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">35</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">25</span> },
+      { <span class="hljs-attr">x</span>: <span class="hljs-number">70</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">80</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">28</span> },
+      { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">35</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">25</span> }
+    ],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
+  )
+}
+
+<span class="hljs-comment">// --- Zigzag group ---</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;zig-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">310</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">8</span>; }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zig-group&#x27;</span>));
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;zig-label&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zig-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zig-label&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zig-label&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">20</span>)<span class="hljs-string">\`Zigzag\`</span> }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;zigzag&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #22c55e; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zig-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zigzag&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;zigzag&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">quadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>,   <span class="hljs-attr">y</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">angle</span>: -60deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">25</span> },
+    [
+      { <span class="hljs-attr">x</span>: <span class="hljs-number">30</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">35</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">25</span> },
+      { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">25</span> },
+      { <span class="hljs-attr">x</span>: <span class="hljs-number">90</span>,  <span class="hljs-attr">y</span>: <span class="hljs-number">35</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">25</span> }
+    ],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">120</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
+  )
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/quad-spline-demos.svg" alt="quadSpline examples — simple arc, flowing curve, and zigzag" loading="lazy">
+</mini-workspace></p>
+<p><strong>When to choose quadSpline over cubicSpline:</strong> When you want smooth curves but don&#39;t need per-point angle control. <code>quadSpline</code> is less to specify and produces naturally flowing shapes. Because it generates quadratic Bézier segments (which have one control point per segment instead of two), the curves have fewer degrees of freedom — great for organic, flowing lines but less precise for art-directed shapes. Use <code>cubicSpline</code> when you need exact control at every waypoint.</p>
+<h2>clippedQuadSpline: Controlling Eccentricity</h2>
+<p>Quadratic curves can sometimes bulge more than you want — the implicit shared control point sits far from the curve, pulling it outward. <em>Eccentricity</em> here refers to how much the curve deviates from the straight line between waypoints: more eccentric curves bulge further away from the baseline.</p>
+<p><code>clippedQuadSpline</code> solves this by adding <code>exitTime</code> and <code>entryTime</code> parameters that control how far the actual control points are placed along the arm toward the virtual shared CP. The placement uses linear interpolation (<a href="/pathogen/docs#stdlib-math-functions"><code>lerp</code></a>) — <code>lerp(start, sharedCP, t)</code> returns a point partway between the endpoint and the virtual CP, where <code>t</code> is the fraction of the distance to travel.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Properties</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>start</code></td>
+<td><code>{ x, y, angle, exit, exitTime }</code></td>
+<td>First point with time fraction</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td><code>[{ x, y, exit, exitTime, entryTime }, ...]</code></td>
+<td>Intermediates with time fractions</td>
+</tr>
+<tr>
+<td><code>end</code></td>
+<td><code>{ x, y, entryTime }</code></td>
+<td>Final waypoint with time fraction</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">clippedQuadSpline</span>(
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -40deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">80</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span> },
+  [{ <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">30</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }],
+  { <span class="hljs-attr">x</span>: <span class="hljs-number">310</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }
+)
+</code></pre><p>The time values range from 0 to 1:</p>
+<ul>
+<li><strong>t = 1.0</strong> — control points at the virtual shared position (equivalent to quadratic, maximum bulge)</li>
+<li><strong>t = 0.5</strong> — control points halfway along the arm (moderate dampening)</li>
+<li><strong>t = 0</strong> — control points at the endpoints (straight lines, no curve)</li>
+</ul>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDYwJTIwMjcwJTIyJTBBJTJGJTJGJTIwY2xpcHBlZFF1YWRTcGxpbmUlMjBhbmF0b215JTIwJUUyJTgwJTk0JTIwdmlydHVhbCUyMHNoYXJlZCUyMENQJTIwYW5kJTIwbGVycGVkJTIwYWN0dWFsJTIwQ1BzJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzBmMTcyYSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0NjAlMkMlMjAyNzApJTIwJTdEJTBBJTBBbGV0JTIwZ3JpZCUyMCUzRCUyMFBhdGhMYXllcignZ3JpZCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwJTIzMWUyOTNiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC41JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFncmlkLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjEzKSUyMCU3QiUyME0lMjAwJTIwY2FsYyhpJTIwKiUyMDIwKSUyMGglMjA0NjAlMjAlN0QlMEElMjAlMjBmb3IlMjAoaiUyMGluJTIwMC4uMjMpJTIwJTdCJTIwTSUyMGNhbGMoaiUyMColMjAyMCklMjAwJTIwdiUyMDI3MCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMFRpdGxlJTIwJUUyJTgwJTk0JTIwdG9wJTJDJTIwY2xlYXIlMjBvZiUyMGdlb21ldHJ5JTBBZGVmaW5lJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMjBmaWxsJTNBJTIwJTIzZjU5ZTBiJTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ3RpdGxlJykuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjYpJTYwU2luZ2xlJTIwc2VnbWVudCUyMCh0JTIwJTNEJTIwMC42KSUyMCVFMiU4MCU5NCUyMENQcyUyMHB1bGxlZCUyMDYwJTI1JTIwdG93YXJkJTIwc2hhcmVkJTIwQ1AlNjAlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBEaWFncmFtJTIwZ3JvdXAlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdkaWFncmFtJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMEFsZXQlMjBzeCUyMCUzRCUyMDcwJTNCJTBBbGV0JTIwc3klMjAlM0QlMjAxODAlM0IlMEFsZXQlMjBleCUyMCUzRCUyMDMzMCUzQiUwQWxldCUyMGV5JTIwJTNEJTIwMTgwJTNCJTBBbGV0JTIwc2hhcmVkWCUyMCUzRCUyMDIwMCUzQiUwQWxldCUyMHNoYXJlZFklMjAlM0QlMjA1NSUzQiUwQWxldCUyMHQlMjAlM0QlMjAwLjYlM0IlMEElMEFsZXQlMjBjcDF4JTIwJTNEJTIwY2FsYyhsZXJwKHN4JTJDJTIwc2hhcmVkWCUyQyUyMHQpKSUzQiUwQWxldCUyMGNwMXklMjAlM0QlMjBjYWxjKGxlcnAoc3klMkMlMjBzaGFyZWRZJTJDJTIwdCkpJTNCJTBBbGV0JTIwY3AyeCUyMCUzRCUyMGNhbGMobGVycChleCUyQyUyMHNoYXJlZFglMkMlMjB0KSklM0IlMEFsZXQlMjBjcDJ5JTIwJTNEJTIwY2FsYyhsZXJwKGV5JTJDJTIwc2hhcmVkWSUyQyUyMHQpKSUzQiUwQSUwQSUyRiUyRiUyMEFybXMlMjBmcm9tJTIwZW5kcG9pbnRzJTIwdG8lMjB2aXJ0dWFsJTIwc2hhcmVkJTIwQ1AlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2FybXMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzZjU5ZTBiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTIwc3Ryb2tlLWRhc2hhcnJheSUzQSUyMDMlMjAzJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2FybXMnKSklM0IlMEFsYXllcignYXJtcycpLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMHN4JTIwc3klMjBMJTIwc2hhcmVkWCUyMHNoYXJlZFklMEElMjAlMjBNJTIwZXglMjBleSUyMEwlMjBzaGFyZWRYJTIwc2hhcmVkWSUwQSU3RCUwQSUwQSUyRiUyRiUyMFZpcnR1YWwlMjBzaGFyZWQlMjBDUCUyMGRpYW1vbmQlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3ZpcnR1YWwnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzZjU5ZTBiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ3ZpcnR1YWwnKSklM0IlMEFsYXllcigndmlydHVhbCcpLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMHNoYXJlZFglMjBjYWxjKHNoYXJlZFklMjAtJTIwNiklMEElMjAlMjBMJTIwY2FsYyhzaGFyZWRYJTIwJTJCJTIwNiklMjBzaGFyZWRZJTBBJTIwJTIwTCUyMHNoYXJlZFglMjBjYWxjKHNoYXJlZFklMjAlMkIlMjA2KSUwQSUyMCUyMEwlMjBjYWxjKHNoYXJlZFglMjAtJTIwNiklMjBzaGFyZWRZJTIwWiUwQSU3RCUwQSUwQSUyRiUyRiUyMEFjdHVhbCUyMENQcyUyMChsZXJwZWQpJTBBZGVmaW5lJTIwUGF0aExheWVyKCdjcDEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjNlZjQ0NDQlM0IlMjBzdHJva2UlM0ElMjAlMjM3ZjFkMWQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTIwJTdEJTBBZGVmaW5lJTIwUGF0aExheWVyKCdjcDInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMyMmM1NWUlM0IlMjBzdHJva2UlM0ElMjAlMjMxNDUzMmQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2NwMScpJTJDJTIwbGF5ZXIoJ2NwMicpKSUzQiUwQWxheWVyKCdjcDEnKS5hcHBseSUyMCU3QiUyMGNpcmNsZShjcDF4JTJDJTIwY3AxeSUyQyUyMDUpJTIwJTdEJTBBbGF5ZXIoJ2NwMicpLmFwcGx5JTIwJTdCJTIwY2lyY2xlKGNwMnglMkMlMjBjcDJ5JTJDJTIwNSklMjAlN0QlMEElMEElMkYlMkYlMjBMaW5lcyUyMGZyb20lMjBlbmRwb2ludHMlMjB0byUyMGFjdHVhbCUyMENQcyUwQWRlZmluZSUyMFBhdGhMYXllcignY3AxLWFybScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNlZjQ0NDQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlMjAlN0QlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2NwMi1hcm0nKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMjJjNTVlJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2NwMS1hcm0nKSUyQyUyMGxheWVyKCdjcDItYXJtJykpJTNCJTBBbGF5ZXIoJ2NwMS1hcm0nKS5hcHBseSUyMCU3QiUyME0lMjBzeCUyMHN5JTIwTCUyMGNwMXglMjBjcDF5JTIwJTdEJTBBbGF5ZXIoJ2NwMi1hcm0nKS5hcHBseSUyMCU3QiUyME0lMjBleCUyMGV5JTIwTCUyMGNwMnglMjBjcDJ5JTIwJTdEJTBBJTBBJTJGJTJGJTIwVGhlJTIwcmVzdWx0aW5nJTIwY3ViaWMlMjBjdXJ2ZSUwQWRlZmluZSUyMFBhdGhMYXllcignY3VydmUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzOGI1Y2Y2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMyUyMCU3RCUwQWxheWVyKCdkaWFncmFtJykuYXBwZW5kKGxheWVyKCdjdXJ2ZScpKSUzQiUwQWxheWVyKCdjdXJ2ZScpLmFwcGx5JTIwJTdCJTIwTSUyMHN4JTIwc3klMjBDJTIwY3AxeCUyMGNwMXklMjBjcDJ4JTIwY3AyeSUyMGV4JTIwZXklMjAlN0QlMEElMEElMkYlMkYlMjBRdWFkcmF0aWMlMjByZWZlcmVuY2UlMjAodCUzRDEuMCklMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3F1YWQtcmVmJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ3NTU2OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwNCUyMDQlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcigncXVhZC1yZWYnKSklM0IlMEFsYXllcigncXVhZC1yZWYnKS5hcHBseSUyMCU3QiUyME0lMjBzeCUyMHN5JTIwUSUyMHNoYXJlZFglMjBzaGFyZWRZJTIwZXglMjBleSUyMCU3RCUwQSUwQSUyRiUyRiUyMEVuZHBvaW50cyUwQWRlZmluZSUyMFBhdGhMYXllcignZW5kcG9pbnRzJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzOGI1Y2Y2JTNCJTIwc3Ryb2tlJTNBJTIwJTIzM2IwNzY0JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2VuZHBvaW50cycpKSUzQiUwQWxheWVyKCdlbmRwb2ludHMnKS5hcHBseSUyMCU3QiUwQSUyMCUyMGNpcmNsZShzeCUyQyUyMHN5JTJDJTIwNSklMEElMjAlMjBjaXJjbGUoZXglMkMlMjBleSUyQyUyMDUpJTBBJTdEJTBBJTBBJTJGJTJGJTIwTGFiZWxzJTIwJUUyJTgwJTk0JTIwcG9zaXRpb25lZCUyMHdpdGglMjBjbGVhcmFuY2UlMjBmcm9tJTIwZ2VvbWV0cnklMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ2xhYmVscycpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMjBmaWxsJTNBJTIwJTIzY2JkNWUxJTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBbGF5ZXIoJ2RpYWdyYW0nKS5hcHBlbmQobGF5ZXIoJ2xhYmVscycpKSUzQiUwQWxheWVyKCdsYWJlbHMnKS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoY2FsYyhzaGFyZWRYJTIwJTJCJTIwMTApJTJDJTIwY2FsYyhzaGFyZWRZJTIwLSUyMDQpKSU2MHZpcnR1YWwlMjBzaGFyZWQlMjBDUCU2MCUwQSUyMCUyMHRleHQoY2FsYyhjcDF4JTIwLSUyMDc1KSUyQyUyMGNhbGMoY3AxeSUyMCUyQiUyMDMwKSklNjBDUDElMjAoZXhpdCklNjAlMEElMjAlMjB0ZXh0KGNhbGMoY3AyeCUyMCUyQiUyMDEyKSUyQyUyMGNhbGMoY3AyeSUyMCUyQiUyMDQpKSU2MENQMiUyMChlbnRyeSklNjAlMEElMjAlMjB0ZXh0KGNhbGMoc3glMjAtJTIwNSklMkMlMjBjYWxjKHN5JTIwJTJCJTIwMjApKSU2MHN0YXJ0JTYwJTBBJTIwJTIwdGV4dChjYWxjKGV4JTIwLSUyMDUpJTJDJTIwY2FsYyhleSUyMCUyQiUyMDIwKSklNjBlbmQlNjAlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBGb3JtdWxhJTIwZ3JvdXAlMjAlRTIlODAlOTQlMjByaWdodCUyMHNpZGUlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdmb3JtdWxhLWdyb3VwJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDM0MCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwNTUlM0IlMjAlN0QlMEElMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ2Zvcm11bGEnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTIwJTdEJTBBbGF5ZXIoJ2Zvcm11bGEtZ3JvdXAnKS5hcHBlbmQobGF5ZXIoJ2Zvcm11bGEnKSklM0IlMEFsYXllcignZm9ybXVsYScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgwJTJDJTIwMTApJTYwQ1AxJTIwJTNEJTIwbGVycChzdGFydCUyQyU2MCUwQSUyMCUyMHRleHQoMCUyQyUyMDI0KSU2MCUyMCUyMHNoYXJlZENQJTJDJTIwZXhpdFRpbWUpJTYwJTBBJTIwJTIwdGV4dCgwJTJDJTIwNDYpJTYwQ1AyJTIwJTNEJTIwbGVycChlbmQlMkMlNjAlMEElMjAlMjB0ZXh0KDAlMkMlMjA2MCklNjAlMjAlMjBzaGFyZWRDUCUyQyUyMGVudHJ5VGltZSklNjAlMEElN0QlMEElMEElMkYlMkYlMjBSZWZlcmVuY2UlMjBub3RlJTIwJUUyJTgwJTk0JTIwYm90dG9tJTIwd2l0aCUyMHNhZmUlMjBtYXJnaW4lMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ3JlZi1ub3RlJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjA5JTNCJTIwZmlsbCUzQSUyMCUyMzQ3NTU2OSUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdyZWYtbm90ZScpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxMzAlMkMlMjAyNTApJTYwZGFzaGVkJTIwZ3JheSUzQSUyMHF1YWRyYXRpYyUyMHJlZmVyZW5jZSUyMCh0JTIwJTNEJTIwMS4wKSU2MCUwQSU3RCUwQQ==" code-open caption="Single segment anatomy — virtual shared CP (diamond) and actual CPs placed via lerp">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 460 270&quot;</span>
+<span class="hljs-comment">// clippedQuadSpline anatomy — virtual shared CP and lerped actual CPs</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">460</span>, <span class="hljs-number">270</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.13</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">460</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.23</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">270</span> }
+}
+
+<span class="hljs-comment">// Title — top, clear of geometry</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #f59e0b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;title&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">26</span>)<span class="hljs-string">\`Single segment (t = 0.6) — CPs pulled 60% toward shared CP\`</span>
+}
+
+<span class="hljs-comment">// === Diagram group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-keyword">let</span> sx = <span class="hljs-number">70</span>;
+<span class="hljs-keyword">let</span> sy = <span class="hljs-number">180</span>;
+<span class="hljs-keyword">let</span> ex = <span class="hljs-number">330</span>;
+<span class="hljs-keyword">let</span> ey = <span class="hljs-number">180</span>;
+<span class="hljs-keyword">let</span> sharedX = <span class="hljs-number">200</span>;
+<span class="hljs-keyword">let</span> sharedY = <span class="hljs-number">55</span>;
+<span class="hljs-keyword">let</span> t = <span class="hljs-number">0.6</span>;
+
+<span class="hljs-keyword">let</span> cp1x = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">lerp</span>(sx, sharedX, t));
+<span class="hljs-keyword">let</span> cp1y = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">lerp</span>(sy, sharedY, t));
+<span class="hljs-keyword">let</span> cp2x = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">lerp</span>(ex, sharedX, t));
+<span class="hljs-keyword">let</span> cp2y = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">lerp</span>(ey, sharedY, t));
+
+<span class="hljs-comment">// Arms from endpoints to virtual shared CP</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arms&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f59e0b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">3</span> <span class="hljs-number">3</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arms&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arms&#x27;</span>).<span class="hljs-property">apply</span> {
+  M sx sy L sharedX sharedY
+  M ex ey L sharedX sharedY
+}
+
+<span class="hljs-comment">// Virtual shared CP diamond</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;virtual&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f59e0b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;virtual&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;virtual&#x27;</span>).<span class="hljs-property">apply</span> {
+  M sharedX <span class="hljs-title function_">calc</span>(sharedY - <span class="hljs-number">6</span>)
+  L <span class="hljs-title function_">calc</span>(sharedX + <span class="hljs-number">6</span>) sharedY
+  L sharedX <span class="hljs-title function_">calc</span>(sharedY + <span class="hljs-number">6</span>)
+  L <span class="hljs-title function_">calc</span>(sharedX - <span class="hljs-number">6</span>) sharedY Z
+}
+
+<span class="hljs-comment">// Actual CPs (lerped)</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp1&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #ef4444; <span class="hljs-attr">stroke</span>: #7f1d1d; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp2&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #22c55e; <span class="hljs-attr">stroke</span>: #14532d; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp1&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp2&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp1&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cp1x, cp1y, <span class="hljs-number">5</span>) }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp2&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cp2x, cp2y, <span class="hljs-number">5</span>) }
+
+<span class="hljs-comment">// Lines from endpoints to actual CPs</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp1-arm&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ef4444; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cp2-arm&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #22c55e; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp1-arm&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp2-arm&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp1-arm&#x27;</span>).<span class="hljs-property">apply</span> { M sx sy L cp1x cp1y }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;cp2-arm&#x27;</span>).<span class="hljs-property">apply</span> { M ex ey L cp2x cp2y }
+
+<span class="hljs-comment">// The resulting cubic curve</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #8b5cf6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">3</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;curve&#x27;</span>).<span class="hljs-property">apply</span> { M sx sy C cp1x cp1y cp2x cp2y ex ey }
+
+<span class="hljs-comment">// Quadratic reference (t=1.0)</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;quad-ref&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">4</span> <span class="hljs-number">4</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;quad-ref&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;quad-ref&#x27;</span>).<span class="hljs-property">apply</span> { M sx sy Q sharedX sharedY ex ey }
+
+<span class="hljs-comment">// Endpoints</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #8b5cf6; <span class="hljs-attr">stroke</span>: #3b0764; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(sx, sy, <span class="hljs-number">5</span>)
+  <span class="hljs-title function_">circle</span>(ex, ey, <span class="hljs-number">5</span>)
+}
+
+<span class="hljs-comment">// Labels — positioned with clearance from geometry</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #cbd5e1; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sharedX + <span class="hljs-number">10</span>), <span class="hljs-title function_">calc</span>(sharedY - <span class="hljs-number">4</span>))<span class="hljs-string">\`virtual shared CP\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(cp1x - <span class="hljs-number">75</span>), <span class="hljs-title function_">calc</span>(cp1y + <span class="hljs-number">30</span>))<span class="hljs-string">\`CP1 (exit)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(cp2x + <span class="hljs-number">12</span>), <span class="hljs-title function_">calc</span>(cp2y + <span class="hljs-number">4</span>))<span class="hljs-string">\`CP2 (entry)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(sx - <span class="hljs-number">5</span>), <span class="hljs-title function_">calc</span>(sy + <span class="hljs-number">20</span>))<span class="hljs-string">\`start\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(ex - <span class="hljs-number">5</span>), <span class="hljs-title function_">calc</span>(ey + <span class="hljs-number">20</span>))<span class="hljs-string">\`end\`</span>
+}
+
+<span class="hljs-comment">// === Formula group — right side ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;formula-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">340</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">55</span>; }
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;formula&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: monospace }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;formula-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;formula&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;formula&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">10</span>)<span class="hljs-string">\`CP1 = lerp(start,\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">24</span>)<span class="hljs-string">\`  sharedCP, exitTime)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">46</span>)<span class="hljs-string">\`CP2 = lerp(end,\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">60</span>)<span class="hljs-string">\`  sharedCP, entryTime)\`</span>
+}
+
+<span class="hljs-comment">// Reference note — bottom with safe margin</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;ref-note&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>; <span class="hljs-attr">fill</span>: #<span class="hljs-number">475569</span>; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;ref-note&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">130</span>, <span class="hljs-number">250</span>)<span class="hljs-string">\`dashed gray: quadratic reference (t = 1.0)\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/eccentricity-anatomy.svg" alt="Single segment anatomy — virtual shared CP (diamond) and actual CPs placed via lerp" loading="lazy">
+</mini-workspace></p>
+<p>The effect is dramatic when overlaid. Same waypoints, same angles — only the time values change:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMjUwJTIyJTBBJTJGJTJGJTIwY2xpcHBlZFF1YWRTcGxpbmUlMjBlY2NlbnRyaWNpdHklMjBjb21wYXJpc29uJTIwJUUyJTgwJTk0JTIwc2FtZSUyMGdlb21ldHJ5JTJDJTIwZGlmZmVyZW50JTIwdGltZSUyMHZhbHVlcyUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwZjE3MmElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNTIwJTJDJTIwMjUwKSUyMCU3RCUwQSUwQWxldCUyMGdyaWQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2dyaWQnKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMCUyMzFlMjkzYiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZ3JpZC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi4xMiklMjAlN0IlMjBNJTIwMCUyMGNhbGMoaSUyMColMjAyMCklMjBoJTIwNTIwJTIwJTdEJTBBJTIwJTIwZm9yJTIwKGolMjBpbiUyMDAuLjI2KSUyMCU3QiUyME0lMjBjYWxjKGolMjAqJTIwMjApJTIwMCUyMHYlMjAyNTAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBEaWFncmFtJTIwZ3JvdXAlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdkaWFncmFtJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMEFsZXQlMjBzQW5nbGUlMjAlM0QlMjAtNDBkZWclM0IlMEFsZXQlMjBzRXhpdCUyMCUzRCUyMDgwJTNCJTBBJTBBJTJGJTJGJTIwdCUyMCUzRCUyMDEuMCUyMChmdWxsJTIwcXVhZHJhdGljJTIwJUUyJTgwJTk0JTIwbW9zdCUyMGVjY2VudHJpYyklMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3QxMDAnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzM2I4MmY2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMi41JTIwJTdEJTBBbGF5ZXIoJ3QxMDAnKS5hcHBseSUyMCU3QiUwQSUyMCUyMGNsaXBwZWRRdWFkU3BsaW5lKCUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjA2MCUyQyUyMHklM0ElMjAxNjUlMkMlMjBhbmdsZSUzQSUyMHNBbmdsZSUyQyUyMGV4aXQlM0ElMjBzRXhpdCUyQyUyMGV4aXRUaW1lJTNBJTIwMS4wJTIwJTdEJTJDJTBBJTIwJTIwJTIwJTIwJTVCJTdCJTIweCUzQSUyMDE5MCUyQyUyMHklM0ElMjA0NSUyQyUyMGV4aXQlM0ElMjA3MCUyQyUyMGV4aXRUaW1lJTNBJTIwMS4wJTJDJTIwZW50cnlUaW1lJTNBJTIwMS4wJTIwJTdEJTVEJTJDJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDMyMCUyQyUyMHklM0ElMjAxNjUlMkMlMjBlbnRyeVRpbWUlM0ElMjAxLjAlMjAlN0QlMEElMjAlMjApJTBBJTdEJTBBJTBBJTJGJTJGJTIwdCUyMCUzRCUyMDAuNzUlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ3QwNzUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzOGI1Y2Y2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUyMCU3RCUwQWxheWVyKCd0MDc1JykuYXBwbHklMjAlN0IlMEElMjAlMjBjbGlwcGVkUXVhZFNwbGluZSglMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwNjAlMkMlMjB5JTNBJTIwMTY1JTJDJTIwYW5nbGUlM0ElMjBzQW5nbGUlMkMlMjBleGl0JTNBJTIwc0V4aXQlMkMlMjBleGl0VGltZSUzQSUyMDAuNzUlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlNUIlN0IlMjB4JTNBJTIwMTkwJTJDJTIweSUzQSUyMDQ1JTJDJTIwZXhpdCUzQSUyMDcwJTJDJTIwZXhpdFRpbWUlM0ElMjAwLjc1JTJDJTIwZW50cnlUaW1lJTNBJTIwMC43NSUyMCU3RCU1RCUyQyUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjAzMjAlMkMlMjB5JTNBJTIwMTY1JTJDJTIwZW50cnlUaW1lJTNBJTIwMC43NSUyMCU3RCUwQSUyMCUyMCklMEElN0QlMEElMEElMkYlMkYlMjB0JTIwJTNEJTIwMC41JTBBZGVmaW5lJTIwUGF0aExheWVyKCd0MDUwJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyM2VjNDg5OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDIlMjAlN0QlMEFsYXllcigndDA1MCcpLmFwcGx5JTIwJTdCJTBBJTIwJTIwY2xpcHBlZFF1YWRTcGxpbmUoJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDYwJTJDJTIweSUzQSUyMDE2NSUyQyUyMGFuZ2xlJTNBJTIwc0FuZ2xlJTJDJTIwZXhpdCUzQSUyMHNFeGl0JTJDJTIwZXhpdFRpbWUlM0ElMjAwLjUlMjAlN0QlMkMlMEElMjAlMjAlMjAlMjAlNUIlN0IlMjB4JTNBJTIwMTkwJTJDJTIweSUzQSUyMDQ1JTJDJTIwZXhpdCUzQSUyMDcwJTJDJTIwZXhpdFRpbWUlM0ElMjAwLjUlMkMlMjBlbnRyeVRpbWUlM0ElMjAwLjUlMjAlN0QlNUQlMkMlMEElMjAlMjAlMjAlMjAlN0IlMjB4JTNBJTIwMzIwJTJDJTIweSUzQSUyMDE2NSUyQyUyMGVudHJ5VGltZSUzQSUyMDAuNSUyMCU3RCUwQSUyMCUyMCklMEElN0QlMEElMEElMkYlMkYlMjB0JTIwJTNEJTIwMC4yNSUwQWRlZmluZSUyMFBhdGhMYXllcigndDAyNScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNmOTczMTYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyJTIwJTdEJTBBbGF5ZXIoJ3QwMjUnKS5hcHBseSUyMCU3QiUwQSUyMCUyMGNsaXBwZWRRdWFkU3BsaW5lKCUwQSUyMCUyMCUyMCUyMCU3QiUyMHglM0ElMjA2MCUyQyUyMHklM0ElMjAxNjUlMkMlMjBhbmdsZSUzQSUyMHNBbmdsZSUyQyUyMGV4aXQlM0ElMjBzRXhpdCUyQyUyMGV4aXRUaW1lJTNBJTIwMC4yNSUyMCU3RCUyQyUwQSUyMCUyMCUyMCUyMCU1QiU3QiUyMHglM0ElMjAxOTAlMkMlMjB5JTNBJTIwNDUlMkMlMjBleGl0JTNBJTIwNzAlMkMlMjBleGl0VGltZSUzQSUyMDAuMjUlMkMlMjBlbnRyeVRpbWUlM0ElMjAwLjI1JTIwJTdEJTVEJTJDJTBBJTIwJTIwJTIwJTIwJTdCJTIweCUzQSUyMDMyMCUyQyUyMHklM0ElMjAxNjUlMkMlMjBlbnRyeVRpbWUlM0ElMjAwLjI1JTIwJTdEJTBBJTIwJTIwKSUwQSU3RCUwQSUwQSUyRiUyRiUyME9uLWN1cnZlJTIwcG9pbnRzJTBBZGVmaW5lJTIwUGF0aExheWVyKCdwdHMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMjBzdHJva2UlM0ElMjAlMjM0NzU1NjklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlMjAlN0QlMEFsYXllcignZGlhZ3JhbScpLmFwcGVuZChsYXllcigndDEwMCcpJTJDJTIwbGF5ZXIoJ3QwNzUnKSUyQyUyMGxheWVyKCd0MDUwJyklMkMlMjBsYXllcigndDAyNScpJTJDJTIwbGF5ZXIoJ3B0cycpKSUzQiUwQWxheWVyKCdwdHMnKS5hcHBseSUyMCU3QiUwQSUyMCUyMGNpcmNsZSg2MCUyQyUyMDE2NSUyQyUyMDUpJTBBJTIwJTIwY2lyY2xlKDE5MCUyQyUyMDQ1JTJDJTIwNSklMEElMjAlMjBjaXJjbGUoMzIwJTJDJTIwMTY1JTJDJTIwNSklMEElN0QlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBMZWdlbmQlMjBncm91cCUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ2xlZ2VuZC1ncm91cCcpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAzNDUlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDQyJTNCJTIwJTdEJTBBJTBBZGVmaW5lJTIwUGF0aExheWVyKCdsZzEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzM2I4MmY2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMi41JTIwJTdEJTBBZGVmaW5lJTIwUGF0aExheWVyKCdsZzInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzOGI1Y2Y2JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUyMCU3RCUwQWRlZmluZSUyMFBhdGhMYXllcignbGczJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyM2VjNDg5OSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDIlMjAlN0QlMEFkZWZpbmUlMjBQYXRoTGF5ZXIoJ2xnNCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNmOTczMTYlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyJTIwJTdEJTBBbGF5ZXIoJ2xlZ2VuZC1ncm91cCcpLmFwcGVuZChsYXllcignbGcxJyklMkMlMjBsYXllcignbGcyJyklMkMlMjBsYXllcignbGczJyklMkMlMjBsYXllcignbGc0JykpJTNCJTBBJTBBbGF5ZXIoJ2xnMScpLmFwcGx5JTIwJTdCJTIwTSUyMDAlMjAwJTIwTCUyMDIwJTIwMCUyMCU3RCUwQWxheWVyKCdsZzInKS5hcHBseSUyMCU3QiUyME0lMjAwJTIwMTglMjBMJTIwMjAlMjAxOCUyMCU3RCUwQWxheWVyKCdsZzMnKS5hcHBseSUyMCU3QiUyME0lMjAwJTIwMzYlMjBMJTIwMjAlMjAzNiUyMCU3RCUwQWxheWVyKCdsZzQnKS5hcHBseSUyMCU3QiUyME0lMjAwJTIwNTQlMjBMJTIwMjAlMjA1NCUyMCU3RCUwQSUwQWRlZmluZSUyMFRleHRMYXllcignbGVnZW5kJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMCUzQiUyMGZpbGwlM0ElMjAlMjNjYmQ1ZTElM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignbGVnZW5kLWdyb3VwJykuYXBwZW5kKGxheWVyKCdsZWdlbmQnKSklM0IlMEFsYXllcignbGVnZW5kJykuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI4JTJDJTIwNCklNjB0JTIwJTNEJTIwMS4wJTIwKHF1YWRyYXRpYyklNjAlMEElMjAlMjB0ZXh0KDI4JTJDJTIwMjIpJTYwdCUyMCUzRCUyMDAuNzUlNjAlMEElMjAlMjB0ZXh0KDI4JTJDJTIwNDApJTYwdCUyMCUzRCUyMDAuNSU2MCUwQSUyMCUyMHRleHQoMjglMkMlMjA1OCklNjB0JTIwJTNEJTIwMC4yNSUyMChkYW1wZW5lZCklNjAlMEElN0QlMEElMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ25vdGUnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdub3RlJykuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDYwJTJDJTIwMjAzKSU2MFNhbWUlMjB3YXlwb2ludHMlMkMlMjBzYW1lJTIwYW5nbGVzJTIwJUUyJTgwJTk0JTIwb25seSU2MCUwQSUyMCUyMHRleHQoNjAlMkMlMjAyMTcpJTYwZXhpdFRpbWUlMjAlMkYlMjBlbnRyeVRpbWUlMjBjaGFuZ2UuJTYwJTBBJTIwJTIwdGV4dCg2MCUyQyUyMDIzMSklNjBMb3dlciUyMHZhbHVlcyUyMHJlZHVjZSUyMGN1cnZlJTIwYnVsZ2UuJTYwJTBBJTdEJTBB" code-open caption="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 250&quot;</span>
+<span class="hljs-comment">// clippedQuadSpline eccentricity comparison — same geometry, different time values</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">250</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.12</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">520</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.26</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">250</span> }
+}
+
+<span class="hljs-comment">// === Diagram group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-keyword">let</span> sAngle = -40deg;
+<span class="hljs-keyword">let</span> sExit = <span class="hljs-number">80</span>;
+
+<span class="hljs-comment">// t = 1.0 (full quadratic — most eccentric)</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;t100&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #3b82f6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t100&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">clippedQuadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">angle</span>: sAngle, <span class="hljs-attr">exit</span>: sExit, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">1.0</span> },
+    [{ <span class="hljs-attr">x</span>: <span class="hljs-number">190</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">1.0</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">1.0</span> }],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">1.0</span> }
+  )
+}
+
+<span class="hljs-comment">// t = 0.75</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;t075&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #8b5cf6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t075&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">clippedQuadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">angle</span>: sAngle, <span class="hljs-attr">exit</span>: sExit, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.75</span> },
+    [{ <span class="hljs-attr">x</span>: <span class="hljs-number">190</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.75</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.75</span> }],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.75</span> }
+  )
+}
+
+<span class="hljs-comment">// t = 0.5</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;t050&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ec4899; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t050&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">clippedQuadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">angle</span>: sAngle, <span class="hljs-attr">exit</span>: sExit, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span> },
+    [{ <span class="hljs-attr">x</span>: <span class="hljs-number">190</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }
+  )
+}
+
+<span class="hljs-comment">// t = 0.25</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;t025&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f97316; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t025&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">clippedQuadSpline</span>(
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">angle</span>: sAngle, <span class="hljs-attr">exit</span>: sExit, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.25</span> },
+    [{ <span class="hljs-attr">x</span>: <span class="hljs-number">190</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.25</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.25</span> }],
+    { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">165</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.25</span> }
+  )
+}
+
+<span class="hljs-comment">// On-curve points</span>
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;pts&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #e2e8f0; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">475569</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diagram&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t100&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t075&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t050&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;t025&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;pts&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;pts&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">60</span>, <span class="hljs-number">165</span>, <span class="hljs-number">5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">190</span>, <span class="hljs-number">45</span>, <span class="hljs-number">5</span>)
+  <span class="hljs-title function_">circle</span>(<span class="hljs-number">320</span>, <span class="hljs-number">165</span>, <span class="hljs-number">5</span>)
+}
+
+<span class="hljs-comment">// === Legend group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">345</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">42</span>; }
+
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg1&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #3b82f6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg2&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #8b5cf6; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg3&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ec4899; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lg4&#x27;</span>) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #f97316; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg1&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg2&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg3&#x27;</span>), <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg4&#x27;</span>));
+
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg1&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">0</span> L <span class="hljs-number">20</span> <span class="hljs-number">0</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg2&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">18</span> L <span class="hljs-number">20</span> <span class="hljs-number">18</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg3&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">36</span> L <span class="hljs-number">20</span> <span class="hljs-number">36</span> }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lg4&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">0</span> <span class="hljs-number">54</span> L <span class="hljs-number">20</span> <span class="hljs-number">54</span> }
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #cbd5e1; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend-group&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">28</span>, <span class="hljs-number">4</span>)<span class="hljs-string">\`t = 1.0 (quadratic)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">28</span>, <span class="hljs-number">22</span>)<span class="hljs-string">\`t = 0.75\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">28</span>, <span class="hljs-number">40</span>)<span class="hljs-string">\`t = 0.5\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">28</span>, <span class="hljs-number">58</span>)<span class="hljs-string">\`t = 0.25 (dampened)\`</span>
+}
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;note&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;note&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">60</span>, <span class="hljs-number">203</span>)<span class="hljs-string">\`Same waypoints, same angles — only\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">60</span>, <span class="hljs-number">217</span>)<span class="hljs-string">\`exitTime / entryTime change.\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">60</span>, <span class="hljs-number">231</span>)<span class="hljs-string">\`Lower values reduce curve bulge.\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post13/eccentricity-comparison.svg" alt="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)" loading="lazy">
+</mini-workspace></p>
+<p>Unlike <code>quadSpline</code> (which emits <code>q</code> commands), <code>clippedQuadSpline</code> emits <code>c</code> (cubic) commands because splitting the shared CP into two independent CPs requires cubic Béziers. This is transparent to the user — the output is still a valid SVG path.</p>
+<p><strong>When to choose clippedQuadSpline:</strong> When you want the convenience of implicit angles (like <code>quadSpline</code>) but need to control how much the curve bulges at each segment. It&#39;s particularly useful for decorative borders, data visualization curves, and any shape where uniform curvature matters more than maximum expressiveness.</p>
+<p>All three spline functions emit relative commands, so they compose naturally with <a href="/pathogen/blog/pathblock-introduction">path blocks</a> and <a href="/pathogen/docs#path-blocks-transforms">transforms</a>. They also pair well with <a href="/pathogen/blog/heading-turn"><code>heading()</code> and <code>turn()</code></a> for establishing tangent context before tangent-dependent functions. Try editing any of the examples above in the <a href="/pathogen/">Pathogen playground</a> — adjust angles, handle lengths, and time values to see how the curves respond.</p>
+`,
   'cloudflare-pages-spa-routing-struggle': `<h1>The CloudFlare Pages SPA Routing Odyssey: A Developer&#39;s Journey Through Documentation Gaps</h1>
 <h2>The Problem</h2>
 <p>What should have been a simple task—making a Single Page Application work with direct URL navigation on CloudFlare Pages—turned into a multi-hour debugging session that exposed significant gaps in CloudFlare&#39;s documentation and inconsistencies between their local development tools and production behavior.</p>
@@ -5081,6 +5966,344 @@ scene.<span class="hljs-title function_">append</span>(bg, left_group, center_gr
 </mini-workspace></p>
 <h2>What Comes Next</h2>
 <p>This is the sixth gradient type in Pathogen&#39;s system — linear, radial, conic, mesh, freeform, and topological. In the <a href="/pathogen/blog/gradient-pipeline">final post</a> of this series, we step back and look at the infrastructure that makes it all work: <code>GroupLayer</code> for scene composition, the CLI&#39;s <code>--render-gpu</code> flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns <code>.pathogen</code> source files into the blog you are reading now.</p>
+`,
+  'heading-turn': `<p>Pathogen&#39;s tangent-dependent functions — <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
+<p>The old workaround was a dummy segment:</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
+h <span class="hljs-number">0.01</span>            <span class="hljs-comment">// invisible line to set heading rightward</span>
+<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg)
+</code></pre><p>This sets the heading, but the 0.01px offset accumulates. When you close a path with <code>z</code>, it draws a line back to <code>(50.01, 100)</code> instead of <code>(50, 100)</code> — a tiny but visible artifact.</p>
+<h2>heading(angle)</h2>
+<p><a href="/pathogen/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
+<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)           <span class="hljs-comment">// set heading rightward — nothing drawn</span>
+<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg) <span class="hljs-comment">// works immediately</span>
+</code></pre><p>Angles follow SVG&#39;s coordinate conventions: 0 is rightward, positive angles rotate clockwise (downward in SVG&#39;s y-down coordinate system). Use the <code>deg</code> suffix for degrees.</p>
+<h2>turn(delta)</h2>
+<p><a href="/pathogen/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
+<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)          <span class="hljs-comment">// start rightward</span>
+<span class="hljs-title function_">turn</span>(90deg)         <span class="hljs-comment">// now downward</span>
+<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">30</span>)     <span class="hljs-comment">// draws 30px down</span>
+</code></pre><p>Negative deltas turn counter-clockwise. Multiple <code>turn()</code> calls accumulate:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
+<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// 45°</span>
+<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// 90°</span>
+<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">20</span>)     <span class="hljs-comment">// draws at 90°</span>
+</code></pre><h2>Shapes Without Dummy Segments</h2>
+<p>The demo below shows four shapes built entirely with <code>heading</code>, <code>turn</code>, <code>tangentLine</code>, and <code>tangentArc</code> — no dummy segments needed. Each shape includes the code used to construct it.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTQwJTIwMjIwJTIyJTBBJTJGJTJGJTIwaGVhZGluZygpJTIwYW5kJTIwdHVybigpJTIwJUUyJTgwJTk0JTIwdGFuZ2VudCUyMGNvbnRleHQlMjB3aXRob3V0JTIwcGF0aCUyMGNvbW1hbmRzJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzBmMTcyYSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1NDAlMkMlMjAyMjApJTIwJTdEJTBBJTBBbGV0JTIwZ3JpZCUyMCUzRCUyMFBhdGhMYXllcignZ3JpZCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwJTIzMWUyOTNiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC41JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFncmlkLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjExKSUyMCU3QiUyME0lMjAwJTIwY2FsYyhpJTIwKiUyMDIwKSUyMGglMjA1NDAlMjAlN0QlMEElMjAlMjBmb3IlMjAoaiUyMGluJTIwMC4uMjcpJTIwJTdCJTIwTSUyMGNhbGMoaiUyMColMjAyMCklMjAwJTIwdiUyMDIyMCUyMCU3RCUwQSU3RCUwQSUwQWxldCUyMHIlMjAlM0QlMjAyMCUzQiUwQWxldCUyMGNvbFdpZHRoJTIwJTNEJTIwMTI1JTNCJTBBbGV0JTIwc2hhcGVSb3dZJTIwJTNEJTIwNjglM0IlMEFsZXQlMjBjb2RlUm93WSUyMCUzRCUyMDEzMCUzQiUwQWxldCUyMGxhYmVsWSUyMCUzRCUyMDI4JTNCJTBBJTBBJTJGJTJGJTIwJTNEJTNEJTNEJTIwTGF5b3V0JTIwZ3JvdXAlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdsYXlvdXQnKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMCUzQiUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEJ1aWxkJTIwZWFjaCUyMHNoYXBlJTIwYXMlMjBhJTIwUGF0aEJsb2NrJTJDJTIwY2VudGVyJTIwdmlhJTIwYm91bmRpbmdCb3glMjAtLS0lMEElMEElMkYlMkYlMjBDLXNoYXBlJTBBbGV0JTIwY0Jsb2NrJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwaGVhZGluZygtMTM1ZGVnKSUwQSUyMCUyMHRhbmdlbnRBcmMociUyQyUyMDI3MGRlZyklMEElMjAlMjB6JTBBJTdEJTNCJTBBbGV0JTIwY0JCJTIwJTNEJTIwY0Jsb2NrLmJvdW5kaW5nQm94KCklM0IlMEElMEElMkYlMkYlMjBTLWN1cnZlJTIwKHNtYWxsZXIlMjByYWRpdXMlMjB0byUyMGZpdCUyMHZlcnRpY2FsbHkpJTBBbGV0JTIwc1IlMjAlM0QlMjAxNSUzQiUwQWxldCUyMHNCbG9jayUyMCUzRCUyMCU0MCU3QiUwQSUyMCUyMGhlYWRpbmcoMCklMEElMjAlMjB0YW5nZW50QXJjKHNSJTJDJTIwMTgwZGVnKSUwQSUyMCUyMHR1cm4oMTgwZGVnKSUwQSUyMCUyMHRhbmdlbnRBcmMoc1IlMkMlMjAxODBkZWcpJTBBJTdEJTNCJTBBbGV0JTIwc0JCJTIwJTNEJTIwc0Jsb2NrLmJvdW5kaW5nQm94KCklM0IlMEElMEElMkYlMkYlMjBaaWd6YWclMEFsZXQlMjB6QmxvY2slMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBoZWFkaW5nKDQ1ZGVnKSUwQSUyMCUyMHRhbmdlbnRMaW5lKDI1KSUwQSUyMCUyMHR1cm4oLTkwZGVnKSUwQSUyMCUyMHRhbmdlbnRMaW5lKDI1KSUwQSUyMCUyMHR1cm4oOTBkZWcpJTBBJTIwJTIwdGFuZ2VudExpbmUoMjUpJTBBJTIwJTIwdHVybigtOTBkZWcpJTBBJTIwJTIwdGFuZ2VudExpbmUoMjUpJTBBJTdEJTNCJTBBbGV0JTIwekJCJTIwJTNEJTIwekJsb2NrLmJvdW5kaW5nQm94KCklM0IlMEElMEElMkYlMkYlMjBTcGlyYWwlMEFsZXQlMjBzcEJsb2NrJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwaGVhZGluZygwKSUwQSUyMCUyMHRhbmdlbnRBcmMoMjglMkMlMjAxODBkZWcpJTBBJTIwJTIwdGFuZ2VudEFyYygyMiUyQyUyMDE4MGRlZyklMEElMjAlMjB0YW5nZW50QXJjKDE1JTJDJTIwMTgwZGVnKSUwQSUyMCUyMHRhbmdlbnRBcmMoMTAlMkMlMjAxODBkZWcpJTBBJTdEJTNCJTBBbGV0JTIwc3BCQiUyMCUzRCUyMHNwQmxvY2suYm91bmRpbmdCb3goKSUzQiUwQSUwQSUyRiUyRiUyMFNoYXBlJTIwY29uZmlncyUzQSUyMCU1QnBhdGhibG9jayUyQyUyMGJvdW5kaW5nYm94JTJDJTIwbGFiZWwlMkMlMjBjb2xvciUyQyUyMGNvbHVtbl9jZW50ZXJfeCU1RCUwQWxldCUyMHNoYXBlcyUyMCUzRCUyMCU1QiUwQSUyMCUyMCU3QiUyMHBiJTNBJTIwY0Jsb2NrJTJDJTIwJTIwYmIlM0ElMjBjQkIlMkMlMjAlMjBsYWJlbCUzQSUyMCUyMkMtc2hhcGUlMjIlMkMlMjBjb2wlM0ElMjAlMjMzYjgyZjYlMjAlN0QlMkMlMEElMjAlMjAlN0IlMjBwYiUzQSUyMHNCbG9jayUyQyUyMCUyMGJiJTNBJTIwc0JCJTJDJTIwJTIwbGFiZWwlM0ElMjAlMjJTLWN1cnZlJTIyJTJDJTIwY29sJTNBJTIwJTIzZWY0NDQ0JTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIwcGIlM0ElMjB6QmxvY2slMkMlMjAlMjBiYiUzQSUyMHpCQiUyQyUyMCUyMGxhYmVsJTNBJTIwJTIyWmlnemFnJTIyJTJDJTIwJTIwY29sJTNBJTIwJTIzMjJjNTVlJTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIwcGIlM0ElMjBzcEJsb2NrJTJDJTIwYmIlM0ElMjBzcEJCJTJDJTIwbGFiZWwlM0ElMjAlMjJTcGlyYWwlMjIlMkMlMjAlMjBjb2wlM0ElMjAlMjNmNTllMGIlMjAlN0QlMEElNUQlM0IlMEElMEFsZXQlMjBjb2RlVGV4dHMlMjAlM0QlMjAlNUIlMEElMjAlMjAlMjYlN0IlMjB0ZXh0KDAlMkMlMjAwKSU2MGhlYWRpbmcoLTEzNWRlZyklMEF0YW5nZW50QXJjKHIlMkMlMjAyNzBkZWcpJTBBeiU2MCUyMCU3RCUyQyUwQSUyMCUyMCUyNiU3QiUyMHRleHQoMCUyQyUyMDApJTYwaGVhZGluZygwKSUwQXRhbmdlbnRBcmMoMTUlMkMlMjAxODBkZWcpJTBBdHVybigxODBkZWcpJTBBdGFuZ2VudEFyYygxNSUyQyUyMDE4MGRlZyklNjAlMjAlN0QlMkMlMEElMjAlMjAlMjYlN0IlMjB0ZXh0KDAlMkMlMjAwKSU2MGhlYWRpbmcoNDVkZWcpJTBBdGFuZ2VudExpbmUoMjUpJTBBdHVybigtOTBkZWcpJTBBdGFuZ2VudExpbmUoMjUpJTIwLi4uJTYwJTIwJTdEJTJDJTBBJTIwJTIwJTI2JTdCJTIwdGV4dCgwJTJDJTIwMCklNjBoZWFkaW5nKDApJTBBdGFuZ2VudEFyYygyOCUyQyUyMDE4MGRlZyklMEF0YW5nZW50QXJjKDIyJTJDJTIwMTgwZGVnKSUwQXRhbmdlbnRBcmMoMTUlMkMlMjAuLi4pJTYwJTIwJTdEJTBBJTVEJTNCJTBBJTBBbGV0JTIwc25pcHBldE5hbWVzJTIwJTNEJTIwJTVCJTIyYy1jb2RlJTIyJTJDJTIwJTIycy1jb2RlJTIyJTJDJTIwJTIyei1jb2RlJTIyJTJDJTIwJTIyc3AtY29kZSUyMiU1RCUzQiUwQSUwQWZvciUyMCglNUJzaGFwZSUyQyUyMGlkeCU1RCUyMGluJTIwc2hhcGVzKSUyMCU3QiUwQSUyMCUyMGxldCUyMGN4JTIwJTNEJTIwY2FsYygyMCUyMCUyQiUyMGNvbFdpZHRoJTIwJTJGJTIwMiUyMCUyQiUyMGlkeCUyMColMjBjb2xXaWR0aCklM0IlMEElMEElMjAlMjAlMkYlMkYlMjAtLS0lMjBHcm91cCUyMGZvciUyMHRoaXMlMjBleGFtcGxlJTIwLS0tJTBBJTIwJTIwbGV0JTIwZ05hbWUlMjAlM0QlMjAlNjBnJTI0JTdCaWR4JTdEJTYwJTNCJTBBJTIwJTIwZGVmaW5lJTIwR3JvdXBMYXllcihnTmFtZSklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMjAlMjBsYXllcignbGF5b3V0JykuYXBwZW5kKGxheWVyKGdOYW1lKSklM0IlMEElMEElMjAlMjAlMkYlMkYlMjAtLS0lMjBMYWJlbCUyMC0tLSUwQSUyMCUyMGxldCUyMHRsTmFtZSUyMCUzRCUyMCU2MGwlMjQlN0JpZHglN0QlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBUZXh0TGF5ZXIodGxOYW1lKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQSUyMCUyMGxheWVyKGdOYW1lKS5hcHBlbmQobGF5ZXIodGxOYW1lKSklM0IlMEElMjAlMjBsZXQlMjBsYWJlbFglMjAlM0QlMjBjYWxjKGN4JTIwLSUyMHNoYXBlLmxhYmVsLmxlbmd0aCUyMColMjAzLjMpJTNCJTBBJTIwJTIwbGF5ZXIodGxOYW1lKS5hcHBseSUyMCU3QiUyMHRleHQobGFiZWxYJTJDJTIwbGFiZWxZKSU2MCUyNCU3QnNoYXBlLmxhYmVsJTdEJTYwJTIwJTdEJTBBJTBBJTIwJTIwJTJGJTJGJTIwLS0tJTIwU2hhcGUlM0ElMjBjZW50ZXJlZCUyMGF0JTIwKGN4JTJDJTIwc2hhcGVSb3dZKSUyMHVzaW5nJTIwYm91bmRpbmdCb3glMjAtLS0lMEElMjAlMjBsZXQlMjBkcmF3WCUyMCUzRCUyMGNhbGMoY3glMjAtJTIwc2hhcGUuYmIueCUyMC0lMjBzaGFwZS5iYi53aWR0aCUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwbGV0JTIwZHJhd1klMjAlM0QlMjBjYWxjKHNoYXBlUm93WSUyMC0lMjBzaGFwZS5iYi55JTIwLSUyMHNoYXBlLmJiLmhlaWdodCUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwbGV0JTIwcGxOYW1lJTIwJTNEJTIwJTYwcCUyNCU3QmlkeCU3RCU2MCUzQiUwQSUyMCUyMGRlZmluZSUyMFBhdGhMYXllcihwbE5hbWUpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjBzaGFwZS5jb2wlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyLjUlMjAlN0QlMEElMjAlMjBsYXllcihnTmFtZSkuYXBwZW5kKGxheWVyKHBsTmFtZSkpJTNCJTBBJTIwJTIwbGF5ZXIocGxOYW1lKS5hcHBseSUyMCU3QiUyMHNoYXBlLnBiLmRyYXdUbyhkcmF3WCUyQyUyMGRyYXdZKSUyMCU3RCUwQSUwQSUyMCUyMCUyRiUyRiUyMC0tLSUyMENvZGUlMjBzbmlwcGV0JTIwLS0tJTBBJTIwJTIwbGV0JTIwc25pcHBldCUyMCUzRCUyMGNvZGVUZXh0cyU1QmlkeCU1RC50b0NvZGVTbmlwcGV0QmxvY2soc25pcHBldE5hbWVzJTVCaWR4JTVEJTJDJTIwOCUyQyUyMDYpJTNCJTBBJTIwJTIwJTJGJTJGJTIwQ2VudGVyJTIwdGhlJTIwc25pcHBldCUyMGhvcml6b250YWxseSUyMHVuZGVyJTIwdGhlJTIwc2hhcGUlMEElMjAlMjBsZXQlMjBzbmlwcGV0QkIlMjAlM0QlMjBzbmlwcGV0LmN0eC50cmFuc2Zvcm0lM0IlMEElMjAlMjBzbmlwcGV0JTIwJTNDJTNDJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjBjYWxjKGN4JTIwLSUyMDU1KSUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwY29kZVJvd1klM0IlMjAlN0QlM0IlMEElMjAlMjBsYXllcihnTmFtZSkuYXBwZW5kKHNuaXBwZXQpJTNCJTBBJTdEJTBB" code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 540 220&quot;</span>
+<span class="hljs-comment">// heading() and turn() — tangent context without path commands</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">540</span>, <span class="hljs-number">220</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.11</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">540</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.27</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">220</span> }
+}
+
+<span class="hljs-keyword">let</span> r = <span class="hljs-number">20</span>;
+<span class="hljs-keyword">let</span> colWidth = <span class="hljs-number">125</span>;
+<span class="hljs-keyword">let</span> shapeRowY = <span class="hljs-number">68</span>;
+<span class="hljs-keyword">let</span> codeRowY = <span class="hljs-number">130</span>;
+<span class="hljs-keyword">let</span> labelY = <span class="hljs-number">28</span>;
+
+<span class="hljs-comment">// === Layout group ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+
+<span class="hljs-comment">// --- Build each shape as a PathBlock, center via boundingBox ---</span>
+
+<span class="hljs-comment">// C-shape</span>
+<span class="hljs-keyword">let</span> cBlock = @{
+  <span class="hljs-title function_">heading</span>(-135deg)
+  <span class="hljs-title function_">tangentArc</span>(r, 270deg)
+  z
+};
+<span class="hljs-keyword">let</span> cBB = cBlock.<span class="hljs-title function_">boundingBox</span>();
+
+<span class="hljs-comment">// S-curve (smaller radius to fit vertically)</span>
+<span class="hljs-keyword">let</span> sR = <span class="hljs-number">15</span>;
+<span class="hljs-keyword">let</span> sBlock = @{
+  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
+  <span class="hljs-title function_">tangentArc</span>(sR, 180deg)
+  <span class="hljs-title function_">turn</span>(180deg)
+  <span class="hljs-title function_">tangentArc</span>(sR, 180deg)
+};
+<span class="hljs-keyword">let</span> sBB = sBlock.<span class="hljs-title function_">boundingBox</span>();
+
+<span class="hljs-comment">// Zigzag</span>
+<span class="hljs-keyword">let</span> zBlock = @{
+  <span class="hljs-title function_">heading</span>(45deg)
+  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
+  <span class="hljs-title function_">turn</span>(-90deg)
+  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
+  <span class="hljs-title function_">turn</span>(90deg)
+  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
+  <span class="hljs-title function_">turn</span>(-90deg)
+  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
+};
+<span class="hljs-keyword">let</span> zBB = zBlock.<span class="hljs-title function_">boundingBox</span>();
+
+<span class="hljs-comment">// Spiral</span>
+<span class="hljs-keyword">let</span> spBlock = @{
+  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">28</span>, 180deg)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">22</span>, 180deg)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">15</span>, 180deg)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">10</span>, 180deg)
+};
+<span class="hljs-keyword">let</span> spBB = spBlock.<span class="hljs-title function_">boundingBox</span>();
+
+<span class="hljs-comment">// Shape configs: [pathblock, boundingbox, label, color, column_center_x]</span>
+<span class="hljs-keyword">let</span> shapes = [
+  { <span class="hljs-attr">pb</span>: cBlock,  <span class="hljs-attr">bb</span>: cBB,  <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;C-shape&quot;</span>, <span class="hljs-attr">col</span>: #3b82f6 },
+  { <span class="hljs-attr">pb</span>: sBlock,  <span class="hljs-attr">bb</span>: sBB,  <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;S-curve&quot;</span>, <span class="hljs-attr">col</span>: #ef4444 },
+  { <span class="hljs-attr">pb</span>: zBlock,  <span class="hljs-attr">bb</span>: zBB,  <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;Zigzag&quot;</span>,  <span class="hljs-attr">col</span>: #22c55e },
+  { <span class="hljs-attr">pb</span>: spBlock, <span class="hljs-attr">bb</span>: spBB, <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;Spiral&quot;</span>,  <span class="hljs-attr">col</span>: #f59e0b }
+];
+
+<span class="hljs-keyword">let</span> codeTexts = [
+  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">\`heading(-135deg)
+tangentArc(r, 270deg)
+z\`</span> },
+  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">\`heading(0)
+tangentArc(15, 180deg)
+turn(180deg)
+tangentArc(15, 180deg)\`</span> },
+  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">\`heading(45deg)
+tangentLine(25)
+turn(-90deg)
+tangentLine(25) ...\`</span> },
+  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">\`heading(0)
+tangentArc(28, 180deg)
+tangentArc(22, 180deg)
+tangentArc(15, ...)\`</span> }
+];
+
+<span class="hljs-keyword">let</span> snippetNames = [<span class="hljs-string">&quot;c-code&quot;</span>, <span class="hljs-string">&quot;s-code&quot;</span>, <span class="hljs-string">&quot;z-code&quot;</span>, <span class="hljs-string">&quot;sp-code&quot;</span>];
+
+<span class="hljs-keyword">for</span> ([shape, idx] <span class="hljs-keyword">in</span> shapes) {
+  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + colWidth / <span class="hljs-number">2</span> + idx * colWidth);
+
+  <span class="hljs-comment">// --- Group for this example ---</span>
+  <span class="hljs-keyword">let</span> gName = <span class="hljs-string">\`g<span class="hljs-subst">\${idx}</span>\`</span>;
+  define <span class="hljs-title class_">GroupLayer</span>(gName) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(gName));
+
+  <span class="hljs-comment">// --- Label ---</span>
+  <span class="hljs-keyword">let</span> tlName = <span class="hljs-string">\`l<span class="hljs-subst">\${idx}</span>\`</span>;
+  define <span class="hljs-title class_">TextLayer</span>(tlName) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(tlName));
+  <span class="hljs-keyword">let</span> labelX = <span class="hljs-title function_">calc</span>(cx - shape.<span class="hljs-property">label</span>.<span class="hljs-property">length</span> * <span class="hljs-number">3.3</span>);
+  <span class="hljs-title function_">layer</span>(tlName).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, labelY)<span class="hljs-string">\`<span class="hljs-subst">\${shape.label}</span>\`</span> }
+
+  <span class="hljs-comment">// --- Shape: centered at (cx, shapeRowY) using boundingBox ---</span>
+  <span class="hljs-keyword">let</span> drawX = <span class="hljs-title function_">calc</span>(cx - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">x</span> - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">width</span> / <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">let</span> drawY = <span class="hljs-title function_">calc</span>(shapeRowY - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">y</span> - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">height</span> / <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">let</span> plName = <span class="hljs-string">\`p<span class="hljs-subst">\${idx}</span>\`</span>;
+  define <span class="hljs-title class_">PathLayer</span>(plName) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: shape.<span class="hljs-property">col</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(plName));
+  <span class="hljs-title function_">layer</span>(plName).<span class="hljs-property">apply</span> { shape.<span class="hljs-property">pb</span>.<span class="hljs-title function_">drawTo</span>(drawX, drawY) }
+
+  <span class="hljs-comment">// --- Code snippet ---</span>
+  <span class="hljs-keyword">let</span> snippet = codeTexts[idx].<span class="hljs-title function_">toCodeSnippetBlock</span>(snippetNames[idx], <span class="hljs-number">8</span>, <span class="hljs-number">6</span>);
+  <span class="hljs-comment">// Center the snippet horizontally under the shape</span>
+  <span class="hljs-keyword">let</span> snippetBB = snippet.<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>;
+  snippet &lt;&lt; \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-title function_">calc</span>(cx - <span class="hljs-number">55</span>); translate-<span class="hljs-attr">y</span>: codeRowY; };
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(snippet);
+}
+</code>
+  <img src="/pathogen/blog/samples/post14/heading-turn-demo.svg" alt="heading() and turn() — C-shape, S-curve, zigzag, and spiral" loading="lazy">
+</mini-workspace></p>
+<h2>Building Regular Polygons</h2>
+<p><code>heading</code>, <code>turn</code>, and <code>tangentLine</code> are all you need to draw any regular polygon. Set an initial heading at half the exterior angle (this orients the first edge so the polygon sits upright), then loop: draw a side with <code>tangentLine</code>, turn by the exterior angle. Replace <code>tangentLine</code> with <code>tangentArc</code> on the turns and the corners become rounded:</p>
+<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">sharpPoly</span>(<span class="hljs-params">sides, sideLen</span>) {
+  <span class="hljs-keyword">let</span> ext = <span class="hljs-title function_">calc</span>(<span class="hljs-number">360</span> / sides);
+  <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
+    <span class="hljs-title function_">tangentLine</span>(sideLen)
+    <span class="hljs-title function_">turn</span>(<span class="hljs-title function_">calc</span>(ext * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+  }
+}
+
+fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-params">sides, sideLen, r</span>) {
+  <span class="hljs-keyword">let</span> ext = <span class="hljs-title function_">calc</span>(<span class="hljs-number">360</span> / sides);
+  <span class="hljs-keyword">let</span> straight = <span class="hljs-title function_">calc</span>(sideLen - <span class="hljs-number">2</span> * r * <span class="hljs-title function_">tan</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>));
+  <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
+    <span class="hljs-title function_">tangentLine</span>(straight)
+    <span class="hljs-title function_">tangentArc</span>(r, <span class="hljs-title function_">calc</span>(ext * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+  }
+}
+</code></pre><p>The showcase below draws triangles through decagons — eight polygons in each row, sharp and rounded. One function, one loop, any number of sides.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjgwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUmVndWxhciUyMHBvbHlnb25zJTIwdmlhJTIwaGVhZGluZyUyMCUyQiUyMHR1cm4lMjAlMkIlMjB0YW5nZW50TGluZSUyRnRhbmdlbnRBcmMlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGYxNzJhJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDY4MCUyQyUyMDQwMCklMjAlN0QlMEElMEFsZXQlMjBncmlkJTIwJTNEJTIwUGF0aExheWVyKCdncmlkJyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjAlMjMxZTI5M2IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWdyaWQuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uMjApJTIwJTdCJTIwTSUyMDAlMjBjYWxjKGklMjAqJTIwMjApJTIwaCUyMDY4MCUyMCU3RCUwQSUyMCUyMGZvciUyMChqJTIwaW4lMjAwLi4zNCklMjAlN0IlMjBNJTIwY2FsYyhqJTIwKiUyMDIwKSUyMDAlMjB2JTIwNDAwJTIwJTdEJTBBJTdEJTBBJTBBbGV0JTIwciUyMCUzRCUyMDI0JTNCJTBBJTBBJTJGJTJGJTIwQnVpbGQlMjBzaGFycCUyMHBvbHlnb24lMjBhcyUyMFBhdGhCbG9jayUwQWZuJTIwc2hhcnBQb2x5QmxvY2soc2lkZXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIwZXh0UmFkJTIwJTNEJTIwY2FsYygyJTIwKiUyMFBJKCklMjAlMkYlMjBzaWRlcyklM0IlMEElMjAlMjBsZXQlMjBzaWRlTGVuJTIwJTNEJTIwY2FsYygyJTIwKiUyMHIlMjAqJTIwc2luKGV4dFJhZCUyMCUyRiUyMDIpKSUzQiUwQSUyMCUyMGxldCUyMGhlYWRBbmdsZSUyMCUzRCUyMGNhbGMoZXh0UmFkJTIwJTJGJTIwMiklM0IlMEElMjAlMjBoZWFkaW5nKGhlYWRBbmdsZSklMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uc2lkZXMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdGFuZ2VudExpbmUoc2lkZUxlbiklMEElMjAlMjAlMjAlMjB0dXJuKGV4dFJhZCklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBCdWlsZCUyMHJvdW5kZWQlMjBwb2x5Z29uJTIwYXMlMjBQYXRoQmxvY2slMEFmbiUyMHJvdW5kZWRQb2x5QmxvY2soc2lkZXMlMkMlMjBjb3JuZXJSYWRpdXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIwZXh0UmFkJTIwJTNEJTIwY2FsYygyJTIwKiUyMFBJKCklMjAlMkYlMjBzaWRlcyklM0IlMEElMjAlMjBsZXQlMjBzaWRlTGVuJTIwJTNEJTIwY2FsYygyJTIwKiUyMHIlMjAqJTIwc2luKGV4dFJhZCUyMCUyRiUyMDIpKSUzQiUwQSUyMCUyMGxldCUyMGFyY09mZnNldCUyMCUzRCUyMGNhbGMoY29ybmVyUmFkaXVzJTIwKiUyMHRhbihleHRSYWQlMjAlMkYlMjAyKSklM0IlMEElMjAlMjBsZXQlMjBzdHJhaWdodCUyMCUzRCUyMGNhbGMoc2lkZUxlbiUyMC0lMjAyJTIwKiUyMGFyY09mZnNldCklM0IlMEElMjAlMjBsZXQlMjBoZWFkQW5nbGUlMjAlM0QlMjBjYWxjKGV4dFJhZCUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwaGVhZGluZyhoZWFkQW5nbGUpJTBBJTIwJTIwbGV0JTIwbGFzdCUyMCUzRCUyMGNhbGMoc2lkZXMlMjAtJTIwMSklM0IlMEElMjAlMjB0YW5nZW50TGluZShzdHJhaWdodCklMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMS4ubGFzdCklMjAlN0IlMEElMjAlMjAlMjAlMjB0YW5nZW50QXJjKGNvcm5lclJhZGl1cyUyQyUyMGV4dFJhZCklMEElMjAlMjAlMjAlMjB0YW5nZW50TGluZShzdHJhaWdodCklMEElMjAlMjAlN0QlMEElMjAlMjB0YW5nZW50QXJjKGNvcm5lclJhZGl1cyUyQyUyMGV4dFJhZCklMEElMjAlMjB6JTBBJTdEJTBBJTBBbGV0JTIwY29sb3JzJTIwJTNEJTIwJTVCJTIzZWY0NDQ0JTJDJTIwJTIzZjk3MzE2JTJDJTIwJTIzZWFiMzA4JTJDJTIwJTIzMjJjNTVlJTJDJTIwJTIzMDZiNmQ0JTJDJTIwJTIzM2I4MmY2JTJDJTIwJTIzOGI1Y2Y2JTJDJTIwJTIzZWM0ODk5JTVEJTNCJTBBJTBBbGV0JTIwbmFtZXMlMjAlM0QlMjAlNUIlMEElMjAlMjAlMjJUcmlhbmdsZSUyMiUyQyUyMCUyMlNxdWFyZSUyMiUyQyUyMCUyMlBlbnRhZ29uJTIyJTJDJTIwJTIySGV4YWdvbiUyMiUyQyUwQSUyMCUyMCUyMkhlcHRhZ29uJTIyJTJDJTIwJTIyT2N0YWdvbiUyMiUyQyUyMCUyMk5vbmFnb24lMjIlMkMlMjAlMjJEZWNhZ29uJTIyJTBBJTVEJTNCJTBBJTBBbGV0JTIwc2lkZXMlMjAlM0QlMjAlNUIzJTJDJTIwNCUyQyUyMDUlMkMlMjA2JTJDJTIwNyUyQyUyMDglMkMlMjA5JTJDJTIwMTAlNUQlM0IlMEFsZXQlMjBzcGFjaW5nJTIwJTNEJTIwODAlM0IlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBSb3clMjAxJTNBJTIwU2hhcnAlMjBwb2x5Z29ucyUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ3NoYXJwLXJvdycpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAyMCUzQiUyMCU3RCUwQSUwQWRlZmluZSUyMFRleHRMYXllcigncjEtdGl0bGUnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdzaGFycC1yb3cnKS5hcHBlbmQobGF5ZXIoJ3IxLXRpdGxlJykpJTNCJTBBbGF5ZXIoJ3IxLXRpdGxlJykuYXBwbHklMjAlN0IlMjB0ZXh0KDIwJTJDJTIwMTQpJTYwU2hhcnAlMjBjb3JuZXJzJTIwJUUyJTgwJTk0JTIwaGVhZGluZyUyMCUyQiUyMHRhbmdlbnRMaW5lJTIwJTJCJTIwdHVybiU2MCUyMCU3RCUwQSUwQWZvciUyMChpZHglMjBpbiUyMDAuLjcpJTIwJTdCJTBBJTIwJTIwbGV0JTIwbiUyMCUzRCUyMHNpZGVzJTVCaWR4JTVEJTNCJTBBJTIwJTIwbGV0JTIwY29sJTIwJTNEJTIwY29sb3JzJTVCaWR4JTVEJTNCJTBBJTIwJTIwbGV0JTIwbmFtZSUyMCUzRCUyMG5hbWVzJTVCaWR4JTVEJTNCJTBBJTBBJTIwJTIwJTJGJTJGJTIwQ3JlYXRlJTIwUGF0aEJsb2NrJTIwYW5kJTIwcXVlcnklMjBpdHMlMjBib3VuZHMlMEElMjAlMjBsZXQlMjBwYiUyMCUzRCUyMCU0MCU3QiUyMHNoYXJwUG9seUJsb2NrKG4pJTIwJTdEJTNCJTBBJTIwJTIwbGV0JTIwYmIlMjAlM0QlMjBwYi5ib3VuZGluZ0JveCgpJTNCJTBBJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDU1JTIwJTJCJTIwaWR4JTIwKiUyMHNwYWNpbmcpJTNCJTBBJTBBJTIwJTIwJTJGJTJGJTIwQ2VudGVyJTIwdGhlJTIwc2hhcGUlM0ElMjBkcmF3VG8lMjBwbGFjZXMlMjBvcmlnaW4lMjBhdCUyMCh4JTJDJTIweSklMkMlMjBzbyUyMG9mZnNldCUyMGJ5JTIwLWJvdW5kcyUyMGNlbnRlciUwQSUyMCUyMGxldCUyMGRyYXdYJTIwJTNEJTIwY2FsYyhjeCUyMC0lMjBiYi54JTIwLSUyMGJiLndpZHRoJTIwJTJGJTIwMiklM0IlMEElMjAlMjBsZXQlMjBkcmF3WSUyMCUzRCUyMGNhbGMoNzIlMjAtJTIwYmIueSUyMC0lMjBiYi5oZWlnaHQlMjAlMkYlMjAyKSUzQiUwQSUwQSUyMCUyMGxldCUyMGdOYW1lJTIwJTNEJTIwJTYwc2clMjQlN0JuJTdEJTYwJTNCJTBBJTIwJTIwZGVmaW5lJTIwR3JvdXBMYXllcihnTmFtZSklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMjAlMjBsYXllcignc2hhcnAtcm93JykuYXBwZW5kKGxheWVyKGdOYW1lKSklM0IlMEElMEElMjAlMjBsZXQlMjBsTmFtZSUyMCUzRCUyMCU2MHMlMjQlN0JuJTdEJTYwJTNCJTBBJTIwJTIwZGVmaW5lJTIwUGF0aExheWVyKGxOYW1lKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwY29sJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUyMCU3RCUwQSUyMCUyMGxheWVyKGdOYW1lKS5hcHBlbmQobGF5ZXIobE5hbWUpKSUzQiUwQSUyMCUyMGxheWVyKGxOYW1lKS5hcHBseSUyMCU3QiUyMHBiLmRyYXdUbyhkcmF3WCUyQyUyMGRyYXdZKSUyMCU3RCUwQSUwQSUyMCUyMCUyRiUyRiUyMENlbnRlciUyMGxhYmVsJTIwdW5kZXIlMjB0aGUlMjBzaGFwZSUwQSUyMCUyMGxldCUyMGxhYmVsWCUyMCUzRCUyMGNhbGMoY3glMjAtJTIwbmFtZS5sZW5ndGglMjAqJTIwMi43KSUzQiUwQSUyMCUyMGxldCUyMHRsTmFtZSUyMCUzRCUyMCU2MHMlMjQlN0JuJTdELWwlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBUZXh0TGF5ZXIodGxOYW1lKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBJTIwJTIwbGF5ZXIoZ05hbWUpLmFwcGVuZChsYXllcih0bE5hbWUpKSUzQiUwQSUyMCUyMGxheWVyKHRsTmFtZSkuYXBwbHklMjAlN0IlMjB0ZXh0KGxhYmVsWCUyQyUyMDExMiklNjAlMjQlN0JuYW1lJTdEJTYwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwJTNEJTNEJTNEJTIwUm93JTIwMiUzQSUyMFJvdW5kZWQlMjBwb2x5Z29ucyUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ3JvdW5kLXJvdycpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAxOTAlM0IlMjAlN0QlMEElMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ3IyLXRpdGxlJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMSUzQiUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcigncm91bmQtcm93JykuYXBwZW5kKGxheWVyKCdyMi10aXRsZScpKSUzQiUwQWxheWVyKCdyMi10aXRsZScpLmFwcGx5JTIwJTdCJTIwdGV4dCgyMCUyQyUyMDE0KSU2MFJvdW5kZWQlMjBjb3JuZXJzJTIwJUUyJTgwJTk0JTIwdGFuZ2VudExpbmUlMjAlMkIlMjB0YW5nZW50QXJjJTYwJTIwJTdEJTBBJTBBZm9yJTIwKGlkeCUyMGluJTIwMC4uNyklMjAlN0IlMEElMjAlMjBsZXQlMjBuJTIwJTNEJTIwc2lkZXMlNUJpZHglNUQlM0IlMEElMjAlMjBsZXQlMjBjb2wlMjAlM0QlMjBjb2xvcnMlNUJpZHglNUQlM0IlMEElMjAlMjBsZXQlMjBjciUyMCUzRCUyMGNhbGMobWluKHIlMjAqJTIwMC4zNSUyQyUyMDgpKSUzQiUwQSUyMCUyMGxldCUyMG5hbWUlMjAlM0QlMjBuYW1lcyU1QmlkeCU1RCUzQiUwQSUwQSUyMCUyMGxldCUyMHBiJTIwJTNEJTIwJTQwJTdCJTIwcm91bmRlZFBvbHlCbG9jayhuJTJDJTIwY3IpJTIwJTdEJTNCJTBBJTIwJTIwbGV0JTIwYmIlMjAlM0QlMjBwYi5ib3VuZGluZ0JveCgpJTNCJTBBJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDU1JTIwJTJCJTIwaWR4JTIwKiUyMHNwYWNpbmcpJTNCJTBBJTBBJTIwJTIwbGV0JTIwZHJhd1glMjAlM0QlMjBjYWxjKGN4JTIwLSUyMGJiLnglMjAtJTIwYmIud2lkdGglMjAlMkYlMjAyKSUzQiUwQSUyMCUyMGxldCUyMGRyYXdZJTIwJTNEJTIwY2FsYyg3MiUyMC0lMjBiYi55JTIwLSUyMGJiLmhlaWdodCUyMCUyRiUyMDIpJTNCJTBBJTBBJTIwJTIwbGV0JTIwZ05hbWUlMjAlM0QlMjAlNjByZyUyNCU3Qm4lN0QlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBHcm91cExheWVyKGdOYW1lKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMCUzQiUyMCU3RCUwQSUyMCUyMGxheWVyKCdyb3VuZC1yb3cnKS5hcHBlbmQobGF5ZXIoZ05hbWUpKSUzQiUwQSUwQSUyMCUyMGxldCUyMGxOYW1lJTIwJTNEJTIwJTYwciUyNCU3Qm4lN0QlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBQYXRoTGF5ZXIobE5hbWUpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjBjb2wlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyJTIwJTdEJTBBJTIwJTIwbGF5ZXIoZ05hbWUpLmFwcGVuZChsYXllcihsTmFtZSkpJTNCJTBBJTIwJTIwbGF5ZXIobE5hbWUpLmFwcGx5JTIwJTdCJTIwcGIuZHJhd1RvKGRyYXdYJTJDJTIwZHJhd1kpJTIwJTdEJTBBJTBBJTIwJTIwbGV0JTIwbGFiZWxYJTIwJTNEJTIwY2FsYyhjeCUyMC0lMjBuYW1lLmxlbmd0aCUyMColMjAyLjcpJTNCJTBBJTIwJTIwbGV0JTIwdGxOYW1lJTIwJTNEJTIwJTYwciUyNCU3Qm4lN0QtbCU2MCUzQiUwQSUyMCUyMGRlZmluZSUyMFRleHRMYXllcih0bE5hbWUpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwOSUzQiUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEElMjAlMjBsYXllcihnTmFtZSkuYXBwZW5kKGxheWVyKHRsTmFtZSkpJTNCJTBBJTIwJTIwbGF5ZXIodGxOYW1lKS5hcHBseSUyMCU3QiUyMHRleHQobGFiZWxYJTJDJTIwMTEyKSU2MCUyNCU3Qm5hbWUlN0QlNjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBDYXB0aW9uJTIwLS0tJTBBZGVmaW5lJTIwVGV4dExheWVyKCdjYXB0aW9uJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMCUzQiUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignY2FwdGlvbicpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMCUyQyUyMDM4MiklNjBBbGwlMjBzaGFwZXMlMjBidWlsdCUyMHdpdGglMjBoZWFkaW5nKCklMkMlMjB0dXJuKCklMkMlMjB0YW5nZW50TGluZSgpJTJDJTIwYW5kJTIwdGFuZ2VudEFyYygpLiU2MCUwQSU3RCUwQQ==" code-open caption="Regular polygons from 3 to 10 sides — sharp and rounded corners">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 680 400&quot;</span>
+<span class="hljs-comment">// Regular polygons via heading + turn + tangentLine/tangentArc</span>
+
+<span class="hljs-comment">// --- Background ---</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">680</span>, <span class="hljs-number">400</span>) }
+
+<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+grid.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.20</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">680</span> }
+  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.34</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">400</span> }
+}
+
+<span class="hljs-keyword">let</span> r = <span class="hljs-number">24</span>;
+
+<span class="hljs-comment">// Build sharp polygon as PathBlock</span>
+fn <span class="hljs-title function_">sharpPolyBlock</span>(<span class="hljs-params">sides</span>) {
+  <span class="hljs-keyword">let</span> extRad = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / sides);
+  <span class="hljs-keyword">let</span> sideLen = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * r * <span class="hljs-title function_">sin</span>(extRad / <span class="hljs-number">2</span>));
+  <span class="hljs-keyword">let</span> headAngle = <span class="hljs-title function_">calc</span>(extRad / <span class="hljs-number">2</span>);
+  <span class="hljs-title function_">heading</span>(headAngle)
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
+    <span class="hljs-title function_">tangentLine</span>(sideLen)
+    <span class="hljs-title function_">turn</span>(extRad)
+  }
+}
+
+<span class="hljs-comment">// Build rounded polygon as PathBlock</span>
+fn <span class="hljs-title function_">roundedPolyBlock</span>(<span class="hljs-params">sides, cornerRadius</span>) {
+  <span class="hljs-keyword">let</span> extRad = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / sides);
+  <span class="hljs-keyword">let</span> sideLen = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * r * <span class="hljs-title function_">sin</span>(extRad / <span class="hljs-number">2</span>));
+  <span class="hljs-keyword">let</span> arcOffset = <span class="hljs-title function_">calc</span>(cornerRadius * <span class="hljs-title function_">tan</span>(extRad / <span class="hljs-number">2</span>));
+  <span class="hljs-keyword">let</span> straight = <span class="hljs-title function_">calc</span>(sideLen - <span class="hljs-number">2</span> * arcOffset);
+  <span class="hljs-keyword">let</span> headAngle = <span class="hljs-title function_">calc</span>(extRad / <span class="hljs-number">2</span>);
+  <span class="hljs-title function_">heading</span>(headAngle)
+  <span class="hljs-keyword">let</span> last = <span class="hljs-title function_">calc</span>(sides - <span class="hljs-number">1</span>);
+  <span class="hljs-title function_">tangentLine</span>(straight)
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span>.<span class="hljs-property">last</span>) {
+    <span class="hljs-title function_">tangentArc</span>(cornerRadius, extRad)
+    <span class="hljs-title function_">tangentLine</span>(straight)
+  }
+  <span class="hljs-title function_">tangentArc</span>(cornerRadius, extRad)
+  z
+}
+
+<span class="hljs-keyword">let</span> colors = [#ef4444, #f97316, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ec4899];
+
+<span class="hljs-keyword">let</span> names = [
+  <span class="hljs-string">&quot;Triangle&quot;</span>, <span class="hljs-string">&quot;Square&quot;</span>, <span class="hljs-string">&quot;Pentagon&quot;</span>, <span class="hljs-string">&quot;Hexagon&quot;</span>,
+  <span class="hljs-string">&quot;Heptagon&quot;</span>, <span class="hljs-string">&quot;Octagon&quot;</span>, <span class="hljs-string">&quot;Nonagon&quot;</span>, <span class="hljs-string">&quot;Decagon&quot;</span>
+];
+
+<span class="hljs-keyword">let</span> sides = [<span class="hljs-number">3</span>, <span class="hljs-number">4</span>, <span class="hljs-number">5</span>, <span class="hljs-number">6</span>, <span class="hljs-number">7</span>, <span class="hljs-number">8</span>, <span class="hljs-number">9</span>, <span class="hljs-number">10</span>];
+<span class="hljs-keyword">let</span> spacing = <span class="hljs-number">80</span>;
+
+<span class="hljs-comment">// === Row 1: Sharp polygons ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;sharp-row&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">20</span>; }
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;r1-title&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sharp-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r1-title&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r1-title&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Sharp corners — heading + tangentLine + turn\`</span> }
+
+<span class="hljs-keyword">for</span> (idx <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
+  <span class="hljs-keyword">let</span> n = sides[idx];
+  <span class="hljs-keyword">let</span> col = colors[idx];
+  <span class="hljs-keyword">let</span> name = names[idx];
+
+  <span class="hljs-comment">// Create PathBlock and query its bounds</span>
+  <span class="hljs-keyword">let</span> pb = @{ <span class="hljs-title function_">sharpPolyBlock</span>(n) };
+  <span class="hljs-keyword">let</span> bb = pb.<span class="hljs-title function_">boundingBox</span>();
+  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">55</span> + idx * spacing);
+
+  <span class="hljs-comment">// Center the shape: drawTo places origin at (x, y), so offset by -bounds center</span>
+  <span class="hljs-keyword">let</span> drawX = <span class="hljs-title function_">calc</span>(cx - bb.<span class="hljs-property">x</span> - bb.<span class="hljs-property">width</span> / <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">let</span> drawY = <span class="hljs-title function_">calc</span>(<span class="hljs-number">72</span> - bb.<span class="hljs-property">y</span> - bb.<span class="hljs-property">height</span> / <span class="hljs-number">2</span>);
+
+  <span class="hljs-keyword">let</span> gName = <span class="hljs-string">\`sg<span class="hljs-subst">\${n}</span>\`</span>;
+  define <span class="hljs-title class_">GroupLayer</span>(gName) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sharp-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(gName));
+
+  <span class="hljs-keyword">let</span> lName = <span class="hljs-string">\`s<span class="hljs-subst">\${n}</span>\`</span>;
+  define <span class="hljs-title class_">PathLayer</span>(lName) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: col; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(lName));
+  <span class="hljs-title function_">layer</span>(lName).<span class="hljs-property">apply</span> { pb.<span class="hljs-title function_">drawTo</span>(drawX, drawY) }
+
+  <span class="hljs-comment">// Center label under the shape</span>
+  <span class="hljs-keyword">let</span> labelX = <span class="hljs-title function_">calc</span>(cx - name.<span class="hljs-property">length</span> * <span class="hljs-number">2.7</span>);
+  <span class="hljs-keyword">let</span> tlName = <span class="hljs-string">\`s<span class="hljs-subst">\${n}</span>-l\`</span>;
+  define <span class="hljs-title class_">TextLayer</span>(tlName) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>; <span class="hljs-attr">fill</span>: #64748b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(tlName));
+  <span class="hljs-title function_">layer</span>(tlName).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-number">112</span>)<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span> }
+}
+
+<span class="hljs-comment">// === Row 2: Rounded polygons ===</span>
+define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;round-row&#x27;</span>) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">190</span>; }
+
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;r2-title&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;round-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r2-title&#x27;</span>));
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r2-title&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Rounded corners — tangentLine + tangentArc\`</span> }
+
+<span class="hljs-keyword">for</span> (idx <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
+  <span class="hljs-keyword">let</span> n = sides[idx];
+  <span class="hljs-keyword">let</span> col = colors[idx];
+  <span class="hljs-keyword">let</span> cr = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">min</span>(r * <span class="hljs-number">0.35</span>, <span class="hljs-number">8</span>));
+  <span class="hljs-keyword">let</span> name = names[idx];
+
+  <span class="hljs-keyword">let</span> pb = @{ <span class="hljs-title function_">roundedPolyBlock</span>(n, cr) };
+  <span class="hljs-keyword">let</span> bb = pb.<span class="hljs-title function_">boundingBox</span>();
+  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">55</span> + idx * spacing);
+
+  <span class="hljs-keyword">let</span> drawX = <span class="hljs-title function_">calc</span>(cx - bb.<span class="hljs-property">x</span> - bb.<span class="hljs-property">width</span> / <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">let</span> drawY = <span class="hljs-title function_">calc</span>(<span class="hljs-number">72</span> - bb.<span class="hljs-property">y</span> - bb.<span class="hljs-property">height</span> / <span class="hljs-number">2</span>);
+
+  <span class="hljs-keyword">let</span> gName = <span class="hljs-string">\`rg<span class="hljs-subst">\${n}</span>\`</span>;
+  define <span class="hljs-title class_">GroupLayer</span>(gName) \${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;round-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(gName));
+
+  <span class="hljs-keyword">let</span> lName = <span class="hljs-string">\`r<span class="hljs-subst">\${n}</span>\`</span>;
+  define <span class="hljs-title class_">PathLayer</span>(lName) \${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: col; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(lName));
+  <span class="hljs-title function_">layer</span>(lName).<span class="hljs-property">apply</span> { pb.<span class="hljs-title function_">drawTo</span>(drawX, drawY) }
+
+  <span class="hljs-keyword">let</span> labelX = <span class="hljs-title function_">calc</span>(cx - name.<span class="hljs-property">length</span> * <span class="hljs-number">2.7</span>);
+  <span class="hljs-keyword">let</span> tlName = <span class="hljs-string">\`r<span class="hljs-subst">\${n}</span>-l\`</span>;
+  define <span class="hljs-title class_">TextLayer</span>(tlName) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>; <span class="hljs-attr">fill</span>: #64748b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(tlName));
+  <span class="hljs-title function_">layer</span>(tlName).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-number">112</span>)<span class="hljs-string">\`<span class="hljs-subst">\${name}</span>\`</span> }
+}
+
+<span class="hljs-comment">// --- Caption ---</span>
+define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;caption&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
+<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;caption&#x27;</span>).<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">382</span>)<span class="hljs-string">\`All shapes built with heading(), turn(), tangentLine(), and tangentArc().\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post14/polygon-showcase.svg" alt="Regular polygons from 3 to 10 sides — sharp and rounded corners" loading="lazy">
+</mini-workspace></p>
+<h2>Clean PathBlock Closure</h2>
+<p><code>heading()</code> is especially valuable inside <a href="/pathogen/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
+<span class="hljs-keyword">let</span> old = @{
+  h <span class="hljs-number">0.01</span>
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 270deg)
+  z
+};
+
+<span class="hljs-comment">// With heading — z closes cleanly to (0, 0)</span>
+<span class="hljs-keyword">let</span> clean = @{
+  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 270deg)
+  z
+};
+</code></pre><h2>Reading the Current Heading</h2>
+<p>The current heading is available via <code>ctx.heading</code> — a read-only property that returns the tangent angle in radians, or <code>undefined</code> after an <code>M</code> (since moves don&#39;t establish direction):</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">0</span> <span class="hljs-number">0</span>  L <span class="hljs-number">50</span> <span class="hljs-number">0</span>
+<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 0 (rightward)</span>
+<span class="hljs-title function_">heading</span>(90deg)
+<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 1.5708 (π/2, downward)</span>
+M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
+<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// undefined (M clears heading)</span>
+</code></pre><p>Any drawing command that establishes a direction — <code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>, and stdlib path functions — sets the heading automatically. <code>heading()</code> and <code>turn()</code> let you set it explicitly when no drawing command has run yet.</p>
+<p>Together, these two functions eliminate the dummy-segment workaround, enable clean <code>z</code> closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with <code>tangentLine</code> and <code>tangentArc</code> to build complex shapes from simple, composable operations.</p>
+<p>For more on tangent-dependent functions, see the <a href="/pathogen/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/pathogen/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/pathogen/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
 `,
   'pathblock-boolean-operations': `<p><em>Part 4 of 4 in our series on PathBlock extensions.</em></p>
 <blockquote>

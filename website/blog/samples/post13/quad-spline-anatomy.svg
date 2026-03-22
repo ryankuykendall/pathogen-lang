@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 350" width="540" height="350">
+
+  <path d="M 0 0 L 540 0 L 540 350 L 0 350 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path d="M 0 0 h 540 M 0 20 h 540 M 0 40 h 540 M 0 60 h 540 M 0 80 h 540 M 0 100 h 540 M 0 120 h 540 M 0 140 h 540 M 0 160 h 540 M 0 180 h 540 M 0 200 h 540 M 0 220 h 540 M 0 240 h 540 M 0 260 h 540 M 0 280 h 540 M 0 300 h 540 M 0 320 h 540 M 0 340 h 540 M 0 0 v 350 M 20 0 v 350 M 40 0 v 350 M 60 0 v 350 M 80 0 v 350 M 100 0 v 350 M 120 0 v 350 M 140 0 v 350 M 160 0 v 350 M 180 0 v 350 M 200 0 v 350 M 220 0 v 350 M 240 0 v 350 M 260 0 v 350 M 280 0 v 350 M 300 0 v 350 M 320 0 v 350 M 340 0 v 350 M 360 0 v 350 M 380 0 v 350 M 400 0 v 350 M 420 0 v 350 M 440 0 v 350 M 460 0 v 350 M 480 0 v 350 M 500 0 v 350 M 520 0 v 350 M 540 0 v 350" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g transform="translate(0, 0)">
+    <text x="30" y="24" font-size="11" fill="#f59e0b">quadSpline — implicit angle derivation</text>
+    <path d="m 50 170 q 54.37846722219899 -25.357095704441974 120 -85 q 40.700727756503454 -36.99257709447921 130 90 q 28.760479071961697 40.90030370976788 120 -95 q 25.083055519378206 -37.36094653259992 80 70" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <path d="M 45 170 A 5 5 0 1 1 55 170 A 5 5 0 1 1 45 170 M 165 85 A 5 5 0 1 1 175 85 A 5 5 0 1 1 165 85 M 295 175 A 5 5 0 1 1 305 175 A 5 5 0 1 1 295 175 M 415 80 A 5 5 0 1 1 425 80 A 5 5 0 1 1 415 80 M 495 150 A 5 5 0 1 1 505 150 A 5 5 0 1 1 495 150" fill="#8b5cf6" stroke="#3b0764" stroke-width="2"/>
+    <path d="M 100.37846722219899 144.64290429555803 A 4 4 0 1 1 108.37846722219899 144.64290429555803 A 4 4 0 1 1 100.37846722219899 144.64290429555803 M 206.70072775650345 48.00742290552079 A 4 4 0 1 1 214.70072775650345 48.00742290552079 A 4 4 0 1 1 206.70072775650345 48.00742290552079 M 324.7604790719617 215.90030370976788 A 4 4 0 1 1 332.7604790719617 215.90030370976788 A 4 4 0 1 1 324.7604790719617 215.90030370976788 M 441.0830555193782 42.63905346740008 A 4 4 0 1 1 449.0830555193782 42.63905346740008 A 4 4 0 1 1 441.0830555193782 42.63905346740008" fill="#f97316" stroke="#7c2d12" stroke-width="2"/>
+    <path d="M 50 170 L 104.37846722219899 144.64290429555803 M 170 85 L 210.70072775650345 48.00742290552079 M 300 175 L 328.7604790719617 215.90030370976788 M 420 80 L 445.0830555193782 42.63905346740008" fill="none" stroke="#f97316" stroke-width="1"/>
+    <path d="M 104.37846722219899 144.64290429555803 L 170 85 M 210.70072775650345 48.00742290552079 L 300 175 M 328.7604790719617 215.90030370976788 L 420 80" fill="none" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="26" y="165" font-size="11" fill="#e2e8f0">start</text>
+    <text x="155" y="72" font-size="11" fill="#e2e8f0">P1</text>
+    <text x="310" y="168" font-size="11" fill="#e2e8f0">P2</text>
+    <text x="405" y="70" font-size="11" fill="#e2e8f0">P3</text>
+    <text x="488" y="165" font-size="11" fill="#e2e8f0">end</text>
+  </g>
+  <g transform="translate(30, 248)">
+    <path d="M 0 0 L 16 0" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <path d="M 4 16 A 4 4 0 1 1 12 16 A 4 4 0 1 1 4 16" fill="#f97316" stroke="none" stroke-width="2"/>
+    <path d="M 0 30 L 16 30" fill="none" stroke="#22d3ee" stroke-width="1.5"/>
+    <path d="M 0 44 L 16 44" fill="none" stroke="#f97316" stroke-width="1"/>
+    <text x="24" y="4" font-size="10" fill="#cbd5e1">Curve</text>
+    <text x="24" y="20" font-size="10" fill="#cbd5e1">Shared CP</text>
+    <text x="24" y="34" font-size="10" fill="#cbd5e1">Derived direction (prevCP -&gt; point)</text>
+    <text x="24" y="48" font-size="10" fill="#cbd5e1">Tangent extension (point -&gt; nextCP)</text>
+    <text x="0" y="68" font-size="10" fill="#94a3b8">Only the start has an explicit angle.</text>
+    <text x="0" y="82" font-size="10" fill="#94a3b8">Intermediate tangents derived geometrically.</text>
+  </g>
+</svg>

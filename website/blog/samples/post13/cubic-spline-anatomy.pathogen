@@ -1,0 +1,140 @@
+// viewBox="0 0 540 330"
+// cubicSpline anatomy — control points, tangent lines, angle arcs
+
+// --- Background ---
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 540, 330) }
+
+let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+grid.apply {
+  for (i in 0..16) { M 0 calc(i * 20) h 540 }
+  for (j in 0..27) { M calc(j * 20) 0 v 330 }
+}
+
+// Angle wedge: draws a filled wedge from 0° to angle with label
+fn angleWedge(cx, cy, radius, angle) {
+  let ex = calc(cx + radius * cos(angle));
+  let ey = calc(cy + radius * sin(angle));
+  let sweep = calc(max(sign(angle), 0));
+  // Wedge fill
+  layer('angle-fills').apply {
+    M cx cy
+    L calc(cx + radius) cy
+    A radius radius 0 0 sweep ex ey
+    Z
+  }
+  // Arc stroke
+  layer('angle-arcs').apply {
+    M calc(cx + radius) cy
+    A radius radius 0 0 sweep ex ey
+  }
+  // Baseline tick (0° reference)
+  layer('angle-ticks').apply {
+    M cx cy L calc(cx + radius + 4) cy
+  }
+  // Angle label
+  let labelR = calc(radius + 12);
+  let midAngle = calc(angle / 2);
+  let lx = calc(cx + labelR * cos(midAngle));
+  let ly = calc(cy + labelR * sin(midAngle));
+  layer('angle-labels').apply {
+    text(lx, calc(ly + 4))`${round(abs(angle) * 180 / PI())}°`
+  }
+}
+
+let pts = [
+  { x: 60,  y: 160, angle: -20deg, exit: 70 },
+  { x: 190, y: 70,  angle: 15deg,  entry: 60, exit: 55 },
+  { x: 330, y: 155, angle: -30deg, entry: 65, exit: 55 },
+  { x: 455, y: 85,  angle: 10deg,  entry: 60 }
+];
+
+// === Diagram group ===
+define GroupLayer('diagram') ${ translate-x: 0; translate-y: 0; }
+
+// Title
+define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+layer('diagram').append(layer('title'));
+layer('title').apply { text(30, 24)`cubicSpline — waypoints, tangent lines, and control points` }
+
+// The curve
+define PathLayer('curve') ${ fill: none; stroke: #3b82f6; stroke-width: 3 }
+layer('diagram').append(layer('curve'));
+layer('curve').apply { cubicSpline(pts) }
+
+// On-curve points
+define PathLayer('anchors') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+layer('diagram').append(layer('anchors'));
+layer('anchors').apply {
+  for ([p, i] in pts) { circle(p.x, p.y, 5) }
+}
+
+// Control points and tangent lines
+define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
+define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
+define PathLayer('tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
+layer('diagram').append(layer('cp-exit'), layer('cp-entry'), layer('tangent'));
+
+let n = calc(pts.length - 1);
+for (i in 1..n) {
+  let prev = pts[calc(i - 1)];
+  let curr = pts[i];
+  let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+  let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+  let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+  let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+
+  layer('cp-exit').apply { circle(c1x, c1y, 4) }
+  layer('cp-entry').apply { circle(c2x, c2y, 4) }
+  layer('tangent').apply {
+    M prev.x prev.y L c1x c1y
+    M curr.x curr.y L c2x c2y
+  }
+}
+
+// Angle visualization layers
+define PathLayer('angle-fills') ${ fill: rgba(245, 158, 11, 0.15); stroke: none }
+define PathLayer('angle-arcs') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+define PathLayer('angle-ticks') ${ fill: none; stroke: #f59e0b; stroke-width: 0.8 }
+define TextLayer('angle-labels') ${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif }
+layer('diagram').append(layer('angle-fills'), layer('angle-arcs'), layer('angle-ticks'), layer('angle-labels'));
+
+for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle) }
+
+// Point labels
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('diagram').append(layer('labels'));
+layer('labels').apply {
+  text(38, 182)`P0`
+  text(178, 56)`P1`
+  text(340, 175)`P2`
+  text(460, 72)`P3`
+}
+
+// === Legend group ===
+define GroupLayer('legend-group') ${ translate-x: 30; translate-y: 230; }
+
+define PathLayer('sw-curve') ${ fill: #3b82f6; stroke: none }
+define PathLayer('sw-exit') ${ fill: #ef4444; stroke: none }
+define PathLayer('sw-entry') ${ fill: #22c55e; stroke: none }
+define PathLayer('sw-tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
+define PathLayer('sw-angle') ${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1 }
+layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
+
+layer('sw-curve').apply { rect(0, 0, 12, 3) }
+layer('sw-exit').apply { circle(6, 20, 4) }
+layer('sw-entry').apply { circle(6, 36, 4) }
+layer('sw-tangent').apply { M 0 50 L 12 50 }
+layer('sw-angle').apply {
+  M 0 64 L 12 64 A 6 6 0 0 0 6 58 Z
+}
+
+define TextLayer('legend-text') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+layer('legend-group').append(layer('legend-text'));
+layer('legend-text').apply {
+  text(20, 6)`Curve`
+  text(20, 24)`Exit CP (outgoing handle)`
+  text(20, 40)`Entry CP (incoming handle)`
+  text(20, 54)`Tangent line`
+  text(20, 68)`Angle wedge`
+}

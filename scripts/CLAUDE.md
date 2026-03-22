@@ -40,6 +40,7 @@ program.parse();
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
 | `check-links.ts` | Puppeteer link checker for blog posts and documentation pages |
+| `validate-samples.ts` | Puppeteer sample validator: margins, collisions, GroupLayer checks + PNG previews |
 
 ## Git Hooks
 

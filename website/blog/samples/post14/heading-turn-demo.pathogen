@@ -1,0 +1,123 @@
+// viewBox="0 0 540 220"
+// heading() and turn() — tangent context without path commands
+
+// --- Background ---
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 540, 220) }
+
+let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+grid.apply {
+  for (i in 0..11) { M 0 calc(i * 20) h 540 }
+  for (j in 0..27) { M calc(j * 20) 0 v 220 }
+}
+
+let r = 20;
+let colWidth = 125;
+let shapeRowY = 68;
+let codeRowY = 130;
+let labelY = 28;
+
+// === Layout group ===
+define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
+
+// --- Build each shape as a PathBlock, center via boundingBox ---
+
+// C-shape
+let cBlock = @{
+  heading(-135deg)
+  tangentArc(r, 270deg)
+  z
+};
+let cBB = cBlock.boundingBox();
+
+// S-curve (smaller radius to fit vertically)
+let sR = 15;
+let sBlock = @{
+  heading(0)
+  tangentArc(sR, 180deg)
+  turn(180deg)
+  tangentArc(sR, 180deg)
+};
+let sBB = sBlock.boundingBox();
+
+// Zigzag
+let zBlock = @{
+  heading(45deg)
+  tangentLine(25)
+  turn(-90deg)
+  tangentLine(25)
+  turn(90deg)
+  tangentLine(25)
+  turn(-90deg)
+  tangentLine(25)
+};
+let zBB = zBlock.boundingBox();
+
+// Spiral
+let spBlock = @{
+  heading(0)
+  tangentArc(28, 180deg)
+  tangentArc(22, 180deg)
+  tangentArc(15, 180deg)
+  tangentArc(10, 180deg)
+};
+let spBB = spBlock.boundingBox();
+
+// Shape configs: [pathblock, boundingbox, label, color, column_center_x]
+let shapes = [
+  { pb: cBlock,  bb: cBB,  label: "C-shape", col: #3b82f6 },
+  { pb: sBlock,  bb: sBB,  label: "S-curve", col: #ef4444 },
+  { pb: zBlock,  bb: zBB,  label: "Zigzag",  col: #22c55e },
+  { pb: spBlock, bb: spBB, label: "Spiral",  col: #f59e0b }
+];
+
+let codeTexts = [
+  &{ text(0, 0)`heading(-135deg)
+tangentArc(r, 270deg)
+z` },
+  &{ text(0, 0)`heading(0)
+tangentArc(15, 180deg)
+turn(180deg)
+tangentArc(15, 180deg)` },
+  &{ text(0, 0)`heading(45deg)
+tangentLine(25)
+turn(-90deg)
+tangentLine(25) ...` },
+  &{ text(0, 0)`heading(0)
+tangentArc(28, 180deg)
+tangentArc(22, 180deg)
+tangentArc(15, ...)` }
+];
+
+let snippetNames = ["c-code", "s-code", "z-code", "sp-code"];
+
+for ([shape, idx] in shapes) {
+  let cx = calc(20 + colWidth / 2 + idx * colWidth);
+
+  // --- Group for this example ---
+  let gName = `g${idx}`;
+  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  layer('layout').append(layer(gName));
+
+  // --- Label ---
+  let tlName = `l${idx}`;
+  define TextLayer(tlName) ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+  layer(gName).append(layer(tlName));
+  let labelX = calc(cx - shape.label.length * 3.3);
+  layer(tlName).apply { text(labelX, labelY)`${shape.label}` }
+
+  // --- Shape: centered at (cx, shapeRowY) using boundingBox ---
+  let drawX = calc(cx - shape.bb.x - shape.bb.width / 2);
+  let drawY = calc(shapeRowY - shape.bb.y - shape.bb.height / 2);
+  let plName = `p${idx}`;
+  define PathLayer(plName) ${ fill: none; stroke: shape.col; stroke-width: 2.5 }
+  layer(gName).append(layer(plName));
+  layer(plName).apply { shape.pb.drawTo(drawX, drawY) }
+
+  // --- Code snippet ---
+  let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
+  // Center the snippet horizontally under the shape
+  let snippetBB = snippet.ctx.transform;
+  snippet << ${ translate-x: calc(cx - 55); translate-y: codeRowY; };
+  layer(gName).append(snippet);
+}

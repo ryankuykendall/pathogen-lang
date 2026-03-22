@@ -1,0 +1,115 @@
+// viewBox="0 0 540 350"
+// quadSpline anatomy — implicit angle derivation from previous CP
+
+// --- Background ---
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 540, 350) }
+
+let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+grid.apply {
+  for (i in 0..17) { M 0 calc(i * 20) h 540 }
+  for (j in 0..27) { M calc(j * 20) 0 v 350 }
+}
+
+let startPt = { x: 50, y: 170, angle: -25deg, exit: 60 };
+let midPts = [
+  { x: 170, y: 85,  exit: 55 },
+  { x: 300, y: 175, exit: 50 },
+  { x: 420, y: 80,  exit: 45 }
+];
+let endPt = { x: 500, y: 150 };
+
+// === Diagram group ===
+define GroupLayer('diagram') ${ translate-x: 0; translate-y: 0; }
+
+// Title
+define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+layer('diagram').append(layer('title'));
+layer('title').apply { text(30, 24)`quadSpline — implicit angle derivation` }
+
+// The curve
+define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
+layer('diagram').append(layer('curve'));
+layer('curve').apply { quadSpline(startPt, midPts, endPt) }
+
+// On-curve points
+define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
+layer('diagram').append(layer('anchors'));
+layer('anchors').apply {
+  circle(startPt.x, startPt.y, 5)
+  for ([p, i] in midPts) { circle(p.x, p.y, 5) }
+  circle(endPt.x, endPt.y, 5)
+}
+
+// Recompute CPs for visualization
+define PathLayer('shared-cp') ${ fill: #f97316; stroke: #7c2d12; stroke-width: 1 }
+define PathLayer('tangent-line') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
+define PathLayer('derived-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
+layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derived-dir'));
+
+// First CP from explicit angle
+let cp0x = calc(startPt.x + startPt.exit * cos(startPt.angle));
+let cp0y = calc(startPt.y + startPt.exit * sin(startPt.angle));
+
+layer('shared-cp').apply { circle(cp0x, cp0y, 4) }
+layer('tangent-line').apply { M startPt.x startPt.y L cp0x cp0y }
+
+// Subsequent CPs from derived angles
+let prevCPx = cp0x;
+let prevCPy = cp0y;
+for ([pt, idx] in midPts) {
+  let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+  let newCPx = calc(pt.x + pt.exit * cos(angle));
+  let newCPy = calc(pt.y + pt.exit * sin(angle));
+
+  // Derived direction: prevCP -> pt (cyan dashed)
+  layer('derived-dir').apply { M prevCPx prevCPy L pt.x pt.y }
+  // Tangent extension: pt -> newCP (orange dashed)
+  layer('tangent-line').apply { M pt.x pt.y L newCPx newCPy }
+  // Shared CP marker
+  layer('shared-cp').apply { circle(newCPx, newCPy, 4) }
+
+  prevCPx = newCPx;
+  prevCPy = newCPy;
+}
+
+// Labels — positioned with clearance
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('diagram').append(layer('labels'));
+layer('labels').apply {
+  text(26, 165)`start`
+  text(155, 72)`P1`
+  text(310, 168)`P2`
+  text(405, 70)`P3`
+  text(488, 165)`end`
+}
+
+// === Legend group ===
+define GroupLayer('legend-group') ${ translate-x: 30; translate-y: 248; }
+
+define PathLayer('lg-curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 2.5 }
+define PathLayer('lg-cp') ${ fill: #f97316; stroke: none }
+define PathLayer('lg-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
+define PathLayer('lg-tan') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
+layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
+
+layer('lg-curve').apply { M 0 0 L 16 0 }
+layer('lg-cp').apply { circle(8, 16, 4) }
+layer('lg-dir').apply { M 0 30 L 16 30 }
+layer('lg-tan').apply { M 0 44 L 16 44 }
+
+define TextLayer('legend') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+layer('legend-group').append(layer('legend'));
+layer('legend').apply {
+  text(24, 4)`Curve`
+  text(24, 20)`Shared CP`
+  text(24, 34)`Derived direction (prevCP -> point)`
+  text(24, 48)`Tangent extension (point -> nextCP)`
+}
+
+define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+layer('legend-group').append(layer('note'));
+layer('note').apply {
+  text(0, 68)`Only the start has an explicit angle.`
+  text(0, 82)`Intermediate tangents derived geometrically.`
+}
