@@ -207,7 +207,7 @@ const nonPathCommandIdentifier: Parsimmon.Parser<Identifier> = P.seqMap(
 
 // Postfix operators: chains .method(args), .method {|p| ...}, .property, and [index] after a base expression
 function withPostfix(base: Parsimmon.Parser<Expression>): Parsimmon.Parser<Expression> {
-  type MethodPostfix = { type: 'method'; method: string; args: Expression[]; block?: { param: string; body: Statement[] }; loc: SourceLocation };
+  type MethodPostfix = { type: 'method'; method: string; args: Expression[]; block?: { params: string[]; body: Statement[] }; loc: SourceLocation };
   type MemberPostfix = { type: 'member'; prop: string };
   type IndexPostfix = { type: 'index'; index: Expression };
   type Postfix = MethodPostfix | MemberPostfix | IndexPostfix;
@@ -504,15 +504,15 @@ const unaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
   ),
 );
 
-// Trailing block: {|param| statements} — parsed after function call closing paren
-const trailingBlock: Parsimmon.Parser<{ param: string; body: Statement[] }> = P.seqMap(
+// Trailing block: {|param1, param2, ...| statements} — parsed after function call closing paren
+const trailingBlock: Parsimmon.Parser<{ params: string[]; body: Statement[] }> = P.seqMap(
   P.string('{').skip(optWhitespace),
   P.string('|').skip(optWhitespace),
-  token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)),
+  P.sepBy1(token(P.regexp(/[a-zA-Z_][a-zA-Z0-9_]*/)), word(',')),
   P.string('|').skip(optWhitespace),
   P.lazy(() => statement).many(),
   word('}'),
-  (_open, _pipe1, param, _pipe2, body, _close) => ({ param, body }),
+  (_open, _pipe1, params, _pipe2, body, _close) => ({ params, body }),
 );
 
 // Function call: name(arg1, arg2, ...) with optional trailing block

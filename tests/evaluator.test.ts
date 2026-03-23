@@ -1424,6 +1424,139 @@ describe('Evaluator', () => {
         expect(() => compile('let arr = [1]; let sub = arr.slice(`a`);')).toThrow(/start must be a number/);
       });
     });
+
+    describe('map multi-param', () => {
+      it('provides index as second block parameter', () => {
+        const result = compile('let r = [10, 20, 30].map {|item, idx| return idx; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[0, 1, 2]');
+      });
+
+      it('provides array reference as third block parameter', () => {
+        const result = compile('let r = [10, 20, 30].map {|item, idx, ref| return ref.length; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[3, 3, 3]');
+      });
+
+      it('supports look-ahead via arrayRef', () => {
+        const result = compile(`
+          let arr = [1, 2, 3, 4];
+          let r = arr.map {|item, idx, ref|
+            if (idx < ref.length - 1) {
+              return calc(item + ref[idx + 1]);
+            }
+            return item;
+          };
+          log(r);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[3, 5, 7, 4]');
+      });
+
+      it('single param still works (backward compatible)', () => {
+        const result = compile('let r = [1, 2, 3].map {|x| return calc(x * 10); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[10, 20, 30]');
+      });
+
+      it('unused extra params are harmless', () => {
+        const result = compile('let r = [5, 6].map {|item, idx, ref| return item; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[5, 6]');
+      });
+    });
+
+    describe('reduce', () => {
+      it('sums numbers', () => {
+        const result = compile('let sum = [1, 2, 3, 4].reduce(0) {|acc, n| return calc(acc + n); }; log(sum);');
+        expect(result.logs[0].parts[0].value).toBe('10');
+      });
+
+      it('concatenates strings', () => {
+        const result = compile(`
+          let csv = ['a', 'b', 'c'].reduce('') {|acc, s, i|
+            if (i == 0) { return s; }
+            return \`\${acc},\${s}\`;
+          };
+          log(csv);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('a,b,c');
+      });
+
+      it('empty array returns initial value', () => {
+        const result = compile('let r = [].reduce(42) {|acc, n| return calc(acc + n); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('42');
+      });
+
+      it('single element array', () => {
+        const result = compile('let r = [5].reduce(10) {|acc, n| return calc(acc + n); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('15');
+      });
+
+      it('index param works', () => {
+        const result = compile('let r = [10, 20, 30].reduce(0) {|acc, item, idx| return calc(acc + idx); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('3');
+      });
+
+      it('arrayRef param works', () => {
+        const result = compile('let r = [1, 2, 3].reduce(0) {|acc, item, idx, ref| return ref.length; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('3');
+      });
+
+      it('no return in block sets accumulator to null', () => {
+        const result = compile('let r = [1, 2].reduce(99) {|acc, n| let x = 1; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('null');
+      });
+
+      it('builds an array accumulator', () => {
+        const result = compile(`
+          let r = [1, 2, 3].reduce([]) {|acc, n|
+            acc.push(calc(n * 2));
+            return acc;
+          };
+          log(r);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[2, 4, 6]');
+      });
+
+      it('missing initial value throws', () => {
+        expect(() => compile('let r = [1].reduce() {|acc, n| return acc; };')).toThrow(/expects 1 argument/);
+      });
+
+      it('missing block throws', () => {
+        expect(() => compile('let r = [1].reduce(0);')).toThrow(/requires a trailing block/);
+      });
+    });
+
+    describe('mapSlice', () => {
+      it('creates sliding windows', () => {
+        const result = compile('let r = [1, 2, 3, 4].mapSlice(2); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[[1, 2], [2, 3], [3, 4], [4]]');
+      });
+
+      it('length equals array length', () => {
+        const result = compile('let r = [1, 2, 3].mapSlice(3); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[[1, 2, 3], [2, 3], [3]]');
+      });
+
+      it('length of 1 wraps each element', () => {
+        const result = compile('let r = [10, 20, 30].mapSlice(1); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[[10], [20], [30]]');
+      });
+
+      it('empty array returns empty array', () => {
+        const result = compile('let r = [].mapSlice(2); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[]');
+      });
+
+      it('length exceeds array length', () => {
+        const result = compile('let r = [1, 2].mapSlice(5); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[[1, 2], [2]]');
+      });
+
+      it('length less than 1 throws', () => {
+        expect(() => compile('let r = [1].mapSlice(0);')).toThrow(/must be at least 1/);
+      });
+
+      it('non-number argument throws', () => {
+        expect(() => compile("let r = [1].mapSlice('a');")).toThrow(/must be a number/);
+      });
+    });
   });
 
   describe('string operations', () => {

@@ -2272,9 +2272,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       if (expr.args.length !== 0) throw mError('map() does not take arguments — use map {|item| ... }');
       if (!expr.block) throw mError('map() requires a trailing block: array.map {|item| return ...; }');
       const result: Value[] = [];
+      const mapParams = expr.block.params;
       for (let i = 0; i < obj.elements.length; i++) {
         const blockScope = createScope(scope);
-        setVariable(blockScope, expr.block.param, obj.elements[i]);
+        setVariable(blockScope, mapParams[0], obj.elements[i]);
+        if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
+        if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
         try {
           for (const stmt of expr.block.body) {
             evaluateStatementPlain(stmt, blockScope);
@@ -2289,6 +2292,45 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         }
       }
       return { type: 'ArrayValue' as const, elements: result };
+    }
+    case 'reduce': {
+      if (expr.args.length !== 1) throw mError('reduce() expects 1 argument (initial value)');
+      if (!expr.block) throw mError('reduce() requires a trailing block: array.reduce(init) {|acc, item| return acc; }');
+      let accumulator: Value = evaluateExpression(expr.args[0], scope);
+      const reduceParams = expr.block.params;
+      for (let i = 0; i < obj.elements.length; i++) {
+        const blockScope = createScope(scope);
+        setVariable(blockScope, reduceParams[0], accumulator);
+        if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
+        if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
+        if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
+        try {
+          for (const stmt of expr.block.body) {
+            evaluateStatementPlain(stmt, blockScope);
+          }
+          accumulator = null;
+        } catch (e) {
+          if (e instanceof ReturnSignal) {
+            accumulator = e.value;
+          } else {
+            throw e;
+          }
+        }
+      }
+      return accumulator;
+    }
+    case 'mapSlice': {
+      if (expr.args.length !== 1) throw mError('mapSlice() expects 1 argument (slice length)');
+      if (expr.block) throw mError('mapSlice() does not take a trailing block');
+      const lengthVal = evaluateExpression(expr.args[0], scope);
+      if (typeof lengthVal !== 'number') throw mError('mapSlice() length must be a number');
+      const len = Math.round(lengthVal);
+      if (len < 1) throw mError('mapSlice() length must be at least 1');
+      const sliceResult: Value[] = [];
+      for (let i = 0; i < obj.elements.length; i++) {
+        sliceResult.push({ type: 'ArrayValue' as const, elements: obj.elements.slice(i, i + len) });
+      }
+      return { type: 'ArrayValue' as const, elements: sliceResult };
     }
     case 'slice': {
       if (expr.args.length < 1 || expr.args.length > 2) throw mError('slice() expects 1-2 arguments');
@@ -3089,7 +3131,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     };
     if (call.block) {
       const blockScope = createScope(scope);
-      setVariable(blockScope, call.block.param, gradient);
+      setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
         evaluateStatementPlain(stmt, blockScope);
       }
@@ -3128,7 +3170,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     };
     if (call.block) {
       const blockScope = createScope(scope);
-      setVariable(blockScope, call.block.param, gradient);
+      setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
         evaluateStatementPlain(stmt, blockScope);
       }
@@ -3170,7 +3212,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     };
     if (call.block) {
       const blockScope = createScope(scope);
-      setVariable(blockScope, call.block.param, gradient);
+      setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
         evaluateStatementPlain(stmt, blockScope);
       }
@@ -3210,7 +3252,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     };
     if (call.block) {
       const blockScope = createScope(scope);
-      setVariable(blockScope, call.block.param, pattern);
+      setVariable(blockScope, call.block.params[0], pattern);
       for (const stmt of call.block.body) {
         evaluateStatementPlain(stmt, blockScope);
       }

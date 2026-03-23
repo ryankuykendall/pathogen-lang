@@ -657,9 +657,14 @@ let last2 = arr.slice(-2);    // [40, 50]     — last 2 elements
 let head = arr.slice(0, -2);  // [10, 20, 30, 40] — up to second-to-last
 ```
 
-#### `.map {|item| ... }`
+#### `.map {|item| ... }` / `.map {|item, index, arrayRef| ... }`
 
 Transforms each element using a trailing block, returning a new array. Use `return` to specify the mapped value. If no `return` is executed, the element maps to `null`.
+
+The block receives up to three parameters:
+- `item` — the current element
+- `index` (optional) — the zero-based index
+- `arrayRef` (optional) — a reference to the original array
 
 ```
 let prices = [10, 25, 50];
@@ -676,6 +681,29 @@ let labels = [1, 2, 3].map {|n|
 // labels is ["item-1", "item-2", "item-3"]
 ```
 
+Use the index parameter for position-aware transforms:
+
+```
+let items = [10, 20, 30];
+let indexed = items.map {|val, i|
+  return calc(val + i);
+};
+// indexed is [10, 21, 32]
+```
+
+Use the array reference for look-ahead or look-behind:
+
+```
+let arr = [1, 2, 3, 4];
+let pairs = arr.map {|item, idx, ref|
+  if (idx < ref.length - 1) {
+    return calc(item + ref[idx + 1]);
+  }
+  return item;
+};
+// pairs is [3, 5, 7, 4]
+```
+
 The block has access to variables from the enclosing scope:
 
 ```
@@ -684,6 +712,49 @@ let shifted = [1, 2, 3].map {|x|
   return calc(x + offset);
 };
 // shifted is [101, 102, 103]
+```
+
+#### `.reduce(initialValue) {|accumulator, item, index, arrayRef| ... }`
+
+Iterates the array, threading an accumulator through each step. The `initialValue` argument sets the starting accumulator. The block must `return` the new accumulator value; if no `return` is executed, the accumulator becomes `null`.
+
+The block receives up to four parameters:
+- `accumulator` — the current accumulated value
+- `item` (optional) — the current element
+- `index` (optional) — the zero-based index
+- `arrayRef` (optional) — a reference to the original array
+
+```
+let sum = [1, 2, 3, 4].reduce(0) {|acc, n|
+  return calc(acc + n);
+};
+// sum is 10
+
+let csv = ['a', 'b', 'c'].reduce('') {|acc, s, i|
+  if (i == 0) { return s; }
+  return `${acc},${s}`;
+};
+// csv is "a,b,c"
+```
+
+On an empty array, `reduce` returns `initialValue` unchanged:
+
+```
+let result = [].reduce(42) {|acc, n| return calc(acc + n); };
+// result is 42
+```
+
+#### `.mapSlice(length)`
+
+Returns a new array where each element is a sub-array (slice) of `length` elements starting at that element's index. Near the end of the array, slices are shorter as they extend past the bounds.
+
+```
+let arr = [1, 2, 3, 4];
+let slices = arr.mapSlice(2);
+// slices is [[1, 2], [2, 3], [3, 4], [4]]
+
+let triples = [10, 20, 30, 40, 50].mapSlice(3);
+// triples is [[10, 20, 30], [20, 30, 40], [30, 40, 50], [40, 50], [50]]
 ```
 
 ### Reference Semantics

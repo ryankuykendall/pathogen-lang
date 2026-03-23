@@ -965,7 +965,7 @@ L 10 20 // end point`;
         method: 'map',
         args: [],
         block: {
-          param: 'item',
+          params: ['item'],
           body: expect.any(Array),
         },
       });
@@ -982,7 +982,7 @@ L 10 20 // end point`;
         method: 'reduce',
         args: [{ type: 'NumberLiteral', value: 0 }],
         block: {
-          param: 'acc',
+          params: ['acc'],
           body: expect.any(Array),
         },
       });
