@@ -1,0 +1,19 @@
+// Hexagon orientation comparison — flat-top (Edge) vs pointy-top (Vertex)
+// viewBox: 0 0 400 200
+
+let cellSize = 20;
+let gridW = 180;
+let gridH = 180;
+
+define PathLayer('flat') ${ stroke: #4488ff; stroke-width: 0.3; fill: none; }
+define PathLayer('pointy') ${ stroke: #ff4488; stroke-width: 0.3; fill: none; }
+
+// Left: Flat-top (HexagonOrientation.Edge)
+layer('flat').apply {
+  hexagonGrid(GridPatternType.Shape, 10, 10, gridW, gridH, cellSize, HexagonOrientation.Edge);
+}
+
+// Right: Pointy-top (HexagonOrientation.Vertex)
+layer('pointy').apply {
+  hexagonGrid(GridPatternType.Shape, 210, 10, gridW, gridH, cellSize, HexagonOrientation.Vertex);
+}

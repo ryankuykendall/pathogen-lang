@@ -287,6 +287,8 @@ const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
   TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
   BBoxAnchor: { TopLeft: 'top-left', Top: 'top', TopRight: 'top-right', Right: 'right', BottomRight: 'bottom-right', Bottom: 'bottom', BottomLeft: 'bottom-left', Left: 'left', Center: 'center' },
+  GridPatternType: { Shape: 'shape', Dot: 'dot', Intersection: 'intersection', Partial: 'partial' },
+  HexagonOrientation: { Edge: 'edge', Vertex: 'vertex' },
 };
 
 /**

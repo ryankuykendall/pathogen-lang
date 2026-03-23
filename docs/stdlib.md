@@ -390,6 +390,87 @@ clippedQuadSpline(
 
 Output: `m` followed by one `c` (relative cubic) command per segment — not `q`.
 
+### Grid Functions
+
+These functions generate complete grid patterns as path segments. Each accepts a `GridPatternType` enum (or string) that controls the visual style:
+
+| Pattern | Description |
+|---------|-------------|
+| `GridPatternType.Shape` (`'shape'`) | Cell outlines — full grid lines |
+| `GridPatternType.Dot` (`'dot'`) | Small circles at grid vertices |
+| `GridPatternType.Intersection` (`'intersection'`) | Small cross marks at grid vertices |
+| `GridPatternType.Partial` (`'partial'`) | Centered partial segments on each edge |
+
+#### squareGrid(type, x, y, width, height, cellSize)
+
+Generates a square grid pattern within the bounding rectangle starting at (x, y).
+
+- `type` — `GridPatternType` enum value or string (`'shape'`, `'dot'`, `'intersection'`, `'partial'`)
+- `x, y` — Top-left origin of the grid
+- `width, height` — Bounding dimensions
+- `cellSize` — Side length of each square cell
+
+The grid contains `floor(width / cellSize)` columns and `floor(height / cellSize)` rows. Extra space is ignored.
+
+```
+gridLayer.apply {
+  squareGrid(GridPatternType.Shape, 0, 0, 200, 200, 20);
+}
+```
+
+#### triangleGrid(type, x, y, width, height, cellSize)
+
+Generates an equilateral triangle grid. `cellSize` is the triangle height (altitude). Triangles have flat bases with alternating up/down orientation.
+
+```
+gridLayer.apply {
+  triangleGrid(GridPatternType.Shape, 0, 0, 200, 200, 20);
+}
+```
+
+The triangle side length is derived from the height: `side = 2 * cellSize / sqrt(3)`.
+
+#### hexagonGrid(type, x, y, width, height, cellSize, orientation?)
+
+Generates a hexagonal grid. `cellSize` is the flat-to-flat height of each hexagon.
+
+- `orientation` — Optional. `HexagonOrientation.Edge` (default, flat-top) or `HexagonOrientation.Vertex` (pointy-top)
+
+```
+// Flat-top hexagons (default)
+gridLayer.apply {
+  hexagonGrid(GridPatternType.Shape, 0, 0, 200, 200, 20);
+}
+
+// Pointy-top hexagons
+gridLayer.apply {
+  hexagonGrid(GridPatternType.Shape, 0, 0, 200, 200, 20, HexagonOrientation.Vertex);
+}
+```
+
+#### Usage with Layers and Transforms
+
+Grid functions return path data and are typically used inside `layer.apply {}` blocks. Rotation and styling are handled via the layer:
+
+```
+let gridStyles = ${ stroke: #88f; stroke-width: 0.25; fill: none; };
+let gridLayer = PathLayer('grid') << gridStyles;
+
+gridLayer.ctx.transform.rotate.set(0.125pi);
+gridLayer.apply {
+  squareGrid(GridPatternType.Partial, 0, 0, 400, 400, 20);
+}
+```
+
+A convenience wrapper for one-line grid drawing:
+
+```
+fn drawGridToLayer(layer, gridFn, type, angle, x, y, w, h, s) {
+  layer.ctx.transform.rotate.set(angle);
+  layer.apply { gridFn(type, x, y, w, h, s); }
+}
+```
+
 ---
 
 ## Context-Aware Functions

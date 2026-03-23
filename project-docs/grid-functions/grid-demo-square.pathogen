@@ -1,0 +1,31 @@
+// Square grid demo — all 4 pattern types side by side
+// viewBox: 0 0 400 400
+
+let cellSize = 15;
+let gridW = 180;
+let gridH = 180;
+
+define PathLayer('shape') ${ stroke: #4488ff; stroke-width: 0.3; fill: none; }
+define PathLayer('dot') ${ stroke: #ff4488; stroke-width: 0.3; fill: #ff4488; }
+define PathLayer('intersection') ${ stroke: #44cc88; stroke-width: 0.4; fill: none; stroke-linecap: round; }
+define PathLayer('partial') ${ stroke: #cc8844; stroke-width: 0.4; fill: none; stroke-linecap: round; }
+
+// Top-left: Shape
+layer('shape').apply {
+  squareGrid(GridPatternType.Shape, 10, 10, gridW, gridH, cellSize);
+}
+
+// Top-right: Dot
+layer('dot').apply {
+  squareGrid(GridPatternType.Dot, 210, 10, gridW, gridH, cellSize);
+}
+
+// Bottom-left: Intersection
+layer('intersection').apply {
+  squareGrid(GridPatternType.Intersection, 10, 210, gridW, gridH, cellSize);
+}
+
+// Bottom-right: Partial
+layer('partial').apply {
+  squareGrid(GridPatternType.Partial, 210, 210, gridW, gridH, cellSize);
+}

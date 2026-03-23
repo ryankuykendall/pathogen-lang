@@ -1,0 +1,31 @@
+// Hexagon grid demo — all 4 pattern types (flat-top orientation)
+// viewBox: 0 0 400 400
+
+let cellSize = 20;
+let gridW = 180;
+let gridH = 180;
+
+define PathLayer('shape') ${ stroke: #4488ff; stroke-width: 0.3; fill: none; }
+define PathLayer('dot') ${ stroke: #44cc88; stroke-width: 0.3; fill: #44cc88; }
+define PathLayer('intersection') ${ stroke: #ff4488; stroke-width: 0.4; fill: none; stroke-linecap: round; }
+define PathLayer('partial') ${ stroke: #cc8844; stroke-width: 0.4; fill: none; stroke-linecap: round; }
+
+// Top-left: Shape
+layer('shape').apply {
+  hexagonGrid(GridPatternType.Shape, 10, 10, gridW, gridH, cellSize);
+}
+
+// Top-right: Dot
+layer('dot').apply {
+  hexagonGrid(GridPatternType.Dot, 210, 10, gridW, gridH, cellSize);
+}
+
+// Bottom-left: Intersection
+layer('intersection').apply {
+  hexagonGrid(GridPatternType.Intersection, 10, 210, gridW, gridH, cellSize);
+}
+
+// Bottom-right: Partial
+layer('partial').apply {
+  hexagonGrid(GridPatternType.Partial, 210, 210, gridW, gridH, cellSize);
+}

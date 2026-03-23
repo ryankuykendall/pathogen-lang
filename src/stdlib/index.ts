@@ -1,9 +1,11 @@
+import { gridFunctions } from './grid';
 import { mathFunctions } from './math';
 import { pathFunctions } from './path';
 
 export const stdlib = {
   ...mathFunctions,
   ...pathFunctions,
+  ...gridFunctions,
 };
 
 /**

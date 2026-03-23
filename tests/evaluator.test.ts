@@ -2878,4 +2878,191 @@ describe('Evaluator', () => {
       expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1), 5)')).toThrow(/must be a Point/);
     });
   });
+
+  describe('grid functions', () => {
+    describe('squareGrid', () => {
+      it('shape pattern generates correct grid lines for a 2x2 grid', () => {
+        const result = compilePath("squareGrid('shape', 0, 0, 40, 40, 20)");
+        // 2 cols, 2 rows => 3 horizontal + 3 vertical = 6 M commands and 6 line commands
+        expect(result).toHaveSVGCommandCount('M', 6);
+      });
+
+      it('dot pattern places circles at all vertices', () => {
+        // 2x2 grid = 3x3 = 9 vertices, each circle uses 2 A commands
+        const result = compilePath("squareGrid('dot', 0, 0, 40, 40, 20)");
+        expect(result).toHaveSVGCommandCount('A', 18);
+      });
+
+      it('intersection pattern places cross marks at vertices', () => {
+        // 3x3 = 9 vertices, each cross = 2 M + 2 L commands
+        const result = compilePath("squareGrid('intersection', 0, 0, 40, 40, 20)");
+        expect(result).toHaveSVGCommandCount('M', 18);
+        expect(result).toHaveSVGCommandCount('L', 18);
+      });
+
+      it('partial pattern places segments on all edges', () => {
+        // 2 cols, 2 rows: horizontal edges = 2*3 = 6, vertical edges = 2*3 = 6, total 12
+        const result = compilePath("squareGrid('partial', 0, 0, 40, 40, 20)");
+        expect(result).toHaveSVGCommandCount('M', 12);
+        expect(result).toHaveSVGCommandCount('L', 12);
+      });
+
+      it('handles non-divisible dimensions (extra space ignored)', () => {
+        // width=50, cellSize=20 => 2 cols; height=50 => 2 rows. Same as 40x40
+        const result = compilePath("squareGrid('shape', 0, 0, 50, 50, 20)");
+        expect(result).toHaveSVGCommandCount('M', 6);
+      });
+
+      it('returns empty path when cellSize exceeds dimensions', () => {
+        const result = compilePath("squareGrid('shape', 0, 0, 10, 10, 20)");
+        expect(result).toBe('');
+      });
+
+      it('offsets grid by x and y', () => {
+        const result = compilePath("squareGrid('shape', 100, 200, 20, 20, 20)");
+        // 1x1 grid starting at (100, 200)
+        expect(result).toContain('100');
+        expect(result).toContain('200');
+      });
+
+      it('accepts GridPatternType enum values', () => {
+        const result = compilePath("squareGrid(GridPatternType.Shape, 0, 0, 40, 40, 20)");
+        expect(result).toHaveSVGCommandCount('M', 6);
+      });
+
+      it('throws on invalid pattern type', () => {
+        expect(() => compilePath("squareGrid('invalid', 0, 0, 40, 40, 20)")).toThrow(/type must be/);
+      });
+
+      it('throws on cellSize <= 0', () => {
+        expect(() => compilePath("squareGrid('shape', 0, 0, 40, 40, 0)")).toThrow(/cellSize must be positive/);
+      });
+
+      it('throws on wrong argument count', () => {
+        expect(() => compilePath("squareGrid('shape', 0, 0, 40)")).toThrow(/expects 6 arguments/);
+      });
+    });
+
+    describe('triangleGrid', () => {
+      it('shape pattern generates triangle edges', () => {
+        const result = compilePath("triangleGrid('shape', 0, 0, 60, 60, 20)");
+        // Should produce M and L commands for triangle edges
+        const parsed = parseSVGPath(result);
+        const mCount = parsed.filter(c => c.command === 'M').length;
+        const lCount = parsed.filter(c => c.command === 'L').length;
+        expect(mCount).toBeGreaterThan(0);
+        expect(lCount).toBeGreaterThan(0);
+      });
+
+      it('dot pattern places circles at triangle vertices', () => {
+        const result = compilePath("triangleGrid('dot', 0, 0, 60, 60, 20)");
+        const parsed = parseSVGPath(result);
+        const arcCount = parsed.filter(c => c.command === 'A').length;
+        expect(arcCount).toBeGreaterThan(0);
+        expect(arcCount % 2).toBe(0); // Arcs come in pairs (full circles)
+      });
+
+      it('intersection pattern uses 3-arm edge-aligned marks', () => {
+        const result = compilePath("triangleGrid('intersection', 0, 0, 60, 60, 20)");
+        const parsed = parseSVGPath(result);
+        const mCount = parsed.filter(c => c.command === 'M').length;
+        const lCount = parsed.filter(c => c.command === 'L').length;
+        expect(mCount).toBeGreaterThan(0);
+        // 3 arms per vertex = 3 M + 3 L per vertex
+        expect(lCount).toBe(mCount);
+      });
+
+      it('partial pattern places segments on triangle edges', () => {
+        const result = compilePath("triangleGrid('partial', 0, 0, 60, 60, 20)");
+        const parsed = parseSVGPath(result);
+        const mCount = parsed.filter(c => c.command === 'M').length;
+        expect(mCount).toBeGreaterThan(0);
+      });
+
+      it('returns empty path when cellSize exceeds dimensions', () => {
+        const result = compilePath("triangleGrid('shape', 0, 0, 5, 5, 20)");
+        expect(result).toBe('');
+      });
+
+      it('accepts GridPatternType enum values', () => {
+        const result = compilePath("triangleGrid(GridPatternType.Shape, 0, 0, 60, 60, 20)");
+        const parsed = parseSVGPath(result);
+        expect(parsed.filter(c => c.command === 'M').length).toBeGreaterThan(0);
+      });
+
+      it('throws on invalid pattern type', () => {
+        expect(() => compilePath("triangleGrid('bad', 0, 0, 60, 60, 20)")).toThrow(/type must be/);
+      });
+
+      it('throws on cellSize <= 0', () => {
+        expect(() => compilePath("triangleGrid('shape', 0, 0, 60, 60, -5)")).toThrow(/cellSize must be positive/);
+      });
+    });
+
+    describe('hexagonGrid', () => {
+      it('shape flat-top generates hex outlines with no duplicate edges', () => {
+        const result = compilePath("hexagonGrid('shape', 0, 0, 100, 100, 20)");
+        const parsed = parseSVGPath(result);
+        const mCount = parsed.filter(c => c.command === 'M').length;
+        const lCount = parsed.filter(c => c.command === 'L').length;
+        expect(mCount).toBeGreaterThan(0);
+        expect(lCount).toBe(mCount); // Each edge is M + L
+      });
+
+      it('shape pointy-top generates correct geometry', () => {
+        const result = compilePath("hexagonGrid('shape', 0, 0, 100, 100, 20, 'vertex')");
+        const parsed = parseSVGPath(result);
+        const mCount = parsed.filter(c => c.command === 'M').length;
+        expect(mCount).toBeGreaterThan(0);
+      });
+
+      it('dot pattern places circles at hex vertices', () => {
+        const result = compilePath("hexagonGrid('dot', 0, 0, 100, 100, 20)");
+        const parsed = parseSVGPath(result);
+        const arcCount = parsed.filter(c => c.command === 'A').length;
+        expect(arcCount).toBeGreaterThan(0);
+        expect(arcCount % 2).toBe(0);
+      });
+
+      it('intersection pattern uses edge-aligned 3-arm marks', () => {
+        const result = compilePath("hexagonGrid('intersection', 0, 0, 100, 100, 20)");
+        const parsed = parseSVGPath(result);
+        const mCount = parsed.filter(c => c.command === 'M').length;
+        const lCount = parsed.filter(c => c.command === 'L').length;
+        expect(mCount).toBeGreaterThan(0);
+        expect(lCount).toBe(mCount);
+      });
+
+      it('partial pattern places segments on hex edges', () => {
+        const result = compilePath("hexagonGrid('partial', 0, 0, 100, 100, 20)");
+        const parsed = parseSVGPath(result);
+        expect(parsed.filter(c => c.command === 'M').length).toBeGreaterThan(0);
+      });
+
+      it('defaults to flat-top (edge) orientation when 6 args given', () => {
+        const withDefault = compilePath("hexagonGrid('shape', 0, 0, 100, 100, 20)");
+        const explicit = compilePath("hexagonGrid('shape', 0, 0, 100, 100, 20, 'edge')");
+        expect(withDefault).toBe(explicit);
+      });
+
+      it('accepts HexagonOrientation enum values', () => {
+        const result = compilePath("hexagonGrid(GridPatternType.Shape, 0, 0, 100, 100, 20, HexagonOrientation.Edge)");
+        const parsed = parseSVGPath(result);
+        expect(parsed.filter(c => c.command === 'M').length).toBeGreaterThan(0);
+      });
+
+      it('throws on invalid orientation', () => {
+        expect(() => compilePath("hexagonGrid('shape', 0, 0, 100, 100, 20, 'diagonal')")).toThrow(/orientation must be/);
+      });
+
+      it('throws on cellSize <= 0', () => {
+        expect(() => compilePath("hexagonGrid('shape', 0, 0, 100, 100, 0)")).toThrow(/cellSize must be positive/);
+      });
+
+      it('returns empty path when cellSize exceeds dimensions', () => {
+        const result = compilePath("hexagonGrid('shape', 0, 0, 5, 5, 20)");
+        expect(result).toBe('');
+      });
+    });
+  });
 });
