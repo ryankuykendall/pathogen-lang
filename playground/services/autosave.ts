@@ -40,6 +40,7 @@ class AutosaveManager {
   // Preferences state (separate from code)
   _preferencesTimer: ReturnType<typeof setTimeout> | null;
   _lastPreferences: string | null;
+  _pendingPreferences: unknown | null;
 
   constructor() {
     this._workspaceId = null;
@@ -51,6 +52,7 @@ class AutosaveManager {
     // Preferences state (separate from code)
     this._preferencesTimer = null;
     this._lastPreferences = null;
+    this._pendingPreferences = null;
   }
 
   // Initialize autosave for a workspace
@@ -80,6 +82,7 @@ class AutosaveManager {
       this._preferencesTimer = null;
     }
     this._pendingCode = null;
+    this._pendingPreferences = null;
   }
 
   // Called when code changes - triggers debounced save
@@ -195,9 +198,8 @@ class AutosaveManager {
     if (this._preferencesTimer) {
       clearTimeout(this._preferencesTimer);
       this._preferencesTimer = null;
-      const prefs = store.get('preferences');
-      if (prefs) {
-        await this._savePreferences(prefs);
+      if (this._pendingPreferences) {
+        await this._savePreferences(this._pendingPreferences);
       }
     }
 
@@ -248,6 +250,9 @@ class AutosaveManager {
       clearTimeout(this._preferencesTimer);
     }
 
+    // Store pending preferences for flush()
+    this._pendingPreferences = preferences;
+
     // Debounce preferences saves
     this._preferencesTimer = setTimeout(() => {
       this._savePreferences(preferences);
@@ -270,6 +275,7 @@ class AutosaveManager {
       store.set('saveStatus', SaveStatus.SAVING);
       await workspaceApi.update(this._workspaceId, { preferences });
       this._lastPreferences = prefsJson;
+      this._pendingPreferences = null;
       store.set('saveStatus', SaveStatus.SAVED);
 
       // Auto-clear saved status after a brief moment
