@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "grid-functions",
+    "title": "Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen",
+    "date": "2026-03-23",
+    "description": "Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each."
+  },
+  {
     "slug": "heading-turn",
     "title": "Clean Tangent Control: heading() and turn() in Pathogen",
     "date": "2026-03-22",
@@ -5966,6 +5972,389 @@ scene.<span class="hljs-title function_">append</span>(bg, left_group, center_gr
 </mini-workspace></p>
 <h2>What Comes Next</h2>
 <p>This is the sixth gradient type in Pathogen&#39;s system — linear, radial, conic, mesh, freeform, and topological. In the <a href="/pathogen/blog/gradient-pipeline">final post</a> of this series, we step back and look at the infrastructure that makes it all work: <code>GroupLayer</code> for scene composition, the CLI&#39;s <code>--render-gpu</code> flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns <code>.pathogen</code> source files into the blog you are reading now.</p>
+`,
+  'grid-functions': `<p>Grid patterns show up everywhere — engineering overlays, graph paper, game boards, architectural plans, generative art backgrounds. Building one from scratch means nested loops, coordinate math, and careful edge deduplication for triangles and hexagons. Pathogen&#39;s three new grid functions collapse all of that into a single call.</p>
+<p><code>squareGrid</code>, <code>triangleGrid</code>, and <code>hexagonGrid</code> each generate complete path geometry within a bounding rectangle. A <a href="/pathogen/docs#stdlib-grid-functions"><code>GridPatternType</code></a> enum selects the visual style — <strong>Shape</strong>, <strong>Dot</strong>, <strong>Intersection</strong>, or <strong>Partial</strong> — and all three return <code>PathSegment</code> values, so they compose with <a href="/pathogen/docs#layers-defining-layers">layers</a>, transforms, and clip paths just like <code>circle()</code> or <code>polygon()</code>.</p>
+<h2>Square Grids</h2>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">squareGrid</span>(type, x, y, width, height, cellSize)
+</code></pre><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td><code>GridPatternType</code> — <code>.Shape</code>, <code>.Dot</code>, <code>.Intersection</code>, or <code>.Partial</code></td>
+</tr>
+<tr>
+<td><code>x, y</code></td>
+<td>Top-left origin</td>
+</tr>
+<tr>
+<td><code>width, height</code></td>
+<td>Bounding dimensions</td>
+</tr>
+<tr>
+<td><code>cellSize</code></td>
+<td>Side length of each square cell</td>
+</tr>
+</tbody></table>
+<p>The grid fills as many complete cells as fit: <code>floor(width / cellSize)</code> columns and <code>floor(height / cellSize)</code> rows. Extra space is ignored.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwU3F1YXJlJTIwZ3JpZCUyMCVFMiU4MCU5NCUyMGFsbCUyMGZvdXIlMjBwYXR0ZXJuJTIwdHlwZXMlMEElMEFsZXQlMjBncmlkQ29sb3IlMjAlM0QlMjBDb2xvcihDU1NWYXIoJy0tZ3JpZC1jb2xvciclMkMlMjAlMjM0NDg4ZmYpKSUzQiUwQWxldCUyMGJnQ29sb3IlMjAlM0QlMjBDb2xvcihDU1NWYXIoJy0tYmctY29sb3InJTJDJTIwJTIzMGYxNzJhKSklM0IlMEElMEFsZXQlMjBjZWxsU2l6ZSUyMCUzRCUyMDE0JTNCJTBBbGV0JTIwZ3JpZFclMjAlM0QlMjAxNjAlM0IlMEFsZXQlMjBncmlkSCUyMCUzRCUyMDE1MCUzQiUwQWxldCUyMHBhZCUyMCUzRCUyMDIwJTNCJTBBJTBBJTJGJTJGJTIwQmFja2dyb3VuZCUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGJnQ29sb3IlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDAwJTJDJTIwNDAwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMEdyaWQlMjBsYXllcnMlMjAlRTIlODAlOTQlMjBlYWNoJTIwcGF0dGVybiUyMGluJTIwYSUyMGRpZmZlcmVudCUyMGh1ZSUwQWxldCUyMHNoYXBlQ29sb3IlMjAlM0QlMjBncmlkQ29sb3IlM0IlMEFsZXQlMjBkb3RDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCg5MCklM0IlMEFsZXQlMjBpbnRDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCgxODApJTNCJTBBbGV0JTIwcGFydENvbG9yJTIwJTNEJTIwZ3JpZENvbG9yLmh1ZVNoaWZ0KDI3MCklM0IlMEElMEFsZXQlMjBzaGFwZUxheWVyJTIwJTNEJTIwUGF0aExheWVyKCdzaGFwZScpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwc2hhcGVDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuMyUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwZG90TGF5ZXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RvdCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwZG90Q29sb3IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjMlM0IlMjBmaWxsJTNBJTIwZG90Q29sb3IlM0IlMjAlN0QlM0IlMEFsZXQlMjBpbnRMYXllciUyMCUzRCUyMFBhdGhMYXllcignaW50JyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjBpbnRDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNCUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlLWxpbmVjYXAlM0ElMjByb3VuZCUzQiUyMCU3RCUzQiUwQWxldCUyMHBhcnRMYXllciUyMCUzRCUyMFBhdGhMYXllcigncGFydCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwcGFydENvbG9yJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC40JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UtbGluZWNhcCUzQSUyMHJvdW5kJTNCJTIwJTdEJTNCJTBBJTBBJTJGJTJGJTIwVG9wLWxlZnQlM0ElMjBTaGFwZSUwQXNoYXBlTGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjBzcXVhcmVHcmlkKEdyaWRQYXR0ZXJuVHlwZS5TaGFwZSUyQyUyMHBhZCUyQyUyMHBhZCUyMCUyQiUyMDE1JTJDJTIwZ3JpZFclMkMlMjBncmlkSCUyQyUyMGNlbGxTaXplKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMFRvcC1yaWdodCUzQSUyMERvdCUwQWRvdExheWVyLmFwcGx5JTIwJTdCJTBBJTIwJTIwc3F1YXJlR3JpZChHcmlkUGF0dGVyblR5cGUuRG90JTJDJTIwMjIwJTJDJTIwcGFkJTIwJTJCJTIwMTUlMkMlMjBncmlkVyUyQyUyMGdyaWRIJTJDJTIwY2VsbFNpemUpJTNCJTBBJTdEJTBBJTBBJTJGJTJGJTIwQm90dG9tLWxlZnQlM0ElMjBJbnRlcnNlY3Rpb24lMEFpbnRMYXllci5hcHBseSUyMCU3QiUwQSUyMCUyMHNxdWFyZUdyaWQoR3JpZFBhdHRlcm5UeXBlLkludGVyc2VjdGlvbiUyQyUyMHBhZCUyQyUyMDIxNSUyMCUyQiUyMDE1JTJDJTIwZ3JpZFclMkMlMjBncmlkSCUyQyUyMGNlbGxTaXplKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMEJvdHRvbS1yaWdodCUzQSUyMFBhcnRpYWwlMEFwYXJ0TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjBzcXVhcmVHcmlkKEdyaWRQYXR0ZXJuVHlwZS5QYXJ0aWFsJTJDJTIwMjIwJTJDJTIwMjIwJTIwJTJCJTIwMTUlMkMlMjBncmlkVyUyQyUyMGdyaWRIJTJDJTIwY2VsbFNpemUpJTNCJTBBJTdEJTBBJTBBJTJGJTJGJTIwTGFiZWxzJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFsYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KHBhZCUyQyUyMHBhZCUyMCUyQiUyMDgpJTYwU2hhcGUlNjAlMEElMjAlMjB0ZXh0KDIyMCUyQyUyMHBhZCUyMCUyQiUyMDgpJTYwRG90JTYwJTBBJTIwJTIwdGV4dChwYWQlMkMlMjAyMjAlMjAlMkIlMjA4KSU2MEludGVyc2VjdGlvbiU2MCUwQSUyMCUyMHRleHQoMjIwJTJDJTIwMjIwJTIwJTJCJTIwOCklNjBQYXJ0aWFsJTYwJTBBJTdEJTBB" code-open caption="squareGrid — four pattern types with reactive colors">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
+<span class="hljs-comment">// Square grid — all four pattern types</span>
+
+<span class="hljs-keyword">let</span> gridColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--grid-color&#x27;</span>, #4488ff));
+<span class="hljs-keyword">let</span> bgColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-color&#x27;</span>, #0f172a));
+
+<span class="hljs-keyword">let</span> cellSize = <span class="hljs-number">14</span>;
+<span class="hljs-keyword">let</span> gridW = <span class="hljs-number">160</span>;
+<span class="hljs-keyword">let</span> gridH = <span class="hljs-number">150</span>;
+<span class="hljs-keyword">let</span> pad = <span class="hljs-number">20</span>;
+
+<span class="hljs-comment">// Background</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: bgColor; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+
+<span class="hljs-comment">// Grid layers — each pattern in a different hue</span>
+<span class="hljs-keyword">let</span> shapeColor = gridColor;
+<span class="hljs-keyword">let</span> dotColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>);
+<span class="hljs-keyword">let</span> intColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">180</span>);
+<span class="hljs-keyword">let</span> partColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">270</span>);
+
+<span class="hljs-keyword">let</span> shapeLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: shapeColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: none; };
+<span class="hljs-keyword">let</span> dotLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dot&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: dotColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: dotColor; };
+<span class="hljs-keyword">let</span> intLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;int&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: intColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+<span class="hljs-keyword">let</span> partLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;part&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: partColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+
+<span class="hljs-comment">// Top-left: Shape</span>
+shapeLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">squareGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Shape</span>, pad, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Top-right: Dot</span>
+dotLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">squareGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Dot</span>, <span class="hljs-number">220</span>, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Bottom-left: Intersection</span>
+intLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">squareGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Intersection</span>, pad, <span class="hljs-number">215</span> + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Bottom-right: Partial</span>
+partLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">squareGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Partial</span>, <span class="hljs-number">220</span>, <span class="hljs-number">220</span> + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Labels</span>
+<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(pad, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Shape\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Dot\`</span>
+  <span class="hljs-title function_">text</span>(pad, <span class="hljs-number">220</span> + <span class="hljs-number">8</span>)<span class="hljs-string">\`Intersection\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">220</span> + <span class="hljs-number">8</span>)<span class="hljs-string">\`Partial\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/square-grid-patterns.svg" alt="squareGrid — four pattern types with reactive colors" loading="lazy">
+</mini-workspace></p>
+<h2>Triangle Grids</h2>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">triangleGrid</span>(type, x, y, width, height, cellSize)
+</code></pre><p>Same parameters as <code>squareGrid</code>, but <code>cellSize</code> is the triangle <strong>height</strong> (altitude of the equilateral triangle). The side length is derived: <code>side = 2 × cellSize / √3</code>. Triangles alternate between point-up and point-down orientations, with odd rows offset by half a side length to form a seamless tessellation.</p>
+<p>The intersection marks on triangle grids are edge-aligned — six arms at 60° intervals (three bidirectional lines), matching the grid&#39;s natural symmetry where six edges meet at each interior vertex.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwVHJpYW5nbGUlMjBncmlkJTIwJUUyJTgwJTk0JTIwYWxsJTIwZm91ciUyMHBhdHRlcm4lMjB0eXBlcyUwQSUwQWxldCUyMGdyaWRDb2xvciUyMCUzRCUyMENvbG9yKENTU1ZhcignLS1ncmlkLWNvbG9yJyUyQyUyMCUyMzQ0Y2M4OCkpJTNCJTBBbGV0JTIwYmdDb2xvciUyMCUzRCUyMENvbG9yKENTU1ZhcignLS1iZy1jb2xvciclMkMlMjAlMjMwZjE3MmEpKSUzQiUwQSUwQWxldCUyMGNlbGxTaXplJTIwJTNEJTIwMTQlM0IlMEFsZXQlMjBncmlkVyUyMCUzRCUyMDE2MCUzQiUwQWxldCUyMGdyaWRIJTIwJTNEJTIwMTUwJTNCJTBBbGV0JTIwcGFkJTIwJTNEJTIwMjAlM0IlMEElMEElMkYlMkYlMjBCYWNrZ3JvdW5kJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwYmdDb2xvciUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwR3JpZCUyMGxheWVycyUwQWxldCUyMHNoYXBlQ29sb3IlMjAlM0QlMjBncmlkQ29sb3IlM0IlMEFsZXQlMjBkb3RDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCg5MCklM0IlMEFsZXQlMjBpbnRDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCgxODApJTNCJTBBbGV0JTIwcGFydENvbG9yJTIwJTNEJTIwZ3JpZENvbG9yLmh1ZVNoaWZ0KDI3MCklM0IlMEElMEFsZXQlMjBzaGFwZUxheWVyJTIwJTNEJTIwUGF0aExheWVyKCdzaGFwZScpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwc2hhcGVDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuMyUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwZG90TGF5ZXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RvdCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwZG90Q29sb3IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjMlM0IlMjBmaWxsJTNBJTIwZG90Q29sb3IlM0IlMjAlN0QlM0IlMEFsZXQlMjBpbnRMYXllciUyMCUzRCUyMFBhdGhMYXllcignaW50JyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjBpbnRDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNCUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlLWxpbmVjYXAlM0ElMjByb3VuZCUzQiUyMCU3RCUzQiUwQWxldCUyMHBhcnRMYXllciUyMCUzRCUyMFBhdGhMYXllcigncGFydCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwcGFydENvbG9yJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC40JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UtbGluZWNhcCUzQSUyMHJvdW5kJTNCJTIwJTdEJTNCJTBBJTBBJTJGJTJGJTIwVG9wLWxlZnQlM0ElMjBTaGFwZSUwQXNoYXBlTGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjB0cmlhbmdsZUdyaWQoR3JpZFBhdHRlcm5UeXBlLlNoYXBlJTJDJTIwcGFkJTJDJTIwcGFkJTIwJTJCJTIwMTUlMkMlMjBncmlkVyUyQyUyMGdyaWRIJTJDJTIwY2VsbFNpemUpJTNCJTBBJTdEJTBBJTBBJTJGJTJGJTIwVG9wLXJpZ2h0JTNBJTIwRG90JTBBZG90TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjB0cmlhbmdsZUdyaWQoR3JpZFBhdHRlcm5UeXBlLkRvdCUyQyUyMDIyMCUyQyUyMHBhZCUyMCUyQiUyMDE1JTJDJTIwZ3JpZFclMkMlMjBncmlkSCUyQyUyMGNlbGxTaXplKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMEJvdHRvbS1sZWZ0JTNBJTIwSW50ZXJzZWN0aW9uJTBBaW50TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjB0cmlhbmdsZUdyaWQoR3JpZFBhdHRlcm5UeXBlLkludGVyc2VjdGlvbiUyQyUyMHBhZCUyQyUyMDIxNSUyMCUyQiUyMDE1JTJDJTIwZ3JpZFclMkMlMjBncmlkSCUyQyUyMGNlbGxTaXplKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMEJvdHRvbS1yaWdodCUzQSUyMFBhcnRpYWwlMEFwYXJ0TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjB0cmlhbmdsZUdyaWQoR3JpZFBhdHRlcm5UeXBlLlBhcnRpYWwlMkMlMjAyMjAlMkMlMjAyMjAlMjAlMkIlMjAxNSUyQyUyMGdyaWRXJTJDJTIwZ3JpZEglMkMlMjBjZWxsU2l6ZSklM0IlMEElN0QlMEElMEElMkYlMkYlMjBMYWJlbHMlMEFsZXQlMjBsYWJlbHMlMjAlM0QlMjBUZXh0TGF5ZXIoJ2xhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzOTRhM2I4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQocGFkJTJDJTIwcGFkJTIwJTJCJTIwOCklNjBTaGFwZSU2MCUwQSUyMCUyMHRleHQoMjIwJTJDJTIwcGFkJTIwJTJCJTIwOCklNjBEb3QlNjAlMEElMjAlMjB0ZXh0KHBhZCUyQyUyMDIyMCUyMCUyQiUyMDgpJTYwSW50ZXJzZWN0aW9uJTYwJTBBJTIwJTIwdGV4dCgyMjAlMkMlMjAyMjAlMjAlMkIlMjA4KSU2MFBhcnRpYWwlNjAlMEElN0QlMEE=" code-open caption="triangleGrid — equilateral triangle tessellation in four pattern types">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
+<span class="hljs-comment">// Triangle grid — all four pattern types</span>
+
+<span class="hljs-keyword">let</span> gridColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--grid-color&#x27;</span>, #44cc88));
+<span class="hljs-keyword">let</span> bgColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-color&#x27;</span>, #0f172a));
+
+<span class="hljs-keyword">let</span> cellSize = <span class="hljs-number">14</span>;
+<span class="hljs-keyword">let</span> gridW = <span class="hljs-number">160</span>;
+<span class="hljs-keyword">let</span> gridH = <span class="hljs-number">150</span>;
+<span class="hljs-keyword">let</span> pad = <span class="hljs-number">20</span>;
+
+<span class="hljs-comment">// Background</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: bgColor; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+
+<span class="hljs-comment">// Grid layers</span>
+<span class="hljs-keyword">let</span> shapeColor = gridColor;
+<span class="hljs-keyword">let</span> dotColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>);
+<span class="hljs-keyword">let</span> intColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">180</span>);
+<span class="hljs-keyword">let</span> partColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">270</span>);
+
+<span class="hljs-keyword">let</span> shapeLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: shapeColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: none; };
+<span class="hljs-keyword">let</span> dotLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dot&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: dotColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: dotColor; };
+<span class="hljs-keyword">let</span> intLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;int&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: intColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+<span class="hljs-keyword">let</span> partLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;part&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: partColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+
+<span class="hljs-comment">// Top-left: Shape</span>
+shapeLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">triangleGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Shape</span>, pad, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Top-right: Dot</span>
+dotLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">triangleGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Dot</span>, <span class="hljs-number">220</span>, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Bottom-left: Intersection</span>
+intLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">triangleGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Intersection</span>, pad, <span class="hljs-number">215</span> + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Bottom-right: Partial</span>
+partLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">triangleGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Partial</span>, <span class="hljs-number">220</span>, <span class="hljs-number">220</span> + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Labels</span>
+<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(pad, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Shape\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Dot\`</span>
+  <span class="hljs-title function_">text</span>(pad, <span class="hljs-number">220</span> + <span class="hljs-number">8</span>)<span class="hljs-string">\`Intersection\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">220</span> + <span class="hljs-number">8</span>)<span class="hljs-string">\`Partial\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/triangle-grid-patterns.svg" alt="triangleGrid — equilateral triangle tessellation in four pattern types" loading="lazy">
+</mini-workspace></p>
+<h2>Hexagon Grids</h2>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">hexagonGrid</span>(type, x, y, width, height, cellSize, orientation?)
+</code></pre><p>The hexagon function adds a seventh parameter: <code>orientation</code>. It accepts the <code>HexagonOrientation</code> enum — <code>.Edge</code> for flat-top hexagons (an edge faces up) or <code>.Vertex</code> for pointy-top (a vertex faces up). When omitted, it defaults to <code>.Edge</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Orientation</th>
+<th>Top</th>
+<th>cellSize meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>HexagonOrientation.Edge</code></td>
+<td>Flat edge</td>
+<td>Flat-to-flat height</td>
+</tr>
+<tr>
+<td><code>HexagonOrientation.Vertex</code></td>
+<td>Pointed vertex</td>
+<td>Point-to-point height</td>
+</tr>
+</tbody></table>
+<p>Intersection marks on hex grids are 3-arm radial marks — matching the three edges that meet at each vertex.</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwSGV4YWdvbiUyMGdyaWQlMjAlRTIlODAlOTQlMjBhbGwlMjBmb3VyJTIwcGF0dGVybiUyMHR5cGVzJTIwKGZsYXQtdG9wKSUwQSUwQWxldCUyMGdyaWRDb2xvciUyMCUzRCUyMENvbG9yKENTU1ZhcignLS1ncmlkLWNvbG9yJyUyQyUyMCUyM2ZmNjY4OCkpJTNCJTBBbGV0JTIwYmdDb2xvciUyMCUzRCUyMENvbG9yKENTU1ZhcignLS1iZy1jb2xvciclMkMlMjAlMjMwZjE3MmEpKSUzQiUwQSUwQWxldCUyMGNlbGxTaXplJTIwJTNEJTIwMTglM0IlMEFsZXQlMjBncmlkVyUyMCUzRCUyMDE2MCUzQiUwQWxldCUyMGdyaWRIJTIwJTNEJTIwMTUwJTNCJTBBbGV0JTIwcGFkJTIwJTNEJTIwMjAlM0IlMEElMEElMkYlMkYlMjBCYWNrZ3JvdW5kJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwYmdDb2xvciUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwR3JpZCUyMGxheWVycyUwQWxldCUyMHNoYXBlQ29sb3IlMjAlM0QlMjBncmlkQ29sb3IlM0IlMEFsZXQlMjBkb3RDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCg5MCklM0IlMEFsZXQlMjBpbnRDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCgxODApJTNCJTBBbGV0JTIwcGFydENvbG9yJTIwJTNEJTIwZ3JpZENvbG9yLmh1ZVNoaWZ0KDI3MCklM0IlMEElMEFsZXQlMjBzaGFwZUxheWVyJTIwJTNEJTIwUGF0aExheWVyKCdzaGFwZScpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwc2hhcGVDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuMyUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwZG90TGF5ZXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RvdCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwZG90Q29sb3IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjMlM0IlMjBmaWxsJTNBJTIwZG90Q29sb3IlM0IlMjAlN0QlM0IlMEFsZXQlMjBpbnRMYXllciUyMCUzRCUyMFBhdGhMYXllcignaW50JyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjBpbnRDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNCUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlLWxpbmVjYXAlM0ElMjByb3VuZCUzQiUyMCU3RCUzQiUwQWxldCUyMHBhcnRMYXllciUyMCUzRCUyMFBhdGhMYXllcigncGFydCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwcGFydENvbG9yJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC40JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UtbGluZWNhcCUzQSUyMHJvdW5kJTNCJTIwJTdEJTNCJTBBJTBBJTJGJTJGJTIwVG9wLWxlZnQlM0ElMjBTaGFwZSUwQXNoYXBlTGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjBoZXhhZ29uR3JpZChHcmlkUGF0dGVyblR5cGUuU2hhcGUlMkMlMjBwYWQlMkMlMjBwYWQlMjAlMkIlMjAxNSUyQyUyMGdyaWRXJTJDJTIwZ3JpZEglMkMlMjBjZWxsU2l6ZSklM0IlMEElN0QlMEElMEElMkYlMkYlMjBUb3AtcmlnaHQlM0ElMjBEb3QlMEFkb3RMYXllci5hcHBseSUyMCU3QiUwQSUyMCUyMGhleGFnb25HcmlkKEdyaWRQYXR0ZXJuVHlwZS5Eb3QlMkMlMjAyMjAlMkMlMjBwYWQlMjAlMkIlMjAxNSUyQyUyMGdyaWRXJTJDJTIwZ3JpZEglMkMlMjBjZWxsU2l6ZSklM0IlMEElN0QlMEElMEElMkYlMkYlMjBCb3R0b20tbGVmdCUzQSUyMEludGVyc2VjdGlvbiUwQWludExheWVyLmFwcGx5JTIwJTdCJTBBJTIwJTIwaGV4YWdvbkdyaWQoR3JpZFBhdHRlcm5UeXBlLkludGVyc2VjdGlvbiUyQyUyMHBhZCUyQyUyMDIxNSUyMCUyQiUyMDE1JTJDJTIwZ3JpZFclMkMlMjBncmlkSCUyQyUyMGNlbGxTaXplKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMEJvdHRvbS1yaWdodCUzQSUyMFBhcnRpYWwlMEFwYXJ0TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjBoZXhhZ29uR3JpZChHcmlkUGF0dGVyblR5cGUuUGFydGlhbCUyQyUyMDIyMCUyQyUyMDIyMCUyMCUyQiUyMDE1JTJDJTIwZ3JpZFclMkMlMjBncmlkSCUyQyUyMGNlbGxTaXplKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMExhYmVscyUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMSUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dChwYWQlMkMlMjBwYWQlMjAlMkIlMjA4KSU2MFNoYXBlJTYwJTBBJTIwJTIwdGV4dCgyMjAlMkMlMjBwYWQlMjAlMkIlMjA4KSU2MERvdCU2MCUwQSUyMCUyMHRleHQocGFkJTJDJTIwMjIwJTIwJTJCJTIwOCklNjBJbnRlcnNlY3Rpb24lNjAlMEElMjAlMjB0ZXh0KDIyMCUyQyUyMDIyMCUyMCUyQiUyMDgpJTYwUGFydGlhbCU2MCUwQSU3RCUwQQ==" code-open caption="hexagonGrid — flat-top hexagons in four pattern types">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
+<span class="hljs-comment">// Hexagon grid — all four pattern types (flat-top)</span>
+
+<span class="hljs-keyword">let</span> gridColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--grid-color&#x27;</span>, #ff6688));
+<span class="hljs-keyword">let</span> bgColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-color&#x27;</span>, #0f172a));
+
+<span class="hljs-keyword">let</span> cellSize = <span class="hljs-number">18</span>;
+<span class="hljs-keyword">let</span> gridW = <span class="hljs-number">160</span>;
+<span class="hljs-keyword">let</span> gridH = <span class="hljs-number">150</span>;
+<span class="hljs-keyword">let</span> pad = <span class="hljs-number">20</span>;
+
+<span class="hljs-comment">// Background</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: bgColor; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+
+<span class="hljs-comment">// Grid layers</span>
+<span class="hljs-keyword">let</span> shapeColor = gridColor;
+<span class="hljs-keyword">let</span> dotColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>);
+<span class="hljs-keyword">let</span> intColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">180</span>);
+<span class="hljs-keyword">let</span> partColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">270</span>);
+
+<span class="hljs-keyword">let</span> shapeLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: shapeColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: none; };
+<span class="hljs-keyword">let</span> dotLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dot&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: dotColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: dotColor; };
+<span class="hljs-keyword">let</span> intLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;int&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: intColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+<span class="hljs-keyword">let</span> partLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;part&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: partColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+
+<span class="hljs-comment">// Top-left: Shape</span>
+shapeLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Shape</span>, pad, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Top-right: Dot</span>
+dotLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Dot</span>, <span class="hljs-number">220</span>, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Bottom-left: Intersection</span>
+intLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Intersection</span>, pad, <span class="hljs-number">215</span> + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Bottom-right: Partial</span>
+partLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Partial</span>, <span class="hljs-number">220</span>, <span class="hljs-number">220</span> + <span class="hljs-number">15</span>, gridW, gridH, cellSize);
+}
+
+<span class="hljs-comment">// Labels</span>
+<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(pad, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Shape\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Dot\`</span>
+  <span class="hljs-title function_">text</span>(pad, <span class="hljs-number">220</span> + <span class="hljs-number">8</span>)<span class="hljs-string">\`Intersection\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">220</span> + <span class="hljs-number">8</span>)<span class="hljs-string">\`Partial\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/hexagon-grid-patterns.svg" alt="hexagonGrid — flat-top hexagons in four pattern types" loading="lazy">
+</mini-workspace></p>
+<h3>Orientation Comparison</h3>
+<p>The two orientations produce visually distinct tessellations from the same cell size:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMjAwJTIyJTBBJTJGJTJGJTIwSGV4YWdvbiUyMG9yaWVudGF0aW9ucyUyMCVFMiU4MCU5NCUyMGZsYXQtdG9wJTIwKEVkZ2UpJTIwdnMlMjBwb2ludHktdG9wJTIwKFZlcnRleCklMEElMEFsZXQlMjBncmlkQ29sb3IlMjAlM0QlMjBDb2xvcihDU1NWYXIoJy0tZ3JpZC1jb2xvciclMkMlMjAlMjNjYzg4ZmYpKSUzQiUwQWxldCUyMGJnQ29sb3IlMjAlM0QlMjBDb2xvcihDU1NWYXIoJy0tYmctY29sb3InJTJDJTIwJTIzMGYxNzJhKSklM0IlMEElMEFsZXQlMjBjZWxsU2l6ZSUyMCUzRCUyMDE4JTNCJTBBbGV0JTIwZ3JpZFclMjAlM0QlMjAxNTAlM0IlMEFsZXQlMjBncmlkSCUyMCUzRCUyMDE0MCUzQiUwQWxldCUyMHBhZCUyMCUzRCUyMDIwJTNCJTBBJTBBJTJGJTJGJTIwQmFja2dyb3VuZCUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGJnQ29sb3IlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDAwJTJDJTIwMjAwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMEdyaWQlMjBsYXllcnMlMEFsZXQlMjBmbGF0Q29sb3IlMjAlM0QlMjBncmlkQ29sb3IlM0IlMEFsZXQlMjBwb2ludHlDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCgxMjApJTNCJTBBJTBBbGV0JTIwZmxhdExheWVyJTIwJTNEJTIwUGF0aExheWVyKCdmbGF0JyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjBmbGF0Q29sb3IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjQlM0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWxldCUyMHBvaW50eUxheWVyJTIwJTNEJTIwUGF0aExheWVyKCdwb2ludHknKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMHBvaW50eUNvbG9yJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC40JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEElMEElMkYlMkYlMjBMZWZ0JTNBJTIwRmxhdC10b3AlMjAoRWRnZSklMEFmbGF0TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjBoZXhhZ29uR3JpZChHcmlkUGF0dGVyblR5cGUuU2hhcGUlMkMlMjBwYWQlMkMlMjBwYWQlMjAlMkIlMjAxNSUyQyUyMGdyaWRXJTJDJTIwZ3JpZEglMkMlMjBjZWxsU2l6ZSUyQyUyMEhleGFnb25PcmllbnRhdGlvbi5FZGdlKSUzQiUwQSU3RCUwQSUwQSUyRiUyRiUyMFJpZ2h0JTNBJTIwUG9pbnR5LXRvcCUyMChWZXJ0ZXgpJTBBcG9pbnR5TGF5ZXIuYXBwbHklMjAlN0IlMEElMjAlMjBoZXhhZ29uR3JpZChHcmlkUGF0dGVyblR5cGUuU2hhcGUlMkMlMjAyMjAlMkMlMjBwYWQlMjAlMkIlMjAxNSUyQyUyMGdyaWRXJTJDJTIwZ3JpZEglMkMlMjBjZWxsU2l6ZSUyQyUyMEhleGFnb25PcmllbnRhdGlvbi5WZXJ0ZXgpJTNCJTBBJTdEJTBBJTBBJTJGJTJGJTIwTGFiZWxzJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk0YTNiOCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFsYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KHBhZCUyQyUyMHBhZCUyMCUyQiUyMDgpJTYwRmxhdC10b3AlMjAoRWRnZSklNjAlMEElMjAlMjB0ZXh0KDIyMCUyQyUyMHBhZCUyMCUyQiUyMDgpJTYwUG9pbnR5LXRvcCUyMChWZXJ0ZXgpJTYwJTBBJTdEJTBB" code-open caption="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 200&quot;</span>
+<span class="hljs-comment">// Hexagon orientations — flat-top (Edge) vs pointy-top (Vertex)</span>
+
+<span class="hljs-keyword">let</span> gridColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--grid-color&#x27;</span>, #cc88ff));
+<span class="hljs-keyword">let</span> bgColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-color&#x27;</span>, #0f172a));
+
+<span class="hljs-keyword">let</span> cellSize = <span class="hljs-number">18</span>;
+<span class="hljs-keyword">let</span> gridW = <span class="hljs-number">150</span>;
+<span class="hljs-keyword">let</span> gridH = <span class="hljs-number">140</span>;
+<span class="hljs-keyword">let</span> pad = <span class="hljs-number">20</span>;
+
+<span class="hljs-comment">// Background</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: bgColor; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">200</span>) }
+
+<span class="hljs-comment">// Grid layers</span>
+<span class="hljs-keyword">let</span> flatColor = gridColor;
+<span class="hljs-keyword">let</span> pointyColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">120</span>);
+
+<span class="hljs-keyword">let</span> flatLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;flat&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: flatColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; };
+<span class="hljs-keyword">let</span> pointyLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;pointy&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: pointyColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.4</span>; <span class="hljs-attr">fill</span>: none; };
+
+<span class="hljs-comment">// Left: Flat-top (Edge)</span>
+flatLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Shape</span>, pad, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize, <span class="hljs-title class_">HexagonOrientation</span>.<span class="hljs-property">Edge</span>);
+}
+
+<span class="hljs-comment">// Right: Pointy-top (Vertex)</span>
+pointyLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Shape</span>, <span class="hljs-number">220</span>, pad + <span class="hljs-number">15</span>, gridW, gridH, cellSize, <span class="hljs-title class_">HexagonOrientation</span>.<span class="hljs-property">Vertex</span>);
+}
+
+<span class="hljs-comment">// Labels</span>
+<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
+  <span class="hljs-attr">fill</span>: #94a3b8;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(pad, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Flat-top (Edge)\`</span>
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, pad + <span class="hljs-number">8</span>)<span class="hljs-string">\`Pointy-top (Vertex)\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/hexagon-orientations.svg" alt="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)" loading="lazy">
+</mini-workspace></p>
+<h2>Four Pattern Types</h2>
+<p>All three grid functions share the same <code>GridPatternType</code> enum:</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Visual</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Shape</strong></td>
+<td>Cell outlines</td>
+<td>Complete grid lines — every edge drawn once</td>
+</tr>
+<tr>
+<td><strong>Dot</strong></td>
+<td>Small circles</td>
+<td>Dots at every grid vertex</td>
+</tr>
+<tr>
+<td><strong>Intersection</strong></td>
+<td>Edge-aligned marks</td>
+<td>Marks where edges meet — axis-aligned <code>+</code> for squares, 6-arm stars for triangles (3 bidirectional lines at 60°), 3-arm Y for hexagons</td>
+</tr>
+<tr>
+<td><strong>Partial</strong></td>
+<td>Centered segments</td>
+<td>40% of each edge length, centered on the edge midpoint</td>
+</tr>
+</tbody></table>
+<p>Pattern proportions are relative to <code>cellSize</code>: dot radius is 2.5%, intersection arm length is 7.5%.</p>
+<h2>Putting It Together</h2>
+<p>Grid functions are most useful as background textures layered behind other geometry. Combine them with <a href="/pathogen/docs#layers-defining-layers">layer transforms</a> for rotation, and use <code>Color</code> methods to derive palette variations from a single reactive base color:</p>
+<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUHJhY3RpY2FsJTIwY29tcG9zaXRpb24lMjAlRTIlODAlOTQlMjByb3RhdGVkJTIwZ3JpZCUyMGJhY2tncm91bmQlMjB3aXRoJTIwZm9yZWdyb3VuZCUyMGdlb21ldHJ5JTBBJTBBbGV0JTIwZ3JpZENvbG9yJTIwJTNEJTIwQ29sb3IoQ1NTVmFyKCctLWdyaWQtY29sb3InJTJDJTIwJTIzNTU3N2FhKSklM0IlMEFsZXQlMjBiZ0NvbG9yJTIwJTNEJTIwQ29sb3IoQ1NTVmFyKCctLWJnLWNvbG9yJyUyQyUyMCUyMzBmMTcyYSkpJTNCJTBBJTBBJTJGJTJGJTIwQmFja2dyb3VuZCUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGJnQ29sb3IlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDAwJTJDJTIwNDAwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMExheWVyJTIwMSUzQSUyMFJvdGF0ZWQlMjBwYXJ0aWFsJTIwZ3JpZCUyMGFzJTIwYmFja2dyb3VuZCUyMHRleHR1cmUlMEFsZXQlMjBncmlkTGF5ZXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2dyaWQnKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMGdyaWRDb2xvciUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuMyUzQiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlLWxpbmVjYXAlM0ElMjByb3VuZCUzQiUyMCU3RCUzQiUwQWdyaWRMYXllci5jdHgudHJhbnNmb3JtLnJvdGF0ZS5zZXQoMC4wOHBpKSUzQiUwQWdyaWRMYXllci5hcHBseSUyMCU3QiUwQSUyMCUyMHNxdWFyZUdyaWQoR3JpZFBhdHRlcm5UeXBlLlBhcnRpYWwlMkMlMjAtNDAlMkMlMjAtNDAlMkMlMjA0ODAlMkMlMjA0ODAlMkMlMjAxNiklM0IlMEElN0QlMEElMEElMkYlMkYlMjBMYXllciUyMDIlM0ElMjBIZXglMjBncmlkJTIwb3ZlcmxheSUyMHdpdGglMjBzaGFwZSUyMHBhdHRlcm4lMEFsZXQlMjBhY2NlbnRDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5saWdodGVuKDMwJTI1KSUzQiUwQWxldCUyMGhleExheWVyJTIwJTNEJTIwUGF0aExheWVyKCdoZXgnKSUyMCUyNCU3QiUyMHN0cm9rZSUzQSUyMGFjY2VudENvbG9yJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC41JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFoZXhMYXllci5hcHBseSUyMCU3QiUwQSUyMCUyMGhleGFnb25HcmlkKEdyaWRQYXR0ZXJuVHlwZS5TaGFwZSUyQyUyMDYwJTJDJTIwNjAlMkMlMjAyODAlMkMlMjAyODAlMkMlMjAzMCklM0IlMEElN0QlMEElMEElMkYlMkYlMjBMYXllciUyMDMlM0ElMjBUcmlhbmdsZSUyMGludGVyc2VjdGlvbiUyMG1hcmtzJTIwYXQlMjBjZW50ZXIlMEFsZXQlMjB0cmlDb2xvciUyMCUzRCUyMGdyaWRDb2xvci5odWVTaGlmdCgxODApLmxpZ2h0ZW4oMjAlMjUpJTNCJTBBbGV0JTIwdHJpTGF5ZXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3RyaScpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwdHJpQ29sb3IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjYlM0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZS1saW5lY2FwJTNBJTIwcm91bmQlM0IlMjAlN0QlM0IlMEF0cmlMYXllci5hcHBseSUyMCU3QiUwQSUyMCUyMHRyaWFuZ2xlR3JpZChHcmlkUGF0dGVyblR5cGUuSW50ZXJzZWN0aW9uJTJDJTIwMTIwJTJDJTIwMTIwJTJDJTIwMTYwJTJDJTIwMTYwJTJDJTIwMjUpJTNCJTBBJTdEJTBBJTBBJTJGJTJGJTIwTGFiZWxzJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjIlMkMlMjAzODgpJTYwUm90YXRlZCUyMHBhcnRpYWwlMjBncmlkJTIwJTJCJTIwaGV4JTIwb3V0bGluZXMlMjAlMkIlMjB0cmlhbmdsZSUyMGludGVyc2VjdGlvbnMlNjAlMEElN0QlMEE=" code-open caption="Layered composition — rotated partial grid, hex outline, and triangle intersections">
+  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
+<span class="hljs-comment">// Practical composition — rotated grid background with foreground geometry</span>
+
+<span class="hljs-keyword">let</span> gridColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--grid-color&#x27;</span>, #5577aa));
+<span class="hljs-keyword">let</span> bgColor = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-color&#x27;</span>, #0f172a));
+
+<span class="hljs-comment">// Background</span>
+<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: bgColor; <span class="hljs-attr">stroke</span>: none; };
+bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+
+<span class="hljs-comment">// Layer 1: Rotated partial grid as background texture</span>
+<span class="hljs-keyword">let</span> gridLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: gridColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.3</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+gridLayer.<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>.<span class="hljs-property">rotate</span>.<span class="hljs-title function_">set</span>(<span class="hljs-number">0.</span>08pi);
+gridLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">squareGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Partial</span>, -<span class="hljs-number">40</span>, -<span class="hljs-number">40</span>, <span class="hljs-number">480</span>, <span class="hljs-number">480</span>, <span class="hljs-number">16</span>);
+}
+
+<span class="hljs-comment">// Layer 2: Hex grid overlay with shape pattern</span>
+<span class="hljs-keyword">let</span> accentColor = gridColor.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">30</span>%);
+<span class="hljs-keyword">let</span> hexLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;hex&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: accentColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
+hexLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">hexagonGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Shape</span>, <span class="hljs-number">60</span>, <span class="hljs-number">60</span>, <span class="hljs-number">280</span>, <span class="hljs-number">280</span>, <span class="hljs-number">30</span>);
+}
+
+<span class="hljs-comment">// Layer 3: Triangle intersection marks at center</span>
+<span class="hljs-keyword">let</span> triColor = gridColor.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">180</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
+<span class="hljs-keyword">let</span> triLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tri&#x27;</span>) \${ <span class="hljs-attr">stroke</span>: triColor; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.6</span>; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">linecap</span>: round; };
+triLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">triangleGrid</span>(<span class="hljs-title class_">GridPatternType</span>.<span class="hljs-property">Intersection</span>, <span class="hljs-number">120</span>, <span class="hljs-number">120</span>, <span class="hljs-number">160</span>, <span class="hljs-number">160</span>, <span class="hljs-number">25</span>);
+}
+
+<span class="hljs-comment">// Labels</span>
+<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${
+  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
+  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
+  <span class="hljs-attr">fill</span>: #64748b;
+  text-<span class="hljs-attr">anchor</span>: start;
+};
+labels.<span class="hljs-property">apply</span> {
+  <span class="hljs-title function_">text</span>(<span class="hljs-number">22</span>, <span class="hljs-number">388</span>)<span class="hljs-string">\`Rotated partial grid + hex outlines + triangle intersections\`</span>
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/grid-composition.svg" alt="Layered composition — rotated partial grid, hex outline, and triangle intersections" loading="lazy">
+</mini-workspace></p>
+<p>The composition uses three techniques worth noting:</p>
+<ul>
+<li><strong>Rotation via transforms</strong> — <code>gridLayer.ctx.transform.rotate.set(0.08pi)</code> tilts the background grid. The grid area is oversized (<code>-40, -40, 480, 480</code>) to prevent gaps at the rotated corners.</li>
+<li><strong>Layered grid types</strong> — a partial square grid as subtle texture, hex outlines as mid-ground structure, and triangle intersection marks as a focal accent. Each gets its own <code>PathLayer</code> with distinct styling.</li>
+<li><strong>Color derivation</strong> — all three grid colors derive from a single <code>--grid-color</code> variable via <code>.lighten()</code> and <code>.hueShift()</code>, so changing the base color recolors the entire composition.</li>
+</ul>
+<p>The core pattern is always the same: create a styled <code>PathLayer</code>, optionally set a transform, then call the grid function inside <code>layer.apply {}</code>.</p>
+<p>Three functions, four pattern types, two hexagon orientations — enough to cover graph paper, game boards, engineering overlays, and generative art backgrounds without writing a single loop. Try changing the <code>--grid-color</code> and <code>--bg-color</code> variables in any of the examples above to see how the reactive colors work.</p>
+<p>For the full function signatures and parameter details, see the <a href="/pathogen/docs#stdlib-grid-functions">stdlib reference</a>. For layer management and transforms, see the <a href="/pathogen/docs#layers-defining-layers">layers documentation</a>. For combining grids with reusable path blocks, see the <a href="/pathogen/blog/pathblock-introduction">PathBlock introduction</a>.</p>
 `,
   'heading-turn': `<p>Pathogen&#39;s tangent-dependent functions — <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
 <p>The old workaround was a dummy segment:</p>

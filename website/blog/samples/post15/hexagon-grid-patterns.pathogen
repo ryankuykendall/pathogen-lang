@@ -1,0 +1,59 @@
+// viewBox="0 0 400 400"
+// Hexagon grid — all four pattern types (flat-top)
+
+let gridColor = Color(CSSVar('--grid-color', #ff6688));
+let bgColor = Color(CSSVar('--bg-color', #0f172a));
+
+let cellSize = 18;
+let gridW = 160;
+let gridH = 150;
+let pad = 20;
+
+// Background
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// Grid layers
+let shapeColor = gridColor;
+let dotColor = gridColor.hueShift(90);
+let intColor = gridColor.hueShift(180);
+let partColor = gridColor.hueShift(270);
+
+let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+
+// Top-left: Shape
+shapeLayer.apply {
+  hexagonGrid(GridPatternType.Shape, pad, pad + 15, gridW, gridH, cellSize);
+}
+
+// Top-right: Dot
+dotLayer.apply {
+  hexagonGrid(GridPatternType.Dot, 220, pad + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-left: Intersection
+intLayer.apply {
+  hexagonGrid(GridPatternType.Intersection, pad, 215 + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-right: Partial
+partLayer.apply {
+  hexagonGrid(GridPatternType.Partial, 220, 220 + 15, gridW, gridH, cellSize);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+labels.apply {
+  text(pad, pad + 8)`Shape`
+  text(220, pad + 8)`Dot`
+  text(pad, 220 + 8)`Intersection`
+  text(220, 220 + 8)`Partial`
+}
