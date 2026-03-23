@@ -171,6 +171,43 @@ b['x'] = 99;
 log(a.x);  // 99 — both a and b point to the same object
 ```
 
+## Merging Objects (`<<`)
+
+The `<<` operator creates a new object by merging two objects together. Properties from the right side override those on the left:
+
+```
+let a = { x: 1, y: 2 };
+let b = { y: 99, z: 3 };
+let merged = a << b;
+log(merged);  // {x: 1, y: 99, z: 3}
+```
+
+The original objects are not modified:
+
+```
+log(a);  // {x: 1, y: 2} — unchanged
+```
+
+Multiple merges can be chained (evaluated left-to-right):
+
+```
+let defaults = { stroke: 'black', width: 2, fill: 'none' };
+let theme = { stroke: 'red' };
+let overrides = { width: 4 };
+let final = defaults << theme << overrides;
+// {stroke: 'red', width: 4, fill: 'none'}
+```
+
+Merge is shallow — nested objects are shared by reference, not deep-copied:
+
+```
+let inner = { val: 1 };
+let a = { nested: inner };
+let b = a << {};
+b.nested['val'] = 99;
+log(a.nested.val);  // 99 — same inner object
+```
+
 ## Using Objects with Path Commands
 
 Objects are natural containers for coordinates and configuration:

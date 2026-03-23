@@ -215,6 +215,78 @@ describe('Objects', () => {
     });
   });
 
+  describe('merge (<<)', () => {
+    it('merges two objects with non-overlapping keys', () => {
+      const result = compile('let a = {x: 1}; let b = {y: 2}; let c = a << b; log(c);');
+      expect(result.logs[0].parts[0].value).toBe('{x: 1, y: 2}');
+    });
+
+    it('right-side wins on key conflicts', () => {
+      const result = compile('let a = {x: 1, y: 2}; let b = {y: 99, z: 3}; let c = a << b; log(c);');
+      expect(result.logs[0].parts[0].value).toBe('{x: 1, y: 99, z: 3}');
+    });
+
+    it('does not mutate the original objects', () => {
+      const result = compile('let a = {x: 1}; let b = {y: 2}; let c = a << b; log(a); log(b);');
+      expect(result.logs[0].parts[0].value).toBe('{x: 1}');
+      expect(result.logs[1].parts[0].value).toBe('{y: 2}');
+    });
+
+    it('chains multiple merges left-to-right', () => {
+      const result = compile('let a = {x: 1}; let b = {y: 2}; let c = {z: 3}; let d = a << b << c; log(d);');
+      expect(result.logs[0].parts[0].value).toBe('{x: 1, y: 2, z: 3}');
+    });
+
+    it('chained merge with progressive override', () => {
+      const result = compile('let a = {v: 1}; let b = {v: 2}; let c = {v: 3}; let d = a << b << c; log(d.v);');
+      expect(result.logs[0].parts[0].value).toBe('3');
+    });
+
+    it('merging with empty object returns equivalent copy', () => {
+      const result = compile('let a = {x: 1, y: 2}; let b = a << {}; log(b);');
+      expect(result.logs[0].parts[0].value).toBe('{x: 1, y: 2}');
+    });
+
+    it('empty object absorbs all properties from right', () => {
+      const result = compile('let a = {}; let b = {x: 1, y: 2}; let c = a << b; log(c);');
+      expect(result.logs[0].parts[0].value).toBe('{x: 1, y: 2}');
+    });
+
+    it('shallow merge shares nested object references', () => {
+      const result = compile(`
+        let inner = {val: 1};
+        let a = {nested: inner};
+        let b = a << {};
+        b.nested['val'] = 99;
+        log(a.nested.val);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('99');
+    });
+
+    it('merged object is independent from sources for top-level keys', () => {
+      const result = compile(`
+        let a = {x: 1};
+        let b = a << {y: 2};
+        b['x'] = 99;
+        log(a.x);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('1');
+    });
+
+    it('preserves mixed value types across merge', () => {
+      const result = compile(`
+        let a = {n: 42, s: 'hello'};
+        let b = {arr: [1, 2], flag: true};
+        let c = a << b;
+        log(c.n); log(c.s); log(c.arr); log(c.flag);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('42');
+      expect(result.logs[1].parts[0].value).toBe('hello');
+      expect(result.logs[2].parts[0].value).toBe('[1, 2]');
+      expect(result.logs[3].parts[0].value).toBe('true');
+    });
+  });
+
   describe('error cases', () => {
     it('throws for non-string key in bracket access', () => {
       expect(() => compile('let obj = { x: 1 }; log(obj[42]);')).toThrow('Object key must be a string');

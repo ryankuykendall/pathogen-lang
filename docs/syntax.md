@@ -210,7 +210,7 @@ L calc(100 + r) 100
 | `\|\|` | Logical OR |
 | `!` | Logical NOT (unary) |
 | `-` | Negation (unary) |
-| `<<` | Style block merge / PathBlock concatenation |
+| `<<` | Merge (objects, style blocks, path blocks, text blocks) |
 
 Operator precedence follows standard mathematical conventions.
 
@@ -232,15 +232,21 @@ Each property is a `name: value;` declaration. Values are try-evaluated as expre
 
 ### Merge (`<<`)
 
-The `<<` operator combines two style blocks. The right side overrides the left:
+The `<<` operator merges two values of the same type. The right side overrides the left on key conflicts:
 
 ```
+// Style blocks
 let base = ${ stroke: red; stroke-width: 2; };
 let merged = base << ${ stroke-width: 4; fill: blue; };
 // Result: stroke: red, stroke-width: 4, fill: blue
+
+// Objects
+let a = { x: 1, y: 2 };
+let b = a << { y: 99, z: 3 };
+// Result: {x: 1, y: 99, z: 3}
 ```
 
-Multiple merges can be chained: `a << b << c`.
+Multiple merges can be chained: `a << b << c`. See also [Objects — Merging](objects.md#merging-objects-).
 
 ### Property Access
 

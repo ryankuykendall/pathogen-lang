@@ -941,7 +941,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       const left = evaluateExpression(expr.left, scope);
       const right = evaluateExpression(expr.right, scope);
 
-      // << operator: PathBlock concatenation or style block merge
+      // << operator: merge (objects, style blocks, path blocks, text blocks)
       if (expr.operator === '<<') {
         if (isPathBlockValue(left) && isPathBlockValue(right)) {
           const concatCmds = concatenateCommands(left.commands, left.endPoint, right.commands);
@@ -977,9 +977,16 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           Object.assign(left.layer.styles, right.properties);
           return left;
         }
+        if (isObjectValue(left) && isObjectValue(right)) {
+          const merged = new Map(left.properties);
+          for (const [key, value] of right.properties) {
+            merged.set(key, value);
+          }
+          return { type: 'ObjectValue', properties: merged };
+        }
         throw new Error(
           formatError(
-            'Operator << requires matching operand types (both style blocks, both path blocks, or text block << style block)',
+            'Operator << requires matching operand types (both objects, both style blocks, both path blocks, or text block << style block)',
             getLine(expr),
           ),
         );
