@@ -5,6 +5,7 @@ node_modules/
 dist/
 public/
 website/docs-static/
+playground/utils/docs-content.js
 
 # Wrangler
 .wrangler/
