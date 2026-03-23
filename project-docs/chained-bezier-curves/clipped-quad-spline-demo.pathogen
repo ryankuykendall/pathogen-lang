@@ -1,0 +1,91 @@
+// clipped-quad-spline-demo.pathogen
+// Eccentricity comparison at various exitTime/entryTime values.
+
+fn clippedQuadSpline(start, points, end) {
+  M start.x start.y
+  let cpx = calc(start.x + start.exit * cos(start.angle));
+  let cpy = calc(start.y + start.exit * sin(start.angle));
+  if (points.length > 0) {
+    let c1x = calc(lerp(start.x, cpx, start.exitTime));
+    let c1y = calc(lerp(start.y, cpy, start.exitTime));
+    let c2x = calc(lerp(points[0].x, cpx, points[0].entryTime));
+    let c2y = calc(lerp(points[0].y, cpy, points[0].entryTime));
+    C c1x c1y c2x c2y points[0].x points[0].y
+    let prevCPx = cpx;
+    let prevCPy = cpy;
+    for ([pt, idx] in points) {
+      let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+      let newCPx = calc(pt.x + pt.exit * cos(angle));
+      let newCPy = calc(pt.y + pt.exit * sin(angle));
+      let c1x = calc(lerp(pt.x, newCPx, pt.exitTime));
+      let c1y = calc(lerp(pt.y, newCPy, pt.exitTime));
+      if (idx < calc(points.length - 1)) {
+        let nextIdx = calc(idx + 1);
+        let c2x = calc(lerp(points[nextIdx].x, newCPx, points[nextIdx].entryTime));
+        let c2y = calc(lerp(points[nextIdx].y, newCPy, points[nextIdx].entryTime));
+        C c1x c1y c2x c2y points[nextIdx].x points[nextIdx].y
+      } else {
+        let c2x = calc(lerp(end.x, newCPx, end.entryTime));
+        let c2y = calc(lerp(end.y, newCPy, end.entryTime));
+        C c1x c1y c2x c2y end.x end.y
+      }
+      prevCPx = newCPx;
+      prevCPy = newCPy;
+    }
+  } else {
+    let c1x = calc(lerp(start.x, cpx, start.exitTime));
+    let c1y = calc(lerp(start.y, cpy, start.exitTime));
+    let c2x = calc(lerp(end.x, cpx, end.entryTime));
+    let c2y = calc(lerp(end.y, cpy, end.entryTime));
+    C c1x c1y c2x c2y end.x end.y
+  }
+}
+
+// --- Eccentricity Comparison ---
+// Same geometry with different time values.
+
+// time = 1.0 (full quadratic, most eccentric)
+define PathLayer('full') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+
+layer('full').apply {
+  clippedQuadSpline(
+    { x: 20, y: 80, angle: -45deg, exit: 50, exitTime: 1.0 },
+    [{ x: 100, y: 20, exit: 50, exitTime: 1.0, entryTime: 1.0 }],
+    { x: 180, y: 80, entryTime: 1.0 }
+  )
+}
+
+// time = 0.7 (moderate dampening)
+define PathLayer('moderate') ${ fill: none; stroke: #9333ea; stroke-width: 2 }
+
+layer('moderate').apply {
+  clippedQuadSpline(
+    { x: 20, y: 80, angle: -45deg, exit: 50, exitTime: 0.7 },
+    [{ x: 100, y: 20, exit: 50, exitTime: 0.7, entryTime: 0.7 }],
+    { x: 180, y: 80, entryTime: 0.7 }
+  )
+}
+
+// time = 0.4 (heavy dampening)
+define PathLayer('damped') ${ fill: none; stroke: #dc2626; stroke-width: 2 }
+
+layer('damped').apply {
+  clippedQuadSpline(
+    { x: 20, y: 80, angle: -45deg, exit: 50, exitTime: 0.4 },
+    [{ x: 100, y: 20, exit: 50, exitTime: 0.4, entryTime: 0.4 }],
+    { x: 180, y: 80, entryTime: 0.4 }
+  )
+}
+
+// --- Asymmetric times ---
+// exit = 1.0, entry = 0.3
+
+define PathLayer('asymmetric') ${ fill: none; stroke: #ea580c; stroke-width: 2; stroke-dasharray: 4 2 }
+
+layer('asymmetric').apply {
+  clippedQuadSpline(
+    { x: 220, y: 80, angle: -45deg, exit: 50, exitTime: 1.0 },
+    [{ x: 300, y: 20, exit: 50, exitTime: 0.3, entryTime: 1.0 }],
+    { x: 380, y: 80, entryTime: 0.3 }
+  )
+}

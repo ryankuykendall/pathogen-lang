@@ -1,0 +1,75 @@
+// control-point-viz.pathogen
+// Debug overlay: visualizes control points as circles and tangent lines.
+
+fn cubicSpline(points) {
+  M points[0].x points[0].y
+  let n = calc(points.length - 1);
+  if (n > 0) {
+    for (i in 1..n) {
+      let prev = points[calc(i - 1)];
+      let curr = points[i];
+      let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+      let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+      let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+      let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+      C c1x c1y c2x c2y curr.x curr.y
+    }
+  }
+}
+
+// --- Data ---
+
+let pts = [
+  { x: 30,  y: 80, angle: -30deg, exit: 35 },
+  { x: 100, y: 20, angle: 10deg,  entry: 30, exit: 30 },
+  { x: 170, y: 70, angle: -20deg, entry: 35, exit: 30 },
+  { x: 240, y: 30, angle: 15deg,  entry: 30 }
+];
+
+
+// --- Curve Layer ---
+
+define PathLayer('curve') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+
+layer('curve').apply {
+  cubicSpline(pts)
+}
+
+
+// --- On-Curve Points ---
+
+define PathLayer('on-points') ${ fill: #2563eb; stroke: none }
+
+layer('on-points').apply {
+  for ([p, i] in pts) {
+    circle(p.x, p.y, 3)
+  }
+}
+
+
+// --- Control Points + Tangent Lines ---
+
+define PathLayer('cp-markers') ${ fill: #dc2626; stroke: none }
+define PathLayer('tangent-lines') ${ fill: none; stroke: #dc2626; stroke-width: 0.75; stroke-dasharray: 3 2 }
+
+let n = calc(pts.length - 1);
+for (i in 1..n) {
+  let prev = pts[calc(i - 1)];
+  let curr = pts[i];
+  let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+  let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+  let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+  let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+
+  // CP markers
+  layer('cp-markers').apply {
+    circle(c1x, c1y, 2.5)
+    circle(c2x, c2y, 2.5)
+  }
+
+  // Tangent lines from anchor to CP
+  layer('tangent-lines').apply {
+    M prev.x prev.y L c1x c1y
+    M curr.x curr.y L c2x c2y
+  }
+}

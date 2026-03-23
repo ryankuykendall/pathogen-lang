@@ -1,0 +1,32 @@
+// cubicSpline(points)
+//
+// Cubic Bezier spline with explicit tangent angles at each point.
+// Each point specifies its tangent angle and handle lengths (exit/entry).
+// G1 continuity guaranteed: exit CP and entry CP at each point share the same tangent line.
+//
+// Point schema:
+//   { x, y, angle, exit?, entry? }
+//   - x, y:    absolute coordinates
+//   - angle:   tangent angle (supports 45deg, 0.25pi suffixes)
+//   - exit:    distance from point to CP1 along tangent (omit on last point)
+//   - entry:   distance from point backward along tangent to CP2 (omit on first point)
+//
+// Math per segment (P[i] → P[i+1]):
+//   CP1 = P[i]   + exit[i]    * dir(angle[i])
+//   CP2 = P[i+1] - entry[i+1] * dir(angle[i+1])
+
+fn cubicSpline(points) {
+  M points[0].x points[0].y
+  let n = calc(points.length - 1);
+  if (n > 0) {
+    for (i in 1..n) {
+      let prev = points[calc(i - 1)];
+      let curr = points[i];
+      let c1x = calc(prev.x + prev.exit * cos(prev.angle));
+      let c1y = calc(prev.y + prev.exit * sin(prev.angle));
+      let c2x = calc(curr.x - curr.entry * cos(curr.angle));
+      let c2y = calc(curr.y - curr.entry * sin(curr.angle));
+      C c1x c1y c2x c2y curr.x curr.y
+    }
+  }
+}

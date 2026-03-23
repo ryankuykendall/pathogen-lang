@@ -1,0 +1,41 @@
+// quadSpline(start, points, end)
+//
+// Quadratic Bezier spline with implicit tangent angles.
+// Only the start point has an explicit angle. Intermediate tangent angles
+// are derived from geometry: direction from previous CP through current point.
+// This is a generalized SVG T command with adjustable arm length.
+//
+// Schemas:
+//   start:        { x, y, angle, exit }
+//   intermediate: { x, y, exit }
+//   end:          { x, y }
+//
+// Math:
+//   Segment 0: sharedCP = start + start.exit * dir(start.angle)
+//   Segment i: derivedAngle = atan2(pt.y - prevCP.y, pt.x - prevCP.x)
+//              sharedCP = pt + pt.exit * dir(derivedAngle)
+
+fn quadSpline(start, points, end) {
+  M start.x start.y
+  let cpx = calc(start.x + start.exit * cos(start.angle));
+  let cpy = calc(start.y + start.exit * sin(start.angle));
+  if (points.length > 0) {
+    Q cpx cpy points[0].x points[0].y
+    let prevCPx = cpx;
+    let prevCPy = cpy;
+    for ([pt, idx] in points) {
+      let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+      let newCPx = calc(pt.x + pt.exit * cos(angle));
+      let newCPy = calc(pt.y + pt.exit * sin(angle));
+      if (idx < calc(points.length - 1)) {
+        Q newCPx newCPy points[calc(idx + 1)].x points[calc(idx + 1)].y
+      } else {
+        Q newCPx newCPy end.x end.y
+      }
+      prevCPx = newCPx;
+      prevCPy = newCPy;
+    }
+  } else {
+    Q cpx cpy end.x end.y
+  }
+}

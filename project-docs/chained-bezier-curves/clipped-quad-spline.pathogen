@@ -1,0 +1,59 @@
+// clippedQuadSpline(start, points, end)
+//
+// Extends quadSpline by splitting the shared CP into two cubic CPs using
+// exitTime/entryTime (0-1 fractions). The shared CP becomes a virtual
+// alignment point — the actual CPs sit at fractions of the arms.
+//
+// When exitTime = entryTime = 1.0: equivalent to a quadratic (CP1 = CP2 = sharedCP)
+// When times < 1.0: CPs pulled back toward endpoints → less eccentric curve
+//
+// Schemas:
+//   start:        { x, y, angle, exit, exitTime }
+//   intermediate: { x, y, exit, exitTime, entryTime }
+//   end:          { x, y, entryTime }
+//
+// Math per segment:
+//   sharedCP computed same as quadSpline (implicit angle + exit)
+//   CP1 = lerp(P[i], sharedCP, exitTime[i])
+//   CP2 = lerp(P[i+1], sharedCP, entryTime[i+1])
+//   Emits cubic C commands (not Q)
+
+fn clippedQuadSpline(start, points, end) {
+  M start.x start.y
+  let cpx = calc(start.x + start.exit * cos(start.angle));
+  let cpy = calc(start.y + start.exit * sin(start.angle));
+  if (points.length > 0) {
+    let c1x = calc(lerp(start.x, cpx, start.exitTime));
+    let c1y = calc(lerp(start.y, cpy, start.exitTime));
+    let c2x = calc(lerp(points[0].x, cpx, points[0].entryTime));
+    let c2y = calc(lerp(points[0].y, cpy, points[0].entryTime));
+    C c1x c1y c2x c2y points[0].x points[0].y
+    let prevCPx = cpx;
+    let prevCPy = cpy;
+    for ([pt, idx] in points) {
+      let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+      let newCPx = calc(pt.x + pt.exit * cos(angle));
+      let newCPy = calc(pt.y + pt.exit * sin(angle));
+      let c1x = calc(lerp(pt.x, newCPx, pt.exitTime));
+      let c1y = calc(lerp(pt.y, newCPy, pt.exitTime));
+      if (idx < calc(points.length - 1)) {
+        let nextIdx = calc(idx + 1);
+        let c2x = calc(lerp(points[nextIdx].x, newCPx, points[nextIdx].entryTime));
+        let c2y = calc(lerp(points[nextIdx].y, newCPy, points[nextIdx].entryTime));
+        C c1x c1y c2x c2y points[nextIdx].x points[nextIdx].y
+      } else {
+        let c2x = calc(lerp(end.x, newCPx, end.entryTime));
+        let c2y = calc(lerp(end.y, newCPy, end.entryTime));
+        C c1x c1y c2x c2y end.x end.y
+      }
+      prevCPx = newCPx;
+      prevCPy = newCPy;
+    }
+  } else {
+    let c1x = calc(lerp(start.x, cpx, start.exitTime));
+    let c1y = calc(lerp(start.y, cpy, start.exitTime));
+    let c2x = calc(lerp(end.x, cpx, end.entryTime));
+    let c2y = calc(lerp(end.y, cpy, end.entryTime));
+    C c1x c1y c2x c2y end.x end.y
+  }
+}

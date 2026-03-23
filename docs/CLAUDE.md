@@ -15,6 +15,7 @@ Public-facing documentation — every `.md` file here is compiled into the site.
 - **Documentation is written first** — before implementation. When adding, removing, or revising Pathogen language features, begin by updating the relevant docs to define the contract, then proceed to implementation. See `src/CLAUDE.md` for the full development lifecycle.
 - **Important**: After creating a new `.md` file in `docs/`, add it to the `DOC_FILES` mapping in `scripts/build-docs.ts` or it will not be published
 - Verify with `npm run build:docs` and `npm run check-links`
+- **Agentic Review**: Agentic review and revision is required before committing or publishing documentation updates. Ensure that the user has viewed the critique, feedback, and roundtable synthesis, and that they have approved the documentation updates.
 
 ## Shared Content Guidelines
 
