@@ -20,6 +20,7 @@ import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
 import compilerWorker from '../services/compiler-worker.js';
 import thumbnailService from '../services/thumbnail-service.js';
+import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
 import { BASE_PATH, buildWorkspaceSlugId, parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
@@ -47,6 +48,8 @@ export class WorkspaceView extends HTMLElement {
   private _handleCopyDebugInfo: (() => Promise<void>) | null = null;
   private _handleThumbnailAutoGenerate: ((e: Event) => void) | null = null;
   private _handleBeforeUnload: (() => void) | null = null;
+  private _handleWorkspaceConflict: ((e: Event) => void) | null = null;
+  private _multiTabUnsubscribe: (() => void) | null = null;
 
   constructor() {
     super();
@@ -75,6 +78,8 @@ export class WorkspaceView extends HTMLElement {
     }
     // Flush pending saves before leaving
     autosave.flush();
+    // Close tab coordinator
+    tabCoordinator.close();
     // Clean up event listeners
     this.cleanupEventListeners();
     // Terminate compiler worker
@@ -101,6 +106,8 @@ export class WorkspaceView extends HTMLElement {
       // Flush pending saves when leaving workspace view
       if (this._initialized) {
         autosave.flush();
+        tabCoordinator.close();
+        store.set('multiTabWarning', false);
 
         // Generate thumbnail if content changed since last thumbnail
         const wsId = this._currentWorkspaceId;
@@ -328,6 +335,9 @@ export class WorkspaceView extends HTMLElement {
           gridSize: store.get('gridSize') as number,
           toFixed: store.get('toFixed') as number | null,
         });
+
+        // Detect same workspace open in another tab
+        tabCoordinator.open(workspace.id);
       }
     } catch (err: any) {
       console.error('Failed to load workspace:', err);
@@ -348,6 +358,11 @@ export class WorkspaceView extends HTMLElement {
   }
 
   setupEventListeners(): void {
+    // Dismiss multi-tab warning
+    this.shadowRoot!.querySelector('#dismiss-multi-tab')?.addEventListener('click', () => {
+      store.set('multiTabWarning', false);
+    });
+
     // Re-apply compilation error when editor finishes loading
     this.shadowRoot!.addEventListener('editor-ready', () => {
       const error = store.get('compilationError') as string | null;
@@ -561,6 +576,20 @@ export class WorkspaceView extends HTMLElement {
       }
     };
     window.addEventListener('beforeunload', this._handleBeforeUnload);
+
+    // Multi-tab conflict warning
+    this._handleWorkspaceConflict = (): void => {
+      if (store.get('currentView') === 'workspace') {
+        store.set('multiTabWarning', true);
+        this._updateWarningBanner();
+      }
+    };
+    document.addEventListener('workspace-conflict', this._handleWorkspaceConflict);
+
+    // Subscribe to multiTabWarning changes for banner updates
+    this._multiTabUnsubscribe = store.subscribe(['multiTabWarning'], () => {
+      this._updateWarningBanner();
+    });
   }
 
   cleanupEventListeners(): void {
@@ -577,6 +606,8 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleSetThumbnail) document.removeEventListener('set-thumbnail', this._handleSetThumbnail);
     if (this._handleThumbnailAutoGenerate) document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
     if (this._handleBeforeUnload) window.removeEventListener('beforeunload', this._handleBeforeUnload);
+    if (this._handleWorkspaceConflict) document.removeEventListener('workspace-conflict', this._handleWorkspaceConflict);
+    if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
   }
 
   copyCode(): void {
@@ -818,6 +849,13 @@ export class WorkspaceView extends HTMLElement {
     return hash.toString(36);
   }
 
+  _updateWarningBanner(): void {
+    const banner = this.shadowRoot?.querySelector('#multi-tab-warning');
+    if (banner) {
+      banner.classList.toggle('visible', store.get('multiTabWarning') as boolean);
+    }
+  }
+
   render(): void {
     this.shadowRoot!.innerHTML = `
       <style>
@@ -841,7 +879,45 @@ export class WorkspaceView extends HTMLElement {
           flex: 1;
           min-height: 0;
         }
+
+        .multi-tab-warning {
+          display: none;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          background: var(--warning-bg, #fef3c7);
+          border-bottom: 1px solid var(--warning-border, #f59e0b);
+          color: var(--warning-text, #92400e);
+          font-size: 12px;
+          line-height: 1.4;
+        }
+
+        .multi-tab-warning.visible {
+          display: flex;
+        }
+
+        .multi-tab-warning .dismiss-btn {
+          margin-left: auto;
+          background: none;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+          padding: 2px 6px;
+          border-radius: var(--radius-sm, 4px);
+          font-size: 11px;
+          opacity: 0.7;
+        }
+
+        .multi-tab-warning .dismiss-btn:hover {
+          opacity: 1;
+          background: rgba(0, 0, 0, 0.08);
+        }
       </style>
+
+      <div class="multi-tab-warning" id="multi-tab-warning">
+        <span>This workspace is open in another tab. Changes may conflict.</span>
+        <button class="dismiss-btn" id="dismiss-multi-tab">Dismiss</button>
+      </div>
 
       <playground-main>
         <code-editor-pane></code-editor-pane>

@@ -484,7 +484,9 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
       }
       if (description !== undefined) workspace.description = description.trim();
       if (isPublic !== undefined) workspace.isPublic = Boolean(isPublic);
-      if (preferences !== undefined) workspace.preferences = preferences;
+      if (preferences !== undefined) {
+        workspace.preferences = { ...(workspace.preferences || {}), ...preferences };
+      }
 
       workspace.updatedAt = new Date().toISOString();
 

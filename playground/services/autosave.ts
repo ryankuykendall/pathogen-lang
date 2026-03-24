@@ -41,6 +41,8 @@ class AutosaveManager {
   _preferencesTimer: ReturnType<typeof setTimeout> | null;
   _lastPreferences: string | null;
   _pendingPreferences: unknown | null;
+  // Flush promise tracking (Fix 1: duplication race condition)
+  _flushPromise: Promise<void> | null;
 
   constructor() {
     this._workspaceId = null;
@@ -53,6 +55,7 @@ class AutosaveManager {
     this._preferencesTimer = null;
     this._lastPreferences = null;
     this._pendingPreferences = null;
+    this._flushPromise = null;
   }
 
   // Initialize autosave for a workspace
@@ -186,24 +189,41 @@ class AutosaveManager {
 
   // Flush any pending changes and stop autosave (call before navigation)
   async flush(): Promise<void> {
-    if (!this._isEnabled || !this._workspaceId) {
-      this.stop();
-      return;
-    }
-
-    // Save pending code (saveNow checks hash, skips if unchanged)
-    await this.saveNow();
-
-    // Save pending preferences if timer was active
-    if (this._preferencesTimer) {
-      clearTimeout(this._preferencesTimer);
-      this._preferencesTimer = null;
-      if (this._pendingPreferences) {
-        await this._savePreferences(this._pendingPreferences);
+    const doFlush = async (): Promise<void> => {
+      if (!this._isEnabled || !this._workspaceId) {
+        this.stop();
+        return;
       }
-    }
 
-    this.stop();
+      // Save pending code (saveNow checks hash, skips if unchanged)
+      await this.saveNow();
+
+      // Save pending preferences if timer was active
+      if (this._preferencesTimer) {
+        clearTimeout(this._preferencesTimer);
+        this._preferencesTimer = null;
+        if (this._pendingPreferences) {
+          await this._savePreferences(this._pendingPreferences);
+        }
+      }
+
+      this.stop();
+    };
+
+    // Track the flush promise so other components can await it
+    this._flushPromise = doFlush();
+    try {
+      await this._flushPromise;
+    } finally {
+      this._flushPromise = null;
+    }
+  }
+
+  // Wait for any in-progress flush to complete (used by copy form to avoid race condition)
+  async awaitPendingFlush(): Promise<void> {
+    if (this._flushPromise) {
+      await this._flushPromise;
+    }
   }
 
   // Force immediate save (e.g., before navigation)
@@ -259,7 +279,7 @@ class AutosaveManager {
     }, DEBOUNCE_MS);
   }
 
-  // Save preferences to backend
+  // Save preferences to backend (sends only changed fields for multi-tab safety)
   async _savePreferences(preferences: unknown): Promise<void> {
     if (!this._isEnabled || !this._workspaceId) {
       return;
@@ -271,9 +291,27 @@ class AutosaveManager {
       return;
     }
 
+    // Compute delta: only send fields that changed from last saved state
+    const current = preferences as Record<string, unknown>;
+    const previous: Record<string, unknown> = this._lastPreferences
+      ? JSON.parse(this._lastPreferences)
+      : {};
+    const delta: Record<string, unknown> = {};
+    let hasChanges = false;
+    for (const [key, value] of Object.entries(current)) {
+      if (JSON.stringify(value) !== JSON.stringify(previous[key])) {
+        delta[key] = value;
+        hasChanges = true;
+      }
+    }
+
+    if (!hasChanges) {
+      return;
+    }
+
     try {
       store.set('saveStatus', SaveStatus.SAVING);
-      await workspaceApi.update(this._workspaceId, { preferences });
+      await workspaceApi.update(this._workspaceId, { preferences: delta });
       this._lastPreferences = prefsJson;
       this._pendingPreferences = null;
       store.set('saveStatus', SaveStatus.SAVED);

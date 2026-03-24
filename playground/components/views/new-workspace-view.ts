@@ -2,6 +2,7 @@
 // Route: /workspace/new
 
 import { workspaceApi } from '../../services/api.js';
+import { autosave } from '../../services/autosave.js';
 import { store } from '../../state/store.js';
 import { defaultCode, examples } from '../../utils/examples.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
@@ -197,6 +198,10 @@ class NewWorkspaceView extends HTMLElement {
     this.render();
 
     try {
+      // Wait for any in-progress autosave flush to complete before fetching
+      // (prevents race condition when user copies immediately after editing)
+      await autosave.awaitPendingFlush();
+
       const workspace = (await workspaceApi.get(id)) as SourceWorkspace;
       this._sourceWorkspace = workspace;
 

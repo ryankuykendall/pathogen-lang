@@ -89,6 +89,7 @@ export const store = createStore({
   // Save status for autosave
   saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'
   saveError: null, // Error message if save failed
+  multiTabWarning: false, // True when same workspace is open in another tab
 
   // User preferences (defaults for new workspaces)
   preferences: {
