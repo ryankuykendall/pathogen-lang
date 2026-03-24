@@ -87,6 +87,28 @@ const EASING_MAP: Record<EasingName, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Texture size clamping
+// ---------------------------------------------------------------------------
+
+/** Maximum canvas dimension for Canvas 2D fallback to avoid memory exhaustion. */
+const MAX_CANVAS_2D_DIM = 16384;
+
+/**
+ * Reduce the effective scale so both dimensions stay within maxDim.
+ * Returns the clamped scale — always <= input scale, >= 0.25 to avoid degenerate textures.
+ */
+function clampScale(w: number, h: number, scale: number, maxDim: number): number {
+  const maxNeeded = Math.max(w * scale, h * scale);
+  if (maxNeeded <= maxDim) return scale;
+  const clamped = maxDim / Math.max(w, h);
+  const result = Math.max(clamped, 0.25);
+  console.warn(
+    `[GradientService] Texture ${Math.round(w * scale)}×${Math.round(h * scale)} exceeds max ${maxDim}×${maxDim}, reducing scale from ${scale}× to ${result.toFixed(2)}×`,
+  );
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Module state
 // ---------------------------------------------------------------------------
 
@@ -314,6 +336,7 @@ async function renderConicWebGPU(grad: GradientOutput, w: number, h: number, sca
   if (!pipelineResult) throw new Error('Pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
+  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
   const pw = w * scale;
   const ph = h * scale;
 
@@ -454,6 +477,7 @@ async function renderFreeformWebGPU(grad: GradientOutput, w: number, h: number, 
   if (!pipelineResult) throw new Error('Freeform pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
+  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
   const pw = w * scale;
   const ph = h * scale;
 
@@ -560,6 +584,7 @@ async function renderMeshWebGPU(grad: GradientOutput, w: number, h: number, scal
   if (!pipelineResult) throw new Error('Mesh pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
+  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
   const pw = w * scale;
   const ph = h * scale;
 
@@ -668,6 +693,7 @@ async function renderMeshWebGPU(grad: GradientOutput, w: number, h: number, scal
  */
 function renderFreeformCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
   try {
+    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
     const pw = w * scale;
     const ph = h * scale;
     // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
@@ -740,6 +766,7 @@ function renderFreeformCanvas2D(grad: GradientOutput, w: number, h: number, scal
  */
 function renderMeshCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
   try {
+    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
     const pw = w * scale;
     const ph = h * scale;
     // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
@@ -915,6 +942,7 @@ function smoothstep(t: number): number {
  */
 function renderConicCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
   try {
+    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
     // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
     const canvas = document.createElement('canvas');
     canvas.width = w * scale;
@@ -975,6 +1003,7 @@ async function renderTopoWebGPU(
   if (!pipelineResult) throw new Error('Topo pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
+  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
   const pw = w * scale;
   const ph = h * scale;
 
@@ -1141,6 +1170,7 @@ async function renderTopoLaplaceWebGPU(
   if (!pipelineResult) throw new Error('Topo Laplace pipeline unavailable');
   const { device, renderPipeline, format } = pipelineResult;
 
+  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
   const pw = w * scale;
   const ph = h * scale;
   const iterations = grad.topoIterations ?? 200;
@@ -1395,6 +1425,7 @@ function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
     return renderTopoLaplaceCanvas2D(grad, w, h, scale);
   }
   try {
+    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
     const pw = w * scale;
     const ph = h * scale;
     const canvas = document.createElement('canvas');
@@ -1470,6 +1501,7 @@ function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
 
 function renderTopoLaplaceCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
   try {
+    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
     const pw = w * scale;
     const ph = h * scale;
     const canvas = document.createElement('canvas');
