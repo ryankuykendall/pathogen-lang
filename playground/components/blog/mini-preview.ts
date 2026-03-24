@@ -2,6 +2,8 @@
 // Zero store dependencies — all state is instance properties
 // Extracted from svg-preview-pane.js for use in blog embeds
 
+import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../../utils/fullscreen-toggle.js';
+
 export class MiniPreview extends HTMLElement {
   // Canvas dimensions
   private _width: number = 200;
@@ -33,6 +35,9 @@ export class MiniPreview extends HTMLElement {
   // Scroll hint timer
   private _scrollHintTimer: ReturnType<typeof setTimeout> | undefined;
 
+  // Fullscreen toggle
+  private _cleanupFullscreen: (() => void) | null = null;
+
   // Bound handlers for cleanup
   private _onDocMouseMove: (e: MouseEvent) => void;
   private _onDocMouseUp: () => void;
@@ -55,11 +60,13 @@ export class MiniPreview extends HTMLElement {
     this.render();
     this.setupEventListeners();
     this.updateSvgStyles();
+    this._cleanupFullscreen = attachFullscreenBehavior(this, this.shadowRoot!);
   }
 
   disconnectedCallback(): void {
     document.removeEventListener('mousemove', this._onDocMouseMove);
     document.removeEventListener('mouseup', this._onDocMouseUp);
+    if (this._cleanupFullscreen) this._cleanupFullscreen();
   }
 
   // --- Public API ---
@@ -601,6 +608,8 @@ export class MiniPreview extends HTMLElement {
           border-color: var(--accent-color, #10b981);
           box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.4));
         }
+
+        ${fullscreenStyles(100, 0.5)}
       </style>
 
       <div id="preview-container">
@@ -618,6 +627,8 @@ export class MiniPreview extends HTMLElement {
           <rect id="navigator-viewport" fill="none" stroke="var(--accent-color, #10b981)" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
         </svg>
       </div>
+
+      ${fullscreenButtonHTML()}
 
       <div id="zoom-controls">
         <button id="zoom-out" title="Zoom out">&#x2212;</button>

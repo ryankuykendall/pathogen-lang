@@ -1,6 +1,7 @@
 // SVG Preview pane with zoom/pan controls and navigator
 
 import { store } from '../state/store.js';
+import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 
 const DEFAULT_STROKE = '#000000';
 const DEFAULT_STROKE_WIDTH = 2;
@@ -108,6 +109,9 @@ export class SvgPreviewPane extends HTMLElement {
   private navDragStartPanX: number = 0;
   private navDragStartPanY: number = 0;
 
+  // Fullscreen toggle
+  private _cleanupFullscreen: (() => void) | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -118,6 +122,11 @@ export class SvgPreviewPane extends HTMLElement {
     this.setupEventListeners();
     this.subscribeToStore();
     this.updateSvgStyles();
+    this._cleanupFullscreen = attachFullscreenBehavior(this, this.shadowRoot!);
+  }
+
+  disconnectedCallback(): void {
+    if (this._cleanupFullscreen) this._cleanupFullscreen();
   }
 
   subscribeToStore(): void {
@@ -1215,6 +1224,8 @@ export class SvgPreviewPane extends HTMLElement {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
+
+        ${fullscreenStyles(120, 1)}
       </style>
 
       <div id="zoom-navigator">
@@ -1224,6 +1235,8 @@ export class SvgPreviewPane extends HTMLElement {
           <rect id="navigator-viewport" fill="none" stroke="var(--accent-color, #10b981)" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
         </svg>
       </div>
+
+      ${fullscreenButtonHTML()}
 
       <div id="zoom-controls">
         <button id="zoom-out" title="Zoom out">&#x2212;</button>
