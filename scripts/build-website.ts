@@ -47,6 +47,16 @@ async function build(): Promise<void> {
   // Copy website root files
   console.log('Copying website root...');
   await copyFile(join(ROOT, 'website', 'index.html'), join(DIST, 'index.html'));
+
+  // Copy website assets (landing background SVG, etc.)
+  const websiteAssetsDir = join(ROOT, 'website', 'assets');
+  try {
+    await fs.stat(websiteAssetsDir);
+    await copyDir(websiteAssetsDir, join(DIST, 'assets'));
+    console.log('Copied website assets.');
+  } catch {
+    // assets/ directory doesn't exist yet — skip
+  }
   await esbuild.build({
     entryPoints: [join(ROOT, 'website', '_worker.ts')],
     outfile: join(DIST, '_worker.js'),

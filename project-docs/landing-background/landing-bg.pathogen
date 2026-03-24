@@ -1,0 +1,51 @@
+// viewBox="0 0 1780 3600"
+// width="1780" height="3600"
+// Landing Page Background — Conic gradient triangle grid on dark field
+
+// --- Gradients ---
+let width = 1780;
+let height = 3600;
+
+let wheel_outer = ConicGradient('wheel-outer', -240, 1200) {|g|
+  g.stop(0,      Color('#e63946').alpha(0.01));
+  g.stop(0.0833, Color('#e63946').alpha(0.2));
+  g.stop(0.1667,    Color('#e63946').alpha(0.5));
+  g.stop(0.25,    Color('#f4845f').alpha(0.9));
+  g.stop(0.3333,    Color('#f9c74f').alpha(0.6));
+  g.stop(0.4165,    Color('#43aa8b').alpha(0.3));
+  g.stop(0.5,    Color('#277da1').alpha(0.7));
+  g.stop(0.5831,    Color('#5e60ce').alpha(0.2));
+  g.stop(0.6667,    Color('#9b5de5').alpha(0.8));
+  g.stop(0.7497,    Color('#e63946').alpha(0.5));
+  g.stop(0.833,      Color('#e63946').alpha(0.2));
+  g.stop(0.9163,      Color('#e63946').alpha(0.5));
+  g.stop(1,      Color('#e63946').alpha(0.01));
+};
+wheel_outer.innerRadius = 65;
+wheel_outer.innerFill = 'transparent';
+wheel_outer.spread = 'transparent';
+wheel_outer.interpolation = 'oklch';
+wheel_outer.from = -0.375pi;
+wheel_outer.to = 0.375pi;
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, width, height) }
+
+// --- Outer ring (donut) ---
+
+let ring = PathLayer('ring') ${
+  fill: wheel_outer;
+  stroke: wheel_outer;
+  stroke-width: 1;
+};
+ring.apply {
+  triangleGrid(GridPatternType.Shape, 0, 0, calc(width + 10), height, 32);
+}
+
+
+// --- Scene ---
+
+let scene = GroupLayer('scene') ${};
+scene.append(bg, ring)
