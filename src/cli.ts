@@ -448,7 +448,7 @@ async function startBBWPServer(
   projectRoot: string,
 ): Promise<{ server: ReturnType<typeof createServer>; port: number }> {
   return new Promise((resolve, reject) => {
-    const server = createServer((req, res) => {
+    const server = createServer(async (req, res) => {
       const url = new URL(req.url || '/', 'http://localhost');
       let filePath = join(projectRoot, url.pathname);
       if (filePath.endsWith('/')) filePath += 'index.html';
@@ -459,6 +459,25 @@ async function startBBWPServer(
         res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
         res.end(content);
       } catch {
+        // Fallback: if .js not found, try transpiling the .ts counterpart on the fly.
+        // After the playground TS migration, source files are .ts but imports use .js extensions.
+        if (filePath.endsWith('.js')) {
+          const tsPath = filePath.replace(/\.js$/, '.ts');
+          try {
+            const tsSource = readFileSync(tsPath, 'utf-8');
+            const { transformSync } = await import('esbuild');
+            const result = transformSync(tsSource, {
+              loader: 'ts',
+              format: 'esm',
+              target: 'es2022',
+            });
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(result.code);
+            return;
+          } catch {
+            // .ts file doesn't exist either — fall through to 404
+          }
+        }
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not Found');
       }
