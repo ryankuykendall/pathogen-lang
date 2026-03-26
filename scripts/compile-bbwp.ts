@@ -240,6 +240,7 @@ program
       `--width=${width}`,
       `--height=${height}`,
     ];
+    cliArgs.push('--include-metadata');
     if (useGpu) {
       cliArgs.push('--render-gpu', `--scale=${scale}`);
     }

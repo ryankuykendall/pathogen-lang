@@ -1,7 +1,6 @@
 // Floating CSS variable panel for live override of var() references in SVG preview
 
 import type { CSSPropertyDeclaration, GradientOutput, LayerOutput } from '../types/compiler.js';
-import { store } from '../state/store.js';
 import styles from './cssvar-panel.css';
 
 // Detect whether a string looks like a CSS color using canvas
@@ -27,31 +26,26 @@ interface VarInfo {
 
 export class CssvarPanel extends HTMLElement {
   private _collapsed: boolean;
-  private _unsubscribe: (() => void) | null;
   private _overrides: Map<string, string>;
+  private _layers: LayerOutput[] = [];
+  private _cssProperties: CSSPropertyDeclaration[] = [];
+  private _gradients: GradientOutput[] = [];
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._collapsed = false;
-    this._unsubscribe = null;
     this._overrides = new Map();
   }
 
   connectedCallback(): void {
     this.render();
-    this._unsubscribe = store.subscribe(['layers', 'cssProperties', 'gradients'], () => {
-      this.updateList();
-    });
     this.updateList();
   }
 
-  disconnectedCallback(): void {
-    if (this._unsubscribe) {
-      this._unsubscribe();
-      this._unsubscribe = null;
-    }
-  }
+  set layers(value: LayerOutput[]) { this._layers = value || []; this.updateList(); }
+  set cssProperties(value: CSSPropertyDeclaration[]) { this._cssProperties = value || []; this.updateList(); }
+  set gradients(value: GradientOutput[]) { this._gradients = value || []; this.updateList(); }
 
   toggleCollapse(): void {
     this._collapsed = !this._collapsed;
@@ -80,7 +74,7 @@ export class CssvarPanel extends HTMLElement {
   }
 
   updateList(): void {
-    const layers = (store.get('layers') || []) as LayerOutput[];
+    const layers = this._layers;
     const list = this.shadowRoot!.querySelector('.var-list') as HTMLElement | null;
     if (!list) return;
 
@@ -103,7 +97,7 @@ export class CssvarPanel extends HTMLElement {
     }
 
     // Also include CSS properties registered via @property (e.g., from Color(CSSVar(...)) in gradient stops)
-    const cssProperties = (store.get('cssProperties') || []) as CSSPropertyDeclaration[];
+    const cssProperties = this._cssProperties;
     for (const prop of cssProperties) {
       if (!varMap.has(prop.name)) {
         varMap.set(prop.name, { fallback: prop.initialValue || '', layerName: '', property: '@property' });
@@ -207,7 +201,7 @@ export class CssvarPanel extends HTMLElement {
     }
 
     // Conic gradient warning: CSS vars are baked at render time for rasterized conic gradients
-    const gradients = (store.get('gradients') || []) as GradientOutput[];
+    const gradients = this._gradients;
     const hasConic = gradients.some((g) => g.type === 'conic');
     const existingNote = list.querySelector('.conic-warning');
     if (existingNote) existingNote.remove();

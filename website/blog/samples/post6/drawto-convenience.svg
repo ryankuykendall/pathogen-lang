@@ -1,25 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" width="520" height="340">
 
-  <path d="M 0 0 L 520 0 L 520 340 L 0 340 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path d="M 260 40 v 260" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="6 4"/>
-  <path d="M 60 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 130 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 200 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 60 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 130 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 200 180 l 20 -15 l 20 15 l -10 20 l -20 0 z" fill="rgba(245, 158, 11, 0.125)" stroke="#f59e0b" stroke-width="1.5"/>
-  <path d="M 57 97 h 6 M 60 94 v 6 M 127 97 h 6 M 130 94 v 6 M 197 97 h 6 M 200 94 v 6 M 57 177 h 6 M 60 174 v 6 M 127 177 h 6 M 130 174 v 6 M 197 177 h 6 M 200 174 v 6" fill="none" stroke="#22c55e" stroke-width="1"/>
-  <path d="M 320 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 390 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 460 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 320 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 390 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 460 180 l 20 -15 l 20 15 l -10 20 l -20 0 z" fill="rgba(139, 92, 246, 0.125)" stroke="#8b5cf6" stroke-width="1.5"/>
-  <text x="45" y="250" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">M 60 100</text>
+  <path id="bg" d="M 0 0 L 520 0 L 520 340 L 0 340 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path id="divider" d="M 260 40 v 260" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="6 4"/>
+  <path id="manual-shapes" d="M 60 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 130 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 200 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 60 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 130 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 200 180 l 20 -15 l 20 15 l -10 20 l -20 0 z" fill="rgba(245, 158, 11, 0.125)" stroke="#f59e0b" stroke-width="1.5"/>
+  <path id="cursors" d="M 57 97 h 6 M 60 94 v 6 M 127 97 h 6 M 130 94 v 6 M 197 97 h 6 M 200 94 v 6 M 57 177 h 6 M 60 174 v 6 M 127 177 h 6 M 130 174 v 6 M 197 177 h 6 M 200 174 v 6" fill="none" stroke="#22c55e" stroke-width="1"/>
+  <path id="drawto-shapes" d="M 320 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 390 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 460 100 l 20 -15 l 20 15 l -10 20 l -20 0 z M 320 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 390 180 l 20 -15 l 20 15 l -10 20 l -20 0 z M 460 180 l 20 -15 l 20 15 l -10 20 l -20 0 z" fill="rgba(139, 92, 246, 0.125)" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text id="code-manual" x="45" y="250" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">M 60 100</text>
   <text x="45" y="263" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">pent.draw()</text>
   <text x="45" y="280" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">M 130 100</text>
   <text x="45" y="293" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">pent.draw()</text>
-  <text x="310" y="250" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">pent.drawTo(320, 100)</text>
+  <text id="code-drawto" x="310" y="250" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">pent.drawTo(320, 100)</text>
   <text x="310" y="263" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">pent.drawTo(390, 100)</text>
-  <text x="45" y="250" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="start">M</text>
+  <text id="kw-manual" x="45" y="250" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="start">M</text>
   <text x="45" y="280" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="start">M</text>
-  <text x="310" y="250" font-family="monospace" font-size="9" fill="#8b5cf6" text-anchor="start">pent.drawTo</text>
+  <text id="kw-drawto" x="310" y="250" font-family="monospace" font-size="9" fill="#8b5cf6" text-anchor="start">pent.drawTo</text>
   <text x="310" y="263" font-family="monospace" font-size="9" fill="#8b5cf6" text-anchor="start">pent.drawTo</text>
-  <text x="45" y="310" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// 2 statements per shape</text>
+  <text id="steps" x="45" y="310" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// 2 statements per shape</text>
   <text x="310" y="278" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// 1 statement per shape</text>
-  <text x="130" y="65" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="middle">Manual: M + draw()</text>
+  <text id="headers" x="130" y="65" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="middle">Manual: M + draw()</text>
   <text x="390" y="65" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="middle">Convenience: drawTo()</text>
-  <path d="M 59 50 L 201 50 Q 205 50 205 54 L 205 68 Q 205 72 201 72 L 59 72 Q 55 72 55 68 L 55 54 Q 55 50 59 50 Z" fill="rgba(245, 158, 11, 0.094)" stroke="#f59e0b" stroke-width="0.5"/>
-  <path d="M 319 50 L 461 50 Q 465 50 465 54 L 465 68 Q 465 72 461 72 L 319 72 Q 315 72 315 68 L 315 54 Q 315 50 319 50 Z" fill="rgba(139, 92, 246, 0.094)" stroke="#8b5cf6" stroke-width="0.5"/>
-  <text x="260" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="middle">Positioning: Two Approaches</text>
+  <path id="badge-manual" d="M 59 50 L 201 50 Q 205 50 205 54 L 205 68 Q 205 72 201 72 L 59 72 Q 55 72 55 68 L 55 54 Q 55 50 59 50 Z" fill="rgba(245, 158, 11, 0.094)" stroke="#f59e0b" stroke-width="0.5"/>
+  <path id="badge-drawto" d="M 319 50 L 461 50 Q 465 50 465 54 L 465 68 Q 465 72 461 72 L 319 72 Q 315 72 315 68 L 315 54 Q 315 50 319 50 Z" fill="rgba(139, 92, 246, 0.094)" stroke="#8b5cf6" stroke-width="0.5"/>
+  <text id="title" x="260" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="middle">Positioning: Two Approaches</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"divider","type":"path","styles":{"stroke":"#334155","stroke-width":"1","stroke-dasharray":"6 4","fill":"none"},"isDefault":false},{"name":"manual-shapes","type":"path","styles":{"fill":"rgba(245, 158, 11, 0.125)","stroke":"#f59e0b","stroke-width":"1.5"},"isDefault":false},{"name":"cursors","type":"path","styles":{"stroke":"#22c55e","stroke-width":"1","fill":"none"},"isDefault":false},{"name":"drawto-shapes","type":"path","styles":{"fill":"rgba(139, 92, 246, 0.125)","stroke":"#8b5cf6","stroke-width":"1.5"},"isDefault":false},{"name":"code-manual","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"code-drawto","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw-manual","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#f59e0b","text-anchor":"start"},"isDefault":false},{"name":"kw-drawto","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#8b5cf6","text-anchor":"start"},"isDefault":false},{"name":"steps","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"headers","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"12","fill":"#e2e8f0","text-anchor":"middle"},"isDefault":false},{"name":"badge-manual","type":"path","styles":{"fill":"rgba(245, 158, 11, 0.094)","stroke":"#f59e0b","stroke-width":"0.5"},"isDefault":false},{"name":"badge-drawto","type":"path","styles":{"fill":"rgba(139, 92, 246, 0.094)","stroke":"#8b5cf6","stroke-width":"0.5"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

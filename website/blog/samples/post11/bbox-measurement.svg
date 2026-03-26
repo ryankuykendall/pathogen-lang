@@ -1,41 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="600" height="360">
 
-  <path d="M 0 0 L 600 0 L 600 360 L 0 360 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 320 h 600 M 0 340 h 600 M 0 360 h 600 M 0 0 v 360 M 20 0 v 360 M 40 0 v 360 M 60 0 v 360 M 80 0 v 360 M 100 0 v 360 M 120 0 v 360 M 140 0 v 360 M 160 0 v 360 M 180 0 v 360 M 200 0 v 360 M 220 0 v 360 M 240 0 v 360 M 260 0 v 360 M 280 0 v 360 M 300 0 v 360 M 320 0 v 360 M 340 0 v 360 M 360 0 v 360 M 380 0 v 360 M 400 0 v 360 M 420 0 v 360 M 440 0 v 360 M 460 0 v 360 M 480 0 v 360 M 500 0 v 360 M 520 0 v 360 M 540 0 v 360 M 560 0 v 360 M 580 0 v 360 M 600 0 v 360" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-  <g transform="translate(60, 100)">
-    <text x="0" y="10" font-family="monospace" font-size="10" fill="#e2e8f0">font-size: 10</text>
-    <path d="M 0 0 L 78 0 L 78 12 L 0 12 Z" fill="rgba(59, 130, 246, 0.063)" stroke="#3b82f6" stroke-width="1"/>
-    <path d="M 0 -14 h 78 M 0 -17 v 6 M 78 -17 v 6" fill="none" stroke="#f59e0b" stroke-width="0.75"/>
-    <text x="39" y="-20" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="middle">w = 78</text>
-    <path d="M 94 0 v 12 M 91 0 h 6 M 91 12 h 6" fill="none" stroke="#22c55e" stroke-width="0.75"/>
-    <text x="102" y="9" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">h = 12</text>
+  <path id="bg" d="M 0 0 L 600 0 L 600 360 L 0 360 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path id="grid" d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 320 h 600 M 0 340 h 600 M 0 360 h 600 M 0 0 v 360 M 20 0 v 360 M 40 0 v 360 M 60 0 v 360 M 80 0 v 360 M 100 0 v 360 M 120 0 v 360 M 140 0 v 360 M 160 0 v 360 M 180 0 v 360 M 200 0 v 360 M 220 0 v 360 M 240 0 v 360 M 260 0 v 360 M 280 0 v 360 M 300 0 v 360 M 320 0 v 360 M 340 0 v 360 M 360 0 v 360 M 380 0 v 360 M 400 0 v 360 M 420 0 v 360 M 440 0 v 360 M 460 0 v 360 M 480 0 v 360 M 500 0 v 360 M 520 0 v 360 M 540 0 v 360 M 560 0 v 360 M 580 0 v 360 M 600 0 v 360" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g id="row-10" transform="translate(60, 100)">
+    <text id="t1" x="0" y="10" font-family="monospace" font-size="10" fill="#e2e8f0">font-size: 10</text>
+    <path id="bb1" d="M 0 0 L 78 0 L 78 12 L 0 12 Z" fill="rgba(59, 130, 246, 0.063)" stroke="#3b82f6" stroke-width="1"/>
+    <path id="wd1" d="M 0 -14 h 78 M 0 -17 v 6 M 78 -17 v 6" fill="none" stroke="#f59e0b" stroke-width="0.75"/>
+    <text id="wl1" x="39" y="-20" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="middle">w = 78</text>
+    <path id="hd1" d="M 94 0 v 12 M 91 0 h 6 M 91 12 h 6" fill="none" stroke="#22c55e" stroke-width="0.75"/>
+    <text id="hl1" x="102" y="9" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">h = 12</text>
   </g>
-  <g transform="translate(60, 195)">
-    <text x="0" y="16" font-family="monospace" font-size="16" fill="#e2e8f0">font-size: 16</text>
-    <path d="M 0 0 L 124.8 0 L 124.8 19.2 L 0 19.2 Z" fill="rgba(59, 130, 246, 0.063)" stroke="#3b82f6" stroke-width="1"/>
-    <path d="M 0 -14 h 124.8 M 0 -17 v 6 M 124.8 -17 v 6" fill="none" stroke="#f59e0b" stroke-width="0.75"/>
-    <text x="62.4" y="-20" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="middle">w = 124.8</text>
-    <path d="M 140.8 0 v 19.2 M 137.8 0 h 6 M 137.8 19.2 h 6" fill="none" stroke="#22c55e" stroke-width="0.75"/>
-    <text x="148.8" y="12.6" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">h = 19.2</text>
+  <g id="row-16" transform="translate(60, 195)">
+    <text id="t2" x="0" y="16" font-family="monospace" font-size="16" fill="#e2e8f0">font-size: 16</text>
+    <path id="bb2" d="M 0 0 L 124.8 0 L 124.8 19.2 L 0 19.2 Z" fill="rgba(59, 130, 246, 0.063)" stroke="#3b82f6" stroke-width="1"/>
+    <path id="wd2" d="M 0 -14 h 124.8 M 0 -17 v 6 M 124.8 -17 v 6" fill="none" stroke="#f59e0b" stroke-width="0.75"/>
+    <text id="wl2" x="62.4" y="-20" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="middle">w = 124.8</text>
+    <path id="hd2" d="M 140.8 0 v 19.2 M 137.8 0 h 6 M 137.8 19.2 h 6" fill="none" stroke="#22c55e" stroke-width="0.75"/>
+    <text id="hl2" x="148.8" y="12.6" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">h = 19.2</text>
   </g>
-  <g transform="translate(60, 300)">
-    <text x="0" y="24" font-family="monospace" font-size="24" fill="#e2e8f0">font-size: 24</text>
-    <path d="M 0 0 L 187.2 0 L 187.2 28.799999999999997 L 0 28.799999999999997 Z" fill="rgba(59, 130, 246, 0.063)" stroke="#3b82f6" stroke-width="1"/>
-    <path d="M 0 -14 h 187.2 M 0 -17 v 6 M 187.2 -17 v 6" fill="none" stroke="#f59e0b" stroke-width="0.75"/>
-    <text x="93.6" y="-20" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="middle">w = 187.2</text>
-    <path d="M 203.2 0 v 28.799999999999997 M 200.2 0 h 6 M 200.2 28.799999999999997 h 6" fill="none" stroke="#22c55e" stroke-width="0.75"/>
-    <text x="211.2" y="17.4" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">h = 28.8</text>
+  <g id="row-24" transform="translate(60, 300)">
+    <text id="t3" x="0" y="24" font-family="monospace" font-size="24" fill="#e2e8f0">font-size: 24</text>
+    <path id="bb3" d="M 0 0 L 187.2 0 L 187.2 28.799999999999997 L 0 28.799999999999997 Z" fill="rgba(59, 130, 246, 0.063)" stroke="#3b82f6" stroke-width="1"/>
+    <path id="wd3" d="M 0 -14 h 187.2 M 0 -17 v 6 M 187.2 -17 v 6" fill="none" stroke="#f59e0b" stroke-width="0.75"/>
+    <text id="wl3" x="93.6" y="-20" font-family="monospace" font-size="8" fill="#f59e0b" text-anchor="middle">w = 187.2</text>
+    <path id="hd3" d="M 203.2 0 v 28.799999999999997 M 200.2 0 h 6 M 200.2 28.799999999999997 h 6" fill="none" stroke="#22c55e" stroke-width="0.75"/>
+    <text id="hl3" x="211.2" y="17.4" font-family="monospace" font-size="8" fill="#22c55e" text-anchor="start">h = 28.8</text>
   </g>
-  <g transform="translate(360, 80)">
-    <text x="0" y="0" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let label = &amp;{</text>
+  <g id="code-group" transform="translate(360, 80)">
+    <text id="code" x="0" y="0" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let label = &amp;{</text>
     <text x="12" y="12" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 24) ...</text>
     <text x="0" y="24" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">} &lt;&lt; styles;</text>
     <text x="0" y="44" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let bb = label.boundingBox();</text>
     <text x="0" y="64" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// bb.width  = text width</text>
     <text x="0" y="76" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// bb.height = fontSize * 1.2</text>
-    <text x="0" y="0" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+    <text id="kw" x="0" y="0" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
     <text x="0" y="44" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
   </g>
-  <text x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Measure Before You Place</text>
-  <text x="30" y="44" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="start">.boundingBox() returns { x, y, width, height }</text>
+  <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Measure Before You Place</text>
+  <text id="subtitle" x="30" y="44" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="start">.boundingBox() returns { x, y, width, height }</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"grid","type":"path","styles":{"stroke":"#1e293b","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"row-10","type":"group","styles":{},"isDefault":false,"transform":"translate(60, 100)","children":[{"name":"t1","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#e2e8f0"},"isDefault":false},{"name":"bb1","type":"path","styles":{"fill":"rgba(59, 130, 246, 0.063)","stroke":"#3b82f6","stroke-width":"1"},"isDefault":false},{"name":"wd1","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"wl1","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#f59e0b","text-anchor":"middle"},"isDefault":false},{"name":"hd1","type":"path","styles":{"stroke":"#22c55e","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"hl1","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#22c55e","text-anchor":"start"},"isDefault":false}]},{"name":"row-16","type":"group","styles":{},"isDefault":false,"transform":"translate(60, 195)","children":[{"name":"t2","type":"text","styles":{"font-family":"monospace","font-size":"16","fill":"#e2e8f0"},"isDefault":false},{"name":"bb2","type":"path","styles":{"fill":"rgba(59, 130, 246, 0.063)","stroke":"#3b82f6","stroke-width":"1"},"isDefault":false},{"name":"wd2","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"wl2","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#f59e0b","text-anchor":"middle"},"isDefault":false},{"name":"hd2","type":"path","styles":{"stroke":"#22c55e","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"hl2","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#22c55e","text-anchor":"start"},"isDefault":false}]},{"name":"row-24","type":"group","styles":{},"isDefault":false,"transform":"translate(60, 300)","children":[{"name":"t3","type":"text","styles":{"font-family":"monospace","font-size":"24","fill":"#e2e8f0"},"isDefault":false},{"name":"bb3","type":"path","styles":{"fill":"rgba(59, 130, 246, 0.063)","stroke":"#3b82f6","stroke-width":"1"},"isDefault":false},{"name":"wd3","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"wl3","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#f59e0b","text-anchor":"middle"},"isDefault":false},{"name":"hd3","type":"path","styles":{"stroke":"#22c55e","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"hl3","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#22c55e","text-anchor":"start"},"isDefault":false}]},{"name":"code-group","type":"group","styles":{},"isDefault":false,"transform":"translate(360, 80)","children":[{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#c084fc","text-anchor":"start"},"isDefault":false}]},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#64748b","text-anchor":"start"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

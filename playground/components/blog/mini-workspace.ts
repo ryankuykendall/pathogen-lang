@@ -36,6 +36,13 @@ export class MiniWorkspace extends HTMLElement {
   private _cssVars: CssVar[] = [];
   private _imgSrc: string | undefined;
 
+  // Inspector state
+  private _inspectorMetadata: Record<string, unknown> | null = null;
+  private _inspectorEl: (HTMLElement & { setData(data: Record<string, unknown>): void }) | null = null;
+  private _inspectorOpen: boolean = false;
+  private _isPreviewFullscreen: boolean = false;
+  private _inspectorKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+
   // Lazy CodeMirror state
   private _editor: unknown | null = null;
   private _cmModules: CmModules | null = null;
@@ -77,6 +84,9 @@ export class MiniWorkspace extends HTMLElement {
     if (this._onThemeChange) {
       document.removeEventListener('theme-change', this._onThemeChange);
     }
+    if (this._inspectorOpen) {
+      this._closeInspector();
+    }
   }
 
   private _captureChildren(): void {
@@ -116,6 +126,7 @@ export class MiniWorkspace extends HTMLElement {
       const h = svgChild.getAttribute('height');
       if (w) this._width = parseFloat(w);
       if (h) this._height = parseFloat(h);
+      this._extractMetadata(svgChild);
     }
 
     // Handle <img> fallback — fetch the SVG so we can render it in mini-preview
@@ -139,6 +150,9 @@ export class MiniWorkspace extends HTMLElement {
       const resp = await fetch(url);
       if (resp.ok) {
         this._svgContent = await resp.text();
+        // Extract metadata from fetched SVG
+        const doc = new DOMParser().parseFromString(this._svgContent, 'image/svg+xml');
+        this._extractMetadata(doc.documentElement);
         const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement & {
           setSvgContent(svg: string): void;
         };
@@ -311,7 +325,6 @@ export class MiniWorkspace extends HTMLElement {
         (langJs as any).javascript(),
         (view as any).EditorView.lineWrapping,
         (state as any).EditorState.readOnly.of(true),
-        (view as any).EditorView.editable.of(false),
       ],
     });
 
@@ -386,6 +399,85 @@ export class MiniWorkspace extends HTMLElement {
 
   // --- Events ---
 
+  private _extractMetadata(svgEl: Element): void {
+    const metaScript = svgEl.querySelector('script#pathogen-metadata');
+    if (metaScript?.textContent) {
+      try {
+        this._inspectorMetadata = JSON.parse(metaScript.textContent);
+      } catch {
+        // Invalid metadata JSON
+      }
+    }
+  }
+
+  private async _openInspector(): Promise<void> {
+    if (this._inspectorOpen || !this._inspectorMetadata) return;
+
+    // Lazy-load inspector panel and its sub-panels
+    await import('../inspector-panel.js');
+
+    this._inspectorEl = document.createElement('inspector-panel') as HTMLElement & { setData(data: Record<string, unknown>): void };
+    this._inspectorEl.classList.add('fullscreen-overlay', 'open');
+    this.shadowRoot!.appendChild(this._inspectorEl);
+    this._inspectorEl.setData(this._inspectorMetadata);
+
+    // Listen for close button
+    this._inspectorEl.addEventListener('toggle-inspector', () => {
+      this._closeInspector();
+    });
+
+    // Listen for layer visibility changes
+    this._inspectorEl.addEventListener('layer-visibility-change', ((e: CustomEvent) => {
+      const { name, visible } = e.detail;
+      const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+      const contentGroup = preview?.shadowRoot?.querySelector('#preview-content');
+      if (contentGroup) {
+        const layerEl = contentGroup.querySelector(`[id="${name}"]`) as HTMLElement | null;
+        if (layerEl) layerEl.style.display = visible === false ? 'none' : '';
+      }
+    }) as EventListener);
+
+    // Listen for CSS var overrides
+    this._inspectorEl.addEventListener('cssvar-override', ((e: CustomEvent) => {
+      const { varName, value } = e.detail;
+      const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+      if (preview) {
+        if (value) {
+          preview.style.setProperty(varName, value);
+        } else {
+          preview.style.removeProperty(varName);
+        }
+      }
+    }) as EventListener);
+
+    // ESC key: close inspector before fullscreen exits
+    this._inspectorKeydownHandler = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && this._inspectorOpen && this._isPreviewFullscreen) {
+        e.stopPropagation();
+        this._closeInspector();
+      }
+    };
+    document.addEventListener('keydown', this._inspectorKeydownHandler, true);
+
+    this._inspectorOpen = true;
+  }
+
+  private _closeInspector(): void {
+    if (!this._inspectorOpen) return;
+
+    if (this._inspectorEl) {
+      this._inspectorEl.remove();
+      this._inspectorEl = null;
+    }
+
+    if (this._inspectorKeydownHandler) {
+      document.removeEventListener('keydown', this._inspectorKeydownHandler, true);
+      this._inspectorKeydownHandler = null;
+    }
+
+    this._inspectorOpen = false;
+  }
+
   private setupEventListeners(): void {
     // Code toggle button
     const toggleBtn = this.shadowRoot!.querySelector('#code-toggle');
@@ -410,6 +502,27 @@ export class MiniWorkspace extends HTMLElement {
     const copyBtn = this.shadowRoot!.querySelector('copy-button') as HTMLElement & { setText(text: string): void };
     if (copyBtn) {
       copyBtn.setText(this._sourceCode);
+    }
+
+    // Inspector toggle and fullscreen tracking — listen directly on mini-preview
+    const miniPreview = this.shadowRoot!.querySelector('mini-preview');
+    if (miniPreview) {
+      miniPreview.addEventListener('toggle-inspector', () => {
+        if (this._isPreviewFullscreen) {
+          if (this._inspectorOpen) {
+            this._closeInspector();
+          } else {
+            this._openInspector();
+          }
+        }
+      });
+
+      miniPreview.addEventListener('fullscreen-change', ((e: CustomEvent) => {
+        this._isPreviewFullscreen = e.detail.fullscreen;
+        if (!e.detail.fullscreen && this._inspectorOpen) {
+          this._closeInspector();
+        }
+      }) as EventListener);
     }
 
     // CSS variable controls

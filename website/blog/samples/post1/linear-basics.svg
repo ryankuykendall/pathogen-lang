@@ -26,12 +26,13 @@
   </linearGradient>
 </defs>
 
-  <g>
-    <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="url(#sky)" stroke="none" stroke-width="2"/>
-    <path d="M 0 155 L 400 155 L 400 185 L 0 185 Z" fill="url(#sunstreak)" stroke="none" stroke-width="2"/>
-    <path d="M 0 220 L 40 175 L 90 200 L 140 155 L 200 130 L 260 160 L 310 140 L 360 165 L 400 150 L 400 300 L 0 300 Z" fill="url(#mountains)" stroke="none" stroke-width="2"/>
-    <path d="M 0 260 L 50 220 L 100 240 L 170 195 L 230 225 L 290 205 L 350 230 L 400 210 L 400 300 L 0 300 Z" fill="url(#mountains)" stroke="none" stroke-width="2" opacity="0.7"/>
-    <path d="M 0 255 L 400 255 L 400 300 L 0 300 Z" fill="url(#ground)" stroke="none" stroke-width="2"/>
-    <path d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="none" stroke="#1a0e2e" stroke-width="4"/>
+  <g id="scene">
+    <path id="sky-fill" d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="url(#sky)" stroke="none" stroke-width="2"/>
+    <path id="sun-streak" d="M 0 155 L 400 155 L 400 185 L 0 185 Z" fill="url(#sunstreak)" stroke="none" stroke-width="2"/>
+    <path id="far-mountains" d="M 0 220 L 40 175 L 90 200 L 140 155 L 200 130 L 260 160 L 310 140 L 360 165 L 400 150 L 400 300 L 0 300 Z" fill="url(#mountains)" stroke="none" stroke-width="2"/>
+    <path id="near-mountains" d="M 0 260 L 50 220 L 100 240 L 170 195 L 230 225 L 290 205 L 350 230 L 400 210 L 400 300 L 0 300 Z" fill="url(#mountains)" stroke="none" stroke-width="2" opacity="0.7"/>
+    <path id="ground-fill" d="M 0 255 L 400 255 L 400 300 L 0 300 Z" fill="url(#ground)" stroke="none" stroke-width="2"/>
+    <path id="frame" d="M 0 0 L 400 0 L 400 300 L 0 300 Z" fill="none" stroke="#1a0e2e" stroke-width="4"/>
   </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"sky-fill","type":"path","styles":{"fill":"url(#sky)","stroke":"none"},"isDefault":false},{"name":"sun-streak","type":"path","styles":{"fill":"url(#sunstreak)","stroke":"none"},"isDefault":false},{"name":"far-mountains","type":"path","styles":{"fill":"url(#mountains)","stroke":"none"},"isDefault":false},{"name":"near-mountains","type":"path","styles":{"fill":"url(#mountains)","stroke":"none","opacity":"0.7"},"isDefault":false},{"name":"ground-fill","type":"path","styles":{"fill":"url(#ground)","stroke":"none"},"isDefault":false},{"name":"frame","type":"path","styles":{"fill":"none","stroke":"#1a0e2e","stroke-width":"4"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[{"id":"sky","type":"linear","attrs":{"x1":"0","y1":"0","x2":"0","y2":"1"},"stops":[{"offset":0,"color":"#0d1b2a"},{"offset":0.45,"color":"#1b4965"},{"offset":0.75,"color":"#c56b5a"},{"offset":0.9,"color":"#e8946b"},{"offset":1,"color":"#f4a261"}]},{"id":"mountains","type":"linear","attrs":{"x1":"0","y1":"0","x2":"0.8","y2":"1"},"stops":[{"offset":0,"color":"#1a0e2e"},{"offset":0.4,"color":"#2d1b4e"},{"offset":1,"color":"#5c6b8a"}]},{"id":"ground","type":"linear","attrs":{"x1":"0","y1":"0","x2":"0","y2":"1"},"stops":[{"offset":0,"color":"#1e4d0f"},{"offset":0.5,"color":"#3a6b22"},{"offset":1,"color":"#6b5a1e"}]},{"id":"sunstreak","type":"linear","attrs":{"x1":"0","y1":"0","x2":"1","y2":"0"},"stops":[{"offset":0,"color":"#f4a261"},{"offset":0.35,"color":"#e8946b"},{"offset":0.7,"color":"#c56b5a"},{"offset":1,"color":"#0d1b2a"}]}],"cssProperties":[]}]]></script>
 </svg>

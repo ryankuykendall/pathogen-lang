@@ -1,7 +1,6 @@
 // Floating palette panel showing all colors used in the current program, grouped by layer
 
 import type { GradientOutput, LayerOutput } from '../types/compiler.js';
-import { store } from '../state/store.js';
 import styles from './palette-panel.css';
 
 const COLOR_PROPERTIES = new Set(['stroke', 'fill', 'color', 'stop-color', 'flood-color']);
@@ -17,29 +16,22 @@ interface ColorEntry {
 
 export class PalettePanel extends HTMLElement {
   private _collapsed: boolean;
-  private _unsubscribe: (() => void) | null;
+  private _layers: LayerOutput[] = [];
+  private _gradients: GradientOutput[] = [];
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._collapsed = false;
-    this._unsubscribe = null;
   }
 
   connectedCallback(): void {
     this.render();
-    this._unsubscribe = store.subscribe(['layers', 'gradients'], () => {
-      this.updateList();
-    });
     this.updateList();
   }
 
-  disconnectedCallback(): void {
-    if (this._unsubscribe) {
-      this._unsubscribe();
-      this._unsubscribe = null;
-    }
-  }
+  set layers(value: LayerOutput[]) { this._layers = value || []; this.updateList(); }
+  set gradients(value: GradientOutput[]) { this._gradients = value || []; this.updateList(); }
 
   toggleCollapse(): void {
     this._collapsed = !this._collapsed;
@@ -50,7 +42,7 @@ export class PalettePanel extends HTMLElement {
   }
 
   updateList(): void {
-    const layers = (store.get('layers') || []) as LayerOutput[];
+    const layers = this._layers;
     const list = this.shadowRoot!.querySelector('.palette-list') as HTMLElement | null;
     if (!list) return;
 
@@ -98,7 +90,7 @@ export class PalettePanel extends HTMLElement {
         // Check for gradient url(#id)
         const urlMatch = entry.value.match(/^url\(#(.+?)\)$/);
         if (urlMatch) {
-          const gradients = (store.get('gradients') || []) as GradientOutput[];
+          const gradients = this._gradients;
           let grad: GradientOutput | null = gradients.find((g) => g.id === urlMatch[1]) || null;
           // Walk href chain for inherited gradients
           while (grad && grad.stops.length === 0 && grad.href) {

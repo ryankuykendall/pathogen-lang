@@ -22,6 +22,7 @@ interface CliOptions {
   scale?: number;
   printLogs?: boolean;
   logFile?: string;
+  includeMetadata?: boolean;
 }
 
 function printUsage() {
@@ -79,22 +80,25 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
   const defaultStrokeWidth = options.strokeWidth || '2';
 
   function renderLayerElement(layer: (typeof result.layers)[0], indent: string): string {
+    const idAttr = layer.name && !layer.isDefault ? ` id="${escapeXml(layer.name)}"` : '';
+
     if (layer.type === 'group') {
       const attrs = Object.entries(layer.styles).map(([k, v]) => `${k}="${escapeXml(String(v))}"`);
       if (layer.transform) attrs.push(`transform="${escapeXml(layer.transform)}"`);
       const attrStr = attrs.length ? ` ${attrs.join(' ')}` : '';
       const children = (layer.children || []).map((c) => renderLayerElement(c, `${indent}  `)).join('\n');
       if (children) {
-        return `${indent}<g${attrStr}>\n${children}\n${indent}</g>`;
+        return `${indent}<g${idAttr}${attrStr}>\n${children}\n${indent}</g>`;
       }
-      return `${indent}<g${attrStr}/>`;
+      return `${indent}<g${idAttr}${attrStr}/>`;
     }
     if (layer.type === 'text' && layer.textElements) {
       return layer.textElements
-        .map((te) => {
+        .map((te, i) => {
           const attrs = Object.entries(layer.styles)
             .map(([k, v]) => `${k}="${escapeXml(String(v))}"`)
             .join(' ');
+          const teIdAttr = i === 0 ? idAttr : '';
           const transform =
             te.rotation != null ? ` transform="rotate(${radToDeg(te.rotation)}, ${te.x}, ${te.y})"` : '';
           const content = te.children
@@ -111,7 +115,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
               return `<tspan${spAttrs ? ` ${spAttrs}` : ''}>${escapeXml(child.text)}</tspan>`;
             })
             .join('');
-          return `${indent}<text x="${te.x}" y="${te.y}"${transform}${attrs ? ` ${attrs}` : ''}>${content}</text>`;
+          return `${indent}<text${teIdAttr} x="${te.x}" y="${te.y}"${transform}${attrs ? ` ${attrs}` : ''}>${content}</text>`;
         })
         .join('\n');
     }
@@ -125,7 +129,7 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
       .join(' ');
     const extra = extraAttrs ? ` ${extraAttrs}` : '';
     const transformAttr = layer.transform ? ` transform="${escapeXml(layer.transform)}"` : '';
-    return `${indent}<path d="${escapeXml(layer.data)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}/>`;
+    return `${indent}<path${idAttr} d="${escapeXml(layer.data)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}/>`;
   }
 
   const elements = result.layers.map((layer) => renderLayerElement(layer, '  ')).join('\n');
@@ -265,9 +269,27 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     styleSection = `\n  <style><![CDATA[\n${rules}\n  ]]></style>`;
   }
 
+  // Optional inspector metadata for downstream consumers (blog embeds, etc.)
+  let metadataSection = '';
+  if (options.includeMetadata) {
+    const stripLayerData = (layer: (typeof result.layers)[0]): Record<string, unknown> => {
+      const { data: _d, fragmentDefs: _fd, fragmentVisuals: _fv, textElements: _te, children, ...rest } = layer;
+      if (children) return { ...rest, children: children.map(stripLayerData) };
+      return rest;
+    };
+    const metadata = {
+      layers: result.layers.map(stripLayerData),
+      masks: result.masks,
+      clipPaths: result.clipPaths,
+      gradients: result.gradients,
+      cssProperties: result.cssProperties,
+    };
+    metadataSection = `\n<script type="application/json" id="pathogen-metadata"><![CDATA[${JSON.stringify(metadata)}]]></script>`;
+  }
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeXml(viewBox)}" width="${escapeXml(width)}" height="${escapeXml(height)}">${styleSection}
 ${defsSection}
-${elements}
+${elements}${metadataSection}
 </svg>`;
 }
 
@@ -394,6 +416,12 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
         process.exit(1);
       }
       options.scale = n;
+      i++;
+      continue;
+    }
+
+    if (arg === '--include-metadata') {
+      options.includeMetadata = true;
       i++;
       continue;
     }

@@ -51,6 +51,9 @@ export class WorkspaceView extends HTMLElement {
   private _handleWorkspaceConflict: ((e: Event) => void) | null = null;
   private _handleFullscreenChange: ((e: Event) => void) | null = null;
   private _multiTabUnsubscribe: (() => void) | null = null;
+  private _inspectorDataUnsubscribe: (() => void) | null = null;
+  private _handleLayerVisibilityChange: ((e: Event) => void) | null = null;
+  private _handleDefsVisibilityChange: ((e: Event) => void) | null = null;
   private _isPreviewFullscreen: boolean = false;
 
   constructor() {
@@ -161,8 +164,8 @@ export class WorkspaceView extends HTMLElement {
     return this.shadowRoot!.querySelector('docs-panel') as any;
   }
 
-  get inspectorPanel(): HTMLElement {
-    return this.shadowRoot!.querySelector('inspector-panel') as HTMLElement;
+  get inspectorPanel(): HTMLElement & { setData(data: Record<string, unknown>): void } {
+    return this.shadowRoot!.querySelector('inspector-panel') as HTMLElement & { setData(data: Record<string, unknown>): void };
   }
 
   get errorPanel(): HTMLElement & { show(message: string): void; hide(): void; showFeedback(message: string): void } {
@@ -611,6 +614,39 @@ export class WorkspaceView extends HTMLElement {
     this._multiTabUnsubscribe = store.subscribe(['multiTabWarning'], () => {
       this._updateWarningBanner();
     });
+
+    // Feed inspector panel data from store
+    this._inspectorDataUnsubscribe = store.subscribe(
+      ['layers', 'masks', 'clipPaths', 'gradients', 'cssProperties', 'layerVisibility', 'defsVisibility'],
+      () => {
+        this.inspectorPanel.setData({
+          layers: store.get('layers') as any[],
+          masks: store.get('masks') as any[],
+          clipPaths: store.get('clipPaths') as any[],
+          gradients: store.get('gradients') as any[],
+          cssProperties: store.get('cssProperties') as any[],
+          layerVisibility: store.get('layerVisibility') as Record<string, boolean>,
+          defsVisibility: store.get('defsVisibility') as Record<string, boolean>,
+        });
+      },
+    );
+
+    // Layer visibility changes from inspector — write back to store
+    this._handleLayerVisibilityChange = (e: Event): void => {
+      const { name, visible } = (e as CustomEvent).detail;
+      const visibility = { ...(store.get('layerVisibility') as Record<string, boolean>) };
+      visibility[name] = visible;
+      store.set('layerVisibility', visibility);
+    };
+    document.addEventListener('layer-visibility-change', this._handleLayerVisibilityChange);
+
+    this._handleDefsVisibilityChange = (e: Event): void => {
+      const { key, visible } = (e as CustomEvent).detail;
+      const visibility = { ...(store.get('defsVisibility') as Record<string, boolean>) };
+      visibility[key] = visible;
+      store.set('defsVisibility', visibility);
+    };
+    document.addEventListener('defs-visibility-change', this._handleDefsVisibilityChange);
   }
 
   private updateInspectorOverlay(): void {
@@ -633,7 +669,10 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleThumbnailAutoGenerate) document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
     if (this._handleBeforeUnload) window.removeEventListener('beforeunload', this._handleBeforeUnload);
     if (this._handleWorkspaceConflict) document.removeEventListener('workspace-conflict', this._handleWorkspaceConflict);
+    if (this._handleLayerVisibilityChange) document.removeEventListener('layer-visibility-change', this._handleLayerVisibilityChange);
+    if (this._handleDefsVisibilityChange) document.removeEventListener('defs-visibility-change', this._handleDefsVisibilityChange);
     if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
+    if (this._inspectorDataUnsubscribe) this._inspectorDataUnsubscribe();
   }
 
   copyCode(): void {

@@ -7,16 +7,16 @@
   </linearGradient>
 </defs>
 
-  <g>
-    <path d="M 0 0 L 700 0 L 700 250 L 0 250 Z" fill="url(#bg-g)" stroke="none" stroke-width="2"/>
-    <path d="M 21 60 L 124 60 Q 130 60 130 66 L 130 109 Q 130 115 124 115 L 21 115 Q 15 115 15 109 L 15 66 Q 15 60 21 60 Z" fill="#1a3a3a" stroke="#2a9d8f" stroke-width="1.5"/>
-    <path d="M 166 60 L 269 60 Q 275 60 275 66 L 275 109 Q 275 115 269 115 L 166 115 Q 160 115 160 109 L 160 66 Q 160 60 166 60 Z" fill="#2a1a4a" stroke="#7c3aed" stroke-width="1.5"/>
-    <path d="M 311 60 L 414 60 Q 420 60 420 66 L 420 109 Q 420 115 414 115 L 311 115 Q 305 115 305 109 L 305 66 Q 305 60 311 60 Z" fill="#4a1a2a" stroke="#f72585" stroke-width="1.5"/>
-    <path d="M 456 60 L 559 60 Q 565 60 565 66 L 565 109 Q 565 115 559 115 L 456 115 Q 450 115 450 109 L 450 66 Q 450 60 456 60 Z" fill="#3a3a1a" stroke="#e9c46a" stroke-width="1.5"/>
-    <path d="M 601 60 L 679 60 Q 685 60 685 66 L 685 109 Q 685 115 679 115 L 601 115 Q 595 115 595 109 L 595 66 Q 595 60 601 60 Z" fill="#1a2a4a" stroke="#4361ee" stroke-width="1.5"/>
-    <path d="M 130 87 L 157 87 M 275 87 L 302 87 M 420 87 L 447 87 M 565 87 L 592 87" fill="none" stroke="#555" stroke-width="1.5"/>
-    <path d="M 155 82 L 160 87 L 155 92 Z M 300 82 L 305 87 L 300 92 Z M 445 82 L 450 87 L 445 92 Z M 590 82 L 595 87 L 590 92 Z" fill="#555" stroke="none" stroke-width="2"/>
-    <text x="72" y="84" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">.pathogen</text>
+  <g id="scene">
+    <path id="bg" d="M 0 0 L 700 0 L 700 250 L 0 250 Z" fill="url(#bg-g)" stroke="none" stroke-width="2"/>
+    <path id="box1" d="M 21 60 L 124 60 Q 130 60 130 66 L 130 109 Q 130 115 124 115 L 21 115 Q 15 115 15 109 L 15 66 Q 15 60 21 60 Z" fill="#1a3a3a" stroke="#2a9d8f" stroke-width="1.5"/>
+    <path id="box2" d="M 166 60 L 269 60 Q 275 60 275 66 L 275 109 Q 275 115 269 115 L 166 115 Q 160 115 160 109 L 160 66 Q 160 60 166 60 Z" fill="#2a1a4a" stroke="#7c3aed" stroke-width="1.5"/>
+    <path id="box3" d="M 311 60 L 414 60 Q 420 60 420 66 L 420 109 Q 420 115 414 115 L 311 115 Q 305 115 305 109 L 305 66 Q 305 60 311 60 Z" fill="#4a1a2a" stroke="#f72585" stroke-width="1.5"/>
+    <path id="box4" d="M 456 60 L 559 60 Q 565 60 565 66 L 565 109 Q 565 115 559 115 L 456 115 Q 450 115 450 109 L 450 66 Q 450 60 456 60 Z" fill="#3a3a1a" stroke="#e9c46a" stroke-width="1.5"/>
+    <path id="box5" d="M 601 60 L 679 60 Q 685 60 685 66 L 685 109 Q 685 115 679 115 L 601 115 Q 595 115 595 109 L 595 66 Q 595 60 601 60 Z" fill="#1a2a4a" stroke="#4361ee" stroke-width="1.5"/>
+    <path id="arrows" d="M 130 87 L 157 87 M 275 87 L 302 87 M 420 87 L 447 87 M 565 87 L 592 87" fill="none" stroke="#555" stroke-width="1.5"/>
+    <path id="heads" d="M 155 82 L 160 87 L 155 92 Z M 300 82 L 305 87 L 300 92 Z M 445 82 L 450 87 L 445 92 Z M 590 82 L 595 87 L 590 92 Z" fill="#555" stroke="none" stroke-width="2"/>
+    <text id="box-labels" x="72" y="84" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">.pathogen</text>
     <text x="72" y="96" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">Source</text>
     <text x="217" y="90" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">Compiler</text>
     <text x="362" y="84" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">GPU</text>
@@ -24,7 +24,7 @@
     <text x="507" y="84" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">SVG +</text>
     <text x="507" y="96" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">base64</text>
     <text x="640" y="90" font-family="system-ui, sans-serif" font-size="10" fill="#eee" text-anchor="middle" font-weight="bold">Blog</text>
-    <text x="72" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">variables</text>
+    <text id="details" x="72" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">variables</text>
     <text x="72" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">expressions</text>
     <text x="72" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">layers</text>
     <text x="217" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">AST → eval</text>
@@ -39,7 +39,8 @@
     <text x="640" y="130" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">mini-</text>
     <text x="640" y="140" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">workspace</text>
     <text x="640" y="150" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">component</text>
-    <text x="350" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#888" text-anchor="middle">The Gradient Compilation Pipeline</text>
-    <text x="350" y="218" font-family="monospace" font-size="9" fill="#555" text-anchor="middle">from .pathogen source to interactive blog embed</text>
+    <text id="title" x="350" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#888" text-anchor="middle">The Gradient Compilation Pipeline</text>
+    <text id="subtitle" x="350" y="218" font-family="monospace" font-size="9" fill="#555" text-anchor="middle">from .pathogen source to interactive blog embed</text>
   </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"bg","type":"path","styles":{"fill":"url(#bg-g)","stroke":"none"},"isDefault":false},{"name":"box1","type":"path","styles":{"fill":"#1a3a3a","stroke":"#2a9d8f","stroke-width":"1.5"},"isDefault":false},{"name":"box2","type":"path","styles":{"fill":"#2a1a4a","stroke":"#7c3aed","stroke-width":"1.5"},"isDefault":false},{"name":"box3","type":"path","styles":{"fill":"#4a1a2a","stroke":"#f72585","stroke-width":"1.5"},"isDefault":false},{"name":"box4","type":"path","styles":{"fill":"#3a3a1a","stroke":"#e9c46a","stroke-width":"1.5"},"isDefault":false},{"name":"box5","type":"path","styles":{"fill":"#1a2a4a","stroke":"#4361ee","stroke-width":"1.5"},"isDefault":false},{"name":"arrows","type":"path","styles":{"fill":"none","stroke":"#555","stroke-width":"1.5"},"isDefault":false},{"name":"heads","type":"path","styles":{"fill":"#555","stroke":"none"},"isDefault":false},{"name":"box-labels","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#eee","text-anchor":"middle","font-weight":"bold"},"isDefault":false},{"name":"details","type":"text","styles":{"font-family":"monospace","font-size":"7","fill":"#666","text-anchor":"middle"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#888","text-anchor":"middle"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#555","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[{"id":"bg-g","type":"linear","attrs":{"x1":"0","y1":"0","x2":"0","y2":"1"},"stops":[{"offset":0,"color":"#0a0a14"},{"offset":1,"color":"#12121f"}]}],"cssProperties":[]}]]></script>
 </svg>

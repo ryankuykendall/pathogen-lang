@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" width="600" height="380">
 
-  <path d="M 0 0 L 600 0 L 600 380 L 0 380 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 320 h 600 M 0 340 h 600 M 0 360 h 600 M 0 380 h 600 M 0 0 v 380 M 20 0 v 380 M 40 0 v 380 M 60 0 v 380 M 80 0 v 380 M 100 0 v 380 M 120 0 v 380 M 140 0 v 380 M 160 0 v 380 M 180 0 v 380 M 200 0 v 380 M 220 0 v 380 M 240 0 v 380 M 260 0 v 380 M 280 0 v 380 M 300 0 v 380 M 320 0 v 380 M 340 0 v 380 M 360 0 v 380 M 380 0 v 380 M 400 0 v 380 M 420 0 v 380 M 440 0 v 380 M 460 0 v 380 M 480 0 v 380 M 500 0 v 380 M 520 0 v 380 M 540 0 v 380 M 560 0 v 380 M 580 0 v 380 M 600 0 v 380" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-  <path d="M 220 190 h 60 v -20 l 30 30 l -30 30 v -20 h -60 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
-  <path d="M 220 170 L 310 170 L 310 230 L 220 230 Z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="5 3"/>
-  <path d="M 216.5 190 A 3.5 3.5 0 1 1 223.5 190 A 3.5 3.5 0 1 1 216.5 190 M 276.5 190 A 3.5 3.5 0 1 1 283.5 190 A 3.5 3.5 0 1 1 276.5 190 M 276.5 170 A 3.5 3.5 0 1 1 283.5 170 A 3.5 3.5 0 1 1 276.5 170 M 306.5 200 A 3.5 3.5 0 1 1 313.5 200 A 3.5 3.5 0 1 1 306.5 200 M 276.5 230 A 3.5 3.5 0 1 1 283.5 230 A 3.5 3.5 0 1 1 276.5 230 M 276.5 210 A 3.5 3.5 0 1 1 283.5 210 A 3.5 3.5 0 1 1 276.5 210 M 216.5 210 A 3.5 3.5 0 1 1 223.5 210 A 3.5 3.5 0 1 1 216.5 210" fill="#ef4444" stroke="#0f172a" stroke-width="1.5"/>
-  <path d="M 213 190 h 14 M 220 183 v 14" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-  <path d="M 248 187 l 7 3 l -7 3 z M 277 182 l 3 -7 l 3 7 z M 293 183 l 6 1 l -1 6 z" fill="#818cf8" stroke="none" stroke-width="2"/>
-  <path d="M 220 190 L 140 140 M 310 170 L 370 130 M 310 200 L 370 210 M 220 210 L 140 255 M 248 193 L 248 265" fill="none" stroke="#475569" stroke-width="0.5"/>
-  <text x="230" y="182" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">0</text>
+  <path id="bg" d="M 0 0 L 600 0 L 600 380 L 0 380 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path id="grid" d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 320 h 600 M 0 340 h 600 M 0 360 h 600 M 0 380 h 600 M 0 0 v 380 M 20 0 v 380 M 40 0 v 380 M 60 0 v 380 M 80 0 v 380 M 100 0 v 380 M 120 0 v 380 M 140 0 v 380 M 160 0 v 380 M 180 0 v 380 M 200 0 v 380 M 220 0 v 380 M 240 0 v 380 M 260 0 v 380 M 280 0 v 380 M 300 0 v 380 M 320 0 v 380 M 340 0 v 380 M 360 0 v 380 M 380 0 v 380 M 400 0 v 380 M 420 0 v 380 M 440 0 v 380 M 460 0 v 380 M 480 0 v 380 M 500 0 v 380 M 520 0 v 380 M 540 0 v 380 M 560 0 v 380 M 580 0 v 380 M 600 0 v 380" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <path id="shape" d="M 220 190 h 60 v -20 l 30 30 l -30 30 v -20 h -60 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
+  <path id="bbox" d="M 220 170 L 310 170 L 310 230 L 220 230 Z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="5 3"/>
+  <path id="vdots" d="M 216.5 190 A 3.5 3.5 0 1 1 223.5 190 A 3.5 3.5 0 1 1 216.5 190 M 276.5 190 A 3.5 3.5 0 1 1 283.5 190 A 3.5 3.5 0 1 1 276.5 190 M 276.5 170 A 3.5 3.5 0 1 1 283.5 170 A 3.5 3.5 0 1 1 276.5 170 M 306.5 200 A 3.5 3.5 0 1 1 313.5 200 A 3.5 3.5 0 1 1 306.5 200 M 276.5 230 A 3.5 3.5 0 1 1 283.5 230 A 3.5 3.5 0 1 1 276.5 230 M 276.5 210 A 3.5 3.5 0 1 1 283.5 210 A 3.5 3.5 0 1 1 276.5 210 M 216.5 210 A 3.5 3.5 0 1 1 223.5 210 A 3.5 3.5 0 1 1 216.5 210" fill="#ef4444" stroke="#0f172a" stroke-width="1.5"/>
+  <path id="origin-mark" d="M 213 190 h 14 M 220 183 v 14" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+  <path id="dir-arrows" d="M 248 187 l 7 3 l -7 3 z M 277 182 l 3 -7 l 3 7 z M 293 183 l 6 1 l -1 6 z" fill="#818cf8" stroke="none" stroke-width="2"/>
+  <path id="leaders" d="M 220 190 L 140 140 M 310 170 L 370 130 M 310 200 L 370 210 M 220 210 L 140 255 M 248 193 L 248 265" fill="none" stroke="#475569" stroke-width="0.5"/>
+  <text id="vidx" x="230" y="182" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">0</text>
   <text x="270" y="182" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">1</text>
   <text x="286" y="163" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">2</text>
   <text x="318" y="194" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">3</text>
   <text x="286" y="240" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">4</text>
   <text x="270" y="220" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">5</text>
   <text x="230" y="220" font-family="monospace" font-size="9" fill="#fca5a5" text-anchor="middle">6</text>
-  <text x="50" y="137" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">.startPoint</text>
+  <text id="props" x="50" y="137" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">.startPoint</text>
   <text x="50" y="150" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">Point(0, 0)</text>
   <text x="375" y="127" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">.bounds</text>
   <text x="375" y="140" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">{ w: 90, h: 60 }</text>
@@ -23,27 +23,28 @@
   <text x="375" y="220" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">Point(90, 10)</text>
   <text x="50" y="252" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">.closed = true</text>
   <text x="50" y="265" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">z → back to origin</text>
-  <text x="50" y="162" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// green crosshair</text>
+  <text id="types" x="50" y="162" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// green crosshair</text>
   <text x="375" y="152" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// dashed yellow</text>
   <text x="375" y="232" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">// arrow tip</text>
-  <text x="248" y="278" font-family="monospace" font-size="9" fill="#818cf8" text-anchor="middle">path direction →</text>
-  <text x="380" y="30" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">let arrow = @{</text>
+  <text id="dir-label" x="248" y="278" font-family="monospace" font-size="9" fill="#818cf8" text-anchor="middle">path direction →</text>
+  <text id="code" x="380" y="30" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">let arrow = @{</text>
   <text x="392" y="44" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">h 60  v -20</text>
   <text x="392" y="58" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">l 30 30</text>
   <text x="392" y="72" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">l -30 30</text>
   <text x="392" y="86" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">v -20  h -60  z</text>
   <text x="380" y="100" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="start">};</text>
-  <text x="380" y="30" font-family="monospace" font-size="10" fill="#c084fc" text-anchor="start">let</text>
-  <text x="30" y="30" font-family="system-ui, sans-serif" font-size="15" fill="#e2e8f0" text-anchor="start">PathBlock Anatomy</text>
-  <text x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Relative commands stored from origin (0, 0)</text>
-  <text x="42" y="342" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Shape</text>
+  <text id="kw" x="380" y="30" font-family="monospace" font-size="10" fill="#c084fc" text-anchor="start">let</text>
+  <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="15" fill="#e2e8f0" text-anchor="start">PathBlock Anatomy</text>
+  <text id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Relative commands stored from origin (0, 0)</text>
+  <text id="legend" x="42" y="342" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Shape</text>
   <text x="42" y="356" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Bounding box</text>
   <text x="42" y="370" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Vertices</text>
   <text x="132" y="342" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Origin</text>
   <text x="132" y="356" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Direction</text>
-  <path d="M 30 335 L 38 335 L 38 343 L 30 343 Z" fill="#3b82f6" stroke="none" stroke-width="2"/>
-  <path d="M 30 349 L 38 349 L 38 357 L 30 357 Z" fill="#f59e0b" stroke="none" stroke-width="2"/>
-  <path d="M 30 363 L 38 363 L 38 371 L 30 371 Z" fill="#ef4444" stroke="none" stroke-width="2"/>
-  <path d="M 120 335 L 128 335 L 128 343 L 120 343 Z" fill="#22c55e" stroke="none" stroke-width="2"/>
-  <path d="M 120 349 L 128 349 L 128 357 L 120 357 Z" fill="#818cf8" stroke="none" stroke-width="2"/>
+  <path id="leg-s" d="M 30 335 L 38 335 L 38 343 L 30 343 Z" fill="#3b82f6" stroke="none" stroke-width="2"/>
+  <path id="leg-b" d="M 30 349 L 38 349 L 38 357 L 30 357 Z" fill="#f59e0b" stroke="none" stroke-width="2"/>
+  <path id="leg-v" d="M 30 363 L 38 363 L 38 371 L 30 371 Z" fill="#ef4444" stroke="none" stroke-width="2"/>
+  <path id="leg-o" d="M 120 335 L 128 335 L 128 343 L 120 343 Z" fill="#22c55e" stroke="none" stroke-width="2"/>
+  <path id="leg-d" d="M 120 349 L 128 349 L 128 357 L 120 357 Z" fill="#818cf8" stroke="none" stroke-width="2"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"grid","type":"path","styles":{"stroke":"#1e293b","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"shape","type":"path","styles":{"fill":"rgba(59, 130, 246, 0.094)","stroke":"#3b82f6","stroke-width":"2"},"isDefault":false},{"name":"bbox","type":"path","styles":{"fill":"none","stroke":"#f59e0b","stroke-width":"1","stroke-dasharray":"5 3"},"isDefault":false},{"name":"vdots","type":"path","styles":{"fill":"#ef4444","stroke":"#0f172a","stroke-width":"1.5"},"isDefault":false},{"name":"origin-mark","type":"path","styles":{"stroke":"#22c55e","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"dir-arrows","type":"path","styles":{"fill":"#818cf8","stroke":"none"},"isDefault":false},{"name":"leaders","type":"path","styles":{"fill":"none","stroke":"#475569","stroke-width":"0.5"},"isDefault":false},{"name":"vidx","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#fca5a5","text-anchor":"middle"},"isDefault":false},{"name":"props","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"types","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"dir-label","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#818cf8","text-anchor":"middle"},"isDefault":false},{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#c084fc","text-anchor":"start"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"15","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"legend","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"leg-s","type":"path","styles":{"fill":"#3b82f6","stroke":"none"},"isDefault":false},{"name":"leg-b","type":"path","styles":{"fill":"#f59e0b","stroke":"none"},"isDefault":false},{"name":"leg-v","type":"path","styles":{"fill":"#ef4444","stroke":"none"},"isDefault":false},{"name":"leg-o","type":"path","styles":{"fill":"#22c55e","stroke":"none"},"isDefault":false},{"name":"leg-d","type":"path","styles":{"fill":"#818cf8","stroke":"none"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

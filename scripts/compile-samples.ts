@@ -90,9 +90,11 @@ program
   .description('Batch-compile blog sample .pathogen files to SVG')
   .option('--post <n>', 'Compile only post N samples (default: all)')
   .option('--dry-run', 'List files without compiling')
+  .option('--force', 'Recompile all files, ignoring timestamps')
   .action(async (opts) => {
     const postFilter = opts.post ? parseInt(opts.post, 10) : undefined;
     const dryRun = opts.dryRun === true;
+    const force = opts.force === true;
 
     const files = findSamples(postFilter);
     if (files.length === 0) {
@@ -117,8 +119,8 @@ program
         continue;
       }
 
-      // Incremental: skip if SVG is newer
-      if (isUpToDate(pathogenPath, svgPath)) {
+      // Incremental: skip if SVG is newer (unless --force)
+      if (!force && isUpToDate(pathogenPath, svgPath)) {
         console.log(`  skip  ${rel} (up to date)`);
         skipped++;
         continue;
@@ -134,6 +136,7 @@ program
         `--viewBox=${viewBox}`,
         `--width=${width}`,
         `--height=${height}`,
+        '--include-metadata',
       ];
       if (useGpu) {
         cliArgs.push('--render-gpu', '--scale=2');

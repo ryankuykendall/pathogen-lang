@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
 
-  <path d="M 60 70 l 15 15 l 15 -15 l -15 -15 z M 110 70 l 15 15 l 15 -15 l -15 -15 z M 160 70 l 15 15 l 15 -15 l -15 -15 z M 210 70 l 15 15 l 15 -15 l -15 -15 z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
-  <path d="M 60 140 l 15 15 l 15 -15 l -15 -15 z M 110 140 l 15 15 l 15 -15 l -15 -15 z M 160 140 l 15 15 l 15 -15 l -15 -15 z M 210 140 l 15 15 l 15 -15 l -15 -15 z" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1.5"/>
-  <path d="" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="3 2"/>
+  <path id="manual" d="M 60 70 l 15 15 l 15 -15 l -15 -15 z M 110 70 l 15 15 l 15 -15 l -15 -15 z M 160 70 l 15 15 l 15 -15 l -15 -15 z M 210 70 l 15 15 l 15 -15 l -15 -15 z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+  <path id="drawto" d="M 60 140 l 15 15 l 15 -15 l -15 -15 z M 110 140 l 15 15 l 15 -15 l -15 -15 z M 160 140 l 15 15 l 15 -15 l -15 -15 z M 210 140 l 15 15 l 15 -15 l -15 -15 z" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1.5"/>
+  <path id="label" d="" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="3 2"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"manual","type":"path","styles":{"fill":"#f59e0b","stroke":"#b45309","stroke-width":"1.5"},"isDefault":false},{"name":"drawto","type":"path","styles":{"fill":"#8b5cf6","stroke":"#6d28d9","stroke-width":"1.5"},"isDefault":false},{"name":"label","type":"path","styles":{"fill":"none","stroke":"#64748b","stroke-width":"1","stroke-dasharray":"3 2"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

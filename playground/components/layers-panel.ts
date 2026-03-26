@@ -1,7 +1,6 @@
 // Floating layers panel for layer inspection and visibility control
 
 import type { GradientOutput, LayerOutput } from '../types/compiler.js';
-import { store } from '../state/store.js';
 import styles from './layers-panel.css';
 
 const EYE_OPEN = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -27,33 +26,31 @@ interface DefRef {
 export class LayersPanel extends HTMLElement {
   private _collapsed: boolean;
   private _collapsedGroups: Set<string>;
-  private _unsubscribe: (() => void) | null;
+  private _layers: LayerOutput[] = [];
+  private _masks: { id: string }[] = [];
+  private _clipPaths: { id: string }[] = [];
+  private _gradients: GradientOutput[] = [];
+  private _layerVisibility: Record<string, boolean> = {};
+  private _defsVisibility: Record<string, boolean> = {};
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._collapsed = false;
     this._collapsedGroups = new Set();
-    this._unsubscribe = null;
   }
 
   connectedCallback(): void {
     this.render();
-    this._unsubscribe = store.subscribe(
-      ['layers', 'layerVisibility', 'masks', 'clipPaths', 'gradients', 'defsVisibility'],
-      () => {
-        this.updateList();
-      },
-    );
     this.updateList();
   }
 
-  disconnectedCallback(): void {
-    if (this._unsubscribe) {
-      this._unsubscribe();
-      this._unsubscribe = null;
-    }
-  }
+  set layers(value: LayerOutput[]) { this._layers = value || []; this.updateList(); }
+  set masks(value: { id: string }[]) { this._masks = value || []; this.updateList(); }
+  set clipPaths(value: { id: string }[]) { this._clipPaths = value || []; this.updateList(); }
+  set gradients(value: GradientOutput[]) { this._gradients = value || []; this.updateList(); }
+  set layerVisibility(value: Record<string, boolean>) { this._layerVisibility = value || {}; this.updateList(); }
+  set defsVisibility(value: Record<string, boolean>) { this._defsVisibility = value || {}; this.updateList(); }
 
   /** Convert a GradientOutput to a CSS background value */
   gradientToCSS(grad: GradientOutput): string | null {
@@ -68,7 +65,7 @@ export class LayersPanel extends HTMLElement {
     if (!value || value === 'none') return null;
     const urlMatch = value.match(/^url\(#(.+?)\)$/);
     if (urlMatch) {
-      const gradients = (store.get('gradients') || []) as GradientOutput[];
+      const gradients = this._gradients;
       const grad = gradients.find((g) => g.id === urlMatch[1]);
       if (grad) {
         // For inherited gradients with no stops, walk the href chain
@@ -98,22 +95,29 @@ export class LayersPanel extends HTMLElement {
   }
 
   toggleVisibility(name: string): void {
-    const visibility = { ...(store.get('layerVisibility') as Record<string, boolean>) };
-    visibility[name] = visibility[name] === false;
-    store.set('layerVisibility', visibility);
+    this._layerVisibility = { ...this._layerVisibility };
+    this._layerVisibility[name] = this._layerVisibility[name] === false;
+    this.updateList();
     this.dispatchEvent(
       new CustomEvent<{ name: string; visible: boolean }>('layer-visibility-change', {
         bubbles: true,
         composed: true,
-        detail: { name, visible: visibility[name] },
+        detail: { name, visible: this._layerVisibility[name] },
       }),
     );
   }
 
   toggleDefsVisibility(key: string): void {
-    const visibility = { ...(store.get('defsVisibility') as Record<string, boolean>) };
-    visibility[key] = visibility[key] === false;
-    store.set('defsVisibility', visibility);
+    this._defsVisibility = { ...this._defsVisibility };
+    this._defsVisibility[key] = this._defsVisibility[key] === false;
+    this.updateList();
+    this.dispatchEvent(
+      new CustomEvent<{ key: string; visible: boolean }>('defs-visibility-change', {
+        bubbles: true,
+        composed: true,
+        detail: { key, visible: this._defsVisibility[key] },
+      }),
+    );
   }
 
   renderLayerRow(
@@ -222,11 +226,11 @@ export class LayersPanel extends HTMLElement {
   }
 
   updateList(): void {
-    const layers = (store.get('layers') || []) as LayerOutput[];
-    const masks = (store.get('masks') || []) as { id: string }[];
-    const clipPaths = (store.get('clipPaths') || []) as { id: string }[];
-    const visibility = (store.get('layerVisibility') || {}) as Record<string, boolean>;
-    const defsVisibility = (store.get('defsVisibility') || {}) as Record<string, boolean>;
+    const layers = this._layers;
+    const masks = this._masks;
+    const clipPaths = this._clipPaths;
+    const visibility = this._layerVisibility;
+    const defsVisibility = this._defsVisibility;
 
     // Hide entirely when <= 1 layer and no masks/clipPaths (standalone only)
     const hasDefs = masks.length > 0 || clipPaths.length > 0;
