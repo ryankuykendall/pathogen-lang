@@ -3,6 +3,8 @@
 import { store } from '../state/store.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 
+const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+
 const DEFAULT_STROKE = '#000000';
 const DEFAULT_STROKE_WIDTH = 2;
 
@@ -147,6 +149,10 @@ export class SvgPreviewPane extends HTMLElement {
         this.updateSvgStyles();
       },
     );
+    store.subscribe('inspectorOpen', () => {
+      const btn = this.shadowRoot!.querySelector('#inspector-open-btn') as HTMLElement | null;
+      if (btn) btn.style.display = (store.get('inspectorOpen') as boolean) ? 'none' : '';
+    });
     store.subscribe('layerVisibility', () => {
       this.applyLayerVisibility();
       this.updateNavigatorContent();
@@ -1052,6 +1058,11 @@ export class SvgPreviewPane extends HTMLElement {
     navSvg.addEventListener('dblclick', (e: MouseEvent) => this.navigatorDoubleClick(e));
     document.addEventListener('mousemove', (e: MouseEvent) => this.navigatorMouseMove(e));
     document.addEventListener('mouseup', () => this.navigatorMouseUp());
+
+    // Inspector toggle
+    this.shadowRoot!.querySelector('#inspector-open-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('toggle-inspector', { bubbles: true, composed: true }));
+    });
   }
 
   render(): void {
@@ -1225,6 +1236,36 @@ export class SvgPreviewPane extends HTMLElement {
           to { transform: rotate(360deg); }
         }
 
+        #inspector-open-btn {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          display: grid;
+          place-items: center;
+          border: 1px solid var(--border-color, #e2e8f0);
+          border-radius: var(--radius-md, 8px);
+          background: var(--bg-elevated, #ffffff);
+          color: var(--text-secondary, #64748b);
+          cursor: pointer;
+          box-shadow: var(--shadow-md);
+          z-index: 10;
+          transition: all var(--transition-base, 0.15s ease);
+        }
+
+        #inspector-open-btn:hover {
+          border-color: var(--accent-color, #10b981);
+          color: var(--accent-color, #10b981);
+          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+        }
+
+        #inspector-open-btn svg {
+          width: 16px;
+          height: 16px;
+        }
+
         ${fullscreenStyles(120, 1)}
       </style>
 
@@ -1237,6 +1278,8 @@ export class SvgPreviewPane extends HTMLElement {
       </div>
 
       ${fullscreenButtonHTML()}
+
+      <button id="inspector-open-btn" title="Toggle inspector">${LAYERS_ICON}</button>
 
       <div id="zoom-controls">
         <button id="zoom-out" title="Zoom out">&#x2212;</button>

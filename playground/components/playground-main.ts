@@ -46,6 +46,7 @@ export class PlaygroundMain extends HTMLElement {
           flex: 1;
           min-width: 0;
           border-right: 1px solid var(--border-color, #ddd);
+          transition: flex 0.3s ease;
         }
 
         ::slotted(annotated-pane) {
@@ -75,6 +76,7 @@ export class PlaygroundMain extends HTMLElement {
         ::slotted(svg-preview-pane) {
           flex: 1;
           min-width: 0;
+          transition: flex 0.3s ease;
         }
 
         ::slotted(inspector-panel) {
@@ -86,8 +88,7 @@ export class PlaygroundMain extends HTMLElement {
         }
 
         ::slotted(inspector-panel.open) {
-          flex: 1 1 0;
-          min-width: 240px;
+          flex: 0 0 240px;
         }
 
         :host(.inspector-open) ::slotted(code-editor-pane) {

@@ -49,7 +49,9 @@ export class WorkspaceView extends HTMLElement {
   private _handleThumbnailAutoGenerate: ((e: Event) => void) | null = null;
   private _handleBeforeUnload: (() => void) | null = null;
   private _handleWorkspaceConflict: ((e: Event) => void) | null = null;
+  private _handleFullscreenChange: ((e: Event) => void) | null = null;
   private _multiTabUnsubscribe: (() => void) | null = null;
+  private _isPreviewFullscreen: boolean = false;
 
   constructor() {
     super();
@@ -483,16 +485,35 @@ export class WorkspaceView extends HTMLElement {
         const isOpen = !(store.get('inspectorOpen') as boolean);
         store.set('inspectorOpen', isOpen);
         this.inspectorPanel.classList.toggle('open', isOpen);
+        this.updateInspectorOverlay();
       }
     };
     document.addEventListener('toggle-inspector', this._handleToggleInspector);
 
-    // Keyboard shortcuts
+    // Fullscreen change — track preview fullscreen state for inspector overlay
+    this._handleFullscreenChange = (e: Event): void => {
+      const detail = (e as CustomEvent).detail;
+      this._isPreviewFullscreen = detail.fullscreen;
+      this.updateInspectorOverlay();
+    };
+    document.addEventListener('fullscreen-change', this._handleFullscreenChange);
+
+    // Keyboard shortcuts (capture phase so ESC can intercept before fullscreen-toggle)
     this._handleKeydown = (e: KeyboardEvent): void => {
       if (store.get('currentView') !== 'workspace') return;
 
-      if (e.key === 'Escape' && this.docsPanel.classList.contains('open')) {
-        this.docsPanel.close();
+      if (e.key === 'Escape') {
+        // Close inspector overlay first when both fullscreen + inspector are active
+        if (this._isPreviewFullscreen && (store.get('inspectorOpen') as boolean)) {
+          e.stopPropagation();
+          store.set('inspectorOpen', false);
+          this.inspectorPanel.classList.remove('open');
+          this.updateInspectorOverlay();
+          return;
+        }
+        if (this.docsPanel.classList.contains('open')) {
+          this.docsPanel.close();
+        }
       }
       // Ctrl/Cmd+S saves immediately
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -500,7 +521,7 @@ export class WorkspaceView extends HTMLElement {
         autosave.saveNow();
       }
     };
-    document.addEventListener('keydown', this._handleKeydown);
+    document.addEventListener('keydown', this._handleKeydown, true);
 
     // Export with legend
     this._handleExportLegend = (): void => {
@@ -592,6 +613,10 @@ export class WorkspaceView extends HTMLElement {
     });
   }
 
+  private updateInspectorOverlay(): void {
+    this.inspectorPanel.classList.toggle('fullscreen-overlay', this._isPreviewFullscreen);
+  }
+
   cleanupEventListeners(): void {
     if (this._handleExportFile) document.removeEventListener('export-file', this._handleExportFile);
     if (this._handleCopyCode) document.removeEventListener('copy-code', this._handleCopyCode);
@@ -599,7 +624,8 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleToggleAnnotated) document.removeEventListener('toggle-annotated', this._handleToggleAnnotated);
     if (this._handleToggleConsole) document.removeEventListener('toggle-console', this._handleToggleConsole);
     if (this._handleToggleInspector) document.removeEventListener('toggle-inspector', this._handleToggleInspector);
-    if (this._handleKeydown) document.removeEventListener('keydown', this._handleKeydown);
+    if (this._handleFullscreenChange) document.removeEventListener('fullscreen-change', this._handleFullscreenChange);
+    if (this._handleKeydown) document.removeEventListener('keydown', this._handleKeydown, true);
     if (this._handleExportLegend) document.removeEventListener('export-legend', this._handleExportLegend);
     if (this._handleRefreshPreview) document.removeEventListener('refresh-preview', this._handleRefreshPreview);
     if (this._handleCopyDebugInfo) document.removeEventListener('copy-debug-info', this._handleCopyDebugInfo);

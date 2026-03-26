@@ -6,6 +6,8 @@
 }
 
 .inspector {
+  width: 240px;
+  min-width: 240px;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -26,6 +28,56 @@
   top: 0;
   background: var(--bg-elevated, #ffffff);
   z-index: 1;
+}
+
+.close-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all var(--transition-base, 0.15s ease);
+}
+
+.close-btn:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+  color: var(--text-primary, #1a1a2e);
+}
+
+.close-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+:host(.fullscreen-overlay) {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  width: 280px !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 10000 !important;
+  border-left: 1px solid var(--border-color, #e2e8f0) !important;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15) !important;
+  overflow: auto !important;
+  transform: translateX(100%) !important;
+  transition: transform 0.3s ease !important;
+}
+
+:host(.fullscreen-overlay) .inspector {
+  width: 280px;
+  min-width: 280px;
+}
+
+:host(.fullscreen-overlay.open) {
+  transform: translateX(0) !important;
 }
 
 @media (max-width: 800px) {

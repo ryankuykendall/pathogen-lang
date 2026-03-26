@@ -90,7 +90,6 @@ class AppBreadcrumb extends HTMLElement {
         'workspaceId',
         'annotatedOpen',
         'consoleOpen',
-        'inspectorOpen',
         'saveStatus',
         'saveError',
         'compilationStatus',
@@ -252,7 +251,6 @@ class AppBreadcrumb extends HTMLElement {
     const isWorkspaceView = currentView === 'workspace';
     const annotatedOpen = store.get('annotatedOpen') as boolean;
     const consoleOpen = store.get('consoleOpen') as boolean;
-    const inspectorOpen = store.get('inspectorOpen') as boolean;
 
     // Derive usesRandom from calledStdlibFunctions
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
@@ -303,7 +301,6 @@ class AppBreadcrumb extends HTMLElement {
               <div class="toggle-bar">
                 <button id="annotated-toggle" class="toggle-btn ${annotatedOpen ? 'active' : ''}" title="Show annotated output">Annotated</button>
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">Console</button>
-                <button id="inspector-toggle" class="toggle-btn ${inspectorOpen ? 'active' : ''}" title="Toggle inspector panel">Inspector</button>
               </div>
               <button id="copy-code" class="secondary-btn" title="Copy code to clipboard">
                 Copy Code
@@ -348,10 +345,6 @@ class AppBreadcrumb extends HTMLElement {
     this.shadowRoot!.querySelector('#console-toggle')?.addEventListener('click', () => {
       store.set('consoleOpen', !store.get('consoleOpen'));
       this.dispatchEvent(new CustomEvent('toggle-console', { bubbles: true, composed: true }));
-    });
-
-    this.shadowRoot!.querySelector('#inspector-toggle')?.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('toggle-inspector', { bubbles: true, composed: true }));
     });
 
     // Copy code button
