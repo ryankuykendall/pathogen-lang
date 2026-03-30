@@ -95,7 +95,9 @@ function generateSvg(result: CompileResult, options: CliOptions): string {
     if (layer.type === 'text' && layer.textElements) {
       return layer.textElements
         .map((te, i) => {
-          const attrs = Object.entries(layer.styles)
+          // Merge layer styles with per-element styles (element overrides layer)
+          const mergedStyles = te.styles ? { ...layer.styles, ...te.styles } : layer.styles;
+          const attrs = Object.entries(mergedStyles)
             .map(([k, v]) => `${k}="${escapeXml(String(v))}"`)
             .join(' ');
           const teIdAttr = i === 0 ? idAttr : '';

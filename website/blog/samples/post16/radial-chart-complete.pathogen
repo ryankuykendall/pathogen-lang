@@ -1,0 +1,587 @@
+// viewBox="0 0 1000 750"
+// Complete radial hierarchical bar chart — BoardGameGeek categories
+
+// === Theme colors (CSSVar for interactive switching) ===
+let bgColor = Color(CSSVar('--bg-color', #f6efe6));
+let textColor = Color(CSSVar('--text-color', #2f2f2f));
+let allBarColor = Color(CSSVar('--bar-all', #cc3333));
+let topBarColor = Color(CSSVar('--bar-top', #1a1a2e));
+let gridColor = Color('#d4c9b8').darken(20%);
+let annotColor = Color('#6b7280');
+let subtleColor = Color('#9ca3af');
+
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 1000, 750) }
+
+// === Chart parameters ===
+// Center in the middle of the canvas; Fantasy's long bar extends left,
+// small bars leave room on the right for annotations
+let cx = 500;
+let cy = 395;
+let innerR = 24;
+let barGap = 1;
+let barInnerR = calc(innerR + barGap);
+let maxR = 413;
+let maxVal = 18;
+let cornerR = 4;
+
+// === Full dataset (sorted by "all" descending) ===
+let data = [
+  { name: "Fantasy",         all: 15.6, top: 7.6 },
+  { name: "Wargame",         all: 13.8, top: 2.2 },
+  { name: "Science Fiction",  all: 8.9, top: 5.7 },
+  { name: "Adventure",       all: 6.5, top: 4.9 },
+  { name: "Economic",        all: 6.0, top: 9.7 },
+  { name: "Animals",         all: 5.8, top: 2.8 },
+  { name: "Humor",           all: 3.7, top: 3.5 },
+  { name: "Murder/Mystery",  all: 3.5, top: 1.2 },
+  { name: "Civilization",    all: 3.2, top: 2.0 },
+  { name: "Exploration",     all: 3.0, top: 4.3 },
+  { name: "Medieval",        all: 2.8, top: 3.8 },
+  { name: "Mythology",       all: 2.5, top: 1.0 },
+  { name: "Political",       all: 1.7, top: 0.3 },
+  { name: "Farming",         all: 1.4, top: 2.4 },
+  { name: "Music",           all: 1.4, top: 0.0 },
+  { name: "Travel",          all: 1.4, top: 0.5 },
+  { name: "Nautical",        all: 1.2, top: 0.3 },
+  { name: "Ancient",         all: 1.0, top: 0.8 },
+  { name: "Mafia",           all: 0.9, top: 0.0 },
+  { name: "Spies / Secret",  all: 0.8, top: 0.0 },
+  { name: "Transportation",  all: 0.7, top: 1.6 },
+  { name: "Religious",       all: 0.5, top: 0.5 },
+  { name: "Prehistoric",     all: 0.4, top: 0.4 },
+  { name: "Age of Reason",   all: 0.3, top: 0.4 },
+  { name: "Medical",         all: 0.3, top: 0.3 },
+  { name: "Arabian",         all: 0.1, top: 0.3 }
+];
+
+let count = data.length;
+let sliceAngle = calc(TAU() / count);
+
+// Fantasy centered at 9:00 (west), CW from there
+let startOffset = calc(PI() - sliceAngle / 2);
+
+// Slight overlap between adjacent wedges (like Observable)
+let overlap = rad(0.3);
+let barSweep = calc(sliceAngle + overlap);
+let topBarSweep = calc(barSweep * 0.5);
+let topBarOffset = calc((barSweep - topBarSweep) / 2);
+
+// === Grid rings ===
+define GroupLayer('chart') ${}
+
+// Solid center circle
+let centerCircle = PathLayer('center-circle') ${ fill: none; stroke: gridColor; stroke-width: 0.8; };
+layer('chart').append(centerCircle);
+centerCircle.apply { circle(cx, cy, innerR) }
+
+// Dashed concentric grid rings at 5% and 10%
+let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
+layer('chart').append(grid);
+grid.apply {
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal))
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal))
+}
+
+let gridLabels = TextLayer('grid-labels') ${
+  font-size: 7;
+  fill: subtleColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+};
+layer('chart').append(gridLabels);
+gridLabels.apply {
+  text(cx, calc(cy - barInnerR - (maxR - barInnerR) * 5 / maxVal - 3))`5%`
+  text(cx, calc(cy - barInnerR - (maxR - barInnerR) * 10 / maxVal - 3))`10%`
+}
+
+// === Draw categories — each category in its own GroupLayer ===
+// Contains: red bar, dark bar, category label, badge (if any)
+// Draw in data order: Fantasy (i=0) lowest z-index, each subsequent stacks higher
+
+// Shared label styles
+let pctSize = 7.2;
+let redDot = ${ fill: allBarColor; white-space: pre; font-size: pctSize; };
+let redPct = ${ fill: allBarColor; font-weight: normal; font-size: pctSize; };
+let darkDot = ${ fill: topBarColor; white-space: pre; font-size: pctSize; };
+let darkPct = ${ fill: topBarColor; font-weight: normal; font-size: pctSize; };
+
+// Extract first word for group naming
+let firstWords = [
+  "Fantasy", "Wargame", "Science", "Adventure", "Economic",
+  "Animals", "Humor", "Murder", "Civilization", "Exploration",
+  "Medieval", "Mythology", "Political", "Farming", "Music",
+  "Travel", "Nautical", "Ancient", "Mafia", "Spies",
+  "Transportation", "Religious", "Prehistoric", "Age", "Medical", "Arabian"
+];
+
+for ([d, i] in data) {
+  let sliceFrom = calc(startOffset + i * sliceAngle);
+  let sliceTo = calc(sliceFrom + barSweep);
+  let midAngle = calc(startOffset + (i + 0.5) * sliceAngle);
+
+  // Create per-category GroupLayer
+  let catGroup = GroupLayer(`group-${i}-${firstWords[i]}`) ${};
+  layer('chart').append(catGroup);
+
+  // Red bar (all BGG games)
+  if (d.all > 0) {
+    let outerR = calc(barInnerR + (maxR - barInnerR) * d.all / maxVal);
+    let barLayer = PathLayer(`bar-all-${i}`) ${ fill: allBarColor; stroke: bgColor; stroke-width: 1; };
+    catGroup.append(barLayer);
+    barLayer.apply {
+      M cx cy
+      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR)
+    }
+  }
+
+  // Dark bar overlaid (top 100)
+  if (d.top > 0) {
+    let topOuterR = calc(barInnerR + (maxR - barInnerR) * d.top / maxVal);
+    let topFrom = calc(sliceFrom + topBarOffset);
+    let topTo = calc(topFrom + topBarSweep);
+    let topLayer = PathLayer(`bar-top-${i}`) ${ fill: topBarColor; stroke: bgColor; stroke-width: 1; };
+    catGroup.append(topLayer);
+    topLayer.apply {
+      M cx cy
+      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR)
+    }
+  }
+
+  // Category label
+  let longerVal = max(d.all, d.top);
+  let barTipR = calc(barInnerR + (maxR - barInnerR) * longerVal / maxVal);
+  let labelR = calc(barTipR + 8);
+
+  let catLabel = TextLayer(`label-${i}`) ${
+    font-size: 9;
+    fill: textColor;
+    font-family: Georgia, serif;
+    font-weight: bold;
+  };
+  catGroup.append(catLabel);
+
+  let labelTb = &{
+    text(0, 0) {
+      `${d.name}`
+      tspan(0, 0, 0, redDot)` · `
+      tspan(0, 0, 0, redPct)`${d.all}%`
+      tspan(0, 0, 0, darkDot)` · `
+      tspan(0, 0, 0, darkPct)`${d.top}%`
+    }
+  } << ${ font-size: 9; };
+
+  catLabel.apply {
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+  }
+
+  // Badge (if applicable)
+  let hasBadge = d.name == "Economic" || d.name == "Wargame" || d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric" ? 1 : 0;
+
+  if (hasBadge == 1) {
+    let labelW = labelTb.boundingBox().width;
+    let badgeR = calc(labelR + labelW + 8);
+    let bx = polarX(cx, midAngle, badgeR);
+    let by = polarY(cy, midAngle, badgeR);
+
+    if (d.name == "Economic") {
+      let bc = PathLayer(`badge-circ-${i}`) ${ fill: textColor; stroke: none; };
+      let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
+      catGroup.append(bc, bs);
+      bc.apply { circle(bx, by, 4.5) }
+      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+    }
+    if (d.name == "Wargame") {
+      let bc = PathLayer(`badge-circ-${i}`) ${ fill: allBarColor; stroke: none; };
+      let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
+      catGroup.append(bc, bs);
+      bc.apply { circle(bx, by, 4.5) }
+      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+    }
+    if (d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric") {
+      let bs = PathLayer(`badge-star-${i}`) ${ fill: textColor; stroke: none; };
+      catGroup.append(bs);
+      bs.apply { star(bx, by, 4, 1.6, 5) }
+    }
+  }
+}
+
+// === Title and subtitle ===
+define GroupLayer('chrome') ${}
+
+let titleLayer = TextLayer('title') ${
+  font-size: 20;
+  fill: textColor;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  text-anchor: middle;
+};
+layer('chrome').append(titleLayer);
+titleLayer.apply {
+  text(500, 45)`Fantasy and war dominate board games`
+  text(500, 73)`(they are just not the best)`
+}
+
+// Subtitle with highlighted phrases
+// Each segment rendered as a separate text element at measured positions,
+// so rectangles and text share the same anchor points.
+let subStyle = ${ font-size: 11; font-family: system-ui, sans-serif; };
+let subY = 100;
+let subPad = 3;
+
+// Measure each segment
+let seg1Tb = &{ text(0, 11)`They make up nearly 30% of ` } << subStyle;
+let segHi1Tb = &{ text(0, 11)`all board games` } << subStyle;
+let seg2Tb = &{ text(0, 11)`, but just about 10% of the ` } << subStyle;
+let segHi2Tb = &{ text(0, 11)`top 100` } << subStyle;
+let seg3Tb = &{ text(0, 11)` ranked titles.` } << subStyle;
+
+let w1 = seg1Tb.boundingBox().width;
+let wHi1 = segHi1Tb.boundingBox().width;
+let w2 = seg2Tb.boundingBox().width;
+let wHi2 = segHi2Tb.boundingBox().width;
+let w3 = seg3Tb.boundingBox().width;
+let totalW = calc(w1 + wHi1 + w2 + wHi2 + w3);
+let subLineStart = calc(500 - totalW / 2);
+
+// Position highlights using proportional offsets from center.
+// The fraction of the line before each highlight is stable regardless of
+// the actual rendered width — it only depends on character count ratios.
+let frac1 = calc(w1 / totalW);              // fraction before "all board games"
+let fracHi1 = calc(wHi1 / totalW);          // fraction of "all board games"
+let frac2 = calc((w1 + wHi1 + w2) / totalW);  // fraction before "top 100"
+let fracHi2 = calc(wHi2 / totalW);          // fraction of "top 100"
+
+// Estimate browser's rendered width — our measurement is ~10% narrow for system-ui
+let browserW = calc(totalW * 1.12);
+let browserStart = calc(500 - browserW / 2);
+
+let subtitleBg = PathLayer('subtitle-bg') ${ fill: allBarColor; stroke: none; };
+let subtitleBg2 = PathLayer('subtitle-bg2') ${ fill: topBarColor; stroke: none; };
+layer('chrome').append(subtitleBg, subtitleBg2);
+
+subtitleBg.apply {
+  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2)
+}
+subtitleBg2.apply {
+  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2)
+}
+
+// Render as a single text element with tspans for color changes.
+// The browser positions tspans using its own font metrics (continuous flow),
+// which is correct. The rectangles above use our measured positions.
+// Accept ~1-2px offset as the cost of approximate character width tables.
+let subtitleLayer = TextLayer('subtitle') ${
+  font-size: 11;
+  fill: annotColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+};
+layer('chrome').append(subtitleLayer);
+
+let hiWhite = ${ fill: #ffffff; };
+subtitleLayer.apply {
+  text(500, subY) {
+    `They make up nearly 30% of `
+    tspan(0, 0, 0, hiWhite)`all board games`
+    `, but just about 10% of the `
+    tspan(0, 0, 0, hiWhite)`top 100`
+    ` ranked titles.`
+  }
+}
+
+// === Wedge Legend (bottom-left) ===
+define GroupLayer('legend') ${ translate-x: 94; translate-y: 540; }
+
+let legIR = 6;
+let legBarStart = 7;  // 1-unit gap from center circle
+let legSweep = 54deg;
+let legCR = 2;
+let legRedColor = allBarColor.lighten(8%);
+let legDarkColor = topBarColor.lighten(8%);
+let legOX = -17;  // diagram + title x offset
+let legOY = 14;   // diagram y offset
+
+// Wedge angles: small → medium → large going CW
+let legA1 = 95deg;
+let legA2 = calc(legA1 + legSweep + 3deg);
+let legA3 = calc(legA2 + legSweep + 3deg);
+
+// Red wedge fan — lightened 8%
+let legRedWedges = PathLayer('leg-red') ${ fill: legRedColor; stroke: bgColor; stroke-width: 0.5; };
+layer('legend').append(legRedWedges);
+legRedWedges.apply {
+  M legOX legOY
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  M legOX legOY
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  M legOX legOY
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+}
+
+// Right-half semicircles + center for red
+let legRedGuides = PathLayer('leg-red-guides') ${ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
+layer('legend').append(legRedGuides);
+legRedGuides.apply {
+  M legOX calc(legOY - 20) A 20 20 0 0 1 legOX calc(legOY + 20)
+  M legOX calc(legOY - 34) A 34 34 0 0 1 legOX calc(legOY + 34)
+}
+let legRedCenter = PathLayer('leg-red-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+layer('legend').append(legRedCenter);
+legRedCenter.apply { circle(legOX, legOY, legIR) }
+
+// Dark wedge fan — same radii, lightened 8%
+let legDX = 130;
+let legDarkX = calc(legDX + legOX);
+let legDarkWedges = PathLayer('leg-dark') ${ fill: legDarkColor; stroke: bgColor; stroke-width: 0.5; };
+layer('legend').append(legDarkWedges);
+legDarkWedges.apply {
+  M legDarkX legOY
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  M legDarkX legOY
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  M legDarkX legOY
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+}
+
+// Right-half semicircles + center for dark
+let legDarkGuides = PathLayer('leg-dark-guides') ${ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
+layer('legend').append(legDarkGuides);
+legDarkGuides.apply {
+  M legDarkX calc(legOY - 20) A 20 20 0 0 1 legDarkX calc(legOY + 20)
+  M legDarkX calc(legOY - 34) A 34 34 0 0 1 legDarkX calc(legOY + 34)
+}
+let legDarkCenter = PathLayer('leg-dark-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+layer('legend').append(legDarkCenter);
+legDarkCenter.apply { circle(legDarkX, legOY, legIR) }
+
+// 5%/10% labels
+let legGuideLabels = TextLayer('leg-guide-labels') ${
+  font-size: 7;
+  fill: subtleColor.darken(20%);
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('legend').append(legGuideLabels);
+legGuideLabels.apply {
+  text(calc(legDarkX + 22), calc(legOY - 5), 90deg)`5%`
+  text(calc(legDarkX + 36), calc(legOY - 5), 90deg)`10%`
+}
+
+// Legend text labels
+let legLabels = TextLayer('leg-labels') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  text-anchor: middle;
+};
+layer('legend').append(legLabels);
+legLabels.apply {
+  text(legOX, 70)`All BoardGameGeek games`
+  text(legDarkX, 70)`Top 100 games`
+}
+
+// Footnote
+let footNote = TextLayer('footnote') ${
+  font-size: 8;
+  fill: annotColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('legend').append(footNote);
+footNote.apply {
+  text(-80, 90)`Each bar shows how often a category appears across games.`
+  text(-80, 102)`Percentages are normalized separately for each group.`
+}
+
+// === Top Categories Bar Chart (bottom-right) ===
+// Dots on a gentle leftward arc, bars extend left from dots, labels right
+define GroupLayer('summary') ${ translate-x: 680; translate-y: 496; }
+
+let summData = [
+  { name: "Economic",        pct: 9.7, rank: 1 },
+  { name: "Fantasy",         pct: 7.6, rank: 2 },
+  { name: "Science Fiction",  pct: 5.7, rank: 3 },
+  { name: "Adventure",       pct: 4.9, rank: 4 },
+  { name: "Exploration",     pct: 4.3, rank: 5 }
+];
+
+let summBarMax = 10;
+let summBarW = 91;
+let summBarH = 8.5;
+let summDotR = calc(summBarH / 2 + 0.75);
+
+// Dots on a gentle circular arc bowing leftward
+// Arc center is to the right of the dots; dots sit on the left side of the circle
+let summDotY0 = 48;        // first dot y
+let summItemStep = 18;     // vertical step between bars
+let summTotalH = calc(4 * summItemStep);  // total height span of 5 items
+let summArcCx = 250;       // arc center far to the right
+let summArcCy = calc(summDotY0 + summTotalH / 2);  // vertically centered on bars
+let summArcR = calc(summArcCx - 150);  // radius so leftmost point is at x≈150
+
+// Dot position: on the circle at the correct y for each item
+fn summDotXAt(idx) {
+  let dy = calc(summDotY0 + idx * summItemStep - summArcCy);
+  return calc(summArcCx - sqrt(summArcR * summArcR - dy * dy));
+}
+
+// Title — centered directly above the bar cluster
+let summTitle = TextLayer('summ-title') ${
+  font-size: 11;
+  fill: textColor;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  text-anchor: middle;
+};
+layer('summary').append(summTitle);
+let summTitleX = calc(summDotXAt(0));
+summTitle.apply {
+  text(summTitleX, calc(summDotY0 - 31))`Top categories among the 100`
+  text(summTitleX, calc(summDotY0 - 18))`highest-ranked board games`
+}
+
+// Circular arc behind dots — extends 8 units above first dot and below last dot
+let summArcLineLayer = PathLayer('summ-arc') ${ fill: none; stroke: topBarColor; stroke-width: 1; };
+layer('summary').append(summArcLineLayer);
+let summArcTopY = calc(summDotY0 - 8);
+let summArcBotY = calc(summDotY0 + 4 * summItemStep + 8);
+let summArcTopDy = calc(summArcTopY - summArcCy);
+let summArcBotDy = calc(summArcBotY - summArcCy);
+let summArcTopX = calc(summArcCx - sqrt(summArcR * summArcR - summArcTopDy * summArcTopDy));
+let summArcBotX = calc(summArcCx - sqrt(summArcR * summArcR - summArcBotDy * summArcBotDy));
+summArcLineLayer.apply {
+  M summArcTopX summArcTopY
+  A summArcR summArcR 0 0 0 summArcBotX summArcBotY
+}
+
+// Bars, dots, labels
+let summBars = PathLayer('summ-bars') ${ fill: topBarColor; stroke: none; };
+let summDots = PathLayer('summ-dots') ${ fill: bgColor; stroke: topBarColor; stroke-width: 1; };
+let summLabels = TextLayer('summ-labels') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('summary').append(summBars, summDots, summLabels);
+
+for ([s, si] in summData) {
+  let dotX = summDotXAt(si);
+  let dotY = calc(summDotY0 + si * summItemStep);
+  let bw = calc(summBarW * s.pct / summBarMax);
+
+  // Bar extends LEFT from dot
+  summBars.apply {
+    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5)
+  }
+
+  // Open circle on the arc — shifted up 0.75 to center on bar
+  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR) }
+
+  // Label to the RIGHT of dot
+  summLabels.apply {
+    text(calc(dotX + 8), calc(dotY + 3))`#${s.rank} ${s.name} ${s.pct}%`
+  }
+}
+// === Annotation badges — on a concentric circle outside the 10% ring ===
+// Uniformly spaced, flowing around the chart like the bars do
+let annotR = calc(barInnerR + (maxR - barInnerR) * 11.75 / maxVal);
+let annotStart = rad(-45);
+
+// Badge 1: Economic overperforms — star in dark circle
+let a1Angle = annotStart;
+let a1x = polarX(cx, a1Angle, annotR);
+let a1y = polarY(cy, a1Angle, annotR);
+
+let badge1Circle = PathLayer('badge1-circle') ${ fill: textColor; stroke: none; };
+let badge1Star = PathLayer('badge1-star') ${ fill: bgColor; stroke: none; };
+layer('chrome').append(badge1Circle, badge1Star);
+badge1Circle.apply { circle(a1x, a1y, 6.5) }
+badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5) }
+
+let badge1Text = TextLayer('badge1-text') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('chrome').append(badge1Text);
+let annotFontSize = 9;
+let annotYShift = calc(annotFontSize * 1.2);
+badge1Text.apply {
+  text(calc(a1x + 14), calc(a1y - 8 + annotYShift))`Economic games are far more`
+  text(calc(a1x + 14), calc(a1y + 4 + annotYShift))`common in the top 100 than among`
+  text(calc(a1x + 14), calc(a1y + 16 + annotYShift))`board games overall`
+}
+
+// Badge 2: Wargames widespread but scarce — star in red circle
+let a2Angle = calc(annotStart + 18deg);
+let a2x = polarX(cx, a2Angle, annotR);
+let a2y = polarY(cy, a2Angle, annotR);
+
+let badge2Circle = PathLayer('badge2-circle') ${ fill: allBarColor; stroke: none; };
+let badge2Star = PathLayer('badge2-star') ${ fill: bgColor; stroke: none; };
+layer('chrome').append(badge2Circle, badge2Star);
+badge2Circle.apply { circle(a2x, a2y, 6.5) }
+badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5) }
+
+let badge2Text = TextLayer('badge2-text') ${
+  font-size: 9;
+  fill: allBarColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('chrome').append(badge2Text);
+badge2Text.apply {
+  text(calc(a2x + 14), calc(a2y - 8 + annotYShift))`Wargames are widespread among`
+  text(calc(a2x + 14), calc(a2y + 4 + annotYShift))`board games overall but scarce in`
+  text(calc(a2x + 14), calc(a2y + 16 + annotYShift))`the top 100`
+}
+
+// Badge 3: No games in top 100 — solid star
+let a3Angle = calc(annotStart + 18deg + 27deg);
+let a3x = polarX(cx, a3Angle, annotR);
+let a3y = polarY(cy, a3Angle, annotR);
+
+let badge3Star = PathLayer('badge3-star') ${ fill: textColor; stroke: none; };
+layer('chrome').append(badge3Star);
+badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5) }
+
+let badge3Text = TextLayer('badge3-text') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('chrome').append(badge3Text);
+badge3Text.apply {
+  text(calc(a3x + 14), calc(a3y - 8 + annotYShift))`No games from this category`
+  text(calc(a3x + 14), calc(a3y + 4 + annotYShift))`appear in the top 100`
+}
+
+// === Disclaimer and source attribution ===
+let disclaimer = TextLayer('disclaimer') ${
+  font-size: 8;
+  fill: annotColor;
+  font-family: Georgia, serif;
+  font-style: italic;
+  text-anchor: start;
+};
+layer('chrome').append(disclaimer);
+disclaimer.apply {
+  text(120, 705)`Categories reflect community-assigned board-game categories, not gameplay mechanics. Formats were excluded, and overlapping or overly specific labels were excluded in`
+  text(120, 717)`favour of broader categories. Percentages are normalized separately for each group, showing relative preference rather than total volume.`
+}
+
+let sourceNote = TextLayer('source') ${
+  font-size: 8;
+  fill: annotColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('chrome').append(sourceNote);
+sourceNote.apply {
+  text(120, 735)`Source: BoardGameGeek (boardgame categories)`
+}

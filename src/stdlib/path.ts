@@ -149,6 +149,131 @@ export const pathFunctions = {
   // Close path
   closePath: (): PathSegment => segment('Z'),
 
+  // Radial wedge (annular sector) with rounded corners and graceful degradation.
+  // Centered at current cursor position — no M emitted. All relative commands.
+  // Use: M cx cy then radialWedge(...), or @{ radialWedge(...) }.drawTo(cx, cy)
+  // fromAngle/toAngle match conic gradient convention.
+  //
+  // Corner geometry: at the junction of a radial line and a concentric arc of
+  // radius R, a fillet of radius r has its center on the concentric circle of
+  // radius (R+r) for inner or (R-r) for outer corners. The angular offset from
+  // the radial edge to the tangent point on the main arc is asin(r/(R±r)).
+  // When the wedge is too narrow for the requested radius, the radius is
+  // automatically reduced to the largest value that fits each end independently.
+  radialWedge: (
+    innerR: number, outerR: number,
+    fromAngle: number, toAngle: number, cornerR: number,
+  ): PathSegment => {
+    const f = formatNum;
+    const sweep = toAngle - fromAngle;
+    const radDist = outerR - innerR;
+    const absSweep = Math.abs(sweep);
+    const halfSweep = absSweep / 2;
+    const sinHalf = Math.sin(halfSweep);
+
+    const px = (a: number, r: number) => Math.cos(a) * r;
+    const py = (a: number, r: number) => Math.sin(a) * r;
+    const svgArc = (r: number, la: number, sw: number, dx: number, dy: number) =>
+      `a ${f(r)} ${f(r)} 0 ${la} ${sw} ${f(dx)} ${f(dy)}`;
+    const svgLine = (dx: number, dy: number) => `l ${f(dx)} ${f(dy)}`;
+
+    // No rounding
+    if (cornerR <= 0 || radDist <= 0) {
+      const la = absSweep > Math.PI ? 1 : 0;
+      const iSw = sweep > 0 ? 1 : 0;
+      const oSw = sweep > 0 ? 0 : 1;
+      const p0x = px(fromAngle, innerR), p0y = py(fromAngle, innerR);
+      const p1x = px(toAngle, innerR), p1y = py(toAngle, innerR);
+      const p2x = px(toAngle, outerR), p2y = py(toAngle, outerR);
+      const p3x = px(fromAngle, outerR), p3y = py(fromAngle, outerR);
+      return segment(
+        `m ${f(p0x)} ${f(p0y)} ` +
+        `${svgArc(innerR, la, iSw, p1x - p0x, p1y - p0y)} ` +
+        `${svgLine(p2x - p1x, p2y - p1y)} ` +
+        `${svgArc(outerR, la, oSw, p3x - p2x, p3y - p2y)} z`,
+      );
+    }
+
+    const sign = sweep > 0 ? 1 : -1;
+    const iSw = sweep > 0 ? 1 : 0;
+    const oSw = sweep > 0 ? 0 : 1;
+
+    // Compute the max fillet radius that fits each end independently.
+    // Solving 2*asin(r/(R+r)) = absSweep → r = R*sin(half) / (1 - sin(half))
+    // For outer: 2*asin(r/(R-r)) = absSweep → r = R*sin(half) / (1 + sin(half))
+    const maxRadial = radDist / 2;
+    const maxInnerCr = sinHalf < 1 ? innerR * sinHalf / (1 - sinHalf) : Infinity;
+    const maxOuterCr = outerR * sinHalf / (1 + sinHalf);
+    const iCr = Math.min(cornerR, maxRadial, maxInnerCr);
+    const oCr = Math.min(cornerR, maxRadial, maxOuterCr);
+
+    // Angular offsets for the fillet tangent points on each concentric arc
+    const iAlpha = Math.asin(Math.min(iCr / (innerR + iCr), 1));
+    const oAlpha = Math.asin(Math.min(oCr / (outerR - oCr), 1));
+
+    // Tangent points on radial lines (iCr/oCr away from vertices along radial)
+    const frIL = { x: px(fromAngle, innerR + iCr), y: py(fromAngle, innerR + iCr) };
+    const frOL = { x: px(fromAngle, outerR - oCr), y: py(fromAngle, outerR - oCr) };
+    const toIL = { x: px(toAngle, innerR + iCr),   y: py(toAngle, innerR + iCr) };
+    const toOL = { x: px(toAngle, outerR - oCr),   y: py(toAngle, outerR - oCr) };
+
+    // Tangent points on inner arc
+    const frIA = { x: px(fromAngle + sign * iAlpha, innerR), y: py(fromAngle + sign * iAlpha, innerR) };
+    const toIA = { x: px(toAngle - sign * iAlpha, innerR),   y: py(toAngle - sign * iAlpha, innerR) };
+
+    // Tangent points on outer arc
+    const toOA = { x: px(toAngle - sign * oAlpha, outerR),   y: py(toAngle - sign * oAlpha, outerR) };
+    const frOA = { x: px(fromAngle + sign * oAlpha, outerR), y: py(fromAngle + sign * oAlpha, outerR) };
+
+    // Arc spans after trimming fillets
+    const innerSpan = absSweep - 2 * iAlpha;
+    const outerSpan = absSweep - 2 * oAlpha;
+    const iLA = innerSpan > Math.PI ? 1 : 0;
+    const oLA = outerSpan > Math.PI ? 1 : 0;
+
+    // Fillet sweep flags:
+    // Inner fillets: the fillet center is OUTSIDE the inner circle (at R+iCr),
+    //   so the arc bulges outward (away from main center) → sweep matches oSw
+    // Outer fillets: the fillet center is INSIDE the outer circle (at R-oCr),
+    //   so the arc bulges inward (toward main center) → sweep matches oSw
+    // Both fillet types curve toward the wedge interior → same sweep direction.
+    const filletSw = oSw;
+
+    const parts: string[] = [];
+
+    // -- Inner end: closure fillet + inner arc + fillet to toAngle --
+    parts.push(`m ${f(frIA.x)} ${f(frIA.y)}`);
+    if (innerSpan > 1e-6) {
+      parts.push(svgArc(innerR, iLA, iSw,
+        toIA.x - frIA.x, toIA.y - frIA.y));
+    }
+    parts.push(svgArc(iCr, 0, filletSw,
+      toIL.x - toIA.x, toIL.y - toIA.y));
+
+    // -- Radial line outward (toAngle side) --
+    parts.push(svgLine(toOL.x - toIL.x, toOL.y - toIL.y));
+
+    // -- Outer end: fillet + outer arc (reverse) + fillet --
+    parts.push(svgArc(oCr, 0, filletSw,
+      toOA.x - toOL.x, toOA.y - toOL.y));
+    if (outerSpan > 1e-6) {
+      parts.push(svgArc(outerR, oLA, oSw,
+        frOA.x - toOA.x, frOA.y - toOA.y));
+    }
+    parts.push(svgArc(oCr, 0, filletSw,
+      frOL.x - frOA.x, frOL.y - frOA.y));
+
+    // -- Radial line inward (fromAngle side) --
+    parts.push(svgLine(frIL.x - frOL.x, frIL.y - frOL.y));
+
+    // -- Closure fillet (fromAngle inner corner) --
+    parts.push(svgArc(iCr, 0, filletSw,
+      frIA.x - frIL.x, frIA.y - frIL.y));
+
+    parts.push('z');
+    return segment(parts.join(' '));
+  },
+
   // ---------------------------------------------------------------------------
   // Chained bezier spline functions
   // ---------------------------------------------------------------------------

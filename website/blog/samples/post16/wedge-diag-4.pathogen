@@ -1,0 +1,126 @@
+// viewBox="0 0 900 700"
+// radialWedge diagnostic matrix: sharp outline + rounded fill + XOR diff
+
+let bgColor = Color(CSSVar('--bg-color', #f6efe6));
+let wedgeColor = Color('#cc3333').lighten(20%);
+let xorColor = Color('#cc3333').darken(20%);
+let outlineColor = Color('#22aa44');
+let guideColor = Color('#4477aa');
+let textColor = Color('#2f2f2f');
+
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 900, 700) }
+
+let innerR = 30;
+let cornerR = 4;
+
+let thetas = [0.05pi, 0.1pi, 0.15pi, 0.2pi, 0.3pi, 0.5pi];
+let thetaLabels = ["0.05pi", "0.1pi", "0.15pi", "0.2pi", "0.3pi", "0.5pi"];
+let outerRs = [50, 70, 100, 140];
+let outerLabels = ["oR=50", "oR=70", "oR=100", "oR=140"];
+
+let colSpacing = 140;
+let rowSpacing = 160;
+let startX = 80;
+let startY = 90;
+
+// Column headers
+let headers = TextLayer('headers') ${
+  font-size: 10;
+  fill: textColor;
+  font-family: monospace, monospace;
+  text-anchor: middle;
+};
+headers.apply {
+  for ([label, ci] in thetaLabels) {
+    text(calc(startX + ci * colSpacing), 30)`${label}`
+  }
+}
+
+// Row headers
+let rowHeaders = TextLayer('row-headers') ${
+  font-size: 10;
+  fill: textColor;
+  font-family: monospace, monospace;
+  text-anchor: end;
+};
+rowHeaders.apply {
+  for ([label, ri] in outerLabels) {
+    text(45, calc(startY + ri * rowSpacing + 5))`${label}`
+  }
+}
+
+// Layers in draw order (bottom to top)
+let wedges = PathLayer('wedges') ${ fill: wedgeColor; stroke: none; };
+let xorLayer = PathLayer('xor') ${ fill: xorColor; stroke: none; };
+let outlines = PathLayer('outlines') ${ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
+let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
+
+let info = TextLayer('info') ${
+  font-size: 7;
+  fill: textColor;
+  font-family: monospace, monospace;
+  text-anchor: middle;
+};
+
+for ([oR, ri] in outerRs) {
+  for ([theta, ci] in thetas) {
+    let cx = calc(startX + ci * colSpacing);
+    let cy = calc(startY + ri * rowSpacing);
+    let halfTheta = calc(theta / 2);
+    let fromA = calc(-90deg - halfTheta);
+    let toA = calc(-90deg + halfTheta);
+
+    // 1. Rounded wedge (lightened)
+    wedges.apply {
+      M cx cy
+      radialWedge(innerR, oR, fromA, toA, cornerR)
+    }
+
+    // 2. XOR between sharp and rounded
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
+    xorLayer.apply { diff.drawTo(0, 0) }
+
+    // 3. Sharp outline (dotted green)
+    outlines.apply {
+      M cx cy
+      radialWedge(innerR, oR, fromA, toA, 0)
+    }
+
+    // 4. Guide circles (on top)
+    guides.apply {
+      circle(cx, cy, innerR)
+      circle(cx, cy, oR)
+    }
+
+    // Effective corner radii info
+    let absSweep = theta;
+    let halfSweep = calc(absSweep / 2);
+    let sinHalf = sin(halfSweep);
+    let maxICr = calc(innerR * sinHalf / (1 - sinHalf));
+    let maxOCr = calc(oR * sinHalf / (1 + sinHalf));
+    let iCr = min(cornerR, calc((oR - innerR) / 2), maxICr);
+    let oCr = min(cornerR, calc((oR - innerR) / 2), maxOCr);
+
+    info.apply {
+      text(cx, calc(cy + oR + 14))`iCr:${round(iCr)} oCr:${round(oCr)}`
+    }
+  }
+}
+
+// Title
+let title = TextLayer('title') ${
+  font-size: 13;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+title.apply {
+  text(60, 670)`radialWedge diagnostics — cr=${cornerR}, iR=${innerR} | green=sharp, dark=XOR diff, blue=guide circles`
+}
+
+let g = GroupLayer('all') ${};
+g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);

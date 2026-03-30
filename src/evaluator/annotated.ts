@@ -2401,6 +2401,12 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     case 'MethodCallExpression':
       return evaluateMethodCall(expr, scope);
 
+    case 'TernaryExpression': {
+      const condVal = evaluateExpression(expr.condition, scope);
+      const truthValue = typeof condVal === 'number' ? condVal !== 0 : (isBooleanValue(condVal) ? condVal.value !== 0 : condVal !== null);
+      return truthValue ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
+    }
+
     case 'BinaryExpression': {
       const left = evaluateExpression(expr.left, scope);
       const right = evaluateExpression(expr.right, scope);

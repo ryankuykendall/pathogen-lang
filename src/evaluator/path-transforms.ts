@@ -1888,6 +1888,82 @@ export function filletCommands(
 }
 
 /**
+ * Compute the tangent direction (as dx, dy) at the END of a command.
+ * For lines: direction from start to end.
+ * For arcs: perpendicular to radius at endpoint (direction of travel).
+ * For curves: direction from last control point to endpoint.
+ */
+function getEdgeTangentAtEnd(cmd: TransformCmd): { dx: number; dy: number } {
+  const upper = cmd.command.toUpperCase();
+  if (upper === 'A') {
+    const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
+    const phi = (rotation * Math.PI) / 180;
+    const center = arcEndpointToCenter(
+      cmd.start.x, cmd.start.y, rx, ry, phi,
+      largeArcFlag, sweepFlag, cmd.end.x, cmd.end.y,
+    );
+    if (!center) return { dx: cmd.end.x - cmd.start.x, dy: cmd.end.y - cmd.start.y };
+    const radDx = cmd.end.x - center.cx;
+    const radDy = cmd.end.y - center.cy;
+    // Tangent perpendicular to radius; direction depends on arc sweep
+    if (center.deltaAngle > 0) {
+      return { dx: -radDy, dy: radDx }; // CCW
+    } else {
+      return { dx: radDy, dy: -radDx }; // CW
+    }
+  }
+  if (upper === 'C') {
+    const [, , cx2, cy2] = cmd.args;
+    const cpX = cmd.start.x + cx2;
+    const cpY = cmd.start.y + cy2;
+    const dx = cmd.end.x - cpX;
+    const dy = cmd.end.y - cpY;
+    if (Math.abs(dx) > 1e-10 || Math.abs(dy) > 1e-10) return { dx, dy };
+  }
+  if (upper === 'Q') {
+    const [qx1, qy1] = cmd.args;
+    const cpX = cmd.start.x + qx1;
+    const cpY = cmd.start.y + qy1;
+    const dx = cmd.end.x - cpX;
+    const dy = cmd.end.y - cpY;
+    if (Math.abs(dx) > 1e-10 || Math.abs(dy) > 1e-10) return { dx, dy };
+  }
+  return { dx: cmd.end.x - cmd.start.x, dy: cmd.end.y - cmd.start.y };
+}
+
+/**
+ * Compute the tangent direction (as dx, dy) at the START of a command.
+ */
+function getEdgeTangentAtStart(cmd: TransformCmd): { dx: number; dy: number } {
+  const upper = cmd.command.toUpperCase();
+  if (upper === 'A') {
+    const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
+    const phi = (rotation * Math.PI) / 180;
+    const center = arcEndpointToCenter(
+      cmd.start.x, cmd.start.y, rx, ry, phi,
+      largeArcFlag, sweepFlag, cmd.end.x, cmd.end.y,
+    );
+    if (!center) return { dx: cmd.end.x - cmd.start.x, dy: cmd.end.y - cmd.start.y };
+    const radDx = cmd.start.x - center.cx;
+    const radDy = cmd.start.y - center.cy;
+    if (center.deltaAngle > 0) {
+      return { dx: -radDy, dy: radDx }; // CCW
+    } else {
+      return { dx: radDy, dy: -radDx }; // CW
+    }
+  }
+  if (upper === 'C') {
+    const [cx1, cy1] = cmd.args;
+    if (Math.abs(cx1) > 1e-10 || Math.abs(cy1) > 1e-10) return { dx: cx1, dy: cy1 };
+  }
+  if (upper === 'Q') {
+    const [qx1, qy1] = cmd.args;
+    if (Math.abs(qx1) > 1e-10 || Math.abs(qy1) > 1e-10) return { dx: qx1, dy: qy1 };
+  }
+  return { dx: cmd.end.x - cmd.start.x, dy: cmd.end.y - cmd.start.y };
+}
+
+/**
  * Apply fillet operations with proper per-vertex trim distance calculation.
  */
 function applyFilletOperations(
@@ -1959,25 +2035,18 @@ function applyFilletOperations(
     const incoming = result[incomingIdx];
     const outgoing = result[outgoingIdx];
 
-    // Check line-line
-    const inUpper = incoming.command.toUpperCase();
-    const outUpper = outgoing.command.toUpperCase();
-    const isInLine = inUpper === 'L' || inUpper === 'H' || inUpper === 'V';
-    const isOutLine = outUpper === 'L' || outUpper === 'H' || outUpper === 'V';
-    if (!isInLine || !isOutLine) {
-      warnings.push(`Fillet skipped at curve junction (index ${cornerIdx})`);
-      continue;
-    }
-
     const vertex = incoming.end;
 
-    // Edge directions
-    const inDx = vertex.x - incoming.start.x;
-    const inDy = vertex.y - incoming.start.y;
+    // Compute tangent directions at the junction (works for lines, arcs, and curves)
+    const inTangent = getEdgeTangentAtEnd(incoming);
+    const outTangent = getEdgeTangentAtStart(outgoing);
+
+    const inDx = inTangent.dx;
+    const inDy = inTangent.dy;
     const inLen = Math.sqrt(inDx * inDx + inDy * inDy);
 
-    const outDx = outgoing.end.x - vertex.x;
-    const outDy = outgoing.end.y - vertex.y;
+    const outDx = outTangent.dx;
+    const outDy = outTangent.dy;
     const outLen = Math.sqrt(outDx * outDx + outDy * outDy);
 
     if (inLen < 1e-10 || outLen < 1e-10) continue;
@@ -2002,21 +2071,37 @@ function applyFilletOperations(
     let trimDist = radius / Math.tan(halfAngle);
     let effectiveRadius = radius;
 
-    // Clamp
-    if (trimDist > inLen) {
-      trimDist = inLen;
+    // Clamp against actual edge arc-lengths (not tangent vector lengths)
+    const inEdgeLen = calculateCommandLength(incoming);
+    const outEdgeLen = calculateCommandLength(outgoing);
+    if (trimDist > inEdgeLen) {
+      trimDist = inEdgeLen;
       effectiveRadius = trimDist * Math.tan(halfAngle);
       warnings.push(`Fillet radius clamped at vertex ${cornerIdx}: effective radius ${effectiveRadius.toFixed(2)}`);
     }
-    if (trimDist > outLen) {
-      trimDist = outLen;
+    if (trimDist > outEdgeLen) {
+      trimDist = outEdgeLen;
       effectiveRadius = trimDist * Math.tan(halfAngle);
       warnings.push(`Fillet radius clamped at vertex ${cornerIdx}: effective radius ${effectiveRadius.toFixed(2)}`);
     }
 
-    // Trim points
-    const p1 = { x: vertex.x + upX * trimDist, y: vertex.y + upY * trimDist };
-    const p2 = { x: vertex.x + uqX * trimDist, y: vertex.y + uqY * trimDist };
+    // Trim points — computed by splitting edges at the trim distance
+    // For lines, this is equivalent to vertex + direction * trimDist
+    // For arcs/curves, splitCommandAtParametricT handles the geometry
+    const inTrimT = findTrimFromEndT(incoming, trimDist);
+    const outTrimT = findTrimFromStartT(outgoing, trimDist);
+
+    // Skip if trim would consume the entire edge (degenerate result)
+    if (inTrimT <= 1e-6 || outTrimT >= 1 - 1e-6) {
+      warnings.push(`Fillet skipped at vertex ${cornerIdx}: radius too large for edge length`);
+      continue;
+    }
+
+    const [inHead] = splitCommandAtParametricT(incoming, inTrimT);
+    const p1 = { ...inHead.end };
+
+    const [, outTail] = splitCommandAtParametricT(outgoing, outTrimT);
+    const p2 = { ...outTail.start };
 
     // Sweep flag: use cross product of incoming/outgoing direction
     const crossIO = inDx * outDy - inDy * outDx;
@@ -2032,16 +2117,7 @@ function applyFilletOperations(
       end: { ...p2 },
     };
 
-    // Split incoming at p1
-    const inTrimT = findTrimFromEndT(incoming, trimDist);
-    const [inHead] = splitCommandAtParametricT(incoming, inTrimT);
-    // Fix inHead end to match p1 exactly
-    inHead.end = { ...p1 };
-
-    // Split outgoing at p2
-    const outTrimT = findTrimFromStartT(outgoing, trimDist);
-    const [, outTail] = splitCommandAtParametricT(outgoing, outTrimT);
-    outTail.start = { ...p2 };
+    // inHead and outTail already computed during trim point calculation above
 
     if (isClosureCorner) {
       result[incomingIdx] = inHead;

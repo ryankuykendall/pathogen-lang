@@ -362,7 +362,26 @@ const pathMemberExpression: Parsimmon.Parser<PathArg> =
   );
 
 // Expression parser with operator precedence
-const expression: Parsimmon.Parser<Expression> = P.lazy(() => orExpression);
+const expression: Parsimmon.Parser<Expression> = P.lazy(() => ternaryExpression);
+
+// Ternary: condition ? consequent : alternate (right-associative, lowest precedence)
+const ternaryExpression: Parsimmon.Parser<Expression> = P.lazy(() =>
+  orExpression.chain((condition) =>
+    P.seq(
+      optWhitespace.then(P.string('?')).skip(optWhitespace),
+      ternaryExpression,
+      optWhitespace.then(P.string(':')).skip(optWhitespace),
+      ternaryExpression,
+    )
+      .map(([, consequent, , alternate]) => ({
+        type: 'TernaryExpression' as const,
+        condition,
+        consequent,
+        alternate,
+      }))
+      .or(P.of(condition)),
+  ),
+);
 
 // Operators by precedence (lowest to highest)
 const orExpression: Parsimmon.Parser<Expression> = P.lazy(() =>

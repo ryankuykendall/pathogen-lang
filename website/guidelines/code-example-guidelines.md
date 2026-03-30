@@ -75,7 +75,31 @@ Standards for code examples embedded in blog posts, documentation, and tutorials
 
 ---
 
-## 10. Schematic Review
+## 10. Label-to-Geometry Association
+
+Every annotation label in a schematic must have a clear, unambiguous association with the geometric element it describes. A reader should never have to guess which geometry a label refers to.
+
+### Rules
+
+1. **Leader lines required for non-adjacent labels.** If a label cannot be placed immediately adjacent to its geometry (within ~5 units), draw a thin leader line connecting the label to the exact point, edge, or arc it annotates. No floating labels.
+
+2. **Proximity first, leaders second.** Place labels as close as possible to their geometry without overlapping other content. Use leader lines only when proximity alone is insufficient due to crowding.
+
+3. **Consistent offset direction.** Labels for radius measurements should sit along or parallel to the radius line they measure. Angle labels should sit near the arc endpoint they reference. Avoid placing labels perpendicular to the association direction.
+
+4. **Clear anchor points.** Each label type has a natural anchor:
+   - **Point labels** (e.g., "center"): immediately adjacent to the point, offset in a direction that avoids other geometry.
+   - **Radius/distance labels** (e.g., "innerR", "outerR"): along the measurement line, between the two endpoints that define the span. Use dimension-style dots or ticks at both ends of the span.
+   - **Angle labels** (e.g., "fromAngle", "toAngle"): near the arc endpoint they reference, with a leader to the arc tip if not immediately adjacent.
+   - **Function/code labels**: positioned in clear space with no geometric association needed — they describe the code, not the shape.
+
+5. **No ambiguous labels.** If you cover up the label text and look at only the leader line and anchor point, you should be able to tell exactly which geometric element the label describes.
+
+6. **Avoid label clustering.** If multiple labels would crowd the same area, spread them outward along leader lines rather than stacking them. Each label should have clear breathing room from its neighbors.
+
+---
+
+## 11. Schematic Review
 
 - Before publishing, review all diagrams and schematics against the checklist and anti-patterns list.
 - See: [schematic-and-diagram-checklist-plus-antipatterns.md](./schematic-and-diagram-checklist-plus-antipatterns.md)

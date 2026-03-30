@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400" width="520" height="400">
+  <style><![CDATA[
+    @property --bg-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #f6efe6;
+    }
+    @property --bar-all {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #cc3333;
+    }
+    @property --bar-top {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #1a1a2e;
+    }
+  ]]></style>
+
+  <path id="bg" d="M 0 0 L 520 0 L 520 400 L 0 400 Z" fill="var(--bg-color, #f6efe6)" stroke="none" stroke-width="2"/>
+  <g id="title-group">
+    <text id="title" x="28" y="26" font-size="13" fill="#2f2f2f" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="start">Overlaid bars — value-to-radius mapping</text>
+  </g>
+  <g id="diagram" transform="translate(10, 40)">
+    <path id="guides" d="M 105 130 A 45 45 0 0 1 105 220 M 105 20 A 155 155 0 0 1 105 330" fill="none" stroke="#c8c0b4" stroke-width="0.6" stroke-dasharray="4 3"/>
+    <path id="bars-all" d="M 105 175 m 28.73392520848403 -34.63179957947964 a 45 45 0 0 1 13.466283762245034 50.256855189838234 a 4 4 0 0 0 2.208872594066783 5.083239214935684 l 70.51074583145137 32.87970076342642 a 4 4 0 0 0 5.3100326419548765 -2.07663028751427 a 130.8 130.8 0 0 0 -41.86342960227479 -156.2364462547725 a 4 4 0 0 0 -5.636938306614667 0.8566017377219026 l -44.62424674811139 63.73002904568358 a 4 4 0 0 0 0.6286798272827738 5.506650590680955 z" fill="var(--bar-all, #cc3333)" stroke="var(--bg-color, #f6efe6)" stroke-width="0.5"/>
+    <path id="bars-top" d="M 105 175 m 38.8458305404261 -22.715665291258784 a 45 45 0 0 1 6.1534781843176845 22.965093227140283 a 4 4 0 0 0 3.8142314817517473 4.02120345875375 l 33.671380795500994 2.9458641048708465 a 4 4 0 0 0 4.249284026660234 -3.837490017573292 a 86.8 86.8 0 0 0 -13.309682837758402 -49.67241258314188 a 4 4 0 0 0 -5.598732923769845 -1.1987218286575398 l -27.687339096967918 19.386883548665352 a 4 4 0 0 0 -1.2926196297344958 5.3895800899424735 z" fill="var(--bar-top, #1a1a2e)" stroke="var(--bg-color, #f6efe6)" stroke-width="0.5"/>
+    <path id="leaders" d="M 231.34309807861013 141.14646890059026 L 244.8660596466571 137.52300226915497 M 188.8423617218911 152.5345068851012 L 205.1707010856544 163.75408322952381" fill="none" stroke="#b0a898" stroke-width="0.5" stroke-dasharray="2 2"/>
+    <path id="dots" d="M 229.84309807861013 141.14646890059026 A 1.5 1.5 0 1 1 232.84309807861013 141.14646890059026 A 1.5 1.5 0 1 1 229.84309807861013 141.14646890059026 M 187.3423617218911 152.5345068851012 A 1.5 1.5 0 1 1 190.3423617218911 152.5345068851012 A 1.5 1.5 0 1 1 187.3423617218911 152.5345068851012" fill="#6b7280" stroke="none" stroke-width="2"/>
+    <text id="pct" x="247.7638371255243" y="139.74654513384743" font-size="9" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="var(--bar-all, #cc3333)">15.6%</tspan></text>
+    <text x="208.15197195129886" y="166.41938332564058" font-size="9" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="var(--bar-top, #1a1a2e)">7.6%</tspan></text>
+  </g>
+  <g id="info" transform="translate(330, 55)">
+    <text id="cat" x="0" y="0" font-size="14" fill="#2f2f2f" font-family="Georgia, serif" font-weight="bold" text-anchor="start">Fantasy</text>
+    <path id="sw-all" d="M 2 14 L 8 14 Q 10 14 10 16 L 10 22 Q 10 24 8 24 L 2 24 Q 0 24 0 22 L 0 16 Q 0 14 2 14 Z" fill="var(--bar-all, #cc3333)" stroke="none" stroke-width="2"/>
+    <path id="sw-top" d="M 2 30 L 8 30 Q 10 30 10 32 L 10 38 Q 10 40 8 40 L 2 40 Q 0 40 0 38 L 0 32 Q 0 30 2 30 Z" fill="var(--bar-top, #1a1a2e)" stroke="none" stroke-width="2"/>
+    <text id="leg" x="16" y="23" font-size="9" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="start">All BGG games</text>
+    <text x="16" y="39" font-size="9" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="start">Top 100 games</text>
+    <text id="code" x="0" y="72" font-size="9" fill="#6b7280" font-family="monospace, monospace" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="#8b5cf6">outerR</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280"> = innerR +</tspan></text>
+    <text x="14" y="86" font-size="9" fill="#6b7280" font-family="monospace, monospace" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="#6b7280">(maxR - innerR) * </tspan><tspan dx="0" dy="0" rotate="0" fill="#8b5cf6">val</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280"> / max</tspan></text>
+    <text x="0" y="110" font-size="9" fill="#6b7280" font-family="monospace, monospace" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="#3b82f6">M</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280"> cx cy</tspan></text>
+    <text x="0" y="124" font-size="9" fill="#6b7280" font-family="monospace, monospace" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="#3b82f6">radialWedge</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280">(</tspan><tspan dx="0" dy="0" rotate="0" fill="#8b5cf6">innerR</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280">, </tspan><tspan dx="0" dy="0" rotate="0" fill="#8b5cf6">outerR</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280">,</tspan></text>
+    <text x="14" y="138" font-size="9" fill="#6b7280" font-family="monospace, monospace" text-anchor="start"><tspan dx="0" dy="0" rotate="0" fill="#8b5cf6">fromAngle</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280">, </tspan><tspan dx="0" dy="0" rotate="0" fill="#8b5cf6">toAngle</tspan><tspan dx="0" dy="0" rotate="0" fill="#6b7280">, 4)</tspan></text>
+  </g>
+  <g id="note" transform="translate(330, 270)">
+    <text id="note-text" x="0" y="0" font-size="9" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" text-anchor="start">Dark bar: 50% angular width,</text>
+    <text x="0" y="14" font-size="9" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" text-anchor="start">centered within the red bar's slice</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg-color, #f6efe6)","stroke":"none"},"isDefault":false},{"name":"title-group","type":"group","styles":{},"isDefault":false,"children":[{"name":"title","type":"text","styles":{"font-size":"13","fill":"#2f2f2f","font-family":"system-ui, sans-serif","font-weight":"bold","text-anchor":"start"},"isDefault":false}]},{"name":"diagram","type":"group","styles":{},"isDefault":false,"transform":"translate(10, 40)","children":[{"name":"guides","type":"path","styles":{"fill":"none","stroke":"#c8c0b4","stroke-width":"0.6","stroke-dasharray":"4 3"},"isDefault":false},{"name":"bars-all","type":"path","styles":{"fill":"var(--bar-all, #cc3333)","stroke":"var(--bg-color, #f6efe6)","stroke-width":"0.5"},"isDefault":false},{"name":"bars-top","type":"path","styles":{"fill":"var(--bar-top, #1a1a2e)","stroke":"var(--bg-color, #f6efe6)","stroke-width":"0.5"},"isDefault":false},{"name":"leaders","type":"path","styles":{"fill":"none","stroke":"#b0a898","stroke-width":"0.5","stroke-dasharray":"2 2"},"isDefault":false},{"name":"dots","type":"path","styles":{"fill":"#6b7280","stroke":"none"},"isDefault":false},{"name":"pct","type":"text","styles":{"font-size":"9","fill":"#2f2f2f","font-family":"system-ui, sans-serif","text-anchor":"start"},"isDefault":false}]},{"name":"info","type":"group","styles":{},"isDefault":false,"transform":"translate(330, 55)","children":[{"name":"cat","type":"text","styles":{"font-size":"14","fill":"#2f2f2f","font-family":"Georgia, serif","font-weight":"bold","text-anchor":"start"},"isDefault":false},{"name":"sw-all","type":"path","styles":{"fill":"var(--bar-all, #cc3333)","stroke":"none"},"isDefault":false},{"name":"sw-top","type":"path","styles":{"fill":"var(--bar-top, #1a1a2e)","stroke":"none"},"isDefault":false},{"name":"leg","type":"text","styles":{"font-size":"9","fill":"#2f2f2f","font-family":"system-ui, sans-serif","text-anchor":"start"},"isDefault":false},{"name":"code","type":"text","styles":{"font-size":"9","fill":"#6b7280","font-family":"monospace, monospace","text-anchor":"start"},"isDefault":false}]},{"name":"note","type":"group","styles":{},"isDefault":false,"transform":"translate(330, 270)","children":[{"name":"note-text","type":"text","styles":{"font-size":"9","fill":"var(--bar-all, #cc3333)","font-family":"system-ui, sans-serif","text-anchor":"start"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg-color","syntax":"<color>","inherits":true,"initialValue":"#f6efe6"},{"name":"--bar-all","syntax":"<color>","inherits":true,"initialValue":"#cc3333"},{"name":"--bar-top","syntax":"<color>","inherits":true,"initialValue":"#1a1a2e"}]}]]></script>
+</svg>

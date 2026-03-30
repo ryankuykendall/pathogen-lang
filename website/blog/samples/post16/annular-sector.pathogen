@@ -1,0 +1,259 @@
+// viewBox="0 0 560 400"
+// radialWedge() — the annular sector with automatic rounded corners
+
+let bgColor = Color(CSSVar('--bg-color', #f6efe6));
+let barColor = Color(CSSVar('--bar-color', #cc3333));
+let textColor = Color('#2f2f2f');
+let annotColor = Color('#6b7280');
+let guideColor = Color('#c8c0b4');
+let leaderColor = Color('#b0a898');
+let kwColor = Color('#3b82f6');
+let paramColor = Color('#8b5cf6');
+
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 560, 400) }
+
+// ============================================================
+// Group 1: Title
+// ============================================================
+define GroupLayer('title-group') ${ translate-x: 0; translate-y: 0; }
+
+let title = TextLayer('title') ${
+  font-size: 13;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+layer('title-group').append(title);
+title.apply {
+  text(28, 26)`radialWedge(innerR, outerR, fromAngle, toAngle, cornerR)`
+}
+
+// ============================================================
+// Group 2: Wedge diagram with annotations
+// ============================================================
+define GroupLayer('diagram') ${ translate-x: 30; translate-y: 50; }
+
+let cx = 130;
+let cy = 155;
+let innerR = 50;
+let outerR = 145;
+let fromA = rad(-50);
+let toA = rad(35);
+
+// Reference circles (dashed)
+let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+layer('diagram').append(guides);
+guides.apply {
+  circle(cx, cy, innerR)
+  circle(cx, cy, outerR)
+}
+
+// Sharp corners (ghost)
+let sharpLayer = PathLayer('sharp') ${ fill: barColor; stroke: none; opacity: 0.2; };
+layer('diagram').append(sharpLayer);
+sharpLayer.apply {
+  M cx cy
+  radialWedge(innerR, outerR, fromA, toA, 0)
+}
+
+// Rounded corners
+let roundLayer = PathLayer('rounded') ${ fill: barColor; stroke: none; };
+layer('diagram').append(roundLayer);
+roundLayer.apply {
+  M cx cy
+  radialWedge(innerR, outerR, fromA, toA, 6)
+}
+
+// --- Annotation layers ---
+let dots = PathLayer('dots') ${ fill: annotColor; stroke: none; };
+let leaders = PathLayer('leaders') ${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
+let arcs = PathLayer('arcs') ${ fill: none; stroke: annotColor; stroke-width: 0.8; };
+let ticks = PathLayer('ticks') ${ fill: none; stroke: annotColor; stroke-width: 0.7; };
+let labelsMid = TextLayer('labels-mid') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+};
+let labelsStart = TextLayer('labels-start') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+let labelsEnd = TextLayer('labels-end') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: end;
+};
+layer('diagram').append(arcs, leaders, dots, labelsMid, labelsStart, labelsEnd);
+
+// --- Center dot + label ---
+dots.apply { circle(cx, cy, 2.5) }
+labelsEnd.apply {
+  text(calc(cx - 5), calc(cy - 4))`center`
+}
+
+// --- innerR: dot on inner radius of wedge, dashed leader to label above ---
+let innerDotAngle = calc((fromA + toA) / 2 - 0.15);  // slightly off-center on inner arc
+let innerDotX = polarX(cx, innerDotAngle, innerR);
+let innerDotY = polarY(cy, innerDotAngle, innerR);
+dots.apply { circle(innerDotX, innerDotY, 2) }
+
+// Label above the inner concentric circle
+let innerLabelX = calc(innerDotX - 12);
+let innerLabelY = calc(cy - innerR - 10);
+leaders.apply {
+  M innerDotX innerDotY
+  L innerLabelX innerLabelY
+}
+labelsEnd.apply {
+  text(calc(innerLabelX + 14), calc(innerLabelY - 2))`innerR`
+}
+
+// --- outerR label: dot on outer circle at the wedge midpoint, label just outside ---
+let outerLabelAngle = calc((fromA + toA) / 2);
+let outerDotX = polarX(cx, outerLabelAngle, outerR);
+let outerDotY = polarY(cy, outerLabelAngle, outerR);
+dots.apply { circle(outerDotX, outerDotY, 2) }
+labelsStart.apply {
+  text(calc(outerDotX + 6), calc(outerDotY + 3))`outerR`
+}
+
+// --- fromAngle / toAngle arcs INSIDE the wedge ---
+let arcR = 30;
+
+// fromAngle arc (from 0° reference to fromA)
+arcs.apply {
+  M calc(cx + arcR) cy
+  A arcR arcR 0 0 0 polarX(cx, fromA, arcR) polarY(cy, fromA, arcR)
+}
+// fromAngle label — short dashed leader to label above-left
+let fromTipX = polarX(cx, fromA, arcR);
+let fromTipY = polarY(cy, fromA, arcR);
+dots.apply { circle(fromTipX, fromTipY, 1.5) }
+leaders.apply {
+  M fromTipX fromTipY
+  L calc(fromTipX - 16) calc(fromTipY - 10)
+}
+labelsEnd.apply {
+  text(calc(fromTipX - 18), calc(fromTipY - 8))`fromAngle`
+}
+
+// toAngle arc (from 0° reference to toA)
+arcs.apply {
+  M calc(cx + arcR) cy
+  A arcR arcR 0 0 1 polarX(cx, toA, arcR) polarY(cy, toA, arcR)
+}
+// toAngle label — short dashed leader to label below-left
+let toTipX = polarX(cx, toA, arcR);
+let toTipY = polarY(cy, toA, arcR);
+dots.apply { circle(toTipX, toTipY, 1.5) }
+leaders.apply {
+  M toTipX toTipY
+  L calc(toTipX - 12) calc(toTipY + 12)
+}
+labelsEnd.apply {
+  text(calc(toTipX - 14), calc(toTipY + 14))`toAngle`
+}
+
+// 0° reference tick
+guides.apply { M cx cy L calc(cx + arcR + 3) cy }
+
+// ============================================================
+// Group 3: Stdlib function call (code)
+// ============================================================
+define GroupLayer('code-group') ${ translate-x: 350; translate-y: 50; }
+
+let headerLabel = TextLayer('header') ${
+  font-size: 10;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+layer('code-group').append(headerLabel);
+headerLabel.apply { text(0, 10)`stdlib function call:` }
+
+let codeLayer = TextLayer('code') ${
+  font-size: 9.5;
+  fill: annotColor;
+  font-family: monospace, monospace;
+  text-anchor: start;
+};
+layer('code-group').append(codeLayer);
+
+let kwStyle = ${ fill: kwColor; };
+let paramStyle = ${ fill: paramColor; };
+let plainStyle = ${ fill: annotColor; };
+
+codeLayer.apply {
+  text(0, 32) {
+    tspan(0, 0, 0, kwStyle)`M`
+    tspan(0, 0, 0, plainStyle)` cx cy`
+  }
+  text(0, 48) {
+    tspan(0, 0, 0, kwStyle)`radialWedge`
+    tspan(0, 0, 0, plainStyle)`(`
+  }
+  text(14, 64) {
+    tspan(0, 0, 0, paramStyle)`innerR`
+    tspan(0, 0, 0, plainStyle)`, `
+    tspan(0, 0, 0, paramStyle)`outerR`
+    tspan(0, 0, 0, plainStyle)`,`
+  }
+  text(14, 80) {
+    tspan(0, 0, 0, paramStyle)`fromAngle`
+    tspan(0, 0, 0, plainStyle)`, `
+    tspan(0, 0, 0, paramStyle)`toAngle`
+    tspan(0, 0, 0, plainStyle)`,`
+  }
+  text(14, 96) {
+    tspan(0, 0, 0, paramStyle)`cornerR`
+  }
+  text(0, 112)`)`
+}
+
+// ============================================================
+// Group 4: Graceful degradation + corner callout
+// ============================================================
+define GroupLayer('notes-group') ${ translate-x: 350; translate-y: 195; }
+
+let notesHeader = TextLayer('notes-header') ${
+  font-size: 10;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+layer('notes-group').append(notesHeader);
+notesHeader.apply { text(0, 10)`Graceful degradation:` }
+
+let notesCode = TextLayer('notes-code') ${
+  font-size: 9.5;
+  fill: Color('#6b7280');
+  font-family: monospace, monospace;
+  text-anchor: start;
+};
+layer('notes-group').append(notesCode);
+notesCode.apply {
+  text(0, 30)`// cornerR auto-reduces`
+  text(0, 46)`// when ends are too narrow`
+  text(0, 62)`// All relative commands`
+  text(0, 78)`// No M — composable in @{}`
+}
+
+let accentLabels = TextLayer('accent') ${
+  font-size: 9;
+  fill: barColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('notes-group').append(accentLabels);
+accentLabels.apply {
+  text(0, 110)`cornerR = 6 rounds all corners`
+  text(0, 124)`cornerR = 0 sharp edges (ghost)`
+}

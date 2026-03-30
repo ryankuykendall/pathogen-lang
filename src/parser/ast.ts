@@ -33,6 +33,7 @@ export type Node =
   | TextStatement
   | CalcExpression
   | FunctionCall
+  | TernaryExpression
   | BinaryExpression
   | UnaryExpression
   | MemberExpression
@@ -176,6 +177,14 @@ export interface BinaryExpression {
   operator: '+' | '-' | '*' | '/' | '%' | '<' | '>' | '<=' | '>=' | '==' | '!=' | '&&' | '||' | '<<';
   left: Expression;
   right: Expression;
+}
+
+// condition ? consequent : alternate
+export interface TernaryExpression {
+  type: 'TernaryExpression';
+  condition: Expression;
+  consequent: Expression;
+  alternate: Expression;
 }
 
 // -x, !x
@@ -386,6 +395,7 @@ export interface FontDirective {
 }
 
 export type Expression =
+  | TernaryExpression
   | BinaryExpression
   | UnaryExpression
   | CalcExpression

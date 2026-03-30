@@ -1,0 +1,94 @@
+// viewBox="0 0 450 280"
+// Summary bar chart — reusing the same data in a horizontal layout
+
+let bgColor = Color(CSSVar('--bg-color', #f6efe6));
+let barColor = Color(CSSVar('--bar-top', #1a1a2e));
+let accentColor = Color(CSSVar('--bar-all', #cc3333));
+let textColor = Color('#2f2f2f');
+let subtleColor = Color('#9ca3af');
+
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 450, 280) }
+
+// === Data ===
+let top5 = [
+  { name: "Economic",        pct: 9.7 },
+  { name: "Fantasy",         pct: 7.6 },
+  { name: "Science Fiction",  pct: 5.7 },
+  { name: "Adventure",       pct: 4.9 },
+  { name: "Exploration",     pct: 4.3 }
+];
+
+// === Chart layout ===
+let chartX = 140;
+let chartY = 60;
+let barMaxW = 220;
+let barH = 22;
+let barSpacing = 32;
+let maxVal = 12;
+
+// === Title ===
+let title = TextLayer('title') ${
+  font-size: 14;
+  fill: textColor;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+title.apply {
+  text(30, 35)`Top categories among the 100 highest-ranked board games`
+}
+
+// === Draw bars ===
+let bars = PathLayer('bars') ${ fill: barColor; stroke: none; };
+let barLabels = TextLayer('labels') ${
+  font-size: 11;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: end;
+};
+let barValues = TextLayer('values') ${
+  font-size: 10;
+  fill: subtleColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+let rankLabels = TextLayer('ranks') ${
+  font-size: 10;
+  fill: accentColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: end;
+};
+
+for ([item, idx] in top5) {
+  let y = calc(chartY + idx * barSpacing);
+  let bw = calc(barMaxW * item.pct / maxVal);
+
+  bars.apply { roundRect(chartX, y, bw, barH, 3) }
+
+  rankLabels.apply {
+    text(45, calc(y + 15))`#${calc(idx + 1)}`
+  }
+  barLabels.apply {
+    text(calc(chartX - 8), calc(y + 15))`${item.name}`
+  }
+  barValues.apply {
+    text(calc(chartX + bw + 8), calc(y + 15))`${item.pct}%`
+  }
+}
+
+// === Footnote ===
+let foot = TextLayer('footnote') ${
+  font-size: 8;
+  fill: subtleColor;
+  font-family: system-ui, sans-serif;
+  font-style: italic;
+  text-anchor: start;
+};
+foot.apply {
+  text(30, 258)`The same reusable functions power both the radial chart and this summary view.`
+}
+
+let g = GroupLayer('all') ${};
+g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);

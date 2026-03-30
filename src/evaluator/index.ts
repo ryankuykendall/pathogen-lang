@@ -289,6 +289,7 @@ const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   BBoxAnchor: { TopLeft: 'top-left', Top: 'top', TopRight: 'top-right', Right: 'right', BottomRight: 'bottom-right', Bottom: 'bottom', BottomLeft: 'bottom-left', Left: 'left', Center: 'center' },
   GridPatternType: { Shape: 'shape', Dot: 'dot', Intersection: 'intersection', Partial: 'partial' },
   HexagonOrientation: { Edge: 'edge', Vertex: 'vertex' },
+  VerticalAnchor: { Descender: 'descender', Baseline: 'baseline', Midline: 'midline', CapHeight: 'cap-height' },
 };
 
 /**
@@ -310,6 +311,8 @@ function expressionToSource(expr: Expression): string {
       return `${expr.name}(${expr.args.map(expressionToSource).join(', ')})`;
     case 'CalcExpression':
       return `calc(${expressionToSource(expr.expression)})`;
+    case 'TernaryExpression':
+      return `(${expressionToSource(expr.condition)} ? ${expressionToSource(expr.consequent)} : ${expressionToSource(expr.alternate)})`;
     case 'BinaryExpression':
       return `(${expressionToSource(expr.left)} ${expr.operator} ${expressionToSource(expr.right)})`;
     case 'UnaryExpression':
@@ -933,6 +936,12 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'MethodCallExpression':
       return evaluateMethodCall(expr, scope);
+
+    case 'TernaryExpression': {
+      const condVal = evaluateExpression(expr.condition, scope);
+      const truthValue = typeof condVal === 'number' ? condVal !== 0 : (isBooleanValue(condVal) ? condVal.value !== 0 : condVal !== null);
+      return truthValue ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
+    }
 
     case 'BinaryExpression': {
       // Check for angle unit mismatch before evaluation for +/-
@@ -2639,6 +2648,96 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           elements: obj.elements.map((el) => ({ ...el, x: el.x + projOriginX, y: el.y + projOriginY })),
           styles: { ...obj.styles },
           origin: { x: projOriginX, y: projOriginY },
+        };
+      }
+      case 'radialProject': {
+        // radialProject(cx, cy, angle, distance, anchor?, autoFlip?)
+        // Positions text at polar coordinate, rotates along radial direction,
+        // auto-flips on left hemisphere for readability, sets text-anchor.
+        if (expr.args.length < 4 || expr.args.length > 7) {
+          throw mError('radialProject() expects 4-7 arguments (cx, cy, angle, distance, anchor?, autoFlip?, verticalAlign?)');
+        }
+        const rpCx = evaluateExpression(expr.args[0], scope);
+        const rpCy = evaluateExpression(expr.args[1], scope);
+        const rpAngle = evaluateExpression(expr.args[2], scope);
+        const rpDist = evaluateExpression(expr.args[3], scope);
+        if (typeof rpCx !== 'number') throw mError('radialProject() cx must be a number');
+        if (typeof rpCy !== 'number') throw mError('radialProject() cy must be a number');
+        if (typeof rpAngle !== 'number') throw mError('radialProject() angle must be a number');
+        if (typeof rpDist !== 'number') throw mError('radialProject() distance must be a number');
+
+        // Optional anchor: 'start' (default) or 'end'
+        let rpAnchor = 'start';
+        if (expr.args.length >= 5) {
+          const anchorVal = evaluateExpression(expr.args[4], scope);
+          if (typeof anchorVal === 'string') rpAnchor = anchorVal;
+        }
+
+        // Optional autoFlip: default true
+        let rpAutoFlip = true;
+        if (expr.args.length >= 6) {
+          const flipVal = evaluateExpression(expr.args[5], scope);
+          if (typeof flipVal === 'number') rpAutoFlip = flipVal !== 0;
+          else if (isBooleanValue(flipVal)) rpAutoFlip = flipVal.value !== 0;
+        }
+
+        // Target position
+        let rpTargetX = rpCx + rpDist * Math.cos(rpAngle);
+        let rpTargetY = rpCy + rpDist * Math.sin(rpAngle);
+
+        // Base rotation aligns text along radial direction
+        let rpRotation = rpAngle;
+        let effectiveAnchor = rpAnchor;
+
+        // Left hemisphere detection and flip
+        const isLeftHemi = Math.cos(rpAngle) < -1e-10;
+        if (rpAutoFlip && isLeftHemi) {
+          rpRotation += Math.PI; // Flip 180° for readability
+          // Swap anchor so text still extends away from center
+          effectiveAnchor = rpAnchor === 'start' ? 'end' : 'start';
+        }
+
+        // Optional verticalAlign: default 'baseline'
+        let rpVAlign = 'baseline';
+        if (expr.args.length >= 7) {
+          const vAlignVal = evaluateExpression(expr.args[6], scope);
+          if (typeof vAlignVal === 'string') rpVAlign = vAlignVal;
+        }
+
+        // Compute perpendicular offset for vertical font metric alignment
+        if (rpVAlign !== 'baseline') {
+          const rpFontSize = typeof obj.styles['font-size'] === 'number'
+            ? obj.styles['font-size']
+            : (typeof obj.styles['font-size'] === 'string' ? parseFloat(obj.styles['font-size'] as string) : 16);
+
+          let vOffset = 0;
+          if (rpVAlign === 'midline') vOffset = -rpFontSize * 0.35;
+          else if (rpVAlign === 'cap-height') vOffset = -rpFontSize * 0.7;
+          else if (rpVAlign === 'descender') vOffset = rpFontSize * 0.2;
+
+          if (vOffset !== 0) {
+            const perpAngle = rpRotation - Math.PI / 2;
+            rpTargetX += vOffset * Math.cos(perpAngle);
+            rpTargetY += vOffset * Math.sin(perpAngle);
+          }
+        }
+
+        // Text-anchor style
+        const rpTextAnchor = effectiveAnchor === 'end' ? 'end' : 'start';
+
+        // Project elements to target position with rotation and text-anchor
+        const rpStyles = { ...obj.styles, 'text-anchor': rpTextAnchor };
+        return {
+          type: 'ProjectedTextValue' as const,
+          elements: obj.elements.map((el) => ({
+            ...el,
+            x: el.x + rpTargetX,
+            y: el.y + rpTargetY,
+            rotation: rpRotation,
+            styles: el.styles ? { ...el.styles, 'text-anchor': rpTextAnchor } : { 'text-anchor': rpTextAnchor },
+          })),
+          styles: rpStyles,
+          origin: { x: rpTargetX, y: rpTargetY },
         };
       }
       case 'project': {

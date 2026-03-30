@@ -54,6 +54,16 @@ export const mathFunctions = {
   deg: (radians: number) => (radians * 180) / Math.PI,
   rad: (degrees: number) => (degrees * Math.PI) / 180,
 
+  // Angle normalization — returns angle in [0, TAU) range
+  normalizeAngle: (angle: number) => {
+    const tau = Math.PI * 2;
+    return ((angle % tau) + tau) % tau;
+  },
+
+  // Polar coordinate helpers — reduce cos/sin boilerplate in radial layouts
+  polarX: (cx: number, angle: number, radius: number) => cx + Math.cos(angle) * radius,
+  polarY: (cy: number, angle: number, radius: number) => cy + Math.sin(angle) * radius,
+
   // Random (note: not deterministic)
   random: () => Math.random(),
   randomRange: (min: number, max: number) => min + Math.random() * (max - min),

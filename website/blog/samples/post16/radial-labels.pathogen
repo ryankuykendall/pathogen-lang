@@ -1,0 +1,138 @@
+// viewBox="0 0 700 700"
+// Radial labels — radialProject with VerticalAnchor.Midline
+
+let bgColor = Color(CSSVar('--bg-color', #f6efe6));
+let allBarColor = Color(CSSVar('--bar-all', #cc3333));
+let topBarColor = Color(CSSVar('--bar-top', #1a1a2e));
+let textColor = Color('#2f2f2f');
+let gridColor = Color('#d4c9b8');
+let pctColor = Color('#6b7280');
+
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 700, 700) }
+
+// === Chart parameters ===
+let cx = 350;
+let cy = 360;
+let innerR = 20;
+let maxR = 220;
+let maxVal = 18;
+let cornerR = 4;
+
+// === Data ===
+let data = [
+  { name: "Fantasy",     all: 15.6, top: 7.6  },
+  { name: "Wargame",     all: 13.8, top: 2.2  },
+  { name: "Sci-Fi",      all: 8.9,  top: 5.7  },
+  { name: "Economic",    all: 6.0,  top: 9.7  },
+  { name: "Adventure",   all: 6.5,  top: 4.9  },
+  { name: "Exploration", all: 3.0,  top: 4.3  },
+  { name: "Medieval",    all: 2.8,  top: 3.8  },
+  { name: "Farming",     all: 1.4,  top: 2.4  }
+];
+
+let count = data.length;
+let sliceAngle = calc(TAU() / count);
+let startOffset = PI();
+let overlap = rad(0.3);
+let barSweep = calc(sliceAngle + overlap);
+
+// === Grid rings + center ===
+let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
+grid.apply {
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+}
+let center = PathLayer('center') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+center.apply { circle(cx, cy, innerR) }
+
+// === Draw bars ===
+let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsTop = PathLayer('bars-top') ${ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
+
+for ([d, i] in data) {
+  let sliceFrom = calc(startOffset + i * sliceAngle);
+  let sliceTo = calc(sliceFrom + barSweep);
+  let allOuterR = calc(innerR + (maxR - innerR) * d.all / maxVal);
+
+  barsAll.apply {
+    M cx cy
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+  }
+
+  if (d.top > 0) {
+    let topOuterR = calc(innerR + (maxR - innerR) * d.top / maxVal);
+    let topSweep = calc(barSweep * 0.5);
+    let topOff = calc((barSweep - topSweep) / 2);
+    barsTop.apply {
+      M cx cy
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+    }
+  }
+}
+
+// === Radial labels — single TextLayer via radialProject + VerticalAnchor ===
+let catLabels = TextLayer('cat-labels') ${
+  font-size: 11;
+  fill: textColor;
+  font-family: Georgia, serif;
+  font-weight: bold;
+};
+
+let redDot = ${ fill: allBarColor; white-space: pre; font-size: 8.8; };
+let redPct = ${ fill: allBarColor; font-weight: normal; font-size: 8.8; };
+let darkDot = ${ fill: topBarColor; white-space: pre; font-size: 8.8; };
+let darkPct = ${ fill: topBarColor; font-weight: normal; font-size: 8.8; };
+
+for ([d, i] in data) {
+  let midAngle = calc(startOffset + (i + 0.5) * sliceAngle);
+  let longerVal = max(d.all, d.top);
+  let barTipR = calc(innerR + (maxR - innerR) * longerVal / maxVal);
+  let labelR = calc(barTipR + 8);
+
+  let labelTb = &{
+    text(0, 0) {
+      `${d.name}`
+      tspan(0, 0, 0, redDot)` · `
+      tspan(0, 0, 0, redPct)`${d.all}%`
+      tspan(0, 0, 0, darkDot)` · `
+      tspan(0, 0, 0, darkPct)`${d.top}%`
+    }
+  } << ${ font-size: 11; };
+
+  catLabels.apply {
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+  }
+}
+
+// === Legend ===
+let swAll = PathLayer('sw-all') ${ fill: allBarColor; stroke: none; };
+let swTop = PathLayer('sw-top') ${ fill: topBarColor; stroke: none; };
+let legLabels = TextLayer('legend') ${
+  font-size: 10;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+swAll.apply { roundRect(270, 672, 10, 10, 2) }
+swTop.apply { roundRect(380, 672, 10, 10, 2) }
+legLabels.apply {
+  text(284, 682)`All BGG games`
+  text(394, 682)`Top 100 games`
+}
+
+// === Title ===
+let title = TextLayer('title') ${
+  font-size: 13;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: middle;
+};
+title.apply {
+  text(350, 28)`radialProject + VerticalAnchor.Midline — one TextLayer, no branching`
+}
+
+let g = GroupLayer('all') ${};
+g.append(bg, grid, center, barsAll, barsTop, catLabels,
+  swAll, swTop, legLabels, title);

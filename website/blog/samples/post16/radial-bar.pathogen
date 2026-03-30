@@ -1,0 +1,214 @@
+// viewBox="0 0 520 400"
+// Radial bar — mapping data values to bar length with radialWedge()
+
+let bgColor = Color(CSSVar('--bg-color', #f6efe6));
+let allBarColor = Color(CSSVar('--bar-all', #cc3333));
+let topBarColor = Color(CSSVar('--bar-top', #1a1a2e));
+let textColor = Color('#2f2f2f');
+let annotColor = Color('#6b7280');
+let guideColor = Color('#c8c0b4');
+let leaderColor = Color('#b0a898');
+let kwColor = Color('#3b82f6');
+let paramColor = Color('#8b5cf6');
+
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 520, 400) }
+
+// ============================================================
+// Group 1: Title
+// ============================================================
+define GroupLayer('title-group') ${}
+
+let title = TextLayer('title') ${
+  font-size: 13;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+layer('title-group').append(title);
+title.apply {
+  text(28, 26)`Overlaid bars — value-to-radius mapping`
+}
+
+// ============================================================
+// Group 2: Wedge diagram
+// ============================================================
+define GroupLayer('diagram') ${ translate-x: 10; translate-y: 40; }
+
+let cx = 105;
+let cy = 175;
+let innerR = 45;
+let maxR = 155;
+let maxVal = 20;
+let cornerR = 4;
+
+let sliceFrom = rad(-55);
+let sliceTo = rad(25);
+let sliceMid = calc((sliceFrom + sliceTo) / 2);
+
+// Reference circles
+let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+layer('diagram').append(guides);
+// Right-half semicircles only — frees up left-side space
+guides.apply {
+  M cx calc(cy - innerR) A innerR innerR 0 0 1 cx calc(cy + innerR)
+  M cx calc(cy - maxR) A maxR maxR 0 0 1 cx calc(cy + maxR)
+}
+
+// "All BGG games" bar — Fantasy 15.6%
+let allOuterR = calc(innerR + (maxR - innerR) * 15.6 / maxVal);
+let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
+layer('diagram').append(barsAll);
+barsAll.apply {
+  M cx cy
+  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+}
+
+// "Top 100" bar overlaid — Fantasy 7.6%, 50% theta, centered
+let topOuterR = calc(innerR + (maxR - innerR) * 7.6 / maxVal);
+let topSweep = calc((sliceTo - sliceFrom) * 0.5);
+let topOff = calc((sliceTo - sliceFrom - topSweep) / 2);
+let barsTop = PathLayer('bars-top') ${ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
+layer('diagram').append(barsTop);
+barsTop.apply {
+  M cx cy
+  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+}
+
+// Percentage labels — outside each bar tip with dots + leaders
+let dots = PathLayer('dots') ${ fill: annotColor; stroke: none; };
+let leaders = PathLayer('leaders') ${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
+let pctLabels = TextLayer('pct') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('diagram').append(leaders, dots, pctLabels);
+
+// 15.6% — dot on red bar tip, label outside
+let allTipX = polarX(cx, sliceMid, allOuterR);
+let allTipY = polarY(cy, sliceMid, allOuterR);
+let allLabelR = calc(allOuterR + 14);
+dots.apply { circle(allTipX, allTipY, 1.5) }
+leaders.apply {
+  M allTipX allTipY
+  L polarX(cx, sliceMid, allLabelR) polarY(cy, sliceMid, allLabelR)
+}
+let allPctStyle = ${ fill: allBarColor; };
+pctLabels.apply {
+  text(polarX(cx, sliceMid, calc(allLabelR + 3)), calc(polarY(cy, sliceMid, calc(allLabelR + 3)) + 3)) {
+    tspan(0, 0, 0, allPctStyle)`15.6%`
+  }
+}
+
+// 7.6% — dot on dark bar tip, label outside
+let topTipX = polarX(cx, sliceMid, topOuterR);
+let topTipY = polarY(cy, sliceMid, topOuterR);
+let topLabelR = calc(topOuterR + 14);
+dots.apply { circle(topTipX, topTipY, 1.5) }
+leaders.apply {
+  M topTipX topTipY
+  L polarX(cx, calc(sliceMid + 0.15), topLabelR) polarY(cy, calc(sliceMid + 0.15), topLabelR)
+}
+let topPctStyle = ${ fill: topBarColor; };
+pctLabels.apply {
+  text(polarX(cx, calc(sliceMid + 0.15), calc(topLabelR + 3)), calc(polarY(cy, calc(sliceMid + 0.15), calc(topLabelR + 3)) + 3)) {
+    tspan(0, 0, 0, topPctStyle)`7.6%`
+  }
+}
+
+// ============================================================
+// Group 3: Legend + code
+// ============================================================
+define GroupLayer('info') ${ translate-x: 330; translate-y: 55; }
+
+// Category name
+let catLabel = TextLayer('cat') ${
+  font-size: 14;
+  fill: textColor;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+layer('info').append(catLabel);
+catLabel.apply { text(0, 0)`Fantasy` }
+
+// Legend swatches
+let swAll = PathLayer('sw-all') ${ fill: allBarColor; stroke: none; };
+let swTop = PathLayer('sw-top') ${ fill: topBarColor; stroke: none; };
+let legLabels = TextLayer('leg') ${
+  font-size: 9;
+  fill: textColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('info').append(swAll, swTop, legLabels);
+swAll.apply { roundRect(0, 14, 10, 10, 2) }
+swTop.apply { roundRect(0, 30, 10, 10, 2) }
+legLabels.apply {
+  text(16, 23)`All BGG games`
+  text(16, 39)`Top 100 games`
+}
+
+// Code — syntax highlighted
+let codeLayer = TextLayer('code') ${
+  font-size: 9;
+  fill: annotColor;
+  font-family: monospace, monospace;
+  text-anchor: start;
+};
+layer('info').append(codeLayer);
+
+let kwStyle = ${ fill: kwColor; };
+let paramStyle = ${ fill: paramColor; };
+let plainStyle = ${ fill: annotColor; };
+
+codeLayer.apply {
+  text(0, 72) {
+    tspan(0, 0, 0, paramStyle)`outerR`
+    tspan(0, 0, 0, plainStyle)` = innerR +`
+  }
+  text(14, 86) {
+    tspan(0, 0, 0, plainStyle)`(maxR - innerR) * `
+    tspan(0, 0, 0, paramStyle)`val`
+    tspan(0, 0, 0, plainStyle)` / max`
+  }
+  text(0, 110) {
+    tspan(0, 0, 0, kwStyle)`M`
+    tspan(0, 0, 0, plainStyle)` cx cy`
+  }
+  text(0, 124) {
+    tspan(0, 0, 0, kwStyle)`radialWedge`
+    tspan(0, 0, 0, plainStyle)`(`
+    tspan(0, 0, 0, paramStyle)`innerR`
+    tspan(0, 0, 0, plainStyle)`, `
+    tspan(0, 0, 0, paramStyle)`outerR`
+    tspan(0, 0, 0, plainStyle)`,`
+  }
+  text(14, 138) {
+    tspan(0, 0, 0, paramStyle)`fromAngle`
+    tspan(0, 0, 0, plainStyle)`, `
+    tspan(0, 0, 0, paramStyle)`toAngle`
+    tspan(0, 0, 0, plainStyle)`, 4)`
+  }
+}
+
+// ============================================================
+// Group 4: Bottom note
+// ============================================================
+define GroupLayer('note') ${ translate-x: 330; translate-y: 270; }
+
+let noteLabel = TextLayer('note-text') ${
+  font-size: 9;
+  fill: allBarColor;
+  font-family: system-ui, sans-serif;
+  text-anchor: start;
+};
+layer('note').append(noteLabel);
+
+noteLabel.apply {
+  text(0, 0)`Dark bar: 50% angular width,`
+  text(0, 14)`centered within the red bar's slice`
+}
