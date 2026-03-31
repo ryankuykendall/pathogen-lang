@@ -831,12 +831,60 @@ function intersectArcArc(
   return intersectViaApprox(cmdA, cmdB);
 }
 
+/**
+ * Find overlap boundary points for arcs on the same circle.
+ * When two arcs share the same underlying circle, they don't have discrete
+ * intersection points — but we need to report where one arc's endpoints
+ * fall within the other arc's angular range so the segments can be split
+ * at the overlap boundaries.
+ */
+function coincidentArcIntersections(
+  cA: ArcCenter, cB: ArcCenter,
+): { tA: number; tB: number; point: Point }[] {
+  const results: { tA: number; tB: number; point: Point }[] = [];
+
+  // Check if B's start lies within A's angular range
+  const bStart = arcPointAt(cB, 0);
+  const tA_bStart = arcTForPoint(cA, bStart);
+  if (tA_bStart !== null) {
+    results.push({ tA: tA_bStart, tB: 0, point: bStart });
+  }
+
+  // Check if B's end lies within A's angular range
+  const bEnd = arcPointAt(cB, 1);
+  const tA_bEnd = arcTForPoint(cA, bEnd);
+  if (tA_bEnd !== null) {
+    results.push({ tA: tA_bEnd, tB: 1, point: bEnd });
+  }
+
+  // Check if A's start lies within B's angular range
+  const aStart = arcPointAt(cA, 0);
+  const tB_aStart = arcTForPoint(cB, aStart);
+  if (tB_aStart !== null) {
+    results.push({ tA: 0, tB: tB_aStart, point: aStart });
+  }
+
+  // Check if A's end lies within B's angular range
+  const aEnd = arcPointAt(cA, 1);
+  const tB_aEnd = arcTForPoint(cB, aEnd);
+  if (tB_aEnd !== null) {
+    results.push({ tA: 1, tB: tB_aEnd, point: aEnd });
+  }
+
+  return dedupeIntersections(results);
+}
+
 function intersectCircleCircle(
   cA: ArcCenter, cB: ArcCenter,
 ): { tA: number; tB: number; point: Point }[] {
   const dx = cB.cx - cA.cx, dy = cB.cy - cA.cy;
   const d = Math.sqrt(dx * dx + dy * dy);
   const rA = cA.rx, rB = cB.rx;
+
+  // Coincident circles: same center, same radius — find overlap boundaries
+  if (d < GEOMETRIC_EPSILON && Math.abs(rA - rB) < GEOMETRIC_EPSILON) {
+    return coincidentArcIntersections(cA, cB);
+  }
 
   if (d > rA + rB + GEOMETRIC_EPSILON || d < Math.abs(rA - rB) - GEOMETRIC_EPSILON || d < GEOMETRIC_EPSILON) {
     return [];
@@ -1173,7 +1221,32 @@ function splitPathAtIntersections(
     }
 
     // Sort t-values and deduplicate
-    const sorted = Array.from(new Set(ts)).sort((a, b) => a - b).filter(t => t > PARAMETRIC_EPSILON && t < 1 - PARAMETRIC_EPSILON);
+    let sorted = Array.from(new Set(ts)).sort((a, b) => a - b).filter(t => t > PARAMETRIC_EPSILON && t < 1 - PARAMETRIC_EPSILON);
+
+    // Merge near-coincident t-values that would create tiny segments.
+    // These arise when multiple pairwise intersection tests find slightly
+    // different points for what is geometrically the same intersection
+    // (e.g., coincident arcs on the same circle). Tiny segments get
+    // randomly classified by the winding number test, causing artifacts.
+    if (sorted.length > 1) {
+      const MIN_SEG_LEN = 0.5; // minimum sub-segment length in path units
+      const merged: number[] = [sorted[0]];
+      for (let k = 1; k < sorted.length; k++) {
+        const prevPt = evalCmd(cmd, merged[merged.length - 1]);
+        const curPt = evalCmd(cmd, sorted[k]);
+        const segDist = Math.sqrt(
+          (curPt.x - prevPt.x) ** 2 + (curPt.y - prevPt.y) ** 2,
+        );
+        if (segDist < MIN_SEG_LEN) {
+          // Merge: keep the average of the two t-values
+          merged[merged.length - 1] = (merged[merged.length - 1] + sorted[k]) / 2;
+        } else {
+          merged.push(sorted[k]);
+        }
+      }
+      sorted = merged;
+    }
+
     const splits = [0, ...sorted, 1];
 
     for (let j = 0; j < splits.length - 1; j++) {
@@ -1369,8 +1442,158 @@ function classifySegment(
 
 function classifyAllSegments(
   splitSegs: SplitSegment[], otherPath: TransformCmd[],
+  intersections?: Intersection[], side?: 'A' | 'B',
+  otherSegs?: TransformCmd[],
 ): SegmentClass[] {
+  if (intersections && side && otherSegs) {
+    return classifyByRingWalk(splitSegs, otherPath, intersections, side, otherSegs);
+  }
   return splitSegs.map(seg => classifySegment(seg, otherPath));
+}
+
+/**
+ * Classify split segments by walking each ring and tracking inside/outside state.
+ *
+ * Instead of independently sampling each segment's midpoint (which fails when
+ * the midpoint lies on the other path's boundary), this walks the ring in order
+ * and flips the inside/outside state at each intersection boundary. Within a
+ * ring, boundaries between segments with the same origIndex are intersection
+ * points (crossings) where the state flips; boundaries between different
+ * origIndex values are original segment joints where the state is unchanged.
+ *
+ * The seed classification is determined by finding a segment whose midpoint is
+ * reliably inside or outside (verified by sampling at two points and checking
+ * agreement). The state is then propagated through the ring.
+ */
+/**
+ * Determine if an intersection at a split boundary is a transverse crossing
+ * (curves cross each other) or a tangent touch (curves touch but stay on the
+ * same side). Returns true for crossings, false for tangent touches.
+ *
+ * Uses cross product of the two paths' tangent vectors at the intersection.
+ * Transverse crossings have large cross product; tangent touches have ~0.
+ */
+function isCrossingAtBoundary(
+  splitBefore: SplitSegment, splitAfter: SplitSegment,
+  intersections: Intersection[], side: 'A' | 'B',
+  otherSegs: TransformCmd[],
+): boolean {
+  // The boundary point is the end of splitBefore / start of splitAfter
+  const bndPt = splitBefore.cmd.end;
+
+  // Current path tangent at the boundary
+  const tanThis = tangentAtEnd(splitBefore.cmd);
+
+  // Find the matching intersection to get the other path's segment
+  const origIdx = splitBefore.origIndex;
+  const MATCH_TOL = GEOMETRIC_EPSILON * 1000;
+  for (const ix of intersections) {
+    const segIdx = side === 'A' ? ix.segA : ix.segB;
+    if (segIdx !== origIdx) continue;
+    if (dist(ix.point, bndPt) > MATCH_TOL) continue;
+
+    // Found the intersection — get the other path's segment and tangent
+    const otherSegIdx = side === 'A' ? ix.segB : ix.segA;
+    const otherT = side === 'A' ? ix.tB : ix.tA;
+    if (otherSegIdx >= otherSegs.length) continue;
+    const otherCmd = otherSegs[otherSegIdx];
+
+    // Compute tangent of the other path at the intersection
+    const dt = 1e-5;
+    const pBefore = evalCmd(otherCmd, Math.max(0, otherT - dt));
+    const pAfter = evalCmd(otherCmd, Math.min(1, otherT + dt));
+    const tanOtherX = pAfter.x - pBefore.x;
+    const tanOtherY = pAfter.y - pBefore.y;
+    const tanOtherLen = Math.sqrt(tanOtherX * tanOtherX + tanOtherY * tanOtherY);
+    if (tanOtherLen < 1e-12) continue;
+
+    // Cross product of the two tangent vectors
+    const cross = tanThis.x * (tanOtherY / tanOtherLen) - tanThis.y * (tanOtherX / tanOtherLen);
+
+    // Small cross product → tangent touch; large → transverse crossing
+    return Math.abs(cross) > 0.05;
+  }
+
+  // Couldn't find matching intersection — assume crossing (conservative)
+  return true;
+}
+
+function classifyByRingWalk(
+  splits: SplitSegment[], otherPath: TransformCmd[],
+  intersections: Intersection[], side: 'A' | 'B',
+  otherSegs: TransformCmd[],
+): SegmentClass[] {
+  const classes: SegmentClass[] = new Array(splits.length);
+
+  // Identify ring boundaries (where consecutive segments don't connect)
+  const ringStarts: number[] = [0];
+  for (let i = 1; i < splits.length; i++) {
+    if (!ptEq(splits[i - 1].cmd.end, splits[i].cmd.start)) {
+      ringStarts.push(i);
+    }
+  }
+  ringStarts.push(splits.length); // sentinel
+
+  // Process each ring independently
+  for (let r = 0; r < ringStarts.length - 1; r++) {
+    const rStart = ringStarts[r];
+    const rEnd = ringStarts[r + 1];
+    if (rEnd - rStart === 0) continue;
+
+    // Find a reliable seed segment: one whose classification is unambiguous.
+    // Sample at t=0.3 and t=0.7 — if both agree, the segment is not on the boundary.
+    let seedIdx = rStart;
+    let seedClass: SegmentClass = 'outside';
+    let found = false;
+    for (let i = rStart; i < rEnd; i++) {
+      const cmd = splits[i].cmd;
+      const p1 = evalCmd(cmd, 0.3);
+      const p2 = evalCmd(cmd, 0.7);
+      const wn1 = windingNumber(p1, otherPath);
+      const wn2 = windingNumber(p2, otherPath);
+      if ((wn1 === 0) === (wn2 === 0)) {
+        // Both agree on inside/outside → reliable seed
+        seedIdx = i;
+        seedClass = wn1 === 0 ? 'outside' : 'inside';
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // Fallback: use midpoint test on first segment
+      const mid = evalCmd(splits[rStart].cmd, 0.5);
+      seedClass = windingNumber(mid, otherPath) === 0 ? 'outside' : 'inside';
+    }
+
+    // Assign seed
+    classes[seedIdx] = seedClass;
+
+    // Walk forward from seed, flipping at transverse crossings
+    let cls = seedClass;
+    for (let i = seedIdx + 1; i < rEnd; i++) {
+      if (splits[i].origIndex === splits[i - 1].origIndex) {
+        // Same original segment → boundary is an intersection.
+        // Only flip if it's a transverse crossing (not a tangent touch).
+        if (isCrossingAtBoundary(splits[i - 1], splits[i], intersections, side, otherSegs)) {
+          cls = cls === 'inside' ? 'outside' : 'inside';
+        }
+      }
+      classes[i] = cls;
+    }
+
+    // Walk backward from seed
+    cls = seedClass;
+    for (let i = seedIdx - 1; i >= rStart; i--) {
+      if (splits[i].origIndex === splits[i + 1].origIndex) {
+        if (isCrossingAtBoundary(splits[i], splits[i + 1], intersections, side, otherSegs)) {
+          cls = cls === 'inside' ? 'outside' : 'inside';
+        }
+      }
+      classes[i] = cls;
+    }
+  }
+
+  return classes;
 }
 
 // ─── Traversal & Assembly ───────────────────────────────────────────────────
@@ -1482,6 +1705,20 @@ function tangentAtEnd(cmd: TransformCmd): Point {
     const len = Math.sqrt(tx * tx + ty * ty);
     return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
   }
+  if (u === 'a') {
+    const center = cmdArcCenter(cmd);
+    if (center) {
+      const angle = center.startAngle + center.deltaAngle;
+      const cosPhi = Math.cos(center.phi), sinPhi = Math.sin(center.phi);
+      const dx = -center.rx * Math.sin(angle);
+      const dy = center.ry * Math.cos(angle);
+      let tx = cosPhi * dx - sinPhi * dy;
+      let ty = sinPhi * dx + cosPhi * dy;
+      if (center.deltaAngle < 0) { tx = -tx; ty = -ty; }
+      const len = Math.sqrt(tx * tx + ty * ty);
+      return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+    }
+  }
   const tx = cmd.end.x - cmd.start.x, ty = cmd.end.y - cmd.start.y;
   const len = Math.sqrt(tx * tx + ty * ty);
   return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
@@ -1503,6 +1740,20 @@ function tangentAtStart(cmd: TransformCmd): Point {
     const tx = cp1.x - cmd.start.x, ty = cp1.y - cmd.start.y;
     const len = Math.sqrt(tx * tx + ty * ty);
     return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+  }
+  if (u === 'a') {
+    const center = cmdArcCenter(cmd);
+    if (center) {
+      const angle = center.startAngle;
+      const cosPhi = Math.cos(center.phi), sinPhi = Math.sin(center.phi);
+      const dx = -center.rx * Math.sin(angle);
+      const dy = center.ry * Math.cos(angle);
+      let tx = cosPhi * dx - sinPhi * dy;
+      let ty = sinPhi * dx + cosPhi * dy;
+      if (center.deltaAngle < 0) { tx = -tx; ty = -ty; }
+      const len = Math.sqrt(tx * tx + ty * ty);
+      return len > 1e-12 ? { x: tx / len, y: ty / len } : { x: 0, y: 0 };
+    }
   }
   const tx = cmd.end.x - cmd.start.x, ty = cmd.end.y - cmd.start.y;
   const len = Math.sqrt(tx * tx + ty * ty);
@@ -1640,81 +1891,37 @@ function extractKeptRuns(ring: RingEntry[], source: 'A' | 'B'): KeptRun[] {
 function buildIntersectionLinks(
   runsA: KeptRun[], runsB: KeptRun[],
 ): Map<KeptRun, KeptRun> {
-  const LINK_TOL = GEOMETRIC_EPSILON * 1000;
+  // Distance-sorted greedy assignment: pair each run exit with a run entry on
+  // the other path, processing shortest distances first. Each run participates
+  // in at most one link (as exit and as entry). This replaces the fixed-
+  // tolerance + fallback approach which failed when coincident arc detection
+  // shifted split points away from exact intersection coordinates.
   const links = new Map<KeptRun, KeptRun>();
 
-  function findBestEntry(
-    exitPoint: Point, exitCmd: TransformCmd,
-    candidates: KeptRun[],
-  ): KeptRun | null {
-    // Find all runs whose entry is within tolerance
-    const matches: { run: KeptRun; d: number }[] = [];
-    for (const run of candidates) {
-      const d = dist(exitPoint, run.entryPoint);
-      if (d < LINK_TOL) {
-        matches.push({ run, d });
-      }
-    }
-    if (matches.length === 0) return null;
-    if (matches.length === 1) return matches[0].run;
-
-    // Multiple candidates — use tangent alignment for smoothest continuation
-    const exitTan = tangentAtEnd(exitCmd);
-    let best: KeptRun | null = null;
-    let bestDot = -Infinity;
-    for (const m of matches) {
-      const entryTan = tangentAtStart(m.run.cmds[0]);
-      const dot = exitTan.x * entryTan.x + exitTan.y * entryTan.y;
-      if (dot > bestDot) {
-        bestDot = dot;
-        best = m.run;
-      }
-    }
-    return best;
-  }
-
-  // Link A exits → B entries
+  interface LinkCandidate { exitRun: KeptRun; entryRun: KeptRun; d: number }
+  const allCandidates: LinkCandidate[] = [];
   for (const aRun of runsA) {
     if (aRun.isComplete) continue;
-    const exitCmd = aRun.cmds[aRun.cmds.length - 1];
-    const match = findBestEntry(aRun.exitPoint, exitCmd, runsB);
-    if (match) links.set(aRun, match);
+    for (const bRun of runsB) {
+      allCandidates.push({ exitRun: aRun, entryRun: bRun, d: dist(aRun.exitPoint, bRun.entryPoint) });
+    }
   }
-
-  // Link B exits → A entries
   for (const bRun of runsB) {
     if (bRun.isComplete) continue;
-    const exitCmd = bRun.cmds[bRun.cmds.length - 1];
-    const match = findBestEntry(bRun.exitPoint, exitCmd, runsA);
-    if (match) links.set(bRun, match);
+    for (const aRun of runsA) {
+      allCandidates.push({ exitRun: bRun, entryRun: aRun, d: dist(bRun.exitPoint, aRun.entryPoint) });
+    }
   }
 
-  // Fallback: for any unlinked run, find the nearest unlinked entry on the
-  // other path. This handles collinear shared boundary edges where the gap
-  // endpoints from each path don't coincide (e.g., two paths sharing a
-  // boundary segment at y=-42 where both sides classify it as "gap").
-  const linkedTargets = new Set(links.values());
-  for (const aRun of runsA) {
-    if (aRun.isComplete || links.has(aRun)) continue;
-    let bestRun: KeptRun | null = null;
-    let bestDist = Infinity;
-    for (const bRun of runsB) {
-      if (linkedTargets.has(bRun)) continue;
-      const d = dist(aRun.exitPoint, bRun.entryPoint);
-      if (d < bestDist) { bestDist = d; bestRun = bRun; }
-    }
-    if (bestRun) { links.set(aRun, bestRun); linkedTargets.add(bestRun); }
-  }
-  for (const bRun of runsB) {
-    if (bRun.isComplete || links.has(bRun)) continue;
-    let bestRun: KeptRun | null = null;
-    let bestDist = Infinity;
-    for (const aRun of runsA) {
-      if (linkedTargets.has(aRun)) continue;
-      const d = dist(bRun.exitPoint, aRun.entryPoint);
-      if (d < bestDist) { bestDist = d; bestRun = aRun; }
-    }
-    if (bestRun) { links.set(bRun, bestRun); linkedTargets.add(bestRun); }
+  allCandidates.sort((a, b) => a.d - b.d);
+
+  const usedExits = new Set<KeptRun>();
+  const usedEntries = new Set<KeptRun>();
+  for (const c of allCandidates) {
+    if (usedExits.has(c.exitRun) || usedEntries.has(c.entryRun)) continue;
+    links.set(c.exitRun, c.entryRun);
+    usedExits.add(c.exitRun);
+    usedEntries.add(c.entryRun);
   }
 
   return links;
@@ -1993,8 +2200,14 @@ function booleanOp(
   // Step 1: Find all intersections
   const intersections = findAllIntersections(segsA, segsB);
 
-  // If no intersections, one path is entirely inside or outside the other
-  if (intersections.length === 0) {
+  // Check if there are effective intersections (ones that create actual splits).
+  // Vertex-vertex intersections (both t at endpoints) don't create splits but
+  // their presence in the array would bypass handleNoIntersections.
+  const hasEffectiveSplits = intersections.some(ix =>
+    (ix.tA > PARAMETRIC_EPSILON && ix.tA < 1 - PARAMETRIC_EPSILON) ||
+    (ix.tB > PARAMETRIC_EPSILON && ix.tB < 1 - PARAMETRIC_EPSILON),
+  );
+  if (intersections.length === 0 || !hasEffectiveSplits) {
     return handleNoIntersections(cmdsA, cmdsB, segsA, segsB, op);
   }
 
@@ -2003,8 +2216,8 @@ function booleanOp(
   const splitsB = splitPathAtIntersections(segsB, intersections, 'B');
 
   // Step 3: Classify each split segment
-  const classesA = classifyAllSegments(splitsA, segsB);
-  const classesB = classifyAllSegments(splitsB, segsA);
+  const classesA = classifyAllSegments(splitsA, segsB, intersections, 'A', segsA);
+  const classesB = classifyAllSegments(splitsB, segsA, intersections, 'B', segsB);
 
   // Step 4: Assemble result
   return assembleResult(splitsA, classesA, splitsB, classesB, op);
