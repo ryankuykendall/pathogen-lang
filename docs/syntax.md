@@ -569,6 +569,24 @@ let nums = [1, 2, 3];
 let mixed = [10, "hello", [4, 5]];
 ```
 
+### Spread (`...`)
+
+Use the spread operator to expand an array's elements into another array literal:
+
+```
+let a = [1, 2, 3];
+let b = [0, ...a, 4, 5];     // [0, 1, 2, 3, 4, 5]
+let c = [...a, ...b];         // combine two arrays
+```
+
+Spread works anywhere inside an array literal and can be mixed with regular elements:
+
+```
+let head = [10, 20];
+let tail = [40, 50];
+let full = [...head, 30, ...tail];  // [10, 20, 30, 40, 50]
+```
+
 ### Index Access
 
 Access elements by zero-based index using `[expr]`:
@@ -790,6 +808,43 @@ for ([size, i] in sizes) {
 ```
 
 Iterating over an empty array produces no output.
+
+### Destructuring
+
+Extract array elements into individual variables with destructuring in `let` declarations:
+
+```
+let [a, b, c] = [1, 2, 3];
+log(a);  // 1
+log(b);  // 2
+log(c);  // 3
+```
+
+If the array has more elements than bindings, extras are silently ignored:
+
+```
+let [first, second] = [10, 20, 30, 40];
+// first is 10, second is 20 — 30 and 40 ignored
+```
+
+If the array has fewer elements than bindings, missing values are `null`:
+
+```
+let [x, y, z] = [1, 2];
+// x is 1, y is 2, z is null
+```
+
+Use the rest pattern (`...name`) to collect remaining elements into a new array:
+
+```
+let [head, ...tail] = [1, 2, 3, 4, 5];
+// head is 1, tail is [2, 3, 4, 5]
+
+let [only, ...rest] = [42];
+// only is 42, rest is []
+```
+
+The rest pattern must be the last binding in the destructuring pattern.
 
 ## Angle Units
 

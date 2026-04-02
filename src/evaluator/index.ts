@@ -108,16 +108,19 @@ import type {
   Value,
 } from './types';
 import type {
+  ArrayDestructuringPattern,
   Expression,
   FunctionCall,
   IndexExpression,
   LayerConstructorExpression,
   MemberExpression,
   MethodCallExpression,
+  ObjectDestructuringPattern,
   PathArg,
   PathBlockExpression,
   PathCommand,
   Program,
+  SpreadElement,
   Statement,
   StyleBlockLiteral,
   TemplateLiteral,
@@ -326,13 +329,13 @@ function expressionToSource(expr: Expression): string {
     case 'BooleanLiteral':
       return expr.value ? 'true' : 'false';
     case 'ArrayLiteral':
-      return `[${expr.elements.map(expressionToSource).join(', ')}]`;
+      return `[${expr.elements.map((el) => el.type === 'SpreadElement' ? `...${expressionToSource(el.argument)}` : expressionToSource(el)).join(', ')}]`;
     case 'IndexExpression':
       return `${expressionToSource(expr.object)}[${expressionToSource(expr.index)}]`;
     case 'MethodCallExpression':
       return `${expressionToSource(expr.object)}.${expr.method}(${expr.args.map(expressionToSource).join(', ')})${expr.block ? ` {|${expr.block.params.join(', ')}| ...}` : ''}`;
     case 'ObjectLiteral':
-      return `{${expr.properties.map((p) => `${p.key}: ${expressionToSource(p.value)}`).join(', ')}}`;
+      return `{${expr.properties.map((p) => p.type === 'SpreadElement' ? `...${expressionToSource(p.argument)}` : `${p.key}: ${expressionToSource(p.value)}`).join(', ')}}`;
     case 'PathBlockExpression':
       return '@{ ... }';
     default:
@@ -919,14 +922,29 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       return lookupVariable(scope, expr.name, getLine(expr), getCol(expr));
 
     case 'ArrayLiteral': {
-      const elements = expr.elements.map((el) => evaluateExpression(el, scope));
+      const elements: Value[] = [];
+      for (const el of expr.elements) {
+        if (el.type === 'SpreadElement') {
+          const val = evaluateExpression(el.argument, scope);
+          if (!isArrayValue(val)) throw new Error(formatError('Spread argument must be an array', getLine(el.argument)));
+          elements.push(...val.elements);
+        } else {
+          elements.push(evaluateExpression(el, scope));
+        }
+      }
       return { type: 'ArrayValue' as const, elements };
     }
 
     case 'ObjectLiteral': {
       const props = new Map<string, Value>();
-      for (const { key, value } of expr.properties) {
-        props.set(key, evaluateExpression(value, scope));
+      for (const prop of expr.properties) {
+        if (prop.type === 'SpreadElement') {
+          const val = evaluateExpression(prop.argument, scope);
+          if (!isObjectValue(val)) throw new Error(formatError('Spread argument must be an object', getLine(prop.argument)));
+          for (const [k, v] of val.properties) props.set(k, v);
+        } else {
+          props.set(prop.key, evaluateExpression(prop.value, scope));
+        }
       }
       return { type: 'ObjectValue', properties: props } as ObjectValue;
     }
@@ -1390,7 +1408,11 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
 
     if (stmt.type === 'LetDeclaration') {
       const value = evaluateExpression(stmt.value, scope);
-      setVariable(scope, stmt.name, value);
+      if (stmt.pattern) {
+        bindDestructuringPattern(stmt.pattern, value, scope);
+      } else {
+        setVariable(scope, stmt.name, value);
+      }
       continue;
     }
 
@@ -5974,7 +5996,52 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       }
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
-      setVariable(scope, item.name, value);
+      if (item.pattern) {
+        bindDestructuringPattern(item.pattern, value, scope);
+      } else {
+        setVariable(scope, item.name, value);
+      }
+    }
+  }
+}
+
+/**
+ * Bind a destructuring pattern to a value, setting variables in the given scope.
+ */
+function bindDestructuringPattern(
+  pattern: ArrayDestructuringPattern | ObjectDestructuringPattern,
+  value: Value,
+  scope: Scope,
+  line?: number,
+): void {
+  if (pattern.type === 'ArrayDestructuringPattern') {
+    if (!isArrayValue(value)) {
+      throw new Error(formatError('Cannot destructure non-array value with array pattern', line));
+    }
+    for (let i = 0; i < pattern.elements.length; i++) {
+      setVariable(scope, pattern.elements[i], value.elements[i] ?? null);
+    }
+    if (pattern.rest) {
+      setVariable(scope, pattern.rest, {
+        type: 'ArrayValue' as const,
+        elements: value.elements.slice(pattern.elements.length),
+      });
+    }
+  } else {
+    if (!isObjectValue(value)) {
+      throw new Error(formatError('Cannot destructure non-object value with object pattern', line));
+    }
+    const usedKeys = new Set<string>();
+    for (const { key, alias } of pattern.properties) {
+      usedKeys.add(key);
+      setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+    }
+    if (pattern.rest) {
+      const remaining = new Map<string, Value>();
+      for (const [k, v] of value.properties) {
+        if (!usedKeys.has(k)) remaining.set(k, v);
+      }
+      setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
     }
   }
 }
@@ -5987,6 +6054,15 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
   switch (stmt.type) {
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
+      // Handle destructuring patterns
+      if (stmt.pattern) {
+        const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
+        bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
+        if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult' && value.path) {
+          accum.push(value.path);
+        }
+        return;
+      }
       // Handle PathWithResult: assign the result to variable, emit the path
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;

@@ -1559,6 +1559,184 @@ describe('Evaluator', () => {
     });
   });
 
+  describe('spread operator', () => {
+    describe('array spread', () => {
+      it('copies an array', () => {
+        const result = compile('let a = [1, 2, 3]; let b = [...a]; log(b);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3]');
+      });
+
+      it('prepends elements', () => {
+        const result = compile('let a = [2, 3]; let b = [0, 1, ...a]; log(b);');
+        expect(result.logs[0].parts[0].value).toBe('[0, 1, 2, 3]');
+      });
+
+      it('appends elements', () => {
+        const result = compile('let a = [1, 2]; let b = [...a, 3, 4]; log(b);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3, 4]');
+      });
+
+      it('combines two arrays', () => {
+        const result = compile('let a = [1, 2]; let b = [3, 4]; let c = [...a, ...b]; log(c);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3, 4]');
+      });
+
+      it('mixes spread with literal elements', () => {
+        const result = compile('let a = [2]; let b = [4]; let c = [1, ...a, 3, ...b, 5]; log(c);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3, 4, 5]');
+      });
+
+      it('spreads an empty array', () => {
+        const result = compile('let a = []; let b = [1, ...a, 2]; log(b);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2]');
+      });
+
+      it('nested arrays preserve structure', () => {
+        const result = compile('let a = [1, 2]; let b = [[...a], [3, 4]]; log(b);');
+        expect(result.logs[0].parts[0].value).toBe('[[1, 2], [3, 4]]');
+      });
+
+      it('throws when spreading non-array', () => {
+        expect(() => compile('let a = 42; let b = [...a];')).toThrow(/must be an array/);
+      });
+    });
+
+    describe('object spread', () => {
+      it('copies an object', () => {
+        const result = compile('let a = { x: 1, y: 2 }; let b = { ...a }; log(b.x, b.y);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+      });
+
+      it('extends with new properties', () => {
+        const result = compile('let a = { x: 1 }; let b = { ...a, y: 2 }; log(b.x, b.y);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+      });
+
+      it('later properties override earlier', () => {
+        const result = compile('let a = { x: 1, y: 2 }; let b = { ...a, x: 99 }; log(b.x, b.y);');
+        expect(result.logs[0].parts[0].value).toBe('99');
+        expect(result.logs[0].parts[1].value).toBe('2');
+      });
+
+      it('combines multiple objects', () => {
+        const result = compile('let a = { x: 1 }; let b = { y: 2 }; let c = { ...a, ...b, z: 3 }; log(c.x, c.y, c.z);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+        expect(result.logs[0].parts[2].value).toBe('3');
+      });
+
+      it('spreads empty object', () => {
+        const result = compile('let a = {}; let b = { ...a, x: 1 }; log(b.x);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+      });
+
+      it('throws when spreading non-object', () => {
+        expect(() => compile('let a = 42; let b = { ...a };')).toThrow(/must be an object/);
+      });
+    });
+  });
+
+  describe('destructuring', () => {
+    describe('array destructuring', () => {
+      it('binds elements to variables', () => {
+        const result = compile('let [a, b, c] = [1, 2, 3]; log(a, b, c);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+        expect(result.logs[0].parts[2].value).toBe('3');
+      });
+
+      it('ignores extra elements', () => {
+        const result = compile('let [a, b] = [1, 2, 3, 4]; log(a, b);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+      });
+
+      it('assigns null for missing elements', () => {
+        const result = compile('let [a, b, c] = [1]; log(a, b, c);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('null');
+        expect(result.logs[0].parts[2].value).toBe('null');
+      });
+
+      it('rest pattern collects remaining elements', () => {
+        const result = compile('let [first, ...rest] = [1, 2, 3, 4]; log(first, rest);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('[2, 3, 4]');
+      });
+
+      it('rest pattern with empty remainder', () => {
+        const result = compile('let [only, ...rest] = [42]; log(only, rest);');
+        expect(result.logs[0].parts[0].value).toBe('42');
+        expect(result.logs[0].parts[1].value).toBe('[]');
+      });
+
+      it('destructures nested arrays', () => {
+        const result = compile('let [a, b] = [[1, 2], [3, 4]]; log(a[0], b[1]);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('4');
+      });
+
+      it('throws when destructuring non-array', () => {
+        expect(() => compile('let [a, b] = 42;')).toThrow(/cannot destructure/i);
+      });
+
+      it('works with function return values', () => {
+        const result = compile('fn pair() { return [10, 20]; } let [x, y] = pair(); log(x, y);');
+        expect(result.logs[0].parts[0].value).toBe('10');
+        expect(result.logs[0].parts[1].value).toBe('20');
+      });
+    });
+
+    describe('object destructuring', () => {
+      it('binds properties to variables', () => {
+        const result = compile('let { x, y } = { x: 50, y: 80 }; log(x, y);');
+        expect(result.logs[0].parts[0].value).toBe('50');
+        expect(result.logs[0].parts[1].value).toBe('80');
+      });
+
+      it('assigns null for missing keys', () => {
+        const result = compile('let { x, z } = { x: 1, y: 2 }; log(x, z);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('null');
+      });
+
+      it('renames properties', () => {
+        const result = compile('let { z: depth } = { z: 42 }; log(depth);');
+        expect(result.logs[0].parts[0].value).toBe('42');
+      });
+
+      it('rest pattern collects remaining properties', () => {
+        const result = compile('let { x, ...rest } = { x: 1, y: 2, z: 3 }; log(x, rest.y, rest.z);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+        expect(result.logs[0].parts[2].value).toBe('3');
+      });
+
+      it('rest pattern with nothing remaining', () => {
+        const result = compile('let { x } = { x: 1 }; log(x);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+      });
+
+      it('throws when destructuring non-object', () => {
+        expect(() => compile('let { x } = [1, 2];')).toThrow(/cannot destructure/i);
+      });
+
+      it('works with spread and destructuring together', () => {
+        const result = compile('let a = { x: 1 }; let b = { y: 2 }; let { x, y } = { ...a, ...b }; log(x, y);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+      });
+
+      it('works with function return values', () => {
+        const result = compile('fn point() { return { x: 10, y: 20 }; } let { x, y } = point(); log(x, y);');
+        expect(result.logs[0].parts[0].value).toBe('10');
+        expect(result.logs[0].parts[1].value).toBe('20');
+      });
+    });
+  });
+
   describe('string operations', () => {
     it('.length returns character count', () => {
       const result = compile('let str = `Hello`; log(str.length);');

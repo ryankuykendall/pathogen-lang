@@ -1046,6 +1046,76 @@ L 10 20 // end point`;
     });
   });
 
+  describe('spread and destructuring', () => {
+    it('parses array spread element', () => {
+      const ast = parse('let x = [1, ...a, 2];');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ArrayLiteral');
+      expect(decl.value.elements).toHaveLength(3);
+      expect(decl.value.elements[0]).toMatchObject({ type: 'NumberLiteral', value: 1 });
+      expect(decl.value.elements[1]).toMatchObject({ type: 'SpreadElement', argument: { type: 'Identifier', name: 'a' } });
+      expect(decl.value.elements[2]).toMatchObject({ type: 'NumberLiteral', value: 2 });
+    });
+
+    it('parses object spread property', () => {
+      const ast = parse('let x = { ...a, y: 2 };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ObjectLiteral');
+      expect(decl.value.properties).toHaveLength(2);
+      expect(decl.value.properties[0]).toMatchObject({ type: 'SpreadElement', argument: { type: 'Identifier', name: 'a' } });
+      expect(decl.value.properties[1]).toMatchObject({ key: 'y' });
+    });
+
+    it('parses array destructuring pattern', () => {
+      const ast = parse('let [a, b, c] = arr;');
+      const decl = ast.body[0] as any;
+      expect(decl.type).toBe('LetDeclaration');
+      expect(decl.pattern).toMatchObject({
+        type: 'ArrayDestructuringPattern',
+        elements: ['a', 'b', 'c'],
+      });
+    });
+
+    it('parses array destructuring with rest', () => {
+      const ast = parse('let [first, ...rest] = arr;');
+      const decl = ast.body[0] as any;
+      expect(decl.pattern).toMatchObject({
+        type: 'ArrayDestructuringPattern',
+        elements: ['first'],
+        rest: 'rest',
+      });
+    });
+
+    it('parses object destructuring pattern', () => {
+      const ast = parse('let { x, y } = point;');
+      const decl = ast.body[0] as any;
+      expect(decl.type).toBe('LetDeclaration');
+      expect(decl.pattern).toMatchObject({
+        type: 'ObjectDestructuringPattern',
+        properties: [{ key: 'x' }, { key: 'y' }],
+      });
+    });
+
+    it('parses object destructuring with rename', () => {
+      const ast = parse('let { z: depth } = point;');
+      const decl = ast.body[0] as any;
+      expect(decl.pattern).toMatchObject({
+        type: 'ObjectDestructuringPattern',
+        properties: [{ key: 'z', alias: 'depth' }],
+      });
+    });
+
+    it('parses object destructuring with rest', () => {
+      const ast = parse('let { x, ...rest } = obj;');
+      const decl = ast.body[0] as any;
+      expect(decl.pattern).toMatchObject({
+        type: 'ObjectDestructuringPattern',
+        properties: [{ key: 'x' }],
+        rest: 'rest',
+      });
+    });
+  });
+
   describe('text and tspan statements', () => {
     it('parses inline text statement', () => {
       const ast = parse('text(10, 20)`hello`');

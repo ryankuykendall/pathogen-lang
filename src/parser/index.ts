@@ -1,6 +1,7 @@
 import Parsimmon from 'parsimmon';
 
 import type {
+  ArrayDestructuringPattern,
   ArrayLiteral,
   AssignmentStatement,
   BinaryExpression,
@@ -26,6 +27,7 @@ import type {
   MemberAssignmentStatement,
   NullLiteral,
   NumberLiteral,
+  ObjectDestructuringPattern,
   ObjectLiteral,
   PathArg,
   PathBlockExpression,
@@ -33,6 +35,7 @@ import type {
   Program,
   ReturnStatement,
   SourceLocation,
+  SpreadElement,
   Statement,
   StringLiteral,
   StyleBlockLiteral,
@@ -587,11 +590,23 @@ const booleanLiteral: Parsimmon.Parser<BooleanLiteral> = P.alt(
   keyword('false').map((): BooleanLiteral => ({ type: 'BooleanLiteral' as const, value: false })),
 );
 
-// Array literal: [], [1, 2, 3], [expr, expr]
+// Spread element: ...expr
+const spreadElement: Parsimmon.Parser<SpreadElement> = P.seq(
+  token(P.string('...')),
+  P.lazy(() => expression),
+).map(([, argument]): SpreadElement => ({
+  type: 'SpreadElement' as const,
+  argument,
+}));
+
+// Array literal: [], [1, 2, 3], [expr, ...arr, expr]
 const arrayLiteral: Parsimmon.Parser<ArrayLiteral> = P.seq(
   word('['),
   P.sepBy(
-    P.lazy(() => expression),
+    P.alt(
+      spreadElement,
+      P.lazy(() => expression),
+    ),
     word(','),
   ),
   word(',').atMost(1),
@@ -616,7 +631,10 @@ const objectProperty: Parsimmon.Parser<{ key: string; value: Expression }> = P.s
 
 const objectLiteral: Parsimmon.Parser<ObjectLiteral> = P.seq(
   word('{'),
-  P.sepBy(objectProperty, word(',')),
+  P.sepBy(
+    P.alt(spreadElement, objectProperty),
+    word(','),
+  ),
   word(',').atMost(1), // optional trailing comma
   word('}'),
 ).map(
@@ -755,20 +773,71 @@ const pathCommand: Parsimmon.Parser<PathCommand> = P.seqMap(
   }),
 );
 
-// let declaration: let x = 10;
-const letDeclaration: Parsimmon.Parser<LetDeclaration> = P.seqMap(
-  P.index,
-  keyword('let'),
+// Destructuring patterns for let declarations
+const arrayDestructuringPattern: Parsimmon.Parser<ArrayDestructuringPattern> = P.seq(
+  word('['),
+  P.sepBy1(nonReservedIdentifier, word(',')),
+  P.seq(word(','), token(P.string('...')), nonReservedIdentifier).atMost(1),
+  word(']'),
+).map(([, elements, restArr]): ArrayDestructuringPattern => ({
+  type: 'ArrayDestructuringPattern' as const,
+  elements: elements.map((id: Identifier) => id.name),
+  ...(restArr.length > 0 ? { rest: (restArr[0] as [unknown, unknown, Identifier])[2].name } : {}),
+}));
+
+const objectDestructuringProp: Parsimmon.Parser<{ key: string; alias?: string }> = P.seqMap(
   nonReservedIdentifier,
-  word('='),
-  expression,
-  word(';'),
-  (startIndex, _let, id, _eq, value, _semi) => ({
-    type: 'LetDeclaration' as const,
-    name: id.name,
-    value,
-    loc: indexToLoc(startIndex),
+  P.seq(word(':'), nonReservedIdentifier).atMost(1),
+  (id, aliasArr) => ({
+    key: id.name,
+    ...(aliasArr.length > 0 ? { alias: (aliasArr[0] as [unknown, Identifier])[1].name } : {}),
   }),
+);
+
+const objectDestructuringPattern: Parsimmon.Parser<ObjectDestructuringPattern> = P.seq(
+  word('{'),
+  P.sepBy1(objectDestructuringProp, word(',')),
+  P.seq(word(','), token(P.string('...')), nonReservedIdentifier).atMost(1),
+  word('}'),
+).map(([, properties, restArr]): ObjectDestructuringPattern => ({
+  type: 'ObjectDestructuringPattern' as const,
+  properties,
+  ...(restArr.length > 0 ? { rest: (restArr[0] as [unknown, unknown, Identifier])[2].name } : {}),
+}));
+
+// let declaration: let x = 10; or let [a, b] = expr; or let { x, y } = obj;
+const letDeclaration: Parsimmon.Parser<LetDeclaration> = P.alt(
+  // Destructuring: let [a, b] = ...; or let { x, y } = ...;
+  P.seqMap(
+    P.index,
+    keyword('let'),
+    P.alt(arrayDestructuringPattern, objectDestructuringPattern),
+    word('='),
+    expression,
+    word(';'),
+    (startIndex, _let, pattern, _eq, value, _semi) => ({
+      type: 'LetDeclaration' as const,
+      name: '',
+      pattern,
+      value,
+      loc: indexToLoc(startIndex),
+    }),
+  ),
+  // Simple: let x = 10;
+  P.seqMap(
+    P.index,
+    keyword('let'),
+    nonReservedIdentifier,
+    word('='),
+    expression,
+    word(';'),
+    (startIndex, _let, id, _eq, value, _semi) => ({
+      type: 'LetDeclaration' as const,
+      name: id.name,
+      value,
+      loc: indexToLoc(startIndex),
+    }),
+  ),
 );
 
 // Block: { statements }

@@ -12,7 +12,32 @@ let point = { x: 50, y: 80 };
 let config = { name: 'Dave', age: 32, cats: ['foo', 'bar', 'baz'] };
 ```
 
-Keys can be identifiers or string literals. Trailing commas are allowed:
+Keys can be identifiers or string literals. Trailing commas are allowed.
+
+Use the spread operator (`...`) to expand an existing object's properties into a new object:
+
+```
+let base = { x: 10, y: 20 };
+let extended = { ...base, z: 30 };      // { x: 10, y: 20, z: 30 }
+let override = { ...base, x: 99 };      // { x: 99, y: 20 }
+```
+
+Spread can be mixed with regular properties and used multiple times:
+
+```
+let a = { x: 1 };
+let b = { y: 2 };
+let merged = { ...a, ...b, z: 3 };      // { x: 1, y: 2, z: 3 }
+```
+
+Later properties override earlier ones (same as the `<<` merge operator):
+
+```
+let defaults = { stroke: 'black', width: 2 };
+let custom = { ...defaults, width: 4 };  // { stroke: 'black', width: 4 }
+```
+
+Keys can also be identifiers or string literals. Trailing commas are allowed:
 
 ```
 let obj = {
@@ -207,6 +232,42 @@ let b = a << {};
 b.nested['val'] = 99;
 log(a.nested.val);  // 99 — same inner object
 ```
+
+## Destructuring
+
+Extract object properties into individual variables with destructuring in `let` declarations:
+
+```
+let point = { x: 50, y: 80 };
+let { x, y } = point;
+log(x);  // 50
+log(y);  // 80
+```
+
+If a key doesn't exist, the variable is set to `null`:
+
+```
+let { x, z } = { x: 1, y: 2 };
+// x is 1, z is null
+```
+
+Rename properties with `key: localName` syntax:
+
+```
+let point3d = { x: 1, y: 2, z: 3 };
+let { z: depth } = point3d;
+log(depth);  // 3
+```
+
+Use the rest pattern (`...name`) to collect remaining properties into a new object:
+
+```
+let config = { x: 1, y: 2, z: 3, w: 4 };
+let { x, ...rest } = config;
+// x is 1, rest is { y: 2, z: 3, w: 4 }
+```
+
+The rest pattern must be the last binding in the destructuring pattern.
 
 ## Using Objects with Path Commands
 

@@ -50,12 +50,14 @@ import type { PathContext } from './context';
 import type { OKLCH } from '../color';
 import type { PathBlockCommand, Point, TextBlockElement, TextBlockValue, ProjectedTextValue, TextChild } from './types';
 import type {
+  ArrayDestructuringPattern,
   Comment,
   Expression,
   FunctionCall,
   IndexExpression,
   MemberExpression,
   MethodCallExpression,
+  ObjectDestructuringPattern,
   PathArg,
   PathBlockExpression,
   Program,
@@ -903,6 +905,10 @@ function formatError(message: string, line?: number, column?: number): string {
     return `Line ${line}: ${message}`;
   }
   return message;
+}
+
+function getLine(node: unknown): number | undefined {
+  return (node as { loc?: { line: number } })?.loc?.line;
 }
 
 function isStyleBlock(value: Value): value is StyleBlockValue {
@@ -2383,14 +2389,29 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     }
 
     case 'ArrayLiteral': {
-      const elements = expr.elements.map((el) => evaluateExpression(el, scope));
+      const elements: Value[] = [];
+      for (const el of expr.elements) {
+        if (el.type === 'SpreadElement') {
+          const val = evaluateExpression(el.argument, scope);
+          if (!isArrayValue(val)) throw new Error(formatError('Spread argument must be an array', getLine(el.argument)));
+          elements.push(...val.elements);
+        } else {
+          elements.push(evaluateExpression(el, scope));
+        }
+      }
       return { type: 'ArrayValue' as const, elements };
     }
 
     case 'ObjectLiteral': {
       const props = new Map<string, Value>();
-      for (const { key, value } of expr.properties) {
-        props.set(key, evaluateExpression(value, scope));
+      for (const prop of expr.properties) {
+        if (prop.type === 'SpreadElement') {
+          const val = evaluateExpression(prop.argument, scope);
+          if (!isObjectValue(val)) throw new Error(formatError('Spread argument must be an object', getLine(prop.argument)));
+          for (const [k, v] of val.properties) props.set(k, v);
+        } else {
+          props.set(prop.key, evaluateExpression(prop.value, scope));
+        }
       }
       return { type: 'ObjectValue', properties: props } as ObjectValue;
     }
@@ -2770,7 +2791,11 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
       }
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
-      setVariable(scope, item.name, value);
+      if (item.pattern) {
+        bindDestructuringPattern(item.pattern, value, scope);
+      } else {
+        setVariable(scope, item.name, value);
+      }
     }
   }
 }
@@ -3450,6 +3475,47 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
   }
 }
 
+/**
+ * Bind a destructuring pattern to a value, setting variables in the given scope.
+ */
+function bindDestructuringPattern(
+  pattern: ArrayDestructuringPattern | ObjectDestructuringPattern,
+  value: Value,
+  scope: Scope,
+  line?: number,
+): void {
+  if (pattern.type === 'ArrayDestructuringPattern') {
+    if (!isArrayValue(value)) {
+      throw new Error(formatError('Cannot destructure non-array value with array pattern', line));
+    }
+    for (let i = 0; i < pattern.elements.length; i++) {
+      setVariable(scope, pattern.elements[i], value.elements[i] ?? null);
+    }
+    if (pattern.rest) {
+      setVariable(scope, pattern.rest, {
+        type: 'ArrayValue' as const,
+        elements: value.elements.slice(pattern.elements.length),
+      });
+    }
+  } else {
+    if (!isObjectValue(value)) {
+      throw new Error(formatError('Cannot destructure non-object value with object pattern', line));
+    }
+    const usedKeys = new Set<string>();
+    for (const { key, alias } of pattern.properties) {
+      usedKeys.add(key);
+      setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+    }
+    if (pattern.rest) {
+      const remaining = new Map<string, Value>();
+      for (const [k, v] of value.properties) {
+        if (!usedKeys.has(k)) remaining.set(k, v);
+      }
+      setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
+    }
+  }
+}
+
 // Plain evaluation (no annotations) for nested contexts
 function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
   switch (stmt.type) {
@@ -3458,6 +3524,12 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
+      if (stmt.pattern) {
+        const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
+        bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
+        if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') return value.path;
+        return '';
+      }
       // Handle PathWithResult: assign the result to variable, emit the path
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
@@ -3756,8 +3828,14 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
-      // Handle PathWithResult: assign the result to variable, emit the path
-      if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
+      if (stmt.pattern) {
+        const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
+        bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
+        if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
+          emitPathString(value.path, ctx);
+        }
+      } else if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
+        // Handle PathWithResult: assign the result to variable, emit the path
         const pwr = value;
         setVariable(scope, stmt.name, pwr.result);
         // Emit annotated draw() call if the value came from a method call

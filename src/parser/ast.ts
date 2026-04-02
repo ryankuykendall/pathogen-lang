@@ -39,6 +39,7 @@ export type Node =
   | MemberExpression
   | NullLiteral
   | BooleanLiteral
+  | SpreadElement
   | ArrayLiteral
   | ObjectLiteral
   | IndexExpression
@@ -78,10 +79,11 @@ export type Statement =
   | TextStatement
   | FontDirective;
 
-// let x = 10;
+// let x = 10; or let [a, b] = expr; or let { x, y } = expr;
 export interface LetDeclaration {
   type: 'LetDeclaration';
   name: string;
+  pattern?: ArrayDestructuringPattern | ObjectDestructuringPattern;
   value: Expression;
   loc?: SourceLocation;
 }
@@ -246,16 +248,42 @@ export interface EnumDefinition {
   loc?: SourceLocation;
 }
 
-// Array literal: [1, 2, 3]
-export interface ArrayLiteral {
-  type: 'ArrayLiteral';
-  elements: Expression[];
+// Spread element: ...expr (used in array/object literals)
+export interface SpreadElement {
+  type: 'SpreadElement';
+  argument: Expression;
 }
 
-// Object literal: { key: value, ... }
+// Array literal: [1, 2, 3] or [1, ...arr, 2]
+export interface ArrayLiteral {
+  type: 'ArrayLiteral';
+  elements: (Expression | SpreadElement)[];
+}
+
+// Object property: key: value
+export interface ObjectProperty {
+  key: string;
+  value: Expression;
+}
+
+// Object literal: { key: value, ... } or { ...obj, key: value }
 export interface ObjectLiteral {
   type: 'ObjectLiteral';
-  properties: { key: string; value: Expression }[];
+  properties: (ObjectProperty | SpreadElement)[];
+}
+
+// Array destructuring: let [a, b, ...rest] = expr;
+export interface ArrayDestructuringPattern {
+  type: 'ArrayDestructuringPattern';
+  elements: string[];
+  rest?: string;
+}
+
+// Object destructuring: let { x, y: alias, ...rest } = expr;
+export interface ObjectDestructuringPattern {
+  type: 'ObjectDestructuringPattern';
+  properties: { key: string; alias?: string }[];
+  rest?: string;
 }
 
 // Indexed assignment: obj['key'] = value; or arr[0] = value;
