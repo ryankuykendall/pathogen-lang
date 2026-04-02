@@ -305,70 +305,70 @@ code.hljs {
 wheel.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>Stops at 0 and 1 should match to avoid a hard seam at the join. With OKLCH interpolation enabled, the transitions stay vibrant across the entire hue wheel — no desaturated dead zones between complementary colors.</p>
 <p>The color wheel below uses <code>innerRadius</code> to create a donut effect and <code>.inherit()</code> to create a smaller inner disc with a different fill mode. One gradient definition, two visual treatments.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwQ29sb3IlMjBXaGVlbCUyMCVFMiU4MCU5NCUyMENsYXNzaWMlMjAzNjAlQzIlQjAlMjBDb25pYyUyMEdyYWRpZW50JTBBJTJGJTJGJTIwVGhlJTIwJTIyaGVsbG8lMjB3b3JsZCUyMiUyMG9mJTIwY29uaWMlMjBncmFkaWVudHMlM0ElMjBhJTIwZnVsbCUyMHJhaW5ib3clMjBzd2VlcCUwQSUwQSUyRiUyRiUyMC0tLSUyMEdyYWRpZW50cyUyMC0tLSUwQSUwQWxldCUyMHdoZWVsX291dGVyJTIwJTNEJTIwQ29uaWNHcmFkaWVudCgnd2hlZWwtb3V0ZXInJTJDJTIwMjAwJTJDJTIwMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMCUyMCUyMENvbG9yKCclMjNlNjM5NDYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4wOCUyQyUyMCUyMCUyMENvbG9yKCclMjNmNDg0NWYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4xNyUyQyUyMCUyMCUyMENvbG9yKCclMjNmOWM3NGYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4zMyUyQyUyMCUyMCUyMENvbG9yKCclMjM0M2FhOGInKSklM0IlMEElMjAlMjBnLnN0b3AoMC41MCUyQyUyMCUyMCUyMENvbG9yKCclMjMyNzdkYTEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC42NyUyQyUyMCUyMCUyMENvbG9yKCclMjM1ZTYwY2UnKSklM0IlMEElMjAlMjBnLnN0b3AoMC44MyUyQyUyMCUyMCUyMENvbG9yKCclMjM5YjVkZTUnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMCUyMCUyMENvbG9yKCclMjNlNjM5NDYnKSklM0IlMEElN0QlM0IlMEF3aGVlbF9vdXRlci5pbm5lclJhZGl1cyUyMCUzRCUyMDY1JTNCJTBBd2hlZWxfb3V0ZXIuaW5uZXJGaWxsJTIwJTNEJTIwJ3RyYW5zcGFyZW50JyUzQiUwQXdoZWVsX291dGVyLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBbGV0JTIwd2hlZWxfaW5uZXIlMjAlM0QlMjB3aGVlbF9vdXRlci5pbmhlcml0KCd3aGVlbC1pbm5lcicpJTNCJTBBd2hlZWxfaW5uZXIuaW5uZXJSYWRpdXMlMjAlM0QlMjAwJTNCJTBBd2hlZWxfaW5uZXIuaW5uZXJGaWxsJTIwJTNEJTIwJ2NlbnRlciclM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGUwZTE4JTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDQwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBPdXRlciUyMHJpbmclMjAoZG9udXQpJTIwLS0tJTBBJTBBbGV0JTIwcmluZyUyMCUzRCUyMFBhdGhMYXllcigncmluZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHdoZWVsX291dGVyJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXJpbmcuYXBwbHklMjAlN0IlMjBjaXJjbGUoMjAwJTJDJTIwMjAwJTJDJTIwMTU1KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwSW5uZXIlMjBkaXNjJTIwLS0tJTBBJTBBbGV0JTIwZGlzYyUyMCUzRCUyMFBhdGhMYXllcignZGlzYycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHdoZWVsX2lubmVyJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWRpc2MuYXBwbHklMjAlN0IlMjBjaXJjbGUoMjAwJTJDJTIwMjAwJTJDJTIwNjIpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTdWJ0bGUlMjBmcmFtZSUyMC0tLSUwQSUwQWxldCUyMGZyYW1lJTIwJTNEJTIwUGF0aExheWVyKCdmcmFtZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBZnJhbWUuYXBwbHklMjAlN0IlMjBjaXJjbGUoMjAwJTJDJTIwMjAwJTJDJTIwMTU1KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwaW5uZXJfZnJhbWUlMjAlM0QlMjBQYXRoTGF5ZXIoJ2lubmVyLWZyYW1lJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUyMCU3RCUzQiUwQWlubmVyX2ZyYW1lLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDIwMCUyQyUyMDIwMCUyQyUyMDYyKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVGl0bGUlMjAtLS0lMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzk5OSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDM4NSklNjAzNjAlQzIlQjAlMjBDb25pYyUyMEdyYWRpZW50JTIwJUUyJTgwJTk0JTIwT0tMQ0glMjBJbnRlcnBvbGF0aW9uJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBzY2VuZSUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3NjZW5lJyklMjAlMjQlN0IlN0QlM0IlMEFzY2VuZS5hcHBlbmQoYmclMkMlMjByaW5nJTJDJTIwZGlzYyUyQyUyMGZyYW1lJTJDJTIwaW5uZXJfZnJhbWUlMkMlMjB0aXRsZSklMEE=" code-open caption="Full 360-degree sweep with innerRadius donut and OKLCH interpolation">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
-<span class="hljs-comment">// Color Wheel — Classic 360° Conic Gradient</span>
-<span class="hljs-comment">// The &quot;hello world&quot; of conic gradients: a full rainbow sweep</span>
+<p><mini-workspace code-open caption="Full 360-degree sweep with innerRadius donut and OKLCH interpolation">
+  <code>// viewBox="0 0 400 400"
+// Color Wheel — Classic 360° Conic Gradient
+// The "hello world" of conic gradients: a full rainbow sweep
 
-<span class="hljs-comment">// --- Gradients ---</span>
+// --- Gradients ---
 
-<span class="hljs-keyword">let</span> wheel_outer = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;wheel-outer&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,      <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.08</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4845f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.17</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.50</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#277da1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.67</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5e60ce&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.83</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#9b5de5&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,      <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+let wheel_outer = ConicGradient('wheel-outer', 200, 200) {|g|
+  g.stop(0,      Color('#e63946'));
+  g.stop(0.08,   Color('#f4845f'));
+  g.stop(0.17,   Color('#f9c74f'));
+  g.stop(0.33,   Color('#43aa8b'));
+  g.stop(0.50,   Color('#277da1'));
+  g.stop(0.67,   Color('#5e60ce'));
+  g.stop(0.83,   Color('#9b5de5'));
+  g.stop(1,      Color('#e63946'));
 };
-wheel_outer.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">65</span>;
-wheel_outer.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-wheel_outer.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+wheel_outer.innerRadius = 65;
+wheel_outer.innerFill = 'transparent';
+wheel_outer.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> wheel_inner = wheel_outer.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;wheel-inner&#x27;</span>);
-wheel_inner.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">0</span>;
-wheel_inner.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
+let wheel_inner = wheel_outer.inherit('wheel-inner');
+wheel_inner.innerRadius = 0;
+wheel_inner.innerFill = 'center';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0e0e18; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
 
-<span class="hljs-comment">// --- Outer ring (donut) ---</span>
+// --- Outer ring (donut) ---
 
-<span class="hljs-keyword">let</span> ring = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ring&#x27;</span>) ${ <span class="hljs-attr">fill</span>: wheel_outer; <span class="hljs-attr">stroke</span>: none; };
-ring.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">155</span>); <span class="hljs-title function_">closePath</span>() }
+let ring = PathLayer('ring') ${ fill: wheel_outer; stroke: none; };
+ring.apply { circle(200, 200, 155); closePath() }
 
-<span class="hljs-comment">// --- Inner disc ---</span>
+// --- Inner disc ---
 
-<span class="hljs-keyword">let</span> disc = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;disc&#x27;</span>) ${ <span class="hljs-attr">fill</span>: wheel_inner; <span class="hljs-attr">stroke</span>: none; };
-disc.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">62</span>); <span class="hljs-title function_">closePath</span>() }
+let disc = PathLayer('disc') ${ fill: wheel_inner; stroke: none; };
+disc.apply { circle(200, 200, 62); closePath() }
 
-<span class="hljs-comment">// --- Subtle frame ---</span>
+// --- Subtle frame ---
 
-<span class="hljs-keyword">let</span> frame = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;frame&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-frame.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">155</span>); <span class="hljs-title function_">closePath</span>() }
+let frame = PathLayer('frame') ${ fill: none; stroke: #333; stroke-width: 1; };
+frame.apply { circle(200, 200, 155); closePath() }
 
-<span class="hljs-keyword">let</span> inner_frame = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;inner-frame&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; };
-inner_frame.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">62</span>); <span class="hljs-title function_">closePath</span>() }
+let inner_frame = PathLayer('inner-frame') ${ fill: none; stroke: #333; stroke-width: 0.5; };
+inner_frame.apply { circle(200, 200, 62); closePath() }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">999</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #999;
+  text-anchor: middle;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">385</span>)<span class="hljs-string">`360° Conic Gradient — OKLCH Interpolation`</span>
+title.apply {
+  text(200, 385)`360° Conic Gradient — OKLCH Interpolation`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, ring, disc, frame, inner_frame, title)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, ring, disc, frame, inner_frame, title)
 </code>
   <img src="/pathogen/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
@@ -384,239 +384,239 @@ gauge.<span class="hljs-property">to</span> = 405deg;
 gauge.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">38</span>;
 gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
 </code></pre><p>The <code>from</code> and <code>to</code> values use degree syntax. Values above 360 are valid — <code>405deg</code> is equivalent to <code>45deg</code> but makes the intent clear: a 270-degree arc that wraps past the top. The dashboard below shows three gauges with different angular ranges and inner radii.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjYwJTIwMzQwJTIyJTBBJTJGJTJGJTIwR2F1Z2UlMjBEYXNoYm9hcmQlMjAlRTIlODAlOTQlMjBQYXJ0aWFsJTIwU3dlZXBzJTIwJTJCJTIwaW5uZXJSYWRpdXMlMEElMkYlMkYlMjBUaHJlZSUyMGdhdWdlcyUyMHVzaW5nJTIwY29uaWMlMjBncmFkaWVudHMlMjBhcyUyMHNwZWVkb21ldGVyLXN0eWxlJTIwVUklMEElMEElMkYlMkYlMjAtLS0lMjBHYXVnZSUyMGdyYWRpZW50cyUyMC0tLSUwQSUyRiUyRiUyMFVzaW5nJTIwc3ByZWFkJTNEJ3RyYW5zcGFyZW50JyUyMHNvJTIwdGhlJTIwZ2FwJTIwYXJlYSUyMChib3R0b20pJTIwc3RheXMlMjBlbXB0eSUwQSUwQWxldCUyMHNwZWVkX2dyYWQlMjAlM0QlMjBDb25pY0dyYWRpZW50KCdzcGVlZCclMkMlMjAxMjAlMkMlMjAxNjApJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzQzYWE4YicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjUlMkMlMjAlMjBDb2xvcignJTIzZjljNzRmJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuOCUyQyUyMCUyMENvbG9yKCclMjNmMzcyMmMnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNlNjM5NDYnKSklM0IlMEElN0QlM0IlMEFzcGVlZF9ncmFkLmZyb20lMjAlM0QlMjAxMzVkZWclM0IlMEFzcGVlZF9ncmFkLnRvJTIwJTNEJTIwNDA1ZGVnJTNCJTBBc3BlZWRfZ3JhZC5pbm5lclJhZGl1cyUyMCUzRCUyMDM4JTNCJTBBc3BlZWRfZ3JhZC5pbm5lckZpbGwlMjAlM0QlMjAndHJhbnNwYXJlbnQnJTNCJTBBc3BlZWRfZ3JhZC5zcHJlYWQlMjAlM0QlMjAndHJhbnNwYXJlbnQnJTNCJTBBc3BlZWRfZ3JhZC5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQWxldCUyMHRlbXBfZ3JhZCUyMCUzRCUyMENvbmljR3JhZGllbnQoJ3RlbXAnJTJDJTIwMzMwJTJDJTIwMTYwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMyNzdkYTEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC40JTJDJTIwJTIwQ29sb3IoJyUyMzkwZTBlZicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjclMkMlMjAlMjBDb2xvcignJTIzZjljNzRmJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzZjM3MjJjJykpJTNCJTBBJTdEJTNCJTBBdGVtcF9ncmFkLmZyb20lMjAlM0QlMjAxMzVkZWclM0IlMEF0ZW1wX2dyYWQudG8lMjAlM0QlMjA0MDVkZWclM0IlMEF0ZW1wX2dyYWQuaW5uZXJSYWRpdXMlMjAlM0QlMjAzOCUzQiUwQXRlbXBfZ3JhZC5pbm5lckZpbGwlMjAlM0QlMjAndHJhbnNwYXJlbnQnJTNCJTBBdGVtcF9ncmFkLnNwcmVhZCUyMCUzRCUyMCd0cmFuc3BhcmVudCclM0IlMEF0ZW1wX2dyYWQuaW50ZXJwb2xhdGlvbiUyMCUzRCUyMCdva2xjaCclM0IlMEElMEFsZXQlMjBmdWVsX2dyYWQlMjAlM0QlMjBDb25pY0dyYWRpZW50KCdmdWVsJyUyQyUyMDU0MCUyQyUyMDE2MCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzNDNhYThiJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNiUyQyUyMCUyMENvbG9yKCclMjNmOWM3NGYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNlNjM5NDYnKSklM0IlMEElN0QlM0IlMEFmdWVsX2dyYWQuZnJvbSUyMCUzRCUyMDE4MGRlZyUzQiUwQWZ1ZWxfZ3JhZC50byUyMCUzRCUyMDM2MGRlZyUzQiUwQWZ1ZWxfZ3JhZC5pbm5lclJhZGl1cyUyMCUzRCUyMDMwJTNCJTBBZnVlbF9ncmFkLmlubmVyRmlsbCUyMCUzRCUyMCd0cmFuc3BhcmVudCclM0IlMEFmdWVsX2dyYWQuc3ByZWFkJTIwJTNEJTIwJ3RyYW5zcGFyZW50JyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMxMTExMTglM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNjYwJTJDJTIwMzQwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEdhdWdlJTIwZmFjZXMlMjAtLS0lMEElMEFsZXQlMjBnMSUyMCUzRCUyMFBhdGhMYXllcignZzEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzcGVlZF9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWcxLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDEyMCUyQyUyMDE2MCUyQyUyMDgwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwZzIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2cyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwdGVtcF9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWcyLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDMzMCUyQyUyMDE2MCUyQyUyMDgwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwZzMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2czJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwZnVlbF9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWczLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDU0MCUyQyUyMDE2MCUyQyUyMDY1KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwR2F1Z2UlMjByaW1zJTIwLS0tJTBBJTBBbGV0JTIwcmltcyUyMCUzRCUyMFBhdGhMYXllcigncmltcycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjM0NDQlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMjAlN0QlM0IlMEFyaW1zLmFwcGx5JTIwJTdCJTBBJTIwJTIwY2lyY2xlKDEyMCUyQyUyMDE2MCUyQyUyMDgxKSUzQiUyMGNsb3NlUGF0aCgpJTBBJTIwJTIwY2lyY2xlKDMzMCUyQyUyMDE2MCUyQyUyMDgxKSUzQiUyMGNsb3NlUGF0aCgpJTBBJTIwJTIwY2lyY2xlKDU0MCUyQyUyMDE2MCUyQyUyMDY2KSUzQiUyMGNsb3NlUGF0aCgpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVGljayUyMG1hcmtzJTIwZm9yJTIwU3BlZWQlMjBnYXVnZSUyMCgxMzUlQzIlQjAlMjB0byUyMDQwNSVDMiVCMCUyQyUyMDI3MCVDMiVCMCUyMHN3ZWVwKSUyMC0tLSUwQSUyRiUyRiUyMDclMjB0aWNrcyUyMGZyb20lMjAwJTIwdG8lMjBtYXglMkMlMjBldmVubHklMjBzcGFjZWQlMjBhbG9uZyUyMHRoZSUyMDI3MCVDMiVCMCUyMGFyYyUwQSUyRiUyRiUyMEFuZ2xlcyUzQSUyMDEzNSUyQyUyMDE4MCUyQyUyMDIyNSUyQyUyMDI3MCUyQyUyMDMxNSUyQyUyMDM2MCUyQyUyMDQwNSUyMGRlZ3JlZXMlMEElMEFsZXQlMjBzcGVlZF90aWNrcyUyMCUzRCUyMFBhdGhMYXllcignc3BlZWQtdGlja3MnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzY2NjJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwNCUzQiUyMCU3RCUzQiUwQXNwZWVkX3RpY2tzLmFwcGx5JTIwJTdCJTBBJTIwJTIwJTJGJTJGJTIwMTM1JUMyJUIwJTIwKGJvdHRvbS1sZWZ0KSUyMCVFMiU4MCU5NCUyMDAlMjBrbSUyRmglMEElMjAlMjBsaW5lKDUxJTJDJTIwMjE3JTJDJTIwNjMlMkMlMjAyMDUpJTBBJTIwJTIwJTJGJTJGJTIwMTgwJUMyJUIwJTIwKGxlZnQpJTIwJUUyJTgwJTk0JTIwNDAlMjBrbSUyRmglMEElMjAlMjBsaW5lKDMzJTJDJTIwMTYwJTJDJTIwNDclMkMlMjAxNjApJTBBJTIwJTIwJTJGJTJGJTIwMjI1JUMyJUIwJTIwKHRvcC1sZWZ0KSUyMCVFMiU4MCU5NCUyMDgwJTIwa20lMkZoJTBBJTIwJTIwbGluZSg1MSUyQyUyMDEwMyUyQyUyMDYzJTJDJTIwMTE1KSUwQSUyMCUyMCUyRiUyRiUyMDI3MCVDMiVCMCUyMCh0b3ApJTIwJUUyJTgwJTk0JTIwMTIwJTIwa20lMkZoJTBBJTIwJTIwbGluZSgxMjAlMkMlMjA3MyUyQyUyMDEyMCUyQyUyMDg3KSUwQSUyMCUyMCUyRiUyRiUyMDMxNSVDMiVCMCUyMCh0b3AtcmlnaHQpJTIwJUUyJTgwJTk0JTIwMTYwJTIwa20lMkZoJTBBJTIwJTIwbGluZSgxODklMkMlMjAxMDMlMkMlMjAxNzclMkMlMjAxMTUpJTBBJTIwJTIwJTJGJTJGJTIwMzYwJUMyJUIwJTIwKHJpZ2h0KSUyMCVFMiU4MCU5NCUyMDIwMCUyMGttJTJGaCUwQSUyMCUyMGxpbmUoMjA3JTJDJTIwMTYwJTJDJTIwMTkzJTJDJTIwMTYwKSUwQSUyMCUyMCUyRiUyRiUyMDQwNSVDMiVCMCUyMChib3R0b20tcmlnaHQpJTIwJUUyJTgwJTk0JTIwMjQwJTIwa20lMkZoJTBBJTIwJTIwbGluZSgxODklMkMlMjAyMTclMkMlMjAxNzclMkMlMjAyMDUpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVGljayUyMG1hcmtzJTIwZm9yJTIwVGVtcCUyMGdhdWdlJTIwKDEzNSVDMiVCMCUyMHRvJTIwNDA1JUMyJUIwJTJDJTIwMjcwJUMyJUIwJTIwc3dlZXApJTIwLS0tJTBBJTBBbGV0JTIwdGVtcF90aWNrcyUyMCUzRCUyMFBhdGhMYXllcigndGVtcC10aWNrcycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNjY2MlM0IlMjBzdHJva2Utd2lkdGglM0ElMjA0JTNCJTIwJTdEJTNCJTBBdGVtcF90aWNrcy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMDEzNSVDMiVCMCUyMCVFMiU4MCU5NCUyMC0yMCVDMiVCMEMlMEElMjAlMjBsaW5lKDI2MSUyQyUyMDIxNyUyQyUyMDI3MyUyQyUyMDIwNSklMEElMjAlMjAlMkYlMkYlMjAxODAlQzIlQjAlMjAlRTIlODAlOTQlMjAwJUMyJUIwQyUwQSUyMCUyMGxpbmUoMjQzJTJDJTIwMTYwJTJDJTIwMjU3JTJDJTIwMTYwKSUwQSUyMCUyMCUyRiUyRiUyMDIyNSVDMiVCMCUyMCVFMiU4MCU5NCUyMDIwJUMyJUIwQyUwQSUyMCUyMGxpbmUoMjYxJTJDJTIwMTAzJTJDJTIwMjczJTJDJTIwMTE1KSUwQSUyMCUyMCUyRiUyRiUyMDI3MCVDMiVCMCUyMCVFMiU4MCU5NCUyMDQwJUMyJUIwQyUwQSUyMCUyMGxpbmUoMzMwJTJDJTIwNzMlMkMlMjAzMzAlMkMlMjA4NyklMEElMjAlMjAlMkYlMkYlMjAzMTUlQzIlQjAlMjAlRTIlODAlOTQlMjA2MCVDMiVCMEMlMEElMjAlMjBsaW5lKDM5OSUyQyUyMDEwMyUyQyUyMDM4NyUyQyUyMDExNSklMEElMjAlMjAlMkYlMkYlMjAzNjAlQzIlQjAlMjAlRTIlODAlOTQlMjA4MCVDMiVCMEMlMEElMjAlMjBsaW5lKDQxNyUyQyUyMDE2MCUyQyUyMDQwMyUyQyUyMDE2MCklMEElMjAlMjAlMkYlMkYlMjA0MDUlQzIlQjAlMjAlRTIlODAlOTQlMjAxMDAlQzIlQjBDJTBBJTIwJTIwbGluZSgzOTklMkMlMjAyMTclMkMlMjAzODclMkMlMjAyMDUpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVGljayUyMG1hcmtzJTIwZm9yJTIwRnVlbCUyMGdhdWdlJTIwKDE4MCVDMiVCMCUyMHRvJTIwMzYwJUMyJUIwJTJDJTIwMTgwJUMyJUIwJTIwc3dlZXApJTIwLS0tJTBBJTBBbGV0JTIwZnVlbF90aWNrcyUyMCUzRCUyMFBhdGhMYXllcignZnVlbC10aWNrcycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNjY2MlM0IlMjBzdHJva2Utd2lkdGglM0ElMjA0JTNCJTIwJTdEJTNCJTBBZnVlbF90aWNrcy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMDE4MCVDMiVCMCUyMChsZWZ0KSUyMCVFMiU4MCU5NCUyMEUlMEElMjAlMjBsaW5lKDQ2OCUyQyUyMDE2MCUyQyUyMDQ4MCUyQyUyMDE2MCklMEElMjAlMjAlMkYlMkYlMjAyMjUlQzIlQjAlMjAlRTIlODAlOTQlMjAxJTJGNCUwQSUyMCUyMGxpbmUoNDg3JTJDJTIwMTE0JTJDJTIwNDk3JTJDJTIwMTI0KSUwQSUyMCUyMCUyRiUyRiUyMDI3MCVDMiVCMCUyMCh0b3ApJTIwJUUyJTgwJTk0JTIwMSUyRjIlMEElMjAlMjBsaW5lKDU0MCUyQyUyMDg4JTJDJTIwNTQwJTJDJTIwMTAwKSUwQSUyMCUyMCUyRiUyRiUyMDMxNSVDMiVCMCUyMCVFMiU4MCU5NCUyMDMlMkY0JTBBJTIwJTIwbGluZSg1OTMlMkMlMjAxMTQlMkMlMjA1ODMlMkMlMjAxMjQpJTBBJTIwJTIwJTJGJTJGJTIwMzYwJUMyJUIwJTIwKHJpZ2h0KSUyMCVFMiU4MCU5NCUyMEYlMEElMjAlMjBsaW5lKDYxMiUyQyUyMDE2MCUyQyUyMDYwMCUyQyUyMDE2MCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTcGVlZCUyMHRpY2slMjBsYWJlbHMlMjAtLS0lMEElMEFsZXQlMjBzcGVlZF92YWxzJTIwJTNEJTIwVGV4dExheWVyKCdzcGVlZC12YWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzODg4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFzcGVlZF92YWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDIzMCklNjAwJTYwJTBBJTIwJTIwdGV4dCgyNSUyQyUyMDE2MyklNjA0MCU2MCUwQSUyMCUyMHRleHQoNDIlMkMlMjA5NiklNjA4MCU2MCUwQSUyMCUyMHRleHQoMTIwJTJDJTIwNjgpJTYwMTIwJTYwJTBBJTIwJTIwdGV4dCgxOTglMkMlMjA5NiklNjAxNjAlNjAlMEElMjAlMjB0ZXh0KDIxNSUyQyUyMDE2MyklNjAyMDAlNjAlMEElMjAlMjB0ZXh0KDE5OCUyQyUyMDIzMCklNjAyNDAlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUZW1wJTIwdGljayUyMGxhYmVscyUyMC0tLSUwQSUwQWxldCUyMHRlbXBfdmFscyUyMCUzRCUyMFRleHRMYXllcigndGVtcC12YWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzODg4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEF0ZW1wX3ZhbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI1MiUyQyUyMDIzMCklNjAtMjAlNjAlMEElMjAlMjB0ZXh0KDIzMyUyQyUyMDE2MyklNjAwJTYwJTBBJTIwJTIwdGV4dCgyNTIlMkMlMjA5NiklNjAyMCU2MCUwQSUyMCUyMHRleHQoMzMwJTJDJTIwNjgpJTYwNDAlNjAlMEElMjAlMjB0ZXh0KDQwOCUyQyUyMDk2KSU2MDYwJTYwJTBBJTIwJTIwdGV4dCg0MjUlMkMlMjAxNjMpJTYwODAlNjAlMEElMjAlMjB0ZXh0KDQwOCUyQyUyMDIzMCklNjAxMDAlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBGdWVsJTIwdGljayUyMGxhYmVscyUyMC0tLSUwQSUwQWxldCUyMGZ1ZWxfdmFscyUyMCUzRCUyMFRleHRMYXllcignZnVlbC12YWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzODg4JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFmdWVsX3ZhbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDQ2MCUyQyUyMDE2MyklNjBFJTYwJTBBJTIwJTIwdGV4dCg0ODElMkMlMjAxMDgpJTYwMSUyRjQlNjAlMEElMjAlMjB0ZXh0KDU0MCUyQyUyMDg0KSU2MDElMkYyJTYwJTBBJTIwJTIwdGV4dCg1OTklMkMlMjAxMDgpJTYwMyUyRjQlNjAlMEElMjAlMjB0ZXh0KDYyMCUyQyUyMDE2MyklNjBGJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwR2F1Z2UlMjB0aXRsZXMlMjAtLS0lMEElMEFsZXQlMjBsYWJlbHMlMjAlM0QlMjBUZXh0TGF5ZXIoJ2xhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTQlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzY2NjJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElMjAlMjBmb250LXdlaWdodCUzQSUyMGJvbGQlM0IlMEElN0QlM0IlMEFsYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDEyMCUyQyUyMDE2NiklNjBrbSUyRmglNjAlMEElMjAlMjB0ZXh0KDMzMCUyQyUyMDE2NiklNjAlQzIlQjBDJTYwJTBBJTIwJTIwdGV4dCg1NDAlMkMlMjAxNjYpJTYwRnVlbCU2MCUwQSU3RCUwQSUwQWxldCUyMHRpdGxlcyUyMCUzRCUyMFRleHRMYXllcigndGl0bGVzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMyUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNkZGQlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSUyMCUyMGZvbnQtd2VpZ2h0JTNBJTIwYm9sZCUzQiUwQSU3RCUzQiUwQXRpdGxlcy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTIwJTJDJTIwMjgwKSU2MFNwZWVkJTYwJTBBJTIwJTIwdGV4dCgzMzAlMkMlMjAyODApJTYwVGVtcGVyYXR1cmUlNjAlMEElMjAlMjB0ZXh0KDU0MCUyQyUyMDI2MCklNjBGdWVsJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjY2JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFzdWJ0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTIwJTJDJTIwMjk1KSU2MDI3MCVDMiVCMCUyMHN3ZWVwJTYwJTBBJTIwJTIwdGV4dCgzMzAlMkMlMjAyOTUpJTYwMjcwJUMyJUIwJTIwc3dlZXAlNjAlMEElMjAlMjB0ZXh0KDU0MCUyQyUyMDI3NSklNjAxODAlQzIlQjAlMjBzd2VlcCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNjZW5lJTIwLS0tJTBBJTBBbGV0JTIwc3BlZWRfZ3JvdXAlMjAlM0QlMjBHcm91cExheWVyKCdzcGVlZC1nYXVnZScpJTIwJTI0JTdCJTdEJTNCJTBBc3BlZWRfZ3JvdXAuYXBwZW5kKGcxJTJDJTIwc3BlZWRfdGlja3MpJTBBJTBBbGV0JTIwdGVtcF9ncm91cCUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3RlbXAtZ2F1Z2UnKSUyMCUyNCU3QiU3RCUzQiUwQXRlbXBfZ3JvdXAuYXBwZW5kKGcyJTJDJTIwdGVtcF90aWNrcyklMEElMEFsZXQlMjBmdWVsX2dyb3VwJTIwJTNEJTIwR3JvdXBMYXllcignZnVlbC1nYXVnZScpJTIwJTI0JTdCJTdEJTNCJTBBZnVlbF9ncm91cC5hcHBlbmQoZzMlMkMlMjBmdWVsX3RpY2tzKSUwQSUwQWxldCUyMHNjZW5lJTIwJTNEJTIwR3JvdXBMYXllcignc2NlbmUnKSUyMCUyNCU3QiU3RCUzQiUwQXNjZW5lLmFwcGVuZChiZyUyQyUyMHNwZWVkX2dyb3VwJTJDJTIwdGVtcF9ncm91cCUyQyUyMGZ1ZWxfZ3JvdXAlMkMlMjByaW1zJTJDJTIwc3BlZWRfdmFscyUyQyUyMHRlbXBfdmFscyUyQyUyMGZ1ZWxfdmFscyUyQyUyMGxhYmVscyUyQyUyMHRpdGxlcyUyQyUyMHN1YnRpdGxlKSUwQQ==" code-open caption="Three gauges using partial sweeps — 270-degree and 180-degree arcs">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 660 340&quot;</span>
-<span class="hljs-comment">// Gauge Dashboard — Partial Sweeps + innerRadius</span>
-<span class="hljs-comment">// Three gauges using conic gradients as speedometer-style UI</span>
+<p><mini-workspace code-open caption="Three gauges using partial sweeps — 270-degree and 180-degree arcs">
+  <code>// viewBox="0 0 660 340"
+// Gauge Dashboard — Partial Sweeps + innerRadius
+// Three gauges using conic gradients as speedometer-style UI
 
-<span class="hljs-comment">// --- Gauge gradients ---</span>
-<span class="hljs-comment">// Using spread=&#x27;transparent&#x27; so the gap area (bottom) stays empty</span>
+// --- Gauge gradients ---
+// Using spread='transparent' so the gap area (bottom) stays empty
 
-<span class="hljs-keyword">let</span> speed_grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;speed&#x27;</span>, <span class="hljs-number">120</span>, <span class="hljs-number">160</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.8</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f3722c&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+let speed_grad = ConicGradient('speed', 120, 160) {|g|
+  g.stop(0,    Color('#43aa8b'));
+  g.stop(0.5,  Color('#f9c74f'));
+  g.stop(0.8,  Color('#f3722c'));
+  g.stop(1,    Color('#e63946'));
 };
-speed_grad.<span class="hljs-property">from</span> = 135deg;
-speed_grad.<span class="hljs-property">to</span> = 405deg;
-speed_grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">38</span>;
-speed_grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-speed_grad.<span class="hljs-property">spread</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-speed_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+speed_grad.from = 135deg;
+speed_grad.to = 405deg;
+speed_grad.innerRadius = 38;
+speed_grad.innerFill = 'transparent';
+speed_grad.spread = 'transparent';
+speed_grad.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> temp_grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;temp&#x27;</span>, <span class="hljs-number">330</span>, <span class="hljs-number">160</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#277da1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#90e0ef&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.7</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f3722c&#x27;</span>));
+let temp_grad = ConicGradient('temp', 330, 160) {|g|
+  g.stop(0,    Color('#277da1'));
+  g.stop(0.4,  Color('#90e0ef'));
+  g.stop(0.7,  Color('#f9c74f'));
+  g.stop(1,    Color('#f3722c'));
 };
-temp_grad.<span class="hljs-property">from</span> = 135deg;
-temp_grad.<span class="hljs-property">to</span> = 405deg;
-temp_grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">38</span>;
-temp_grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-temp_grad.<span class="hljs-property">spread</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-temp_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+temp_grad.from = 135deg;
+temp_grad.to = 405deg;
+temp_grad.innerRadius = 38;
+temp_grad.innerFill = 'transparent';
+temp_grad.spread = 'transparent';
+temp_grad.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> fuel_grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;fuel&#x27;</span>, <span class="hljs-number">540</span>, <span class="hljs-number">160</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.6</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+let fuel_grad = ConicGradient('fuel', 540, 160) {|g|
+  g.stop(0,    Color('#43aa8b'));
+  g.stop(0.6,  Color('#f9c74f'));
+  g.stop(1,    Color('#e63946'));
 };
-fuel_grad.<span class="hljs-property">from</span> = 180deg;
-fuel_grad.<span class="hljs-property">to</span> = 360deg;
-fuel_grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">30</span>;
-fuel_grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-fuel_grad.<span class="hljs-property">spread</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
+fuel_grad.from = 180deg;
+fuel_grad.to = 360deg;
+fuel_grad.innerRadius = 30;
+fuel_grad.innerFill = 'transparent';
+fuel_grad.spread = 'transparent';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">111118</span>; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">660</span>, <span class="hljs-number">340</span>) }
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 660, 340) }
 
-<span class="hljs-comment">// --- Gauge faces ---</span>
+// --- Gauge faces ---
 
-<span class="hljs-keyword">let</span> g1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;g1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: speed_grad; <span class="hljs-attr">stroke</span>: none; };
-g1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">120</span>, <span class="hljs-number">160</span>, <span class="hljs-number">80</span>); <span class="hljs-title function_">closePath</span>() }
+let g1 = PathLayer('g1') ${ fill: speed_grad; stroke: none; };
+g1.apply { circle(120, 160, 80); closePath() }
 
-<span class="hljs-keyword">let</span> g2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;g2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: temp_grad; <span class="hljs-attr">stroke</span>: none; };
-g2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">330</span>, <span class="hljs-number">160</span>, <span class="hljs-number">80</span>); <span class="hljs-title function_">closePath</span>() }
+let g2 = PathLayer('g2') ${ fill: temp_grad; stroke: none; };
+g2.apply { circle(330, 160, 80); closePath() }
 
-<span class="hljs-keyword">let</span> g3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;g3&#x27;</span>) ${ <span class="hljs-attr">fill</span>: fuel_grad; <span class="hljs-attr">stroke</span>: none; };
-g3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">540</span>, <span class="hljs-number">160</span>, <span class="hljs-number">65</span>); <span class="hljs-title function_">closePath</span>() }
+let g3 = PathLayer('g3') ${ fill: fuel_grad; stroke: none; };
+g3.apply { circle(540, 160, 65); closePath() }
 
-<span class="hljs-comment">// --- Gauge rims ---</span>
+// --- Gauge rims ---
 
-<span class="hljs-keyword">let</span> rims = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;rims&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">444</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>; };
-rims.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">120</span>, <span class="hljs-number">160</span>, <span class="hljs-number">81</span>); <span class="hljs-title function_">closePath</span>()
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">330</span>, <span class="hljs-number">160</span>, <span class="hljs-number">81</span>); <span class="hljs-title function_">closePath</span>()
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">540</span>, <span class="hljs-number">160</span>, <span class="hljs-number">66</span>); <span class="hljs-title function_">closePath</span>()
+let rims = PathLayer('rims') ${ fill: none; stroke: #444; stroke-width: 1.5; };
+rims.apply {
+  circle(120, 160, 81); closePath()
+  circle(330, 160, 81); closePath()
+  circle(540, 160, 66); closePath()
 }
 
-<span class="hljs-comment">// --- Tick marks for Speed gauge (135° to 405°, 270° sweep) ---</span>
-<span class="hljs-comment">// 7 ticks from 0 to max, evenly spaced along the 270° arc</span>
-<span class="hljs-comment">// Angles: 135, 180, 225, 270, 315, 360, 405 degrees</span>
+// --- Tick marks for Speed gauge (135° to 405°, 270° sweep) ---
+// 7 ticks from 0 to max, evenly spaced along the 270° arc
+// Angles: 135, 180, 225, 270, 315, 360, 405 degrees
 
-<span class="hljs-keyword">let</span> speed_ticks = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;speed-ticks&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">4</span>; };
-speed_ticks.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// 135° (bottom-left) — 0 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">51</span>, <span class="hljs-number">217</span>, <span class="hljs-number">63</span>, <span class="hljs-number">205</span>)
-  <span class="hljs-comment">// 180° (left) — 40 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">33</span>, <span class="hljs-number">160</span>, <span class="hljs-number">47</span>, <span class="hljs-number">160</span>)
-  <span class="hljs-comment">// 225° (top-left) — 80 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">51</span>, <span class="hljs-number">103</span>, <span class="hljs-number">63</span>, <span class="hljs-number">115</span>)
-  <span class="hljs-comment">// 270° (top) — 120 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">120</span>, <span class="hljs-number">73</span>, <span class="hljs-number">120</span>, <span class="hljs-number">87</span>)
-  <span class="hljs-comment">// 315° (top-right) — 160 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">189</span>, <span class="hljs-number">103</span>, <span class="hljs-number">177</span>, <span class="hljs-number">115</span>)
-  <span class="hljs-comment">// 360° (right) — 200 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">207</span>, <span class="hljs-number">160</span>, <span class="hljs-number">193</span>, <span class="hljs-number">160</span>)
-  <span class="hljs-comment">// 405° (bottom-right) — 240 km/h</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">189</span>, <span class="hljs-number">217</span>, <span class="hljs-number">177</span>, <span class="hljs-number">205</span>)
+let speed_ticks = PathLayer('speed-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+speed_ticks.apply {
+  // 135° (bottom-left) — 0 km/h
+  line(51, 217, 63, 205)
+  // 180° (left) — 40 km/h
+  line(33, 160, 47, 160)
+  // 225° (top-left) — 80 km/h
+  line(51, 103, 63, 115)
+  // 270° (top) — 120 km/h
+  line(120, 73, 120, 87)
+  // 315° (top-right) — 160 km/h
+  line(189, 103, 177, 115)
+  // 360° (right) — 200 km/h
+  line(207, 160, 193, 160)
+  // 405° (bottom-right) — 240 km/h
+  line(189, 217, 177, 205)
 }
 
-<span class="hljs-comment">// --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---</span>
+// --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
 
-<span class="hljs-keyword">let</span> temp_ticks = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;temp-ticks&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">4</span>; };
-temp_ticks.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// 135° — -20°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">261</span>, <span class="hljs-number">217</span>, <span class="hljs-number">273</span>, <span class="hljs-number">205</span>)
-  <span class="hljs-comment">// 180° — 0°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">243</span>, <span class="hljs-number">160</span>, <span class="hljs-number">257</span>, <span class="hljs-number">160</span>)
-  <span class="hljs-comment">// 225° — 20°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">261</span>, <span class="hljs-number">103</span>, <span class="hljs-number">273</span>, <span class="hljs-number">115</span>)
-  <span class="hljs-comment">// 270° — 40°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">330</span>, <span class="hljs-number">73</span>, <span class="hljs-number">330</span>, <span class="hljs-number">87</span>)
-  <span class="hljs-comment">// 315° — 60°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">399</span>, <span class="hljs-number">103</span>, <span class="hljs-number">387</span>, <span class="hljs-number">115</span>)
-  <span class="hljs-comment">// 360° — 80°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">417</span>, <span class="hljs-number">160</span>, <span class="hljs-number">403</span>, <span class="hljs-number">160</span>)
-  <span class="hljs-comment">// 405° — 100°C</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">399</span>, <span class="hljs-number">217</span>, <span class="hljs-number">387</span>, <span class="hljs-number">205</span>)
+let temp_ticks = PathLayer('temp-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+temp_ticks.apply {
+  // 135° — -20°C
+  line(261, 217, 273, 205)
+  // 180° — 0°C
+  line(243, 160, 257, 160)
+  // 225° — 20°C
+  line(261, 103, 273, 115)
+  // 270° — 40°C
+  line(330, 73, 330, 87)
+  // 315° — 60°C
+  line(399, 103, 387, 115)
+  // 360° — 80°C
+  line(417, 160, 403, 160)
+  // 405° — 100°C
+  line(399, 217, 387, 205)
 }
 
-<span class="hljs-comment">// --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---</span>
+// --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
 
-<span class="hljs-keyword">let</span> fuel_ticks = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;fuel-ticks&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">4</span>; };
-fuel_ticks.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// 180° (left) — E</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">468</span>, <span class="hljs-number">160</span>, <span class="hljs-number">480</span>, <span class="hljs-number">160</span>)
-  <span class="hljs-comment">// 225° — 1/4</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">487</span>, <span class="hljs-number">114</span>, <span class="hljs-number">497</span>, <span class="hljs-number">124</span>)
-  <span class="hljs-comment">// 270° (top) — 1/2</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">540</span>, <span class="hljs-number">88</span>, <span class="hljs-number">540</span>, <span class="hljs-number">100</span>)
-  <span class="hljs-comment">// 315° — 3/4</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">593</span>, <span class="hljs-number">114</span>, <span class="hljs-number">583</span>, <span class="hljs-number">124</span>)
-  <span class="hljs-comment">// 360° (right) — F</span>
-  <span class="hljs-title function_">line</span>(<span class="hljs-number">612</span>, <span class="hljs-number">160</span>, <span class="hljs-number">600</span>, <span class="hljs-number">160</span>)
+let fuel_ticks = PathLayer('fuel-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+fuel_ticks.apply {
+  // 180° (left) — E
+  line(468, 160, 480, 160)
+  // 225° — 1/4
+  line(487, 114, 497, 124)
+  // 270° (top) — 1/2
+  line(540, 88, 540, 100)
+  // 315° — 3/4
+  line(593, 114, 583, 124)
+  // 360° (right) — F
+  line(612, 160, 600, 160)
 }
 
-<span class="hljs-comment">// --- Speed tick labels ---</span>
+// --- Speed tick labels ---
 
-<span class="hljs-keyword">let</span> speed_vals = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;speed-vals&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let speed_vals = TextLayer('speed-vals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #888;
+  text-anchor: middle;
 };
-speed_vals.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">230</span>)<span class="hljs-string">`0`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">25</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`40`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">96</span>)<span class="hljs-string">`80`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">120</span>, <span class="hljs-number">68</span>)<span class="hljs-string">`120`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">198</span>, <span class="hljs-number">96</span>)<span class="hljs-string">`160`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">215</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`200`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">198</span>, <span class="hljs-number">230</span>)<span class="hljs-string">`240`</span>
+speed_vals.apply {
+  text(42, 230)`0`
+  text(25, 163)`40`
+  text(42, 96)`80`
+  text(120, 68)`120`
+  text(198, 96)`160`
+  text(215, 163)`200`
+  text(198, 230)`240`
 }
 
-<span class="hljs-comment">// --- Temp tick labels ---</span>
+// --- Temp tick labels ---
 
-<span class="hljs-keyword">let</span> temp_vals = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;temp-vals&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let temp_vals = TextLayer('temp-vals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #888;
+  text-anchor: middle;
 };
-temp_vals.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">252</span>, <span class="hljs-number">230</span>)<span class="hljs-string">`-20`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">233</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`0`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">252</span>, <span class="hljs-number">96</span>)<span class="hljs-string">`20`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">330</span>, <span class="hljs-number">68</span>)<span class="hljs-string">`40`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">408</span>, <span class="hljs-number">96</span>)<span class="hljs-string">`60`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">425</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`80`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">408</span>, <span class="hljs-number">230</span>)<span class="hljs-string">`100`</span>
+temp_vals.apply {
+  text(252, 230)`-20`
+  text(233, 163)`0`
+  text(252, 96)`20`
+  text(330, 68)`40`
+  text(408, 96)`60`
+  text(425, 163)`80`
+  text(408, 230)`100`
 }
 
-<span class="hljs-comment">// --- Fuel tick labels ---</span>
+// --- Fuel tick labels ---
 
-<span class="hljs-keyword">let</span> fuel_vals = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;fuel-vals&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let fuel_vals = TextLayer('fuel-vals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: #888;
+  text-anchor: middle;
 };
-fuel_vals.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">460</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`E`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">481</span>, <span class="hljs-number">108</span>)<span class="hljs-string">`1/4`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">540</span>, <span class="hljs-number">84</span>)<span class="hljs-string">`1/2`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">599</span>, <span class="hljs-number">108</span>)<span class="hljs-string">`3/4`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">620</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`F`</span>
+fuel_vals.apply {
+  text(460, 163)`E`
+  text(481, 108)`1/4`
+  text(540, 84)`1/2`
+  text(599, 108)`3/4`
+  text(620, 163)`F`
 }
 
-<span class="hljs-comment">// --- Gauge titles ---</span>
+// --- Gauge titles ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: #ccc;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ccc;
+  text-anchor: middle;
+  font-weight: bold;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">120</span>, <span class="hljs-number">166</span>)<span class="hljs-string">`km/h`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">330</span>, <span class="hljs-number">166</span>)<span class="hljs-string">`°C`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">540</span>, <span class="hljs-number">166</span>)<span class="hljs-string">`Fuel`</span>
+labels.apply {
+  text(120, 166)`km/h`
+  text(330, 166)`°C`
+  text(540, 166)`Fuel`
 }
 
-<span class="hljs-keyword">let</span> titles = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;titles&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
-  <span class="hljs-attr">fill</span>: #ddd;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let titles = TextLayer('titles') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
 };
-titles.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">120</span>, <span class="hljs-number">280</span>)<span class="hljs-string">`Speed`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">330</span>, <span class="hljs-number">280</span>)<span class="hljs-string">`Temperature`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">540</span>, <span class="hljs-number">260</span>)<span class="hljs-string">`Fuel`</span>
+titles.apply {
+  text(120, 280)`Speed`
+  text(330, 280)`Temperature`
+  text(540, 260)`Fuel`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">666</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let subtitle = TextLayer('subtitle') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">120</span>, <span class="hljs-number">295</span>)<span class="hljs-string">`270° sweep`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">330</span>, <span class="hljs-number">295</span>)<span class="hljs-string">`270° sweep`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">540</span>, <span class="hljs-number">275</span>)<span class="hljs-string">`180° sweep`</span>
+subtitle.apply {
+  text(120, 295)`270° sweep`
+  text(330, 295)`270° sweep`
+  text(540, 275)`180° sweep`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> speed_group = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;speed-gauge&#x27;</span>) ${};
-speed_group.<span class="hljs-title function_">append</span>(g1, speed_ticks)
+let speed_group = GroupLayer('speed-gauge') ${};
+speed_group.append(g1, speed_ticks)
 
-<span class="hljs-keyword">let</span> temp_group = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;temp-gauge&#x27;</span>) ${};
-temp_group.<span class="hljs-title function_">append</span>(g2, temp_ticks)
+let temp_group = GroupLayer('temp-gauge') ${};
+temp_group.append(g2, temp_ticks)
 
-<span class="hljs-keyword">let</span> fuel_group = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;fuel-gauge&#x27;</span>) ${};
-fuel_group.<span class="hljs-title function_">append</span>(g3, fuel_ticks)
+let fuel_group = GroupLayer('fuel-gauge') ${};
+fuel_group.append(g3, fuel_ticks)
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle)
 </code>
   <img src="/pathogen/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
 </mini-workspace></p>
@@ -629,98 +629,98 @@ scene.<span class="hljs-title function_">append</span>(bg, speed_group, temp_gro
   g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
 };
 grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
-</code></pre><p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwRGlyZWN0aW9uJTIwQ29tcGFyaXNvbiUyMCVFMiU4MCU5NCUyMENXJTIwdnMlMjBDQ1clMEElMkYlMkYlMjBTYW1lJTIwZ3JhZGllbnQlMkMlMjB0d28lMjBkaXJlY3Rpb25zJTNBJTIwc2hvd2luZyUyMGhvdyUyMGRpcmVjdGlvbiUyMHJldmVyc2VzJTIwY29sb3IlMjBmbG93JTBBJTBBJTJGJTJGJTIwLS0tJTIwR3JhZGllbnRzJTIwLS0tJTBBJTBBbGV0JTIwY3dfZ3JhZCUyMCUzRCUyMENvbmljR3JhZGllbnQoJ2N3LWdyYWQnJTJDJTIwMTQwJTJDJTIwMTUwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNlMDdhNWYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4zMyUyQyUyMENvbG9yKCclMjNmMmNjOGYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC42NiUyQyUyMENvbG9yKCclMjMzZDg1YzYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMyNjQ2NTMnKSklM0IlMEElN0QlM0IlMEFjd19ncmFkLmRpcmVjdGlvbiUyMCUzRCUyMCdjdyclM0IlMEFjd19ncmFkLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBbGV0JTIwY2N3X2dyYWQlMjAlM0QlMjBDb25pY0dyYWRpZW50KCdjY3ctZ3JhZCclMkMlMjAzNjAlMkMlMjAxNTApJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyM2UwN2E1ZicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjMzJTJDJTIwQ29sb3IoJyUyM2YyY2M4ZicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjY2JTJDJTIwQ29sb3IoJyUyMzNkODVjNicpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzI2NDY1MycpKSUzQiUwQSU3RCUzQiUwQWNjd19ncmFkLmRpcmVjdGlvbiUyMCUzRCUyMCdjY3cnJTNCJTBBY2N3X2dyYWQuaW50ZXJwb2xhdGlvbiUyMCUzRCUyMCdva2xjaCclM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGUwZTE4JTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDUwMCUyQyUyMDMwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBHcmFkaWVudCUyMGNpcmNsZXMlMjAtLS0lMEElMEFsZXQlMjBjd19jaXJjbGUlMjAlM0QlMjBQYXRoTGF5ZXIoJ2N3LWNpcmNsZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGN3X2dyYWQlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBY3dfY2lyY2xlLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDE0MCUyQyUyMDE1MCUyQyUyMDkwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwY2N3X2NpcmNsZSUyMCUzRCUyMFBhdGhMYXllcignY2N3LWNpcmNsZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNjd19ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWNjd19jaXJjbGUuYXBwbHklMjAlN0IlMjBjaXJjbGUoMzYwJTJDJTIwMTUwJTJDJTIwOTApJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBEaXJlY3Rpb24lMjBhcnJvd3MlMjAoY3VydmVkJTIwc3dlZXAlMjBhcmNzJTIwd2l0aCUyMGFycm93aGVhZHMpJTIwLS0tJTBBJTBBJTJGJTJGJTIwQ1clM0ElMjBjdXJ2ZWQlMjBhcnJvdyUyMHN3ZWVwaW5nJTIwY2xvY2t3aXNlJTIwZnJvbSUyMHRvcCUwQWxldCUyMGN3X2Fycm93JTIwJTNEJTIwUGF0aExheWVyKCdjdy1hcnJvdycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjAlMjNmZmZmZmZhYSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMjAlN0QlM0IlMEFjd19hcnJvdy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMEFyYyUyMHN3ZWVwaW5nJTIwQ1clMjBmcm9tJTIwfnRvcC1sZWZ0JTIwdG8lMjB+dG9wLXJpZ2h0JTBBJTIwJTIwTSUyMDExOCUyMDU2JTIwQSUyMDIwJTIwMjAlMjAwJTIwMCUyMDElMjAxNjIlMjA1NiUwQSUyMCUyMCUyRiUyRiUyMEFycm93aGVhZCUyMGF0JTIwZW5kJTBBJTIwJTIwTSUyMDE1NiUyMDQ4JTIwTCUyMDE2MyUyMDU2JTIwTCUyMDE1NSUyMDYyJTBBJTdEJTBBJTBBJTJGJTJGJTIwQ0NXJTNBJTIwY3VydmVkJTIwYXJyb3clMjBzd2VlcGluZyUyMGNvdW50ZXItY2xvY2t3aXNlJTIwZnJvbSUyMHRvcCUwQWxldCUyMGNjd19hcnJvdyUyMCUzRCUyMFBhdGhMYXllcignY2N3LWFycm93JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyM2ZmZmZmZmFhJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUzQiUyMCU3RCUzQiUwQWNjd19hcnJvdy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMEFyYyUyMHN3ZWVwaW5nJTIwQ0NXJTIwZnJvbSUyMH50b3AtcmlnaHQlMjB0byUyMH50b3AtbGVmdCUwQSUyMCUyME0lMjAzODIlMjA1NiUyMEElMjAyMCUyMDIwJTIwMCUyMDAlMjAwJTIwMzM4JTIwNTYlMEElMjAlMjAlMkYlMkYlMjBBcnJvd2hlYWQlMjBhdCUyMGVuZCUwQSUyMCUyME0lMjAzNDQlMjA0OCUyMEwlMjAzMzclMjA1NiUyMEwlMjAzNDUlMjA2MiUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxNCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNkZGQlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSUyMCUyMGZvbnQtd2VpZ2h0JTNBJTIwYm9sZCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTQwJTJDJTIwMjcwKSU2MENsb2Nrd2lzZSUyMChDVyklNjAlMEElMjAlMjB0ZXh0KDM2MCUyQyUyMDI3MCklNjBDb3VudGVyLUNsb2Nrd2lzZSUyMChDQ1cpJTYwJTBBJTdEJTBBJTBBbGV0JTIwbm90ZSUyMCUzRCUyMFRleHRMYXllcignbm90ZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NjYlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQW5vdGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI1MCUyQyUyMDI5MiklNjBTYW1lJTIwNCUyMHN0b3BzJTIwJUUyJTgwJTk0JTIwZGlyZWN0aW9uJTIwcmV2ZXJzZXMlMjBjb2xvciUyMGZsb3clNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTY2VuZSUyMC0tLSUwQSUwQWxldCUyMGxlZnQlMjAlM0QlMjBHcm91cExheWVyKCdsZWZ0JyklMjAlMjQlN0IlN0QlM0IlMEFsZWZ0LmFwcGVuZChjd19jaXJjbGUlMkMlMjBjd19hcnJvdyklMEElMEFsZXQlMjByaWdodCUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3JpZ2h0JyklMjAlMjQlN0IlN0QlM0IlMEFyaWdodC5hcHBlbmQoY2N3X2NpcmNsZSUyQyUyMGNjd19hcnJvdyklMEElMEFsZXQlMjBzY2VuZSUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3NjZW5lJyklMjAlMjQlN0IlN0QlM0IlMEFzY2VuZS5hcHBlbmQoYmclMkMlMjBsZWZ0JTJDJTIwcmlnaHQlMkMlMjBsYWJlbHMlMkMlMjBub3RlKSUwQQ==" caption="Same four stops — clockwise vs counter-clockwise">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 500 300&quot;</span>
-<span class="hljs-comment">// Direction Comparison — CW vs CCW</span>
-<span class="hljs-comment">// Same gradient, two directions: showing how direction reverses color flow</span>
+</code></pre><p><mini-workspace caption="Same four stops — clockwise vs counter-clockwise">
+  <code>// viewBox="0 0 500 300"
+// Direction Comparison — CW vs CCW
+// Same gradient, two directions: showing how direction reverses color flow
 
-<span class="hljs-comment">// --- Gradients ---</span>
+// --- Gradients ---
 
-<span class="hljs-keyword">let</span> cw_grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;cw-grad&#x27;</span>, <span class="hljs-number">140</span>, <span class="hljs-number">150</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e07a5f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f2cc8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3d85c6&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+let cw_grad = ConicGradient('cw-grad', 140, 150) {|g|
+  g.stop(0,    Color('#e07a5f'));
+  g.stop(0.33, Color('#f2cc8f'));
+  g.stop(0.66, Color('#3d85c6'));
+  g.stop(1,    Color('#264653'));
 };
-cw_grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;cw&#x27;</span>;
-cw_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+cw_grad.direction = 'cw';
+cw_grad.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> ccw_grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;ccw-grad&#x27;</span>, <span class="hljs-number">360</span>, <span class="hljs-number">150</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e07a5f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f2cc8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3d85c6&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+let ccw_grad = ConicGradient('ccw-grad', 360, 150) {|g|
+  g.stop(0,    Color('#e07a5f'));
+  g.stop(0.33, Color('#f2cc8f'));
+  g.stop(0.66, Color('#3d85c6'));
+  g.stop(1,    Color('#264653'));
 };
-ccw_grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
-ccw_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+ccw_grad.direction = 'ccw';
+ccw_grad.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0e0e18; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">500</span>, <span class="hljs-number">300</span>) }
+let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+bg.apply { rect(0, 0, 500, 300) }
 
-<span class="hljs-comment">// --- Gradient circles ---</span>
+// --- Gradient circles ---
 
-<span class="hljs-keyword">let</span> cw_circle = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cw-circle&#x27;</span>) ${ <span class="hljs-attr">fill</span>: cw_grad; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-cw_circle.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">140</span>, <span class="hljs-number">150</span>, <span class="hljs-number">90</span>); <span class="hljs-title function_">closePath</span>() }
+let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
+cw_circle.apply { circle(140, 150, 90); closePath() }
 
-<span class="hljs-keyword">let</span> ccw_circle = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ccw-circle&#x27;</span>) ${ <span class="hljs-attr">fill</span>: ccw_grad; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-ccw_circle.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">360</span>, <span class="hljs-number">150</span>, <span class="hljs-number">90</span>); <span class="hljs-title function_">closePath</span>() }
+let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
+ccw_circle.apply { circle(360, 150, 90); closePath() }
 
-<span class="hljs-comment">// --- Direction arrows (curved sweep arcs with arrowheads) ---</span>
+// --- Direction arrows (curved sweep arcs with arrowheads) ---
 
-<span class="hljs-comment">// CW: curved arrow sweeping clockwise from top</span>
-<span class="hljs-keyword">let</span> cw_arrow = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cw-arrow&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ffffffaa; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>; };
-cw_arrow.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// Arc sweeping CW from ~top-left to ~top-right</span>
-  M <span class="hljs-number">118</span> <span class="hljs-number">56</span> A <span class="hljs-number">20</span> <span class="hljs-number">20</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">162</span> <span class="hljs-number">56</span>
-  <span class="hljs-comment">// Arrowhead at end</span>
-  M <span class="hljs-number">156</span> <span class="hljs-number">48</span> L <span class="hljs-number">163</span> <span class="hljs-number">56</span> L <span class="hljs-number">155</span> <span class="hljs-number">62</span>
+// CW: curved arrow sweeping clockwise from top
+let cw_arrow = PathLayer('cw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+cw_arrow.apply {
+  // Arc sweeping CW from ~top-left to ~top-right
+  M 118 56 A 20 20 0 0 1 162 56
+  // Arrowhead at end
+  M 156 48 L 163 56 L 155 62
 }
 
-<span class="hljs-comment">// CCW: curved arrow sweeping counter-clockwise from top</span>
-<span class="hljs-keyword">let</span> ccw_arrow = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ccw-arrow&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ffffffaa; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>; };
-ccw_arrow.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// Arc sweeping CCW from ~top-right to ~top-left</span>
-  M <span class="hljs-number">382</span> <span class="hljs-number">56</span> A <span class="hljs-number">20</span> <span class="hljs-number">20</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">338</span> <span class="hljs-number">56</span>
-  <span class="hljs-comment">// Arrowhead at end</span>
-  M <span class="hljs-number">344</span> <span class="hljs-number">48</span> L <span class="hljs-number">337</span> <span class="hljs-number">56</span> L <span class="hljs-number">345</span> <span class="hljs-number">62</span>
+// CCW: curved arrow sweeping counter-clockwise from top
+let ccw_arrow = PathLayer('ccw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+ccw_arrow.apply {
+  // Arc sweeping CCW from ~top-right to ~top-left
+  M 382 56 A 20 20 0 0 0 338 56
+  // Arrowhead at end
+  M 344 48 L 337 56 L 345 62
 }
 
-<span class="hljs-comment">// --- Labels ---</span>
+// --- Labels ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: #ddd;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">140</span>, <span class="hljs-number">270</span>)<span class="hljs-string">`Clockwise (CW)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">360</span>, <span class="hljs-number">270</span>)<span class="hljs-string">`Counter-Clockwise (CCW)`</span>
+labels.apply {
+  text(140, 270)`Clockwise (CW)`
+  text(360, 270)`Counter-Clockwise (CCW)`
 }
 
-<span class="hljs-keyword">let</span> note = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;note&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">666</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let note = TextLayer('note') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #666;
+  text-anchor: middle;
 };
-note.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">250</span>, <span class="hljs-number">292</span>)<span class="hljs-string">`Same 4 stops — direction reverses color flow`</span>
+note.apply {
+  text(250, 292)`Same 4 stops — direction reverses color flow`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> left = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;left&#x27;</span>) ${};
-left.<span class="hljs-title function_">append</span>(cw_circle, cw_arrow)
+let left = GroupLayer('left') ${};
+left.append(cw_circle, cw_arrow)
 
-<span class="hljs-keyword">let</span> right = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;right&#x27;</span>) ${};
-right.<span class="hljs-title function_">append</span>(ccw_circle, ccw_arrow)
+let right = GroupLayer('right') ${};
+right.append(ccw_circle, ccw_arrow)
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, left, right, labels, note)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, left, right, labels, note)
 </code>
   <img src="/pathogen/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
 </mini-workspace></p>
@@ -738,260 +738,260 @@ scene.<span class="hljs-title function_">append</span>(bg, left, right, labels, 
 };
 grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
 grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;
-</code></pre><p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwNTMwJTIyJTBBJTJGJTJGJTIwSW5uZXIlMjBSYWRpdXMlMjAlMjYlMjBGaWxsJTIwTW9kZXMlMjAlRTIlODAlOTQlMjAyJUMzJTk3MiUyMEdyaWQlMEElMkYlMkYlMjBUaGUlMjA0JTIwaW5uZXJGaWxsJTIwbW9kZXMlMjB3aXRoJTIwdGhlJTIwc2FtZSUyMGJhc2UlMjBncmFkaWVudCUwQSUwQSUyRiUyRiUyMC0tLSUyMEdyaWQlMjBsYXlvdXQlMjAod2lkZXIlMjBzcGFjaW5nJTIwdG8lMjBhdm9pZCUyMGxhYmVsJTIwb3ZlcmxhcCklMjAtLS0lMEElMEFsZXQlMjBjeDElMjAlM0QlMjAxNDAlM0IlMEFsZXQlMjBjeTElMjAlM0QlMjAxNTUlM0IlMEFsZXQlMjBjeDIlMjAlM0QlMjAzODAlM0IlMEFsZXQlMjBjeTIlMjAlM0QlMjAxNTUlM0IlMEFsZXQlMjBjeDMlMjAlM0QlMjAxNDAlM0IlMEFsZXQlMjBjeTMlMjAlM0QlMjAzOTAlM0IlMEFsZXQlMjBjeDQlMjAlM0QlMjAzODAlM0IlMEFsZXQlMjBjeTQlMjAlM0QlMjAzOTAlM0IlMEFsZXQlMjByJTIwJTNEJTIwODAlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBHcmFkaWVudCUyMHZhcmlhbnRzJTIwLS0tJTBBJTBBbGV0JTIwZzElMjAlM0QlMjBDb25pY0dyYWRpZW50KCdnLXRyYW5zcGFyZW50JyUyQyUyMGN4MSUyQyUyMGN5MSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzN2MzYWVkJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMjUlMkMlMjBDb2xvcignJTIzZWM0ODk5JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMCUyMENvbG9yKCclMjNmNTllMGInKSklM0IlMEElMjAlMjBnLnN0b3AoMC43NSUyQyUyMENvbG9yKCclMjMxMGI5ODEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjM3YzNhZWQnKSklM0IlMEElN0QlM0IlMEFnMS5pbm5lclJhZGl1cyUyMCUzRCUyMDM1JTNCJTBBZzEuaW5uZXJGaWxsJTIwJTNEJTIwJ3RyYW5zcGFyZW50JyUzQiUwQWcxLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBbGV0JTIwZzIlMjAlM0QlMjBDb25pY0dyYWRpZW50KCdnLXRyYW5zLWJsZW5kJyUyQyUyMGN4MiUyQyUyMGN5MiklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzN2MzYWVkJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMjUlMkMlMjBDb2xvcignJTIzZWM0ODk5JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMCUyMENvbG9yKCclMjNmNTllMGInKSklM0IlMEElMjAlMjBnLnN0b3AoMC43NSUyQyUyMENvbG9yKCclMjMxMGI5ODEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjM3YzNhZWQnKSklM0IlMEElN0QlM0IlMEFnMi5pbm5lclJhZGl1cyUyMCUzRCUyMDM1JTNCJTBBZzIuaW5uZXJGaWxsJTIwJTNEJTIwJ3RyYW5zcGFyZW50LWJsZW5kJyUzQiUwQWcyLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBbGV0JTIwZzMlMjAlM0QlMjBDb25pY0dyYWRpZW50KCdnLWNlbnRlciclMkMlMjBjeDMlMkMlMjBjeTMpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzdjM2FlZCcpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjI1JTJDJTIwQ29sb3IoJyUyM2VjNDg5OScpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjUlMkMlMjAlMjBDb2xvcignJTIzZjU5ZTBiJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNzUlMkMlMjBDb2xvcignJTIzMTBiOTgxJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzN2MzYWVkJykpJTNCJTBBJTdEJTNCJTBBZzMuaW5uZXJSYWRpdXMlMjAlM0QlMjAzNSUzQiUwQWczLmlubmVyRmlsbCUyMCUzRCUyMCdjZW50ZXInJTNCJTBBZzMuaW50ZXJwb2xhdGlvbiUyMCUzRCUyMCdva2xjaCclM0IlMEElMEFsZXQlMjBnNCUyMCUzRCUyMENvbmljR3JhZGllbnQoJ2ctY3VzdG9tJyUyQyUyMGN4NCUyQyUyMGN5NCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzN2MzYWVkJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMjUlMkMlMjBDb2xvcignJTIzZWM0ODk5JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMCUyMENvbG9yKCclMjNmNTllMGInKSklM0IlMEElMjAlMjBnLnN0b3AoMC43NSUyQyUyMENvbG9yKCclMjMxMGI5ODEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjM3YzNhZWQnKSklM0IlMEElN0QlM0IlMEFnNC5pbm5lclJhZGl1cyUyMCUzRCUyMDM1JTNCJTBBZzQuaW5uZXJGaWxsJTIwJTNEJTIwQ29sb3IoJyUyMzFhMWEyZScpJTNCJTBBZzQuaW50ZXJwb2xhdGlvbiUyMCUzRCUyMCdva2xjaCclM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMTExMTE4JTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDUyMCUyQyUyMDUzMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBDaXJjbGVzJTIwLS0tJTBBJTBBbGV0JTIwYzElMjAlM0QlMjBQYXRoTGF5ZXIoJ2MxJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwZzElM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBYzEuYXBwbHklMjAlN0IlMjBjaXJjbGUoY3gxJTJDJTIwY3kxJTJDJTIwciklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMGMyJTIwJTNEJTIwUGF0aExheWVyKCdjMicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGcyJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWMyLmFwcGx5JTIwJTdCJTIwY2lyY2xlKGN4MiUyQyUyMGN5MiUyQyUyMHIpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBjMyUyMCUzRCUyMFBhdGhMYXllcignYzMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBnMyUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFjMy5hcHBseSUyMCU3QiUyMGNpcmNsZShjeDMlMkMlMjBjeTMlMkMlMjByKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwYzQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2M0JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwZzQlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBYzQuYXBwbHklMjAlN0IlMjBjaXJjbGUoY3g0JTJDJTIwY3k0JTJDJTIwciklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNkZGQlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSUyMCUyMGZvbnQtd2VpZ2h0JTNBJTIwYm9sZCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoY3gxJTJDJTIwMjU4KSU2MHRyYW5zcGFyZW50JTYwJTBBJTIwJTIwdGV4dChjeDIlMkMlMjAyNTgpJTYwdHJhbnNwYXJlbnQtYmxlbmQlNjAlMEElMjAlMjB0ZXh0KGN4MyUyQyUyMDQ5MyklNjBjZW50ZXIlNjAlMEElMjAlMjB0ZXh0KGN4NCUyQyUyMDQ5MyklNjBDb2xvcignJTIzMWExYTJlJyklNjAlMEElN0QlMEElMEFsZXQlMjBkZXNjJTIwJTNEJTIwVGV4dExheWVyKCdkZXNjJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzNjY2JTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFkZXNjLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dChjeDElMkMlMjAyNzQpJTYwaGFyZCUyMGRvbnV0JTIwaG9sZSU2MCUwQSUyMCUyMHRleHQoY3gyJTJDJTIwMjc0KSU2MHNtb290aCUyMGZhZGUlMjBvdXQlNjAlMEElMjAlMjB0ZXh0KGN4MyUyQyUyMDUwOSklNjBmaXJzdCUyMHN0b3AlMjBmaWxscyUyMGNlbnRlciU2MCUwQSUyMCUyMHRleHQoY3g0JTJDJTIwNTA5KSU2MGN1c3RvbSUyMGRhcmslMjBjZW50ZXIlNjAlMEElN0QlMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE1JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2JiYiUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTIwJTIwZm9udC13ZWlnaHQlM0ElMjBib2xkJTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI2MCUyQyUyMDQwKSU2MGlubmVyRmlsbCUyME1vZGVzJTIwKGlubmVyUmFkaXVzJTIwJTNEJTIwMzUpJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjB0b3Bfcm93JTIwJTNEJTIwR3JvdXBMYXllcigndG9wLXJvdycpJTIwJTI0JTdCJTdEJTNCJTBBdG9wX3Jvdy5hcHBlbmQoYzElMkMlMjBjMiklMEElMEFsZXQlMjBib3R0b21fcm93JTIwJTNEJTIwR3JvdXBMYXllcignYm90dG9tLXJvdycpJTIwJTI0JTdCJTdEJTNCJTBBYm90dG9tX3Jvdy5hcHBlbmQoYzMlMkMlMjBjNCklMEElMEFsZXQlMjBzY2VuZSUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3NjZW5lJyklMjAlMjQlN0IlN0QlM0IlMEFzY2VuZS5hcHBlbmQoYmclMkMlMjB0b3Bfcm93JTJDJTIwYm90dG9tX3JvdyUyQyUyMGxhYmVscyUyQyUyMGRlc2MlMkMlMjB0aXRsZSklMEE=" code-open caption="Four innerFill modes: transparent, transparent-blend, center, and custom color">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 530&quot;</span>
-<span class="hljs-comment">// Inner Radius &amp; Fill Modes — 2×2 Grid</span>
-<span class="hljs-comment">// The 4 innerFill modes with the same base gradient</span>
+</code></pre><p><mini-workspace code-open caption="Four innerFill modes: transparent, transparent-blend, center, and custom color">
+  <code>// viewBox="0 0 520 530"
+// Inner Radius &amp; Fill Modes — 2×2 Grid
+// The 4 innerFill modes with the same base gradient
 
-<span class="hljs-comment">// --- Grid layout (wider spacing to avoid label overlap) ---</span>
+// --- Grid layout (wider spacing to avoid label overlap) ---
 
-<span class="hljs-keyword">let</span> cx1 = <span class="hljs-number">140</span>;
-<span class="hljs-keyword">let</span> cy1 = <span class="hljs-number">155</span>;
-<span class="hljs-keyword">let</span> cx2 = <span class="hljs-number">380</span>;
-<span class="hljs-keyword">let</span> cy2 = <span class="hljs-number">155</span>;
-<span class="hljs-keyword">let</span> cx3 = <span class="hljs-number">140</span>;
-<span class="hljs-keyword">let</span> cy3 = <span class="hljs-number">390</span>;
-<span class="hljs-keyword">let</span> cx4 = <span class="hljs-number">380</span>;
-<span class="hljs-keyword">let</span> cy4 = <span class="hljs-number">390</span>;
-<span class="hljs-keyword">let</span> r = <span class="hljs-number">80</span>;
+let cx1 = 140;
+let cy1 = 155;
+let cx2 = 380;
+let cy2 = 155;
+let cx3 = 140;
+let cy3 = 390;
+let cx4 = 380;
+let cy4 = 390;
+let r = 80;
 
-<span class="hljs-comment">// --- Gradient variants ---</span>
+// --- Gradient variants ---
 
-<span class="hljs-keyword">let</span> g1 = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;g-transparent&#x27;</span>, cx1, cy1) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ec4899&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#10b981&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
+let g1 = ConicGradient('g-transparent', cx1, cy1) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
 };
-g1.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
-g1.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent&#x27;</span>;
-g1.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+g1.innerRadius = 35;
+g1.innerFill = 'transparent';
+g1.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> g2 = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;g-trans-blend&#x27;</span>, cx2, cy2) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ec4899&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#10b981&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
+let g2 = ConicGradient('g-trans-blend', cx2, cy2) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
 };
-g2.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
-g2.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;
-g2.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+g2.innerRadius = 35;
+g2.innerFill = 'transparent-blend';
+g2.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> g3 = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;g-center&#x27;</span>, cx3, cy3) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ec4899&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#10b981&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
+let g3 = ConicGradient('g-center', cx3, cy3) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
 };
-g3.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
-g3.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
-g3.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+g3.innerRadius = 35;
+g3.innerFill = 'center';
+g3.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> g4 = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;g-custom&#x27;</span>, cx4, cy4) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ec4899&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#10b981&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
+let g4 = ConicGradient('g-custom', cx4, cy4) {|g|
+  g.stop(0,    Color('#7c3aed'));
+  g.stop(0.25, Color('#ec4899'));
+  g.stop(0.5,  Color('#f59e0b'));
+  g.stop(0.75, Color('#10b981'));
+  g.stop(1,    Color('#7c3aed'));
 };
-g4.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
-g4.<span class="hljs-property">innerFill</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a1a2e&#x27;</span>);
-g4.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+g4.innerRadius = 35;
+g4.innerFill = Color('#1a1a2e');
+g4.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">111118</span>; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">530</span>) }
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 520, 530) }
 
-<span class="hljs-comment">// --- Circles ---</span>
+// --- Circles ---
 
-<span class="hljs-keyword">let</span> c1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;c1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g1; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-c1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cx1, cy1, r); <span class="hljs-title function_">closePath</span>() }
+let c1 = PathLayer('c1') ${ fill: g1; stroke: #333; stroke-width: 1; };
+c1.apply { circle(cx1, cy1, r); closePath() }
 
-<span class="hljs-keyword">let</span> c2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;c2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g2; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-c2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cx2, cy2, r); <span class="hljs-title function_">closePath</span>() }
+let c2 = PathLayer('c2') ${ fill: g2; stroke: #333; stroke-width: 1; };
+c2.apply { circle(cx2, cy2, r); closePath() }
 
-<span class="hljs-keyword">let</span> c3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;c3&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g3; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-c3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cx3, cy3, r); <span class="hljs-title function_">closePath</span>() }
+let c3 = PathLayer('c3') ${ fill: g3; stroke: #333; stroke-width: 1; };
+c3.apply { circle(cx3, cy3, r); closePath() }
 
-<span class="hljs-keyword">let</span> c4 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;c4&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g4; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-c4.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(cx4, cy4, r); <span class="hljs-title function_">closePath</span>() }
+let c4 = PathLayer('c4') ${ fill: g4; stroke: #333; stroke-width: 1; };
+c4.apply { circle(cx4, cy4, r); closePath() }
 
-<span class="hljs-comment">// --- Labels ---</span>
+// --- Labels ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>;
-  <span class="hljs-attr">fill</span>: #ddd;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: #ddd;
+  text-anchor: middle;
+  font-weight: bold;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(cx1, <span class="hljs-number">258</span>)<span class="hljs-string">`transparent`</span>
-  <span class="hljs-title function_">text</span>(cx2, <span class="hljs-number">258</span>)<span class="hljs-string">`transparent-blend`</span>
-  <span class="hljs-title function_">text</span>(cx3, <span class="hljs-number">493</span>)<span class="hljs-string">`center`</span>
-  <span class="hljs-title function_">text</span>(cx4, <span class="hljs-number">493</span>)<span class="hljs-string">`Color(&#x27;#1a1a2e&#x27;)`</span>
+labels.apply {
+  text(cx1, 258)`transparent`
+  text(cx2, 258)`transparent-blend`
+  text(cx3, 493)`center`
+  text(cx4, 493)`Color('#1a1a2e')`
 }
 
-<span class="hljs-keyword">let</span> desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">666</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let desc = TextLayer('desc') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
 };
-desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(cx1, <span class="hljs-number">274</span>)<span class="hljs-string">`hard donut hole`</span>
-  <span class="hljs-title function_">text</span>(cx2, <span class="hljs-number">274</span>)<span class="hljs-string">`smooth fade out`</span>
-  <span class="hljs-title function_">text</span>(cx3, <span class="hljs-number">509</span>)<span class="hljs-string">`first stop fills center`</span>
-  <span class="hljs-title function_">text</span>(cx4, <span class="hljs-number">509</span>)<span class="hljs-string">`custom dark center`</span>
+desc.apply {
+  text(cx1, 274)`hard donut hole`
+  text(cx2, 274)`smooth fade out`
+  text(cx3, 509)`first stop fills center`
+  text(cx4, 509)`custom dark center`
 }
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">15</span>;
-  <span class="hljs-attr">fill</span>: #bbb;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 15;
+  fill: #bbb;
+  text-anchor: middle;
+  font-weight: bold;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">260</span>, <span class="hljs-number">40</span>)<span class="hljs-string">`innerFill Modes (innerRadius = 35)`</span>
+title.apply {
+  text(260, 40)`innerFill Modes (innerRadius = 35)`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> top_row = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;top-row&#x27;</span>) ${};
-top_row.<span class="hljs-title function_">append</span>(c1, c2)
+let top_row = GroupLayer('top-row') ${};
+top_row.append(c1, c2)
 
-<span class="hljs-keyword">let</span> bottom_row = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;bottom-row&#x27;</span>) ${};
-bottom_row.<span class="hljs-title function_">append</span>(c3, c4)
+let bottom_row = GroupLayer('bottom-row') ${};
+bottom_row.append(c3, c4)
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, top_row, bottom_row, labels, desc, title)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, top_row, bottom_row, labels, desc, title)
 </code>
   <img src="/pathogen/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
 </mini-workspace></p>
 <h2>OKLCH on Conics</h2>
 <p>OKLCH interpolation matters even more on conic gradients than on linear ones. A full-sweep color wheel interpolated in sRGB produces muddy bands wherever complementary colors meet. In OKLCH, the transitions trace a perceptually uniform arc through the hue wheel, maintaining chroma and lightness throughout.</p>
 <p>The comparison below renders the same color pairs as both sRGB and OKLCH conic gradients. The sRGB versions show visible desaturation at the midpoints. The OKLCH versions maintain vivid color throughout the full rotation.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjAwJTIwNTQwJTIyJTBBJTJGJTJGJTIwT0tMQ0glMjB2cyUyMHNSR0IlMjBJbnRlcnBvbGF0aW9uJTIwb24lMjBDb25pYyUyMEdyYWRpZW50cyUwQSUyRiUyRiUyMFBlcmNlcHR1YWwlMjBkaWZmZXJlbmNlJTNBJTIwbXVkZHklMjBzUkdCJTIwbWlkcG9pbnRzJTIwdnMlMjB2aWJyYW50JTIwT0tMQ0glMjB0cmFuc2l0aW9ucyUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhaXIlMjAxJTNBJTIwQmx1ZSUyMCVFMiU4NiU5NCUyMFllbGxvdyUyMC0tLSUwQSUwQWxldCUyMHNyZ2JfYnklMjAlM0QlMjBDb25pY0dyYWRpZW50KCdzcmdiLWJ5JyUyQyUyMDE2MCUyQyUyMDE2NSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzMjU2M2ViJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMENvbG9yKCclMjNlYWIzMDgnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9ieSUyMCUzRCUyMENvbmljR3JhZGllbnQoJ29rbGNoLWJ5JyUyQyUyMDQ0MCUyQyUyMDE2NSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzMjU2M2ViJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMENvbG9yKCclMjNlYWIzMDgnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElN0QlM0IlMEFva2xjaF9ieS5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhaXIlMjAyJTNBJTIwUmVkJTIwJUUyJTg2JTk0JTIwQ3lhbiUyMC0tLSUwQSUwQWxldCUyMHNyZ2JfcmMlMjAlM0QlMjBDb25pY0dyYWRpZW50KCdzcmdiLXJjJyUyQyUyMDE2MCUyQyUyMDQwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzZGMyNjI2JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMENvbG9yKCclMjMwNmI2ZDQnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjNkYzI2MjYnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9yYyUyMCUzRCUyMENvbmljR3JhZGllbnQoJ29rbGNoLXJjJyUyQyUyMDQ0MCUyQyUyMDQwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzZGMyNjI2JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMENvbG9yKCclMjMwNmI2ZDQnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjNkYzI2MjYnKSklM0IlMEElN0QlM0IlMEFva2xjaF9yYy5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMxMTExMTglM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNjAwJTJDJTIwNTQwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEdyYWRpZW50JTIwY2lyY2xlcyUyMC0tLSUwQSUwQWxldCUyMGJ5X3MlMjAlM0QlMjBQYXRoTGF5ZXIoJ2J5LXNyZ2InKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzcmdiX2J5JTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWJ5X3MuYXBwbHklMjAlN0IlMjBjaXJjbGUoMTYwJTJDJTIwMTY1JTJDJTIwODUpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBieV9vJTIwJTNEJTIwUGF0aExheWVyKCdieS1va2xjaCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG9rbGNoX2J5JTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWJ5X28uYXBwbHklMjAlN0IlMjBjaXJjbGUoNDQwJTJDJTIwMTY1JTJDJTIwODUpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjByY19zJTIwJTNEJTIwUGF0aExheWVyKCdyYy1zcmdiJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwc3JnYl9yYyUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFyY19zLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDE2MCUyQyUyMDQwMCUyQyUyMDg1KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwcmNfbyUyMCUzRCUyMFBhdGhMYXllcigncmMtb2tsY2gnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBva2xjaF9yYyUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFyY19vLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDQ0MCUyQyUyMDQwMCUyQyUyMDg1KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29sdW1uJTIwaGVhZGVycyUyMC0tLSUwQSUwQWxldCUyMGhlYWRlcnMlMjAlM0QlMjBUZXh0TGF5ZXIoJ2hlYWRlcnMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE2JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2NjYyUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTIwJTIwZm9udC13ZWlnaHQlM0ElMjBib2xkJTNCJTBBJTdEJTNCJTBBaGVhZGVycy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTYwJTJDJTIwNDApJTYwc1JHQiU2MCUwQSUyMCUyMHRleHQoNDQwJTJDJTIwNDApJTYwT0tMQ0glNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBSb3clMjBsYWJlbHMlMjAtLS0lMEElMEFsZXQlMjByb3dfbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdyb3ctbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzg4OCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBcm93X2xhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAwJTJDJTIwMTY1KSU2MEJsdWUlMjAlRTIlODYlOTQlMjBZZWxsb3clNjAlMEElMjAlMjB0ZXh0KDMwMCUyQyUyMDQwMCklNjBSZWQlMjAlRTIlODYlOTQlMjBDeWFuJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQW5ub3RhdGlvbnMlMjAtLS0lMEElMEFsZXQlMjBub3RlcyUyMCUzRCUyMFRleHRMYXllcignbm90ZXMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM1NTUlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQW5vdGVzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNjAlMkMlMjAyNzIpJTYwbXVkZHklMjBncmF5JTIwbWlkcG9pbnQlNjAlMEElMjAlMjB0ZXh0KDQ0MCUyQyUyMDI3MiklNjB2aWJyYW50JTIwZ3JlZW4lMkZ0ZWFsJTYwJTBBJTIwJTIwdGV4dCgxNjAlMkMlMjA1MDcpJTYwZGVzYXR1cmF0ZWQlMjBicm93biU2MCUwQSUyMCUyMHRleHQoNDQwJTJDJTIwNTA3KSU2MHJpY2glMjBtYWdlbnRhJTIwYXJjJTYwJTBBJTdEJTBBJTBBbGV0JTIwZm9vdGVyJTIwJTNEJTIwVGV4dExheWVyKCdmb290ZXInKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM0NDQlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQWZvb3Rlci5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAwJTJDJTIwNTMwKSU2MFNhbWUlMjBjb2xvciUyMHN0b3BzJTIwJUUyJTgwJTk0JTIwaW50ZXJwb2xhdGlvbiUyMG1vZGUlMjBjaGFuZ2VzJTIwZXZlcnl0aGluZyU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNjZW5lJTIwLS0tJTBBJTBBbGV0JTIwdG9wX3JvdyUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3RvcC1yb3cnKSUyMCUyNCU3QiU3RCUzQiUwQXRvcF9yb3cuYXBwZW5kKGJ5X3MlMkMlMjBieV9vKSUwQSUwQWxldCUyMGJvdHRvbV9yb3clMjAlM0QlMjBHcm91cExheWVyKCdib3R0b20tcm93JyklMjAlMjQlN0IlN0QlM0IlMEFib3R0b21fcm93LmFwcGVuZChyY19zJTJDJTIwcmNfbyklMEElMEFsZXQlMjBzY2VuZSUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3NjZW5lJyklMjAlMjQlN0IlN0QlM0IlMEFzY2VuZS5hcHBlbmQoYmclMkMlMjB0b3Bfcm93JTJDJTIwYm90dG9tX3JvdyUyQyUyMGhlYWRlcnMlMkMlMjByb3dfbGFiZWxzJTJDJTIwbm90ZXMlMkMlMjBmb290ZXIpJTBB" caption="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 600 540&quot;</span>
-<span class="hljs-comment">// OKLCH vs sRGB Interpolation on Conic Gradients</span>
-<span class="hljs-comment">// Perceptual difference: muddy sRGB midpoints vs vibrant OKLCH transitions</span>
+<p><mini-workspace caption="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs">
+  <code>// viewBox="0 0 600 540"
+// OKLCH vs sRGB Interpolation on Conic Gradients
+// Perceptual difference: muddy sRGB midpoints vs vibrant OKLCH transitions
 
-<span class="hljs-comment">// --- Pair 1: Blue ↔ Yellow ---</span>
+// --- Pair 1: Blue ↔ Yellow ---
 
-<span class="hljs-keyword">let</span> srgb_by = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;srgb-by&#x27;</span>, <span class="hljs-number">160</span>, <span class="hljs-number">165</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eab308&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
+let srgb_by = ConicGradient('srgb-by', 160, 165) {|g|
+  g.stop(0,   Color('#2563eb'));
+  g.stop(0.5, Color('#eab308'));
+  g.stop(1,   Color('#2563eb'));
 };
 
-<span class="hljs-keyword">let</span> oklch_by = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;oklch-by&#x27;</span>, <span class="hljs-number">440</span>, <span class="hljs-number">165</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eab308&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
+let oklch_by = ConicGradient('oklch-by', 440, 165) {|g|
+  g.stop(0,   Color('#2563eb'));
+  g.stop(0.5, Color('#eab308'));
+  g.stop(1,   Color('#2563eb'));
 };
-oklch_by.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+oklch_by.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Pair 2: Red ↔ Cyan ---</span>
+// --- Pair 2: Red ↔ Cyan ---
 
-<span class="hljs-keyword">let</span> srgb_rc = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;srgb-rc&#x27;</span>, <span class="hljs-number">160</span>, <span class="hljs-number">400</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#dc2626&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#06b6d4&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#dc2626&#x27;</span>));
+let srgb_rc = ConicGradient('srgb-rc', 160, 400) {|g|
+  g.stop(0,   Color('#dc2626'));
+  g.stop(0.5, Color('#06b6d4'));
+  g.stop(1,   Color('#dc2626'));
 };
 
-<span class="hljs-keyword">let</span> oklch_rc = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;oklch-rc&#x27;</span>, <span class="hljs-number">440</span>, <span class="hljs-number">400</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#dc2626&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#06b6d4&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#dc2626&#x27;</span>));
+let oklch_rc = ConicGradient('oklch-rc', 440, 400) {|g|
+  g.stop(0,   Color('#dc2626'));
+  g.stop(0.5, Color('#06b6d4'));
+  g.stop(1,   Color('#dc2626'));
 };
-oklch_rc.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+oklch_rc.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">111118</span>; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">600</span>, <span class="hljs-number">540</span>) }
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 600, 540) }
 
-<span class="hljs-comment">// --- Gradient circles ---</span>
+// --- Gradient circles ---
 
-<span class="hljs-keyword">let</span> by_s = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;by-srgb&#x27;</span>) ${ <span class="hljs-attr">fill</span>: srgb_by; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-by_s.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">160</span>, <span class="hljs-number">165</span>, <span class="hljs-number">85</span>); <span class="hljs-title function_">closePath</span>() }
+let by_s = PathLayer('by-srgb') ${ fill: srgb_by; stroke: #333; stroke-width: 1; };
+by_s.apply { circle(160, 165, 85); closePath() }
 
-<span class="hljs-keyword">let</span> by_o = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;by-oklch&#x27;</span>) ${ <span class="hljs-attr">fill</span>: oklch_by; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-by_o.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">440</span>, <span class="hljs-number">165</span>, <span class="hljs-number">85</span>); <span class="hljs-title function_">closePath</span>() }
+let by_o = PathLayer('by-oklch') ${ fill: oklch_by; stroke: #333; stroke-width: 1; };
+by_o.apply { circle(440, 165, 85); closePath() }
 
-<span class="hljs-keyword">let</span> rc_s = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;rc-srgb&#x27;</span>) ${ <span class="hljs-attr">fill</span>: srgb_rc; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-rc_s.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">160</span>, <span class="hljs-number">400</span>, <span class="hljs-number">85</span>); <span class="hljs-title function_">closePath</span>() }
+let rc_s = PathLayer('rc-srgb') ${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
+rc_s.apply { circle(160, 400, 85); closePath() }
 
-<span class="hljs-keyword">let</span> rc_o = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;rc-oklch&#x27;</span>) ${ <span class="hljs-attr">fill</span>: oklch_rc; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-rc_o.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">440</span>, <span class="hljs-number">400</span>, <span class="hljs-number">85</span>); <span class="hljs-title function_">closePath</span>() }
+let rc_o = PathLayer('rc-oklch') ${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
+rc_o.apply { circle(440, 400, 85); closePath() }
 
-<span class="hljs-comment">// --- Column headers ---</span>
+// --- Column headers ---
 
-<span class="hljs-keyword">let</span> headers = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;headers&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">16</span>;
-  <span class="hljs-attr">fill</span>: #ccc;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let headers = TextLayer('headers') ${
+  font-family: system-ui, sans-serif;
+  font-size: 16;
+  fill: #ccc;
+  text-anchor: middle;
+  font-weight: bold;
 };
-headers.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">160</span>, <span class="hljs-number">40</span>)<span class="hljs-string">`sRGB`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">440</span>, <span class="hljs-number">40</span>)<span class="hljs-string">`OKLCH`</span>
+headers.apply {
+  text(160, 40)`sRGB`
+  text(440, 40)`OKLCH`
 }
 
-<span class="hljs-comment">// --- Row labels ---</span>
+// --- Row labels ---
 
-<span class="hljs-keyword">let</span> row_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;row-labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let row_labels = TextLayer('row-labels') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: #888;
+  text-anchor: middle;
 };
-row_labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">300</span>, <span class="hljs-number">165</span>)<span class="hljs-string">`Blue ↔ Yellow`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">300</span>, <span class="hljs-number">400</span>)<span class="hljs-string">`Red ↔ Cyan`</span>
+row_labels.apply {
+  text(300, 165)`Blue ↔ Yellow`
+  text(300, 400)`Red ↔ Cyan`
 }
 
-<span class="hljs-comment">// --- Annotations ---</span>
+// --- Annotations ---
 
-<span class="hljs-keyword">let</span> notes = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;notes&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">555</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let notes = TextLayer('notes') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #555;
+  text-anchor: middle;
 };
-notes.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">160</span>, <span class="hljs-number">272</span>)<span class="hljs-string">`muddy gray midpoint`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">440</span>, <span class="hljs-number">272</span>)<span class="hljs-string">`vibrant green/teal`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">160</span>, <span class="hljs-number">507</span>)<span class="hljs-string">`desaturated brown`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">440</span>, <span class="hljs-number">507</span>)<span class="hljs-string">`rich magenta arc`</span>
+notes.apply {
+  text(160, 272)`muddy gray midpoint`
+  text(440, 272)`vibrant green/teal`
+  text(160, 507)`desaturated brown`
+  text(440, 507)`rich magenta arc`
 }
 
-<span class="hljs-keyword">let</span> footer = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;footer&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">444</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let footer = TextLayer('footer') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #444;
+  text-anchor: middle;
 };
-footer.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">300</span>, <span class="hljs-number">530</span>)<span class="hljs-string">`Same color stops — interpolation mode changes everything`</span>
+footer.apply {
+  text(300, 530)`Same color stops — interpolation mode changes everything`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> top_row = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;top-row&#x27;</span>) ${};
-top_row.<span class="hljs-title function_">append</span>(by_s, by_o)
+let top_row = GroupLayer('top-row') ${};
+top_row.append(by_s, by_o)
 
-<span class="hljs-keyword">let</span> bottom_row = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;bottom-row&#x27;</span>) ${};
-bottom_row.<span class="hljs-title function_">append</span>(rc_s, rc_o)
+let bottom_row = GroupLayer('bottom-row') ${};
+bottom_row.append(rc_s, rc_o)
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, top_row, bottom_row, headers, row_labels, notes, footer)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)
 </code>
   <img src="/pathogen/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
 </mini-workspace></p>

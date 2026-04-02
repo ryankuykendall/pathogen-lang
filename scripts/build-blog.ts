@@ -101,6 +101,10 @@ interface BlogEntry {
   description: string;
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 /**
  * Process <mini-workspace src="..."> tags in HTML.
  * Reads the .pathogen source + .svg file, generates progressive-enhancement HTML.
@@ -143,19 +147,9 @@ async function processMiniWorkspaceTags(html: string, blogDir: string): Promise<
       // No SVG file available
     }
 
-    // Base64-encode source for code-data attribute
-    const codeData = Buffer.from(encodeURIComponent(sourceCode)).toString('base64');
-
-    // Syntax-highlight source for static fallback
-    let highlightedCode: string;
-    if (hljs.getLanguage('pathogen')) {
-      highlightedCode = hljs.highlight(sourceCode, { language: 'pathogen', ignoreIllegals: true }).value;
-    } else {
-      highlightedCode = hljs.highlightAuto(sourceCode).value;
-    }
-
-    // Build replacement HTML
-    const attrs = [`code-data="${codeData}"`, hasCodeOpen ? 'code-open' : '', caption ? `caption="${caption}"` : '']
+    // Build replacement HTML — raw source in <code> (HTML-escaped), no base64 or pre-highlighting.
+    // The web component extracts source via textContent; CodeMirror highlights at runtime.
+    const attrs = [hasCodeOpen ? 'code-open' : '', caption ? `caption="${caption}"` : '']
       .filter(Boolean)
       .join(' ');
 
@@ -164,7 +158,7 @@ async function processMiniWorkspaceTags(html: string, blogDir: string): Promise<
       : '';
 
     const replacement = `<mini-workspace ${attrs}>
-  <code class="hljs language-pathogen">${highlightedCode}</code>${svgFallback}
+  <code>${escapeHtml(sourceCode)}</code>${svgFallback}
 </mini-workspace>`;
 
     replacements.push({ match: fullMatch, replacement });

@@ -316,320 +316,320 @@ code.hljs {
 </code></pre><h3>XOR</h3>
 <p><a href="/pathogen/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
-</code></pre><p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTgwJTIwNDgwJTIyJTBBJTJGJTJGJTIwQm9vbGVhbiUyMG9wZXJhdGlvbnMlMjAlRTIlODAlOTQlMjB1bmlvbiUyQyUyMGRpZmZlcmVuY2UlMkMlMjBpbnRlcnNlY3Rpb24lMkMlMjB4b3IlMEElMkYlMkYlMjBFYWNoJTIwcXVhZHJhbnQlMjB1c2VzJTIwYSUyMEdyb3VwTGF5ZXIlMjB3aXRoJTIwdHJhbnNsYXRlJTIwdG8lMjBhdm9pZCUyMGNvbXBvdW5kaW5nJTIwcHJvamVjdGlvbnMlMEElMEFsZXQlMjBzcSUyMCUzRCUyMCU0MCU3QiUyMGglMjA1MCUyMHYlMjA1MCUyMGglMjAtNTAlMjB6JTIwJTdEJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1ODAlMkMlMjA0ODApJTIwJTdEJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwVW5pb24lMjAodG9wLWxlZnQlMjBxdWFkcmFudCklMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjB1X29yaWclMjAlM0QlMjBQYXRoTGF5ZXIoJ3Utb3JpZycpJTIwJTI0JTdCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzk0YTNiODQwJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTIwJTIwc3Ryb2tlLWRhc2hhcnJheSUzQSUyMCUyMjQlMjAzJTIyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEF1X29yaWcuYXBwbHklMjAlN0IlMEElMjAlMjBzcS5kcmF3VG8oMCUyQyUyMDApJTBBJTIwJTIwc3EuZHJhd1RvKDI1JTJDJTIwMjUpJTBBJTdEJTBBJTBBbGV0JTIwdV9yZXN1bHQlMjAlM0QlMjBQYXRoTGF5ZXIoJ3UtcmVzdWx0JyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjMzYjgyZjYxOCcpJTNCJTBBJTdEJTNCJTBBdV9yZXN1bHQuYXBwbHklMjAlN0IlMEElMjAlMjBsZXQlMjB1JTIwJTNEJTIwc3EucHJvamVjdCgwJTJDJTIwMCkudW5pb24oc3EucHJvamVjdCgyNSUyQyUyMDI1KSklM0IlMEElMjAlMjB1LmRyYXdUbygwJTJDJTIwMCklMEElN0QlMEElMEFsZXQlMjB1X2FiJTIwJTNEJTIwVGV4dExheWVyKCd1LWFiJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM5NGEzYjgnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBdV9hYi5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTIlMkMlMjAxNSklNjBBJTYwJTBBJTIwJTIwdGV4dCg2MiUyQyUyMDYwKSU2MEIlNjAlMEElN0QlMEElMEFsZXQlMjB1X29wJTIwJTNEJTIwVGV4dExheWVyKCd1LW9wJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlMmU4ZjAnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEF1X29wLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxMTAlMkMlMjAzNSklNjAudW5pb24oQiklNjAlMEElMjAlMjB0ZXh0KDExMCUyQyUyMDUwKSU2MEElMjAlRTIlODglQUElMjBCJTYwJTBBJTdEJTBBJTBBbGV0JTIwdV9kZXNjJTIwJTNEJTIwVGV4dExheWVyKCd1LWRlc2MnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXVfZGVzYy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTEwJTJDJTIwNjgpJTYwQ29tYmluZWQlMjBvdXRsaW5lJTYwJTBBJTdEJTBBJTBBbGV0JTIwZ191bmlvbiUyMCUzRCUyMEdyb3VwTGF5ZXIoJ2ctdW5pb24nKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwNTAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDgwJTNCJTIwJTdEJTNCJTBBZ191bmlvbi5hcHBlbmQodV9vcmlnJTJDJTIwdV9yZXN1bHQlMkMlMjB1X2FiJTJDJTIwdV9vcCUyQyUyMHVfZGVzYyklM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBEaWZmZXJlbmNlJTIwKHRvcC1yaWdodCUyMHF1YWRyYW50KSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMGRfb3JpZyUyMCUzRCUyMFBhdGhMYXllcignZC1vcmlnJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOTRhM2I4NDAnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNCUyMDMlMjIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQWRfb3JpZy5hcHBseSUyMCU3QiUwQSUyMCUyMHNxLmRyYXdUbygwJTJDJTIwMCklMEElMjAlMjBzcS5kcmF3VG8oMjUlMkMlMjAyNSklMEElN0QlMEElMEFsZXQlMjBkX3Jlc3VsdCUyMCUzRCUyMFBhdGhMYXllcignZC1yZXN1bHQnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNjE4JyklM0IlMEElN0QlM0IlMEFkX3Jlc3VsdC5hcHBseSUyMCU3QiUwQSUyMCUyMGxldCUyMGQlMjAlM0QlMjBzcS5wcm9qZWN0KDAlMkMlMjAwKS5kaWZmZXJlbmNlKHNxLnByb2plY3QoMjUlMkMlMjAyNSkpJTNCJTBBJTIwJTIwZC5kcmF3VG8oMCUyQyUyMDApJTBBJTdEJTBBJTBBbGV0JTIwZF9hYiUyMCUzRCUyMFRleHRMYXllcignZC1hYicpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQWRfYWIuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDEyJTJDJTIwMTUpJTYwQSU2MCUwQSUyMCUyMHRleHQoNjIlMkMlMjA2MCklNjBCJTYwJTBBJTdEJTBBJTBBbGV0JTIwZF9vcCUyMCUzRCUyMFRleHRMYXllcignZC1vcCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBZF9vcC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTEwJTJDJTIwMzUpJTYwLmRpZmZlcmVuY2UoQiklNjAlMEElMjAlMjB0ZXh0KDExMCUyQyUyMDUwKSU2MEElMjAlNUMlMjBCJTYwJTBBJTdEJTBBJTBBbGV0JTIwZF9kZXNjJTIwJTNEJTIwVGV4dExheWVyKCdkLWRlc2MnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWRfZGVzYy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTEwJTJDJTIwNjgpJTYwQSUyMG1pbnVzJTIwb3ZlcmxhcCU2MCUwQSU3RCUwQSUwQWxldCUyMGdfZGlmZiUyMCUzRCUyMEdyb3VwTGF5ZXIoJ2ctZGlmZicpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAzMjAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDgwJTNCJTIwJTdEJTNCJTBBZ19kaWZmLmFwcGVuZChkX29yaWclMkMlMjBkX3Jlc3VsdCUyQyUyMGRfYWIlMkMlMjBkX29wJTJDJTIwZF9kZXNjKSUzQiUwQSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUyRiUyRiUyMEludGVyc2VjdGlvbiUyMChib3R0b20tbGVmdCUyMHF1YWRyYW50KSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMGlfb3JpZyUyMCUzRCUyMFBhdGhMYXllcignaS1vcmlnJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOTRhM2I4NDAnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNCUyMDMlMjIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQWlfb3JpZy5hcHBseSUyMCU3QiUwQSUyMCUyMHNxLmRyYXdUbygwJTJDJTIwMCklMEElMjAlMjBzcS5kcmF3VG8oMjUlMkMlMjAyNSklMEElN0QlMEElMEFsZXQlMjBpX3Jlc3VsdCUyMCUzRCUyMFBhdGhMYXllcignaS1yZXN1bHQnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNjE4JyklM0IlMEElN0QlM0IlMEFpX3Jlc3VsdC5hcHBseSUyMCU3QiUwQSUyMCUyMGxldCUyMGl4JTIwJTNEJTIwc3EucHJvamVjdCgwJTJDJTIwMCkuaW50ZXJzZWN0aW9uKHNxLnByb2plY3QoMjUlMkMlMjAyNSkpJTNCJTBBJTIwJTIwaXguZHJhd1RvKDAlMkMlMjAwKSUwQSU3RCUwQSUwQWxldCUyMGlfYWIlMjAlM0QlMjBUZXh0TGF5ZXIoJ2ktYWInKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFpX2FiLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxMiUyQyUyMDE1KSU2MEElNjAlMEElMjAlMjB0ZXh0KDYyJTJDJTIwNjApJTYwQiU2MCUwQSU3RCUwQSUwQWxldCUyMGlfb3AlMjAlM0QlMjBUZXh0TGF5ZXIoJ2ktb3AnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWlfb3AuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDExMCUyQyUyMDM1KSU2MC5pbnRlcnNlY3Rpb24oQiklNjAlMEElMjAlMjB0ZXh0KDExMCUyQyUyMDUwKSU2MEElMjAlRTIlODglQTklMjBCJTYwJTBBJTdEJTBBJTBBbGV0JTIwaV9kZXNjJTIwJTNEJTIwVGV4dExheWVyKCdpLWRlc2MnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWlfZGVzYy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTEwJTJDJTIwNjgpJTYwT25seSUyMG92ZXJsYXAlNjAlMEElN0QlMEElMEFsZXQlMjBnX2ludCUyMCUzRCUyMEdyb3VwTGF5ZXIoJ2ctaW50JyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDUwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAyOTAlM0IlMjAlN0QlM0IlMEFnX2ludC5hcHBlbmQoaV9vcmlnJTJDJTIwaV9yZXN1bHQlMkMlMjBpX2FiJTJDJTIwaV9vcCUyQyUyMGlfZGVzYyklM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBYT1IlMjAoYm90dG9tLXJpZ2h0JTIwcXVhZHJhbnQpJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIweF9vcmlnJTIwJTNEJTIwUGF0aExheWVyKCd4LW9yaWcnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjM5NGEzYjg0MCcpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjAlMjI0JTIwMyUyMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBeF9vcmlnLmFwcGx5JTIwJTdCJTBBJTIwJTIwc3EuZHJhd1RvKDAlMkMlMjAwKSUwQSUyMCUyMHNxLmRyYXdUbygyNSUyQyUyMDI1KSUwQSU3RCUwQSUwQWxldCUyMHhfcmVzdWx0JTIwJTNEJTIwUGF0aExheWVyKCd4LXJlc3VsdCcpJTIwJTI0JTdCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzNiODJmNicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzM2I4MmY2MTgnKSUzQiUwQSU3RCUzQiUwQXhfcmVzdWx0LmFwcGx5JTIwJTdCJTBBJTIwJTIwbGV0JTIweHIlMjAlM0QlMjBzcS5wcm9qZWN0KDAlMkMlMjAwKS54b3Ioc3EucHJvamVjdCgyNSUyQyUyMDI1KSklM0IlMEElMjAlMjB4ci5kcmF3VG8oMCUyQyUyMDApJTBBJTdEJTBBJTBBbGV0JTIweF9hYiUyMCUzRCUyMFRleHRMYXllcigneC1hYicpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQXhfYWIuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDEyJTJDJTIwMTUpJTYwQSU2MCUwQSUyMCUyMHRleHQoNjIlMkMlMjA2MCklNjBCJTYwJTBBJTdEJTBBJTBBbGV0JTIweF9vcCUyMCUzRCUyMFRleHRMYXllcigneC1vcCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBeF9vcC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMTEwJTJDJTIwMzUpJTYwLnhvcihCKSU2MCUwQSUyMCUyMHRleHQoMTEwJTJDJTIwNTApJTYwQSUyMCVFMiU5NiVCMyUyMEIlNjAlMEElN0QlMEElMEFsZXQlMjB4X2Rlc2MlMjAlM0QlMjBUZXh0TGF5ZXIoJ3gtZGVzYycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBeF9kZXNjLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxMTAlMkMlMjA2OCklNjBFdmVyeXRoaW5nJTIwZXhjZXB0JTIwb3ZlcmxhcCU2MCUwQSU3RCUwQSUwQWxldCUyMGdfeG9yJTIwJTNEJTIwR3JvdXBMYXllcignZy14b3InKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMzIwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAyOTAlM0IlMjAlN0QlM0IlMEFnX3hvci5hcHBlbmQoeF9vcmlnJTJDJTIweF9yZXN1bHQlMkMlMjB4X2FiJTJDJTIweF9vcCUyQyUyMHhfZGVzYyklM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBDaHJvbWUlM0ElMjBkaXZpZGVycyUyQyUyMGNvZGUlMkMlMjB0aXRsZSUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQSUyRiUyRiUyMC0tLSUyMERpdmlkZXJzJTIwLS0tJTBBJTBBbGV0JTIwZGl2aWRlcnMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RpdmlkZXJzJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMzM0MTU1JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTIwJTIwc3Ryb2tlLWRhc2hhcnJheSUzQSUyMCUyMjYlMjA0JTIyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEFkaXZpZGVycy5hcHBseSUyMCU3QiUwQSUyMCUyME0lMjAyOTAlMjA1MCUyMHYlMjAzOTAlMEElMjAlMjBNJTIwMjAlMjAyNTUlMjBoJTIwNTQ1JTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29kZSUyMC0tLSUwQSUwQWxldCUyMGNvZGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBY29kZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjA0NDApJTYwbGV0JTIwYSUyMCUzRCUyMHNxLnByb2plY3QoMCUyQyUyMDApJTNCJTYwJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDQ1NCklNjBsZXQlMjByZXN1bHQlMjAlM0QlMjBhLnVuaW9uKHNxLnByb2plY3QoMjUlMkMlMjAyNSkpJTNCJTYwJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDQ2OCklNjByZXN1bHQuZHJhd1RvKDAlMkMlMjAwKSU2MCUwQSU3RCUwQSUwQWxldCUyMGt3JTIwJTNEJTIwVGV4dExheWVyKCdrdycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNjMDg0ZmMnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFrdy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjA0NDApJTYwbGV0JTYwJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDQ1NCklNjBsZXQlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUaXRsZSUyMC0tLSUwQSUwQWxldCUyMHRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTQlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDMwKSU2MEJvb2xlYW4lMjBPcGVyYXRpb25zJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDYpJTYwRm91ciUyMHNldCUyMG9wZXJhdGlvbnMlMjBvbiUyMG92ZXJsYXBwaW5nJTIwNTAlQzMlOTc1MCUyMHNxdWFyZXMlNjAlMEElN0QlMEE=" code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 580 480&quot;</span>
-<span class="hljs-comment">// Boolean operations — union, difference, intersection, xor</span>
-<span class="hljs-comment">// Each quadrant uses a GroupLayer with translate to avoid compounding projections</span>
+</code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
+  <code>// viewBox="0 0 580 480"
+// Boolean operations — union, difference, intersection, xor
+// Each quadrant uses a GroupLayer with translate to avoid compounding projections
 
-<span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
+let sq = @{ h 50 v 50 h -50 z };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">580</span>, <span class="hljs-number">480</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 580, 480) }
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Union (top-left quadrant)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Union (top-left quadrant)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> u_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;u-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b840&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let u_orig = PathLayer('u-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-u_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+u_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> u_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;u-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+let u_result = PathLayer('u-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
 };
-u_result.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> u = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-  u.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+u_result.apply {
+  let u = sq.project(0, 0).union(sq.project(25, 25));
+  u.drawTo(0, 0)
 }
 
-<span class="hljs-keyword">let</span> u_ab = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;u-ab&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let u_ab = TextLayer('u-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
 };
-u_ab.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">12</span>, <span class="hljs-number">15</span>)<span class="hljs-string">`A`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">62</span>, <span class="hljs-number">60</span>)<span class="hljs-string">`B`</span>
+u_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
 }
 
-<span class="hljs-keyword">let</span> u_op = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;u-op&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let u_op = TextLayer('u-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-u_op.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">35</span>)<span class="hljs-string">`.union(B)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">50</span>)<span class="hljs-string">`A ∪ B`</span>
+u_op.apply {
+  text(110, 35)`.union(B)`
+  text(110, 50)`A ∪ B`
 }
 
-<span class="hljs-keyword">let</span> u_desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;u-desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let u_desc = TextLayer('u-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-u_desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">68</span>)<span class="hljs-string">`Combined outline`</span>
+u_desc.apply {
+  text(110, 68)`Combined outline`
 }
 
-<span class="hljs-keyword">let</span> g_union = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-union&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">50</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">80</span>; };
-g_union.<span class="hljs-title function_">append</span>(u_orig, u_result, u_ab, u_op, u_desc);
+let g_union = GroupLayer('g-union') ${ translate-x: 50; translate-y: 80; };
+g_union.append(u_orig, u_result, u_ab, u_op, u_desc);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Difference (top-right quadrant)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Difference (top-right quadrant)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> d_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;d-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b840&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let d_orig = PathLayer('d-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-d_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+d_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> d_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;d-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+let d_result = PathLayer('d-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
 };
-d_result.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> d = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-  d.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+d_result.apply {
+  let d = sq.project(0, 0).difference(sq.project(25, 25));
+  d.drawTo(0, 0)
 }
 
-<span class="hljs-keyword">let</span> d_ab = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;d-ab&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let d_ab = TextLayer('d-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
 };
-d_ab.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">12</span>, <span class="hljs-number">15</span>)<span class="hljs-string">`A`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">62</span>, <span class="hljs-number">60</span>)<span class="hljs-string">`B`</span>
+d_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
 }
 
-<span class="hljs-keyword">let</span> d_op = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;d-op&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let d_op = TextLayer('d-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-d_op.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">35</span>)<span class="hljs-string">`.difference(B)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">50</span>)<span class="hljs-string">`A \ B`</span>
+d_op.apply {
+  text(110, 35)`.difference(B)`
+  text(110, 50)`A \ B`
 }
 
-<span class="hljs-keyword">let</span> d_desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;d-desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let d_desc = TextLayer('d-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-d_desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">68</span>)<span class="hljs-string">`A minus overlap`</span>
+d_desc.apply {
+  text(110, 68)`A minus overlap`
 }
 
-<span class="hljs-keyword">let</span> g_diff = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-diff&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">320</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">80</span>; };
-g_diff.<span class="hljs-title function_">append</span>(d_orig, d_result, d_ab, d_op, d_desc);
+let g_diff = GroupLayer('g-diff') ${ translate-x: 320; translate-y: 80; };
+g_diff.append(d_orig, d_result, d_ab, d_op, d_desc);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Intersection (bottom-left quadrant)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Intersection (bottom-left quadrant)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> i_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;i-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b840&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let i_orig = PathLayer('i-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-i_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+i_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> i_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;i-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+let i_result = PathLayer('i-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
 };
-i_result.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> ix = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">intersection</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-  ix.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+i_result.apply {
+  let ix = sq.project(0, 0).intersection(sq.project(25, 25));
+  ix.drawTo(0, 0)
 }
 
-<span class="hljs-keyword">let</span> i_ab = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;i-ab&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let i_ab = TextLayer('i-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
 };
-i_ab.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">12</span>, <span class="hljs-number">15</span>)<span class="hljs-string">`A`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">62</span>, <span class="hljs-number">60</span>)<span class="hljs-string">`B`</span>
+i_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
 }
 
-<span class="hljs-keyword">let</span> i_op = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;i-op&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let i_op = TextLayer('i-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-i_op.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">35</span>)<span class="hljs-string">`.intersection(B)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">50</span>)<span class="hljs-string">`A ∩ B`</span>
+i_op.apply {
+  text(110, 35)`.intersection(B)`
+  text(110, 50)`A ∩ B`
 }
 
-<span class="hljs-keyword">let</span> i_desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;i-desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let i_desc = TextLayer('i-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-i_desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">68</span>)<span class="hljs-string">`Only overlap`</span>
+i_desc.apply {
+  text(110, 68)`Only overlap`
 }
 
-<span class="hljs-keyword">let</span> g_int = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-int&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">50</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">290</span>; };
-g_int.<span class="hljs-title function_">append</span>(i_orig, i_result, i_ab, i_op, i_desc);
+let g_int = GroupLayer('g-int') ${ translate-x: 50; translate-y: 290; };
+g_int.append(i_orig, i_result, i_ab, i_op, i_desc);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// XOR (bottom-right quadrant)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// XOR (bottom-right quadrant)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> x_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;x-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b840&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let x_orig = PathLayer('x-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-x_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+x_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> x_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;x-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+let x_result = PathLayer('x-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
 };
-x_result.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> xr = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">xor</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-  xr.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+x_result.apply {
+  let xr = sq.project(0, 0).xor(sq.project(25, 25));
+  xr.drawTo(0, 0)
 }
 
-<span class="hljs-keyword">let</span> x_ab = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;x-ab&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let x_ab = TextLayer('x-ab') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
 };
-x_ab.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">12</span>, <span class="hljs-number">15</span>)<span class="hljs-string">`A`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">62</span>, <span class="hljs-number">60</span>)<span class="hljs-string">`B`</span>
+x_ab.apply {
+  text(12, 15)`A`
+  text(62, 60)`B`
 }
 
-<span class="hljs-keyword">let</span> x_op = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;x-op&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let x_op = TextLayer('x-op') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-x_op.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">35</span>)<span class="hljs-string">`.xor(B)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">50</span>)<span class="hljs-string">`A △ B`</span>
+x_op.apply {
+  text(110, 35)`.xor(B)`
+  text(110, 50)`A △ B`
 }
 
-<span class="hljs-keyword">let</span> x_desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;x-desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let x_desc = TextLayer('x-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-x_desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">110</span>, <span class="hljs-number">68</span>)<span class="hljs-string">`Everything except overlap`</span>
+x_desc.apply {
+  text(110, 68)`Everything except overlap`
 }
 
-<span class="hljs-keyword">let</span> g_xor = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-xor&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">320</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">290</span>; };
-g_xor.<span class="hljs-title function_">append</span>(x_orig, x_result, x_ab, x_op, x_desc);
+let g_xor = GroupLayer('g-xor') ${ translate-x: 320; translate-y: 290; };
+g_xor.append(x_orig, x_result, x_ab, x_op, x_desc);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Chrome: dividers, code, title</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Chrome: dividers, code, title
+// ═══════════════════════════════════════
 
-<span class="hljs-comment">// --- Dividers ---</span>
+// --- Dividers ---
 
-<span class="hljs-keyword">let</span> dividers = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dividers&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#334155&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;6 4&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let dividers = PathLayer('dividers') ${
+  stroke: Color('#334155');
+  stroke-width: 1;
+  stroke-dasharray: "6 4";
+  fill: none;
 };
-dividers.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">290</span> <span class="hljs-number">50</span> v <span class="hljs-number">390</span>
-  M <span class="hljs-number">20</span> <span class="hljs-number">255</span> h <span class="hljs-number">545</span>
+dividers.apply {
+  M 290 50 v 390
+  M 20 255 h 545
 }
 
-<span class="hljs-comment">// --- Code ---</span>
+// --- Code ---
 
-<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-code.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">440</span>)<span class="hljs-string">`let a = sq.project(0, 0);`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">454</span>)<span class="hljs-string">`let result = a.union(sq.project(25, 25));`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">468</span>)<span class="hljs-string">`result.drawTo(0, 0)`</span>
+code.apply {
+  text(30, 440)`let a = sq.project(0, 0);`
+  text(30, 454)`let result = a.union(sq.project(25, 25));`
+  text(30, 468)`result.drawTo(0, 0)`
 }
 
-<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
 };
-kw.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">440</span>)<span class="hljs-string">`let`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">454</span>)<span class="hljs-string">`let`</span>
+kw.apply {
+  text(30, 440)`let`
+  text(30, 454)`let`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`Boolean Operations`</span>
+title.apply {
+  text(30, 30)`Boolean Operations`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">`Four set operations on overlapping 50×50 squares`</span>
+subtitle.apply {
+  text(30, 46)`Four set operations on overlapping 50×50 squares`
 }
 </code>
   <img src="/pathogen/blog/samples/post9/boolean-basics.svg" alt="Four boolean operations on overlapping squares — union, difference, intersection, xor" loading="lazy">
@@ -694,228 +694,228 @@ result.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number
 rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>)
 </code></pre><p>This creates a union of two overlapping squares, then rounds all the corners with a 5px fillet. The composability is the whole point — each operation produces a value that feeds into the next.</p>
 <p>The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a PathBlock that feeds into the next.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMjgwJTIyJTBBJTJGJTJGJTIwQm9vbGVhbiUyMCUyQiUyMGZpbGxldCUyMGNoYWluaW5nJTIwJUUyJTgwJTk0JTIwY29tcG9zZSUyMG9wZXJhdGlvbnMlMEElMkYlMkYlMjBFYWNoJTIwc3RlcCUyMHVzZXMlMjBhJTIwR3JvdXBMYXllciUyMHdpdGglMjB0cmFuc2xhdGUlMjB0byUyMGF2b2lkJTIwY29tcG91bmRpbmclMjBwcm9qZWN0aW9ucyUwQSUwQWxldCUyMHNxJTIwJTNEJTIwJTQwJTdCJTIwaCUyMDYwJTIwdiUyMDYwJTIwaCUyMC02MCUyMHolMjAlN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzBmMTcyYScpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDUyMCUyQyUyMDI4MCklMjAlN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBTdGVwJTIwMSUzQSUyMFR3byUyMG92ZXJsYXBwaW5nJTIwc3F1YXJlcyUyMChpbnB1dCklMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMEFsZXQlMjBzMV9vcmlnJTIwJTNEJTIwUGF0aExheWVyKCdzMS1vcmlnJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOTRhM2I4NDAnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNCUyMDMlMjIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQXMxX29yaWcuYXBwbHklMjAlN0IlMEElMjAlMjBzcS5kcmF3VG8oMCUyQyUyMDApJTBBJTIwJTIwc3EuZHJhd1RvKDI1JTJDJTIwMjUpJTBBJTdEJTBBJTBBbGV0JTIwczFfbGFiZWwlMjAlM0QlMjBUZXh0TGF5ZXIoJ3MxLWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlMmU4ZjAnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBczFfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMTE1KSU2ME92ZXJsYXBwaW5nJTIwc3F1YXJlcyU2MCUwQSU3RCUwQSUwQWxldCUyMHMxX251bSUyMCUzRCUyMFRleHRMYXllcignczEtbnVtJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFzMV9udW0uYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMTMwKSU2MHN0ZXAlMjAxJTNBJTIwaW5wdXQlNjAlMEElN0QlMEElMEFsZXQlMjBnX3N0ZXAxJTIwJTNEJTIwR3JvdXBMYXllcignZy1zdGVwMScpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAzMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwNjAlM0IlMjAlN0QlM0IlMEFnX3N0ZXAxLmFwcGVuZChzMV9vcmlnJTJDJTIwczFfbGFiZWwlMkMlMjBzMV9udW0pJTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwU3RlcCUyMDIlM0ElMjBVbmlvbiUyMHJlc3VsdCUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMHMyX29yaWclMjAlM0QlMjBQYXRoTGF5ZXIoJ3MyLW9yaWcnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjM5NGEzYjgzMCcpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjAlMjI0JTIwMyUyMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBczJfb3JpZy5hcHBseSUyMCU3QiUwQSUyMCUyMHNxLmRyYXdUbygwJTJDJTIwMCklMEElMjAlMjBzcS5kcmF3VG8oMjUlMkMlMjAyNSklMEElN0QlMEElMEFsZXQlMjBzMl9yZXN1bHQlMjAlM0QlMjBQYXRoTGF5ZXIoJ3MyLXJlc3VsdCcpJTIwJTI0JTdCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzNiODJmNicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzM2I4MmY2MTUnKSUzQiUwQSU3RCUzQiUwQXMyX3Jlc3VsdC5hcHBseSUyMCU3QiUwQSUyMCUyMGxldCUyMHUlMjAlM0QlMjBzcS5wcm9qZWN0KDAlMkMlMjAwKS51bmlvbihzcS5wcm9qZWN0KDI1JTJDJTIwMjUpKSUzQiUwQSUyMCUyMHUuZHJhd1RvKDAlMkMlMjAwKSUwQSU3RCUwQSUwQWxldCUyMHMyX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdzMi1sYWJlbCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQXMyX2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDExNSklNjAudW5pb24oKSU2MCUwQSU3RCUwQSUwQWxldCUyMHMyX251bSUyMCUzRCUyMFRleHRMYXllcignczItbnVtJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFzMl9udW0uYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMTMwKSU2MHN0ZXAlMjAyJTNBJTIwY29tYmluZSU2MCUwQSU3RCUwQSUwQWxldCUyMGdfc3RlcDIlMjAlM0QlMjBHcm91cExheWVyKCdnLXN0ZXAyJyklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDE5NSUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwNjAlM0IlMjAlN0QlM0IlMEFnX3N0ZXAyLmFwcGVuZChzMl9vcmlnJTJDJTIwczJfcmVzdWx0JTJDJTIwczJfbGFiZWwlMkMlMjBzMl9udW0pJTNCJTBBJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTJGJTJGJTIwU3RlcCUyMDMlM0ElMjBVbmlvbiUyMCUyQiUyMGZpbGxldCUwQSUyRiUyRiUyMCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCVFMiU5NSU5MCUwQSUwQWxldCUyMHMzX29yaWclMjAlM0QlMjBQYXRoTGF5ZXIoJ3MzLW9yaWcnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjM5NGEzYjgzMCcpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjAlMjI0JTIwMyUyMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBczNfb3JpZy5hcHBseSUyMCU3QiUwQSUyMCUyMHNxLmRyYXdUbygwJTJDJTIwMCklMEElMjAlMjBzcS5kcmF3VG8oMjUlMkMlMjAyNSklMEElN0QlMEElMEFsZXQlMjBzM19yZXN1bHQlMjAlM0QlMjBQYXRoTGF5ZXIoJ3MzLXJlc3VsdCcpJTIwJTI0JTdCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzhiNWNmNicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOGI1Y2Y2MTUnKSUzQiUwQSU3RCUzQiUwQXMzX3Jlc3VsdC5hcHBseSUyMCU3QiUwQSUyMCUyMGxldCUyMHUlMjAlM0QlMjBzcS5wcm9qZWN0KDAlMkMlMjAwKS51bmlvbihzcS5wcm9qZWN0KDI1JTJDJTIwMjUpKSUzQiUwQSUyMCUyMGxldCUyMHJvdW5kZWQlMjAlM0QlMjB1LmZpbGxldCg4KSUzQiUwQSUyMCUyMHJvdW5kZWQuZHJhd1RvKDAlMkMlMjAwKSUwQSU3RCUwQSUwQWxldCUyMHMzX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdzMy1sYWJlbCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQXMzX2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDExNSklNjAudW5pb24oKS5maWxsZXQoOCklNjAlMEElN0QlMEElMEFsZXQlMjBzM19udW0lMjAlM0QlMjBUZXh0TGF5ZXIoJ3MzLW51bScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA4JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBczNfbnVtLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDEzMCklNjBzdGVwJTIwMyUzQSUyMHJvdW5kJTYwJTBBJTdEJTBBJTBBbGV0JTIwZ19zdGVwMyUyMCUzRCUyMEdyb3VwTGF5ZXIoJ2ctc3RlcDMnKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMzcwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjA2MCUzQiUyMCU3RCUzQiUwQWdfc3RlcDMuYXBwZW5kKHMzX29yaWclMkMlMjBzM19yZXN1bHQlMkMlMjBzM19sYWJlbCUyQyUyMHMzX251bSklM0IlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBBcnJvdyUyMGNvbm5lY3RvcnMlMjAoYWJzb2x1dGUlMjBwb3NpdGlvbnMpJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwYXJyb3dzJTIwJTNEJTIwUGF0aExheWVyKCdhcnJvd3MnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjM0NzU1NjknKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNDc1NTY5JyklM0IlMEElN0QlM0IlMEFhcnJvd3MuYXBwbHklMjAlN0IlMEElMjAlMjAlMkYlMkYlMjBBcnJvdyUyMDElRTIlODYlOTIyJTBBJTIwJTIwTSUyMDEyNSUyMDk1JTIwaCUyMDU1JTBBJTIwJTIwTSUyMDE3OCUyMDkxJTIwbCUyMDclMjA0JTIwbCUyMC03JTIwNCUyMHolMEElMjAlMjAlMkYlMkYlMjBBcnJvdyUyMDIlRTIlODYlOTIzJTBBJTIwJTIwTSUyMDMwMCUyMDk1JTIwaCUyMDU1JTBBJTIwJTIwTSUyMDM1MyUyMDkxJTIwbCUyMDclMjA0JTIwbCUyMC03JTIwNCUyMHolMEElN0QlMEElMEElMkYlMkYlMjAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlRTIlOTUlOTAlMEElMkYlMkYlMjBDb2RlJTIwYmxvY2slMjAoYWJzb2x1dGUlMjBwb3NpdGlvbnMpJTBBJTJGJTJGJTIwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJUUyJTk1JTkwJTBBJTBBbGV0JTIwY29kZSUyMCUzRCUyMFRleHRMYXllcignY29kZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM5NGEzYjgnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFjb2RlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDIyMiklNjBsZXQlMjBjb21iaW5lZCUyMCUzRCUyMGEudW5pb24oYiklM0IlNjAlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjM2KSU2MGxldCUyMHJvdW5kZWQlMjAlM0QlMjBjb21iaW5lZC5maWxsZXQoOCklM0IlNjAlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjUwKSU2MHJvdW5kZWQuZHJhd1RvKHglMkMlMjB5KSU2MCUwQSU3RCUwQSUwQWxldCUyMGt3JTIwJTNEJTIwVGV4dExheWVyKCdrdycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNjMDg0ZmMnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFrdy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjAyMjIpJTYwbGV0JTYwJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDIzNiklNjBsZXQlNjAlMEElN0QlMEElMEFsZXQlMjBjb2RlX25vdGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUtbm90ZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA4JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFjb2RlX25vdGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjY2KSU2MCUyRiUyRiUyMEV2ZXJ5JTIwb3BlcmF0aW9uJTIwcmV0dXJucyUyMGElMjBQYXRoQmxvY2slMjAlRTIlODAlOTQlMjBjaGFpbiUyMGZyZWVseSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMyUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjgpJTYwQ2hhaW5pbmclM0ElMjBCb29sZWFuJTIwJTJCJTIwRmlsbGV0JTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFzdWJ0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjYwJTJDJTIwMjgpJTYwQ29tYmluZSUyMHNoYXBlcyUyQyUyMHRoZW4lMjByb3VuZCUyMHRoZSUyMHJlc3VsdCU2MCUwQSU3RCUwQQ==" caption="Chaining pipeline — overlapping squares → union → union + fillet(8)">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 280&quot;</span>
-<span class="hljs-comment">// Boolean + fillet chaining — compose operations</span>
-<span class="hljs-comment">// Each step uses a GroupLayer with translate to avoid compounding projections</span>
+<p><mini-workspace caption="Chaining pipeline — overlapping squares → union → union + fillet(8)">
+  <code>// viewBox="0 0 520 280"
+// Boolean + fillet chaining — compose operations
+// Each step uses a GroupLayer with translate to avoid compounding projections
 
-<span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">60</span> h -<span class="hljs-number">60</span> z };
+let sq = @{ h 60 v 60 h -60 z };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">280</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 520, 280) }
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Step 1: Two overlapping squares (input)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Step 1: Two overlapping squares (input)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> s1_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s1-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b840&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let s1_orig = PathLayer('s1-orig') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-s1_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+s1_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> s1_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s1-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let s1_label = TextLayer('s1-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
 };
-s1_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">115</span>)<span class="hljs-string">`Overlapping squares`</span>
+s1_label.apply {
+  text(42, 115)`Overlapping squares`
 }
 
-<span class="hljs-keyword">let</span> s1_num = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s1-num&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let s1_num = TextLayer('s1-num') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: middle;
 };
-s1_num.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">130</span>)<span class="hljs-string">`step 1: input`</span>
+s1_num.apply {
+  text(42, 130)`step 1: input`
 }
 
-<span class="hljs-keyword">let</span> g_step1 = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-step1&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">30</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">60</span>; };
-g_step1.<span class="hljs-title function_">append</span>(s1_orig, s1_label, s1_num);
+let g_step1 = GroupLayer('g-step1') ${ translate-x: 30; translate-y: 60; };
+g_step1.append(s1_orig, s1_label, s1_num);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Step 2: Union result</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Step 2: Union result
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> s2_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s2-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b830&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let s2_orig = PathLayer('s2-orig') ${
+  stroke: Color('#94a3b830');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-s2_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+s2_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> s2_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s2-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f615&#x27;</span>);
+let s2_result = PathLayer('s2-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f615');
 };
-s2_result.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> u = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-  u.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+s2_result.apply {
+  let u = sq.project(0, 0).union(sq.project(25, 25));
+  u.drawTo(0, 0)
 }
 
-<span class="hljs-keyword">let</span> s2_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s2-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let s2_label = TextLayer('s2-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
 };
-s2_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">115</span>)<span class="hljs-string">`.union()`</span>
+s2_label.apply {
+  text(42, 115)`.union()`
 }
 
-<span class="hljs-keyword">let</span> s2_num = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s2-num&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let s2_num = TextLayer('s2-num') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: middle;
 };
-s2_num.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">130</span>)<span class="hljs-string">`step 2: combine`</span>
+s2_num.apply {
+  text(42, 130)`step 2: combine`
 }
 
-<span class="hljs-keyword">let</span> g_step2 = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-step2&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">195</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">60</span>; };
-g_step2.<span class="hljs-title function_">append</span>(s2_orig, s2_result, s2_label, s2_num);
+let g_step2 = GroupLayer('g-step2') ${ translate-x: 195; translate-y: 60; };
+g_step2.append(s2_orig, s2_result, s2_label, s2_num);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Step 3: Union + fillet</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Step 3: Union + fillet
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> s3_orig = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s3-orig&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b830&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let s3_orig = PathLayer('s3-orig') ${
+  stroke: Color('#94a3b830');
+  stroke-width: 1;
+  stroke-dasharray: "4 3";
+  fill: none;
 };
-s3_orig.<span class="hljs-property">apply</span> {
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
-  sq.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>)
+s3_orig.apply {
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
-<span class="hljs-keyword">let</span> s3_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s3-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf615&#x27;</span>);
+let s3_result = PathLayer('s3-result') ${
+  stroke: Color('#8b5cf6');
+  stroke-width: 2;
+  fill: Color('#8b5cf615');
 };
-s3_result.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> u = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-  <span class="hljs-keyword">let</span> rounded = u.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
-  rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+s3_result.apply {
+  let u = sq.project(0, 0).union(sq.project(25, 25));
+  let rounded = u.fillet(8);
+  rounded.drawTo(0, 0)
 }
 
-<span class="hljs-keyword">let</span> s3_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s3-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let s3_label = TextLayer('s3-label') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
 };
-s3_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">115</span>)<span class="hljs-string">`.union().fillet(8)`</span>
+s3_label.apply {
+  text(42, 115)`.union().fillet(8)`
 }
 
-<span class="hljs-keyword">let</span> s3_num = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;s3-num&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let s3_num = TextLayer('s3-num') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: middle;
 };
-s3_num.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">130</span>)<span class="hljs-string">`step 3: round`</span>
+s3_num.apply {
+  text(42, 130)`step 3: round`
 }
 
-<span class="hljs-keyword">let</span> g_step3 = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;g-step3&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">370</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">60</span>; };
-g_step3.<span class="hljs-title function_">append</span>(s3_orig, s3_result, s3_label, s3_num);
+let g_step3 = GroupLayer('g-step3') ${ translate-x: 370; translate-y: 60; };
+g_step3.append(s3_orig, s3_result, s3_label, s3_num);
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Arrow connectors (absolute positions)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Arrow connectors (absolute positions)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> arrows = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arrows&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>);
+let arrows = PathLayer('arrows') ${
+  stroke: Color('#475569');
+  stroke-width: 1.5;
+  fill: Color('#475569');
 };
-arrows.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// Arrow 1→2</span>
-  M <span class="hljs-number">125</span> <span class="hljs-number">95</span> h <span class="hljs-number">55</span>
-  M <span class="hljs-number">178</span> <span class="hljs-number">91</span> l <span class="hljs-number">7</span> <span class="hljs-number">4</span> l -<span class="hljs-number">7</span> <span class="hljs-number">4</span> z
-  <span class="hljs-comment">// Arrow 2→3</span>
-  M <span class="hljs-number">300</span> <span class="hljs-number">95</span> h <span class="hljs-number">55</span>
-  M <span class="hljs-number">353</span> <span class="hljs-number">91</span> l <span class="hljs-number">7</span> <span class="hljs-number">4</span> l -<span class="hljs-number">7</span> <span class="hljs-number">4</span> z
+arrows.apply {
+  // Arrow 1→2
+  M 125 95 h 55
+  M 178 91 l 7 4 l -7 4 z
+  // Arrow 2→3
+  M 300 95 h 55
+  M 353 91 l 7 4 l -7 4 z
 }
 
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
-<span class="hljs-comment">// Code block (absolute positions)</span>
-<span class="hljs-comment">// ═══════════════════════════════════════</span>
+// ═══════════════════════════════════════
+// Code block (absolute positions)
+// ═══════════════════════════════════════
 
-<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-code.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">222</span>)<span class="hljs-string">`let combined = a.union(b);`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">236</span>)<span class="hljs-string">`let rounded = combined.fillet(8);`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">250</span>)<span class="hljs-string">`rounded.drawTo(x, y)`</span>
+code.apply {
+  text(30, 222)`let combined = a.union(b);`
+  text(30, 236)`let rounded = combined.fillet(8);`
+  text(30, 250)`rounded.drawTo(x, y)`
 }
 
-<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
 };
-kw.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">222</span>)<span class="hljs-string">`let`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">236</span>)<span class="hljs-string">`let`</span>
+kw.apply {
+  text(30, 222)`let`
+  text(30, 236)`let`
 }
 
-<span class="hljs-keyword">let</span> code_note = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code-note&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code_note = TextLayer('code-note') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-code_note.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">266</span>)<span class="hljs-string">`// Every operation returns a PathBlock — chain freely`</span>
+code_note.apply {
+  text(30, 266)`// Every operation returns a PathBlock — chain freely`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`Chaining: Boolean + Fillet`</span>
+title.apply {
+  text(30, 28)`Chaining: Boolean + Fillet`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">260</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`Combine shapes, then round the result`</span>
+subtitle.apply {
+  text(260, 28)`Combine shapes, then round the result`
 }
 </code>
   <img src="/pathogen/blog/samples/post9/boolean-chaining.svg" alt="Chaining pipeline — overlapping squares → union → union + fillet(8)" loading="lazy">
@@ -928,86 +928,86 @@ subtitle.<span class="hljs-property">apply</span> {
 <span class="hljs-keyword">let</span> drilled = d1.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
 drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
 </code></pre><p>The demo below shows two practical examples: a plate with four drilled holes (chained <code>.difference()</code> calls), and a badge shape created by unioning a star with a circle.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMjAwJTIyJTBBJTJGJTJGJTIwU3RhbmRhcmQlMjBsaWJyYXJ5JTIwc2hhcGVzJTIwd2l0aCUyMGJvb2xlYW4lMjBvcGVyYXRpb25zJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzBmMTcyYScpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDIwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBQbGF0ZSUyMHdpdGglMjBkcmlsbGVkJTIwaG9sZXMlMjAtLS0lMEElMEFsZXQlMjBwbGF0ZSUyMCUzRCUyMCU0MCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA4MCUyQyUyMDgwKSUyMCU3RCUzQiUwQWxldCUyMGhvbGUlMjAlM0QlMjAlNDAlN0IlMjBjaXJjbGUoMCUyQyUyMDAlMkMlMjAxMCklMjAlN0QlM0IlMEElMEFsZXQlMjBkMSUyMCUzRCUyMHBsYXRlLnByb2plY3QoMCUyQyUyMDApLmRpZmZlcmVuY2UoaG9sZS5wcm9qZWN0KDI1JTJDJTIwMjUpKSUzQiUwQWxldCUyMGQyJTIwJTNEJTIwZDEucHJvamVjdCgwJTJDJTIwMCkuZGlmZmVyZW5jZShob2xlLnByb2plY3QoNTUlMkMlMjAyNSkpJTNCJTBBbGV0JTIwZDMlMjAlM0QlMjBkMi5wcm9qZWN0KDAlMkMlMjAwKS5kaWZmZXJlbmNlKGhvbGUucHJvamVjdCgyNSUyQyUyMDU1KSklM0IlMEFsZXQlMjBkcmlsbGVkJTIwJTNEJTIwZDMucHJvamVjdCgwJTJDJTIwMCkuZGlmZmVyZW5jZShob2xlLnByb2plY3QoNTUlMkMlMjA1NSkpJTNCJTBBJTBBbGV0JTIwcGxhdGVfcmVzdWx0JTIwJTNEJTIwUGF0aExheWVyKCdwbGF0ZS1yZXN1bHQnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNjE4JyklM0IlMEElN0QlM0IlMEFwbGF0ZV9yZXN1bHQuYXBwbHklMjAlN0IlMEElMjAlMjBkcmlsbGVkLmRyYXdUbygzMCUyQyUyMDU1KSUwQSU3RCUwQSUwQWxldCUyMHBsYXRlX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdwbGF0ZS1sYWJlbCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBcGxhdGVfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzApJTYwcGxhdGUuZGlmZmVyZW5jZShob2xlKSU2MCUwQSU3RCUwQSUwQWxldCUyMHBsYXRlX2Rlc2MlMjAlM0QlMjBUZXh0TGF5ZXIoJ3BsYXRlLWRlc2MnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXBsYXRlX2Rlc2MuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDQpJTYwcmVjdCg4MCVDMyU5NzgwKSUyMHdpdGglMjBmb3VyJTIwY2lyY2xlKDEwKSUyMGN1dG91dHMlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTdGFyJTIwdW5pb24lMjBjaXJjbGUlMjAtLS0lMEElMEFsZXQlMjBzdCUyMCUzRCUyMCU0MCU3QiUyMHN0YXIoMCUyQyUyMDAlMkMlMjAzMCUyQyUyMDE0JTJDJTIwNSklMjAlN0QlM0IlMEFsZXQlMjBjaXJjJTIwJTNEJTIwJTQwJTdCJTIwY2lyY2xlKDAlMkMlMjAwJTJDJTIwMTgpJTIwJTdEJTNCJTBBJTBBbGV0JTIwYmFkZ2UlMjAlM0QlMjBzdC5wcm9qZWN0KDAlMkMlMjAwKS51bmlvbihjaXJjLnByb2plY3QoMCUyQyUyMDApKSUzQiUwQSUwQWxldCUyMGJhZGdlX3Jlc3VsdCUyMCUzRCUyMFBhdGhMYXllcignYmFkZ2UtcmVzdWx0JyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjMzYjgyZjYxOCcpJTNCJTBBJTdEJTNCJTBBYmFkZ2VfcmVzdWx0LmFwcGx5JTIwJTdCJTBBJTIwJTIwYmFkZ2UuZHJhd1RvKDI2MCUyQyUyMDEwMCklMEElN0QlMEElMEFsZXQlMjBiYWRnZV9sYWJlbCUyMCUzRCUyMFRleHRMYXllcignYmFkZ2UtbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWJhZGdlX2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMjAlMkMlMjAzMCklNjBzdGFyLnVuaW9uKGNpcmNsZSklNjAlMEElN0QlMEElMEFsZXQlMjBiYWRnZV9kZXNjJTIwJTNEJTIwVGV4dExheWVyKCdiYWRnZS1kZXNjJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFiYWRnZV9kZXNjLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMjAlMkMlMjA0NCklNjBzdGFyKDUlMkMlMjAzMCUyQyUyMDE0KSUyMCVFMiU4OCVBQSUyMGNpcmNsZSgxOCklNjAlMEElN0QlMEE=" code-open caption="Standard library shapes — drilled plate and star-circle badge">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 200&quot;</span>
-<span class="hljs-comment">// Standard library shapes with boolean operations</span>
+<p><mini-workspace code-open caption="Standard library shapes — drilled plate and star-circle badge">
+  <code>// viewBox="0 0 400 200"
+// Standard library shapes with boolean operations
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">200</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 400, 200) }
 
-<span class="hljs-comment">// --- Plate with drilled holes ---</span>
+// --- Plate with drilled holes ---
 
-<span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">80</span>, <span class="hljs-number">80</span>) };
-<span class="hljs-keyword">let</span> hole = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">10</span>) };
+let plate = @{ rect(0, 0, 80, 80) };
+let hole = @{ circle(0, 0, 10) };
 
-<span class="hljs-keyword">let</span> d1 = plate.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-<span class="hljs-keyword">let</span> d2 = d1.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">25</span>));
-<span class="hljs-keyword">let</span> d3 = d2.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">55</span>));
-<span class="hljs-keyword">let</span> drilled = d3.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
+let d1 = plate.project(0, 0).difference(hole.project(25, 25));
+let d2 = d1.project(0, 0).difference(hole.project(55, 25));
+let d3 = d2.project(0, 0).difference(hole.project(25, 55));
+let drilled = d3.project(0, 0).difference(hole.project(55, 55));
 
-<span class="hljs-keyword">let</span> plate_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;plate-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+let plate_result = PathLayer('plate-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
 };
-plate_result.<span class="hljs-property">apply</span> {
-  drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">30</span>, <span class="hljs-number">55</span>)
+plate_result.apply {
+  drilled.drawTo(30, 55)
 }
 
-<span class="hljs-keyword">let</span> plate_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;plate-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let plate_label = TextLayer('plate-label') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-plate_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`plate.difference(hole)`</span>
+plate_label.apply {
+  text(30, 30)`plate.difference(hole)`
 }
 
-<span class="hljs-keyword">let</span> plate_desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;plate-desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let plate_desc = TextLayer('plate-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-plate_desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">44</span>)<span class="hljs-string">`rect(80×80) with four circle(10) cutouts`</span>
+plate_desc.apply {
+  text(30, 44)`rect(80×80) with four circle(10) cutouts`
 }
 
-<span class="hljs-comment">// --- Star union circle ---</span>
+// --- Star union circle ---
 
-<span class="hljs-keyword">let</span> st = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>, <span class="hljs-number">14</span>, <span class="hljs-number">5</span>) };
-<span class="hljs-keyword">let</span> circ = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">18</span>) };
+let st = @{ star(0, 0, 30, 14, 5) };
+let circ = @{ circle(0, 0, 18) };
 
-<span class="hljs-keyword">let</span> badge = st.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(circ.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>));
+let badge = st.project(0, 0).union(circ.project(0, 0));
 
-<span class="hljs-keyword">let</span> badge_result = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;badge-result&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
+let badge_result = PathLayer('badge-result') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: Color('#3b82f618');
 };
-badge_result.<span class="hljs-property">apply</span> {
-  badge.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">260</span>, <span class="hljs-number">100</span>)
+badge_result.apply {
+  badge.drawTo(260, 100)
 }
 
-<span class="hljs-keyword">let</span> badge_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;badge-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let badge_label = TextLayer('badge-label') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-badge_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`star.union(circle)`</span>
+badge_label.apply {
+  text(220, 30)`star.union(circle)`
 }
 
-<span class="hljs-keyword">let</span> badge_desc = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;badge-desc&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let badge_desc = TextLayer('badge-desc') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-badge_desc.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">44</span>)<span class="hljs-string">`star(5, 30, 14) ∪ circle(18)`</span>
+badge_desc.apply {
+  text(220, 44)`star(5, 30, 14) ∪ circle(18)`
 }
 </code>
   <img src="/pathogen/blog/samples/post9/boolean-stdlib.svg" alt="Standard library shapes — drilled plate and star-circle badge" loading="lazy">

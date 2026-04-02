@@ -314,274 +314,274 @@ code.hljs {
 };
 </code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/pathogen/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
 <p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/pathogen/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/pathogen/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjAwJTIwMzgwJTIyJTBBJTJGJTJGJTIwUGF0aEJsb2NrJTIwQW5hdG9teSUyMCVFMiU4MCU5NCUyMHZpc3VhbCUyMGd1aWRlJTIwdG8lMjBzdHJ1Y3R1cmUlMjBhbmQlMjBwcm9wZXJ0aWVzJTBBJTBBbGV0JTIwYXJyb3clMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBoJTIwNjAlMEElMjAlMjB2JTIwLTIwJTBBJTIwJTIwbCUyMDMwJTIwMzAlMEElMjAlMjBsJTIwLTMwJTIwMzAlMEElMjAlMjB2JTIwLTIwJTBBJTIwJTIwaCUyMC02MCUwQSUyMCUyMHolMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzBmMTcyYScpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDYwMCUyQyUyMDM4MCklMjAlN0QlMEElMEFsZXQlMjBncmlkJTIwJTNEJTIwUGF0aExheWVyKCdncmlkJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMWUyOTNiJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQWdyaWQuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uMTkpJTIwJTdCJTBBJTIwJTIwJTIwJTIwTSUyMDAlMjBjYWxjKGklMjAqJTIwMjApJTBBJTIwJTIwJTIwJTIwaCUyMDYwMCUwQSUyMCUyMCU3RCUwQSUyMCUyMGZvciUyMChqJTIwaW4lMjAwLi4zMCklMjAlN0IlMEElMjAlMjAlMjAlMjBNJTIwY2FsYyhqJTIwKiUyMDIwKSUyMDAlMEElMjAlMjAlMjAlMjB2JTIwMzgwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2hhcGUlMjAtLS0lMEElMEFsZXQlMjBzaGFwZSUyMCUzRCUyMFBhdGhMYXllcignc2hhcGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzM2I4MmY2MTgnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjBBcnJvdyUyMGF0JTIwKDIyMCUyQyUyMDE5MCklM0ElMjB2ZXJ0aWNlcyUyMGF0JTBBJTJGJTJGJTIwVjAoMjIwJTJDMTkwKSUyMFYxKDI4MCUyQzE5MCklMjBWMigyODAlMkMxNzApJTIwVjMoMzEwJTJDMjAwKSUwQSUyRiUyRiUyMFY0KDI4MCUyQzIzMCklMjBWNSgyODAlMkMyMTApJTIwVjYoMjIwJTJDMjEwKSUwQXNoYXBlLmFwcGx5JTIwJTdCJTBBJTIwJTIwYXJyb3cuZHJhd1RvKDIyMCUyQyUyMDE5MCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBCb3VuZGluZyUyMGJveCUyMG92ZXJsYXklMjAtLS0lMEElMEFsZXQlMjBiYm94JTIwJTNEJTIwUGF0aExheWVyKCdiYm94JyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjNmNTllMGInKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNSUyMDMlMjIlM0IlMEElN0QlM0IlMEFiYm94LmFwcGx5JTIwJTdCJTBBJTIwJTIwJTJGJTJGJTIwQkJveCUzQSUyMHglM0QyMjAlMkMlMjB5JTNEMTcwJTJDJTIwdyUzRDkwJTJDJTIwaCUzRDYwJTBBJTIwJTIwcmVjdCgyMjAlMkMlMjAxNzAlMkMlMjA5MCUyQyUyMDYwKSUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFZlcnRleCUyMGRvdHMlMjAtLS0lMEElMEFsZXQlMjB2ZG90cyUyMCUzRCUyMFBhdGhMYXllcigndmRvdHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZWY0NDQ0JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMGYxNzJhJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEF2ZG90cy5hcHBseSUyMCU3QiUwQSUyMCUyMGNpcmNsZSgyMjAlMkMlMjAxOTAlMkMlMjAzLjUpJTBBJTIwJTIwY2lyY2xlKDI4MCUyQyUyMDE5MCUyQyUyMDMuNSklMEElMjAlMjBjaXJjbGUoMjgwJTJDJTIwMTcwJTJDJTIwMy41KSUwQSUyMCUyMGNpcmNsZSgzMTAlMkMlMjAyMDAlMkMlMjAzLjUpJTBBJTIwJTIwY2lyY2xlKDI4MCUyQyUyMDIzMCUyQyUyMDMuNSklMEElMjAlMjBjaXJjbGUoMjgwJTJDJTIwMjEwJTJDJTIwMy41KSUwQSUyMCUyMGNpcmNsZSgyMjAlMkMlMjAyMTAlMkMlMjAzLjUpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwT3JpZ2luJTIwY3Jvc3NoYWlyJTIwLS0tJTBBJTBBbGV0JTIwb3JpZ2luX21hcmslMjAlM0QlMjBQYXRoTGF5ZXIoJ29yaWdpbi1tYXJrJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQW9yaWdpbl9tYXJrLmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMDIxMyUyMDE5MCUyMGglMjAxNCUwQSUyMCUyME0lMjAyMjAlMjAxODMlMjB2JTIwMTQlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBEaXJlY3Rpb24lMjBpbmRpY2F0b3JzJTIwYWxvbmclMjBlZGdlcyUyMC0tLSUwQSUwQWxldCUyMGRpcl9hcnJvd3MlMjAlM0QlMjBQYXRoTGF5ZXIoJ2Rpci1hcnJvd3MnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzODE4Y2Y4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBZGlyX2Fycm93cy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMEFsb25nJTIwaCUyMDYwJTIwZWRnZSUyMCVFMiU4MCU5NCUyMG1pZHBvaW50JTIwKDI1MCUyQyUyMDE5MCklMkMlMjBwb2ludGluZyUyMHJpZ2h0JTBBJTIwJTIwTSUyMDI0OCUyMDE4NyUyMGwlMjA3JTIwMyUyMGwlMjAtNyUyMDMlMjB6JTBBJTIwJTIwJTJGJTJGJTIwQWxvbmclMjB2JTIwLTIwJTIwZWRnZSUyMCVFMiU4MCU5NCUyMG1pZHBvaW50JTIwKDI4MCUyQyUyMDE4MCklMkMlMjBwb2ludGluZyUyMHVwJTBBJTIwJTIwTSUyMDI3NyUyMDE4MiUyMGwlMjAzJTIwLTclMjBsJTIwMyUyMDclMjB6JTBBJTIwJTIwJTJGJTJGJTIwQWxvbmclMjBsJTIwMzAlMjAzMCUyMHRvJTIwdGlwJTIwJUUyJTgwJTk0JTIwbWlkcG9pbnQlMjAoMjk1JTJDJTIwMTg1KSUyQyUyMHBvaW50aW5nJTIwZG93bi1yaWdodCUwQSUyMCUyME0lMjAyOTMlMjAxODMlMjBsJTIwNiUyMDElMjBsJTIwLTElMjA2JTIweiUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExlYWRlciUyMGxpbmVzJTIwLS0tJTBBJTBBbGV0JTIwbGVhZGVycyUyMCUzRCUyMFBhdGhMYXllcignbGVhZGVycycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzNDc1NTY5JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMEElN0QlM0IlMEFsZWFkZXJzLmFwcGx5JTIwJTdCJTBBJTIwJTIwJTJGJTJGJTIwT3JpZ2luJTIwJUUyJTg2JTkyJTIwbGFiZWwlMEElMjAlMjBNJTIwMjIwJTIwMTkwJTIwTCUyMDE0MCUyMDE0MCUwQSUyMCUyMCUyRiUyRiUyMEJCb3glMjBjb3JuZXIlMjAlRTIlODYlOTIlMjBsYWJlbCUwQSUyMCUyME0lMjAzMTAlMjAxNzAlMjBMJTIwMzcwJTIwMTMwJTBBJTIwJTIwJTJGJTJGJTIwVGlwJTIwdmVydGV4JTIwJUUyJTg2JTkyJTIwbGFiZWwlMEElMjAlMjBNJTIwMzEwJTIwMjAwJTIwTCUyMDM3MCUyMDIxMCUwQSUyMCUyMCUyRiUyRiUyMENsb3NlJTIwJUUyJTg2JTkyJTIwbGFiZWwlMEElMjAlMjBNJTIwMjIwJTIwMjEwJTIwTCUyMDE0MCUyMDI1NSUwQSUyMCUyMCUyRiUyRiUyMERpcmVjdGlvbiUyMCVFMiU4NiU5MiUyMGxhYmVsJTBBJTIwJTIwTSUyMDI0OCUyMDE5MyUyMEwlMjAyNDglMjAyNjUlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBWZXJ0ZXglMjBpbmRleCUyMGxhYmVscyUyMC0tLSUwQSUwQWxldCUyMHZpZHglMjAlM0QlMjBUZXh0TGF5ZXIoJ3ZpZHgnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZmNhNWE1JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQXZpZHguYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIzMCUyQyUyMDE4MiklNjAwJTYwJTBBJTIwJTIwdGV4dCgyNzAlMkMlMjAxODIpJTYwMSU2MCUwQSUyMCUyMHRleHQoMjg2JTJDJTIwMTYzKSU2MDIlNjAlMEElMjAlMjB0ZXh0KDMxOCUyQyUyMDE5NCklNjAzJTYwJTBBJTIwJTIwdGV4dCgyODYlMkMlMjAyNDApJTYwNCU2MCUwQSUyMCUyMHRleHQoMjcwJTJDJTIwMjIwKSU2MDUlNjAlMEElMjAlMjB0ZXh0KDIzMCUyQyUyMDIyMCklNjA2JTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwUHJvcGVydHklMjBjYWxsb3V0cyUyMC0tLSUwQSUwQWxldCUyMHByb3BzJTIwJTNEJTIwVGV4dExheWVyKCdwcm9wcycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBcHJvcHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDUwJTJDJTIwMTM3KSU2MC5zdGFydFBvaW50JTYwJTBBJTIwJTIwdGV4dCg1MCUyQyUyMDE1MCklNjBQb2ludCgwJTJDJTIwMCklNjAlMEElMjAlMjB0ZXh0KDM3NSUyQyUyMDEyNyklNjAuYm91bmRzJTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAxNDApJTYwJTdCJTIwdyUzQSUyMDkwJTJDJTIwaCUzQSUyMDYwJTIwJTdEJTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAyMDcpJTYwLnZlcnRpY2VzJTVCMyU1RCU2MCUwQSUyMCUyMHRleHQoMzc1JTJDJTIwMjIwKSU2MFBvaW50KDkwJTJDJTIwMTApJTYwJTBBJTIwJTIwdGV4dCg1MCUyQyUyMDI1MiklNjAuY2xvc2VkJTIwJTNEJTIwdHJ1ZSU2MCUwQSUyMCUyMHRleHQoNTAlMkMlMjAyNjUpJTYweiUyMCVFMiU4NiU5MiUyMGJhY2slMjB0byUyMG9yaWdpbiU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFN1YmR1ZWQlMjBwcm9wZXJ0eSUyMHR5cGUlMjBsYWJlbHMlMjAtLS0lMEElMEFsZXQlMjB0eXBlX2xhYmVscyUyMCUzRCUyMFRleHRMYXllcigndHlwZXMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdHlwZV9sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDUwJTJDJTIwMTYyKSU2MCUyRiUyRiUyMGdyZWVuJTIwY3Jvc3NoYWlyJTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAxNTIpJTYwJTJGJTJGJTIwZGFzaGVkJTIweWVsbG93JTYwJTBBJTIwJTIwdGV4dCgzNzUlMkMlMjAyMzIpJTYwJTJGJTJGJTIwYXJyb3clMjB0aXAlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBEaXJlY3Rpb24lMjBsYWJlbCUyMC0tLSUwQSUwQWxldCUyMGRpcl9sYWJlbCUyMCUzRCUyMFRleHRMYXllcignZGlyLWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzgxOGNmOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFkaXJfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI0OCUyQyUyMDI3OCklNjBwYXRoJTIwZGlyZWN0aW9uJTIwJUUyJTg2JTkyJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29kZSUyMGJsb2NrJTIwKHRvcC1sZWZ0KSUyMC0tLSUwQSUwQWxldCUyMGNvZGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWNvZGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDM4MCUyQyUyMDMwKSU2MGxldCUyMGFycm93JTIwJTNEJTIwJTQwJTdCJTYwJTBBJTIwJTIwdGV4dCgzOTIlMkMlMjA0NCklNjBoJTIwNjAlMjAlMjB2JTIwLTIwJTYwJTBBJTIwJTIwdGV4dCgzOTIlMkMlMjA1OCklNjBsJTIwMzAlMjAzMCU2MCUwQSUyMCUyMHRleHQoMzkyJTJDJTIwNzIpJTYwbCUyMC0zMCUyMDMwJTYwJTBBJTIwJTIwdGV4dCgzOTIlMkMlMjA4NiklNjB2JTIwLTIwJTIwJTIwaCUyMC02MCUyMCUyMHolNjAlMEElMjAlMjB0ZXh0KDM4MCUyQyUyMDEwMCklNjAlN0QlM0IlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTeW50YXglMjBoaWdobGlnaHQlM0ElMjBrZXl3b3JkcyUyMC0tLSUwQSUwQWxldCUyMGt3JTIwJTNEJTIwVGV4dExheWVyKCdrdycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDM4MCUyQyUyMDMwKSU2MGxldCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxNSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzApJTYwUGF0aEJsb2NrJTIwQW5hdG9teSU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXN1YnRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMCUyQyUyMDQ2KSU2MFJlbGF0aXZlJTIwY29tbWFuZHMlMjBzdG9yZWQlMjBmcm9tJTIwb3JpZ2luJTIwKDAlMkMlMjAwKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExlZ2VuZCUyMC0tLSUwQSUwQWxldCUyMGxlZyUyMCUzRCUyMFRleHRMYXllcignbGVnZW5kJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA4JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEElMEFsZXQlMjBsZWdfcyUyMCUzRCUyMFBhdGhMYXllcignbGVnLXMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwbGVnX2IlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlZy1iJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWxldCUyMGxlZ192JTIwJTNEJTIwUGF0aExheWVyKCdsZWctdicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlZjQ0NDQnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFsZXQlMjBsZWdfbyUyMCUzRCUyMFBhdGhMYXllcignbGVnLW8nKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwbGVnX2QlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlZy1kJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzgxOGNmOCcpJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQSUwQWxlZ19zLmFwcGx5JTIwJTdCJTIwcmVjdCgzMCUyQyUyMDMzNSUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ19iLmFwcGx5JTIwJTdCJTIwcmVjdCgzMCUyQyUyMDM0OSUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ192LmFwcGx5JTIwJTdCJTIwcmVjdCgzMCUyQyUyMDM2MyUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ19vLmFwcGx5JTIwJTdCJTIwcmVjdCgxMjAlMkMlMjAzMzUlMkMlMjA4JTJDJTIwOCklMjAlN0QlMEFsZWdfZC5hcHBseSUyMCU3QiUyMHJlY3QoMTIwJTJDJTIwMzQ5JTJDJTIwOCUyQyUyMDgpJTIwJTdEJTBBJTBBbGVnLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0MiUyQyUyMDM0MiklNjBTaGFwZSU2MCUwQSUyMCUyMHRleHQoNDIlMkMlMjAzNTYpJTYwQm91bmRpbmclMjBib3glNjAlMEElMjAlMjB0ZXh0KDQyJTJDJTIwMzcwKSU2MFZlcnRpY2VzJTYwJTBBJTIwJTIwdGV4dCgxMzIlMkMlMjAzNDIpJTYwT3JpZ2luJTYwJTBBJTIwJTIwdGV4dCgxMzIlMkMlMjAzNTYpJTYwRGlyZWN0aW9uJTYwJTBBJTdEJTBB" caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 600 380&quot;</span>
-<span class="hljs-comment">// PathBlock Anatomy — visual guide to structure and properties</span>
+<p><mini-workspace caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
+  <code>// viewBox="0 0 600 380"
+// PathBlock Anatomy — visual guide to structure and properties
 
-<span class="hljs-keyword">let</span> arrow = @{
-  h <span class="hljs-number">60</span>
-  v -<span class="hljs-number">20</span>
-  l <span class="hljs-number">30</span> <span class="hljs-number">30</span>
-  l -<span class="hljs-number">30</span> <span class="hljs-number">30</span>
-  v -<span class="hljs-number">20</span>
-  h -<span class="hljs-number">60</span>
+let arrow = @{
+  h 60
+  v -20
+  l 30 30
+  l -30 30
+  v -20
+  h -60
   z
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">600</span>, <span class="hljs-number">380</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 380) }
 
-<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e293b&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
 };
-grid.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.19</span>) {
-    M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>)
-    h <span class="hljs-number">600</span>
+grid.apply {
+  for (i in 0..19) {
+    M 0 calc(i * 20)
+    h 600
   }
-  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.30</span>) {
-    M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span>
-    v <span class="hljs-number">380</span>
+  for (j in 0..30) {
+    M calc(j * 20) 0
+    v 380
   }
 }
 
-<span class="hljs-comment">// --- Shape ---</span>
+// --- Shape ---
 
-<span class="hljs-keyword">let</span> shape = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;shape&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
+let shape = PathLayer('shape') ${
+  fill: Color('#3b82f618');
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
 };
 
-<span class="hljs-comment">// Arrow at (220, 190): vertices at</span>
-<span class="hljs-comment">// V0(220,190) V1(280,190) V2(280,170) V3(310,200)</span>
-<span class="hljs-comment">// V4(280,230) V5(280,210) V6(220,210)</span>
-shape.<span class="hljs-property">apply</span> {
-  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">220</span>, <span class="hljs-number">190</span>)
+// Arrow at (220, 190): vertices at
+// V0(220,190) V1(280,190) V2(280,170) V3(310,200)
+// V4(280,230) V5(280,210) V6(220,210)
+shape.apply {
+  arrow.drawTo(220, 190)
 }
 
-<span class="hljs-comment">// --- Bounding box overlay ---</span>
+// --- Bounding box overlay ---
 
-<span class="hljs-keyword">let</span> bbox = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bbox&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: none;
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;5 3&quot;</span>;
+let bbox = PathLayer('bbox') ${
+  fill: none;
+  stroke: Color('#f59e0b');
+  stroke-width: 1;
+  stroke-dasharray: "5 3";
 };
-bbox.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// BBox: x=220, y=170, w=90, h=60</span>
-  <span class="hljs-title function_">rect</span>(<span class="hljs-number">220</span>, <span class="hljs-number">170</span>, <span class="hljs-number">90</span>, <span class="hljs-number">60</span>)
+bbox.apply {
+  // BBox: x=220, y=170, w=90, h=60
+  rect(220, 170, 90, 60)
 }
 
-<span class="hljs-comment">// --- Vertex dots ---</span>
+// --- Vertex dots ---
 
-<span class="hljs-keyword">let</span> vdots = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;vdots&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let vdots = PathLayer('vdots') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
 };
-vdots.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">220</span>, <span class="hljs-number">190</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">190</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">170</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">310</span>, <span class="hljs-number">200</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">230</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">210</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">220</span>, <span class="hljs-number">210</span>, <span class="hljs-number">3.5</span>)
+vdots.apply {
+  circle(220, 190, 3.5)
+  circle(280, 190, 3.5)
+  circle(280, 170, 3.5)
+  circle(310, 200, 3.5)
+  circle(280, 230, 3.5)
+  circle(280, 210, 3.5)
+  circle(220, 210, 3.5)
 }
 
-<span class="hljs-comment">// --- Origin crosshair ---</span>
+// --- Origin crosshair ---
 
-<span class="hljs-keyword">let</span> origin_mark = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;origin-mark&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let origin_mark = PathLayer('origin-mark') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
 };
-origin_mark.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">213</span> <span class="hljs-number">190</span> h <span class="hljs-number">14</span>
-  M <span class="hljs-number">220</span> <span class="hljs-number">183</span> v <span class="hljs-number">14</span>
+origin_mark.apply {
+  M 213 190 h 14
+  M 220 183 v 14
 }
 
-<span class="hljs-comment">// --- Direction indicators along edges ---</span>
+// --- Direction indicators along edges ---
 
-<span class="hljs-keyword">let</span> dir_arrows = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dir-arrows&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#818cf8&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: none;
+let dir_arrows = PathLayer('dir-arrows') ${
+  fill: Color('#818cf8');
+  stroke: none;
 };
-dir_arrows.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// Along h 60 edge — midpoint (250, 190), pointing right</span>
-  M <span class="hljs-number">248</span> <span class="hljs-number">187</span> l <span class="hljs-number">7</span> <span class="hljs-number">3</span> l -<span class="hljs-number">7</span> <span class="hljs-number">3</span> z
-  <span class="hljs-comment">// Along v -20 edge — midpoint (280, 180), pointing up</span>
-  M <span class="hljs-number">277</span> <span class="hljs-number">182</span> l <span class="hljs-number">3</span> -<span class="hljs-number">7</span> l <span class="hljs-number">3</span> <span class="hljs-number">7</span> z
-  <span class="hljs-comment">// Along l 30 30 to tip — midpoint (295, 185), pointing down-right</span>
-  M <span class="hljs-number">293</span> <span class="hljs-number">183</span> l <span class="hljs-number">6</span> <span class="hljs-number">1</span> l -<span class="hljs-number">1</span> <span class="hljs-number">6</span> z
+dir_arrows.apply {
+  // Along h 60 edge — midpoint (250, 190), pointing right
+  M 248 187 l 7 3 l -7 3 z
+  // Along v -20 edge — midpoint (280, 180), pointing up
+  M 277 182 l 3 -7 l 3 7 z
+  // Along l 30 30 to tip — midpoint (295, 185), pointing down-right
+  M 293 183 l 6 1 l -1 6 z
 }
 
-<span class="hljs-comment">// --- Leader lines ---</span>
+// --- Leader lines ---
 
-<span class="hljs-keyword">let</span> leaders = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaders&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: none;
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+let leaders = PathLayer('leaders') ${
+  fill: none;
+  stroke: Color('#475569');
+  stroke-width: 0.5;
 };
-leaders.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// Origin → label</span>
-  M <span class="hljs-number">220</span> <span class="hljs-number">190</span> L <span class="hljs-number">140</span> <span class="hljs-number">140</span>
-  <span class="hljs-comment">// BBox corner → label</span>
-  M <span class="hljs-number">310</span> <span class="hljs-number">170</span> L <span class="hljs-number">370</span> <span class="hljs-number">130</span>
-  <span class="hljs-comment">// Tip vertex → label</span>
-  M <span class="hljs-number">310</span> <span class="hljs-number">200</span> L <span class="hljs-number">370</span> <span class="hljs-number">210</span>
-  <span class="hljs-comment">// Close → label</span>
-  M <span class="hljs-number">220</span> <span class="hljs-number">210</span> L <span class="hljs-number">140</span> <span class="hljs-number">255</span>
-  <span class="hljs-comment">// Direction → label</span>
-  M <span class="hljs-number">248</span> <span class="hljs-number">193</span> L <span class="hljs-number">248</span> <span class="hljs-number">265</span>
+leaders.apply {
+  // Origin → label
+  M 220 190 L 140 140
+  // BBox corner → label
+  M 310 170 L 370 130
+  // Tip vertex → label
+  M 310 200 L 370 210
+  // Close → label
+  M 220 210 L 140 255
+  // Direction → label
+  M 248 193 L 248 265
 }
 
-<span class="hljs-comment">// --- Vertex index labels ---</span>
+// --- Vertex index labels ---
 
-<span class="hljs-keyword">let</span> vidx = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;vidx&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#fca5a5&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let vidx = TextLayer('vidx') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#fca5a5');
+  text-anchor: middle;
 };
-vidx.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">230</span>, <span class="hljs-number">182</span>)<span class="hljs-string">`0`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">270</span>, <span class="hljs-number">182</span>)<span class="hljs-string">`1`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">286</span>, <span class="hljs-number">163</span>)<span class="hljs-string">`2`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">318</span>, <span class="hljs-number">194</span>)<span class="hljs-string">`3`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">286</span>, <span class="hljs-number">240</span>)<span class="hljs-string">`4`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">270</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`5`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">230</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`6`</span>
+vidx.apply {
+  text(230, 182)`0`
+  text(270, 182)`1`
+  text(286, 163)`2`
+  text(318, 194)`3`
+  text(286, 240)`4`
+  text(270, 220)`5`
+  text(230, 220)`6`
 }
 
-<span class="hljs-comment">// --- Property callouts ---</span>
+// --- Property callouts ---
 
-<span class="hljs-keyword">let</span> props = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;props&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let props = TextLayer('props') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-props.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">137</span>)<span class="hljs-string">`.startPoint`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">150</span>)<span class="hljs-string">`Point(0, 0)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">127</span>)<span class="hljs-string">`.bounds`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">140</span>)<span class="hljs-string">`{ w: 90, h: 60 }`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">207</span>)<span class="hljs-string">`.vertices[3]`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`Point(90, 10)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">252</span>)<span class="hljs-string">`.closed = true`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">265</span>)<span class="hljs-string">`z → back to origin`</span>
+props.apply {
+  text(50, 137)`.startPoint`
+  text(50, 150)`Point(0, 0)`
+  text(375, 127)`.bounds`
+  text(375, 140)`{ w: 90, h: 60 }`
+  text(375, 207)`.vertices[3]`
+  text(375, 220)`Point(90, 10)`
+  text(50, 252)`.closed = true`
+  text(50, 265)`z → back to origin`
 }
 
-<span class="hljs-comment">// --- Subdued property type labels ---</span>
+// --- Subdued property type labels ---
 
-<span class="hljs-keyword">let</span> type_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;types&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let type_labels = TextLayer('types') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-type_labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">162</span>)<span class="hljs-string">`// green crosshair`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">152</span>)<span class="hljs-string">`// dashed yellow`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">375</span>, <span class="hljs-number">232</span>)<span class="hljs-string">`// arrow tip`</span>
+type_labels.apply {
+  text(50, 162)`// green crosshair`
+  text(375, 152)`// dashed yellow`
+  text(375, 232)`// arrow tip`
 }
 
-<span class="hljs-comment">// --- Direction label ---</span>
+// --- Direction label ---
 
-<span class="hljs-keyword">let</span> dir_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;dir-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#818cf8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let dir_label = TextLayer('dir-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#818cf8');
+  text-anchor: middle;
 };
-dir_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">248</span>, <span class="hljs-number">278</span>)<span class="hljs-string">`path direction →`</span>
+dir_label.apply {
+  text(248, 278)`path direction →`
 }
 
-<span class="hljs-comment">// --- Code block (top-left) ---</span>
+// --- Code block (top-left) ---
 
-<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-code.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">380</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`let arrow = @{`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">44</span>)<span class="hljs-string">`h 60  v -20`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">58</span>)<span class="hljs-string">`l 30 30`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">72</span>)<span class="hljs-string">`l -30 30`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">392</span>, <span class="hljs-number">86</span>)<span class="hljs-string">`v -20  h -60  z`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">380</span>, <span class="hljs-number">100</span>)<span class="hljs-string">`};`</span>
+code.apply {
+  text(380, 30)`let arrow = @{`
+  text(392, 44)`h 60  v -20`
+  text(392, 58)`l 30 30`
+  text(392, 72)`l -30 30`
+  text(392, 86)`v -20  h -60  z`
+  text(380, 100)`};`
 }
 
-<span class="hljs-comment">// --- Syntax highlight: keywords ---</span>
+// --- Syntax highlight: keywords ---
 
-<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#c084fc');
+  text-anchor: start;
 };
-kw.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">380</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`let`</span>
+kw.apply {
+  text(380, 30)`let`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">15</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 15;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`PathBlock Anatomy`</span>
+title.apply {
+  text(30, 30)`PathBlock Anatomy`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">46</span>)<span class="hljs-string">`Relative commands stored from origin (0, 0)`</span>
+subtitle.apply {
+  text(30, 46)`Relative commands stored from origin (0, 0)`
 }
 
-<span class="hljs-comment">// --- Legend ---</span>
+// --- Legend ---
 
-<span class="hljs-keyword">let</span> leg = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
 
-<span class="hljs-keyword">let</span> leg_s = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-s&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_b = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-b&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_v = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-v&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_o = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-o&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_d = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-d&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#818cf8&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+let leg_s = PathLayer('leg-s') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
+let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_d = PathLayer('leg-d') ${ fill: Color('#818cf8'); stroke: none; };
 
-leg_s.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">335</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_b.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">349</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_v.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">30</span>, <span class="hljs-number">363</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_o.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">120</span>, <span class="hljs-number">335</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_d.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">120</span>, <span class="hljs-number">349</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+leg_s.apply { rect(30, 335, 8, 8) }
+leg_b.apply { rect(30, 349, 8, 8) }
+leg_v.apply { rect(30, 363, 8, 8) }
+leg_o.apply { rect(120, 335, 8, 8) }
+leg_d.apply { rect(120, 349, 8, 8) }
 
-leg.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">342</span>)<span class="hljs-string">`Shape`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">356</span>)<span class="hljs-string">`Bounding box`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">42</span>, <span class="hljs-number">370</span>)<span class="hljs-string">`Vertices`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">132</span>, <span class="hljs-number">342</span>)<span class="hljs-string">`Origin`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">132</span>, <span class="hljs-number">356</span>)<span class="hljs-string">`Direction`</span>
+leg.apply {
+  text(42, 342)`Shape`
+  text(42, 356)`Bounding box`
+  text(42, 370)`Vertices`
+  text(132, 342)`Origin`
+  text(132, 356)`Direction`
 }
 </code>
   <img src="/pathogen/blog/samples/post6/pathblock-anatomy.svg" alt="PathBlock anatomy — origin, vertices, bounds, and path direction" loading="lazy">
@@ -598,48 +598,48 @@ arrow.<span class="hljs-title function_">draw</span>()
 <pre><code class="hljs language-pathogen">arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">70</span>)
 </code></pre><p>It emits <code>M 60 70</code> followed by the PathBlock&#39;s commands, and returns a <code>ProjectedPath</code> value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.</p>
 <p>The demo below shows both approaches — manual on top, <code>drawTo</code> on the bottom. Same shapes, same positions, less ceremony with <code>drawTo</code>.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMjAwJTIyJTBBJTJGJTJGJTIwZHJhd1RvKCklMjB2cyUyMG1hbnVhbCUyME0lMjAlMkIlMjBkcmF3KCklMEElMEFsZXQlMjBkaWFtb25kJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwbCUyMDE1JTIwMTUlMEElMjAlMjBsJTIwMTUlMjAtMTUlMEElMjAlMjBsJTIwLTE1JTIwLTE1JTBBJTIwJTIweiUwQSU3RCUzQiUwQSUwQWxldCUyMG1hbnVhbCUyMCUzRCUyMFBhdGhMYXllcignbWFudWFsJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyM2I0NTMwOScpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwZHJhd3RvJTIwJTNEJTIwUGF0aExheWVyKCdkcmF3dG8nKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOGI1Y2Y2JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzNmQyOGQ5JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEElMEFsZXQlMjBsYWJlbCUyMCUzRCUyMFBhdGhMYXllcignbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMHN0cm9rZS1kYXNoYXJyYXklM0ElMjAlMjIzJTIwMiUyMiUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyME1hbnVhbCUyMGFwcHJvYWNoJTNBJTIwTSUyMHRoZW4lMjBkcmF3JTBBbWFudWFsLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwTSUyMGNhbGMoNjAlMjAlMkIlMjBpJTIwKiUyMDUwKSUyMDcwJTBBJTIwJTIwJTIwJTIwZGlhbW9uZC5kcmF3KCklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBkcmF3VG8lMjBhcHByb2FjaCUzQSUyMHNpbmdsZSUyMGNhbGwlMEFkcmF3dG8uYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uMyklMjAlN0IlMEElMjAlMjAlMjAlMjBkaWFtb25kLmRyYXdUbyhjYWxjKDYwJTIwJTJCJTIwaSUyMColMjA1MCklMkMlMjAxNDApJTBBJTIwJTIwJTdEJTBBJTdEJTBB" code-open caption="Manual M+draw() vs drawTo() — same result, less code">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 200&quot;</span>
-<span class="hljs-comment">// drawTo() vs manual M + draw()</span>
+<p><mini-workspace code-open caption="Manual M+draw() vs drawTo() — same result, less code">
+  <code>// viewBox="0 0 400 200"
+// drawTo() vs manual M + draw()
 
-<span class="hljs-keyword">let</span> diamond = @{
-  l <span class="hljs-number">15</span> <span class="hljs-number">15</span>
-  l <span class="hljs-number">15</span> -<span class="hljs-number">15</span>
-  l -<span class="hljs-number">15</span> -<span class="hljs-number">15</span>
+let diamond = @{
+  l 15 15
+  l 15 -15
+  l -15 -15
   z
 };
 
-<span class="hljs-keyword">let</span> manual = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;manual&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b45309&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let manual = PathLayer('manual') ${
+  fill: Color('#f59e0b');
+  stroke: Color('#b45309');
+  stroke-width: 1.5;
 };
 
-<span class="hljs-keyword">let</span> drawto = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;drawto&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf6&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6d28d9&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let drawto = PathLayer('drawto') ${
+  fill: Color('#8b5cf6');
+  stroke: Color('#6d28d9');
+  stroke-width: 1.5;
 };
 
-<span class="hljs-keyword">let</span> label = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;label&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: none;
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;3 2&quot;</span>;
+let label = PathLayer('label') ${
+  fill: none;
+  stroke: Color('#64748b');
+  stroke-width: 1;
+  stroke-dasharray: "3 2";
 };
 
-<span class="hljs-comment">// Manual approach: M then draw</span>
-manual.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.3</span>) {
-    M <span class="hljs-title function_">calc</span>(<span class="hljs-number">60</span> + i * <span class="hljs-number">50</span>) <span class="hljs-number">70</span>
-    diamond.<span class="hljs-title function_">draw</span>()
+// Manual approach: M then draw
+manual.apply {
+  for (i in 0..3) {
+    M calc(60 + i * 50) 70
+    diamond.draw()
   }
 }
 
-<span class="hljs-comment">// drawTo approach: single call</span>
-drawto.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.3</span>) {
-    diamond.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">60</span> + i * <span class="hljs-number">50</span>), <span class="hljs-number">140</span>)
+// drawTo approach: single call
+drawto.apply {
+  for (i in 0..3) {
+    diamond.drawTo(calc(60 + i * 50), 140)
   }
 }
 </code>
@@ -656,217 +656,217 @@ drawto.<span class="hljs-property">apply</span> {
 }
 </code></pre><p>PathBlocks are <a href="/pathogen/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
 <p>Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUGF0aEJsb2NrJTIwcmV1c2UlMjAlRTIlODAlOTQlMjBkZWZpbmUlMjBvbmNlJTJDJTIwY3JlYXRlJTIwcGF0dGVybnMlMEElMEElMkYlMkYlMjBBJTIwbGVhZi1saWtlJTIwbW90aWYlMEFsZXQlMjBsZWFmJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwYyUyMDglMjAtMTglMjAyMiUyMC0xOCUyMDMwJTIwMCUwQSUyMCUyMGMlMjAtOCUyMDE4JTIwLTIyJTIwMTglMjAtMzAlMjAwJTBBJTIwJTIweiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMEElMjBzbWFsbCUyMGRpYW1vbmQlMjBhY2NlbnQlMEFsZXQlMjBnZW0lMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBsJTIwNSUyMDglMEElMjAlMjBsJTIwNSUyMC04JTBBJTIwJTIwbCUyMC01JTIwLTglMEElMjAlMjB6JTBBJTdEJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwUmFkaWFsJTIwbGVhZiUyMHBhdHRlcm4lMjAoY2VudGVyKSUyMC0tLSUwQSUwQWxldCUyMGxlYXZlcyUyMCUzRCUyMFBhdGhMYXllcignbGVhdmVzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzIyYzU1ZTEyJyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwbGVhdmVzMiUyMCUzRCUyMFBhdGhMYXllcignbGVhdmVzMicpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjMzYjgyZjYxMicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzNiODJmNicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMElubmVyJTIwcmluZyUyMCVFMiU4MCU5NCUyMDglMjBsZWF2ZXMlMEFsZWF2ZXMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uOCklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoaSUyMColMjAwLjc4NTQpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMGNvcyhhbmdsZSklMjAqJTIwNjApJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwY3klMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMHNpbihhbmdsZSklMjAqJTIwNjApJTNCJTBBJTIwJTIwJTIwJTIwbGVhZi5kcmF3VG8oY2FsYyhjeCUyMC0lMjAxNSklMkMlMjBjeSklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBPdXRlciUyMHJpbmclMjAlRTIlODAlOTQlMjAxMiUyMGxlYXZlcyUyQyUyMG9mZnNldCUyMHJvdGF0aW9uJTBBbGVhdmVzMi5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi4xMiklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoaSUyMColMjAwLjUyMzYlMjAlMkIlMjAwLjI2MTgpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMGNvcyhhbmdsZSklMjAqJTIwMTIwKSUzQiUwQSUyMCUyMCUyMCUyMGxldCUyMGN5JTIwJTNEJTIwY2FsYygyMDAlMjAlMkIlMjBzaW4oYW5nbGUpJTIwKiUyMDEyMCklM0IlMEElMjAlMjAlMjAlMjBsZWFmLmRyYXdUbyhjYWxjKGN4JTIwLSUyMDE1KSUyQyUyMGN5KSUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMERpYW1vbmQlMjBhY2NlbnRzJTIwLS0tJTBBJTBBbGV0JTIwZ2VtcyUyMCUzRCUyMFBhdGhMYXllcignZ2VtcycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNmNTllMGInKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjNiNDUzMDknKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUwQSU3RCUzQiUwQWdlbXMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uOCklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBhbmdsZSUyMCUzRCUyMGNhbGMoaSUyMColMjAwLjc4NTQlMjAlMkIlMjAwLjM5MjcpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwZ3glMjAlM0QlMjBjYWxjKDIwMCUyMCUyQiUyMGNvcyhhbmdsZSklMjAqJTIwOTAlMjAtJTIwNSklM0IlMEElMjAlMjAlMjAlMjBsZXQlMjBneSUyMCUzRCUyMGNhbGMoMjAwJTIwJTJCJTIwc2luKGFuZ2xlKSUyMColMjA5MCklM0IlMEElMjAlMjAlMjAlMjBnZW0uZHJhd1RvKGd4JTJDJTIwZ3kpJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ2VudGVyJTIwZG90JTIwLS0tJTBBJTBBbGV0JTIwY2VudGVyJTIwJTNEJTIwUGF0aExheWVyKCdjZW50ZXInKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBY2VudGVyLmFwcGx5JTIwJTdCJTBBJTIwJTIwY2lyY2xlKDIwMCUyQyUyMDIwMCUyQyUyMDQpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29uc3RydWN0aW9uJTIwY2lyY2xlcyUyMC0tLSUwQSUwQWxldCUyMGd1aWRlcyUyMCUzRCUyMFBhdGhMYXllcignZ3VpZGVzJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMzM0MTU1JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyMyUyMDQlMjIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQWd1aWRlcy5hcHBseSUyMCU3QiUwQSUyMCUyMGNpcmNsZSgyMDAlMkMlMjAyMDAlMkMlMjA2MCklMEElMjAlMjBjaXJjbGUoMjAwJTJDJTIwMjAwJTJDJTIwOTApJTBBJTIwJTIwY2lyY2xlKDIwMCUyQyUyMDIwMCUyQyUyMDEyMCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBBbm5vdGF0aW9ucyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDglM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjY1JTJDJTIwMjA1KSU2MHIlMjAlM0QlMjA2MCU2MCUwQSUyMCUyMHRleHQoMjk1JTJDJTIwMjA1KSU2MHIlMjAlM0QlMjA5MCU2MCUwQSUyMCUyMHRleHQoMzI1JTJDJTIwMjA1KSU2MHIlMjAlM0QlMjAxMjAlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBDb2RlJTIwYW5ub3RhdGlvbiUyMC0tLSUwQSUwQWxldCUyMGNvZGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBY29kZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjAlMkMlMjAyNSklNjBsZXQlMjBsZWFmJTIwJTNEJTIwJTQwJTdCJTYwJTBBJTIwJTIwdGV4dCgzMiUyQyUyMDM3KSU2MGMlMjA4JTIwLTE4JTIwMjIlMjAtMTglMjAzMCUyMDAlNjAlMEElMjAlMjB0ZXh0KDMyJTJDJTIwNDkpJTYwYyUyMC04JTIwMTglMjAtMjIlMjAxOCUyMC0zMCUyMDAlNjAlMEElMjAlMjB0ZXh0KDMyJTJDJTIwNjEpJTYweiU2MCUwQSUyMCUyMHRleHQoMjAlMkMlMjA3MyklNjAlN0QlM0IlNjAlMEElN0QlMEElMEFsZXQlMjBrdyUyMCUzRCUyMFRleHRMYXllcigna3cnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwJTJDJTIwMjUpJTYwbGV0JTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU3RhdHMlMjAtLS0lMEElMEFsZXQlMjBzdGF0cyUyMCUzRCUyMFRleHRMYXllcignc3RhdHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBlbmQlM0IlMEElN0QlM0IlMEFzdGF0cy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzg1JTJDJTIwMzc1KSU2MDElMjBQYXRoQmxvY2slNjAlMEElMjAlMjB0ZXh0KDM4NSUyQyUyMDM4OCklNjAyOCUyMGluc3RhbmNlcyU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMiUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMGVuZCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzODUlMkMlMjAyNSklNjBEZWZpbmUlMjBPbmNlJTJDJTIwRHJhdyUyMEV2ZXJ5d2hlcmUlNjAlMEElN0QlMEE=" caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
-<span class="hljs-comment">// PathBlock reuse — define once, create patterns</span>
+<p><mini-workspace caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
+  <code>// viewBox="0 0 400 400"
+// PathBlock reuse — define once, create patterns
 
-<span class="hljs-comment">// A leaf-like motif</span>
-<span class="hljs-keyword">let</span> leaf = @{
-  c <span class="hljs-number">8</span> -<span class="hljs-number">18</span> <span class="hljs-number">22</span> -<span class="hljs-number">18</span> <span class="hljs-number">30</span> <span class="hljs-number">0</span>
-  c -<span class="hljs-number">8</span> <span class="hljs-number">18</span> -<span class="hljs-number">22</span> <span class="hljs-number">18</span> -<span class="hljs-number">30</span> <span class="hljs-number">0</span>
+// A leaf-like motif
+let leaf = @{
+  c 8 -18 22 -18 30 0
+  c -8 18 -22 18 -30 0
   z
 };
 
-<span class="hljs-comment">// A small diamond accent</span>
-<span class="hljs-keyword">let</span> gem = @{
-  l <span class="hljs-number">5</span> <span class="hljs-number">8</span>
-  l <span class="hljs-number">5</span> -<span class="hljs-number">8</span>
-  l -<span class="hljs-number">5</span> -<span class="hljs-number">8</span>
+// A small diamond accent
+let gem = @{
+  l 5 8
+  l 5 -8
+  l -5 -8
   z
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
 
-<span class="hljs-comment">// --- Radial leaf pattern (center) ---</span>
+// --- Radial leaf pattern (center) ---
 
-<span class="hljs-keyword">let</span> leaves = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaves&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e12&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+let leaves = PathLayer('leaves') ${
+  fill: Color('#22c55e12');
+  stroke: Color('#22c55e');
+  stroke-width: 1;
 };
 
-<span class="hljs-keyword">let</span> leaves2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaves2&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f612&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+let leaves2 = PathLayer('leaves2') ${
+  fill: Color('#3b82f612');
+  stroke: Color('#3b82f6');
+  stroke-width: 1;
 };
 
-<span class="hljs-comment">// Inner ring — 8 leaves</span>
-leaves.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
-    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.7854</span>);
-    <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">60</span>);
-    <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">60</span>);
-    leaf.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(cx - <span class="hljs-number">15</span>), cy)
+// Inner ring — 8 leaves
+leaves.apply {
+  for (i in 0..8) {
+    let angle = calc(i * 0.7854);
+    let cx = calc(200 + cos(angle) * 60);
+    let cy = calc(200 + sin(angle) * 60);
+    leaf.drawTo(calc(cx - 15), cy)
   }
 }
 
-<span class="hljs-comment">// Outer ring — 12 leaves, offset rotation</span>
-leaves2.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.12</span>) {
-    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.5236</span> + <span class="hljs-number">0.2618</span>);
-    <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">120</span>);
-    <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">120</span>);
-    leaf.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(cx - <span class="hljs-number">15</span>), cy)
+// Outer ring — 12 leaves, offset rotation
+leaves2.apply {
+  for (i in 0..12) {
+    let angle = calc(i * 0.5236 + 0.2618);
+    let cx = calc(200 + cos(angle) * 120);
+    let cy = calc(200 + sin(angle) * 120);
+    leaf.drawTo(calc(cx - 15), cy)
   }
 }
 
-<span class="hljs-comment">// --- Diamond accents ---</span>
+// --- Diamond accents ---
 
-<span class="hljs-keyword">let</span> gems = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;gems&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b45309&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+let gems = PathLayer('gems') ${
+  fill: Color('#f59e0b');
+  stroke: Color('#b45309');
+  stroke-width: 0.5;
 };
-gems.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
-    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.7854</span> + <span class="hljs-number">0.3927</span>);
-    <span class="hljs-keyword">let</span> gx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">90</span> - <span class="hljs-number">5</span>);
-    <span class="hljs-keyword">let</span> gy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">200</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">90</span>);
-    gem.<span class="hljs-title function_">drawTo</span>(gx, gy)
+gems.apply {
+  for (i in 0..8) {
+    let angle = calc(i * 0.7854 + 0.3927);
+    let gx = calc(200 + cos(angle) * 90 - 5);
+    let gy = calc(200 + sin(angle) * 90);
+    gem.drawTo(gx, gy)
   }
 }
 
-<span class="hljs-comment">// --- Center dot ---</span>
+// --- Center dot ---
 
-<span class="hljs-keyword">let</span> center = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;center&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: none;
+let center = PathLayer('center') ${
+  fill: Color('#e2e8f0');
+  stroke: none;
 };
-center.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">4</span>)
+center.apply {
+  circle(200, 200, 4)
 }
 
-<span class="hljs-comment">// --- Construction circles ---</span>
+// --- Construction circles ---
 
-<span class="hljs-keyword">let</span> guides = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;guides&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#334155&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;3 4&quot;</span>;
-  <span class="hljs-attr">fill</span>: none;
+let guides = PathLayer('guides') ${
+  stroke: Color('#334155');
+  stroke-width: 0.5;
+  stroke-dasharray: "3 4";
+  fill: none;
 };
-guides.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">60</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">90</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-number">120</span>)
+guides.apply {
+  circle(200, 200, 60)
+  circle(200, 200, 90)
+  circle(200, 200, 120)
 }
 
-<span class="hljs-comment">// --- Annotations ---</span>
+// --- Annotations ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">265</span>, <span class="hljs-number">205</span>)<span class="hljs-string">`r = 60`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">205</span>)<span class="hljs-string">`r = 90`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">325</span>, <span class="hljs-number">205</span>)<span class="hljs-string">`r = 120`</span>
+labels.apply {
+  text(265, 205)`r = 60`
+  text(295, 205)`r = 90`
+  text(325, 205)`r = 120`
 }
 
-<span class="hljs-comment">// --- Code annotation ---</span>
+// --- Code annotation ---
 
-<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-code.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`let leaf = @{`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">32</span>, <span class="hljs-number">37</span>)<span class="hljs-string">`c 8 -18 22 -18 30 0`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">32</span>, <span class="hljs-number">49</span>)<span class="hljs-string">`c -8 18 -22 18 -30 0`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">32</span>, <span class="hljs-number">61</span>)<span class="hljs-string">`z`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">73</span>)<span class="hljs-string">`};`</span>
+code.apply {
+  text(20, 25)`let leaf = @{`
+  text(32, 37)`c 8 -18 22 -18 30 0`
+  text(32, 49)`c -8 18 -22 18 -30 0`
+  text(32, 61)`z`
+  text(20, 73)`};`
 }
 
-<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
 };
-kw.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`let`</span>
+kw.apply {
+  text(20, 25)`let`
 }
 
-<span class="hljs-comment">// --- Stats ---</span>
+// --- Stats ---
 
-<span class="hljs-keyword">let</span> stats = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;stats&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: end;
+let stats = TextLayer('stats') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: end;
 };
-stats.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">385</span>, <span class="hljs-number">375</span>)<span class="hljs-string">`1 PathBlock`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">385</span>, <span class="hljs-number">388</span>)<span class="hljs-string">`28 instances`</span>
+stats.apply {
+  text(385, 375)`1 PathBlock`
+  text(385, 388)`28 instances`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: end;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 12;
+  fill: Color('#e2e8f0');
+  text-anchor: end;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">385</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`Define Once, Draw Everywhere`</span>
+title.apply {
+  text(385, 25)`Define Once, Draw Everywhere`
 }
 </code>
   <img src="/pathogen/blog/samples/post6/pathblock-pattern.svg" alt="Radial pattern — one PathBlock drawn 28 times with trigonometric placement" loading="lazy">
 </mini-workspace></p>
 <h2>A Practical Example</h2>
 <p>Here&#39;s a grid built from two simple PathBlocks — a horizontal line and a vertical line — repeated with loops. The PathBlock captures the shape; the loop handles placement.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwUGF0aEJsb2NrJTIwYmFzaWNzJTIwJUUyJTgwJTk0JTIwZGVmaW5lJTJDJTIwZHJhdyUyQyUyMHJldXNlJTBBJTBBbGV0JTIwYXJyb3clMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBoJTIwNDAlMEElMjAlMjBsJTIwLTEwJTIwLTglMEElMjAlMjBsJTIwMCUyMDUlMEElMjAlMjBoJTIwLTMwJTBBJTIwJTIwdiUyMDYlMEElMjAlMjBoJTIwMzAlMEElMjAlMjBsJTIwMCUyMDUlMEElMjAlMjBsJTIwMTAlMjAtOCUwQSU3RCUzQiUwQSUwQWxldCUyMGFycm93cyUyMCUzRCUyMFBhdGhMYXllcignYXJyb3dzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzFlNDBhZicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElMjAlMjBzdHJva2UtZGFzaGFycmF5JTNBJTIwJTIyNCUyMDMlMjIlM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjBEcmF3JTIwdGhlJTIwZ3JpZCUwQWZvciUyMChpJTIwaW4lMjAwLi42KSUyMCU3QiUwQSUyMCUyME0lMjA1MCUyMGNhbGMoNTAlMjAlMkIlMjBpJTIwKiUyMDQwKSUwQSUyMCUyMGglMjAzMDAlMEElN0QlMEFmb3IlMjAoaiUyMGluJTIwMC4uOCklMjAlN0IlMEElMjAlMjBNJTIwY2FsYyg1MCUyMCUyQiUyMGolMjAqJTIwNDApJTIwNTAlMEElMjAlMjB2JTIwMjAwJTBBJTdEJTBBJTBBJTJGJTJGJTIwUmV1c2UlMjB0aGUlMjBhcnJvdyUyMGF0JTIwZGlmZmVyZW50JTIwcG9zaXRpb25zJTBBYXJyb3dzLmFwcGx5JTIwJTdCJTBBJTIwJTIwYXJyb3cuZHJhd1RvKDgwJTJDJTIwOTApJTBBJTIwJTIwYXJyb3cuZHJhd1RvKDIwMCUyQyUyMDEzMCklMEElMjAlMjBhcnJvdy5kcmF3VG8oMTYwJTJDJTIwMjEwKSUwQSUyMCUyMGFycm93LmRyYXdUbygyODAlMkMlMjAxNzApJTBBJTdEJTBB" code-open caption="Grid from two PathBlocks — define once, draw in loops">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
-<span class="hljs-comment">// PathBlock basics — define, draw, reuse</span>
+<p><mini-workspace code-open caption="Grid from two PathBlocks — define once, draw in loops">
+  <code>// viewBox="0 0 400 300"
+// PathBlock basics — define, draw, reuse
 
-<span class="hljs-keyword">let</span> arrow = @{
-  h <span class="hljs-number">40</span>
-  l -<span class="hljs-number">10</span> -<span class="hljs-number">8</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
-  h -<span class="hljs-number">30</span>
-  v <span class="hljs-number">6</span>
-  h <span class="hljs-number">30</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
-  l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+let arrow = @{
+  h 40
+  l -10 -8
+  l 0 5
+  h -30
+  v 6
+  h 30
+  l 0 5
+  l 10 -8
 };
 
-<span class="hljs-keyword">let</span> arrows = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arrows&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e40af&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let arrows = PathLayer('arrows') ${
+  fill: Color('#3b82f6');
+  stroke: Color('#1e40af');
+  stroke-width: 1.5;
 };
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  <span class="hljs-attr">fill</span>: none;
-  stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-string">&quot;4 3&quot;</span>;
+let bg = PathLayer('bg') ${
+  stroke: Color('#94a3b8');
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: "4 3";
 };
 
-<span class="hljs-comment">// Draw the grid</span>
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.6</span>) {
-  M <span class="hljs-number">50</span> <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + i * <span class="hljs-number">40</span>)
-  h <span class="hljs-number">300</span>
+// Draw the grid
+for (i in 0..6) {
+  M 50 calc(50 + i * 40)
+  h 300
 }
-<span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
-  M <span class="hljs-title function_">calc</span>(<span class="hljs-number">50</span> + j * <span class="hljs-number">40</span>) <span class="hljs-number">50</span>
-  v <span class="hljs-number">200</span>
+for (j in 0..8) {
+  M calc(50 + j * 40) 50
+  v 200
 }
 
-<span class="hljs-comment">// Reuse the arrow at different positions</span>
-arrows.<span class="hljs-property">apply</span> {
-  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">80</span>, <span class="hljs-number">90</span>)
-  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">200</span>, <span class="hljs-number">130</span>)
-  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">160</span>, <span class="hljs-number">210</span>)
-  arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">280</span>, <span class="hljs-number">170</span>)
+// Reuse the arrow at different positions
+arrows.apply {
+  arrow.drawTo(80, 90)
+  arrow.drawTo(200, 130)
+  arrow.drawTo(160, 210)
+  arrow.drawTo(280, 170)
 }
 </code>
   <img src="/pathogen/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
@@ -893,153 +893,153 @@ arrows.<span class="hljs-property">apply</span> {
 <span class="hljs-keyword">let</span> r = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) };
 <span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
 </code></pre><p>These return PathBlocks, so all the same methods — <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, transforms — work on them.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjAwJTIwMjYwJTIyJTBBJTJGJTJGJTIwU3RhbmRhcmQlMjBsaWJyYXJ5JTIwc2hhcGUlMjBnYWxsZXJ5JTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA2MDAlMkMlMjAyNjApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwR3JpZCUyMGNlbGxzJTIwLS0tJTBBJTBBbGV0JTIwY2VsbHMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2NlbGxzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzFlMjkzYicpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzMzNDE1NScpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSU3RCUzQiUwQWNlbGxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwcm91bmRSZWN0KDE1JTJDJTIwNTAlMkMlMjAxMDAlMkMlMjAxMDAlMkMlMjA2KSUwQSUyMCUyMHJvdW5kUmVjdCgxMzAlMkMlMjA1MCUyQyUyMDEwMCUyQyUyMDEwMCUyQyUyMDYpJTBBJTIwJTIwcm91bmRSZWN0KDI0NSUyQyUyMDUwJTJDJTIwMTAwJTJDJTIwMTAwJTJDJTIwNiklMEElMjAlMjByb3VuZFJlY3QoMzYwJTJDJTIwNTAlMkMlMjAxMDAlMkMlMjAxMDAlMkMlMjA2KSUwQSUyMCUyMHJvdW5kUmVjdCg0NzUlMkMlMjA1MCUyQyUyMDEwMCUyQyUyMDEwMCUyQyUyMDYpJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2hhcGVzJTIwLS0tJTBBJTBBbGV0JTIwczElMjAlM0QlMjBQYXRoTGF5ZXIoJ3MtY2lyY2xlJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzNiODJmNjE4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEFzMS5hcHBseSUyMCU3QiUyMGNpcmNsZSg2NSUyQyUyMDEwMCUyQyUyMDMwKSUyMCU3RCUwQSUwQWxldCUyMHMyJTIwJTNEJTIwUGF0aExheWVyKCdzLXJlY3QnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzMjJjNTVlMTgnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMyMmM1NWUnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUwQSU3RCUzQiUwQXMyLmFwcGx5JTIwJTdCJTIwcmVjdCgxNTAlMkMlMjA3MiUyQyUyMDYwJTJDJTIwNDApJTIwJTdEJTBBJTBBbGV0JTIwczMlMjAlM0QlMjBQYXRoTGF5ZXIoJ3Mtc3RhcicpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNmNTllMGIxOCcpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBczMuYXBwbHklMjAlN0IlMjBzdGFyKDI5NSUyQyUyMDEwMCUyQyUyMDMyJTJDJTIwMTQlMkMlMjA1KSUyMCU3RCUwQSUwQWxldCUyMHM0JTIwJTNEJTIwUGF0aExheWVyKCdzLXBvbHlnb24nKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZWY0NDQ0MTgnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjNlZjQ0NDQnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUwQSU3RCUzQiUwQXM0LmFwcGx5JTIwJTdCJTIwcG9seWdvbig0MTAlMkMlMjAxMDAlMkMlMjAzMCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwczUlMjAlM0QlMjBQYXRoTGF5ZXIoJ3Mtcm91bmRyZWN0JyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzhiNWNmNjE4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzOGI1Y2Y2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEFzNS5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCg0OTglMkMlMjA3NSUyQyUyMDU1JTJDJTIwNDAlMkMlMjA4KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNoYXBlJTIwbmFtZXMlMjAtLS0lMEElMEFsZXQlMjBuYW1lcyUyMCUzRCUyMFRleHRMYXllcignbmFtZXMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFuYW1lcy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNjUlMkMlMjAxNzApJTYwY2lyY2xlKCklNjAlMEElMjAlMjB0ZXh0KDE4MCUyQyUyMDE3MCklNjByZWN0KCklNjAlMEElMjAlMjB0ZXh0KDI5NSUyQyUyMDE3MCklNjBzdGFyKCklNjAlMEElMjAlMjB0ZXh0KDQxMCUyQyUyMDE3MCklNjBwb2x5Z29uKCklNjAlMEElMjAlMjB0ZXh0KDUyNSUyQyUyMDE3MCklNjByb3VuZFJlY3QoKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNpZ25hdHVyZXMlMjAtLS0lMEElMEFsZXQlMjBzaWdzJTIwJTNEJTIwVGV4dExheWVyKCdzaWdzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDclM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFzaWdzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg2NSUyQyUyMDE4MyklNjBjeCUyQyUyMGN5JTJDJTIwciU2MCUwQSUyMCUyMHRleHQoMTgwJTJDJTIwMTgzKSU2MHglMkMlMjB5JTJDJTIwdyUyQyUyMGglNjAlMEElMjAlMjB0ZXh0KDI5NSUyQyUyMDE4MyklNjBjeCUyQyUyMGN5JTJDJTIwUiUyQyUyMHIlMkMlMjBuJTYwJTBBJTIwJTIwdGV4dCg0MTAlMkMlMjAxODMpJTYwY3glMkMlMjBjeSUyQyUyMHIlMkMlMjBzaWRlcyU2MCUwQSUyMCUyMHRleHQoNTI1JTJDJTIwMTgzKSU2MHglMkMlMjB5JTJDJTIwdyUyQyUyMGglMkMlMjByJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVXNhZ2UlMjBleGFtcGxlJTIwLS0tJTBBJTBBbGV0JTIwdXNhZ2UlMjAlM0QlMjBUZXh0TGF5ZXIoJ3VzYWdlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXVzYWdlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNSUyQyUyMDIyMCklNjBsZXQlMjBzaGFwZSUyMCUzRCUyMCU0MCU3QiUyMGNpcmNsZSgwJTJDJTIwMCUyQyUyMDMwKSUyMCU3RCUzQiU2MCUwQSUyMCUyMHRleHQoMTUlMkMlMjAyMzQpJTYwc2hhcGUuZHJhd1RvKDEwMCUyQyUyMDEwMCklNjAlMEElN0QlMEElMEFsZXQlMjB1c2FnZV9rdyUyMCUzRCUyMFRleHRMYXllcigndXNhZ2Uta3cnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdXNhZ2Vfa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDE1JTJDJTIwMjIwKSU2MGxldCU2MCUwQSU3RCUwQSUwQWxldCUyMHVzYWdlX25vdGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3VzYWdlLW5vdGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdXNhZ2Vfbm90ZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzEwJTJDJTIwMjIwKSU2MCUyRiUyRiUyMEFsbCUyMHN0ZGxpYiUyMGZ1bmN0aW9ucyUyMHJldHVybiUyMFBhdGhCbG9ja3MlNjAlMEElMjAlMjB0ZXh0KDMxMCUyQyUyMDIzNCklNjAlMkYlMkYlMjBVc2UlMjBpbnNpZGUlMjAlNDAlN0IlMjAlN0QlMjBvciUyMGRpcmVjdGx5JTIwaW4lMjAuYXBwbHklMjAlN0IlMjAlN0QlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUaXRsZSUyMC0tLSUwQSUwQWxldCUyMHRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTQlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2UyZThmMCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxNSUyQyUyMDMyKSU2MFN0YW5kYXJkJTIwTGlicmFyeSUyMFNoYXBlcyU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQXN1YnRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMjAlMkMlMjAzMiklNjBCdWlsdC1pbiUyMHBhdGglMjBmdW5jdGlvbnMlMjBmb3IlMjBjb21tb24lMjBnZW9tZXRyeSU2MCUwQSU3RCUwQQ==" caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 600 260&quot;</span>
-<span class="hljs-comment">// Standard library shape gallery</span>
+<p><mini-workspace caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
+  <code>// viewBox="0 0 600 260"
+// Standard library shape gallery
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">600</span>, <span class="hljs-number">260</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 600, 260) }
 
-<span class="hljs-comment">// --- Grid cells ---</span>
+// --- Grid cells ---
 
-<span class="hljs-keyword">let</span> cells = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cells&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e293b&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#334155&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+let cells = PathLayer('cells') ${
+  fill: Color('#1e293b');
+  stroke: Color('#334155');
+  stroke-width: 1;
 };
-cells.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">15</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
-  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">130</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
-  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">245</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
-  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">360</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
-  <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">475</span>, <span class="hljs-number">50</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span>, <span class="hljs-number">6</span>)
+cells.apply {
+  roundRect(15, 50, 100, 100, 6)
+  roundRect(130, 50, 100, 100, 6)
+  roundRect(245, 50, 100, 100, 6)
+  roundRect(360, 50, 100, 100, 6)
+  roundRect(475, 50, 100, 100, 6)
 }
 
-<span class="hljs-comment">// --- Shapes ---</span>
+// --- Shapes ---
 
-<span class="hljs-keyword">let</span> s1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-circle&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f618&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let s1 = PathLayer('s-circle') ${
+  fill: Color('#3b82f618');
+  stroke: Color('#3b82f6');
+  stroke-width: 1.5;
 };
-s1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">65</span>, <span class="hljs-number">100</span>, <span class="hljs-number">30</span>) }
+s1.apply { circle(65, 100, 30) }
 
-<span class="hljs-keyword">let</span> s2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-rect&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e18&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let s2 = PathLayer('s-rect') ${
+  fill: Color('#22c55e18');
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
 };
-s2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">150</span>, <span class="hljs-number">72</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) }
+s2.apply { rect(150, 72, 60, 40) }
 
-<span class="hljs-keyword">let</span> s3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-star&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b18&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let s3 = PathLayer('s-star') ${
+  fill: Color('#f59e0b18');
+  stroke: Color('#f59e0b');
+  stroke-width: 1.5;
 };
-s3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">star</span>(<span class="hljs-number">295</span>, <span class="hljs-number">100</span>, <span class="hljs-number">32</span>, <span class="hljs-number">14</span>, <span class="hljs-number">5</span>) }
+s3.apply { star(295, 100, 32, 14, 5) }
 
-<span class="hljs-keyword">let</span> s4 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-polygon&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef444418&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let s4 = PathLayer('s-polygon') ${
+  fill: Color('#ef444418');
+  stroke: Color('#ef4444');
+  stroke-width: 1.5;
 };
-s4.<span class="hljs-property">apply</span> { <span class="hljs-title function_">polygon</span>(<span class="hljs-number">410</span>, <span class="hljs-number">100</span>, <span class="hljs-number">30</span>, <span class="hljs-number">6</span>) }
+s4.apply { polygon(410, 100, 30, 6) }
 
-<span class="hljs-keyword">let</span> s5 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s-roundrect&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf618&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8b5cf6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let s5 = PathLayer('s-roundrect') ${
+  fill: Color('#8b5cf618');
+  stroke: Color('#8b5cf6');
+  stroke-width: 1.5;
 };
-s5.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">498</span>, <span class="hljs-number">75</span>, <span class="hljs-number">55</span>, <span class="hljs-number">40</span>, <span class="hljs-number">8</span>) }
+s5.apply { roundRect(498, 75, 55, 40, 8) }
 
-<span class="hljs-comment">// --- Shape names ---</span>
+// --- Shape names ---
 
-<span class="hljs-keyword">let</span> names = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;names&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let names = TextLayer('names') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: middle;
 };
-names.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">65</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`circle()`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">180</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`rect()`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`star()`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">410</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`polygon()`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">525</span>, <span class="hljs-number">170</span>)<span class="hljs-string">`roundRect()`</span>
+names.apply {
+  text(65, 170)`circle()`
+  text(180, 170)`rect()`
+  text(295, 170)`star()`
+  text(410, 170)`polygon()`
+  text(525, 170)`roundRect()`
 }
 
-<span class="hljs-comment">// --- Signatures ---</span>
+// --- Signatures ---
 
-<span class="hljs-keyword">let</span> sigs = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;sigs&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let sigs = TextLayer('sigs') ${
+  font-family: monospace;
+  font-size: 7;
+  fill: Color('#64748b');
+  text-anchor: middle;
 };
-sigs.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">65</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`cx, cy, r`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">180</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`x, y, w, h`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`cx, cy, R, r, n`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">410</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`cx, cy, r, sides`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">525</span>, <span class="hljs-number">183</span>)<span class="hljs-string">`x, y, w, h, r`</span>
+sigs.apply {
+  text(65, 183)`cx, cy, r`
+  text(180, 183)`x, y, w, h`
+  text(295, 183)`cx, cy, R, r, n`
+  text(410, 183)`cx, cy, r, sides`
+  text(525, 183)`x, y, w, h, r`
 }
 
-<span class="hljs-comment">// --- Usage example ---</span>
+// --- Usage example ---
 
-<span class="hljs-keyword">let</span> usage = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;usage&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let usage = TextLayer('usage') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-usage.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`let shape = @{ circle(0, 0, 30) };`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">234</span>)<span class="hljs-string">`shape.drawTo(100, 100)`</span>
+usage.apply {
+  text(15, 220)`let shape = @{ circle(0, 0, 30) };`
+  text(15, 234)`shape.drawTo(100, 100)`
 }
 
-<span class="hljs-keyword">let</span> usage_kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;usage-kw&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let usage_kw = TextLayer('usage-kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
 };
-usage_kw.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`let`</span>
+usage_kw.apply {
+  text(15, 220)`let`
 }
 
-<span class="hljs-keyword">let</span> usage_note = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;usage-note&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let usage_note = TextLayer('usage-note') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-usage_note.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">310</span>, <span class="hljs-number">220</span>)<span class="hljs-string">`// All stdlib functions return PathBlocks`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">310</span>, <span class="hljs-number">234</span>)<span class="hljs-string">`// Use inside @{ } or directly in .apply { }`</span>
+usage_note.apply {
+  text(310, 220)`// All stdlib functions return PathBlocks`
+  text(310, 234)`// Use inside @{ } or directly in .apply { }`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">15</span>, <span class="hljs-number">32</span>)<span class="hljs-string">`Standard Library Shapes`</span>
+title.apply {
+  text(15, 32)`Standard Library Shapes`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">220</span>, <span class="hljs-number">32</span>)<span class="hljs-string">`Built-in path functions for common geometry`</span>
+subtitle.apply {
+  text(220, 32)`Built-in path functions for common geometry`
 }
 </code>
   <img src="/pathogen/blog/samples/post6/stdlib-showcase.svg" alt="Standard library shapes — circle, rect, star, polygon, and roundRect" loading="lazy">

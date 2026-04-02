@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen — Pathogen</title>
+  <meta name="description" content="Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each.">
+  <link rel="canonical" href="https://pedestal.design/pathogen/blog/grid-functions">
+  <meta property="og:title" content="Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen — Pathogen">
+  <meta property="og:description" content="Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each.">
+  <meta property="og:url" content="https://pedestal.design/pathogen/blog/grid-functions">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen","description":"Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each.","datePublished":"2026-03-23","url":"https://pedestal.design/pathogen/blog/grid-functions","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pedestal.design"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg-primary, #f8f9fa);
+      color: var(--text-primary, #1a1a2e);
+    }
+
+    /* Nav bar */
+    .site-header {
+      background: var(--bg-secondary, #ffffff);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .site-header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; height: 56px; gap: 1rem;
+    }
+    .logo {
+      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
+    }
+    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
+    .logo-main {
+      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
+      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
+    }
+    .logo-sub {
+      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
+      color: var(--text-secondary, #64748b); white-space: nowrap;
+    }
+    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
+    .nav-link {
+      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
+      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
+    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      background: var(--bg-primary, #f8f9fa);
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+      position: sticky; top: 56px; z-index: 40;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .site-header-inner { padding: 0 0.75rem; height: 52px; }
+      .breadcrumb-bar { top: 52px; }
+      .logo-sub { display: none; }
+      .site-nav { gap: 0; }
+      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+    @media (max-width: 600px) {
+      .site-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="/pathogen/">
+        <span class="logo-main">Pathogen</span>
+        <span class="logo-sub">built on svg-path-extended v1.0</span>
+      </a>
+      <nav class="site-nav">
+          <a class="nav-link" href="/pathogen/">Workspaces</a>
+          <a class="nav-link" href="/pathogen/docs">Docs</a>
+          <a class="nav-link" href="/pathogen/explore">Explore</a>
+          <a class="nav-link" href="/pathogen/featured">Featured</a>
+          <a class="nav-link active" href="/pathogen/blog">Blog</a>
+          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+      </nav>
+      <theme-toggle></theme-toggle>
+    </div>
+  </header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen</h1>
+        <p class="post-meta"><time datetime="2026-03-23">March 22, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p>Grid patterns show up everywhere — engineering overlays, graph paper, game boards, architectural plans, generative art backgrounds. Building one from scratch means nested loops, coordinate math, and careful edge deduplication for triangles and hexagons. Pathogen&#39;s three new grid functions collapse all of that into a single call.</p>
+<p><code>squareGrid</code>, <code>triangleGrid</code>, and <code>hexagonGrid</code> each generate complete path geometry within a bounding rectangle. A <a href="/pathogen/docs#stdlib-grid-functions"><code>GridPatternType</code></a> enum selects the visual style — <strong>Shape</strong>, <strong>Dot</strong>, <strong>Intersection</strong>, or <strong>Partial</strong> — and all three return <code>PathSegment</code> values, so they compose with <a href="/pathogen/docs#layers-defining-layers">layers</a>, transforms, and clip paths just like <code>circle()</code> or <code>polygon()</code>.</p>
+<h2>Square Grids</h2>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">squareGrid</span>(type, x, y, width, height, cellSize)
+</code></pre><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td><code>GridPatternType</code> — <code>.Shape</code>, <code>.Dot</code>, <code>.Intersection</code>, or <code>.Partial</code></td>
+</tr>
+<tr>
+<td><code>x, y</code></td>
+<td>Top-left origin</td>
+</tr>
+<tr>
+<td><code>width, height</code></td>
+<td>Bounding dimensions</td>
+</tr>
+<tr>
+<td><code>cellSize</code></td>
+<td>Side length of each square cell</td>
+</tr>
+</tbody></table>
+<p>The grid fills as many complete cells as fit: <code>floor(width / cellSize)</code> columns and <code>floor(height / cellSize)</code> rows. Extra space is ignored.</p>
+<p><mini-workspace code-open caption="squareGrid — four pattern types with reactive colors">
+  <code>// viewBox="0 0 400 400"
+// Square grid — all four pattern types
+
+let gridColor = Color(CSSVar('--grid-color', #4488ff));
+let bgColor = Color(CSSVar('--bg-color', #0f172a));
+
+let cellSize = 14;
+let gridW = 160;
+let gridH = 150;
+let pad = 20;
+
+// Background
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// Grid layers — each pattern in a different hue
+let shapeColor = gridColor;
+let dotColor = gridColor.hueShift(90);
+let intColor = gridColor.hueShift(180);
+let partColor = gridColor.hueShift(270);
+
+let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+
+// Top-left: Shape
+shapeLayer.apply {
+  squareGrid(GridPatternType.Shape, pad, pad + 15, gridW, gridH, cellSize);
+}
+
+// Top-right: Dot
+dotLayer.apply {
+  squareGrid(GridPatternType.Dot, 220, pad + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-left: Intersection
+intLayer.apply {
+  squareGrid(GridPatternType.Intersection, pad, 215 + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-right: Partial
+partLayer.apply {
+  squareGrid(GridPatternType.Partial, 220, 220 + 15, gridW, gridH, cellSize);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+labels.apply {
+  text(pad, pad + 8)`Shape`
+  text(220, pad + 8)`Dot`
+  text(pad, 220 + 8)`Intersection`
+  text(220, 220 + 8)`Partial`
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/square-grid-patterns.svg" alt="squareGrid — four pattern types with reactive colors" loading="lazy">
+</mini-workspace></p>
+<h2>Triangle Grids</h2>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">triangleGrid</span>(type, x, y, width, height, cellSize)
+</code></pre><p>Same parameters as <code>squareGrid</code>, but <code>cellSize</code> is the triangle <strong>height</strong> (altitude of the equilateral triangle). The side length is derived: <code>side = 2 × cellSize / √3</code>. Triangles alternate between point-up and point-down orientations, with odd rows offset by half a side length to form a seamless tessellation.</p>
+<p>The intersection marks on triangle grids are edge-aligned — six arms at 60° intervals (three bidirectional lines), matching the grid&#39;s natural symmetry where six edges meet at each interior vertex.</p>
+<p><mini-workspace code-open caption="triangleGrid — equilateral triangle tessellation in four pattern types">
+  <code>// viewBox="0 0 400 400"
+// Triangle grid — all four pattern types
+
+let gridColor = Color(CSSVar('--grid-color', #44cc88));
+let bgColor = Color(CSSVar('--bg-color', #0f172a));
+
+let cellSize = 14;
+let gridW = 160;
+let gridH = 150;
+let pad = 20;
+
+// Background
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// Grid layers
+let shapeColor = gridColor;
+let dotColor = gridColor.hueShift(90);
+let intColor = gridColor.hueShift(180);
+let partColor = gridColor.hueShift(270);
+
+let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+
+// Top-left: Shape
+shapeLayer.apply {
+  triangleGrid(GridPatternType.Shape, pad, pad + 15, gridW, gridH, cellSize);
+}
+
+// Top-right: Dot
+dotLayer.apply {
+  triangleGrid(GridPatternType.Dot, 220, pad + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-left: Intersection
+intLayer.apply {
+  triangleGrid(GridPatternType.Intersection, pad, 215 + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-right: Partial
+partLayer.apply {
+  triangleGrid(GridPatternType.Partial, 220, 220 + 15, gridW, gridH, cellSize);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+labels.apply {
+  text(pad, pad + 8)`Shape`
+  text(220, pad + 8)`Dot`
+  text(pad, 220 + 8)`Intersection`
+  text(220, 220 + 8)`Partial`
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/triangle-grid-patterns.svg" alt="triangleGrid — equilateral triangle tessellation in four pattern types" loading="lazy">
+</mini-workspace></p>
+<h2>Hexagon Grids</h2>
+<pre><code class="hljs language-pathogen"><span class="hljs-title function_">hexagonGrid</span>(type, x, y, width, height, cellSize, orientation?)
+</code></pre><p>The hexagon function adds a seventh parameter: <code>orientation</code>. It accepts the <code>HexagonOrientation</code> enum — <code>.Edge</code> for flat-top hexagons (an edge faces up) or <code>.Vertex</code> for pointy-top (a vertex faces up). When omitted, it defaults to <code>.Edge</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Orientation</th>
+<th>Top</th>
+<th>cellSize meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>HexagonOrientation.Edge</code></td>
+<td>Flat edge</td>
+<td>Flat-to-flat height</td>
+</tr>
+<tr>
+<td><code>HexagonOrientation.Vertex</code></td>
+<td>Pointed vertex</td>
+<td>Point-to-point height</td>
+</tr>
+</tbody></table>
+<p>Intersection marks on hex grids are 3-arm radial marks — matching the three edges that meet at each vertex.</p>
+<p><mini-workspace code-open caption="hexagonGrid — flat-top hexagons in four pattern types">
+  <code>// viewBox="0 0 400 400"
+// Hexagon grid — all four pattern types (flat-top)
+
+let gridColor = Color(CSSVar('--grid-color', #ff6688));
+let bgColor = Color(CSSVar('--bg-color', #0f172a));
+
+let cellSize = 18;
+let gridW = 160;
+let gridH = 150;
+let pad = 20;
+
+// Background
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// Grid layers
+let shapeColor = gridColor;
+let dotColor = gridColor.hueShift(90);
+let intColor = gridColor.hueShift(180);
+let partColor = gridColor.hueShift(270);
+
+let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+
+// Top-left: Shape
+shapeLayer.apply {
+  hexagonGrid(GridPatternType.Shape, pad, pad + 15, gridW, gridH, cellSize);
+}
+
+// Top-right: Dot
+dotLayer.apply {
+  hexagonGrid(GridPatternType.Dot, 220, pad + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-left: Intersection
+intLayer.apply {
+  hexagonGrid(GridPatternType.Intersection, pad, 215 + 15, gridW, gridH, cellSize);
+}
+
+// Bottom-right: Partial
+partLayer.apply {
+  hexagonGrid(GridPatternType.Partial, 220, 220 + 15, gridW, gridH, cellSize);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+labels.apply {
+  text(pad, pad + 8)`Shape`
+  text(220, pad + 8)`Dot`
+  text(pad, 220 + 8)`Intersection`
+  text(220, 220 + 8)`Partial`
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/hexagon-grid-patterns.svg" alt="hexagonGrid — flat-top hexagons in four pattern types" loading="lazy">
+</mini-workspace></p>
+<h3>Orientation Comparison</h3>
+<p>The two orientations produce visually distinct tessellations from the same cell size:</p>
+<p><mini-workspace code-open caption="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)">
+  <code>// viewBox="0 0 400 200"
+// Hexagon orientations — flat-top (Edge) vs pointy-top (Vertex)
+
+let gridColor = Color(CSSVar('--grid-color', #cc88ff));
+let bgColor = Color(CSSVar('--bg-color', #0f172a));
+
+let cellSize = 18;
+let gridW = 150;
+let gridH = 140;
+let pad = 20;
+
+// Background
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 400, 200) }
+
+// Grid layers
+let flatColor = gridColor;
+let pointyColor = gridColor.hueShift(120);
+
+let flatLayer = PathLayer('flat') ${ stroke: flatColor; stroke-width: 0.4; fill: none; };
+let pointyLayer = PathLayer('pointy') ${ stroke: pointyColor; stroke-width: 0.4; fill: none; };
+
+// Left: Flat-top (Edge)
+flatLayer.apply {
+  hexagonGrid(GridPatternType.Shape, pad, pad + 15, gridW, gridH, cellSize, HexagonOrientation.Edge);
+}
+
+// Right: Pointy-top (Vertex)
+pointyLayer.apply {
+  hexagonGrid(GridPatternType.Shape, 220, pad + 15, gridW, gridH, cellSize, HexagonOrientation.Vertex);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #94a3b8;
+  text-anchor: start;
+};
+labels.apply {
+  text(pad, pad + 8)`Flat-top (Edge)`
+  text(220, pad + 8)`Pointy-top (Vertex)`
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/hexagon-orientations.svg" alt="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)" loading="lazy">
+</mini-workspace></p>
+<h2>Four Pattern Types</h2>
+<p>All three grid functions share the same <code>GridPatternType</code> enum:</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Visual</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Shape</strong></td>
+<td>Cell outlines</td>
+<td>Complete grid lines — every edge drawn once</td>
+</tr>
+<tr>
+<td><strong>Dot</strong></td>
+<td>Small circles</td>
+<td>Dots at every grid vertex</td>
+</tr>
+<tr>
+<td><strong>Intersection</strong></td>
+<td>Edge-aligned marks</td>
+<td>Marks where edges meet — axis-aligned <code>+</code> for squares, 6-arm stars for triangles (3 bidirectional lines at 60°), 3-arm Y for hexagons</td>
+</tr>
+<tr>
+<td><strong>Partial</strong></td>
+<td>Centered segments</td>
+<td>40% of each edge length, centered on the edge midpoint</td>
+</tr>
+</tbody></table>
+<p>Pattern proportions are relative to <code>cellSize</code>: dot radius is 2.5%, intersection arm length is 7.5%.</p>
+<h2>Putting It Together</h2>
+<p>Grid functions are most useful as background textures layered behind other geometry. Combine them with <a href="/pathogen/docs#layers-defining-layers">layer transforms</a> for rotation, and use <code>Color</code> methods to derive palette variations from a single reactive base color:</p>
+<p><mini-workspace code-open caption="Layered composition — rotated partial grid, hex outline, and triangle intersections">
+  <code>// viewBox="0 0 400 400"
+// Practical composition — rotated grid background with foreground geometry
+
+let gridColor = Color(CSSVar('--grid-color', #5577aa));
+let bgColor = Color(CSSVar('--bg-color', #0f172a));
+
+// Background
+let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// Layer 1: Rotated partial grid as background texture
+let gridLayer = PathLayer('grid') ${ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };
+gridLayer.ctx.transform.rotate.set(0.08pi);
+gridLayer.apply {
+  squareGrid(GridPatternType.Partial, -40, -40, 480, 480, 16);
+}
+
+// Layer 2: Hex grid overlay with shape pattern
+let accentColor = gridColor.lighten(30%);
+let hexLayer = PathLayer('hex') ${ stroke: accentColor; stroke-width: 0.5; fill: none; };
+hexLayer.apply {
+  hexagonGrid(GridPatternType.Shape, 60, 60, 280, 280, 30);
+}
+
+// Layer 3: Triangle intersection marks at center
+let triColor = gridColor.hueShift(180).lighten(20%);
+let triLayer = PathLayer('tri') ${ stroke: triColor; stroke-width: 0.6; fill: none; stroke-linecap: round; };
+triLayer.apply {
+  triangleGrid(GridPatternType.Intersection, 120, 120, 160, 160, 25);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: #64748b;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 388)`Rotated partial grid + hex outlines + triangle intersections`
+}
+</code>
+  <img src="/pathogen/blog/samples/post15/grid-composition.svg" alt="Layered composition — rotated partial grid, hex outline, and triangle intersections" loading="lazy">
+</mini-workspace></p>
+<p>The composition uses three techniques worth noting:</p>
+<ul>
+<li><strong>Rotation via transforms</strong> — <code>gridLayer.ctx.transform.rotate.set(0.08pi)</code> tilts the background grid. The grid area is oversized (<code>-40, -40, 480, 480</code>) to prevent gaps at the rotated corners.</li>
+<li><strong>Layered grid types</strong> — a partial square grid as subtle texture, hex outlines as mid-ground structure, and triangle intersection marks as a focal accent. Each gets its own <code>PathLayer</code> with distinct styling.</li>
+<li><strong>Color derivation</strong> — all three grid colors derive from a single <code>--grid-color</code> variable via <code>.lighten()</code> and <code>.hueShift()</code>, so changing the base color recolors the entire composition.</li>
+</ul>
+<p>The core pattern is always the same: create a styled <code>PathLayer</code>, optionally set a transform, then call the grid function inside <code>layer.apply {}</code>.</p>
+<p>Three functions, four pattern types, two hexagon orientations — enough to cover graph paper, game boards, engineering overlays, and generative art backgrounds without writing a single loop. Try changing the <code>--grid-color</code> and <code>--bg-color</code> variables in any of the examples above to see how the reactive colors work.</p>
+<p>For the full function signatures and parameter details, see the <a href="/pathogen/docs#stdlib-grid-functions">stdlib reference</a>. For layer management and transforms, see the <a href="/pathogen/docs#layers-defining-layers">layers documentation</a>. For combining grids with reusable path blocks, see the <a href="/pathogen/blog/pathblock-introduction">PathBlock introduction</a>.</p>
+
+      </div>
+    </article>
+  </main>
+  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

@@ -90,22 +90,10 @@ export class MiniWorkspace extends HTMLElement {
   }
 
   private _captureChildren(): void {
-    // Decode source from code-data attribute (base64)
-    const codeData = this.getAttribute('code-data');
-    if (codeData) {
-      try {
-        this._sourceCode = decodeURIComponent(atob(codeData));
-      } catch {
-        this._sourceCode = '';
-      }
-    }
-
-    // Fallback: extract from <code> child (with or without <pre> wrapper)
-    if (!this._sourceCode) {
-      const codeEl = this.querySelector('code') || this.querySelector('pre code');
-      if (codeEl) {
-        this._sourceCode = codeEl.textContent || '';
-      }
+    // Extract source from <code> child (with or without <pre> wrapper)
+    const codeEl = this.querySelector('code') || this.querySelector('pre code');
+    if (codeEl) {
+      this._sourceCode = codeEl.textContent || '';
     }
 
     // Extract dimensions from viewBox comment in source (e.g., // viewBox="0 0 400 400")

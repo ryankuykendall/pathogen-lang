@@ -303,185 +303,185 @@ code.hljs {
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sky_layer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sky-fill&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sky; <span class="hljs-attr">stroke</span>: none; };
 sky_layer.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwTGluZWFyJTIwR3JhZGllbnQlMjBCYXNpY3MlMjAlRTIlODAlOTQlMjBMYXllcmVkJTIwTGFuZHNjYXBlJTBBJTJGJTJGJTIwRGVtb25zdHJhdGVzJTIwdmVydGljYWwlMkMlMjBkaWFnb25hbCUyQyUyMGFuZCUyMGhvcml6b250YWwlMjBsaW5lYXIlMjBncmFkaWVudHMlMEElMEElMkYlMkYlMjAtLS0lMjBHcmFkaWVudHMlMjAtLS0lMEElMEFsZXQlMjBza3lfZ3JhZCUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdza3knJTJDJTIwMCUyQyUyMDAlMkMlMjAwJTJDJTIwMSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMGQxYjJhJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNDUlMkMlMjBDb2xvcignJTIzMWI0OTY1JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNzUlMkMlMjBDb2xvcignJTIzYzU2YjVhJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuOSUyQyUyMCUyMENvbG9yKCclMjNlODk0NmInKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNmNGEyNjEnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBtdG5fZ3JhZCUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdtb3VudGFpbnMnJTJDJTIwMCUyQyUyMDAlMkMlMjAwLjglMkMlMjAxKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMENvbG9yKCclMjMxYTBlMmUnKSklM0IlMEElMjAlMjBnLnN0b3AoMC40JTJDJTIwQ29sb3IoJyUyMzJkMWI0ZScpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwQ29sb3IoJyUyMzVjNmI4YScpKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMGdyb3VuZF9ncmFkJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2dyb3VuZCclMkMlMjAwJTJDJTIwMCUyQyUyMDAlMkMlMjAxKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMENvbG9yKCclMjMxZTRkMGYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC41JTJDJTIwQ29sb3IoJyUyMzNhNmIyMicpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwQ29sb3IoJyUyMzZiNWExZScpKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHN1bl9ncmFkJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ3N1bnN0cmVhayclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNmNGEyNjEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4zNSUyQyUyMENvbG9yKCclMjNlODk0NmInKSklM0IlMEElMjAlMjBnLnN0b3AoMC43JTJDJTIwJTIwQ29sb3IoJyUyM2M1NmI1YScpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzBkMWIyYScpKSUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMExheWVycyUyMC0tLSUwQSUwQWxldCUyMHNreSUyMCUzRCUyMFBhdGhMYXllcignc2t5LWZpbGwnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBza3lfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFza3kuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDAwJTJDJTIwMzAwKSUyMCU3RCUwQSUwQWxldCUyMHN1biUyMCUzRCUyMFBhdGhMYXllcignc3VuLXN0cmVhaycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHN1bl9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXN1bi5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDE1NSUyQyUyMDQwMCUyQyUyMDMwKSUyMCU3RCUwQSUwQWxldCUyMGZhcl9tdG5zJTIwJTNEJTIwUGF0aExheWVyKCdmYXItbW91bnRhaW5zJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbXRuX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZmFyX210bnMuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwMCUyMDIyMCUwQSUyMCUyMEwlMjA0MCUyMDE3NSUyMEwlMjA5MCUyMDIwMCUyMEwlMjAxNDAlMjAxNTUlMjBMJTIwMjAwJTIwMTMwJTBBJTIwJTIwTCUyMDI2MCUyMDE2MCUyMEwlMjAzMTAlMjAxNDAlMjBMJTIwMzYwJTIwMTY1JTIwTCUyMDQwMCUyMDE1MCUwQSUyMCUyMEwlMjA0MDAlMjAzMDAlMjBMJTIwMCUyMDMwMCUyMFolMEElN0QlMEElMEFsZXQlMjBuZWFyX210bnMlMjAlM0QlMjBQYXRoTGF5ZXIoJ25lYXItbW91bnRhaW5zJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbXRuX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwb3BhY2l0eSUzQSUyMDAuNyUzQiUyMCU3RCUzQiUwQW5lYXJfbXRucy5hcHBseSUyMCU3QiUwQSUyMCUyME0lMjAwJTIwMjYwJTBBJTIwJTIwTCUyMDUwJTIwMjIwJTIwTCUyMDEwMCUyMDI0MCUyMEwlMjAxNzAlMjAxOTUlMjBMJTIwMjMwJTIwMjI1JTBBJTIwJTIwTCUyMDI5MCUyMDIwNSUyMEwlMjAzNTAlMjAyMzAlMjBMJTIwNDAwJTIwMjEwJTBBJTIwJTIwTCUyMDQwMCUyMDMwMCUyMEwlMjAwJTIwMzAwJTIwWiUwQSU3RCUwQSUwQWxldCUyMGdyb3VuZCUyMCUzRCUyMFBhdGhMYXllcignZ3JvdW5kLWZpbGwnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBncm91bmRfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFncm91bmQuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAyNTUlMkMlMjA0MDAlMkMlMjA0NSklMjAlN0QlMEElMEFsZXQlMjBmcmFtZSUyMCUzRCUyMFBhdGhMYXllcignZnJhbWUnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMWEwZTJlJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwNCUzQiUyMCU3RCUzQiUwQWZyYW1lLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDMwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTY2VuZSUyME9yZ2FuaXphdGlvbiUyMC0tLSUwQSUwQWxldCUyMHNjZW5lJTIwJTNEJTIwR3JvdXBMYXllcignc2NlbmUnKSUyMCUyNCU3QiU3RCUzQiUwQXNjZW5lLmFwcGVuZChza3klMkMlMjBzdW4lMkMlMjBmYXJfbXRucyUyQyUyMG5lYXJfbXRucyUyQyUyMGdyb3VuZCUyQyUyMGZyYW1lKSUwQQ==" code-open caption="Four linear gradients composing a layered landscape">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
-<span class="hljs-comment">// Linear Gradient Basics — Layered Landscape</span>
-<span class="hljs-comment">// Demonstrates vertical, diagonal, and horizontal linear gradients</span>
+<p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
+  <code>// viewBox="0 0 400 300"
+// Linear Gradient Basics — Layered Landscape
+// Demonstrates vertical, diagonal, and horizontal linear gradients
 
-<span class="hljs-comment">// --- Gradients ---</span>
+// --- Gradients ---
 
-<span class="hljs-keyword">let</span> sky_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;sky&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.45</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1b4965&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c56b5a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.9</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e8946b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+let sky_grad = LinearGradient('sky', 0, 0, 0, 1) {|g|
+  g.stop(0,    Color('#0d1b2a'));
+  g.stop(0.45, Color('#1b4965'));
+  g.stop(0.75, Color('#c56b5a'));
+  g.stop(0.9,  Color('#e8946b'));
+  g.stop(1,    Color('#f4a261'));
 };
 
-<span class="hljs-keyword">let</span> mtn_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;mountains&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.8</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a0e2e&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2d1b4e&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5c6b8a&#x27;</span>));
+let mtn_grad = LinearGradient('mountains', 0, 0, 0.8, 1) {|g|
+  g.stop(0,   Color('#1a0e2e'));
+  g.stop(0.4, Color('#2d1b4e'));
+  g.stop(1,   Color('#5c6b8a'));
 };
 
-<span class="hljs-keyword">let</span> ground_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;ground&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e4d0f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3a6b22&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6b5a1e&#x27;</span>));
+let ground_grad = LinearGradient('ground', 0, 0, 0, 1) {|g|
+  g.stop(0,   Color('#1e4d0f'));
+  g.stop(0.5, Color('#3a6b22'));
+  g.stop(1,   Color('#6b5a1e'));
 };
 
-<span class="hljs-keyword">let</span> sun_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;sunstreak&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.35</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e8946b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.7</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c56b5a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
+let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
+  g.stop(0,    Color('#f4a261'));
+  g.stop(0.35, Color('#e8946b'));
+  g.stop(0.7,  Color('#c56b5a'));
+  g.stop(1,    Color('#0d1b2a'));
 };
 
-<span class="hljs-comment">// --- Layers ---</span>
+// --- Layers ---
 
-<span class="hljs-keyword">let</span> sky = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sky-fill&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sky_grad; <span class="hljs-attr">stroke</span>: none; };
-sky.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+let sky = PathLayer('sky-fill') ${ fill: sky_grad; stroke: none; };
+sky.apply { rect(0, 0, 400, 300) }
 
-<span class="hljs-keyword">let</span> sun = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sun-streak&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sun_grad; <span class="hljs-attr">stroke</span>: none; };
-sun.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">155</span>, <span class="hljs-number">400</span>, <span class="hljs-number">30</span>) }
+let sun = PathLayer('sun-streak') ${ fill: sun_grad; stroke: none; };
+sun.apply { rect(0, 155, 400, 30) }
 
-<span class="hljs-keyword">let</span> far_mtns = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;far-mountains&#x27;</span>) ${ <span class="hljs-attr">fill</span>: mtn_grad; <span class="hljs-attr">stroke</span>: none; };
-far_mtns.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">0</span> <span class="hljs-number">220</span>
-  L <span class="hljs-number">40</span> <span class="hljs-number">175</span> L <span class="hljs-number">90</span> <span class="hljs-number">200</span> L <span class="hljs-number">140</span> <span class="hljs-number">155</span> L <span class="hljs-number">200</span> <span class="hljs-number">130</span>
-  L <span class="hljs-number">260</span> <span class="hljs-number">160</span> L <span class="hljs-number">310</span> <span class="hljs-number">140</span> L <span class="hljs-number">360</span> <span class="hljs-number">165</span> L <span class="hljs-number">400</span> <span class="hljs-number">150</span>
-  L <span class="hljs-number">400</span> <span class="hljs-number">300</span> L <span class="hljs-number">0</span> <span class="hljs-number">300</span> Z
+let far_mtns = PathLayer('far-mountains') ${ fill: mtn_grad; stroke: none; };
+far_mtns.apply {
+  M 0 220
+  L 40 175 L 90 200 L 140 155 L 200 130
+  L 260 160 L 310 140 L 360 165 L 400 150
+  L 400 300 L 0 300 Z
 }
 
-<span class="hljs-keyword">let</span> near_mtns = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;near-mountains&#x27;</span>) ${ <span class="hljs-attr">fill</span>: mtn_grad; <span class="hljs-attr">stroke</span>: none; <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.7</span>; };
-near_mtns.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">0</span> <span class="hljs-number">260</span>
-  L <span class="hljs-number">50</span> <span class="hljs-number">220</span> L <span class="hljs-number">100</span> <span class="hljs-number">240</span> L <span class="hljs-number">170</span> <span class="hljs-number">195</span> L <span class="hljs-number">230</span> <span class="hljs-number">225</span>
-  L <span class="hljs-number">290</span> <span class="hljs-number">205</span> L <span class="hljs-number">350</span> <span class="hljs-number">230</span> L <span class="hljs-number">400</span> <span class="hljs-number">210</span>
-  L <span class="hljs-number">400</span> <span class="hljs-number">300</span> L <span class="hljs-number">0</span> <span class="hljs-number">300</span> Z
+let near_mtns = PathLayer('near-mountains') ${ fill: mtn_grad; stroke: none; opacity: 0.7; };
+near_mtns.apply {
+  M 0 260
+  L 50 220 L 100 240 L 170 195 L 230 225
+  L 290 205 L 350 230 L 400 210
+  L 400 300 L 0 300 Z
 }
 
-<span class="hljs-keyword">let</span> ground = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ground-fill&#x27;</span>) ${ <span class="hljs-attr">fill</span>: ground_grad; <span class="hljs-attr">stroke</span>: none; };
-ground.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">400</span>, <span class="hljs-number">45</span>) }
+let ground = PathLayer('ground-fill') ${ fill: ground_grad; stroke: none; };
+ground.apply { rect(0, 255, 400, 45) }
 
-<span class="hljs-keyword">let</span> frame = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;frame&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #1a0e2e; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">4</span>; };
-frame.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+let frame = PathLayer('frame') ${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
+frame.apply { rect(0, 0, 400, 300) }
 
-<span class="hljs-comment">// --- Scene Organization ---</span>
+// --- Scene Organization ---
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(sky, sun, far_mtns, near_mtns, ground, frame)
+let scene = GroupLayer('scene') ${};
+scene.append(sky, sun, far_mtns, near_mtns, ground, frame)
 </code>
   <img src="/pathogen/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
 </mini-workspace></p>
 <h2>Gradient Direction</h2>
 <p>The <code>x1, y1 → x2, y2</code> coordinates control the gradient&#39;s angle. A vertical gradient uses <code>(0, 0, 0, 1)</code>. A horizontal one uses <code>(0, 0, 1, 0)</code>. Diagonals use any combination. Reversing the coordinates reverses the color flow — <code>(1, 0, 0, 0)</code> runs right to left.</p>
 <p>There is no <code>angle</code> property. The two-point model is more flexible: you can offset the start or end to create gradients that begin or end partway through an element, or run along arbitrary diagonals. The six swatches below show the same three color stops at six different directions.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwQW5nbGUlMjBGYW4lMjAlRTIlODAlOTQlMjBMaW5lYXIlMjBHcmFkaWVudCUyMERpcmVjdGlvbiUyMFNob3djYXNlJTBBJTJGJTJGJTIwU2FtZSUyMGdyYWRpZW50JTIwc3RvcHMlMjBhdCUyMDYlMjBkaWZmZXJlbnQlMjBhbmdsZXMlMkMlMjBhcnJhbmdlZCUyMGluJTIwYSUyMGZhbiUwQSUwQSUyRiUyRiUyMC0tLSUyMFNoYXJlZCUyMGNvbG9yJTIwcGFsZXR0ZSUyMC0tLSUwQSUwQWxldCUyMGMxJTIwJTNEJTIwQ29sb3IoJyUyM2U2Mzk0NicpJTNCJTBBbGV0JTIwYzIlMjAlM0QlMjBDb2xvcignJTIzZjRhMjYxJyklM0IlMEFsZXQlMjBjMyUyMCUzRCUyMENvbG9yKCclMjMyYTlkOGYnKSUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFNpeCUyMGdyYWRpZW50cyUyMGF0JTIwZGlmZmVyZW50JTIwZGlyZWN0aW9ucyUyMC0tLSUwQSUwQWxldCUyMGcwJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2ctcmlnaHQnJTJDJTIwMCUyQyUyMDAlMkMlMjAxJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBjMSklM0IlMjBnLnN0b3AoMC41JTJDJTIwYzIpJTNCJTIwZy5zdG9wKDElMkMlMjBjMyklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBnNjAlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnZy1kb3duLXJpZ2h0JyUyQyUyMDAlMkMlMjAwJTJDJTIwMSUyQyUyMDEpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwYzEpJTNCJTIwZy5zdG9wKDAuNSUyQyUyMGMyKSUzQiUyMGcuc3RvcCgxJTJDJTIwYzMpJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwZzkwJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2ctZG93biclMkMlMjAwJTJDJTIwMCUyQyUyMDAlMkMlMjAxKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMGMxKSUzQiUyMGcuc3RvcCgwLjUlMkMlMjBjMiklM0IlMjBnLnN0b3AoMSUyQyUyMGMzKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMGcxODAlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnZy1sZWZ0JyUyQyUyMDElMkMlMjAwJTJDJTIwMCUyQyUyMDApJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwYzEpJTNCJTIwZy5zdG9wKDAuNSUyQyUyMGMyKSUzQiUyMGcuc3RvcCgxJTJDJTIwYzMpJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwZzI0MCUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdnLXVwLWxlZnQnJTJDJTIwMSUyQyUyMDElMkMlMjAwJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBjMSklM0IlMjBnLnN0b3AoMC41JTJDJTIwYzIpJTNCJTIwZy5zdG9wKDElMkMlMjBjMyklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBnMjcwJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ2ctdXAnJTJDJTIwMCUyQyUyMDElMkMlMjAwJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBjMSklM0IlMjBnLnN0b3AoMC41JTJDJTIwYzIpJTNCJTIwZy5zdG9wKDElMkMlMjBjMyklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMWExYTJlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDQwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTd2F0Y2glMjBncmlkJTNBJTIwMyUyMGNvbHVtbnMlMjAlQzMlOTclMjAyJTIwcm93cyUyMC0tLSUwQSUwQWxldCUyMHN3MSUyMCUzRCUyMFBhdGhMYXllcignc3dhdGNoLXJpZ2h0JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwZzAlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBc3cxLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDIwJTJDJTIwNTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3cyJTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtZG93bi1yaWdodCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGc2MCUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFzdzIuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMTQ1JTJDJTIwNTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3czJTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtZG93bicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGc5MCUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFzdzMuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMjcwJTJDJTIwNTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3c0JTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtbGVmdCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGcxODAlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBc3c0LmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDIwJTJDJTIwMjE1JTJDJTIwMTEwJTJDJTIwNzAlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMHN3NSUyMCUzRCUyMFBhdGhMYXllcignc3dhdGNoLXVwLWxlZnQnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBnMjQwJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQXN3NS5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgxNDUlMkMlMjAyMTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBbGV0JTIwc3c2JTIwJTNEJTIwUGF0aExheWVyKCdzd2F0Y2gtdXAnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBnMjcwJTNCJTIwc3Ryb2tlJTNBJTIwJTIzMzMzJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQXN3Ni5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgyNzAlMkMlMjAyMTUlMkMlMjAxMTAlMkMlMjA3MCUyQyUyMDYpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwRGlyZWN0aW9uJTIwbGFiZWxzJTIwLS0tJTBBJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTElM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzYTBhMGMwJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElN0QlM0IlMEFsYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDc1JTJDJTIwMTQ1KSU2MCVFMiU4NiU5MiUyMHJpZ2h0JTIwKDAlMkMwJUUyJTg2JTkyMSUyQzApJTYwJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAxNDUpJTYwJUUyJTg2JTk4JTIwZGlhZ29uYWwlMjAoMCUyQzAlRTIlODYlOTIxJTJDMSklNjAlMEElMjAlMjB0ZXh0KDMyNSUyQyUyMDE0NSklNjAlRTIlODYlOTMlMjBkb3duJTIwKDAlMkMwJUUyJTg2JTkyMCUyQzEpJTYwJTBBJTIwJTIwdGV4dCg3NSUyQyUyMDMwNSklNjAlRTIlODYlOTAlMjBsZWZ0JTIwKDElMkMwJUUyJTg2JTkyMCUyQzApJTYwJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAzMDUpJTYwJUUyJTg2JTk2JTIwZGlhZ29uYWwlMjAoMSUyQzElRTIlODYlOTIwJTJDMCklNjAlMEElMjAlMjB0ZXh0KDMyNSUyQyUyMDMwNSklNjAlRTIlODYlOTElMjB1cCUyMCgwJTJDMSVFMiU4NiU5MjAlMkMwKSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjNlMGUwZmYlM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSUyMCUyMGZvbnQtd2VpZ2h0JTNBJTIwYm9sZCUzQiUwQSU3RCUzQiUwQXRpdGxlLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAzNzApJTYwTGluZWFyJTIwR3JhZGllbnQlMjBEaXJlY3Rpb25zJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ2VudHJhbCUyMGNvbm5lY3RvciUyMC0tLSUwQSUwQWxldCUyMGNvbm5lY3RvciUyMCUzRCUyMFBhdGhMYXllcignY29ubmVjdG9yJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzQ0NDQ2NiUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFjb25uZWN0b3IuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwNzUlMjAxMzAlMjBMJTIwNzUlMjAyMTAlMEElMjAlMjBNJTIwMjAwJTIwMTMwJTIwTCUyMDIwMCUyMDIxMCUwQSUyMCUyME0lMjAzMjUlMjAxMzAlMjBMJTIwMzI1JTIwMjEwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBmYW4lMjAlM0QlMjBHcm91cExheWVyKCdmYW4nKSUyMCUyNCU3QiU3RCUzQiUwQWZhbi5hcHBlbmQoYmclMkMlMjBzdzElMkMlMjBzdzIlMkMlMjBzdzMlMkMlMjBzdzQlMkMlMjBzdzUlMkMlMjBzdzYlMkMlMjBsYWJlbHMlMkMlMjB0aXRsZSUyQyUyMGNvbm5lY3RvciklMEE=" caption="Same stops, six directions — the two-point model controls angle">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
-<span class="hljs-comment">// Angle Fan — Linear Gradient Direction Showcase</span>
-<span class="hljs-comment">// Same gradient stops at 6 different angles, arranged in a fan</span>
+<p><mini-workspace caption="Same stops, six directions — the two-point model controls angle">
+  <code>// viewBox="0 0 400 400"
+// Angle Fan — Linear Gradient Direction Showcase
+// Same gradient stops at 6 different angles, arranged in a fan
 
-<span class="hljs-comment">// --- Shared color palette ---</span>
+// --- Shared color palette ---
 
-<span class="hljs-keyword">let</span> c1 = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
-<span class="hljs-keyword">let</span> c2 = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>);
-<span class="hljs-keyword">let</span> c3 = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>);
+let c1 = Color('#e63946');
+let c2 = Color('#f4a261');
+let c3 = Color('#2a9d8f');
 
-<span class="hljs-comment">// --- Six gradients at different directions ---</span>
+// --- Six gradients at different directions ---
 
-<span class="hljs-keyword">let</span> g0 = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;g-right&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, c1); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, c2); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, c3);
+let g0 = LinearGradient('g-right', 0, 0, 1, 0) {|g|
+  g.stop(0, c1); g.stop(0.5, c2); g.stop(1, c3);
 };
 
-<span class="hljs-keyword">let</span> g60 = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;g-down-right&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, c1); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, c2); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, c3);
+let g60 = LinearGradient('g-down-right', 0, 0, 1, 1) {|g|
+  g.stop(0, c1); g.stop(0.5, c2); g.stop(1, c3);
 };
 
-<span class="hljs-keyword">let</span> g90 = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;g-down&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, c1); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, c2); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, c3);
+let g90 = LinearGradient('g-down', 0, 0, 0, 1) {|g|
+  g.stop(0, c1); g.stop(0.5, c2); g.stop(1, c3);
 };
 
-<span class="hljs-keyword">let</span> g180 = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;g-left&#x27;</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, c1); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, c2); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, c3);
+let g180 = LinearGradient('g-left', 1, 0, 0, 0) {|g|
+  g.stop(0, c1); g.stop(0.5, c2); g.stop(1, c3);
 };
 
-<span class="hljs-keyword">let</span> g240 = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;g-up-left&#x27;</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, c1); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, c2); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, c3);
+let g240 = LinearGradient('g-up-left', 1, 1, 0, 0) {|g|
+  g.stop(0, c1); g.stop(0.5, c2); g.stop(1, c3);
 };
 
-<span class="hljs-keyword">let</span> g270 = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;g-up&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, c1); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, c2); g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, c3);
+let g270 = LinearGradient('g-up', 0, 1, 0, 0) {|g|
+  g.stop(0, c1); g.stop(0.5, c2); g.stop(1, c3);
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #1a1a2e; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+let bg = PathLayer('bg') ${ fill: #1a1a2e; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
 
-<span class="hljs-comment">// --- Swatch grid: 3 columns × 2 rows ---</span>
+// --- Swatch grid: 3 columns × 2 rows ---
 
-<span class="hljs-keyword">let</span> sw1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;swatch-right&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g0; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-sw1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">20</span>, <span class="hljs-number">55</span>, <span class="hljs-number">110</span>, <span class="hljs-number">70</span>, <span class="hljs-number">6</span>) }
+let sw1 = PathLayer('swatch-right') ${ fill: g0; stroke: #333; stroke-width: 1; };
+sw1.apply { roundRect(20, 55, 110, 70, 6) }
 
-<span class="hljs-keyword">let</span> sw2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;swatch-down-right&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g60; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-sw2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">145</span>, <span class="hljs-number">55</span>, <span class="hljs-number">110</span>, <span class="hljs-number">70</span>, <span class="hljs-number">6</span>) }
+let sw2 = PathLayer('swatch-down-right') ${ fill: g60; stroke: #333; stroke-width: 1; };
+sw2.apply { roundRect(145, 55, 110, 70, 6) }
 
-<span class="hljs-keyword">let</span> sw3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;swatch-down&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g90; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-sw3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">270</span>, <span class="hljs-number">55</span>, <span class="hljs-number">110</span>, <span class="hljs-number">70</span>, <span class="hljs-number">6</span>) }
+let sw3 = PathLayer('swatch-down') ${ fill: g90; stroke: #333; stroke-width: 1; };
+sw3.apply { roundRect(270, 55, 110, 70, 6) }
 
-<span class="hljs-keyword">let</span> sw4 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;swatch-left&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g180; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-sw4.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">20</span>, <span class="hljs-number">215</span>, <span class="hljs-number">110</span>, <span class="hljs-number">70</span>, <span class="hljs-number">6</span>) }
+let sw4 = PathLayer('swatch-left') ${ fill: g180; stroke: #333; stroke-width: 1; };
+sw4.apply { roundRect(20, 215, 110, 70, 6) }
 
-<span class="hljs-keyword">let</span> sw5 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;swatch-up-left&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g240; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-sw5.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">145</span>, <span class="hljs-number">215</span>, <span class="hljs-number">110</span>, <span class="hljs-number">70</span>, <span class="hljs-number">6</span>) }
+let sw5 = PathLayer('swatch-up-left') ${ fill: g240; stroke: #333; stroke-width: 1; };
+sw5.apply { roundRect(145, 215, 110, 70, 6) }
 
-<span class="hljs-keyword">let</span> sw6 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;swatch-up&#x27;</span>) ${ <span class="hljs-attr">fill</span>: g270; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-sw6.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">270</span>, <span class="hljs-number">215</span>, <span class="hljs-number">110</span>, <span class="hljs-number">70</span>, <span class="hljs-number">6</span>) }
+let sw6 = PathLayer('swatch-up') ${ fill: g270; stroke: #333; stroke-width: 1; };
+sw6.apply { roundRect(270, 215, 110, 70, 6) }
 
-<span class="hljs-comment">// --- Direction labels ---</span>
+// --- Direction labels ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: #a0a0c0;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 11;
+  fill: #a0a0c0;
+  text-anchor: middle;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">75</span>, <span class="hljs-number">145</span>)<span class="hljs-string">`→ right (0,0→1,0)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">145</span>)<span class="hljs-string">`↘ diagonal (0,0→1,1)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">325</span>, <span class="hljs-number">145</span>)<span class="hljs-string">`↓ down (0,0→0,1)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">75</span>, <span class="hljs-number">305</span>)<span class="hljs-string">`← left (1,0→0,0)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">305</span>)<span class="hljs-string">`↖ diagonal (1,1→0,0)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">325</span>, <span class="hljs-number">305</span>)<span class="hljs-string">`↑ up (0,1→0,0)`</span>
+labels.apply {
+  text(75, 145)`→ right (0,0→1,0)`
+  text(200, 145)`↘ diagonal (0,0→1,1)`
+  text(325, 145)`↓ down (0,0→0,1)`
+  text(75, 305)`← left (1,0→0,0)`
+  text(200, 305)`↖ diagonal (1,1→0,0)`
+  text(325, 305)`↑ up (0,1→0,0)`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">18</span>;
-  <span class="hljs-attr">fill</span>: #e0e0ff;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 18;
+  fill: #e0e0ff;
+  text-anchor: middle;
+  font-weight: bold;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">370</span>)<span class="hljs-string">`Linear Gradient Directions`</span>
+title.apply {
+  text(200, 370)`Linear Gradient Directions`
 }
 
-<span class="hljs-comment">// --- Central connector ---</span>
+// --- Central connector ---
 
-<span class="hljs-keyword">let</span> connector = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;connector&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">444466</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-connector.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">75</span> <span class="hljs-number">130</span> L <span class="hljs-number">75</span> <span class="hljs-number">210</span>
-  M <span class="hljs-number">200</span> <span class="hljs-number">130</span> L <span class="hljs-number">200</span> <span class="hljs-number">210</span>
-  M <span class="hljs-number">325</span> <span class="hljs-number">130</span> L <span class="hljs-number">325</span> <span class="hljs-number">210</span>
+let connector = PathLayer('connector') ${ fill: none; stroke: #444466; stroke-width: 1; };
+connector.apply {
+  M 75 130 L 75 210
+  M 200 130 L 200 210
+  M 325 130 L 325 210
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> fan = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;fan&#x27;</span>) ${};
-fan.<span class="hljs-title function_">append</span>(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector)
+let fan = GroupLayer('fan') ${};
+fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector)
 </code>
   <img src="/pathogen/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
 </mini-workspace></p>
@@ -493,97 +493,97 @@ fan.<span class="hljs-title function_">append</span>(bg, sw1, sw2, sw3, sw4, sw5
   g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
 };
 </code></pre><p>Radial gradients are natural fits for glows, spotlights, and vignettes. The scene below composes four radial gradients — a nebula background, two star types, and a planet with an off-center highlight — to build a cosmic scene entirely from radial falloffs and transparent stops.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUmFkaWFsJTIwR3JhZGllbnQlMjBHbG93JTIwJUUyJTgwJTk0JTIwQ29zbWljJTIwU2NlbmUlMEElMkYlMkYlMjBEZW1vbnN0cmF0ZXMlMjByYWRpYWwlMjBncmFkaWVudHMlMjBmb3IlMjBsaWdodCUyMHNvdXJjZXMlMkMlMjBnbG93cyUyQyUyMGFuZCUyMHNoYWRpbmclMEElMEElMkYlMkYlMjAtLS0lMjBHcmFkaWVudHMlMjAtLS0lMEElMEFsZXQlMjBuZWJ1bGFfZ3JhZCUyMCUzRCUyMFJhZGlhbEdyYWRpZW50KCduZWJ1bGEnJTJDJTIwMC40NSUyQyUyMDAuNCUyQyUyMDAuNTUpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzliNTliNicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjI1JTJDJTIwQ29sb3IoJyUyMzZiMmZhMCcpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjUlMkMlMjAlMjBDb2xvcignJTIzMmMxNjU0JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuOCUyQyUyMCUyMENvbG9yKCclMjMwZjBhMWEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMwODA2MTInKSklM0IlMEElN0QlM0IlMEFuZWJ1bGFfZ3JhZC5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQWxldCUyMHN0YXJfZ3JhZCUyMCUzRCUyMFJhZGlhbEdyYWRpZW50KCdzdGFyLWNvcmUnJTJDJTIwMC41JTJDJTIwMC41JTJDJTIwMC41KSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMENvbG9yKCclMjNmZmZmZmYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4yJTJDJTIwQ29sb3IoJyUyM2NjZTVmZicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjUlMkMlMjBDb2xvcignJTIzNTU5OWRkJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjBDb2xvcignJTIzMDAwMDAwMDAnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjB3YXJtX3N0YXIlMjAlM0QlMjBSYWRpYWxHcmFkaWVudCgnd2FybS1zdGFyJyUyQyUyMDAuNSUyQyUyMDAuNSUyQyUyMDAuNSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzZmZmOGUxJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMTUlMkMlMjBDb2xvcignJTIzZmZjYzgwJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNCUyQyUyMENvbG9yKCclMjNlNjUxMDAnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjMwMDAwMDAwMCcpKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHBsYW5ldF9ncmFkJTIwJTNEJTIwUmFkaWFsR3JhZGllbnQoJ3BsYW5ldCclMkMlMjAwLjM1JTJDJTIwMC4zNSUyQyUyMDAuNSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzNGZjM2Y3JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMyUyQyUyMENvbG9yKCclMjMwMjg4ZDEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC42JTJDJTIwQ29sb3IoJyUyMzAxNTc5YicpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwQ29sb3IoJyUyMzBhMTkyOScpKSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHJpbmdfZ3JhZCUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdyaW5nJyUyQyUyMDAlMkMlMjAwJTJDJTIwMSUyQyUyMDApJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzAwMDAwMDAwJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMiUyQyUyMCUyMENvbG9yKCclMjM4MGRlZWEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC41JTJDJTIwJTIwQ29sb3IoJyUyMzRkZDBlMScpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjglMkMlMjAlMjBDb2xvcignJTIzODBkZWVhJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMDAwMDAwMDAnKSklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwYW5kJTIwTmVidWxhJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMDgwNjEyJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDQwMCklMjAlN0QlMEElMEFsZXQlMjBuZWJ1bGElMjAlM0QlMjBQYXRoTGF5ZXIoJ25lYnVsYS1sYXllcicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5lYnVsYV9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQW5lYnVsYS5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU3RhcnMlMjAtLS0lMEElMEFsZXQlMjBzMSUyMCUzRCUyMFBhdGhMYXllcignczEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzdGFyX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBczEuYXBwbHklMjAlN0IlMjBjaXJjbGUoNzAlMkMlMjA1NSUyQyUyMDE4KSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwczIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3MyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwd2FybV9zdGFyJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXMyLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDMzMCUyQyUyMDgwJTJDJTIwMjIpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBzMyUyMCUzRCUyMFBhdGhMYXllcignczMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzdGFyX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBczMuYXBwbHklMjAlN0IlMjBjaXJjbGUoNjAlMkMlMjAzMjAlMkMlMjAxNCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMHM0JTIwJTNEJTIwUGF0aExheWVyKCdzNCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHdhcm1fc3RhciUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFzNC5hcHBseSUyMCU3QiUyMGNpcmNsZSgzNTAlMkMlMjAyOTAlMkMlMjAxNiklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMHM1JTIwJTNEJTIwUGF0aExheWVyKCdzNScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHN0YXJfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFzNS5hcHBseSUyMCU3QiUyMGNpcmNsZSgyMDAlMkMlMjA0MCUyQyUyMDEwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwc3RhcnMlMjAlM0QlMjBHcm91cExheWVyKCdzdGFycycpJTIwJTI0JTdCJTdEJTNCJTBBc3RhcnMuYXBwZW5kKHMxJTJDJTIwczIlMkMlMjBzMyUyQyUyMHM0JTJDJTIwczUpJTBBJTBBJTJGJTJGJTIwLS0tJTIwUGxhbmV0JTIwd2l0aCUyMFJpbmclMjAtLS0lMEElMEFsZXQlMjBwbGFuZXRfYm9keSUyMCUzRCUyMFBhdGhMYXllcigncGxhbmV0LWJvZHknKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBwbGFuZXRfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFwbGFuZXRfYm9keS5hcHBseSUyMCU3QiUyMGNpcmNsZSgyNjAlMkMlMjAyODAlMkMlMjA0NSklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMHBsYW5ldF9yaW5nJTIwJTNEJTIwUGF0aExheWVyKCdwbGFuZXQtcmluZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHJpbmdfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjBvcGFjaXR5JTNBJTIwMC42JTNCJTIwJTdEJTNCJTBBcGxhbmV0X3JpbmcuYXBwbHklMjAlN0IlMEElMjAlMjBNJTIwMjAwJTIwMjgyJTIwUSUyMDIzMCUyMDI2MCUyMDI2MCUyMDI2MiUyMFElMjAyOTAlMjAyNjAlMjAzMjAlMjAyODIlMEElMjAlMjBRJTIwMjkwJTIwMjkwJTIwMjYwJTIwMjg4JTIwUSUyMDIzMCUyMDI5MCUyMDIwMCUyMDI4MiUyMFolMEElN0QlMEElMEFsZXQlMjBwbGFuZXQlMjAlM0QlMjBHcm91cExheWVyKCdwbGFuZXQnKSUyMCUyNCU3QiU3RCUzQiUwQXBsYW5ldC5hcHBlbmQocGxhbmV0X2JvZHklMkMlMjBwbGFuZXRfcmluZyklMEElMEElMkYlMkYlMjAtLS0lMjBTY2VuZSUyMC0tLSUwQSUwQWxldCUyMHNjZW5lJTIwJTNEJTIwR3JvdXBMYXllcignc2NlbmUnKSUyMCUyNCU3QiU3RCUzQiUwQXNjZW5lLmFwcGVuZChiZyUyQyUyMG5lYnVsYSUyQyUyMHN0YXJzJTJDJTIwcGxhbmV0KSUwQQ==" code-open caption="Four radial gradients — nebula, stars, and a ringed planet">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
-<span class="hljs-comment">// Radial Gradient Glow — Cosmic Scene</span>
-<span class="hljs-comment">// Demonstrates radial gradients for light sources, glows, and shading</span>
+<p><mini-workspace code-open caption="Four radial gradients — nebula, stars, and a ringed planet">
+  <code>// viewBox="0 0 400 400"
+// Radial Gradient Glow — Cosmic Scene
+// Demonstrates radial gradients for light sources, glows, and shading
 
-<span class="hljs-comment">// --- Gradients ---</span>
+// --- Gradients ---
 
-<span class="hljs-keyword">let</span> nebula_grad = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;nebula&#x27;</span>, <span class="hljs-number">0.45</span>, <span class="hljs-number">0.4</span>, <span class="hljs-number">0.55</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#9b59b6&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6b2fa0&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2c1654&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.8</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f0a1a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#080612&#x27;</span>));
+let nebula_grad = RadialGradient('nebula', 0.45, 0.4, 0.55) {|g|
+  g.stop(0,    Color('#9b59b6'));
+  g.stop(0.25, Color('#6b2fa0'));
+  g.stop(0.5,  Color('#2c1654'));
+  g.stop(0.8,  Color('#0f0a1a'));
+  g.stop(1,    Color('#080612'));
 };
-nebula_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+nebula_grad.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> star_grad = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;star-core&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.2</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#cce5ff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5599dd&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#00000000&#x27;</span>));
-};
-
-<span class="hljs-keyword">let</span> warm_star = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;warm-star&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#fff8e1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.15</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffcc80&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e65100&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#00000000&#x27;</span>));
+let star_grad = RadialGradient('star-core', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   Color('#ffffff'));
+  g.stop(0.2, Color('#cce5ff'));
+  g.stop(0.5, Color('#5599dd'));
+  g.stop(1,   Color('#00000000'));
 };
 
-<span class="hljs-keyword">let</span> planet_grad = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;planet&#x27;</span>, <span class="hljs-number">0.35</span>, <span class="hljs-number">0.35</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#4fc3f7&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0288d1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.6</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#01579b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1929&#x27;</span>));
+let warm_star = RadialGradient('warm-star', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   Color('#fff8e1'));
+  g.stop(0.15, Color('#ffcc80'));
+  g.stop(0.4, Color('#e65100'));
+  g.stop(1,   Color('#00000000'));
 };
 
-<span class="hljs-keyword">let</span> ring_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;ring&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#00000000&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.2</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#80deea&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#4dd0e1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.8</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#80deea&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#00000000&#x27;</span>));
+let planet_grad = RadialGradient('planet', 0.35, 0.35, 0.5) {|g|
+  g.stop(0,   Color('#4fc3f7'));
+  g.stop(0.3, Color('#0288d1'));
+  g.stop(0.6, Color('#01579b'));
+  g.stop(1,   Color('#0a1929'));
 };
 
-<span class="hljs-comment">// --- Background and Nebula ---</span>
+let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
+  g.stop(0,    Color('#00000000'));
+  g.stop(0.2,  Color('#80deea'));
+  g.stop(0.5,  Color('#4dd0e1'));
+  g.stop(0.8,  Color('#80deea'));
+  g.stop(1,    Color('#00000000'));
+};
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">080612</span>; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+// --- Background and Nebula ---
 
-<span class="hljs-keyword">let</span> nebula = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;nebula-layer&#x27;</span>) ${ <span class="hljs-attr">fill</span>: nebula_grad; <span class="hljs-attr">stroke</span>: none; };
-nebula.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
+let bg = PathLayer('bg') ${ fill: #080612; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
 
-<span class="hljs-comment">// --- Stars ---</span>
+let nebula = PathLayer('nebula-layer') ${ fill: nebula_grad; stroke: none; };
+nebula.apply { rect(0, 0, 400, 400) }
 
-<span class="hljs-keyword">let</span> s1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: star_grad; <span class="hljs-attr">stroke</span>: none; };
-s1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">70</span>, <span class="hljs-number">55</span>, <span class="hljs-number">18</span>); <span class="hljs-title function_">closePath</span>() }
+// --- Stars ---
 
-<span class="hljs-keyword">let</span> s2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: warm_star; <span class="hljs-attr">stroke</span>: none; };
-s2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">330</span>, <span class="hljs-number">80</span>, <span class="hljs-number">22</span>); <span class="hljs-title function_">closePath</span>() }
+let s1 = PathLayer('s1') ${ fill: star_grad; stroke: none; };
+s1.apply { circle(70, 55, 18); closePath() }
 
-<span class="hljs-keyword">let</span> s3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s3&#x27;</span>) ${ <span class="hljs-attr">fill</span>: star_grad; <span class="hljs-attr">stroke</span>: none; };
-s3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">60</span>, <span class="hljs-number">320</span>, <span class="hljs-number">14</span>); <span class="hljs-title function_">closePath</span>() }
+let s2 = PathLayer('s2') ${ fill: warm_star; stroke: none; };
+s2.apply { circle(330, 80, 22); closePath() }
 
-<span class="hljs-keyword">let</span> s4 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s4&#x27;</span>) ${ <span class="hljs-attr">fill</span>: warm_star; <span class="hljs-attr">stroke</span>: none; };
-s4.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">350</span>, <span class="hljs-number">290</span>, <span class="hljs-number">16</span>); <span class="hljs-title function_">closePath</span>() }
+let s3 = PathLayer('s3') ${ fill: star_grad; stroke: none; };
+s3.apply { circle(60, 320, 14); closePath() }
 
-<span class="hljs-keyword">let</span> s5 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s5&#x27;</span>) ${ <span class="hljs-attr">fill</span>: star_grad; <span class="hljs-attr">stroke</span>: none; };
-s5.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">40</span>, <span class="hljs-number">10</span>); <span class="hljs-title function_">closePath</span>() }
+let s4 = PathLayer('s4') ${ fill: warm_star; stroke: none; };
+s4.apply { circle(350, 290, 16); closePath() }
 
-<span class="hljs-keyword">let</span> stars = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;stars&#x27;</span>) ${};
-stars.<span class="hljs-title function_">append</span>(s1, s2, s3, s4, s5)
+let s5 = PathLayer('s5') ${ fill: star_grad; stroke: none; };
+s5.apply { circle(200, 40, 10); closePath() }
 
-<span class="hljs-comment">// --- Planet with Ring ---</span>
+let stars = GroupLayer('stars') ${};
+stars.append(s1, s2, s3, s4, s5)
 
-<span class="hljs-keyword">let</span> planet_body = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;planet-body&#x27;</span>) ${ <span class="hljs-attr">fill</span>: planet_grad; <span class="hljs-attr">stroke</span>: none; };
-planet_body.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">260</span>, <span class="hljs-number">280</span>, <span class="hljs-number">45</span>); <span class="hljs-title function_">closePath</span>() }
+// --- Planet with Ring ---
 
-<span class="hljs-keyword">let</span> planet_ring = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;planet-ring&#x27;</span>) ${ <span class="hljs-attr">fill</span>: ring_grad; <span class="hljs-attr">stroke</span>: none; <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.6</span>; };
-planet_ring.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">200</span> <span class="hljs-number">282</span> Q <span class="hljs-number">230</span> <span class="hljs-number">260</span> <span class="hljs-number">260</span> <span class="hljs-number">262</span> Q <span class="hljs-number">290</span> <span class="hljs-number">260</span> <span class="hljs-number">320</span> <span class="hljs-number">282</span>
-  Q <span class="hljs-number">290</span> <span class="hljs-number">290</span> <span class="hljs-number">260</span> <span class="hljs-number">288</span> Q <span class="hljs-number">230</span> <span class="hljs-number">290</span> <span class="hljs-number">200</span> <span class="hljs-number">282</span> Z
+let planet_body = PathLayer('planet-body') ${ fill: planet_grad; stroke: none; };
+planet_body.apply { circle(260, 280, 45); closePath() }
+
+let planet_ring = PathLayer('planet-ring') ${ fill: ring_grad; stroke: none; opacity: 0.6; };
+planet_ring.apply {
+  M 200 282 Q 230 260 260 262 Q 290 260 320 282
+  Q 290 290 260 288 Q 230 290 200 282 Z
 }
 
-<span class="hljs-keyword">let</span> planet = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;planet&#x27;</span>) ${};
-planet.<span class="hljs-title function_">append</span>(planet_body, planet_ring)
+let planet = GroupLayer('planet') ${};
+planet.append(planet_body, planet_ring)
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, nebula, stars, planet)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, nebula, stars, planet)
 </code>
   <img src="/pathogen/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
 </mini-workspace></p>
@@ -596,74 +596,74 @@ scene.<span class="hljs-title function_">append</span>(bg, nebula, stars, planet
   g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1428&#x27;</span>));
 };
 </code></pre><p>The three spheres below use identical color stops. Only <code>fx</code> and <code>fy</code> differ — the highlight shifts from top-left to center to top-right.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDUwJTIwMTgwJTIyJTBBJTJGJTJGJTIwRm9jYWwlMjBQb2ludCUyMFNwaGVyZXMlMjAlRTIlODAlOTQlMjBTYW1lJTIwc3RvcHMlMkMlMjBkaWZmZXJlbnQlMjBmeCUyRmZ5JTIwcG9zaXRpb25zJTBBJTJGJTJGJTIwRGVtb25zdHJhdGVzJTIwaG93JTIwUmFkaWFsR3JhZGllbnQncyUyMGZvY2FsJTIwcG9pbnQlMjBzaGlmdHMlMjB0aGUlMjBoaWdobGlnaHQlMEElMEElMkYlMkYlMjAtLS0lMjBTaGFyZWQlMjBiYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGEwYTFhJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQ1MCUyQyUyMDE4MCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTcGhlcmUlMjBncmFkaWVudHMlMjB3aXRoJTIwZGlmZmVyZW50JTIwZm9jYWwlMjBwb2ludHMlMjAtLS0lMEElMEFsZXQlMjBzcGhlcmUxX2dyYWQlMjAlM0QlMjBSYWRpYWxHcmFkaWVudCgnc3BoZXJlMSclMkMlMjAwLjUlMkMlMjAwLjUlMkMlMjAwLjUlMkMlMjAwLjMlMkMlMjAwLjMpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyM2ZmZmZmZicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjE1JTJDJTIwQ29sb3IoJyUyM2I4ZDRmMCcpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjQ1JTJDJTIwQ29sb3IoJyUyMzI1NjNlYicpKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjglMkMlMjAlMjBDb2xvcignJTIzMWUzYTZlJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMGExNDI4JykpJTNCJTBBJTdEJTNCJTBBc3BoZXJlMV9ncmFkLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBbGV0JTIwc3BoZXJlMl9ncmFkJTIwJTNEJTIwUmFkaWFsR3JhZGllbnQoJ3NwaGVyZTInJTJDJTIwMC41JTJDJTIwMC41JTJDJTIwMC41JTJDJTIwMC41JTJDJTIwMC41KSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNmZmZmZmYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4xNSUyQyUyMENvbG9yKCclMjNiOGQ0ZjAnKSklM0IlMEElMjAlMjBnLnN0b3AoMC40NSUyQyUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElMjAlMjBnLnN0b3AoMC44JTJDJTIwJTIwQ29sb3IoJyUyMzFlM2E2ZScpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwJTIwQ29sb3IoJyUyMzBhMTQyOCcpKSUzQiUwQSU3RCUzQiUwQXNwaGVyZTJfZ3JhZC5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQWxldCUyMHNwaGVyZTNfZ3JhZCUyMCUzRCUyMFJhZGlhbEdyYWRpZW50KCdzcGhlcmUzJyUyQyUyMDAuNSUyQyUyMDAuNSUyQyUyMDAuNSUyQyUyMDAuNyUyQyUyMDAuMyklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzZmZmZmZmJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMTUlMkMlMjBDb2xvcignJTIzYjhkNGYwJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNDUlMkMlMjBDb2xvcignJTIzMjU2M2ViJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuOCUyQyUyMCUyMENvbG9yKCclMjMxZTNhNmUnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMwYTE0MjgnKSklM0IlMEElN0QlM0IlMEFzcGhlcmUzX2dyYWQuaW50ZXJwb2xhdGlvbiUyMCUzRCUyMCdva2xjaCclM0IlMEElMEElMkYlMkYlMjAtLS0lMjBTcGhlcmUlMjBsYXllcnMlMjAtLS0lMEElMEFsZXQlMjBzMSUyMCUzRCUyMFBhdGhMYXllcignczEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzcGhlcmUxX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBczEuYXBwbHklMjAlN0IlMjBjaXJjbGUoODAlMkMlMjA4MCUyQyUyMDYwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwczIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3MyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwc3BoZXJlMl9ncmFkJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXMyLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDIyNSUyQyUyMDgwJTJDJTIwNjApJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBzMyUyMCUzRCUyMFBhdGhMYXllcignczMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzcGhlcmUzX2dyYWQlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBczMuYXBwbHklMjAlN0IlMjBjaXJjbGUoMzcwJTJDJTIwODAlMkMlMjA2MCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMSUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM2NjclM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoODAlMkMlMjAxNjApJTYwZnglM0QwLjMlMjAlMjBmeSUzRDAuMyU2MCUwQSUyMCUyMHRleHQoMjI1JTJDJTIwMTYwKSU2MGZ4JTNEMC41JTIwJTIwZnklM0QwLjUlNjAlMEElMjAlMjB0ZXh0KDM3MCUyQyUyMDE2MCklNjBmeCUzRDAuNyUyMCUyMGZ5JTNEMC4zJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBzY2VuZSUyMCUzRCUyMEdyb3VwTGF5ZXIoJ3NjZW5lJyklMjAlMjQlN0IlN0QlM0IlMEFzY2VuZS5hcHBlbmQoYmclMkMlMjBzMSUyQyUyMHMyJTJDJTIwczMlMkMlMjBsYWJlbHMpJTBB" caption="Same gradient stops, three focal points — the highlight shifts with fx, fy">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 450 180&quot;</span>
-<span class="hljs-comment">// Focal Point Spheres — Same stops, different fx/fy positions</span>
-<span class="hljs-comment">// Demonstrates how RadialGradient&#x27;s focal point shifts the highlight</span>
+<p><mini-workspace caption="Same gradient stops, three focal points — the highlight shifts with fx, fy">
+  <code>// viewBox="0 0 450 180"
+// Focal Point Spheres — Same stops, different fx/fy positions
+// Demonstrates how RadialGradient's focal point shifts the highlight
 
-<span class="hljs-comment">// --- Shared background ---</span>
+// --- Shared background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0a0a1a; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">450</span>, <span class="hljs-number">180</span>) }
+let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
+bg.apply { rect(0, 0, 450, 180) }
 
-<span class="hljs-comment">// --- Sphere gradients with different focal points ---</span>
+// --- Sphere gradients with different focal points ---
 
-<span class="hljs-keyword">let</span> sphere1_grad = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;sphere1&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0.3</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.15</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b8d4f0&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.45</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.8</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e3a6e&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1428&#x27;</span>));
+let sphere1_grad = RadialGradient('sphere1', 0.5, 0.5, 0.5, 0.3, 0.3) {|g|
+  g.stop(0,    Color('#ffffff'));
+  g.stop(0.15, Color('#b8d4f0'));
+  g.stop(0.45, Color('#2563eb'));
+  g.stop(0.8,  Color('#1e3a6e'));
+  g.stop(1,    Color('#0a1428'));
 };
-sphere1_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+sphere1_grad.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> sphere2_grad = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;sphere2&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.15</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b8d4f0&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.45</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.8</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e3a6e&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1428&#x27;</span>));
+let sphere2_grad = RadialGradient('sphere2', 0.5, 0.5, 0.5, 0.5, 0.5) {|g|
+  g.stop(0,    Color('#ffffff'));
+  g.stop(0.15, Color('#b8d4f0'));
+  g.stop(0.45, Color('#2563eb'));
+  g.stop(0.8,  Color('#1e3a6e'));
+  g.stop(1,    Color('#0a1428'));
 };
-sphere2_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+sphere2_grad.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> sphere3_grad = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;sphere3&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.7</span>, <span class="hljs-number">0.3</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.15</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#b8d4f0&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.45</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.8</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e3a6e&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1428&#x27;</span>));
+let sphere3_grad = RadialGradient('sphere3', 0.5, 0.5, 0.5, 0.7, 0.3) {|g|
+  g.stop(0,    Color('#ffffff'));
+  g.stop(0.15, Color('#b8d4f0'));
+  g.stop(0.45, Color('#2563eb'));
+  g.stop(0.8,  Color('#1e3a6e'));
+  g.stop(1,    Color('#0a1428'));
 };
-sphere3_grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+sphere3_grad.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Sphere layers ---</span>
+// --- Sphere layers ---
 
-<span class="hljs-keyword">let</span> s1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sphere1_grad; <span class="hljs-attr">stroke</span>: none; };
-s1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">80</span>, <span class="hljs-number">80</span>, <span class="hljs-number">60</span>); <span class="hljs-title function_">closePath</span>() }
+let s1 = PathLayer('s1') ${ fill: sphere1_grad; stroke: none; };
+s1.apply { circle(80, 80, 60); closePath() }
 
-<span class="hljs-keyword">let</span> s2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sphere2_grad; <span class="hljs-attr">stroke</span>: none; };
-s2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">225</span>, <span class="hljs-number">80</span>, <span class="hljs-number">60</span>); <span class="hljs-title function_">closePath</span>() }
+let s2 = PathLayer('s2') ${ fill: sphere2_grad; stroke: none; };
+s2.apply { circle(225, 80, 60); closePath() }
 
-<span class="hljs-keyword">let</span> s3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;s3&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sphere3_grad; <span class="hljs-attr">stroke</span>: none; };
-s3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">370</span>, <span class="hljs-number">80</span>, <span class="hljs-number">60</span>); <span class="hljs-title function_">closePath</span>() }
+let s3 = PathLayer('s3') ${ fill: sphere3_grad; stroke: none; };
+s3.apply { circle(370, 80, 60); closePath() }
 
-<span class="hljs-comment">// --- Labels ---</span>
+// --- Labels ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">667</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #667;
+  text-anchor: middle;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">80</span>, <span class="hljs-number">160</span>)<span class="hljs-string">`fx=0.3  fy=0.3`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">225</span>, <span class="hljs-number">160</span>)<span class="hljs-string">`fx=0.5  fy=0.5`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">370</span>, <span class="hljs-number">160</span>)<span class="hljs-string">`fx=0.7  fy=0.3`</span>
+labels.apply {
+  text(80, 160)`fx=0.3  fy=0.3`
+  text(225, 160)`fx=0.5  fy=0.5`
+  text(370, 160)`fx=0.7  fy=0.3`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, s1, s2, s3, labels)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, s1, s2, s3, labels)
 </code>
   <img src="/pathogen/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
 </mini-workspace></p>
@@ -676,116 +676,116 @@ scene.<span class="hljs-title function_">append</span>(bg, s1, s2, s3, labels)
 };
 grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>The comparison below shows three color pairs — blue/yellow, red/cyan, magenta/green — in both sRGB and OKLCH. The difference is dramatic: sRGB midpoints are desaturated and dull, while OKLCH transitions stay vibrant and chromatic.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwNDAwJTIyJTBBJTJGJTJGJTIwT0tMQ0glMjB2cyUyMHNSR0IlMjBJbnRlcnBvbGF0aW9uJTIwJUUyJTgwJTk0JTIwU2lkZS1ieS1TaWRlJTIwQ29tcGFyaXNvbiUwQSUyRiUyRiUyMFNhbWUlMjBjb2xvciUyMHN0b3BzJTJDJTIwZHJhbWF0aWNhbGx5JTIwZGlmZmVyZW50JTIwbWlkcG9pbnRzJTBBJTBBJTJGJTJGJTIwLS0tJTIwUGFpciUyMDElM0ElMjBCbHVlJTIwJUUyJTg2JTkyJTIwWWVsbG93JTIwKHRoZSUyMGNsYXNzaWMlMjBleGFtcGxlKSUyMC0tLSUwQSUwQWxldCUyMHNyZ2JfYmx1ZV95ZWxsb3clMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3JnYi1ieSclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjNlYWIzMDgnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9ibHVlX3llbGxvdyUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdva2xjaC1ieSclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjMyNTYzZWInKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjNlYWIzMDgnKSklM0IlMEElN0QlM0IlMEFva2xjaF9ibHVlX3llbGxvdy5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhaXIlMjAyJTNBJTIwUmVkJTIwJUUyJTg2JTkyJTIwQ3lhbiUyMC0tLSUwQSUwQWxldCUyMHNyZ2JfcmVkX2N5YW4lMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3JnYi1yYyclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjNkYzI2MjYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMwNmI2ZDQnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9yZWRfY3lhbiUyMCUzRCUyMExpbmVhckdyYWRpZW50KCdva2xjaC1yYyclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjNkYzI2MjYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMwNmI2ZDQnKSklM0IlMEElN0QlM0IlMEFva2xjaF9yZWRfY3lhbi5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhaXIlMjAzJTNBJTIwTWFnZW50YSUyMCVFMiU4NiU5MiUyMEdyZWVuJTIwLS0tJTBBJTBBbGV0JTIwc3JnYl9tYWdfZ3JlZW4lMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3JnYi1tZyclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMENvbG9yKCclMjNjMDI2ZDMnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMENvbG9yKCclMjMxNmEzNGEnKSklM0IlMEElN0QlM0IlMEElMEFsZXQlMjBva2xjaF9tYWdfZ3JlZW4lMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnb2tsY2gtbWcnJTJDJTIwMCUyQyUyMDAlMkMlMjAxJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjBDb2xvcignJTIzYzAyNmQzJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjBDb2xvcignJTIzMTZhMzRhJykpJTNCJTBBJTdEJTNCJTBBb2tsY2hfbWFnX2dyZWVuLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzExMTExOCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA0MDAlMkMlMjA0MDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwR3JhZGllbnQlMjBiYXJzJTIwLS0tJTBBJTBBbGV0JTIwYmFyX3clMjAlM0QlMjAzMDAlM0IlMEFsZXQlMjBiYXJfaCUyMCUzRCUyMDMyJTNCJTBBbGV0JTIweDAlMjAlM0QlMjA1MCUzQiUwQSUwQSUyRiUyRiUyMFBhaXIlMjAxJTBBbGV0JTIwYnlfc3JnYiUyMCUzRCUyMFBhdGhMYXllcignYnktc3JnYicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHNyZ2JfYmx1ZV95ZWxsb3clM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYnlfc3JnYi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDUyJTJDJTIwYmFyX3clMkMlMjBiYXJfaCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwYnlfb2tsY2glMjAlM0QlMjBQYXRoTGF5ZXIoJ2J5LW9rbGNoJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwb2tsY2hfYmx1ZV95ZWxsb3clM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYnlfb2tsY2guYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoeDAlMkMlMjA5MiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMFBhaXIlMjAyJTBBbGV0JTIwcmNfc3JnYiUyMCUzRCUyMFBhdGhMYXllcigncmMtc3JnYicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHNyZ2JfcmVkX2N5YW4lM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBcmNfc3JnYi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDE3MiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMHJjX29rbGNoJTIwJTNEJTIwUGF0aExheWVyKCdyYy1va2xjaCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG9rbGNoX3JlZF9jeWFuJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXJjX29rbGNoLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KHgwJTJDJTIwMjEyJTJDJTIwYmFyX3clMkMlMjBiYXJfaCUyQyUyMDQpJTIwJTdEJTBBJTBBJTJGJTJGJTIwUGFpciUyMDMlMEFsZXQlMjBtZ19zcmdiJTIwJTNEJTIwUGF0aExheWVyKCdtZy1zcmdiJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwc3JnYl9tYWdfZ3JlZW4lM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbWdfc3JnYi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDI5MiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMG1nX29rbGNoJTIwJTNEJTIwUGF0aExheWVyKCdtZy1va2xjaCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG9rbGNoX21hZ19ncmVlbiUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFtZ19va2xjaC5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCh4MCUyQyUyMDMzMiUyQyUyMGJhcl93JTJDJTIwYmFyX2glMkMlMjA0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMG1vZGVfbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdtb2RlLWxhYmVscycpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjAlMjM4ODglM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMGVuZCUzQiUwQSU3RCUzQiUwQW1vZGVfbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCg0NCUyQyUyMDczKSU2MHNSR0IlNjAlMEElMjAlMjB0ZXh0KDQ0JTJDJTIwMTEzKSU2ME9LTENIJTYwJTBBJTIwJTIwdGV4dCg0NCUyQyUyMDE5MyklNjBzUkdCJTYwJTBBJTIwJTIwdGV4dCg0NCUyQyUyMDIzMyklNjBPS0xDSCU2MCUwQSUyMCUyMHRleHQoNDQlMkMlMjAzMTMpJTYwc1JHQiU2MCUwQSUyMCUyMHRleHQoNDQlMkMlMjAzNTMpJTYwT0tMQ0glNjAlMEElN0QlMEElMEFsZXQlMjBwYWlyX2xhYmVscyUyMCUzRCUyMFRleHRMYXllcigncGFpci1sYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEzJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2NjY2NkZCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTIwJTIwZm9udC13ZWlnaHQlM0ElMjBib2xkJTNCJTBBJTdEJTNCJTBBcGFpcl9sYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDQyKSU2MEJsdWUlMjAlRTIlODYlOTIlMjBZZWxsb3clNjAlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDE2MiklNjBSZWQlMjAlRTIlODYlOTIlMjBDeWFuJTYwJTBBJTIwJTIwdGV4dCgyMDAlMkMlMjAyODIpJTYwTWFnZW50YSUyMCVFMiU4NiU5MiUyMEdyZWVuJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBjb21wYXJpc29uJTIwJTNEJTIwR3JvdXBMYXllcignY29tcGFyaXNvbicpJTIwJTI0JTdCJTdEJTNCJTBBY29tcGFyaXNvbi5hcHBlbmQoYmclMkMlMjBieV9zcmdiJTJDJTIwYnlfb2tsY2glMkMlMjByY19zcmdiJTJDJTIwcmNfb2tsY2glMkMlMjBtZ19zcmdiJTJDJTIwbWdfb2tsY2glMkMlMjBtb2RlX2xhYmVscyUyQyUyMHBhaXJfbGFiZWxzKSUwQQ==" code-open caption="sRGB vs OKLCH — same stops, dramatically different midpoints">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 400&quot;</span>
-<span class="hljs-comment">// OKLCH vs sRGB Interpolation — Side-by-Side Comparison</span>
-<span class="hljs-comment">// Same color stops, dramatically different midpoints</span>
+<p><mini-workspace code-open caption="sRGB vs OKLCH — same stops, dramatically different midpoints">
+  <code>// viewBox="0 0 400 400"
+// OKLCH vs sRGB Interpolation — Side-by-Side Comparison
+// Same color stops, dramatically different midpoints
 
-<span class="hljs-comment">// --- Pair 1: Blue → Yellow (the classic example) ---</span>
+// --- Pair 1: Blue → Yellow (the classic example) ---
 
-<span class="hljs-keyword">let</span> srgb_blue_yellow = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;srgb-by&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eab308&#x27;</span>));
+let srgb_blue_yellow = LinearGradient('srgb-by', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#2563eb'));
+  g.stop(1, Color('#eab308'));
 };
 
-<span class="hljs-keyword">let</span> oklch_blue_yellow = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;oklch-by&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eab308&#x27;</span>));
+let oklch_blue_yellow = LinearGradient('oklch-by', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#2563eb'));
+  g.stop(1, Color('#eab308'));
 };
-oklch_blue_yellow.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+oklch_blue_yellow.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Pair 2: Red → Cyan ---</span>
+// --- Pair 2: Red → Cyan ---
 
-<span class="hljs-keyword">let</span> srgb_red_cyan = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;srgb-rc&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#dc2626&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#06b6d4&#x27;</span>));
-};
-
-<span class="hljs-keyword">let</span> oklch_red_cyan = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;oklch-rc&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#dc2626&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#06b6d4&#x27;</span>));
-};
-oklch_red_cyan.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
-
-<span class="hljs-comment">// --- Pair 3: Magenta → Green ---</span>
-
-<span class="hljs-keyword">let</span> srgb_mag_green = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;srgb-mg&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c026d3&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#16a34a&#x27;</span>));
+let srgb_red_cyan = LinearGradient('srgb-rc', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#dc2626'));
+  g.stop(1, Color('#06b6d4'));
 };
 
-<span class="hljs-keyword">let</span> oklch_mag_green = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;oklch-mg&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c026d3&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#16a34a&#x27;</span>));
+let oklch_red_cyan = LinearGradient('oklch-rc', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#dc2626'));
+  g.stop(1, Color('#06b6d4'));
 };
-oklch_mag_green.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+oklch_red_cyan.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Pair 3: Magenta → Green ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">111118</span>; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) }
-
-<span class="hljs-comment">// --- Gradient bars ---</span>
-
-<span class="hljs-keyword">let</span> bar_w = <span class="hljs-number">300</span>;
-<span class="hljs-keyword">let</span> bar_h = <span class="hljs-number">32</span>;
-<span class="hljs-keyword">let</span> x0 = <span class="hljs-number">50</span>;
-
-<span class="hljs-comment">// Pair 1</span>
-<span class="hljs-keyword">let</span> by_srgb = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;by-srgb&#x27;</span>) ${ <span class="hljs-attr">fill</span>: srgb_blue_yellow; <span class="hljs-attr">stroke</span>: none; };
-by_srgb.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x0, <span class="hljs-number">52</span>, bar_w, bar_h, <span class="hljs-number">4</span>) }
-
-<span class="hljs-keyword">let</span> by_oklch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;by-oklch&#x27;</span>) ${ <span class="hljs-attr">fill</span>: oklch_blue_yellow; <span class="hljs-attr">stroke</span>: none; };
-by_oklch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x0, <span class="hljs-number">92</span>, bar_w, bar_h, <span class="hljs-number">4</span>) }
-
-<span class="hljs-comment">// Pair 2</span>
-<span class="hljs-keyword">let</span> rc_srgb = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;rc-srgb&#x27;</span>) ${ <span class="hljs-attr">fill</span>: srgb_red_cyan; <span class="hljs-attr">stroke</span>: none; };
-rc_srgb.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x0, <span class="hljs-number">172</span>, bar_w, bar_h, <span class="hljs-number">4</span>) }
-
-<span class="hljs-keyword">let</span> rc_oklch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;rc-oklch&#x27;</span>) ${ <span class="hljs-attr">fill</span>: oklch_red_cyan; <span class="hljs-attr">stroke</span>: none; };
-rc_oklch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x0, <span class="hljs-number">212</span>, bar_w, bar_h, <span class="hljs-number">4</span>) }
-
-<span class="hljs-comment">// Pair 3</span>
-<span class="hljs-keyword">let</span> mg_srgb = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;mg-srgb&#x27;</span>) ${ <span class="hljs-attr">fill</span>: srgb_mag_green; <span class="hljs-attr">stroke</span>: none; };
-mg_srgb.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x0, <span class="hljs-number">292</span>, bar_w, bar_h, <span class="hljs-number">4</span>) }
-
-<span class="hljs-keyword">let</span> mg_oklch = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;mg-oklch&#x27;</span>) ${ <span class="hljs-attr">fill</span>: oklch_mag_green; <span class="hljs-attr">stroke</span>: none; };
-mg_oklch.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x0, <span class="hljs-number">332</span>, bar_w, bar_h, <span class="hljs-number">4</span>) }
-
-<span class="hljs-comment">// --- Labels ---</span>
-
-<span class="hljs-keyword">let</span> mode_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;mode-labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: end;
+let srgb_mag_green = LinearGradient('srgb-mg', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#c026d3'));
+  g.stop(1, Color('#16a34a'));
 };
-mode_labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">44</span>, <span class="hljs-number">73</span>)<span class="hljs-string">`sRGB`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">44</span>, <span class="hljs-number">113</span>)<span class="hljs-string">`OKLCH`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">44</span>, <span class="hljs-number">193</span>)<span class="hljs-string">`sRGB`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">44</span>, <span class="hljs-number">233</span>)<span class="hljs-string">`OKLCH`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">44</span>, <span class="hljs-number">313</span>)<span class="hljs-string">`sRGB`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">44</span>, <span class="hljs-number">353</span>)<span class="hljs-string">`OKLCH`</span>
+
+let oklch_mag_green = LinearGradient('oklch-mg', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#c026d3'));
+  g.stop(1, Color('#16a34a'));
+};
+oklch_mag_green.interpolation = 'oklch';
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 400, 400) }
+
+// --- Gradient bars ---
+
+let bar_w = 300;
+let bar_h = 32;
+let x0 = 50;
+
+// Pair 1
+let by_srgb = PathLayer('by-srgb') ${ fill: srgb_blue_yellow; stroke: none; };
+by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4) }
+
+let by_oklch = PathLayer('by-oklch') ${ fill: oklch_blue_yellow; stroke: none; };
+by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4) }
+
+// Pair 2
+let rc_srgb = PathLayer('rc-srgb') ${ fill: srgb_red_cyan; stroke: none; };
+rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4) }
+
+let rc_oklch = PathLayer('rc-oklch') ${ fill: oklch_red_cyan; stroke: none; };
+rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4) }
+
+// Pair 3
+let mg_srgb = PathLayer('mg-srgb') ${ fill: srgb_mag_green; stroke: none; };
+mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4) }
+
+let mg_oklch = PathLayer('mg-oklch') ${ fill: oklch_mag_green; stroke: none; };
+mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4) }
+
+// --- Labels ---
+
+let mode_labels = TextLayer('mode-labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #888;
+  text-anchor: end;
+};
+mode_labels.apply {
+  text(44, 73)`sRGB`
+  text(44, 113)`OKLCH`
+  text(44, 193)`sRGB`
+  text(44, 233)`OKLCH`
+  text(44, 313)`sRGB`
+  text(44, 353)`OKLCH`
 }
 
-<span class="hljs-keyword">let</span> pair_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;pair-labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
-  <span class="hljs-attr">fill</span>: #ccccdd;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let pair_labels = TextLayer('pair-labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: #ccccdd;
+  text-anchor: middle;
+  font-weight: bold;
 };
-pair_labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">42</span>)<span class="hljs-string">`Blue → Yellow`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">162</span>)<span class="hljs-string">`Red → Cyan`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">282</span>)<span class="hljs-string">`Magenta → Green`</span>
+pair_labels.apply {
+  text(200, 42)`Blue → Yellow`
+  text(200, 162)`Red → Cyan`
+  text(200, 282)`Magenta → Green`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> comparison = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;comparison&#x27;</span>) ${};
-comparison.<span class="hljs-title function_">append</span>(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels)
+let comparison = GroupLayer('comparison') ${};
+comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels)
 </code>
   <img src="/pathogen/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
 </mini-workspace></p>
@@ -804,102 +804,102 @@ comparison.<span class="hljs-title function_">append</span>(bg, by_srgb, by_oklc
 };
 grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;reflect&#x27;</span>;
 </code></pre><p>The three strips below use the same gradient that covers only the first 30% of each element. The vertical lines mark the gradient&#39;s defined range. Beyond that boundary, each spread method produces a different visual pattern.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwU3ByZWFkJTIwTW9kZXMlMjAlRTIlODAlOTQlMjBQYWQlMjAlMkYlMjBSZWZsZWN0JTIwJTJGJTIwUmVwZWF0JTBBJTJGJTJGJTIwU2FtZSUyMG5hcnJvdyUyMGdyYWRpZW50JTJDJTIwdGhyZWUlMjBkaWZmZXJlbnQlMjBzcHJlYWQlMjBiZWhhdmlvcnMlMEElMEElMkYlMkYlMjAtLS0lMjBCYXNlJTIwZ3JhZGllbnQlMjAoY292ZXJzJTIwMCUyMHRvJTIwMC4zJTIwb2YlMjB0aGUlMjBlbGVtZW50KSUyMC0tLSUwQSUwQWxldCUyMHBhZF9ncmFkJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ3BhZC1ncmFkJyUyQyUyMDAlMkMlMjAwJTJDJTIwMC4zJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzZTYzOTQ2JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMzMlMkMlMjBDb2xvcignJTIzZjRhMjYxJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNjYlMkMlMjBDb2xvcignJTIzMmE5ZDhmJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMjY0NjUzJykpJTNCJTBBJTdEJTNCJTBBcGFkX2dyYWQuc3ByZWFkTWV0aG9kJTIwJTNEJTIwJ3BhZCclM0IlMEElMEFsZXQlMjByZWZsZWN0X2dyYWQlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgncmVmbGVjdC1ncmFkJyUyQyUyMDAlMkMlMjAwJTJDJTIwMC4zJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzZTYzOTQ2JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMzMlMkMlMjBDb2xvcignJTIzZjRhMjYxJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNjYlMkMlMjBDb2xvcignJTIzMmE5ZDhmJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMjY0NjUzJykpJTNCJTBBJTdEJTNCJTBBcmVmbGVjdF9ncmFkLnNwcmVhZE1ldGhvZCUyMCUzRCUyMCdyZWZsZWN0JyUzQiUwQSUwQWxldCUyMHJlcGVhdF9ncmFkJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ3JlcGVhdC1ncmFkJyUyQyUyMDAlMkMlMjAwJTJDJTIwMC4zJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzZTYzOTQ2JykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuMzMlMkMlMjBDb2xvcignJTIzZjRhMjYxJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNjYlMkMlMjBDb2xvcignJTIzMmE5ZDhmJykpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjAlMjBDb2xvcignJTIzMjY0NjUzJykpJTNCJTBBJTdEJTNCJTBBcmVwZWF0X2dyYWQuc3ByZWFkTWV0aG9kJTIwJTNEJTIwJ3JlcGVhdCclM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMTQxNDFlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDMwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBHcmFkaWVudCUyMHN0cmlwcyUyMC0tLSUwQSUwQWxldCUyMHN0cmlwX3BhZCUyMCUzRCUyMFBhdGhMYXllcignc3RyaXAtcGFkJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwcGFkX2dyYWQlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBc3RyaXBfcGFkLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDYwJTJDJTIwNDUlMkMlMjAzMjAlMkMlMjA1MCUyQyUyMDQpJTIwJTdEJTBBJTBBbGV0JTIwc3RyaXBfcmVmbGVjdCUyMCUzRCUyMFBhdGhMYXllcignc3RyaXAtcmVmbGVjdCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMHJlZmxlY3RfZ3JhZCUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFzdHJpcF9yZWZsZWN0LmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDYwJTJDJTIwMTIwJTJDJTIwMzIwJTJDJTIwNTAlMkMlMjA0KSUyMCU3RCUwQSUwQWxldCUyMHN0cmlwX3JlcGVhdCUyMCUzRCUyMFBhdGhMYXllcignc3RyaXAtcmVwZWF0JyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwcmVwZWF0X2dyYWQlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBc3RyaXBfcmVwZWF0LmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDYwJTJDJTIwMTk1JTJDJTIwMzIwJTJDJTIwNTAlMkMlMjA0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFJhbmdlJTIwaW5kaWNhdG9yJTIwKHNob3dzJTIwdGhlJTIwMCVFMiU4MCU5MzMwJTI1JTIwcmVnaW9uKSUyMC0tLSUwQSUwQWxldCUyMGluZGljYXRvciUyMCUzRCUyMFBhdGhMYXllcigncmFuZ2UtaW5kaWNhdG9yJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMCUyM2ZmZmZmZjQ0JTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUyMCU3RCUzQiUwQWluZGljYXRvci5hcHBseSUyMCU3QiUwQSUyMCUyME0lMjA2MCUyMDQwJTIwTCUyMDYwJTIwMjU1JTBBJTIwJTIwTSUyMDE1NiUyMDQwJTIwTCUyMDE1NiUyMDI1NSUwQSU3RCUwQSUwQWxldCUyMHJhbmdlX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdyYW5nZS1sYWJlbCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA5JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzY2NiUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBcmFuZ2VfbGFiZWwuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDEwOCUyQyUyMDI2NSklNjAlRTIlODYlOTAlMjBncmFkaWVudCUyMHJhbmdlJTIwJUUyJTg2JTkyJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwTGFiZWxzJTIwLS0tJTBBJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTIlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzYTBhMGMwJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBlbmQlM0IlMEElN0QlM0IlMEFsYWJlbHMuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDUyJTJDJTIwNzUpJTYwcGFkJTYwJTBBJTIwJTIwdGV4dCg1MiUyQyUyMDE1MCklNjByZWZsZWN0JTYwJTBBJTIwJTIwdGV4dCg1MiUyQyUyMDIyNSklNjByZXBlYXQlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUaXRsZSUyMC0tLSUwQSUwQWxldCUyMHRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCd0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTYlM0IlMEElMjAlMjBmaWxsJTNBJTIwJTIzZTBlMGZmJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBtaWRkbGUlM0IlMEElMjAlMjBmb250LXdlaWdodCUzQSUyMGJvbGQlM0IlMEElN0QlM0IlMEF0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMjAwJTJDJTIwMjkwKSU2MHNwcmVhZE1ldGhvZCUyMENvbXBhcmlzb24lNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBTY2VuZSUyMC0tLSUwQSUwQWxldCUyMHNjZW5lJTIwJTNEJTIwR3JvdXBMYXllcignc2NlbmUnKSUyMCUyNCU3QiU3RCUzQiUwQXNjZW5lLmFwcGVuZChiZyUyQyUyMHN0cmlwX3BhZCUyQyUyMHN0cmlwX3JlZmxlY3QlMkMlMjBzdHJpcF9yZXBlYXQlMkMlMjBpbmRpY2F0b3IlMkMlMjByYW5nZV9sYWJlbCUyQyUyMGxhYmVscyUyQyUyMHRpdGxlKSUwQQ==" code-open caption="pad, reflect, repeat — same narrow gradient, three spread behaviors">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
-<span class="hljs-comment">// Spread Modes — Pad / Reflect / Repeat</span>
-<span class="hljs-comment">// Same narrow gradient, three different spread behaviors</span>
+<p><mini-workspace code-open caption="pad, reflect, repeat — same narrow gradient, three spread behaviors">
+  <code>// viewBox="0 0 400 300"
+// Spread Modes — Pad / Reflect / Repeat
+// Same narrow gradient, three different spread behaviors
 
-<span class="hljs-comment">// --- Base gradient (covers 0 to 0.3 of the element) ---</span>
+// --- Base gradient (covers 0 to 0.3 of the element) ---
 
-<span class="hljs-keyword">let</span> pad_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;pad-grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+let pad_grad = LinearGradient('pad-grad', 0, 0, 0.3, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.33, Color('#f4a261'));
+  g.stop(0.66, Color('#2a9d8f'));
+  g.stop(1,    Color('#264653'));
 };
-pad_grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;pad&#x27;</span>;
+pad_grad.spreadMethod = 'pad';
 
-<span class="hljs-keyword">let</span> reflect_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;reflect-grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+let reflect_grad = LinearGradient('reflect-grad', 0, 0, 0.3, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.33, Color('#f4a261'));
+  g.stop(0.66, Color('#2a9d8f'));
+  g.stop(1,    Color('#264653'));
 };
-reflect_grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;reflect&#x27;</span>;
+reflect_grad.spreadMethod = 'reflect';
 
-<span class="hljs-keyword">let</span> repeat_grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;repeat-grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+let repeat_grad = LinearGradient('repeat-grad', 0, 0, 0.3, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.33, Color('#f4a261'));
+  g.stop(0.66, Color('#2a9d8f'));
+  g.stop(1,    Color('#264653'));
 };
-repeat_grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;repeat&#x27;</span>;
+repeat_grad.spreadMethod = 'repeat';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #14141e; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+let bg = PathLayer('bg') ${ fill: #14141e; stroke: none; };
+bg.apply { rect(0, 0, 400, 300) }
 
-<span class="hljs-comment">// --- Gradient strips ---</span>
+// --- Gradient strips ---
 
-<span class="hljs-keyword">let</span> strip_pad = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;strip-pad&#x27;</span>) ${ <span class="hljs-attr">fill</span>: pad_grad; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-strip_pad.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">60</span>, <span class="hljs-number">45</span>, <span class="hljs-number">320</span>, <span class="hljs-number">50</span>, <span class="hljs-number">4</span>) }
+let strip_pad = PathLayer('strip-pad') ${ fill: pad_grad; stroke: #333; stroke-width: 1; };
+strip_pad.apply { roundRect(60, 45, 320, 50, 4) }
 
-<span class="hljs-keyword">let</span> strip_reflect = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;strip-reflect&#x27;</span>) ${ <span class="hljs-attr">fill</span>: reflect_grad; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-strip_reflect.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">60</span>, <span class="hljs-number">120</span>, <span class="hljs-number">320</span>, <span class="hljs-number">50</span>, <span class="hljs-number">4</span>) }
+let strip_reflect = PathLayer('strip-reflect') ${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
+strip_reflect.apply { roundRect(60, 120, 320, 50, 4) }
 
-<span class="hljs-keyword">let</span> strip_repeat = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;strip-repeat&#x27;</span>) ${ <span class="hljs-attr">fill</span>: repeat_grad; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-strip_repeat.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">60</span>, <span class="hljs-number">195</span>, <span class="hljs-number">320</span>, <span class="hljs-number">50</span>, <span class="hljs-number">4</span>) }
+let strip_repeat = PathLayer('strip-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+strip_repeat.apply { roundRect(60, 195, 320, 50, 4) }
 
-<span class="hljs-comment">// --- Range indicator (shows the 0–30% region) ---</span>
+// --- Range indicator (shows the 0–30% region) ---
 
-<span class="hljs-keyword">let</span> indicator = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;range-indicator&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: #ffffff44; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-indicator.<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">60</span> <span class="hljs-number">40</span> L <span class="hljs-number">60</span> <span class="hljs-number">255</span>
-  M <span class="hljs-number">156</span> <span class="hljs-number">40</span> L <span class="hljs-number">156</span> <span class="hljs-number">255</span>
+let indicator = PathLayer('range-indicator') ${ fill: none; stroke: #ffffff44; stroke-width: 1; };
+indicator.apply {
+  M 60 40 L 60 255
+  M 156 40 L 156 255
 }
 
-<span class="hljs-keyword">let</span> range_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;range-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">666</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let range_label = TextLayer('range-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #666;
+  text-anchor: middle;
 };
-range_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">108</span>, <span class="hljs-number">265</span>)<span class="hljs-string">`← gradient range →`</span>
+range_label.apply {
+  text(108, 265)`← gradient range →`
 }
 
-<span class="hljs-comment">// --- Labels ---</span>
+// --- Labels ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>;
-  <span class="hljs-attr">fill</span>: #a0a0c0;
-  text-<span class="hljs-attr">anchor</span>: end;
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 12;
+  fill: #a0a0c0;
+  text-anchor: end;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">52</span>, <span class="hljs-number">75</span>)<span class="hljs-string">`pad`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">52</span>, <span class="hljs-number">150</span>)<span class="hljs-string">`reflect`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">52</span>, <span class="hljs-number">225</span>)<span class="hljs-string">`repeat`</span>
+labels.apply {
+  text(52, 75)`pad`
+  text(52, 150)`reflect`
+  text(52, 225)`repeat`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">16</span>;
-  <span class="hljs-attr">fill</span>: #e0e0ff;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 16;
+  fill: #e0e0ff;
+  text-anchor: middle;
+  font-weight: bold;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">290</span>)<span class="hljs-string">`spreadMethod Comparison`</span>
+title.apply {
+  text(200, 290)`spreadMethod Comparison`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title)
 </code>
   <img src="/pathogen/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
 </mini-workspace></p>
@@ -918,170 +918,170 @@ cool.<span class="hljs-property">gradientTransform</span> = <span class="hljs-st
 <span class="hljs-keyword">let</span> vertical = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;vertical-variant&#x27;</span>);
 vertical.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
 </code></pre><p>One base gradient, three variants. Change the base and all inherited gradients update. This is the foundation of a themeable gradient system — define your palette once, derive everything else.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwR3JhZGllbnQlMjBJbmhlcml0YW5jZSUyMCVFMiU4MCU5NCUyMFRoZW1lZCUyMFVJJTIwUGFsZXR0ZSUwQSUyRiUyRiUyME9uZSUyMGJhc2UlMjBncmFkaWVudCUyMHNwYXducyUyMHZhcmlhbnRzJTIwdmlhJTIwaW5oZXJpdCgpJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFzZSUyMGdyYWRpZW50JTNBJTIwd2FybSUyMHN1bnNldCUyMHBhbGV0dGUlMjAtLS0lMEElMEFsZXQlMjBiYXNlJTIwJTNEJTIwTGluZWFyR3JhZGllbnQoJ3dhcm0tYmFzZSclMkMlMjAwJTJDJTIwMCUyQyUyMDElMkMlMjAwKSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjNlNjM5NDYnKSklM0IlMEElMjAlMjBnLnN0b3AoMC4zNSUyQyUyMENvbG9yKCclMjNmNGEyNjEnKSklM0IlMEElMjAlMjBnLnN0b3AoMC42NSUyQyUyMENvbG9yKCclMjNlOWM0NmEnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMCUyMENvbG9yKCclMjMyYTlkOGYnKSklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBJbmhlcml0ZWQlMjB2YXJpYW50cyUyMC0tLSUwQSUwQWxldCUyMGNvb2wlMjAlM0QlMjBiYXNlLmluaGVyaXQoJ2Nvb2wtdmFyaWFudCcpJTNCJTBBY29vbC5ncmFkaWVudFRyYW5zZm9ybSUyMCUzRCUyMCdyb3RhdGUoMTgwJTJDJTIwMC41JTJDJTIwMC41KSclM0IlMEElMEFsZXQlMjB2ZXJ0aWNhbCUyMCUzRCUyMGJhc2UuaW5oZXJpdCgndmVydGljYWwtdmFyaWFudCcpJTNCJTBBdmVydGljYWwuZ3JhZGllbnRUcmFuc2Zvcm0lMjAlM0QlMjAncm90YXRlKDkwJTJDJTIwMC41JTJDJTIwMC41KSclM0IlMEElMEFsZXQlMjBzdWJ0bGUlMjAlM0QlMjBMaW5lYXJHcmFkaWVudCgnc3VidGxlLXZhcmlhbnQnJTJDJTIwMCUyQyUyMDAlMkMlMjAxJTJDJTIwMCklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBDb2xvcignJTIzYzQ5MDhhJykpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNSUyQyUyMENvbG9yKCclMjNkNGI4OTYnKSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMENvbG9yKCclMjM4YWJjYjMnKSklM0IlMEElN0QlM0IlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMTExMTE4JTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDQwMCUyQyUyMDMwMCklMjAlN0QlMEElMEElMkYlMkYlMjAtLS0lMjBCYXNlJTIwc2hvd2Nhc2UlMjAobGFyZ2UlMjBjYXJkKSUyMC0tLSUwQSUwQWxldCUyMGJhc2VfY2FyZCUyMCUzRCUyMFBhdGhMYXllcignYmFzZS1jYXJkJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwYmFzZSUzQiUyMHN0cm9rZSUzQSUyMCUyMzMzMyUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDElM0IlMjAlN0QlM0IlMEFiYXNlX2NhcmQuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMjAlMkMlMjA0MCUyQyUyMDE3MCUyQyUyMDgwJTJDJTIwOCklMjAlN0QlMEElMEFsZXQlMjBjb29sX2NhcmQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2Nvb2wtY2FyZCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGNvb2wlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBY29vbF9jYXJkLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDIxMCUyQyUyMDQwJTJDJTIwMTcwJTJDJTIwODAlMkMlMjA4KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFZlcnRpY2FsJTIwdmFyaWFudCUzQSUyMHRhbGwlMjBzaWRlYmFyJTIwLS0tJTBBJTBBbGV0JTIwdmVydF9iYXIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3ZlcnQtYmFyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwdmVydGljYWwlM0IlMjBzdHJva2UlM0ElMjAlMjMzMzMlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAxJTNCJTIwJTdEJTNCJTBBdmVydF9iYXIuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMjAlMkMlMjAxNDUlMkMlMjA2MCUyQyUyMDEyMCUyQyUyMDgpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU3VidGxlJTIwdmFyaWFudCUzQSUyMFVJJTIwZWxlbWVudHMlMjAtLS0lMEElMEFsZXQlMjBidG4xJTIwJTNEJTIwUGF0aExheWVyKCdidG4xJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwc3VidGxlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJ0bjEuYXBwbHklMjAlN0IlMjByb3VuZFJlY3QoMTAwJTJDJTIwMTQ1JTJDJTIwMTIwJTJDJTIwMzYlMkMlMjA2KSUyMCU3RCUwQSUwQWxldCUyMGJ0bjIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2J0bjInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBzdWJ0bGUlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYnRuMi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgxMDAlMkMlMjAxOTUlMkMlMjAxMjAlMkMlMjAzNiUyQyUyMDYpJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU21hbGwlMjBhY2NlbnQlMjBjaXJjbGVzJTIwdXNpbmclMjBiYXNlJTIwLS0tJTBBJTBBbGV0JTIwZG90MSUyMCUzRCUyMFBhdGhMYXllcignZG90MScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGJhc2UlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZG90MS5hcHBseSUyMCU3QiUyMGNpcmNsZSgyNjAlMkMlMjAxNjMlMkMlMjAxOCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQWxldCUyMGRvdDIlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RvdDInKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBjb29sJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWRvdDIuYXBwbHklMjAlN0IlMjBjaXJjbGUoMzEwJTJDJTIwMTYzJTJDJTIwMTgpJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBkb3QzJTIwJTNEJTIwUGF0aExheWVyKCdkb3QzJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwdmVydGljYWwlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBZG90My5hcHBseSUyMCU3QiUyMGNpcmNsZSgzNjAlMkMlMjAxNjMlMkMlMjAxOCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFBpbGwlMjBzaGFwZXMlMjB3aXRoJTIwaW5oZXJpdGVkJTIwZ3JhZGllbnQlMjAtLS0lMEElMEFsZXQlMjBwaWxsMSUyMCUzRCUyMFBhdGhMYXllcigncGlsbDEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBiYXNlJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQXBpbGwxLmFwcGx5JTIwJTdCJTIwcm91bmRSZWN0KDI0MCUyQyUyMDIwMCUyQyUyMDE0MCUyQyUyMDI4JTJDJTIwMTQpJTIwJTdEJTBBJTBBbGV0JTIwcGlsbDIlMjAlM0QlMjBQYXRoTGF5ZXIoJ3BpbGwyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwY29vbCUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFwaWxsMi5hcHBseSUyMCU3QiUyMHJvdW5kUmVjdCgyNDAlMkMlMjAyMzYlMkMlMjAxNDAlMkMlMjAyOCUyQyUyMDE0KSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExhYmVscyUyMC0tLSUwQSUwQWxldCUyMGxhYmVscyUyMCUzRCUyMFRleHRMYXllcignbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyMzg4OCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTdEJTNCJTBBbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgxMDUlMkMlMjAxMzUpJTYwYmFzZSUyMCh3YXJtKSU2MCUwQSUyMCUyMHRleHQoMjk1JTJDJTIwMTM1KSU2MGluaGVyaXQlMjAlRTIlODYlOTIlMjBjb29sJTYwJTBBJTIwJTIwdGV4dCg1MCUyQyUyMDI3OCklNjB2ZXJ0aWNhbCU2MCUwQSUyMCUyMHRleHQoMTYwJTJDJTIwMjQ4KSU2MHN1YnRsZSU2MCUwQSUyMCUyMHRleHQoMzEwJTJDJTIwMTk1KSU2MGFjY2VudCUyMGRvdHMlNjAlMEElN0QlMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMCUyM2NjY2NkZCUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwbWlkZGxlJTNCJTBBJTIwJTIwZm9udC13ZWlnaHQlM0ElMjBib2xkJTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDIwMCUyQyUyMDI1KSU2MEdyYWRpZW50JTIwSW5oZXJpdGFuY2UlM0ElMjBPbmUlMjBCYXNlJTJDJTIwTWFueSUyMFZhcmlhbnRzJTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwU2NlbmUlMjAtLS0lMEElMEFsZXQlMjBwYWxldHRlJTIwJTNEJTIwR3JvdXBMYXllcigncGFsZXR0ZScpJTIwJTI0JTdCJTdEJTNCJTBBcGFsZXR0ZS5hcHBlbmQoYmclMkMlMjBiYXNlX2NhcmQlMkMlMjBjb29sX2NhcmQlMkMlMjB2ZXJ0X2JhciUyQyUyMGJ0bjElMkMlMjBidG4yJTJDJTIwZG90MSUyQyUyMGRvdDIlMkMlMjBkb3QzJTJDJTIwcGlsbDElMkMlMjBwaWxsMiUyQyUyMGxhYmVscyUyQyUyMHRpdGxlKSUwQQ==" code-open caption="One base gradient spawns a family of variants via inherit()">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
-<span class="hljs-comment">// Gradient Inheritance — Themed UI Palette</span>
-<span class="hljs-comment">// One base gradient spawns variants via inherit()</span>
+<p><mini-workspace code-open caption="One base gradient spawns a family of variants via inherit()">
+  <code>// viewBox="0 0 400 300"
+// Gradient Inheritance — Themed UI Palette
+// One base gradient spawns variants via inherit()
 
-<span class="hljs-comment">// --- Base gradient: warm sunset palette ---</span>
+// --- Base gradient: warm sunset palette ---
 
-<span class="hljs-keyword">let</span> base = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;warm-base&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.35</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.65</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+let base = LinearGradient('warm-base', 0, 0, 1, 0) {|g|
+  g.stop(0,    Color('#e63946'));
+  g.stop(0.35, Color('#f4a261'));
+  g.stop(0.65, Color('#e9c46a'));
+  g.stop(1,    Color('#2a9d8f'));
 };
 
-<span class="hljs-comment">// --- Inherited variants ---</span>
+// --- Inherited variants ---
 
-<span class="hljs-keyword">let</span> cool = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;cool-variant&#x27;</span>);
-cool.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(180, 0.5, 0.5)&#x27;</span>;
+let cool = base.inherit('cool-variant');
+cool.gradientTransform = 'rotate(180, 0.5, 0.5)';
 
-<span class="hljs-keyword">let</span> vertical = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;vertical-variant&#x27;</span>);
-vertical.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
+let vertical = base.inherit('vertical-variant');
+vertical.gradientTransform = 'rotate(90, 0.5, 0.5)';
 
-<span class="hljs-keyword">let</span> subtle = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;subtle-variant&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c4908a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#d4b896&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#8abcb3&#x27;</span>));
+let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
+  g.stop(0,   Color('#c4908a'));
+  g.stop(0.5, Color('#d4b896'));
+  g.stop(1,   Color('#8abcb3'));
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">111118</span>; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+bg.apply { rect(0, 0, 400, 300) }
 
-<span class="hljs-comment">// --- Base showcase (large card) ---</span>
+// --- Base showcase (large card) ---
 
-<span class="hljs-keyword">let</span> base_card = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;base-card&#x27;</span>) ${ <span class="hljs-attr">fill</span>: base; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-base_card.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">20</span>, <span class="hljs-number">40</span>, <span class="hljs-number">170</span>, <span class="hljs-number">80</span>, <span class="hljs-number">8</span>) }
+let base_card = PathLayer('base-card') ${ fill: base; stroke: #333; stroke-width: 1; };
+base_card.apply { roundRect(20, 40, 170, 80, 8) }
 
-<span class="hljs-keyword">let</span> cool_card = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;cool-card&#x27;</span>) ${ <span class="hljs-attr">fill</span>: cool; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-cool_card.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">210</span>, <span class="hljs-number">40</span>, <span class="hljs-number">170</span>, <span class="hljs-number">80</span>, <span class="hljs-number">8</span>) }
+let cool_card = PathLayer('cool-card') ${ fill: cool; stroke: #333; stroke-width: 1; };
+cool_card.apply { roundRect(210, 40, 170, 80, 8) }
 
-<span class="hljs-comment">// --- Vertical variant: tall sidebar ---</span>
+// --- Vertical variant: tall sidebar ---
 
-<span class="hljs-keyword">let</span> vert_bar = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;vert-bar&#x27;</span>) ${ <span class="hljs-attr">fill</span>: vertical; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">333</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; };
-vert_bar.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">20</span>, <span class="hljs-number">145</span>, <span class="hljs-number">60</span>, <span class="hljs-number">120</span>, <span class="hljs-number">8</span>) }
+let vert_bar = PathLayer('vert-bar') ${ fill: vertical; stroke: #333; stroke-width: 1; };
+vert_bar.apply { roundRect(20, 145, 60, 120, 8) }
 
-<span class="hljs-comment">// --- Subtle variant: UI elements ---</span>
+// --- Subtle variant: UI elements ---
 
-<span class="hljs-keyword">let</span> btn1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;btn1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: subtle; <span class="hljs-attr">stroke</span>: none; };
-btn1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">100</span>, <span class="hljs-number">145</span>, <span class="hljs-number">120</span>, <span class="hljs-number">36</span>, <span class="hljs-number">6</span>) }
+let btn1 = PathLayer('btn1') ${ fill: subtle; stroke: none; };
+btn1.apply { roundRect(100, 145, 120, 36, 6) }
 
-<span class="hljs-keyword">let</span> btn2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;btn2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: subtle; <span class="hljs-attr">stroke</span>: none; };
-btn2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">100</span>, <span class="hljs-number">195</span>, <span class="hljs-number">120</span>, <span class="hljs-number">36</span>, <span class="hljs-number">6</span>) }
+let btn2 = PathLayer('btn2') ${ fill: subtle; stroke: none; };
+btn2.apply { roundRect(100, 195, 120, 36, 6) }
 
-<span class="hljs-comment">// --- Small accent circles using base ---</span>
+// --- Small accent circles using base ---
 
-<span class="hljs-keyword">let</span> dot1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dot1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: base; <span class="hljs-attr">stroke</span>: none; };
-dot1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">260</span>, <span class="hljs-number">163</span>, <span class="hljs-number">18</span>); <span class="hljs-title function_">closePath</span>() }
+let dot1 = PathLayer('dot1') ${ fill: base; stroke: none; };
+dot1.apply { circle(260, 163, 18); closePath() }
 
-<span class="hljs-keyword">let</span> dot2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dot2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: cool; <span class="hljs-attr">stroke</span>: none; };
-dot2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">310</span>, <span class="hljs-number">163</span>, <span class="hljs-number">18</span>); <span class="hljs-title function_">closePath</span>() }
+let dot2 = PathLayer('dot2') ${ fill: cool; stroke: none; };
+dot2.apply { circle(310, 163, 18); closePath() }
 
-<span class="hljs-keyword">let</span> dot3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dot3&#x27;</span>) ${ <span class="hljs-attr">fill</span>: vertical; <span class="hljs-attr">stroke</span>: none; };
-dot3.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">360</span>, <span class="hljs-number">163</span>, <span class="hljs-number">18</span>); <span class="hljs-title function_">closePath</span>() }
+let dot3 = PathLayer('dot3') ${ fill: vertical; stroke: none; };
+dot3.apply { circle(360, 163, 18); closePath() }
 
-<span class="hljs-comment">// --- Pill shapes with inherited gradient ---</span>
+// --- Pill shapes with inherited gradient ---
 
-<span class="hljs-keyword">let</span> pill1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;pill1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: base; <span class="hljs-attr">stroke</span>: none; };
-pill1.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">240</span>, <span class="hljs-number">200</span>, <span class="hljs-number">140</span>, <span class="hljs-number">28</span>, <span class="hljs-number">14</span>) }
+let pill1 = PathLayer('pill1') ${ fill: base; stroke: none; };
+pill1.apply { roundRect(240, 200, 140, 28, 14) }
 
-<span class="hljs-keyword">let</span> pill2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;pill2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: cool; <span class="hljs-attr">stroke</span>: none; };
-pill2.<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">240</span>, <span class="hljs-number">236</span>, <span class="hljs-number">140</span>, <span class="hljs-number">28</span>, <span class="hljs-number">14</span>) }
+let pill2 = PathLayer('pill2') ${ fill: cool; stroke: none; };
+pill2.apply { roundRect(240, 236, 140, 28, 14) }
 
-<span class="hljs-comment">// --- Labels ---</span>
+// --- Labels ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #888;
+  text-anchor: middle;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">105</span>, <span class="hljs-number">135</span>)<span class="hljs-string">`base (warm)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">135</span>)<span class="hljs-string">`inherit → cool`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">278</span>)<span class="hljs-string">`vertical`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">160</span>, <span class="hljs-number">248</span>)<span class="hljs-string">`subtle`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">310</span>, <span class="hljs-number">195</span>)<span class="hljs-string">`accent dots`</span>
+labels.apply {
+  text(105, 135)`base (warm)`
+  text(295, 135)`inherit → cool`
+  text(50, 278)`vertical`
+  text(160, 248)`subtle`
+  text(310, 195)`accent dots`
 }
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: #ccccdd;
-  text-<span class="hljs-attr">anchor</span>: middle;
-  font-<span class="hljs-attr">weight</span>: bold;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: #ccccdd;
+  text-anchor: middle;
+  font-weight: bold;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">200</span>, <span class="hljs-number">25</span>)<span class="hljs-string">`Gradient Inheritance: One Base, Many Variants`</span>
+title.apply {
+  text(200, 25)`Gradient Inheritance: One Base, Many Variants`
 }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> palette = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;palette&#x27;</span>) ${};
-palette.<span class="hljs-title function_">append</span>(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title)
+let palette = GroupLayer('palette') ${};
+palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title)
 </code>
   <img src="/pathogen/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
 </mini-workspace></p>
 <h2>CSS Variable Reactivity</h2>
 <p>Pathogen&#39;s gradients compose naturally with the <a href="/pathogen/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
 <p>The demo below puts three overlapping radial glows on a dark background. Each glow&#39;s center color is bound to a CSS variable (<code>--light-a</code>, <code>--light-b</code>, <code>--light-c</code>) — use the color pickers to remix the scene in real time.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwUmVhY3RpdmUlMjBSYWRpYWwlMjBMaWdodHMlMjAlRTIlODAlOTQlMjBDU1NWYXItZHJpdmVuJTIwb3ZlcmxhcHBpbmclMjBnbG93cyUwQSUyRiUyRiUyMERyYWclMjB0aGUlMjBjb2xvciUyMHBpY2tlcnMlMjB0byUyMHJlY29sb3IlMjB0aHJlZSUyMHJhZGlhbCUyMGxpZ2h0JTIwc291cmNlcyUwQSUwQSUyRiUyRiUyMC0tLSUyMFJlYWN0aXZlJTIwbGlnaHQlMjBjb2xvcnMlMjAtLS0lMEElMEFsZXQlMjBsaWdodF9hJTIwJTNEJTIwQ29sb3IoQ1NTVmFyKCctLWxpZ2h0LWEnJTJDJTIwJyUyM2Y0YTI2MScpKSUzQiUwQWxldCUyMGxpZ2h0X2IlMjAlM0QlMjBDb2xvcihDU1NWYXIoJy0tbGlnaHQtYiclMkMlMjAnJTIzMjU2M2ViJykpJTNCJTBBbGV0JTIwbGlnaHRfYyUyMCUzRCUyMENvbG9yKENTU1ZhcignLS1saWdodC1jJyUyQyUyMCclMjNlNjM5NDYnKSklM0IlMEElMEElMkYlMkYlMjAtLS0lMjBSYWRpYWwlMjBncmFkaWVudHMlM0ElMjBjZW50ZXIlMjBjb2xvciUyMGZhZGVzJTIwdG8lMjB0cmFuc3BhcmVudCUyMC0tLSUwQSUwQWxldCUyMGdsb3dfYSUyMCUzRCUyMFJhZGlhbEdyYWRpZW50KCdnbG93LWEnJTJDJTIwMC41JTJDJTIwMC41JTJDJTIwMC41KSUyMCU3QiU3Q2clN0MlMEElMjAlMjBnLnN0b3AoMCUyQyUyMCUyMCUyMGxpZ2h0X2EpJTNCJTBBJTIwJTIwZy5zdG9wKDAuNCUyQyUyMGxpZ2h0X2EuYWxwaGEoMC42KSklM0IlMEElMjAlMjBnLnN0b3AoMSUyQyUyMCUyMCUyMGxpZ2h0X2EuYWxwaGEoMCkpJTNCJTBBJTdEJTNCJTBBZ2xvd19hLmludGVycG9sYXRpb24lMjAlM0QlMjAnb2tsY2gnJTNCJTBBJTBBbGV0JTIwZ2xvd19iJTIwJTNEJTIwUmFkaWFsR3JhZGllbnQoJ2dsb3ctYiclMkMlMjAwLjUlMkMlMjAwLjUlMkMlMjAwLjUpJTIwJTdCJTdDZyU3QyUwQSUyMCUyMGcuc3RvcCgwJTJDJTIwJTIwJTIwbGlnaHRfYiklM0IlMEElMjAlMjBnLnN0b3AoMC40JTJDJTIwbGlnaHRfYi5hbHBoYSgwLjYpKSUzQiUwQSUyMCUyMGcuc3RvcCgxJTJDJTIwJTIwJTIwbGlnaHRfYi5hbHBoYSgwKSklM0IlMEElN0QlM0IlMEFnbG93X2IuaW50ZXJwb2xhdGlvbiUyMCUzRCUyMCdva2xjaCclM0IlMEElMEFsZXQlMjBnbG93X2MlMjAlM0QlMjBSYWRpYWxHcmFkaWVudCgnZ2xvdy1jJyUyQyUyMDAuNSUyQyUyMDAuNSUyQyUyMDAuNSklMjAlN0IlN0NnJTdDJTBBJTIwJTIwZy5zdG9wKDAlMkMlMjAlMjAlMjBsaWdodF9jKSUzQiUwQSUyMCUyMGcuc3RvcCgwLjQlMkMlMjBsaWdodF9jLmFscGhhKDAuNikpJTNCJTBBJTIwJTIwZy5zdG9wKDElMkMlMjAlMjAlMjBsaWdodF9jLmFscGhhKDApKSUzQiUwQSU3RCUzQiUwQWdsb3dfYy5pbnRlcnBvbGF0aW9uJTIwJTNEJTIwJ29rbGNoJyUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjAlMjMwYTBhMWElM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNDAwJTJDJTIwMzAwKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMExpZ2h0JTIwY2lyY2xlcyUyMChvdmVybGFwcGluZyUyMGZvciUyMGNvbG9yJTIwbWl4aW5nKSUyMC0tLSUwQSUwQWxldCUyMGxhJTIwJTNEJTIwUGF0aExheWVyKCdsaWdodC1hJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwZ2xvd19hJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMG9wYWNpdHklM0ElMjAwLjglM0IlMjAlN0QlM0IlMEFsYS5hcHBseSUyMCU3QiUyMGNpcmNsZSgxNDAlMkMlMjAxMjAlMkMlMjAxMzApJTNCJTIwY2xvc2VQYXRoKCklMjAlN0QlMEElMEFsZXQlMjBsYiUyMCUzRCUyMFBhdGhMYXllcignbGlnaHQtYicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMGdsb3dfYiUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjBvcGFjaXR5JTNBJTIwMC44JTNCJTIwJTdEJTNCJTBBbGIuYXBwbHklMjAlN0IlMjBjaXJjbGUoMjgwJTJDJTIwMTEwJTJDJTIwMTMwKSUzQiUyMGNsb3NlUGF0aCgpJTIwJTdEJTBBJTBBbGV0JTIwbGMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xpZ2h0LWMnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBnbG93X2MlM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwb3BhY2l0eSUzQSUyMDAuOCUzQiUyMCU3RCUzQiUwQWxjLmFwcGx5JTIwJTdCJTIwY2lyY2xlKDIwMCUyQyUyMDIyMCUyQyUyMDEzMCklM0IlMjBjbG9zZVBhdGgoKSUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFNjZW5lJTIwLS0tJTBBJTBBbGV0JTIwc2NlbmUlMjAlM0QlMjBHcm91cExheWVyKCdzY2VuZScpJTIwJTI0JTdCJTdEJTNCJTBBc2NlbmUuYXBwZW5kKGJnJTJDJTIwbGElMkMlMjBsYiUyQyUyMGxjKSUwQQ==" code-open caption="Drag the color pickers to recolor three overlapping radial lights">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
-<span class="hljs-comment">// Reactive Radial Lights — CSSVar-driven overlapping glows</span>
-<span class="hljs-comment">// Drag the color pickers to recolor three radial light sources</span>
+<p><mini-workspace code-open caption="Drag the color pickers to recolor three overlapping radial lights">
+  <code>// viewBox="0 0 400 300"
+// Reactive Radial Lights — CSSVar-driven overlapping glows
+// Drag the color pickers to recolor three radial light sources
 
-<span class="hljs-comment">// --- Reactive light colors ---</span>
+// --- Reactive light colors ---
 
-<span class="hljs-keyword">let</span> light_a = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--light-a&#x27;</span>, <span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-<span class="hljs-keyword">let</span> light_b = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--light-b&#x27;</span>, <span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-<span class="hljs-keyword">let</span> light_c = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--light-c&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
+let light_a = Color(CSSVar('--light-a', '#f4a261'));
+let light_b = Color(CSSVar('--light-b', '#2563eb'));
+let light_c = Color(CSSVar('--light-c', '#e63946'));
 
-<span class="hljs-comment">// --- Radial gradients: center color fades to transparent ---</span>
+// --- Radial gradients: center color fades to transparent ---
 
-<span class="hljs-keyword">let</span> glow_a = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;glow-a&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   light_a);
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, light_a.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.6</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   light_a.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0</span>));
+let glow_a = RadialGradient('glow-a', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   light_a);
+  g.stop(0.4, light_a.alpha(0.6));
+  g.stop(1,   light_a.alpha(0));
 };
-glow_a.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+glow_a.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> glow_b = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;glow-b&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   light_b);
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, light_b.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.6</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   light_b.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0</span>));
+let glow_b = RadialGradient('glow-b', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   light_b);
+  g.stop(0.4, light_b.alpha(0.6));
+  g.stop(1,   light_b.alpha(0));
 };
-glow_b.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+glow_b.interpolation = 'oklch';
 
-<span class="hljs-keyword">let</span> glow_c = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;glow-c&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   light_c);
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, light_c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.6</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   light_c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0</span>));
+let glow_c = RadialGradient('glow-c', 0.5, 0.5, 0.5) {|g|
+  g.stop(0,   light_c);
+  g.stop(0.4, light_c.alpha(0.6));
+  g.stop(1,   light_c.alpha(0));
 };
-glow_c.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+glow_c.interpolation = 'oklch';
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0a0a1a; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
+bg.apply { rect(0, 0, 400, 300) }
 
-<span class="hljs-comment">// --- Light circles (overlapping for color mixing) ---</span>
+// --- Light circles (overlapping for color mixing) ---
 
-<span class="hljs-keyword">let</span> la = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;light-a&#x27;</span>) ${ <span class="hljs-attr">fill</span>: glow_a; <span class="hljs-attr">stroke</span>: none; <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.8</span>; };
-la.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">140</span>, <span class="hljs-number">120</span>, <span class="hljs-number">130</span>); <span class="hljs-title function_">closePath</span>() }
+let la = PathLayer('light-a') ${ fill: glow_a; stroke: none; opacity: 0.8; };
+la.apply { circle(140, 120, 130); closePath() }
 
-<span class="hljs-keyword">let</span> lb = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;light-b&#x27;</span>) ${ <span class="hljs-attr">fill</span>: glow_b; <span class="hljs-attr">stroke</span>: none; <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.8</span>; };
-lb.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">280</span>, <span class="hljs-number">110</span>, <span class="hljs-number">130</span>); <span class="hljs-title function_">closePath</span>() }
+let lb = PathLayer('light-b') ${ fill: glow_b; stroke: none; opacity: 0.8; };
+lb.apply { circle(280, 110, 130); closePath() }
 
-<span class="hljs-keyword">let</span> lc = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;light-c&#x27;</span>) ${ <span class="hljs-attr">fill</span>: glow_c; <span class="hljs-attr">stroke</span>: none; <span class="hljs-attr">opacity</span>: <span class="hljs-number">0.8</span>; };
-lc.<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">200</span>, <span class="hljs-number">220</span>, <span class="hljs-number">130</span>); <span class="hljs-title function_">closePath</span>() }
+let lc = PathLayer('light-c') ${ fill: glow_c; stroke: none; opacity: 0.8; };
+lc.apply { circle(200, 220, 130); closePath() }
 
-<span class="hljs-comment">// --- Scene ---</span>
+// --- Scene ---
 
-<span class="hljs-keyword">let</span> scene = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;scene&#x27;</span>) ${};
-scene.<span class="hljs-title function_">append</span>(bg, la, lb, lc)
+let scene = GroupLayer('scene') ${};
+scene.append(bg, la, lb, lc)
 </code>
   <img src="/pathogen/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
 </mini-workspace></p>

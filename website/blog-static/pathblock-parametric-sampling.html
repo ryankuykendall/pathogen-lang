@@ -320,248 +320,248 @@ code.hljs {
 <span class="hljs-comment">// n.angle is tangent angle - π/2</span>
 <span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTYwJTIwMzYwJTIyJTBBJTJGJTJGJTIwUGFyYW1ldHJpYyUyMFNhbXBsaW5nJTIwQW5hdG9teSUyMCVFMiU4MCU5NCUyMC5nZXQoKSUyQyUyMC50YW5nZW50KCklMkMlMjAubm9ybWFsKCklMjB2aXN1YWxpemVkJTBBJTBBbGV0JTIwY3VydmUlMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBjJTIwMCUyMC0xNDAlMjAyMjAlMjAtMTQwJTIwMjIwJTIwMCUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMEJhY2tncm91bmQlMjAtLS0lMEElMEFsZXQlMjBiZyUyMCUzRCUyMFBhdGhMYXllcignYmcnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzMGYxNzJhJyklM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBYmcuYXBwbHklMjAlN0IlMjByZWN0KDAlMkMlMjAwJTJDJTIwNTYwJTJDJTIwMzYwKSUyMCU3RCUwQSUwQWxldCUyMGdyaWQlMjAlM0QlMjBQYXRoTGF5ZXIoJ2dyaWQnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMxZTI5M2InKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDAuNSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBZ3JpZC5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChpJTIwaW4lMjAwLi4xOCklMjAlN0IlMEElMjAlMjAlMjAlMjBNJTIwMCUyMGNhbGMoaSUyMColMjAyMCklMEElMjAlMjAlMjAlMjBoJTIwNTYwJTBBJTIwJTIwJTdEJTBBJTIwJTIwZm9yJTIwKGolMjBpbiUyMDAuLjI4KSUyMCU3QiUwQSUyMCUyMCUyMCUyME0lMjBjYWxjKGolMjAqJTIwMjApJTIwMCUwQSUyMCUyMCUyMCUyMHYlMjAzNjAlMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUaGUlMjBjdXJ2ZSUyMC0tLSUwQSUwQWxldCUyMHBhdGglMjAlM0QlMjBQYXRoTGF5ZXIoJ3BhdGgnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIuNSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBcGF0aC5hcHBseSUyMCU3QiUwQSUyMCUyMGN1cnZlLmRyYXdUbyg4MCUyQyUyMDI0MCklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBHZXQlMjByZWFsJTIwc2FtcGxpbmclMjBkYXRhJTIwYXQlMjB0JTNEMC40JTIwLS0tJTBBJTBBbGV0JTIwcHJvaiUyMCUzRCUyMGN1cnZlLnByb2plY3QoODAlMkMlMjAyNDApJTNCJTBBbGV0JTIwcHQlMjAlM0QlMjBwcm9qLmdldCgwLjQpJTNCJTBBbGV0JTIwdGFuJTIwJTNEJTIwcHJvai50YW5nZW50KDAuNCklM0IlMEFsZXQlMjBub3JtJTIwJTNEJTIwcHJvai5ub3JtYWwoMC40KSUzQiUwQSUwQSUyRiUyRiUyMC0tLSUyMFNhbXBsZSUyMHBvaW50JTIwZG90JTIwLS0tJTBBJTBBbGV0JTIwc2FtcGxlX2RvdCUyMCUzRCUyMFBhdGhMYXllcignc2FtcGxlLWRvdCcpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlZjQ0NDQnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElN0QlM0IlMEFzYW1wbGVfZG90LmFwcGx5JTIwJTdCJTBBJTIwJTIwY2lyY2xlKHB0LnglMkMlMjBwdC55JTJDJTIwNSklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBUYW5nZW50JTIwbGluZSUyMC0tLSUwQSUwQWxldCUyMHRhbmdlbnQlMjAlM0QlMjBQYXRoTGF5ZXIoJ3RhbmdlbnQnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMyMmM1NWUnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDEuNSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBdGFuZ2VudC5hcHBseSUyMCU3QiUwQSUyMCUyME0lMjBjYWxjKHB0LnglMjAtJTIwY29zKHRhbi5hbmdsZSklMjAqJTIwNTUpJTIwY2FsYyhwdC55JTIwLSUyMHNpbih0YW4uYW5nbGUpJTIwKiUyMDU1KSUwQSUyMCUyMEwlMjBjYWxjKHB0LnglMjAlMkIlMjBjb3ModGFuLmFuZ2xlKSUyMColMjA1NSklMjBjYWxjKHB0LnklMjAlMkIlMjBzaW4odGFuLmFuZ2xlKSUyMColMjA1NSklMEElN0QlMEElMEElMkYlMkYlMjBUYW5nZW50JTIwZGlyZWN0aW9uJTIwYXJyb3clMEFsZXQlMjB0YW5fYXJyb3clMjAlM0QlMjBQYXRoTGF5ZXIoJ3Rhbi1hcnJvdycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjMyMmM1NWUnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEElMkYlMkYlMjBBcnJvdyUyMGF0JTIwdGhlJTIwcG9zaXRpdmUlMjBlbmQlMjBvZiUyMHRhbmdlbnQlMEFsZXQlMjB0YW5fZW5kX3glMjAlM0QlMjBjYWxjKHB0LnglMjAlMkIlMjBjb3ModGFuLmFuZ2xlKSUyMColMjA1NSklM0IlMEFsZXQlMjB0YW5fZW5kX3klMjAlM0QlMjBjYWxjKHB0LnklMjAlMkIlMjBzaW4odGFuLmFuZ2xlKSUyMColMjA1NSklM0IlMEFsZXQlMjB0YW5fcGVycF94JTIwJTNEJTIwY2FsYygtc2luKHRhbi5hbmdsZSkpJTNCJTBBbGV0JTIwdGFuX3BlcnBfeSUyMCUzRCUyMGNhbGMoY29zKHRhbi5hbmdsZSkpJTNCJTBBdGFuX2Fycm93LmFwcGx5JTIwJTdCJTBBJTIwJTIwTSUyMHRhbl9lbmRfeCUyMHRhbl9lbmRfeSUwQSUyMCUyMGwlMjBjYWxjKC1jb3ModGFuLmFuZ2xlKSUyMColMjAxMCUyMCUyQiUyMHRhbl9wZXJwX3glMjAqJTIwNCklMjBjYWxjKC1zaW4odGFuLmFuZ2xlKSUyMColMjAxMCUyMCUyQiUyMHRhbl9wZXJwX3klMjAqJTIwNCklMEElMjAlMjBsJTIwY2FsYygtdGFuX3BlcnBfeCUyMColMjA4KSUyMGNhbGMoLXRhbl9wZXJwX3klMjAqJTIwOCklMEElMjAlMjB6JTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwTm9ybWFsJTIwbGluZSUyMC0tLSUwQSUwQWxldCUyMG5vcm1hbCUyMCUzRCUyMFBhdGhMYXllcignbm9ybWFsJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzZjU5ZTBiJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQW5vcm1hbC5hcHBseSUyMCU3QiUwQSUyMCUyME0lMjBwdC54JTIwcHQueSUwQSUyMCUyMEwlMjBjYWxjKHB0LnglMjAlMkIlMjBjb3Mobm9ybS5hbmdsZSklMjAqJTIwNTApJTIwY2FsYyhwdC55JTIwJTJCJTIwc2luKG5vcm0uYW5nbGUpJTIwKiUyMDUwKSUwQSU3RCUwQSUwQSUyRiUyRiUyME5vcm1hbCUyMGRpcmVjdGlvbiUyMGFycm93JTBBbGV0JTIwbm9ybV9lbmRfeCUyMCUzRCUyMGNhbGMocHQueCUyMCUyQiUyMGNvcyhub3JtLmFuZ2xlKSUyMColMjA1MCklM0IlMEFsZXQlMjBub3JtX2VuZF95JTIwJTNEJTIwY2FsYyhwdC55JTIwJTJCJTIwc2luKG5vcm0uYW5nbGUpJTIwKiUyMDUwKSUzQiUwQWxldCUyMG5vcm1fcGVycF94JTIwJTNEJTIwY2FsYygtc2luKG5vcm0uYW5nbGUpKSUzQiUwQWxldCUyMG5vcm1fcGVycF95JTIwJTNEJTIwY2FsYyhjb3Mobm9ybS5hbmdsZSkpJTNCJTBBbm9ybWFsLmFwcGx5JTIwJTdCJTBBJTIwJTIwJTJGJTJGJTIwYXJyb3doZWFkJTBBJTIwJTIwTSUyMG5vcm1fZW5kX3glMjBub3JtX2VuZF95JTBBJTIwJTIwbCUyMGNhbGMoLWNvcyhub3JtLmFuZ2xlKSUyMColMjAxMCUyMCUyQiUyMG5vcm1fcGVycF94JTIwKiUyMDQpJTIwY2FsYygtc2luKG5vcm0uYW5nbGUpJTIwKiUyMDEwJTIwJTJCJTIwbm9ybV9wZXJwX3klMjAqJTIwNCklMEElMjAlMjBsJTIwY2FsYygtbm9ybV9wZXJwX3glMjAqJTIwOCklMjBjYWxjKC1ub3JtX3BlcnBfeSUyMColMjA4KSUwQSUyMCUyMHolMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjB0JTNEMCUyMGFuZCUyMHQlM0QxJTIwZW5kcG9pbnQlMjBtYXJrZXJzJTIwLS0tJTBBJTBBbGV0JTIwZW5kcG9pbnRzJTIwJTNEJTIwUGF0aExheWVyKCdlbmRwb2ludHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMGYxNzJhJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElN0QlM0IlMEFlbmRwb2ludHMuYXBwbHklMjAlN0IlMEElMjAlMjBjaXJjbGUoODAlMkMlMjAyNDAlMkMlMjAzLjUpJTBBJTIwJTIwY2lyY2xlKDMwMCUyQyUyMDI0MCUyQyUyMDMuNSklMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBMZWFkZXIlMjBsaW5lcyUyMC0tLSUwQSUwQWxldCUyMGxlYWRlcnMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlYWRlcnMnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzQ3NTU2OScpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC41JTNCJTBBJTdEJTNCJTBBbGVhZGVycy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMFRhbmdlbnQlMjBsYWJlbCUyMGxlYWRlciUwQSUyMCUyME0lMjBjYWxjKHB0LnglMjAlMkIlMjBjb3ModGFuLmFuZ2xlKSUyMColMjA0OCklMjBjYWxjKHB0LnklMjAlMkIlMjBzaW4odGFuLmFuZ2xlKSUyMColMjA0OCklMEElMjAlMjBMJTIwMzEwJTIwODAlMEElMjAlMjAlMkYlMkYlMjBOb3JtYWwlMjBsYWJlbCUyMGxlYWRlciUwQSUyMCUyME0lMjBjYWxjKHB0LnglMjAlMkIlMjBjb3Mobm9ybS5hbmdsZSklMjAqJTIwNDQpJTIwY2FsYyhwdC55JTIwJTJCJTIwc2luKG5vcm0uYW5nbGUpJTIwKiUyMDQ0KSUwQSUyMCUyMEwlMjAxMTAlMjA1MCUwQSUyMCUyMCUyRiUyRiUyMFNhbXBsZSUyMHBvaW50JTIwbGVhZGVyJTIwKGJlbG93JTIwY3VydmUpJTBBJTIwJTIwTSUyMGNhbGMocHQueCklMjBjYWxjKHB0LnklMjAlMkIlMjA4KSUwQSUyMCUyMEwlMjBjYWxjKHB0LngpJTIwMjYwJTBBJTIwJTIwTCUyMDM2NSUyMDI2MCUwQSUyMCUyMCUyRiUyRiUyMHQlM0QwJTIwbGVhZGVyJTBBJTIwJTIwTSUyMDgwJTIwMjQwJTIwTCUyMDU1JTIwMjY4JTBBJTIwJTIwJTJGJTJGJTIwdCUzRDElMjBsZWFkZXIlMEElMjAlMjBNJTIwMzAwJTIwMjQwJTIwTCUyMDMyNSUyMDI2OCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEVuZHBvaW50JTIwbGFiZWxzJTIwLS0tJTBBJTBBbGV0JTIwZXBfbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdlcC1sYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzOTRhM2I4JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQWVwX2xhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNTUlMkMlMjAyODApJTYwdCUyMCUzRCUyMDAlNjAlMEElMjAlMjB0ZXh0KDMyNSUyQyUyMDI4MCklNjB0JTIwJTNEJTIwMSU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyME1ldGhvZCUyMGNhbGxvdXQlMjBsYWJlbHMlMjAtLS0lMEElMEFsZXQlMjBtZXRob2RfbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdtZXRob2QtbGFiZWxzJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlMmU4ZjAnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFtZXRob2RfbGFiZWxzLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzNzAlMkMlMjAyNTYpJTYwLmdldCgwLjQpJTYwJTBBJTIwJTIwdGV4dCgzNzAlMkMlMjAyNjkpJTYwJUUyJTg2JTkyJTIwUG9pbnQlNjAlMEElN0QlMEElMEFsZXQlMjB0YW5nZW50X2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCd0YW5nZW50LWxhYmVsJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDEwJTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjMyMmM1NWUnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEF0YW5nZW50X2xhYmVsLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzMTUlMkMlMjA3NiklNjAudGFuZ2VudCgwLjQpJTYwJTBBJTIwJTIwdGV4dCgzMTUlMkMlMjA4OSklNjAlRTIlODYlOTIlMjAlN0IlMjBwb2ludCUyQyUyMGFuZ2xlJTIwJTdEJTYwJTBBJTdEJTBBJTBBbGV0JTIwbm9ybWFsX2xhYmVsJTIwJTNEJTIwVGV4dExheWVyKCdub3JtYWwtbGFiZWwnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwMTAlM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2Y1OWUwYicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQW5vcm1hbF9sYWJlbC5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoNTAlMkMlMjA0NSklNjAubm9ybWFsKDAuNCklNjAlMEElMjAlMjB0ZXh0KDUwJTJDJTIwNTgpJTYwJUUyJTg2JTkyJTIwdGFuZ2VudCUyMCVFMiU4OCU5MiUyMCVDRiU4MCUyRjIlNjAlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBMZWdlbmQlMjAtLS0lMEElMEFsZXQlMjBsZWclMjAlM0QlMjBUZXh0TGF5ZXIoJ2xlZ2VuZCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwbGVnX2MlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlZy1jdXJ2ZScpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFsZXQlMjBsZWdfdCUyMCUzRCUyMFBhdGhMYXllcignbGVnLXRhbicpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMyMmM1NWUnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFsZXQlMjBsZWdfbiUyMCUzRCUyMFBhdGhMYXllcignbGVnLW5vcm0nKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBDb2xvcignJTIzZjU5ZTBiJyklM0IlMjBzdHJva2UlM0ElMjBub25lJTNCJTIwJTdEJTNCJTBBbGV0JTIwbGVnX3AlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xlZy1wdCcpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlZjQ0NDQnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEElMEFsZWdfYy5hcHBseSUyMCU3QiUyMHJlY3QoMzcwJTJDJTIwMzEwJTJDJTIwOCUyQyUyMDgpJTIwJTdEJTBBbGVnX3QuYXBwbHklMjAlN0IlMjByZWN0KDM3MCUyQyUyMDMyNCUyQyUyMDglMkMlMjA4KSUyMCU3RCUwQWxlZ19uLmFwcGx5JTIwJTdCJTIwcmVjdCg0NjAlMkMlMjAzMTAlMkMlMjA4JTJDJTIwOCklMjAlN0QlMEFsZWdfcC5hcHBseSUyMCU3QiUyMHJlY3QoNDYwJTJDJTIwMzI0JTJDJTIwOCUyQyUyMDgpJTIwJTdEJTBBJTBBbGVnLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgzODIlMkMlMjAzMTcpJTYwQ3VydmUlMjBwYXRoJTYwJTBBJTIwJTIwdGV4dCgzODIlMkMlMjAzMzEpJTYwVGFuZ2VudCU2MCUwQSUyMCUyMHRleHQoNDcyJTJDJTIwMzE3KSU2ME5vcm1hbCU2MCUwQSUyMCUyMHRleHQoNDcyJTJDJTIwMzMxKSU2MFNhbXBsZSUyMHBvaW50JTYwJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVGl0bGUlMjAtLS0lMEElMEFsZXQlMjB0aXRsZSUyMCUzRCUyMFRleHRMYXllcigndGl0bGUnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDE0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjNlMmU4ZjAnKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEF0aXRsZS5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzAlMkMlMjAzMjgpJTYwUGFyYW1ldHJpYyUyMFNhbXBsaW5nJTYwJTBBJTdEJTBBJTBBbGV0JTIwc3VidGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3N1YnRpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzQ0KSU2MFF1ZXJ5JTIwYW55JTIwcG9pbnQlMjBhbG9uZyUyMGElMjBwYXRoJTIwYnklMjBhcmMtbGVuZ3RoJTIwZnJhY3Rpb24lMjB0JTYwJTBBJTdEJTBB" caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 560 360&quot;</span>
-<span class="hljs-comment">// Parametric Sampling Anatomy — .get(), .tangent(), .normal() visualized</span>
+<p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
+  <code>// viewBox="0 0 560 360"
+// Parametric Sampling Anatomy — .get(), .tangent(), .normal() visualized
 
-<span class="hljs-keyword">let</span> curve = @{
-  c <span class="hljs-number">0</span> -<span class="hljs-number">140</span> <span class="hljs-number">220</span> -<span class="hljs-number">140</span> <span class="hljs-number">220</span> <span class="hljs-number">0</span>
+let curve = @{
+  c 0 -140 220 -140 220 0
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">560</span>, <span class="hljs-number">360</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 560, 360) }
 
-<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e293b&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let grid = PathLayer('grid') ${
+  stroke: Color('#1e293b');
+  stroke-width: 0.5;
+  fill: none;
 };
-grid.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.18</span>) {
-    M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>)
-    h <span class="hljs-number">560</span>
+grid.apply {
+  for (i in 0..18) {
+    M 0 calc(i * 20)
+    h 560
   }
-  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.28</span>) {
-    M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span>
-    v <span class="hljs-number">360</span>
+  for (j in 0..28) {
+    M calc(j * 20) 0
+    v 360
   }
 }
 
-<span class="hljs-comment">// --- The curve ---</span>
+// --- The curve ---
 
-<span class="hljs-keyword">let</span> path = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;path&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let path = PathLayer('path') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2.5;
+  fill: none;
 };
-path.<span class="hljs-property">apply</span> {
-  curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">80</span>, <span class="hljs-number">240</span>)
+path.apply {
+  curve.drawTo(80, 240)
 }
 
-<span class="hljs-comment">// --- Get real sampling data at t=0.4 ---</span>
+// --- Get real sampling data at t=0.4 ---
 
-<span class="hljs-keyword">let</span> proj = curve.<span class="hljs-title function_">project</span>(<span class="hljs-number">80</span>, <span class="hljs-number">240</span>);
-<span class="hljs-keyword">let</span> pt = proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.4</span>);
-<span class="hljs-keyword">let</span> tan = proj.<span class="hljs-title function_">tangent</span>(<span class="hljs-number">0.4</span>);
-<span class="hljs-keyword">let</span> norm = proj.<span class="hljs-title function_">normal</span>(<span class="hljs-number">0.4</span>);
+let proj = curve.project(80, 240);
+let pt = proj.get(0.4);
+let tan = proj.tangent(0.4);
+let norm = proj.normal(0.4);
 
-<span class="hljs-comment">// --- Sample point dot ---</span>
+// --- Sample point dot ---
 
-<span class="hljs-keyword">let</span> sample_dot = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sample-dot&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
+let sample_dot = PathLayer('sample-dot') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 2;
 };
-sample_dot.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">circle</span>(pt.<span class="hljs-property">x</span>, pt.<span class="hljs-property">y</span>, <span class="hljs-number">5</span>)
+sample_dot.apply {
+  circle(pt.x, pt.y, 5)
 }
 
-<span class="hljs-comment">// --- Tangent line ---</span>
+// --- Tangent line ---
 
-<span class="hljs-keyword">let</span> tangent = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tangent&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let tangent = PathLayer('tangent') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
 };
-tangent.<span class="hljs-property">apply</span> {
-  M <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> - <span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">55</span>) <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> - <span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">55</span>)
-  L <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">55</span>) <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">55</span>)
+tangent.apply {
+  M calc(pt.x - cos(tan.angle) * 55) calc(pt.y - sin(tan.angle) * 55)
+  L calc(pt.x + cos(tan.angle) * 55) calc(pt.y + sin(tan.angle) * 55)
 }
 
-<span class="hljs-comment">// Tangent direction arrow</span>
-<span class="hljs-keyword">let</span> tan_arrow = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tan-arrow&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: none;
+// Tangent direction arrow
+let tan_arrow = PathLayer('tan-arrow') ${
+  fill: Color('#22c55e');
+  stroke: none;
 };
-<span class="hljs-comment">// Arrow at the positive end of tangent</span>
-<span class="hljs-keyword">let</span> tan_end_x = <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">55</span>);
-<span class="hljs-keyword">let</span> tan_end_y = <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">55</span>);
-<span class="hljs-keyword">let</span> tan_perp_x = <span class="hljs-title function_">calc</span>(-<span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>));
-<span class="hljs-keyword">let</span> tan_perp_y = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>));
-tan_arrow.<span class="hljs-property">apply</span> {
+// Arrow at the positive end of tangent
+let tan_end_x = calc(pt.x + cos(tan.angle) * 55);
+let tan_end_y = calc(pt.y + sin(tan.angle) * 55);
+let tan_perp_x = calc(-sin(tan.angle));
+let tan_perp_y = calc(cos(tan.angle));
+tan_arrow.apply {
   M tan_end_x tan_end_y
-  l <span class="hljs-title function_">calc</span>(-<span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span> + tan_perp_x * <span class="hljs-number">4</span>) <span class="hljs-title function_">calc</span>(-<span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span> + tan_perp_y * <span class="hljs-number">4</span>)
-  l <span class="hljs-title function_">calc</span>(-tan_perp_x * <span class="hljs-number">8</span>) <span class="hljs-title function_">calc</span>(-tan_perp_y * <span class="hljs-number">8</span>)
+  l calc(-cos(tan.angle) * 10 + tan_perp_x * 4) calc(-sin(tan.angle) * 10 + tan_perp_y * 4)
+  l calc(-tan_perp_x * 8) calc(-tan_perp_y * 8)
   z
 }
 
-<span class="hljs-comment">// --- Normal line ---</span>
+// --- Normal line ---
 
-<span class="hljs-keyword">let</span> normal = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;normal&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let normal = PathLayer('normal') ${
+  stroke: Color('#f59e0b');
+  stroke-width: 1.5;
+  fill: none;
 };
-normal.<span class="hljs-property">apply</span> {
-  M pt.<span class="hljs-property">x</span> pt.<span class="hljs-property">y</span>
-  L <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">50</span>) <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">50</span>)
+normal.apply {
+  M pt.x pt.y
+  L calc(pt.x + cos(norm.angle) * 50) calc(pt.y + sin(norm.angle) * 50)
 }
 
-<span class="hljs-comment">// Normal direction arrow</span>
-<span class="hljs-keyword">let</span> norm_end_x = <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> norm_end_y = <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> norm_perp_x = <span class="hljs-title function_">calc</span>(-<span class="hljs-title function_">sin</span>(norm.<span class="hljs-property">angle</span>));
-<span class="hljs-keyword">let</span> norm_perp_y = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(norm.<span class="hljs-property">angle</span>));
-normal.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// arrowhead</span>
+// Normal direction arrow
+let norm_end_x = calc(pt.x + cos(norm.angle) * 50);
+let norm_end_y = calc(pt.y + sin(norm.angle) * 50);
+let norm_perp_x = calc(-sin(norm.angle));
+let norm_perp_y = calc(cos(norm.angle));
+normal.apply {
+  // arrowhead
   M norm_end_x norm_end_y
-  l <span class="hljs-title function_">calc</span>(-<span class="hljs-title function_">cos</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span> + norm_perp_x * <span class="hljs-number">4</span>) <span class="hljs-title function_">calc</span>(-<span class="hljs-title function_">sin</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span> + norm_perp_y * <span class="hljs-number">4</span>)
-  l <span class="hljs-title function_">calc</span>(-norm_perp_x * <span class="hljs-number">8</span>) <span class="hljs-title function_">calc</span>(-norm_perp_y * <span class="hljs-number">8</span>)
+  l calc(-cos(norm.angle) * 10 + norm_perp_x * 4) calc(-sin(norm.angle) * 10 + norm_perp_y * 4)
+  l calc(-norm_perp_x * 8) calc(-norm_perp_y * 8)
   z
 }
 
-<span class="hljs-comment">// --- t=0 and t=1 endpoint markers ---</span>
+// --- t=0 and t=1 endpoint markers ---
 
-<span class="hljs-keyword">let</span> endpoints = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;endpoints&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let endpoints = PathLayer('endpoints') ${
+  fill: Color('#94a3b8');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
 };
-endpoints.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">80</span>, <span class="hljs-number">240</span>, <span class="hljs-number">3.5</span>)
-  <span class="hljs-title function_">circle</span>(<span class="hljs-number">300</span>, <span class="hljs-number">240</span>, <span class="hljs-number">3.5</span>)
+endpoints.apply {
+  circle(80, 240, 3.5)
+  circle(300, 240, 3.5)
 }
 
-<span class="hljs-comment">// --- Leader lines ---</span>
+// --- Leader lines ---
 
-<span class="hljs-keyword">let</span> leaders = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leaders&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: none;
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>;
+let leaders = PathLayer('leaders') ${
+  fill: none;
+  stroke: Color('#475569');
+  stroke-width: 0.5;
 };
-leaders.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// Tangent label leader</span>
-  M <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">48</span>) <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * <span class="hljs-number">48</span>)
-  L <span class="hljs-number">310</span> <span class="hljs-number">80</span>
-  <span class="hljs-comment">// Normal label leader</span>
-  M <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">44</span>) <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">44</span>)
-  L <span class="hljs-number">110</span> <span class="hljs-number">50</span>
-  <span class="hljs-comment">// Sample point leader (below curve)</span>
-  M <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span>) <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">y</span> + <span class="hljs-number">8</span>)
-  L <span class="hljs-title function_">calc</span>(pt.<span class="hljs-property">x</span>) <span class="hljs-number">260</span>
-  L <span class="hljs-number">365</span> <span class="hljs-number">260</span>
-  <span class="hljs-comment">// t=0 leader</span>
-  M <span class="hljs-number">80</span> <span class="hljs-number">240</span> L <span class="hljs-number">55</span> <span class="hljs-number">268</span>
-  <span class="hljs-comment">// t=1 leader</span>
-  M <span class="hljs-number">300</span> <span class="hljs-number">240</span> L <span class="hljs-number">325</span> <span class="hljs-number">268</span>
+leaders.apply {
+  // Tangent label leader
+  M calc(pt.x + cos(tan.angle) * 48) calc(pt.y + sin(tan.angle) * 48)
+  L 310 80
+  // Normal label leader
+  M calc(pt.x + cos(norm.angle) * 44) calc(pt.y + sin(norm.angle) * 44)
+  L 110 50
+  // Sample point leader (below curve)
+  M calc(pt.x) calc(pt.y + 8)
+  L calc(pt.x) 260
+  L 365 260
+  // t=0 leader
+  M 80 240 L 55 268
+  // t=1 leader
+  M 300 240 L 325 268
 }
 
-<span class="hljs-comment">// --- Endpoint labels ---</span>
+// --- Endpoint labels ---
 
-<span class="hljs-keyword">let</span> ep_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;ep-labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let ep_labels = TextLayer('ep-labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
 };
-ep_labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">55</span>, <span class="hljs-number">280</span>)<span class="hljs-string">`t = 0`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">325</span>, <span class="hljs-number">280</span>)<span class="hljs-string">`t = 1`</span>
+ep_labels.apply {
+  text(55, 280)`t = 0`
+  text(325, 280)`t = 1`
 }
 
-<span class="hljs-comment">// --- Method callout labels ---</span>
+// --- Method callout labels ---
 
-<span class="hljs-keyword">let</span> method_labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;method-labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let method_labels = TextLayer('method-labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-method_labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">370</span>, <span class="hljs-number">256</span>)<span class="hljs-string">`.get(0.4)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">370</span>, <span class="hljs-number">269</span>)<span class="hljs-string">`→ Point`</span>
+method_labels.apply {
+  text(370, 256)`.get(0.4)`
+  text(370, 269)`→ Point`
 }
 
-<span class="hljs-keyword">let</span> tangent_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;tangent-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let tangent_label = TextLayer('tangent-label') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#22c55e');
+  text-anchor: start;
 };
-tangent_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">315</span>, <span class="hljs-number">76</span>)<span class="hljs-string">`.tangent(0.4)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">315</span>, <span class="hljs-number">89</span>)<span class="hljs-string">`→ { point, angle }`</span>
+tangent_label.apply {
+  text(315, 76)`.tangent(0.4)`
+  text(315, 89)`→ { point, angle }`
 }
 
-<span class="hljs-keyword">let</span> normal_label = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;normal-label&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let normal_label = TextLayer('normal-label') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: Color('#f59e0b');
+  text-anchor: start;
 };
-normal_label.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">45</span>)<span class="hljs-string">`.normal(0.4)`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">50</span>, <span class="hljs-number">58</span>)<span class="hljs-string">`→ tangent − π/2`</span>
+normal_label.apply {
+  text(50, 45)`.normal(0.4)`
+  text(50, 58)`→ tangent − π/2`
 }
 
-<span class="hljs-comment">// --- Legend ---</span>
+// --- Legend ---
 
-<span class="hljs-keyword">let</span> leg = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;legend&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let leg = TextLayer('legend') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
 
-<span class="hljs-keyword">let</span> leg_c = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-curve&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_t = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-tan&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_n = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-norm&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-<span class="hljs-keyword">let</span> leg_p = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;leg-pt&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
+let leg_c = PathLayer('leg-curve') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_t = PathLayer('leg-tan') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_n = PathLayer('leg-norm') ${ fill: Color('#f59e0b'); stroke: none; };
+let leg_p = PathLayer('leg-pt') ${ fill: Color('#ef4444'); stroke: none; };
 
-leg_c.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">370</span>, <span class="hljs-number">310</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_t.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">370</span>, <span class="hljs-number">324</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_n.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">460</span>, <span class="hljs-number">310</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
-leg_p.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">460</span>, <span class="hljs-number">324</span>, <span class="hljs-number">8</span>, <span class="hljs-number">8</span>) }
+leg_c.apply { rect(370, 310, 8, 8) }
+leg_t.apply { rect(370, 324, 8, 8) }
+leg_n.apply { rect(460, 310, 8, 8) }
+leg_p.apply { rect(460, 324, 8, 8) }
 
-leg.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">382</span>, <span class="hljs-number">317</span>)<span class="hljs-string">`Curve path`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">382</span>, <span class="hljs-number">331</span>)<span class="hljs-string">`Tangent`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">472</span>, <span class="hljs-number">317</span>)<span class="hljs-string">`Normal`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">472</span>, <span class="hljs-number">331</span>)<span class="hljs-string">`Sample point`</span>
+leg.apply {
+  text(382, 317)`Curve path`
+  text(382, 331)`Tangent`
+  text(472, 317)`Normal`
+  text(472, 331)`Sample point`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 14;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">328</span>)<span class="hljs-string">`Parametric Sampling`</span>
+title.apply {
+  text(30, 328)`Parametric Sampling`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">344</span>)<span class="hljs-string">`Query any point along a path by arc-length fraction t`</span>
+subtitle.apply {
+  text(30, 344)`Query any point along a path by arc-length fraction t`
 }
 </code>
   <img src="/pathogen/blog/samples/post7/sampling-anatomy.svg" alt="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4" loading="lazy">
@@ -578,58 +578,58 @@ curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number"
 </code></pre><p>This works but is manual — you pick the t-values yourself. For evenly-spaced distributions, <code>partition()</code> automates this pattern.</p>
 <h2>Sampling Points Along a Curve</h2>
 <p>The demo below shows parametric sampling in action. A sine-like curve is defined with two cubic Béziers, then 8 points are placed along it using <code>partition()</code>, and tangent lines are drawn at regular intervals.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNDAwJTIwMzAwJTIyJTBBJTJGJTJGJTIwUGFyYW1ldHJpYyUyMHNhbXBsaW5nJTIwJUUyJTgwJTk0JTIwcGxhY2luZyUyMGRvdHMlMjBhbG9uZyUyMGElMjBjdXJ2ZSUwQSUwQWxldCUyMGN1cnZlJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwYyUyMDAlMjAtMTIwJTIwMjAwJTIwLTEyMCUyMDIwMCUyMDAlMEElMjAlMjBjJTIwMCUyMDEyMCUyMC0yMDAlMjAxMjAlMjAtMjAwJTIwMCUwQSU3RCUzQiUwQSUwQWxldCUyMHBhdGglMjAlM0QlMjBQYXRoTGF5ZXIoJ3BhdGgnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjMzYjgyZjYnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMGRvdHMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2RvdHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZWY0NDQ0JyklM0IlMEElMjAlMjBzdHJva2UlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwdGFuZ2VudHMlMjAlM0QlMjBQYXRoTGF5ZXIoJ3RhbmdlbnRzJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzMjJjNTVlJyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAxLjUlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMEdldCUyMHByb2plY3Rpb24lMjBmb3IlMjBzYW1wbGluZyUwQWxldCUyMHByb2olMjAlM0QlMjBjdXJ2ZS5wcm9qZWN0KDUwJTJDJTIwMTUwKSUzQiUwQSUwQSUyRiUyRiUyMERyYXclMjB0aGUlMjBjdXJ2ZSUwQXBhdGguYXBwbHklMjAlN0IlMEElMjAlMjBjdXJ2ZS5kcmF3VG8oNTAlMkMlMjAxNTApJTBBJTdEJTBBJTBBJTJGJTJGJTIwU2FtcGxlJTIwOCUyMHBvaW50cyUyMGFsb25nJTIwdGhlJTIwY3VydmUlMEFkb3RzLmFwcGx5JTIwJTdCJTBBJTIwJTIwbGV0JTIwcHRzJTIwJTNEJTIwcHJvai5wYXJ0aXRpb24oOCklM0IlMEElMjAlMjBmb3IlMjAocCUyMGluJTIwcHRzKSUyMCU3QiUwQSUyMCUyMCUyMCUyME0lMjBjYWxjKHAucG9pbnQueCUyMC0lMjA0KSUyMHAucG9pbnQueSUwQSUyMCUyMCUyMCUyMGElMjA0JTIwNCUyMDAlMjAxJTIwMSUyMDglMjAwJTBBJTIwJTIwJTIwJTIwYSUyMDQlMjA0JTIwMCUyMDElMjAxJTIwLTglMjAwJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwU2hvdyUyMHRhbmdlbnQlMjBsaW5lcyUyMGF0JTIwYSUyMGZldyUyMHBvaW50cyUwQXRhbmdlbnRzLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjgpJTIwJTdCJTBBJTIwJTIwJTIwJTIwbGV0JTIwdCUyMCUzRCUyMGNhbGMoaSUyMCUyRiUyMDgpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwdGFuJTIwJTNEJTIwcHJvai50YW5nZW50KHQpJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwbGVuJTIwJTNEJTIwMjAlM0IlMEElMjAlMjAlMjAlMjBNJTIwY2FsYyh0YW4ucG9pbnQueCUyMC0lMjBjb3ModGFuLmFuZ2xlKSUyMColMjBsZW4lMjAlMkYlMjAyKSUyMGNhbGModGFuLnBvaW50LnklMjAtJTIwc2luKHRhbi5hbmdsZSklMjAqJTIwbGVuJTIwJTJGJTIwMiklMEElMjAlMjAlMjAlMjBsJTIwY2FsYyhjb3ModGFuLmFuZ2xlKSUyMColMjBsZW4pJTIwY2FsYyhzaW4odGFuLmFuZ2xlKSUyMColMjBsZW4pJTBBJTIwJTIwJTdEJTBBJTdEJTBB" code-open caption="Points and tangent lines sampled along a cubic Bézier curve">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 400 300&quot;</span>
-<span class="hljs-comment">// Parametric sampling — placing dots along a curve</span>
+<p><mini-workspace code-open caption="Points and tangent lines sampled along a cubic Bézier curve">
+  <code>// viewBox="0 0 400 300"
+// Parametric sampling — placing dots along a curve
 
-<span class="hljs-keyword">let</span> curve = @{
-  c <span class="hljs-number">0</span> -<span class="hljs-number">120</span> <span class="hljs-number">200</span> -<span class="hljs-number">120</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span>
-  c <span class="hljs-number">0</span> <span class="hljs-number">120</span> -<span class="hljs-number">200</span> <span class="hljs-number">120</span> -<span class="hljs-number">200</span> <span class="hljs-number">0</span>
+let curve = @{
+  c 0 -120 200 -120 200 0
+  c 0 120 -200 120 -200 0
 };
 
-<span class="hljs-keyword">let</span> path = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;path&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: none;
+let path = PathLayer('path') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: none;
 };
 
-<span class="hljs-keyword">let</span> dots = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dots&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: none;
+let dots = PathLayer('dots') ${
+  fill: Color('#ef4444');
+  stroke: none;
 };
 
-<span class="hljs-keyword">let</span> tangents = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;tangents&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
-  <span class="hljs-attr">fill</span>: none;
+let tangents = PathLayer('tangents') ${
+  stroke: Color('#22c55e');
+  stroke-width: 1.5;
+  fill: none;
 };
 
-<span class="hljs-comment">// Get projection for sampling</span>
-<span class="hljs-keyword">let</span> proj = curve.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">150</span>);
+// Get projection for sampling
+let proj = curve.project(50, 150);
 
-<span class="hljs-comment">// Draw the curve</span>
-path.<span class="hljs-property">apply</span> {
-  curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">150</span>)
+// Draw the curve
+path.apply {
+  curve.drawTo(50, 150)
 }
 
-<span class="hljs-comment">// Sample 8 points along the curve</span>
-dots.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">let</span> pts = proj.<span class="hljs-title function_">partition</span>(<span class="hljs-number">8</span>);
-  <span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-    M <span class="hljs-title function_">calc</span>(p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> - <span class="hljs-number">4</span>) p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>
-    a <span class="hljs-number">4</span> <span class="hljs-number">4</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">8</span> <span class="hljs-number">0</span>
-    a <span class="hljs-number">4</span> <span class="hljs-number">4</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">8</span> <span class="hljs-number">0</span>
+// Sample 8 points along the curve
+dots.apply {
+  let pts = proj.partition(8);
+  for (p in pts) {
+    M calc(p.point.x - 4) p.point.y
+    a 4 4 0 1 1 8 0
+    a 4 4 0 1 1 -8 0
   }
 }
 
-<span class="hljs-comment">// Show tangent lines at a few points</span>
-tangents.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.8</span>) {
-    <span class="hljs-keyword">let</span> t = <span class="hljs-title function_">calc</span>(i / <span class="hljs-number">8</span>);
-    <span class="hljs-keyword">let</span> tan = proj.<span class="hljs-title function_">tangent</span>(t);
-    <span class="hljs-keyword">let</span> len = <span class="hljs-number">20</span>;
-    M <span class="hljs-title function_">calc</span>(tan.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> - <span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * len / <span class="hljs-number">2</span>) <span class="hljs-title function_">calc</span>(tan.<span class="hljs-property">point</span>.<span class="hljs-property">y</span> - <span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * len / <span class="hljs-number">2</span>)
-    l <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(tan.<span class="hljs-property">angle</span>) * len) <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(tan.<span class="hljs-property">angle</span>) * len)
+// Show tangent lines at a few points
+tangents.apply {
+  for (i in 0..8) {
+    let t = calc(i / 8);
+    let tan = proj.tangent(t);
+    let len = 20;
+    M calc(tan.point.x - cos(tan.angle) * len / 2) calc(tan.point.y - sin(tan.angle) * len / 2)
+    l calc(cos(tan.angle) * len) calc(sin(tan.angle) * len)
   }
 }
 </code>
@@ -667,279 +667,279 @@ tangents.<span class="hljs-property">apply</span> {
 </tr>
 </tbody></table>
 <p>The demo below shows <code>partition(8)</code> on an S-curve. Each of the 9 points (fence posts at both ends) is labeled with its <code>t</code> value. Notice the even spacing — the points are equidistant along the curve, not along the x-axis.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTIwJTIwMzAwJTIyJTBBJTJGJTJGJTIwUGFydGl0aW9uJTIwd2l0aCUyMHQtdmFsdWUlMjBsYWJlbHMlMjAlRTIlODAlOTQlMjBldmVuJTIwYXJjLWxlbmd0aCUyMHNwYWNpbmclMEElMEFsZXQlMjBjdXJ2ZSUyMCUzRCUyMCU0MCU3QiUwQSUyMCUyMGMlMjAwJTIwLTEyMCUyMDIwMCUyMC0xMjAlMjAyMDAlMjAwJTBBJTIwJTIwYyUyMDAlMjAxMjAlMjAyMDAlMjAxMjAlMjAyMDAlMjAwJTBBJTdEJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1MjAlMkMlMjAzMDApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwVGhlJTIwY3VydmUlMjAtLS0lMEElMEFsZXQlMjBwYXRoJTIwJTNEJTIwUGF0aExheWVyKCdwYXRoJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzM2I4MmY2JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjAyJTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEFwYXRoLmFwcGx5JTIwJTdCJTBBJTIwJTIwY3VydmUuZHJhd1RvKDYwJTJDJTIwMTUwKSUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFBhcnRpdGlvbiUyMHBvaW50cyUyMChuJTNEOCklMjB1c2luZyUyMHJlYWwlMjBkYXRhJTIwLS0tJTBBJTBBbGV0JTIwcHJvaiUyMCUzRCUyMGN1cnZlLnByb2plY3QoNjAlMkMlMjAxNTApJTNCJTBBbGV0JTIwcHRzJTIwJTNEJTIwcHJvai5wYXJ0aXRpb24oOCklM0IlMEElMEFsZXQlMjBkb3RzJTIwJTNEJTIwUGF0aExheWVyKCdkb3RzJyklMjAlMjQlN0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyM2VmNDQ0NCcpJTNCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzBmMTcyYScpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBZG90cy5hcHBseSUyMCU3QiUwQSUyMCUyMGZvciUyMChwJTIwaW4lMjBwdHMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwY2lyY2xlKHAucG9pbnQueCUyQyUyMHAucG9pbnQueSUyQyUyMDQpJTBBJTIwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwdC12YWx1ZSUyMGxhYmVscyUyMChwb3NpdGlvbmVkJTIwcmVsYXRpdmUlMjB0byUyMGFjdHVhbCUyMHBvaW50cyklMjAtLS0lMEElMEFsZXQlMjB0dmFscyUyMCUzRCUyMFRleHRMYXllcigndHZhbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOCUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZmNhNWE1JyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMG1pZGRsZSUzQiUwQSU3RCUzQiUwQSUwQSUyRiUyRiUyMExhYmVsJTIwZWFjaCUyMHBvaW50JTIwd2l0aCUyMGl0cyUyMHQlMjB2YWx1ZSUwQSUyRiUyRiUyMFBsYWNlJTIwbGFiZWxzJTIwYWJvdmUlMjBwb2ludHMlMjBvbiUyMHRoZSUyMHVwcGVyJTIwaGFsZiUyQyUyMGJlbG93JTIwb24lMjB0aGUlMjBsb3dlciUyMGhhbGYlMEF0dmFscy5hcHBseSUyMCU3QiUwQSUyMCUyMCUyRiUyRiUyMHQlM0QwJTIwKHN0YXJ0JTJDJTIwbGVmdCklMEElMjAlMjB0ZXh0KHB0cyU1QjAlNUQucG9pbnQueCUyQyUyMGNhbGMocHRzJTVCMCU1RC5wb2ludC55JTIwJTJCJTIwMTgpKSU2MDAuMDAlNjAlMEElMjAlMjAlMkYlMkYlMjB0JTNEMC4xMjUlMjAoZ29pbmclMjB1cCklMEElMjAlMjB0ZXh0KGNhbGMocHRzJTVCMSU1RC5wb2ludC54JTIwLSUyMDgpJTJDJTIwY2FsYyhwdHMlNUIxJTVELnBvaW50LnklMjAtJTIwMTIpKSU2MDAuMTI1JTYwJTBBJTIwJTIwJTJGJTJGJTIwdCUzRDAuMjUlMjAobmVhciUyMHRvcCklMEElMjAlMjB0ZXh0KHB0cyU1QjIlNUQucG9pbnQueCUyQyUyMGNhbGMocHRzJTVCMiU1RC5wb2ludC55JTIwLSUyMDEyKSklNjAwLjI1JTYwJTBBJTIwJTIwJTJGJTJGJTIwdCUzRDAuMzc1JTIwKG5lYXIlMjB0b3ApJTBBJTIwJTIwdGV4dChjYWxjKHB0cyU1QjMlNUQucG9pbnQueCUyMCUyQiUyMDgpJTJDJTIwY2FsYyhwdHMlNUIzJTVELnBvaW50LnklMjAtJTIwMTIpKSU2MDAuMzc1JTYwJTBBJTIwJTIwJTJGJTJGJTIwdCUzRDAuNSUyMChtaWRkbGUpJTBBJTIwJTIwdGV4dChwdHMlNUI0JTVELnBvaW50LnglMkMlMjBjYWxjKHB0cyU1QjQlNUQucG9pbnQueSUyMCUyQiUyMDE4KSklNjAwLjUwJTYwJTBBJTIwJTIwJTJGJTJGJTIwdCUzRDAuNjI1JTIwKGdvaW5nJTIwZG93biklMEElMjAlMjB0ZXh0KGNhbGMocHRzJTVCNSU1RC5wb2ludC54JTIwJTJCJTIwOCklMkMlMjBjYWxjKHB0cyU1QjUlNUQucG9pbnQueSUyMCUyQiUyMDE4KSklNjAwLjYyNSU2MCUwQSUyMCUyMCUyRiUyRiUyMHQlM0QwLjc1JTIwKG5lYXIlMjBib3R0b20pJTBBJTIwJTIwdGV4dChwdHMlNUI2JTVELnBvaW50LnglMkMlMjBjYWxjKHB0cyU1QjYlNUQucG9pbnQueSUyMCUyQiUyMDE4KSklNjAwLjc1JTYwJTBBJTIwJTIwJTJGJTJGJTIwdCUzRDAuODc1JTIwKGdvaW5nJTIwdXApJTBBJTIwJTIwdGV4dChjYWxjKHB0cyU1QjclNUQucG9pbnQueCUyMCUyQiUyMDgpJTJDJTIwY2FsYyhwdHMlNUI3JTVELnBvaW50LnklMjAlMkIlMjAxOCkpJTYwMC44NzUlNjAlMEElMjAlMjAlMkYlMkYlMjB0JTNEMS4wJTIwKGVuZCUyQyUyMHJpZ2h0KSUwQSUyMCUyMHRleHQocHRzJTVCOCU1RC5wb2ludC54JTJDJTIwY2FsYyhwdHMlNUI4JTVELnBvaW50LnklMjAlMkIlMjAxOCkpJTYwMS4wMCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMENvZGUlMjAtLS0lMEElMEFsZXQlMjBjb2RlJTIwJTNEJTIwVGV4dExheWVyKCdjb2RlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWNvZGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjYyKSU2MGxldCUyMHB0cyUyMCUzRCUyMGN1cnZlLnBhcnRpdGlvbig4KSUzQiU2MCUwQSUyMCUyMHRleHQoMzAlMkMlMjAyNzYpJTYwJTJGJTJGJTIwJUUyJTg2JTkyJTIwOSUyMHBvaW50cyUyMGF0JTIwdCUyMCUzRCUyMDAlMkMlMjAwLjEyNSUyQyUyMDAuMjUlMkMlMjAuLi4lMjAxLjAlNjAlMEElN0QlMEElMEFsZXQlMjBrdyUyMCUzRCUyMFRleHRMYXllcigna3cnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwbW9ub3NwYWNlJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzYzA4NGZjJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBa3cuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjYyKSU2MGxldCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMyUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjgpJTYwcGFydGl0aW9uKDgpJTIwJUUyJTgwJTk0JTIwRXZlbiUyMERpc3RyaWJ1dGlvbiU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDI5NSUyQyUyMDI4KSU2MG4lMjAlMkIlMjAxJTIwcG9pbnRzJTIwYXQlMjBlcXVhbCUyMGFyYy1sZW5ndGglMjBpbnRlcnZhbHMlNjAlMEElN0QlMEE=" caption="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 520 300&quot;</span>
-<span class="hljs-comment">// Partition with t-value labels — even arc-length spacing</span>
+<p><mini-workspace caption="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve">
+  <code>// viewBox="0 0 520 300"
+// Partition with t-value labels — even arc-length spacing
 
-<span class="hljs-keyword">let</span> curve = @{
-  c <span class="hljs-number">0</span> -<span class="hljs-number">120</span> <span class="hljs-number">200</span> -<span class="hljs-number">120</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span>
-  c <span class="hljs-number">0</span> <span class="hljs-number">120</span> <span class="hljs-number">200</span> <span class="hljs-number">120</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span>
+let curve = @{
+  c 0 -120 200 -120 200 0
+  c 0 120 200 120 200 0
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">520</span>, <span class="hljs-number">300</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 520, 300) }
 
-<span class="hljs-comment">// --- The curve ---</span>
+// --- The curve ---
 
-<span class="hljs-keyword">let</span> path = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;path&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: none;
+let path = PathLayer('path') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 2;
+  fill: none;
 };
-path.<span class="hljs-property">apply</span> {
-  curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">150</span>)
+path.apply {
+  curve.drawTo(60, 150)
 }
 
-<span class="hljs-comment">// --- Partition points (n=8) using real data ---</span>
+// --- Partition points (n=8) using real data ---
 
-<span class="hljs-keyword">let</span> proj = curve.<span class="hljs-title function_">project</span>(<span class="hljs-number">60</span>, <span class="hljs-number">150</span>);
-<span class="hljs-keyword">let</span> pts = proj.<span class="hljs-title function_">partition</span>(<span class="hljs-number">8</span>);
+let proj = curve.project(60, 150);
+let pts = proj.partition(8);
 
-<span class="hljs-keyword">let</span> dots = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dots&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ef4444&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let dots = PathLayer('dots') ${
+  fill: Color('#ef4444');
+  stroke: Color('#0f172a');
+  stroke-width: 1.5;
 };
-dots.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-    <span class="hljs-title function_">circle</span>(p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>, <span class="hljs-number">4</span>)
+dots.apply {
+  for (p in pts) {
+    circle(p.point.x, p.point.y, 4)
   }
 }
 
-<span class="hljs-comment">// --- t-value labels (positioned relative to actual points) ---</span>
+// --- t-value labels (positioned relative to actual points) ---
 
-<span class="hljs-keyword">let</span> tvals = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;tvals&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#fca5a5&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: middle;
+let tvals = TextLayer('tvals') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#fca5a5');
+  text-anchor: middle;
 };
 
-<span class="hljs-comment">// Label each point with its t value</span>
-<span class="hljs-comment">// Place labels above points on the upper half, below on the lower half</span>
-tvals.<span class="hljs-property">apply</span> {
-  <span class="hljs-comment">// t=0 (start, left)</span>
-  <span class="hljs-title function_">text</span>(pts[<span class="hljs-number">0</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">0</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-number">18</span>))<span class="hljs-string">`0.00`</span>
-  <span class="hljs-comment">// t=0.125 (going up)</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">1</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span> - <span class="hljs-number">8</span>), <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">1</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> - <span class="hljs-number">12</span>))<span class="hljs-string">`0.125`</span>
-  <span class="hljs-comment">// t=0.25 (near top)</span>
-  <span class="hljs-title function_">text</span>(pts[<span class="hljs-number">2</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">2</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> - <span class="hljs-number">12</span>))<span class="hljs-string">`0.25`</span>
-  <span class="hljs-comment">// t=0.375 (near top)</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">3</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-number">8</span>), <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">3</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> - <span class="hljs-number">12</span>))<span class="hljs-string">`0.375`</span>
-  <span class="hljs-comment">// t=0.5 (middle)</span>
-  <span class="hljs-title function_">text</span>(pts[<span class="hljs-number">4</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">4</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-number">18</span>))<span class="hljs-string">`0.50`</span>
-  <span class="hljs-comment">// t=0.625 (going down)</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">5</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-number">8</span>), <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">5</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-number">18</span>))<span class="hljs-string">`0.625`</span>
-  <span class="hljs-comment">// t=0.75 (near bottom)</span>
-  <span class="hljs-title function_">text</span>(pts[<span class="hljs-number">6</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">6</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-number">18</span>))<span class="hljs-string">`0.75`</span>
-  <span class="hljs-comment">// t=0.875 (going up)</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">7</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-number">8</span>), <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">7</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-number">18</span>))<span class="hljs-string">`0.875`</span>
-  <span class="hljs-comment">// t=1.0 (end, right)</span>
-  <span class="hljs-title function_">text</span>(pts[<span class="hljs-number">8</span>].<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, <span class="hljs-title function_">calc</span>(pts[<span class="hljs-number">8</span>].<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-number">18</span>))<span class="hljs-string">`1.00`</span>
+// Label each point with its t value
+// Place labels above points on the upper half, below on the lower half
+tvals.apply {
+  // t=0 (start, left)
+  text(pts[0].point.x, calc(pts[0].point.y + 18))`0.00`
+  // t=0.125 (going up)
+  text(calc(pts[1].point.x - 8), calc(pts[1].point.y - 12))`0.125`
+  // t=0.25 (near top)
+  text(pts[2].point.x, calc(pts[2].point.y - 12))`0.25`
+  // t=0.375 (near top)
+  text(calc(pts[3].point.x + 8), calc(pts[3].point.y - 12))`0.375`
+  // t=0.5 (middle)
+  text(pts[4].point.x, calc(pts[4].point.y + 18))`0.50`
+  // t=0.625 (going down)
+  text(calc(pts[5].point.x + 8), calc(pts[5].point.y + 18))`0.625`
+  // t=0.75 (near bottom)
+  text(pts[6].point.x, calc(pts[6].point.y + 18))`0.75`
+  // t=0.875 (going up)
+  text(calc(pts[7].point.x + 8), calc(pts[7].point.y + 18))`0.875`
+  // t=1.0 (end, right)
+  text(pts[8].point.x, calc(pts[8].point.y + 18))`1.00`
 }
 
-<span class="hljs-comment">// --- Code ---</span>
+// --- Code ---
 
-<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-code.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">262</span>)<span class="hljs-string">`let pts = curve.partition(8);`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">276</span>)<span class="hljs-string">`// → 9 points at t = 0, 0.125, 0.25, ... 1.0`</span>
+code.apply {
+  text(30, 262)`let pts = curve.partition(8);`
+  text(30, 276)`// → 9 points at t = 0, 0.125, 0.25, ... 1.0`
 }
 
-<span class="hljs-keyword">let</span> kw = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;kw&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c084fc&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let kw = TextLayer('kw') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#c084fc');
+  text-anchor: start;
 };
-kw.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">262</span>)<span class="hljs-string">`let`</span>
+kw.apply {
+  text(30, 262)`let`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`partition(8) — Even Distribution`</span>
+title.apply {
+  text(30, 28)`partition(8) — Even Distribution`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">295</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`n + 1 points at equal arc-length intervals`</span>
+subtitle.apply {
+  text(295, 28)`n + 1 points at equal arc-length intervals`
 }
 </code>
   <img src="/pathogen/blog/samples/post7/sampling-tvalues.svg" alt="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve" loading="lazy">
 </mini-workspace></p>
 <h2>Building a Fence Along a Curve</h2>
 <p>Here&#39;s a practical example: fence posts distributed evenly along a winding road. The posts are placed using <code>partition(16)</code>, then oriented perpendicular to the road using <code>normal()</code>. Rails connect adjacent posts at 1/3 and 2/3 height.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTQwJTIwMzIwJTIyJTBBJTJGJTJGJTIwcGFydGl0aW9uKCklMjAlRTIlODAlOTQlMjBldmVubHktc3BhY2VkJTIwZmVuY2UlMjBwb3N0cyUyMGFsb25nJTIwYSUyMGN1cnZlZCUyMHBhdGglMEElMEFsZXQlMjByb2FkJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwYyUyMDUwJTIwLTgwJTIwMTUwJTIwLTgwJTIwMjAwJTIwMCUwQSUyMCUyMGMlMjA1MCUyMDgwJTIwMTUwJTIwODAlMjAyMDAlMjAwJTBBJTdEJTNCJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMENvbG9yKCclMjMwZjE3MmEnKSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1NDAlMkMlMjAzMjApJTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwTGF5ZXJzJTIwLS0tJTBBJTBBbGV0JTIwcm9hZExheWVyJTIwJTNEJTIwUGF0aExheWVyKCdyb2FkJyklMjAlMjQlN0IlMEElMjAlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzNDc1NTY5JyklM0IlMEElMjAlMjBzdHJva2Utd2lkdGglM0ElMjA0JTNCJTBBJTIwJTIwZmlsbCUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEElMEFsZXQlMjBwb3N0cyUyMCUzRCUyMFBhdGhMYXllcigncG9zdHMnKSUyMCUyNCU3QiUwQSUyMCUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjM4NTRkMGUnKSUzQiUwQSUyMCUyMHN0cm9rZS13aWR0aCUzQSUyMDIlM0IlMEElMjAlMjBmaWxsJTNBJTIwbm9uZSUzQiUwQSU3RCUzQiUwQSUwQWxldCUyMHJhaWxzJTIwJTNEJTIwUGF0aExheWVyKCdyYWlscycpJTIwJTI0JTdCJTBBJTIwJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyM2ExNjIwNycpJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTdEJTNCJTBBJTBBJTJGJTJGJTIwR2V0JTIwcHJvamVjdGlvbiUyMGZvciUyMHNhbXBsaW5nJTBBbGV0JTIwcHJvaiUyMCUzRCUyMHJvYWQucHJvamVjdCg1MCUyQyUyMDE4MCklM0IlMEFsZXQlMjBuJTIwJTNEJTIwMTYlM0IlMEFsZXQlMjBwdHMlMjAlM0QlMjBwcm9qLnBhcnRpdGlvbihuKSUzQiUwQSUwQSUyRiUyRiUyMERyYXclMjB0aGUlMjByb2FkJTBBcm9hZExheWVyLmFwcGx5JTIwJTdCJTBBJTIwJTIwcm9hZC5kcmF3VG8oNTAlMkMlMjAxODApJTBBJTdEJTBBJTBBJTJGJTJGJTIwUGxhY2UlMjBmZW5jZSUyMHBvc3RzJTIwZXZlbmx5JTIwYWxvbmclMjB0aGUlMjByb2FkJTBBcG9zdHMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAocCUyMGluJTIwcHRzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMGxldCUyMG5vcm0lMjAlM0QlMjBwcm9qLm5vcm1hbChwLnQpJTNCJTBBJTIwJTIwJTIwJTIwTSUyMHAucG9pbnQueCUyMHAucG9pbnQueSUwQSUyMCUyMCUyMCUyMGwlMjBjYWxjKGNvcyhub3JtLmFuZ2xlKSUyMColMjAzMCklMjBjYWxjKHNpbihub3JtLmFuZ2xlKSUyMColMjAzMCklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBDb25uZWN0JTIwcG9zdHMlMjB3aXRoJTIwcmFpbHMlMEFsZXQlMjBuTWludXMxJTIwJTNEJTIwY2FsYyhuJTIwLSUyMDEpJTNCJTBBcmFpbHMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4ubk1pbnVzMSklMjAlN0IlMEElMjAlMjAlMjAlMjBsZXQlMjBwMSUyMCUzRCUyMHB0cyU1QmklNUQlM0IlMEElMjAlMjAlMjAlMjBsZXQlMjBwMiUyMCUzRCUyMHB0cyU1QmNhbGMoaSUyMCUyQiUyMDEpJTVEJTNCJTBBJTIwJTIwJTIwJTIwbGV0JTIwbjElMjAlM0QlMjBwcm9qLm5vcm1hbChwMS50KSUzQiUwQSUyMCUyMCUyMCUyMGxldCUyMG4yJTIwJTNEJTIwcHJvai5ub3JtYWwocDIudCklM0IlMEElMjAlMjAlMjAlMjAlMkYlMkYlMjBSYWlsJTIwYXQlMjAxJTJGMyUyMGhlaWdodCUwQSUyMCUyMCUyMCUyME0lMjBjYWxjKHAxLnBvaW50LnglMjAlMkIlMjBjb3MobjEuYW5nbGUpJTIwKiUyMDEwKSUyMGNhbGMocDEucG9pbnQueSUyMCUyQiUyMHNpbihuMS5hbmdsZSklMjAqJTIwMTApJTBBJTIwJTIwJTIwJTIwTCUyMGNhbGMocDIucG9pbnQueCUyMCUyQiUyMGNvcyhuMi5hbmdsZSklMjAqJTIwMTApJTIwY2FsYyhwMi5wb2ludC55JTIwJTJCJTIwc2luKG4yLmFuZ2xlKSUyMColMjAxMCklMEElMjAlMjAlMjAlMjAlMkYlMkYlMjBSYWlsJTIwYXQlMjAyJTJGMyUyMGhlaWdodCUwQSUyMCUyMCUyMCUyME0lMjBjYWxjKHAxLnBvaW50LnglMjAlMkIlMjBjb3MobjEuYW5nbGUpJTIwKiUyMDIwKSUyMGNhbGMocDEucG9pbnQueSUyMCUyQiUyMHNpbihuMS5hbmdsZSklMjAqJTIwMjApJTBBJTIwJTIwJTIwJTIwTCUyMGNhbGMocDIucG9pbnQueCUyMCUyQiUyMGNvcyhuMi5hbmdsZSklMjAqJTIwMjApJTIwY2FsYyhwMi5wb2ludC55JTIwJTJCJTIwc2luKG4yLmFuZ2xlKSUyMColMjAyMCklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBQb3N0JTIwYmFzZSUyMGRvdHMlMjAtLS0lMEElMEFsZXQlMjBiYXNlX2RvdHMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2Jhc2UtZG90cycpJTIwJTI0JTdCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM4NTRkMGUnKSUzQiUwQSUyMCUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMEElN0QlM0IlMEFiYXNlX2RvdHMuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAocCUyMGluJTIwcHRzKSUyMCU3QiUwQSUyMCUyMCUyMCUyMGNpcmNsZShwLnBvaW50LnglMkMlMjBwLnBvaW50LnklMkMlMjAyKSUwQSUyMCUyMCU3RCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEFubm90YXRpb25zJTIwLS0tJTBBJTBBbGV0JTIwbGFiZWxzJTIwJTNEJTIwVGV4dExheWVyKCdsYWJlbHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzY0NzQ4YicpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWxhYmVscy5hcHBseSUyMCU3QiUwQSUyMCUyMHRleHQoMzYwJTJDJTIwMjgpJTYwcm9hZCUzQSUyMGN1YmljJTIwQiVDMyVBOXppZXIlMjBwYXRoJTYwJTBBJTIwJTIwdGV4dCgzNjAlMkMlMjA0MiklNjBwb3N0cyUzQSUyMHBhcnRpdGlvbigxNiklMjAlMkIlMjBub3JtYWwoKSU2MCUwQSUyMCUyMHRleHQoMzYwJTJDJTIwNTYpJTYwcmFpbHMlM0ElMjBjb25uZWN0aW5nJTIwYWRqYWNlbnQlMjBwb3N0cyU2MCUwQSU3RCUwQSUwQWxldCUyMGxhYmVsX2RvdHMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xhYmVsLWRvdHMnKSUyMCUyNCU3QiUwQSUyMCUyMGZpbGwlM0ElMjBub25lJTNCJTBBJTIwJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMS41JTNCJTBBJTdEJTNCJTBBJTBBbGV0JTIwbGQxJTIwJTNEJTIwUGF0aExheWVyKCdsZDEnKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwQ29sb3IoJyUyMzQ3NTU2OScpJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMyUzQiUyMCU3RCUzQiUwQWxldCUyMGxkMiUyMCUzRCUyMFBhdGhMYXllcignbGQyJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMHN0cm9rZSUzQSUyMENvbG9yKCclMjM4NTRkMGUnKSUzQiUyMHN0cm9rZS13aWR0aCUzQSUyMDMlM0IlMjAlN0QlM0IlMEFsZXQlMjBsZDMlMjAlM0QlMjBQYXRoTGF5ZXIoJ2xkMycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjBDb2xvcignJTIzYTE2MjA3JyklM0IlMjBzdHJva2Utd2lkdGglM0ElMjAzJTNCJTIwJTdEJTNCJTBBbGQxLmFwcGx5JTIwJTdCJTIwTSUyMDM1MCUyMDI0JTIwaCUyMDYlMjAlN0QlMEFsZDIuYXBwbHklMjAlN0IlMjBNJTIwMzUwJTIwMzglMjBoJTIwNiUyMCU3RCUwQWxkMy5hcHBseSUyMCU3QiUyME0lMjAzNTAlMjA1MiUyMGglMjA2JTIwJTdEJTBBJTBBJTJGJTJGJTIwLS0tJTIwQ29kZSUyMGFubm90YXRpb24lMjAtLS0lMEElMEFsZXQlMjBjb2RlJTIwJTNEJTIwVGV4dExheWVyKCdjb2RlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMG1vbm9zcGFjZSUzQiUwQSUyMCUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMEElMjAlMjBmaWxsJTNBJTIwQ29sb3IoJyUyMzk0YTNiOCcpJTNCJTBBJTIwJTIwdGV4dC1hbmNob3IlM0ElMjBzdGFydCUzQiUwQSU3RCUzQiUwQWNvZGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjcyKSU2MGxldCUyMHB0cyUyMCUzRCUyMHByb2oucGFydGl0aW9uKDE2KSUzQiU2MCUwQSUyMCUyMHRleHQoMzAlMkMlMjAyODYpJTYwbGV0JTIwbm9ybSUyMCUzRCUyMHByb2oubm9ybWFsKHAudCklM0IlNjAlMEElN0QlMEElMEFsZXQlMjBjb2RlX2NvbW1lbnQlMjAlM0QlMjBUZXh0TGF5ZXIoJ2NvZGUtY29tbWVudCcpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBtb25vc3BhY2UlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjA4JTNCJTBBJTIwJTIwZmlsbCUzQSUyMENvbG9yKCclMjM2NDc0OGInKSUzQiUwQSUyMCUyMHRleHQtYW5jaG9yJTNBJTIwc3RhcnQlM0IlMEElN0QlM0IlMEFjb2RlX2NvbW1lbnQuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMzAyKSU2MCUyRiUyRiUyMG5vcm1hbCgpJTIwcmV0dXJucyUyMHBlcnBlbmRpY3VsYXIlMjBkaXJlY3Rpb24lMjBhdCUyMGVhY2glMjBwb2ludCU2MCUwQSU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMFRpdGxlJTIwLS0tJTBBJTBBbGV0JTIwdGl0bGUlMjAlM0QlMjBUZXh0TGF5ZXIoJ3RpdGxlJyklMjAlMjQlN0IlMEElMjAlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlM0IlMEElMjAlMjBmb250LXNpemUlM0ElMjAxMyUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzZTJlOGYwJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBdGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwMjgpJTYwRmVuY2UlMjBBbG9uZyUyMGElMjBDdXJ2ZSU2MCUwQSU3RCUwQSUwQWxldCUyMHN1YnRpdGxlJTIwJTNEJTIwVGV4dExheWVyKCdzdWJ0aXRsZScpJTIwJTI0JTdCJTBBJTIwJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTNCJTBBJTIwJTIwZm9udC1zaXplJTNBJTIwOSUzQiUwQSUyMCUyMGZpbGwlM0ElMjBDb2xvcignJTIzNjQ3NDhiJyklM0IlMEElMjAlMjB0ZXh0LWFuY2hvciUzQSUyMHN0YXJ0JTNCJTBBJTdEJTNCJTBBc3VidGl0bGUuYXBwbHklMjAlN0IlMEElMjAlMjB0ZXh0KDMwJTJDJTIwNDIpJTYwcGFydGl0aW9uKCklMjAlMkIlMjBub3JtYWwoKSUyMGZvciUyMHBlcnBlbmRpY3VsYXIlMjBwbGFjZW1lbnQlNjAlMEElN0QlMEE=" code-open caption="Fence posts and rails distributed along a curved road">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 540 320&quot;</span>
-<span class="hljs-comment">// partition() — evenly-spaced fence posts along a curved path</span>
+<p><mini-workspace code-open caption="Fence posts and rails distributed along a curved road">
+  <code>// viewBox="0 0 540 320"
+// partition() — evenly-spaced fence posts along a curved path
 
-<span class="hljs-keyword">let</span> road = @{
-  c <span class="hljs-number">50</span> -<span class="hljs-number">80</span> <span class="hljs-number">150</span> -<span class="hljs-number">80</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span>
-  c <span class="hljs-number">50</span> <span class="hljs-number">80</span> <span class="hljs-number">150</span> <span class="hljs-number">80</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span>
+let road = @{
+  c 50 -80 150 -80 200 0
+  c 50 80 150 80 200 0
 };
 
-<span class="hljs-comment">// --- Background ---</span>
+// --- Background ---
 
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0f172a&#x27;</span>); <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">540</span>, <span class="hljs-number">320</span>) }
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 540, 320) }
 
-<span class="hljs-comment">// --- Layers ---</span>
+// --- Layers ---
 
-<span class="hljs-keyword">let</span> roadLayer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;road&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">4</span>;
-  <span class="hljs-attr">fill</span>: none;
+let roadLayer = PathLayer('road') ${
+  stroke: Color('#475569');
+  stroke-width: 4;
+  fill: none;
 };
 
-<span class="hljs-keyword">let</span> posts = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;posts&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#854d0e&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>;
-  <span class="hljs-attr">fill</span>: none;
+let posts = PathLayer('posts') ${
+  stroke: Color('#854d0e');
+  stroke-width: 2;
+  fill: none;
 };
 
-<span class="hljs-keyword">let</span> rails = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;rails&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#a16207&#x27;</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  <span class="hljs-attr">fill</span>: none;
+let rails = PathLayer('rails') ${
+  stroke: Color('#a16207');
+  stroke-width: 1;
+  fill: none;
 };
 
-<span class="hljs-comment">// Get projection for sampling</span>
-<span class="hljs-keyword">let</span> proj = road.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">180</span>);
-<span class="hljs-keyword">let</span> n = <span class="hljs-number">16</span>;
-<span class="hljs-keyword">let</span> pts = proj.<span class="hljs-title function_">partition</span>(n);
+// Get projection for sampling
+let proj = road.project(50, 180);
+let n = 16;
+let pts = proj.partition(n);
 
-<span class="hljs-comment">// Draw the road</span>
-roadLayer.<span class="hljs-property">apply</span> {
-  road.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">180</span>)
+// Draw the road
+roadLayer.apply {
+  road.drawTo(50, 180)
 }
 
-<span class="hljs-comment">// Place fence posts evenly along the road</span>
-posts.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-    <span class="hljs-keyword">let</span> norm = proj.<span class="hljs-title function_">normal</span>(p.<span class="hljs-property">t</span>);
-    M p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>
-    l <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">30</span>) <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(norm.<span class="hljs-property">angle</span>) * <span class="hljs-number">30</span>)
+// Place fence posts evenly along the road
+posts.apply {
+  for (p in pts) {
+    let norm = proj.normal(p.t);
+    M p.point.x p.point.y
+    l calc(cos(norm.angle) * 30) calc(sin(norm.angle) * 30)
   }
 }
 
-<span class="hljs-comment">// Connect posts with rails</span>
-<span class="hljs-keyword">let</span> nMinus1 = <span class="hljs-title function_">calc</span>(n - <span class="hljs-number">1</span>);
-rails.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">nMinus1</span>) {
-    <span class="hljs-keyword">let</span> p1 = pts[i];
-    <span class="hljs-keyword">let</span> p2 = pts[<span class="hljs-title function_">calc</span>(i + <span class="hljs-number">1</span>)];
-    <span class="hljs-keyword">let</span> n1 = proj.<span class="hljs-title function_">normal</span>(p1.<span class="hljs-property">t</span>);
-    <span class="hljs-keyword">let</span> n2 = proj.<span class="hljs-title function_">normal</span>(p2.<span class="hljs-property">t</span>);
-    <span class="hljs-comment">// Rail at 1/3 height</span>
-    M <span class="hljs-title function_">calc</span>(p1.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(n1.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span>) <span class="hljs-title function_">calc</span>(p1.<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(n1.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span>)
-    L <span class="hljs-title function_">calc</span>(p2.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(n2.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span>) <span class="hljs-title function_">calc</span>(p2.<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(n2.<span class="hljs-property">angle</span>) * <span class="hljs-number">10</span>)
-    <span class="hljs-comment">// Rail at 2/3 height</span>
-    M <span class="hljs-title function_">calc</span>(p1.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(n1.<span class="hljs-property">angle</span>) * <span class="hljs-number">20</span>) <span class="hljs-title function_">calc</span>(p1.<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(n1.<span class="hljs-property">angle</span>) * <span class="hljs-number">20</span>)
-    L <span class="hljs-title function_">calc</span>(p2.<span class="hljs-property">point</span>.<span class="hljs-property">x</span> + <span class="hljs-title function_">cos</span>(n2.<span class="hljs-property">angle</span>) * <span class="hljs-number">20</span>) <span class="hljs-title function_">calc</span>(p2.<span class="hljs-property">point</span>.<span class="hljs-property">y</span> + <span class="hljs-title function_">sin</span>(n2.<span class="hljs-property">angle</span>) * <span class="hljs-number">20</span>)
+// Connect posts with rails
+let nMinus1 = calc(n - 1);
+rails.apply {
+  for (i in 0..nMinus1) {
+    let p1 = pts[i];
+    let p2 = pts[calc(i + 1)];
+    let n1 = proj.normal(p1.t);
+    let n2 = proj.normal(p2.t);
+    // Rail at 1/3 height
+    M calc(p1.point.x + cos(n1.angle) * 10) calc(p1.point.y + sin(n1.angle) * 10)
+    L calc(p2.point.x + cos(n2.angle) * 10) calc(p2.point.y + sin(n2.angle) * 10)
+    // Rail at 2/3 height
+    M calc(p1.point.x + cos(n1.angle) * 20) calc(p1.point.y + sin(n1.angle) * 20)
+    L calc(p2.point.x + cos(n2.angle) * 20) calc(p2.point.y + sin(n2.angle) * 20)
   }
 }
 
-<span class="hljs-comment">// --- Post base dots ---</span>
+// --- Post base dots ---
 
-<span class="hljs-keyword">let</span> base_dots = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;base-dots&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#854d0e&#x27;</span>);
-  <span class="hljs-attr">stroke</span>: none;
+let base_dots = PathLayer('base-dots') ${
+  fill: Color('#854d0e');
+  stroke: none;
 };
-base_dots.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-    <span class="hljs-title function_">circle</span>(p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>, p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>, <span class="hljs-number">2</span>)
+base_dots.apply {
+  for (p in pts) {
+    circle(p.point.x, p.point.y, 2)
   }
 }
 
-<span class="hljs-comment">// --- Annotations ---</span>
+// --- Annotations ---
 
-<span class="hljs-keyword">let</span> labels = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-labels.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">360</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`road: cubic Bézier path`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">360</span>, <span class="hljs-number">42</span>)<span class="hljs-string">`posts: partition(16) + normal()`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">360</span>, <span class="hljs-number">56</span>)<span class="hljs-string">`rails: connecting adjacent posts`</span>
+labels.apply {
+  text(360, 28)`road: cubic Bézier path`
+  text(360, 42)`posts: partition(16) + normal()`
+  text(360, 56)`rails: connecting adjacent posts`
 }
 
-<span class="hljs-keyword">let</span> label_dots = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;label-dots&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: none;
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+let label_dots = PathLayer('label-dots') ${
+  fill: none;
+  stroke-width: 1.5;
 };
 
-<span class="hljs-keyword">let</span> ld1 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ld1&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#475569&#x27;</span>); stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">3</span>; };
-<span class="hljs-keyword">let</span> ld2 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ld2&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#854d0e&#x27;</span>); stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">3</span>; };
-<span class="hljs-keyword">let</span> ld3 = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ld3&#x27;</span>) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#a16207&#x27;</span>); stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">3</span>; };
-ld1.<span class="hljs-property">apply</span> { M <span class="hljs-number">350</span> <span class="hljs-number">24</span> h <span class="hljs-number">6</span> }
-ld2.<span class="hljs-property">apply</span> { M <span class="hljs-number">350</span> <span class="hljs-number">38</span> h <span class="hljs-number">6</span> }
-ld3.<span class="hljs-property">apply</span> { M <span class="hljs-number">350</span> <span class="hljs-number">52</span> h <span class="hljs-number">6</span> }
+let ld1 = PathLayer('ld1') ${ fill: none; stroke: Color('#475569'); stroke-width: 3; };
+let ld2 = PathLayer('ld2') ${ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
+let ld3 = PathLayer('ld3') ${ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
+ld1.apply { M 350 24 h 6 }
+ld2.apply { M 350 38 h 6 }
+ld3.apply { M 350 52 h 6 }
 
-<span class="hljs-comment">// --- Code annotation ---</span>
+// --- Code annotation ---
 
-<span class="hljs-keyword">let</span> code = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#94a3b8&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code = TextLayer('code') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: Color('#94a3b8');
+  text-anchor: start;
 };
-code.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">272</span>)<span class="hljs-string">`let pts = proj.partition(16);`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">286</span>)<span class="hljs-string">`let norm = proj.normal(p.t);`</span>
+code.apply {
+  text(30, 272)`let pts = proj.partition(16);`
+  text(30, 286)`let norm = proj.normal(p.t);`
 }
 
-<span class="hljs-keyword">let</span> code_comment = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;code-comment&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: monospace;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">8</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let code_comment = TextLayer('code-comment') ${
+  font-family: monospace;
+  font-size: 8;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-code_comment.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">302</span>)<span class="hljs-string">`// normal() returns perpendicular direction at each point`</span>
+code_comment.apply {
+  text(30, 302)`// normal() returns perpendicular direction at each point`
 }
 
-<span class="hljs-comment">// --- Title ---</span>
+// --- Title ---
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;title&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e2e8f0&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let title = TextLayer('title') ${
+  font-family: system-ui, sans-serif;
+  font-size: 13;
+  fill: Color('#e2e8f0');
+  text-anchor: start;
 };
-title.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`Fence Along a Curve`</span>
+title.apply {
+  text(30, 28)`Fence Along a Curve`
 }
 
-<span class="hljs-keyword">let</span> subtitle = <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;subtitle&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  <span class="hljs-attr">fill</span>: <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#64748b&#x27;</span>);
-  text-<span class="hljs-attr">anchor</span>: start;
+let subtitle = TextLayer('subtitle') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: Color('#64748b');
+  text-anchor: start;
 };
-subtitle.<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">30</span>, <span class="hljs-number">42</span>)<span class="hljs-string">`partition() + normal() for perpendicular placement`</span>
+subtitle.apply {
+  text(30, 42)`partition() + normal() for perpendicular placement`
 }
 </code>
   <img src="/pathogen/blog/samples/post7/partition-fence.svg" alt="Fence posts and rails distributed along a curved road" loading="lazy">

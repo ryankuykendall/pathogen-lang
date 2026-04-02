@@ -314,129 +314,129 @@ h <span class="hljs-number">0.01</span>            <span class="hljs-comment">//
 <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">20</span>)     <span class="hljs-comment">// draws at 90°</span>
 </code></pre><h2>Shapes Without Dummy Segments</h2>
 <p>The demo below shows four shapes built entirely with <code>heading</code>, <code>turn</code>, <code>tangentLine</code>, and <code>tangentArc</code> — no dummy segments needed. Each shape includes the code used to construct it.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNTQwJTIwMjIwJTIyJTBBJTJGJTJGJTIwaGVhZGluZygpJTIwYW5kJTIwdHVybigpJTIwJUUyJTgwJTk0JTIwdGFuZ2VudCUyMGNvbnRleHQlMjB3aXRob3V0JTIwcGF0aCUyMGNvbW1hbmRzJTBBJTBBJTJGJTJGJTIwLS0tJTIwQmFja2dyb3VuZCUyMC0tLSUwQWxldCUyMGJnJTIwJTNEJTIwUGF0aExheWVyKCdiZycpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMCUyMzBmMTcyYSUzQiUyMHN0cm9rZSUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFiZy5hcHBseSUyMCU3QiUyMHJlY3QoMCUyQyUyMDAlMkMlMjA1NDAlMkMlMjAyMjApJTIwJTdEJTBBJTBBbGV0JTIwZ3JpZCUyMCUzRCUyMFBhdGhMYXllcignZ3JpZCcpJTIwJTI0JTdCJTIwc3Ryb2tlJTNBJTIwJTIzMWUyOTNiJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMC41JTNCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjAlN0QlM0IlMEFncmlkLmFwcGx5JTIwJTdCJTBBJTIwJTIwZm9yJTIwKGklMjBpbiUyMDAuLjExKSUyMCU3QiUyME0lMjAwJTIwY2FsYyhpJTIwKiUyMDIwKSUyMGglMjA1NDAlMjAlN0QlMEElMjAlMjBmb3IlMjAoaiUyMGluJTIwMC4uMjcpJTIwJTdCJTIwTSUyMGNhbGMoaiUyMColMjAyMCklMjAwJTIwdiUyMDIyMCUyMCU3RCUwQSU3RCUwQSUwQWxldCUyMHIlMjAlM0QlMjAyMCUzQiUwQWxldCUyMGNvbFdpZHRoJTIwJTNEJTIwMTI1JTNCJTBBbGV0JTIwc2hhcGVSb3dZJTIwJTNEJTIwNjglM0IlMEFsZXQlMjBjb2RlUm93WSUyMCUzRCUyMDEzMCUzQiUwQWxldCUyMGxhYmVsWSUyMCUzRCUyMDI4JTNCJTBBJTBBJTJGJTJGJTIwJTNEJTNEJTNEJTIwTGF5b3V0JTIwZ3JvdXAlMjAlM0QlM0QlM0QlMEFkZWZpbmUlMjBHcm91cExheWVyKCdsYXlvdXQnKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMCUzQiUyMCU3RCUwQSUwQSUyRiUyRiUyMC0tLSUyMEJ1aWxkJTIwZWFjaCUyMHNoYXBlJTIwYXMlMjBhJTIwUGF0aEJsb2NrJTJDJTIwY2VudGVyJTIwdmlhJTIwYm91bmRpbmdCb3glMjAtLS0lMEElMEElMkYlMkYlMjBDLXNoYXBlJTBBbGV0JTIwY0Jsb2NrJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwaGVhZGluZygtMTM1ZGVnKSUwQSUyMCUyMHRhbmdlbnRBcmMociUyQyUyMDI3MGRlZyklMEElMjAlMjB6JTBBJTdEJTNCJTBBbGV0JTIwY0JCJTIwJTNEJTIwY0Jsb2NrLmJvdW5kaW5nQm94KCklM0IlMEElMEElMkYlMkYlMjBTLWN1cnZlJTIwKHNtYWxsZXIlMjByYWRpdXMlMjB0byUyMGZpdCUyMHZlcnRpY2FsbHkpJTBBbGV0JTIwc1IlMjAlM0QlMjAxNSUzQiUwQWxldCUyMHNCbG9jayUyMCUzRCUyMCU0MCU3QiUwQSUyMCUyMGhlYWRpbmcoMCklMEElMjAlMjB0YW5nZW50QXJjKHNSJTJDJTIwMTgwZGVnKSUwQSUyMCUyMHR1cm4oMTgwZGVnKSUwQSUyMCUyMHRhbmdlbnRBcmMoc1IlMkMlMjAxODBkZWcpJTBBJTdEJTNCJTBBbGV0JTIwc0JCJTIwJTNEJTIwc0Jsb2NrLmJvdW5kaW5nQm94KCklM0IlMEElMEElMkYlMkYlMjBaaWd6YWclMEFsZXQlMjB6QmxvY2slMjAlM0QlMjAlNDAlN0IlMEElMjAlMjBoZWFkaW5nKDQ1ZGVnKSUwQSUyMCUyMHRhbmdlbnRMaW5lKDI1KSUwQSUyMCUyMHR1cm4oLTkwZGVnKSUwQSUyMCUyMHRhbmdlbnRMaW5lKDI1KSUwQSUyMCUyMHR1cm4oOTBkZWcpJTBBJTIwJTIwdGFuZ2VudExpbmUoMjUpJTBBJTIwJTIwdHVybigtOTBkZWcpJTBBJTIwJTIwdGFuZ2VudExpbmUoMjUpJTBBJTdEJTNCJTBBbGV0JTIwekJCJTIwJTNEJTIwekJsb2NrLmJvdW5kaW5nQm94KCklM0IlMEElMEElMkYlMkYlMjBTcGlyYWwlMEFsZXQlMjBzcEJsb2NrJTIwJTNEJTIwJTQwJTdCJTBBJTIwJTIwaGVhZGluZygwKSUwQSUyMCUyMHRhbmdlbnRBcmMoMjglMkMlMjAxODBkZWcpJTBBJTIwJTIwdGFuZ2VudEFyYygyMiUyQyUyMDE4MGRlZyklMEElMjAlMjB0YW5nZW50QXJjKDE1JTJDJTIwMTgwZGVnKSUwQSUyMCUyMHRhbmdlbnRBcmMoMTAlMkMlMjAxODBkZWcpJTBBJTdEJTNCJTBBbGV0JTIwc3BCQiUyMCUzRCUyMHNwQmxvY2suYm91bmRpbmdCb3goKSUzQiUwQSUwQSUyRiUyRiUyMFNoYXBlJTIwY29uZmlncyUzQSUyMCU1QnBhdGhibG9jayUyQyUyMGJvdW5kaW5nYm94JTJDJTIwbGFiZWwlMkMlMjBjb2xvciUyQyUyMGNvbHVtbl9jZW50ZXJfeCU1RCUwQWxldCUyMHNoYXBlcyUyMCUzRCUyMCU1QiUwQSUyMCUyMCU3QiUyMHBiJTNBJTIwY0Jsb2NrJTJDJTIwJTIwYmIlM0ElMjBjQkIlMkMlMjAlMjBsYWJlbCUzQSUyMCUyMkMtc2hhcGUlMjIlMkMlMjBjb2wlM0ElMjAlMjMzYjgyZjYlMjAlN0QlMkMlMEElMjAlMjAlN0IlMjBwYiUzQSUyMHNCbG9jayUyQyUyMCUyMGJiJTNBJTIwc0JCJTJDJTIwJTIwbGFiZWwlM0ElMjAlMjJTLWN1cnZlJTIyJTJDJTIwY29sJTNBJTIwJTIzZWY0NDQ0JTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIwcGIlM0ElMjB6QmxvY2slMkMlMjAlMjBiYiUzQSUyMHpCQiUyQyUyMCUyMGxhYmVsJTNBJTIwJTIyWmlnemFnJTIyJTJDJTIwJTIwY29sJTNBJTIwJTIzMjJjNTVlJTIwJTdEJTJDJTBBJTIwJTIwJTdCJTIwcGIlM0ElMjBzcEJsb2NrJTJDJTIwYmIlM0ElMjBzcEJCJTJDJTIwbGFiZWwlM0ElMjAlMjJTcGlyYWwlMjIlMkMlMjAlMjBjb2wlM0ElMjAlMjNmNTllMGIlMjAlN0QlMEElNUQlM0IlMEElMEFsZXQlMjBjb2RlVGV4dHMlMjAlM0QlMjAlNUIlMEElMjAlMjAlMjYlN0IlMjB0ZXh0KDAlMkMlMjAwKSU2MGhlYWRpbmcoLTEzNWRlZyklMEF0YW5nZW50QXJjKHIlMkMlMjAyNzBkZWcpJTBBeiU2MCUyMCU3RCUyQyUwQSUyMCUyMCUyNiU3QiUyMHRleHQoMCUyQyUyMDApJTYwaGVhZGluZygwKSUwQXRhbmdlbnRBcmMoMTUlMkMlMjAxODBkZWcpJTBBdHVybigxODBkZWcpJTBBdGFuZ2VudEFyYygxNSUyQyUyMDE4MGRlZyklNjAlMjAlN0QlMkMlMEElMjAlMjAlMjYlN0IlMjB0ZXh0KDAlMkMlMjAwKSU2MGhlYWRpbmcoNDVkZWcpJTBBdGFuZ2VudExpbmUoMjUpJTBBdHVybigtOTBkZWcpJTBBdGFuZ2VudExpbmUoMjUpJTIwLi4uJTYwJTIwJTdEJTJDJTBBJTIwJTIwJTI2JTdCJTIwdGV4dCgwJTJDJTIwMCklNjBoZWFkaW5nKDApJTBBdGFuZ2VudEFyYygyOCUyQyUyMDE4MGRlZyklMEF0YW5nZW50QXJjKDIyJTJDJTIwMTgwZGVnKSUwQXRhbmdlbnRBcmMoMTUlMkMlMjAuLi4pJTYwJTIwJTdEJTBBJTVEJTNCJTBBJTBBbGV0JTIwc25pcHBldE5hbWVzJTIwJTNEJTIwJTVCJTIyYy1jb2RlJTIyJTJDJTIwJTIycy1jb2RlJTIyJTJDJTIwJTIyei1jb2RlJTIyJTJDJTIwJTIyc3AtY29kZSUyMiU1RCUzQiUwQSUwQWZvciUyMCglNUJzaGFwZSUyQyUyMGlkeCU1RCUyMGluJTIwc2hhcGVzKSUyMCU3QiUwQSUyMCUyMGxldCUyMGN4JTIwJTNEJTIwY2FsYygyMCUyMCUyQiUyMGNvbFdpZHRoJTIwJTJGJTIwMiUyMCUyQiUyMGlkeCUyMColMjBjb2xXaWR0aCklM0IlMEElMEElMjAlMjAlMkYlMkYlMjAtLS0lMjBHcm91cCUyMGZvciUyMHRoaXMlMjBleGFtcGxlJTIwLS0tJTBBJTIwJTIwbGV0JTIwZ05hbWUlMjAlM0QlMjAlNjBnJTI0JTdCaWR4JTdEJTYwJTNCJTBBJTIwJTIwZGVmaW5lJTIwR3JvdXBMYXllcihnTmFtZSklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMjAlMjBsYXllcignbGF5b3V0JykuYXBwZW5kKGxheWVyKGdOYW1lKSklM0IlMEElMEElMjAlMjAlMkYlMkYlMjAtLS0lMjBMYWJlbCUyMC0tLSUwQSUyMCUyMGxldCUyMHRsTmFtZSUyMCUzRCUyMCU2MGwlMjQlN0JpZHglN0QlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBUZXh0TGF5ZXIodGxOYW1lKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQSUyMCUyMGxheWVyKGdOYW1lKS5hcHBlbmQobGF5ZXIodGxOYW1lKSklM0IlMEElMjAlMjBsZXQlMjBsYWJlbFglMjAlM0QlMjBjYWxjKGN4JTIwLSUyMHNoYXBlLmxhYmVsLmxlbmd0aCUyMColMjAzLjMpJTNCJTBBJTIwJTIwbGF5ZXIodGxOYW1lKS5hcHBseSUyMCU3QiUyMHRleHQobGFiZWxYJTJDJTIwbGFiZWxZKSU2MCUyNCU3QnNoYXBlLmxhYmVsJTdEJTYwJTIwJTdEJTBBJTBBJTIwJTIwJTJGJTJGJTIwLS0tJTIwU2hhcGUlM0ElMjBjZW50ZXJlZCUyMGF0JTIwKGN4JTJDJTIwc2hhcGVSb3dZKSUyMHVzaW5nJTIwYm91bmRpbmdCb3glMjAtLS0lMEElMjAlMjBsZXQlMjBkcmF3WCUyMCUzRCUyMGNhbGMoY3glMjAtJTIwc2hhcGUuYmIueCUyMC0lMjBzaGFwZS5iYi53aWR0aCUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwbGV0JTIwZHJhd1klMjAlM0QlMjBjYWxjKHNoYXBlUm93WSUyMC0lMjBzaGFwZS5iYi55JTIwLSUyMHNoYXBlLmJiLmhlaWdodCUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwbGV0JTIwcGxOYW1lJTIwJTNEJTIwJTYwcCUyNCU3QmlkeCU3RCU2MCUzQiUwQSUyMCUyMGRlZmluZSUyMFBhdGhMYXllcihwbE5hbWUpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjBzaGFwZS5jb2wlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyLjUlMjAlN0QlMEElMjAlMjBsYXllcihnTmFtZSkuYXBwZW5kKGxheWVyKHBsTmFtZSkpJTNCJTBBJTIwJTIwbGF5ZXIocGxOYW1lKS5hcHBseSUyMCU3QiUyMHNoYXBlLnBiLmRyYXdUbyhkcmF3WCUyQyUyMGRyYXdZKSUyMCU3RCUwQSUwQSUyMCUyMCUyRiUyRiUyMC0tLSUyMENvZGUlMjBzbmlwcGV0JTIwLS0tJTBBJTIwJTIwbGV0JTIwc25pcHBldCUyMCUzRCUyMGNvZGVUZXh0cyU1QmlkeCU1RC50b0NvZGVTbmlwcGV0QmxvY2soc25pcHBldE5hbWVzJTVCaWR4JTVEJTJDJTIwOCUyQyUyMDYpJTNCJTBBJTIwJTIwJTJGJTJGJTIwQ2VudGVyJTIwdGhlJTIwc25pcHBldCUyMGhvcml6b250YWxseSUyMHVuZGVyJTIwdGhlJTIwc2hhcGUlMEElMjAlMjBsZXQlMjBzbmlwcGV0QkIlMjAlM0QlMjBzbmlwcGV0LmN0eC50cmFuc2Zvcm0lM0IlMEElMjAlMjBzbmlwcGV0JTIwJTNDJTNDJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjBjYWxjKGN4JTIwLSUyMDU1KSUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwY29kZVJvd1klM0IlMjAlN0QlM0IlMEElMjAlMjBsYXllcihnTmFtZSkuYXBwZW5kKHNuaXBwZXQpJTNCJTBBJTdEJTBB" code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 540 220&quot;</span>
-<span class="hljs-comment">// heading() and turn() — tangent context without path commands</span>
+<p><mini-workspace code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
+  <code>// viewBox="0 0 540 220"
+// heading() and turn() — tangent context without path commands
 
-<span class="hljs-comment">// --- Background ---</span>
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">540</span>, <span class="hljs-number">220</span>) }
+// --- Background ---
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 540, 220) }
 
-<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
-grid.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.11</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">540</span> }
-  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.27</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">220</span> }
+let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+grid.apply {
+  for (i in 0..11) { M 0 calc(i * 20) h 540 }
+  for (j in 0..27) { M calc(j * 20) 0 v 220 }
 }
 
-<span class="hljs-keyword">let</span> r = <span class="hljs-number">20</span>;
-<span class="hljs-keyword">let</span> colWidth = <span class="hljs-number">125</span>;
-<span class="hljs-keyword">let</span> shapeRowY = <span class="hljs-number">68</span>;
-<span class="hljs-keyword">let</span> codeRowY = <span class="hljs-number">130</span>;
-<span class="hljs-keyword">let</span> labelY = <span class="hljs-number">28</span>;
+let r = 20;
+let colWidth = 125;
+let shapeRowY = 68;
+let codeRowY = 130;
+let labelY = 28;
 
-<span class="hljs-comment">// === Layout group ===</span>
-define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
+// === Layout group ===
+define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
 
-<span class="hljs-comment">// --- Build each shape as a PathBlock, center via boundingBox ---</span>
+// --- Build each shape as a PathBlock, center via boundingBox ---
 
-<span class="hljs-comment">// C-shape</span>
-<span class="hljs-keyword">let</span> cBlock = @{
-  <span class="hljs-title function_">heading</span>(-135deg)
-  <span class="hljs-title function_">tangentArc</span>(r, 270deg)
+// C-shape
+let cBlock = @{
+  heading(-135deg)
+  tangentArc(r, 270deg)
   z
 };
-<span class="hljs-keyword">let</span> cBB = cBlock.<span class="hljs-title function_">boundingBox</span>();
+let cBB = cBlock.boundingBox();
 
-<span class="hljs-comment">// S-curve (smaller radius to fit vertically)</span>
-<span class="hljs-keyword">let</span> sR = <span class="hljs-number">15</span>;
-<span class="hljs-keyword">let</span> sBlock = @{
-  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
-  <span class="hljs-title function_">tangentArc</span>(sR, 180deg)
-  <span class="hljs-title function_">turn</span>(180deg)
-  <span class="hljs-title function_">tangentArc</span>(sR, 180deg)
+// S-curve (smaller radius to fit vertically)
+let sR = 15;
+let sBlock = @{
+  heading(0)
+  tangentArc(sR, 180deg)
+  turn(180deg)
+  tangentArc(sR, 180deg)
 };
-<span class="hljs-keyword">let</span> sBB = sBlock.<span class="hljs-title function_">boundingBox</span>();
+let sBB = sBlock.boundingBox();
 
-<span class="hljs-comment">// Zigzag</span>
-<span class="hljs-keyword">let</span> zBlock = @{
-  <span class="hljs-title function_">heading</span>(45deg)
-  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
-  <span class="hljs-title function_">turn</span>(-90deg)
-  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
-  <span class="hljs-title function_">turn</span>(90deg)
-  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
-  <span class="hljs-title function_">turn</span>(-90deg)
-  <span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">25</span>)
+// Zigzag
+let zBlock = @{
+  heading(45deg)
+  tangentLine(25)
+  turn(-90deg)
+  tangentLine(25)
+  turn(90deg)
+  tangentLine(25)
+  turn(-90deg)
+  tangentLine(25)
 };
-<span class="hljs-keyword">let</span> zBB = zBlock.<span class="hljs-title function_">boundingBox</span>();
+let zBB = zBlock.boundingBox();
 
-<span class="hljs-comment">// Spiral</span>
-<span class="hljs-keyword">let</span> spBlock = @{
-  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">28</span>, 180deg)
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">22</span>, 180deg)
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">15</span>, 180deg)
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">10</span>, 180deg)
+// Spiral
+let spBlock = @{
+  heading(0)
+  tangentArc(28, 180deg)
+  tangentArc(22, 180deg)
+  tangentArc(15, 180deg)
+  tangentArc(10, 180deg)
 };
-<span class="hljs-keyword">let</span> spBB = spBlock.<span class="hljs-title function_">boundingBox</span>();
+let spBB = spBlock.boundingBox();
 
-<span class="hljs-comment">// Shape configs: [pathblock, boundingbox, label, color, column_center_x]</span>
-<span class="hljs-keyword">let</span> shapes = [
-  { <span class="hljs-attr">pb</span>: cBlock,  <span class="hljs-attr">bb</span>: cBB,  <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;C-shape&quot;</span>, <span class="hljs-attr">col</span>: #3b82f6 },
-  { <span class="hljs-attr">pb</span>: sBlock,  <span class="hljs-attr">bb</span>: sBB,  <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;S-curve&quot;</span>, <span class="hljs-attr">col</span>: #ef4444 },
-  { <span class="hljs-attr">pb</span>: zBlock,  <span class="hljs-attr">bb</span>: zBB,  <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;Zigzag&quot;</span>,  <span class="hljs-attr">col</span>: #22c55e },
-  { <span class="hljs-attr">pb</span>: spBlock, <span class="hljs-attr">bb</span>: spBB, <span class="hljs-attr">label</span>: <span class="hljs-string">&quot;Spiral&quot;</span>,  <span class="hljs-attr">col</span>: #f59e0b }
+// Shape configs: [pathblock, boundingbox, label, color, column_center_x]
+let shapes = [
+  { pb: cBlock,  bb: cBB,  label: "C-shape", col: #3b82f6 },
+  { pb: sBlock,  bb: sBB,  label: "S-curve", col: #ef4444 },
+  { pb: zBlock,  bb: zBB,  label: "Zigzag",  col: #22c55e },
+  { pb: spBlock, bb: spBB, label: "Spiral",  col: #f59e0b }
 ];
 
-<span class="hljs-keyword">let</span> codeTexts = [
-  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">`heading(-135deg)
+let codeTexts = [
+  &amp;{ text(0, 0)`heading(-135deg)
 tangentArc(r, 270deg)
-z`</span> },
-  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">`heading(0)
+z` },
+  &amp;{ text(0, 0)`heading(0)
 tangentArc(15, 180deg)
 turn(180deg)
-tangentArc(15, 180deg)`</span> },
-  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">`heading(45deg)
+tangentArc(15, 180deg)` },
+  &amp;{ text(0, 0)`heading(45deg)
 tangentLine(25)
 turn(-90deg)
-tangentLine(25) ...`</span> },
-  &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">`heading(0)
+tangentLine(25) ...` },
+  &amp;{ text(0, 0)`heading(0)
 tangentArc(28, 180deg)
 tangentArc(22, 180deg)
-tangentArc(15, ...)`</span> }
+tangentArc(15, ...)` }
 ];
 
-<span class="hljs-keyword">let</span> snippetNames = [<span class="hljs-string">&quot;c-code&quot;</span>, <span class="hljs-string">&quot;s-code&quot;</span>, <span class="hljs-string">&quot;z-code&quot;</span>, <span class="hljs-string">&quot;sp-code&quot;</span>];
+let snippetNames = ["c-code", "s-code", "z-code", "sp-code"];
 
-<span class="hljs-keyword">for</span> ([shape, idx] <span class="hljs-keyword">in</span> shapes) {
-  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + colWidth / <span class="hljs-number">2</span> + idx * colWidth);
+for ([shape, idx] in shapes) {
+  let cx = calc(20 + colWidth / 2 + idx * colWidth);
 
-  <span class="hljs-comment">// --- Group for this example ---</span>
-  <span class="hljs-keyword">let</span> gName = <span class="hljs-string">`g<span class="hljs-subst">${idx}</span>`</span>;
-  define <span class="hljs-title class_">GroupLayer</span>(gName) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;layout&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(gName));
+  // --- Group for this example ---
+  let gName = `g${idx}`;
+  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  layer('layout').append(layer(gName));
 
-  <span class="hljs-comment">// --- Label ---</span>
-  <span class="hljs-keyword">let</span> tlName = <span class="hljs-string">`l<span class="hljs-subst">${idx}</span>`</span>;
-  define <span class="hljs-title class_">TextLayer</span>(tlName) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(tlName));
-  <span class="hljs-keyword">let</span> labelX = <span class="hljs-title function_">calc</span>(cx - shape.<span class="hljs-property">label</span>.<span class="hljs-property">length</span> * <span class="hljs-number">3.3</span>);
-  <span class="hljs-title function_">layer</span>(tlName).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, labelY)<span class="hljs-string">`<span class="hljs-subst">${shape.label}</span>`</span> }
+  // --- Label ---
+  let tlName = `l${idx}`;
+  define TextLayer(tlName) ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+  layer(gName).append(layer(tlName));
+  let labelX = calc(cx - shape.label.length * 3.3);
+  layer(tlName).apply { text(labelX, labelY)`${shape.label}` }
 
-  <span class="hljs-comment">// --- Shape: centered at (cx, shapeRowY) using boundingBox ---</span>
-  <span class="hljs-keyword">let</span> drawX = <span class="hljs-title function_">calc</span>(cx - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">x</span> - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">width</span> / <span class="hljs-number">2</span>);
-  <span class="hljs-keyword">let</span> drawY = <span class="hljs-title function_">calc</span>(shapeRowY - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">y</span> - shape.<span class="hljs-property">bb</span>.<span class="hljs-property">height</span> / <span class="hljs-number">2</span>);
-  <span class="hljs-keyword">let</span> plName = <span class="hljs-string">`p<span class="hljs-subst">${idx}</span>`</span>;
-  define <span class="hljs-title class_">PathLayer</span>(plName) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: shape.<span class="hljs-property">col</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2.5</span> }
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(plName));
-  <span class="hljs-title function_">layer</span>(plName).<span class="hljs-property">apply</span> { shape.<span class="hljs-property">pb</span>.<span class="hljs-title function_">drawTo</span>(drawX, drawY) }
+  // --- Shape: centered at (cx, shapeRowY) using boundingBox ---
+  let drawX = calc(cx - shape.bb.x - shape.bb.width / 2);
+  let drawY = calc(shapeRowY - shape.bb.y - shape.bb.height / 2);
+  let plName = `p${idx}`;
+  define PathLayer(plName) ${ fill: none; stroke: shape.col; stroke-width: 2.5 }
+  layer(gName).append(layer(plName));
+  layer(plName).apply { shape.pb.drawTo(drawX, drawY) }
 
-  <span class="hljs-comment">// --- Code snippet ---</span>
-  <span class="hljs-keyword">let</span> snippet = codeTexts[idx].<span class="hljs-title function_">toCodeSnippetBlock</span>(snippetNames[idx], <span class="hljs-number">8</span>, <span class="hljs-number">6</span>);
-  <span class="hljs-comment">// Center the snippet horizontally under the shape</span>
-  <span class="hljs-keyword">let</span> snippetBB = snippet.<span class="hljs-property">ctx</span>.<span class="hljs-property">transform</span>;
-  snippet &lt;&lt; ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-title function_">calc</span>(cx - <span class="hljs-number">55</span>); translate-<span class="hljs-attr">y</span>: codeRowY; };
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(snippet);
+  // --- Code snippet ---
+  let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
+  // Center the snippet horizontally under the shape
+  let snippetBB = snippet.ctx.transform;
+  snippet &lt;&lt; ${ translate-x: calc(cx - 55); translate-y: codeRowY; };
+  layer(gName).append(snippet);
 }
 </code>
   <img src="/pathogen/blog/samples/post14/heading-turn-demo.svg" alt="heading() and turn() — C-shape, S-curve, zigzag, and spiral" loading="lazy">
@@ -462,140 +462,140 @@ fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-param
   }
 }
 </code></pre><p>The showcase below draws triangles through decagons — eight polygons in each row, sharp and rounded. One function, one loop, any number of sides.</p>
-<p><mini-workspace code-data="JTJGJTJGJTIwdmlld0JveCUzRCUyMjAlMjAwJTIwNjgwJTIwNDAwJTIyJTBBJTJGJTJGJTIwUmVndWxhciUyMHBvbHlnb25zJTIwdmlhJTIwaGVhZGluZyUyMCUyQiUyMHR1cm4lMjAlMkIlMjB0YW5nZW50TGluZSUyRnRhbmdlbnRBcmMlMEElMEElMkYlMkYlMjAtLS0lMjBCYWNrZ3JvdW5kJTIwLS0tJTBBbGV0JTIwYmclMjAlM0QlMjBQYXRoTGF5ZXIoJ2JnJyklMjAlMjQlN0IlMjBmaWxsJTNBJTIwJTIzMGYxNzJhJTNCJTIwc3Ryb2tlJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWJnLmFwcGx5JTIwJTdCJTIwcmVjdCgwJTJDJTIwMCUyQyUyMDY4MCUyQyUyMDQwMCklMjAlN0QlMEElMEFsZXQlMjBncmlkJTIwJTNEJTIwUGF0aExheWVyKCdncmlkJyklMjAlMjQlN0IlMjBzdHJva2UlM0ElMjAlMjMxZTI5M2IlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAwLjUlM0IlMjBmaWxsJTNBJTIwbm9uZSUzQiUyMCU3RCUzQiUwQWdyaWQuYXBwbHklMjAlN0IlMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uMjApJTIwJTdCJTIwTSUyMDAlMjBjYWxjKGklMjAqJTIwMjApJTIwaCUyMDY4MCUyMCU3RCUwQSUyMCUyMGZvciUyMChqJTIwaW4lMjAwLi4zNCklMjAlN0IlMjBNJTIwY2FsYyhqJTIwKiUyMDIwKSUyMDAlMjB2JTIwNDAwJTIwJTdEJTBBJTdEJTBBJTBBbGV0JTIwciUyMCUzRCUyMDI0JTNCJTBBJTBBJTJGJTJGJTIwQnVpbGQlMjBzaGFycCUyMHBvbHlnb24lMjBhcyUyMFBhdGhCbG9jayUwQWZuJTIwc2hhcnBQb2x5QmxvY2soc2lkZXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIwZXh0UmFkJTIwJTNEJTIwY2FsYygyJTIwKiUyMFBJKCklMjAlMkYlMjBzaWRlcyklM0IlMEElMjAlMjBsZXQlMjBzaWRlTGVuJTIwJTNEJTIwY2FsYygyJTIwKiUyMHIlMjAqJTIwc2luKGV4dFJhZCUyMCUyRiUyMDIpKSUzQiUwQSUyMCUyMGxldCUyMGhlYWRBbmdsZSUyMCUzRCUyMGNhbGMoZXh0UmFkJTIwJTJGJTIwMiklM0IlMEElMjAlMjBoZWFkaW5nKGhlYWRBbmdsZSklMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMC4uc2lkZXMpJTIwJTdCJTBBJTIwJTIwJTIwJTIwdGFuZ2VudExpbmUoc2lkZUxlbiklMEElMjAlMjAlMjAlMjB0dXJuKGV4dFJhZCklMEElMjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjBCdWlsZCUyMHJvdW5kZWQlMjBwb2x5Z29uJTIwYXMlMjBQYXRoQmxvY2slMEFmbiUyMHJvdW5kZWRQb2x5QmxvY2soc2lkZXMlMkMlMjBjb3JuZXJSYWRpdXMpJTIwJTdCJTBBJTIwJTIwbGV0JTIwZXh0UmFkJTIwJTNEJTIwY2FsYygyJTIwKiUyMFBJKCklMjAlMkYlMjBzaWRlcyklM0IlMEElMjAlMjBsZXQlMjBzaWRlTGVuJTIwJTNEJTIwY2FsYygyJTIwKiUyMHIlMjAqJTIwc2luKGV4dFJhZCUyMCUyRiUyMDIpKSUzQiUwQSUyMCUyMGxldCUyMGFyY09mZnNldCUyMCUzRCUyMGNhbGMoY29ybmVyUmFkaXVzJTIwKiUyMHRhbihleHRSYWQlMjAlMkYlMjAyKSklM0IlMEElMjAlMjBsZXQlMjBzdHJhaWdodCUyMCUzRCUyMGNhbGMoc2lkZUxlbiUyMC0lMjAyJTIwKiUyMGFyY09mZnNldCklM0IlMEElMjAlMjBsZXQlMjBoZWFkQW5nbGUlMjAlM0QlMjBjYWxjKGV4dFJhZCUyMCUyRiUyMDIpJTNCJTBBJTIwJTIwaGVhZGluZyhoZWFkQW5nbGUpJTBBJTIwJTIwbGV0JTIwbGFzdCUyMCUzRCUyMGNhbGMoc2lkZXMlMjAtJTIwMSklM0IlMEElMjAlMjB0YW5nZW50TGluZShzdHJhaWdodCklMEElMjAlMjBmb3IlMjAoaSUyMGluJTIwMS4ubGFzdCklMjAlN0IlMEElMjAlMjAlMjAlMjB0YW5nZW50QXJjKGNvcm5lclJhZGl1cyUyQyUyMGV4dFJhZCklMEElMjAlMjAlMjAlMjB0YW5nZW50TGluZShzdHJhaWdodCklMEElMjAlMjAlN0QlMEElMjAlMjB0YW5nZW50QXJjKGNvcm5lclJhZGl1cyUyQyUyMGV4dFJhZCklMEElMjAlMjB6JTBBJTdEJTBBJTBBbGV0JTIwY29sb3JzJTIwJTNEJTIwJTVCJTIzZWY0NDQ0JTJDJTIwJTIzZjk3MzE2JTJDJTIwJTIzZWFiMzA4JTJDJTIwJTIzMjJjNTVlJTJDJTIwJTIzMDZiNmQ0JTJDJTIwJTIzM2I4MmY2JTJDJTIwJTIzOGI1Y2Y2JTJDJTIwJTIzZWM0ODk5JTVEJTNCJTBBJTBBbGV0JTIwbmFtZXMlMjAlM0QlMjAlNUIlMEElMjAlMjAlMjJUcmlhbmdsZSUyMiUyQyUyMCUyMlNxdWFyZSUyMiUyQyUyMCUyMlBlbnRhZ29uJTIyJTJDJTIwJTIySGV4YWdvbiUyMiUyQyUwQSUyMCUyMCUyMkhlcHRhZ29uJTIyJTJDJTIwJTIyT2N0YWdvbiUyMiUyQyUyMCUyMk5vbmFnb24lMjIlMkMlMjAlMjJEZWNhZ29uJTIyJTBBJTVEJTNCJTBBJTBBbGV0JTIwc2lkZXMlMjAlM0QlMjAlNUIzJTJDJTIwNCUyQyUyMDUlMkMlMjA2JTJDJTIwNyUyQyUyMDglMkMlMjA5JTJDJTIwMTAlNUQlM0IlMEFsZXQlMjBzcGFjaW5nJTIwJTNEJTIwODAlM0IlMEElMEElMkYlMkYlMjAlM0QlM0QlM0QlMjBSb3clMjAxJTNBJTIwU2hhcnAlMjBwb2x5Z29ucyUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ3NoYXJwLXJvdycpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAyMCUzQiUyMCU3RCUwQSUwQWRlZmluZSUyMFRleHRMYXllcigncjEtdGl0bGUnKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDExJTNCJTIwZmlsbCUzQSUyMCUyM2UyZThmMCUzQiUyMGZvbnQtZmFtaWx5JTNBJTIwc3lzdGVtLXVpJTJDJTIwc2Fucy1zZXJpZiUyMCU3RCUwQWxheWVyKCdzaGFycC1yb3cnKS5hcHBlbmQobGF5ZXIoJ3IxLXRpdGxlJykpJTNCJTBBbGF5ZXIoJ3IxLXRpdGxlJykuYXBwbHklMjAlN0IlMjB0ZXh0KDIwJTJDJTIwMTQpJTYwU2hhcnAlMjBjb3JuZXJzJTIwJUUyJTgwJTk0JTIwaGVhZGluZyUyMCUyQiUyMHRhbmdlbnRMaW5lJTIwJTJCJTIwdHVybiU2MCUyMCU3RCUwQSUwQWZvciUyMChpZHglMjBpbiUyMDAuLjcpJTIwJTdCJTBBJTIwJTIwbGV0JTIwbiUyMCUzRCUyMHNpZGVzJTVCaWR4JTVEJTNCJTBBJTIwJTIwbGV0JTIwY29sJTIwJTNEJTIwY29sb3JzJTVCaWR4JTVEJTNCJTBBJTIwJTIwbGV0JTIwbmFtZSUyMCUzRCUyMG5hbWVzJTVCaWR4JTVEJTNCJTBBJTBBJTIwJTIwJTJGJTJGJTIwQ3JlYXRlJTIwUGF0aEJsb2NrJTIwYW5kJTIwcXVlcnklMjBpdHMlMjBib3VuZHMlMEElMjAlMjBsZXQlMjBwYiUyMCUzRCUyMCU0MCU3QiUyMHNoYXJwUG9seUJsb2NrKG4pJTIwJTdEJTNCJTBBJTIwJTIwbGV0JTIwYmIlMjAlM0QlMjBwYi5ib3VuZGluZ0JveCgpJTNCJTBBJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDU1JTIwJTJCJTIwaWR4JTIwKiUyMHNwYWNpbmcpJTNCJTBBJTBBJTIwJTIwJTJGJTJGJTIwQ2VudGVyJTIwdGhlJTIwc2hhcGUlM0ElMjBkcmF3VG8lMjBwbGFjZXMlMjBvcmlnaW4lMjBhdCUyMCh4JTJDJTIweSklMkMlMjBzbyUyMG9mZnNldCUyMGJ5JTIwLWJvdW5kcyUyMGNlbnRlciUwQSUyMCUyMGxldCUyMGRyYXdYJTIwJTNEJTIwY2FsYyhjeCUyMC0lMjBiYi54JTIwLSUyMGJiLndpZHRoJTIwJTJGJTIwMiklM0IlMEElMjAlMjBsZXQlMjBkcmF3WSUyMCUzRCUyMGNhbGMoNzIlMjAtJTIwYmIueSUyMC0lMjBiYi5oZWlnaHQlMjAlMkYlMjAyKSUzQiUwQSUwQSUyMCUyMGxldCUyMGdOYW1lJTIwJTNEJTIwJTYwc2clMjQlN0JuJTdEJTYwJTNCJTBBJTIwJTIwZGVmaW5lJTIwR3JvdXBMYXllcihnTmFtZSklMjAlMjQlN0IlMjB0cmFuc2xhdGUteCUzQSUyMDAlM0IlMjB0cmFuc2xhdGUteSUzQSUyMDAlM0IlMjAlN0QlMEElMjAlMjBsYXllcignc2hhcnAtcm93JykuYXBwZW5kKGxheWVyKGdOYW1lKSklM0IlMEElMEElMjAlMjBsZXQlMjBsTmFtZSUyMCUzRCUyMCU2MHMlMjQlN0JuJTdEJTYwJTNCJTBBJTIwJTIwZGVmaW5lJTIwUGF0aExheWVyKGxOYW1lKSUyMCUyNCU3QiUyMGZpbGwlM0ElMjBub25lJTNCJTIwc3Ryb2tlJTNBJTIwY29sJTNCJTIwc3Ryb2tlLXdpZHRoJTNBJTIwMiUyMCU3RCUwQSUyMCUyMGxheWVyKGdOYW1lKS5hcHBlbmQobGF5ZXIobE5hbWUpKSUzQiUwQSUyMCUyMGxheWVyKGxOYW1lKS5hcHBseSUyMCU3QiUyMHBiLmRyYXdUbyhkcmF3WCUyQyUyMGRyYXdZKSUyMCU3RCUwQSUwQSUyMCUyMCUyRiUyRiUyMENlbnRlciUyMGxhYmVsJTIwdW5kZXIlMjB0aGUlMjBzaGFwZSUwQSUyMCUyMGxldCUyMGxhYmVsWCUyMCUzRCUyMGNhbGMoY3glMjAtJTIwbmFtZS5sZW5ndGglMjAqJTIwMi43KSUzQiUwQSUyMCUyMGxldCUyMHRsTmFtZSUyMCUzRCUyMCU2MHMlMjQlN0JuJTdELWwlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBUZXh0TGF5ZXIodGxOYW1lKSUyMCUyNCU3QiUyMGZvbnQtc2l6ZSUzQSUyMDklM0IlMjBmaWxsJTNBJTIwJTIzNjQ3NDhiJTNCJTIwZm9udC1mYW1pbHklM0ElMjBzeXN0ZW0tdWklMkMlMjBzYW5zLXNlcmlmJTIwJTdEJTBBJTIwJTIwbGF5ZXIoZ05hbWUpLmFwcGVuZChsYXllcih0bE5hbWUpKSUzQiUwQSUyMCUyMGxheWVyKHRsTmFtZSkuYXBwbHklMjAlN0IlMjB0ZXh0KGxhYmVsWCUyQyUyMDExMiklNjAlMjQlN0JuYW1lJTdEJTYwJTIwJTdEJTBBJTdEJTBBJTBBJTJGJTJGJTIwJTNEJTNEJTNEJTIwUm93JTIwMiUzQSUyMFJvdW5kZWQlMjBwb2x5Z29ucyUyMCUzRCUzRCUzRCUwQWRlZmluZSUyMEdyb3VwTGF5ZXIoJ3JvdW5kLXJvdycpJTIwJTI0JTdCJTIwdHJhbnNsYXRlLXglM0ElMjAwJTNCJTIwdHJhbnNsYXRlLXklM0ElMjAxOTAlM0IlMjAlN0QlMEElMEFkZWZpbmUlMjBUZXh0TGF5ZXIoJ3IyLXRpdGxlJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMSUzQiUyMGZpbGwlM0ElMjAlMjNlMmU4ZjAlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcigncm91bmQtcm93JykuYXBwZW5kKGxheWVyKCdyMi10aXRsZScpKSUzQiUwQWxheWVyKCdyMi10aXRsZScpLmFwcGx5JTIwJTdCJTIwdGV4dCgyMCUyQyUyMDE0KSU2MFJvdW5kZWQlMjBjb3JuZXJzJTIwJUUyJTgwJTk0JTIwdGFuZ2VudExpbmUlMjAlMkIlMjB0YW5nZW50QXJjJTYwJTIwJTdEJTBBJTBBZm9yJTIwKGlkeCUyMGluJTIwMC4uNyklMjAlN0IlMEElMjAlMjBsZXQlMjBuJTIwJTNEJTIwc2lkZXMlNUJpZHglNUQlM0IlMEElMjAlMjBsZXQlMjBjb2wlMjAlM0QlMjBjb2xvcnMlNUJpZHglNUQlM0IlMEElMjAlMjBsZXQlMjBjciUyMCUzRCUyMGNhbGMobWluKHIlMjAqJTIwMC4zNSUyQyUyMDgpKSUzQiUwQSUyMCUyMGxldCUyMG5hbWUlMjAlM0QlMjBuYW1lcyU1QmlkeCU1RCUzQiUwQSUwQSUyMCUyMGxldCUyMHBiJTIwJTNEJTIwJTQwJTdCJTIwcm91bmRlZFBvbHlCbG9jayhuJTJDJTIwY3IpJTIwJTdEJTNCJTBBJTIwJTIwbGV0JTIwYmIlMjAlM0QlMjBwYi5ib3VuZGluZ0JveCgpJTNCJTBBJTIwJTIwbGV0JTIwY3glMjAlM0QlMjBjYWxjKDU1JTIwJTJCJTIwaWR4JTIwKiUyMHNwYWNpbmcpJTNCJTBBJTBBJTIwJTIwbGV0JTIwZHJhd1glMjAlM0QlMjBjYWxjKGN4JTIwLSUyMGJiLnglMjAtJTIwYmIud2lkdGglMjAlMkYlMjAyKSUzQiUwQSUyMCUyMGxldCUyMGRyYXdZJTIwJTNEJTIwY2FsYyg3MiUyMC0lMjBiYi55JTIwLSUyMGJiLmhlaWdodCUyMCUyRiUyMDIpJTNCJTBBJTBBJTIwJTIwbGV0JTIwZ05hbWUlMjAlM0QlMjAlNjByZyUyNCU3Qm4lN0QlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBHcm91cExheWVyKGdOYW1lKSUyMCUyNCU3QiUyMHRyYW5zbGF0ZS14JTNBJTIwMCUzQiUyMHRyYW5zbGF0ZS15JTNBJTIwMCUzQiUyMCU3RCUwQSUyMCUyMGxheWVyKCdyb3VuZC1yb3cnKS5hcHBlbmQobGF5ZXIoZ05hbWUpKSUzQiUwQSUwQSUyMCUyMGxldCUyMGxOYW1lJTIwJTNEJTIwJTYwciUyNCU3Qm4lN0QlNjAlM0IlMEElMjAlMjBkZWZpbmUlMjBQYXRoTGF5ZXIobE5hbWUpJTIwJTI0JTdCJTIwZmlsbCUzQSUyMG5vbmUlM0IlMjBzdHJva2UlM0ElMjBjb2wlM0IlMjBzdHJva2Utd2lkdGglM0ElMjAyJTIwJTdEJTBBJTIwJTIwbGF5ZXIoZ05hbWUpLmFwcGVuZChsYXllcihsTmFtZSkpJTNCJTBBJTIwJTIwbGF5ZXIobE5hbWUpLmFwcGx5JTIwJTdCJTIwcGIuZHJhd1RvKGRyYXdYJTJDJTIwZHJhd1kpJTIwJTdEJTBBJTBBJTIwJTIwbGV0JTIwbGFiZWxYJTIwJTNEJTIwY2FsYyhjeCUyMC0lMjBuYW1lLmxlbmd0aCUyMColMjAyLjcpJTNCJTBBJTIwJTIwbGV0JTIwdGxOYW1lJTIwJTNEJTIwJTYwciUyNCU3Qm4lN0QtbCU2MCUzQiUwQSUyMCUyMGRlZmluZSUyMFRleHRMYXllcih0bE5hbWUpJTIwJTI0JTdCJTIwZm9udC1zaXplJTNBJTIwOSUzQiUyMGZpbGwlM0ElMjAlMjM2NDc0OGIlM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEElMjAlMjBsYXllcihnTmFtZSkuYXBwZW5kKGxheWVyKHRsTmFtZSkpJTNCJTBBJTIwJTIwbGF5ZXIodGxOYW1lKS5hcHBseSUyMCU3QiUyMHRleHQobGFiZWxYJTJDJTIwMTEyKSU2MCUyNCU3Qm5hbWUlN0QlNjAlMjAlN0QlMEElN0QlMEElMEElMkYlMkYlMjAtLS0lMjBDYXB0aW9uJTIwLS0tJTBBZGVmaW5lJTIwVGV4dExheWVyKCdjYXB0aW9uJyklMjAlMjQlN0IlMjBmb250LXNpemUlM0ElMjAxMCUzQiUyMGZpbGwlM0ElMjAlMjM5NGEzYjglM0IlMjBmb250LWZhbWlseSUzQSUyMHN5c3RlbS11aSUyQyUyMHNhbnMtc2VyaWYlMjAlN0QlMEFsYXllcignY2FwdGlvbicpLmFwcGx5JTIwJTdCJTBBJTIwJTIwdGV4dCgyMCUyQyUyMDM4MiklNjBBbGwlMjBzaGFwZXMlMjBidWlsdCUyMHdpdGglMjBoZWFkaW5nKCklMkMlMjB0dXJuKCklMkMlMjB0YW5nZW50TGluZSgpJTJDJTIwYW5kJTIwdGFuZ2VudEFyYygpLiU2MCUwQSU3RCUwQQ==" code-open caption="Regular polygons from 3 to 10 sides — sharp and rounded corners">
-  <code class="hljs language-pathogen"><span class="hljs-comment">// viewBox=&quot;0 0 680 400&quot;</span>
-<span class="hljs-comment">// Regular polygons via heading + turn + tangentLine/tangentArc</span>
+<p><mini-workspace code-open caption="Regular polygons from 3 to 10 sides — sharp and rounded corners">
+  <code>// viewBox="0 0 680 400"
+// Regular polygons via heading + turn + tangentLine/tangentArc
 
-<span class="hljs-comment">// --- Background ---</span>
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
-bg.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">680</span>, <span class="hljs-number">400</span>) }
+// --- Background ---
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+bg.apply { rect(0, 0, 680, 400) }
 
-<span class="hljs-keyword">let</span> grid = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;grid&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: #1e293b; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; };
-grid.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.20</span>) { M <span class="hljs-number">0</span> <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">20</span>) h <span class="hljs-number">680</span> }
-  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.34</span>) { M <span class="hljs-title function_">calc</span>(j * <span class="hljs-number">20</span>) <span class="hljs-number">0</span> v <span class="hljs-number">400</span> }
+let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+grid.apply {
+  for (i in 0..20) { M 0 calc(i * 20) h 680 }
+  for (j in 0..34) { M calc(j * 20) 0 v 400 }
 }
 
-<span class="hljs-keyword">let</span> r = <span class="hljs-number">24</span>;
+let r = 24;
 
-<span class="hljs-comment">// Build sharp polygon as PathBlock</span>
-fn <span class="hljs-title function_">sharpPolyBlock</span>(<span class="hljs-params">sides</span>) {
-  <span class="hljs-keyword">let</span> extRad = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / sides);
-  <span class="hljs-keyword">let</span> sideLen = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * r * <span class="hljs-title function_">sin</span>(extRad / <span class="hljs-number">2</span>));
-  <span class="hljs-keyword">let</span> headAngle = <span class="hljs-title function_">calc</span>(extRad / <span class="hljs-number">2</span>);
-  <span class="hljs-title function_">heading</span>(headAngle)
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
-    <span class="hljs-title function_">tangentLine</span>(sideLen)
-    <span class="hljs-title function_">turn</span>(extRad)
+// Build sharp polygon as PathBlock
+fn sharpPolyBlock(sides) {
+  let extRad = calc(2 * PI() / sides);
+  let sideLen = calc(2 * r * sin(extRad / 2));
+  let headAngle = calc(extRad / 2);
+  heading(headAngle)
+  for (i in 0..sides) {
+    tangentLine(sideLen)
+    turn(extRad)
   }
 }
 
-<span class="hljs-comment">// Build rounded polygon as PathBlock</span>
-fn <span class="hljs-title function_">roundedPolyBlock</span>(<span class="hljs-params">sides, cornerRadius</span>) {
-  <span class="hljs-keyword">let</span> extRad = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / sides);
-  <span class="hljs-keyword">let</span> sideLen = <span class="hljs-title function_">calc</span>(<span class="hljs-number">2</span> * r * <span class="hljs-title function_">sin</span>(extRad / <span class="hljs-number">2</span>));
-  <span class="hljs-keyword">let</span> arcOffset = <span class="hljs-title function_">calc</span>(cornerRadius * <span class="hljs-title function_">tan</span>(extRad / <span class="hljs-number">2</span>));
-  <span class="hljs-keyword">let</span> straight = <span class="hljs-title function_">calc</span>(sideLen - <span class="hljs-number">2</span> * arcOffset);
-  <span class="hljs-keyword">let</span> headAngle = <span class="hljs-title function_">calc</span>(extRad / <span class="hljs-number">2</span>);
-  <span class="hljs-title function_">heading</span>(headAngle)
-  <span class="hljs-keyword">let</span> last = <span class="hljs-title function_">calc</span>(sides - <span class="hljs-number">1</span>);
-  <span class="hljs-title function_">tangentLine</span>(straight)
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span>.<span class="hljs-property">last</span>) {
-    <span class="hljs-title function_">tangentArc</span>(cornerRadius, extRad)
-    <span class="hljs-title function_">tangentLine</span>(straight)
+// Build rounded polygon as PathBlock
+fn roundedPolyBlock(sides, cornerRadius) {
+  let extRad = calc(2 * PI() / sides);
+  let sideLen = calc(2 * r * sin(extRad / 2));
+  let arcOffset = calc(cornerRadius * tan(extRad / 2));
+  let straight = calc(sideLen - 2 * arcOffset);
+  let headAngle = calc(extRad / 2);
+  heading(headAngle)
+  let last = calc(sides - 1);
+  tangentLine(straight)
+  for (i in 1..last) {
+    tangentArc(cornerRadius, extRad)
+    tangentLine(straight)
   }
-  <span class="hljs-title function_">tangentArc</span>(cornerRadius, extRad)
+  tangentArc(cornerRadius, extRad)
   z
 }
 
-<span class="hljs-keyword">let</span> colors = [#ef4444, #f97316, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ec4899];
+let colors = [#ef4444, #f97316, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ec4899];
 
-<span class="hljs-keyword">let</span> names = [
-  <span class="hljs-string">&quot;Triangle&quot;</span>, <span class="hljs-string">&quot;Square&quot;</span>, <span class="hljs-string">&quot;Pentagon&quot;</span>, <span class="hljs-string">&quot;Hexagon&quot;</span>,
-  <span class="hljs-string">&quot;Heptagon&quot;</span>, <span class="hljs-string">&quot;Octagon&quot;</span>, <span class="hljs-string">&quot;Nonagon&quot;</span>, <span class="hljs-string">&quot;Decagon&quot;</span>
+let names = [
+  "Triangle", "Square", "Pentagon", "Hexagon",
+  "Heptagon", "Octagon", "Nonagon", "Decagon"
 ];
 
-<span class="hljs-keyword">let</span> sides = [<span class="hljs-number">3</span>, <span class="hljs-number">4</span>, <span class="hljs-number">5</span>, <span class="hljs-number">6</span>, <span class="hljs-number">7</span>, <span class="hljs-number">8</span>, <span class="hljs-number">9</span>, <span class="hljs-number">10</span>];
-<span class="hljs-keyword">let</span> spacing = <span class="hljs-number">80</span>;
+let sides = [3, 4, 5, 6, 7, 8, 9, 10];
+let spacing = 80;
 
-<span class="hljs-comment">// === Row 1: Sharp polygons ===</span>
-define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;sharp-row&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">20</span>; }
+// === Row 1: Sharp polygons ===
+define GroupLayer('sharp-row') ${ translate-x: 0; translate-y: 20; }
 
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;r1-title&#x27;</span>) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sharp-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r1-title&#x27;</span>));
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r1-title&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Sharp corners — heading + tangentLine + turn`</span> }
+define TextLayer('r1-title') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('sharp-row').append(layer('r1-title'));
+layer('r1-title').apply { text(20, 14)`Sharp corners — heading + tangentLine + turn` }
 
-<span class="hljs-keyword">for</span> (idx <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> n = sides[idx];
-  <span class="hljs-keyword">let</span> col = colors[idx];
-  <span class="hljs-keyword">let</span> name = names[idx];
+for (idx in 0..7) {
+  let n = sides[idx];
+  let col = colors[idx];
+  let name = names[idx];
 
-  <span class="hljs-comment">// Create PathBlock and query its bounds</span>
-  <span class="hljs-keyword">let</span> pb = @{ <span class="hljs-title function_">sharpPolyBlock</span>(n) };
-  <span class="hljs-keyword">let</span> bb = pb.<span class="hljs-title function_">boundingBox</span>();
-  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">55</span> + idx * spacing);
+  // Create PathBlock and query its bounds
+  let pb = @{ sharpPolyBlock(n) };
+  let bb = pb.boundingBox();
+  let cx = calc(55 + idx * spacing);
 
-  <span class="hljs-comment">// Center the shape: drawTo places origin at (x, y), so offset by -bounds center</span>
-  <span class="hljs-keyword">let</span> drawX = <span class="hljs-title function_">calc</span>(cx - bb.<span class="hljs-property">x</span> - bb.<span class="hljs-property">width</span> / <span class="hljs-number">2</span>);
-  <span class="hljs-keyword">let</span> drawY = <span class="hljs-title function_">calc</span>(<span class="hljs-number">72</span> - bb.<span class="hljs-property">y</span> - bb.<span class="hljs-property">height</span> / <span class="hljs-number">2</span>);
+  // Center the shape: drawTo places origin at (x, y), so offset by -bounds center
+  let drawX = calc(cx - bb.x - bb.width / 2);
+  let drawY = calc(72 - bb.y - bb.height / 2);
 
-  <span class="hljs-keyword">let</span> gName = <span class="hljs-string">`sg<span class="hljs-subst">${n}</span>`</span>;
-  define <span class="hljs-title class_">GroupLayer</span>(gName) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;sharp-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(gName));
+  let gName = `sg${n}`;
+  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  layer('sharp-row').append(layer(gName));
 
-  <span class="hljs-keyword">let</span> lName = <span class="hljs-string">`s<span class="hljs-subst">${n}</span>`</span>;
-  define <span class="hljs-title class_">PathLayer</span>(lName) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: col; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(lName));
-  <span class="hljs-title function_">layer</span>(lName).<span class="hljs-property">apply</span> { pb.<span class="hljs-title function_">drawTo</span>(drawX, drawY) }
+  let lName = `s${n}`;
+  define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2 }
+  layer(gName).append(layer(lName));
+  layer(lName).apply { pb.drawTo(drawX, drawY) }
 
-  <span class="hljs-comment">// Center label under the shape</span>
-  <span class="hljs-keyword">let</span> labelX = <span class="hljs-title function_">calc</span>(cx - name.<span class="hljs-property">length</span> * <span class="hljs-number">2.7</span>);
-  <span class="hljs-keyword">let</span> tlName = <span class="hljs-string">`s<span class="hljs-subst">${n}</span>-l`</span>;
-  define <span class="hljs-title class_">TextLayer</span>(tlName) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>; <span class="hljs-attr">fill</span>: #64748b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(tlName));
-  <span class="hljs-title function_">layer</span>(tlName).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-number">112</span>)<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span> }
+  // Center label under the shape
+  let labelX = calc(cx - name.length * 2.7);
+  let tlName = `s${n}-l`;
+  define TextLayer(tlName) ${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif }
+  layer(gName).append(layer(tlName));
+  layer(tlName).apply { text(labelX, 112)`${name}` }
 }
 
-<span class="hljs-comment">// === Row 2: Rounded polygons ===</span>
-define <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;round-row&#x27;</span>) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">190</span>; }
+// === Row 2: Rounded polygons ===
+define GroupLayer('round-row') ${ translate-x: 0; translate-y: 190; }
 
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;r2-title&#x27;</span>) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; <span class="hljs-attr">fill</span>: #e2e8f0; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;round-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r2-title&#x27;</span>));
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;r2-title&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Rounded corners — tangentLine + tangentArc`</span> }
+define TextLayer('r2-title') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+layer('round-row').append(layer('r2-title'));
+layer('r2-title').apply { text(20, 14)`Rounded corners — tangentLine + tangentArc` }
 
-<span class="hljs-keyword">for</span> (idx <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> n = sides[idx];
-  <span class="hljs-keyword">let</span> col = colors[idx];
-  <span class="hljs-keyword">let</span> cr = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">min</span>(r * <span class="hljs-number">0.35</span>, <span class="hljs-number">8</span>));
-  <span class="hljs-keyword">let</span> name = names[idx];
+for (idx in 0..7) {
+  let n = sides[idx];
+  let col = colors[idx];
+  let cr = calc(min(r * 0.35, 8));
+  let name = names[idx];
 
-  <span class="hljs-keyword">let</span> pb = @{ <span class="hljs-title function_">roundedPolyBlock</span>(n, cr) };
-  <span class="hljs-keyword">let</span> bb = pb.<span class="hljs-title function_">boundingBox</span>();
-  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">55</span> + idx * spacing);
+  let pb = @{ roundedPolyBlock(n, cr) };
+  let bb = pb.boundingBox();
+  let cx = calc(55 + idx * spacing);
 
-  <span class="hljs-keyword">let</span> drawX = <span class="hljs-title function_">calc</span>(cx - bb.<span class="hljs-property">x</span> - bb.<span class="hljs-property">width</span> / <span class="hljs-number">2</span>);
-  <span class="hljs-keyword">let</span> drawY = <span class="hljs-title function_">calc</span>(<span class="hljs-number">72</span> - bb.<span class="hljs-property">y</span> - bb.<span class="hljs-property">height</span> / <span class="hljs-number">2</span>);
+  let drawX = calc(cx - bb.x - bb.width / 2);
+  let drawY = calc(72 - bb.y - bb.height / 2);
 
-  <span class="hljs-keyword">let</span> gName = <span class="hljs-string">`rg<span class="hljs-subst">${n}</span>`</span>;
-  define <span class="hljs-title class_">GroupLayer</span>(gName) ${ translate-<span class="hljs-attr">x</span>: <span class="hljs-number">0</span>; translate-<span class="hljs-attr">y</span>: <span class="hljs-number">0</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;round-row&#x27;</span>).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(gName));
+  let gName = `rg${n}`;
+  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  layer('round-row').append(layer(gName));
 
-  <span class="hljs-keyword">let</span> lName = <span class="hljs-string">`r<span class="hljs-subst">${n}</span>`</span>;
-  define <span class="hljs-title class_">PathLayer</span>(lName) ${ <span class="hljs-attr">fill</span>: none; <span class="hljs-attr">stroke</span>: col; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span> }
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(lName));
-  <span class="hljs-title function_">layer</span>(lName).<span class="hljs-property">apply</span> { pb.<span class="hljs-title function_">drawTo</span>(drawX, drawY) }
+  let lName = `r${n}`;
+  define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2 }
+  layer(gName).append(layer(lName));
+  layer(lName).apply { pb.drawTo(drawX, drawY) }
 
-  <span class="hljs-keyword">let</span> labelX = <span class="hljs-title function_">calc</span>(cx - name.<span class="hljs-property">length</span> * <span class="hljs-number">2.7</span>);
-  <span class="hljs-keyword">let</span> tlName = <span class="hljs-string">`r<span class="hljs-subst">${n}</span>-l`</span>;
-  define <span class="hljs-title class_">TextLayer</span>(tlName) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>; <span class="hljs-attr">fill</span>: #64748b; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
-  <span class="hljs-title function_">layer</span>(gName).<span class="hljs-title function_">append</span>(<span class="hljs-title function_">layer</span>(tlName));
-  <span class="hljs-title function_">layer</span>(tlName).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-number">112</span>)<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span> }
+  let labelX = calc(cx - name.length * 2.7);
+  let tlName = `r${n}-l`;
+  define TextLayer(tlName) ${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif }
+  layer(gName).append(layer(tlName));
+  layer(tlName).apply { text(labelX, 112)`${name}` }
 }
 
-<span class="hljs-comment">// --- Caption ---</span>
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;caption&#x27;</span>) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; <span class="hljs-attr">fill</span>: #94a3b8; font-<span class="hljs-attr">family</span>: system-ui, sans-serif }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;caption&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">20</span>, <span class="hljs-number">382</span>)<span class="hljs-string">`All shapes built with heading(), turn(), tangentLine(), and tangentArc().`</span>
+// --- Caption ---
+define TextLayer('caption') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+layer('caption').apply {
+  text(20, 382)`All shapes built with heading(), turn(), tangentLine(), and tangentArc().`
 }
 </code>
   <img src="/pathogen/blog/samples/post14/polygon-showcase.svg" alt="Regular polygons from 3 to 10 sides — sharp and rounded corners" loading="lazy">
