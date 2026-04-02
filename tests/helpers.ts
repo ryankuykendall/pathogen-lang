@@ -61,6 +61,27 @@ export function extractSVGCommands(d: string): ParsedCommand[] {
 }
 
 /**
+ * Extract attributes from SVG/XML elements by tag name.
+ * Returns one Record<string, string> per matched opening tag.
+ * Attribute-order independent — use with toMatchObject for resilient assertions.
+ */
+export function extractSVGElements(content: string, tag: string): Record<string, string>[] {
+  const regex = new RegExp(`<${tag}\\b([^>]*)`, 'g');
+  const elements: Record<string, string>[] = [];
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const attrs: Record<string, string> = {};
+    const attrRegex = /([\w-]+)="([^"]*)"/g;
+    let attrMatch;
+    while ((attrMatch = attrRegex.exec(match[1])) !== null) {
+      attrs[attrMatch[1]] = attrMatch[2];
+    }
+    elements.push(attrs);
+  }
+  return elements;
+}
+
+/**
  * Format a parsed command as a readable string: "M 50 100"
  */
 function formatCommand(cmd: ParsedCommand): string {

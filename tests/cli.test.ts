@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { extractSVGElements } from './helpers';
+
 const CLI_PATH = join(__dirname, '..', 'src', 'cli.ts');
 const TMP_DIR = join(__dirname, 'tmp');
 
@@ -179,12 +181,10 @@ describe('CLI', () => {
     it('uses default styling', () => {
       runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`]);
       const content = readFileSync(outputSvg, 'utf-8');
-      expect(content).toContain('viewBox="0 0 200 200"');
-      expect(content).toContain('width="200"');
-      expect(content).toContain('height="200"');
-      expect(content).toContain('stroke="#000"');
-      expect(content).toContain('fill="none"');
-      expect(content).toContain('stroke-width="2"');
+      const [svg] = extractSVGElements(content, 'svg');
+      expect(svg).toMatchObject({ viewBox: '0 0 200 200', width: '200', height: '200' });
+      const [path] = extractSVGElements(content, 'path');
+      expect(path).toMatchObject({ stroke: '#000', fill: 'none', 'stroke-width': '2' });
     });
 
     it('applies custom viewBox', () => {
@@ -229,10 +229,10 @@ describe('CLI', () => {
         '--viewBox=0 0 500 500',
       ]);
       const content = readFileSync(outputSvg, 'utf-8');
-      expect(content).toContain('stroke="green"');
-      expect(content).toContain('fill="yellow"');
-      expect(content).toContain('stroke-width="3"');
-      expect(content).toContain('viewBox="0 0 500 500"');
+      const [svg] = extractSVGElements(content, 'svg');
+      expect(svg).toMatchObject({ viewBox: '0 0 500 500' });
+      const [path] = extractSVGElements(content, 'path');
+      expect(path).toMatchObject({ stroke: 'green', fill: 'yellow', 'stroke-width': '3' });
     });
   });
 
@@ -437,9 +437,15 @@ describe('CLI', () => {
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
       const content = readFileSync(outputFile, 'utf-8');
-      expect(content).toContain('<text x="50" y="45"');
-      expect(content).toContain('font-size="14"');
-      expect(content).toContain('fill="#333"');
+      const textEls = extractSVGElements(content, 'text');
+      expect(textEls).toHaveLength(1);
+      expect(textEls[0]).toMatchObject({
+        id: 'labels',
+        x: '50',
+        y: '45',
+        'font-size': '14',
+        fill: '#333',
+      });
       expect(content).toContain('>Hello</text>');
 
       unlinkSync(inputFile);
@@ -453,7 +459,8 @@ describe('CLI', () => {
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
       const content = readFileSync(outputFile, 'utf-8');
-      expect(content).toContain('transform="rotate(45, 10, 20)"');
+      const [textEl] = extractSVGElements(content, 'text');
+      expect(textEl).toMatchObject({ transform: 'rotate(45, 10, 20)' });
 
       unlinkSync(inputFile);
       unlinkSync(outputFile);
