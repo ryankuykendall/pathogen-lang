@@ -1,7 +1,6 @@
 // Pathogen Language Grammar — Lezer LR Parser
-// This grammar is the single source of truth for Pathogen syntax.
-// It powers both the compiler (via CST-to-AST conversion) and the
-// playground editor (via CodeMirror 6 native integration).
+// Single source of truth for Pathogen syntax, powering both the compiler
+// (via CST-to-AST conversion) and the playground editor (CodeMirror 6).
 
 @top Program { statement* }
 
@@ -16,7 +15,8 @@
   equality @left,
   and @left,
   or @left,
-  ternary @right
+  ternary @right,
+  assign @right
 }
 
 // ─── Statements ────────────────────────────────────────────────
@@ -34,27 +34,16 @@ statement {
   IfStatement |
   FunctionDefinition |
   ReturnStatement |
-  IndexedAssignment |
-  MemberAssignment |
-  Assignment |
   PathCommand |
   ExpressionStatement
 }
 
+// Note: Assignment, IndexedAssignment, MemberAssignment are handled
+// within ExpressionStatement. The AST builder distinguishes them by
+// checking if the expression ends with "= expr ;".
+
 LetDeclaration {
   kw<"let"> (ArrayDestructure | ObjectDestructure | VariableName) "=" expression ";"
-}
-
-Assignment {
-  VariableName !member "=" !equality expression ";"
-}
-
-IndexedAssignment {
-  expression !member "[" expression "]" "=" expression ";"
-}
-
-MemberAssignment {
-  expression !member "." PropertyName "=" expression ";"
 }
 
 ForLoop {
@@ -70,11 +59,15 @@ ForEachDestructure {
 }
 
 IfStatement {
-  kw<"if"> "(" expression ")" Block (kw<"else"> (IfStatement | Block))?
+  kw<"if"> "(" expression ")" Block ElseClause?
+}
+
+ElseClause {
+  kw<"else"> (IfStatement | Block)
 }
 
 FunctionDefinition {
-  kw<"fn"> FunctionName "(" commaSep<ParameterName> ")" Block
+  kw<"fn"> VariableName "(" commaSep<VariableName> ")" Block
 }
 
 ReturnStatement {
@@ -82,11 +75,11 @@ ReturnStatement {
 }
 
 EnumDefinition {
-  kw<"enum"> EnumName "{" commaSep<EnumMember> ","? "}"
+  kw<"enum"> VariableName "{" EnumMember ("," EnumMember)* ","? "}"
 }
 
 EnumMember {
-  MemberName ("=" expression)?
+  VariableName ("=" expression)?
 }
 
 LayerDefinition {
@@ -94,7 +87,7 @@ LayerDefinition {
 }
 
 LayerApplyBlock {
-  (kw<"layer"> "(" expression ")" | expression) "." kw<"apply"> Block
+  kw<"layer"> "(" expression ")" "." kw<"apply"> Block
 }
 
 TextStatement {
@@ -116,7 +109,8 @@ textBodyItem {
 }
 
 TspanStatement {
-  kw<"tspan"> "(" commaSep<expression>? ")" TemplateLiteral
+  kw<"tspan"> "(" expression ("," expression)* ")" TemplateLiteral |
+  kw<"tspan"> "(" ")" TemplateLiteral
 }
 
 TextForLoop {
@@ -132,32 +126,56 @@ TextIfStatement {
 }
 
 FontDirective {
-  fontDirectiveKw String Number ";"?
-| fontDirectiveKw String ";"?
+  fontDirectiveKw String ~fontWeight Number |
+  fontDirectiveKw String ~fontWeight
 }
 
+// Path commands: always greedy when args are available.
+// Z/z take no args; all others take at least one.
 PathCommand {
-  pathCommandLetter pathArg+
-| pathCommandLetter
+  pathCmd PathArgs |
+  pathCmdZ
 }
 
-pathArg {
-  CalcExpression |
-  Identifier ArgList |
-  BooleanLiteral |
-  Number |
-  pathMemberExpression |
-  Identifier
+pathCmd[@name=PathCommandLetter] {
+  @specialize[@name=PathCommandLetter]<Identifier, "M"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "m"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "L"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "l"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "H"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "h"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "V"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "v"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "C"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "c"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "S"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "s"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "Q"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "q"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "T"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "t"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "A"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "a">
 }
 
-pathMemberExpression {
-  Identifier (!member "." PropertyName)*
-  (!member "[" expression "]")*
-  (!call "." MethodName "(" commaSep<expression> ")")*
+pathCmdZ[@name=PathCommandLetter] {
+  @specialize[@name=PathCommandLetter]<Identifier, "Z"> |
+  @specialize[@name=PathCommandLetter]<Identifier, "z">
 }
 
+// PathArgs is a single opaque token consumed by an external tokenizer.
+// The tokenizer greedily consumes numbers, identifiers, calc(), booleans,
+// and member/index/call chains until hitting a statement boundary
+// (keyword, path command letter, EOF, or closing brace).
+@external tokens pathArgsTokenizer from "./path-args-tokenizer" {
+  PathArgs
+}
+
+// ExpressionStatement requires ";" to avoid ambiguity with path command args.
+// Standalone function calls like circle() that don't end with ";" are handled
+// as PathCommand with empty command letter (the AST builder handles this).
 ExpressionStatement {
-  expression ";"?
+  expression ("=" expression)? ";"
 }
 
 Block {
@@ -192,15 +210,13 @@ UnaryExpression {
 }
 
 postfixExpression {
-  primaryExpression postfixOp*
-}
-
-postfixOp {
-  !call ArgList TrailingBlock? |
-  !member "." PropertyName |
-  !member "[" expression "]" |
-  !call "." MethodName ArgList TrailingBlock? |
-  !call "." MethodName TrailingBlock
+  primaryExpression (
+    !call ArgList TrailingBlock? |
+    !member "." Identifier !call ArgList TrailingBlock? |
+    !member "." Identifier TrailingBlock |
+    !member "." Identifier |
+    !member "[" expression "]"
+  )*
 }
 
 ArgList {
@@ -223,11 +239,13 @@ primaryExpression {
   CalcExpression |
   LayerConstructor |
   Identifier |
-  "(" expression ")"
+  ParenExpression
 }
 
+ParenExpression { "(" expression ")" }
+
 TrailingBlock {
-  "{" "|" commaSep1<ParameterName> "|" statement* "}"
+  "{" "|" VariableName ("," VariableName)* "|" statement* "}"
 }
 
 CalcExpression {
@@ -235,7 +253,7 @@ CalcExpression {
 }
 
 ArrayLiteral {
-  "[" listOf<arrayElement>? "]"
+  "[" (arrayElement ("," arrayElement)* ","?)? "]"
 }
 
 arrayElement {
@@ -247,7 +265,7 @@ SpreadElement {
 }
 
 ObjectLiteral {
-  "{" listOf<objectElement>? "}"
+  "{" (objectElement ("," objectElement)* ","?)? "}"
 }
 
 objectElement {
@@ -255,11 +273,11 @@ objectElement {
 }
 
 ObjectProperty {
-  PropertyName ":" expression
+  (Identifier | String) ":" expression
 }
 
 StyleBlockLiteral {
-  styleBlockOpen StyleContent "}"
+  styleBlockOpen StyleContent? "}"
 }
 
 PathBlockExpression {
@@ -271,21 +289,22 @@ TextBlockExpression {
 }
 
 LayerConstructor {
-  LayerType "(" expression ")" StyleBlockLiteral?
+  LayerType "(" expression ")" ~layerStyle StyleBlockLiteral |
+  LayerType "(" expression ")" ~layerStyle
 }
 
 // ─── Destructuring ─────────────────────────────────────────────
 
 ArrayDestructure {
-  "[" commaSep1<VariableName> ("," "..." VariableName)? "]"
+  "[" VariableName ("," VariableName)* ("," "..." VariableName)? "]"
 }
 
 ObjectDestructure {
-  "{" commaSep1<ObjectDestructureProp> ("," "..." VariableName)? "}"
+  "{" ObjectDestructureProp ("," ObjectDestructureProp)* ("," "..." VariableName)? "}"
 }
 
 ObjectDestructureProp {
-  PropertyName (":" VariableName)?
+  Identifier (":" VariableName)?
 }
 
 // ─── Template Literals ─────────────────────────────────────────
@@ -304,84 +323,70 @@ commaSep<content> {
   (content ("," content)*)?
 }
 
-commaSep1<content> {
-  content ("," content)*
-}
-
-// List with optional trailing comma
-listOf<content> {
-  content ("," content)* ","?
-}
-
 kw<term> { @specialize[@name={term}]<Identifier, term> }
+
+VariableName { Identifier }
 
 // ─── Tokens ────────────────────────────────────────────────────
 
-@skip { whitespace | Comment }
+@skip { whitespace | LineComment }
+
+// LineComment is skipped (not preserved in tree). Comment nodes in statements
+// are preserved for the annotated view. Both use "//" syntax — the parser
+// tries Comment first (in statement position), LineComment handles the rest.
 
 @tokens {
   whitespace { @whitespace+ }
 
   Comment { "//" ![\n]* }
+  LineComment { "//" ![\n]* }
 
-  @precedence { Comment, "/" }
+  @precedence { Comment, LineComment, "/" }
 
-  // Numbers: integer, float, with optional unit suffix
+  // Numbers: no leading minus (unary minus at expression level).
+  // Require at least one digit after decimal point to prevent matching "0." before ".." range.
   Number {
-    "-"? (@digit+ "." @digit* | "." @digit+ | @digit+) ("deg" | "rad" | "pi" | "%")?
+    (@digit+ "." @digit+ | "." @digit+ | @digit+) ("deg" | "rad" | "pi" | "%")?
   }
 
-  // Strings
   String {
     "\"" (![\\\"\n] | "\\" _)* "\"" |
     "'" (![\\\'\n] | "\\" _)* "'"
   }
 
-  // Color literals: #fff, #ff0000, #cc000080
   ColorLiteral { "#" $[0-9a-fA-F]+ }
 
-  // CSS color functions: rgb(...), oklch(...), etc.
   CSSColorLiteral {
     ("rgb" | "rgba" | "hsl" | "hsla" | "hwb" | "lab" | "lch" | "oklab" | "oklch")
     "(" (![\)]* ) ")"
   }
 
-  // Boolean literals
   BooleanLiteral { "true" | "false" }
 
   NullLiteral { "null" }
 
-  // Template literal tokens
   templateStart { "`" }
   templateEnd { "`" }
   templateContent { (![\`\\$] | "\\" _ | "$" ![\{])+ }
   templateInterpStart { "$" "{" }
   templateInterpEnd { "}" }
 
-  // Identifiers
   Identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
 
-  // SVG path command letters — single uppercase/lowercase letter
-  // This must come after Identifier in precedence to be specialized
-  pathCommandLetter {
-    $[MLHVCSQTAZmlhvcsqtaz]
-  }
+  // pathCommandLetter removed — handled via @specialize on Identifier
 
-  // Layer type keywords
   LayerType { "PathLayer" | "TextLayer" | "GroupLayer" }
 
-  // Range operator
   RangeOp { ".." }
 
-  // Block delimiters for special blocks
   styleBlockOpen { "$" "{" }
   pathBlockOpen { "@" "{" }
   textBlockOpen { "&" "{" }
 
-  // Font directive
   fontDirectiveKw { "@" "font" }
 
-  // Operators (multi-char must precede single-char in precedence)
+  StyleContent { ![}]+ }
+
   @precedence { "...", RangeOp, "." }
   @precedence { "||" }
   @precedence { "&&" }
@@ -389,28 +394,16 @@ kw<term> { @specialize[@name={term}]<Identifier, term> }
   @precedence { "<=", ">=", "<<" }
   @precedence { fontDirectiveKw, pathBlockOpen }
   @precedence { styleBlockOpen, templateInterpStart }
-  @precedence { Number, "-" }
-  @precedence { BooleanLiteral, NullLiteral, LayerType, CSSColorLiteral, Identifier, pathCommandLetter }
+  @precedence { Number, "." }
+  @precedence { BooleanLiteral, NullLiteral, LayerType, CSSColorLiteral, Identifier }
+  @precedence { StyleContent, templateContent, LineComment, whitespace }
   @precedence { templateStart, templateContent, templateEnd }
-
-  // Style block content — raw text capture until closing brace
-  StyleContent { ![}]* }
 
   "(" ")" "[" "]" "{" "}" ";" "," ":" "?" "."
   "+" "-" "*" "/" "%" "!" "=" "<" ">" "|"
   "||" "&&" "==" "!=" "<=" ">=" "<<" "..."
 }
 
-// Named tokens for AST builder to distinguish usage context
-VariableName { Identifier }
-FunctionName { Identifier }
-MethodName { Identifier }
-ParameterName { Identifier }
-PropertyName { Identifier | String }
-EnumName { Identifier }
-MemberName { Identifier }
-
-// Highlighting tags for CodeMirror syntax highlighting
 @detectDelim
 
 @external propSource pathogenHighlighting from "./highlight"
