@@ -52,3 +52,36 @@
 :host-context([data-theme="dark"]) #editor-container .cm-error-line {
   background-color: rgba(255, 80, 80, 0.12);
 }
+
+/* Hover tooltip styles */
+.cm-hover-tooltip {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 400px;
+  padding: 6px 10px;
+}
+
+.cm-hover-tooltip strong {
+  color: var(--accent-color, #3b82f6);
+}
+
+.cm-hover-tooltip code {
+  background: var(--bg-secondary, #f1f5f9);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.cm-hover-tooltip pre {
+  margin: 4px 0;
+  padding: 6px 8px;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.cm-hover-tooltip pre code {
+  background: none;
+  padding: 0;
+}

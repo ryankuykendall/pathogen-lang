@@ -5,6 +5,8 @@ import { colorPickerExtension } from '../utils/cm-color-picker.js';
 import { errorHighlightExtension } from '../utils/cm-error-highlight.js';
 import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
 import { svgPathCompletions } from '../utils/codemirror-setup.js';
+import { sharedCompletionSource } from '../utils/cm-completion-bridge.js';
+import { hoverTooltipExtension } from '../utils/cm-hover-tooltip.js';
 import { themeManager } from '../utils/theme.js';
 import styles from './code-editor-pane.css';
 
@@ -32,6 +34,7 @@ interface CmViewModule {
   rectangularSelection(): unknown;
   highlightActiveLine(): unknown;
   keymap: { of(bindings: unknown[]): unknown };
+  hoverTooltip(source: unknown, options?: unknown): unknown;
 }
 
 interface CmEditorView {
@@ -232,13 +235,19 @@ export class CodeEditorPane extends HTMLElement {
           commands.indentWithTab,
         ]),
         autocomplete.autocompletion({
-          override: [svgPathCompletions],
+          override: [
+            // Shared language-services completion engine (primary)
+            sharedCompletionSource,
+            // Legacy ad-hoc completions (fallback for features not yet in shared engine)
+            svgPathCompletions,
+          ],
         }),
         updateExtension,
         view.EditorView.lineWrapping,
         ...colorPickerExtension(view),
         ...textLayerEditorExtension(view),
         ...this._errorHighlight.extension,
+        ...hoverTooltipExtension(view),
       ],
     });
 
