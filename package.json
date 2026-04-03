@@ -53,6 +53,9 @@
     "preprocessor",
     "dsl"
   ],
+  "workspaces": [
+    "packages/*"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@eslint/compat": "^2.0.3",

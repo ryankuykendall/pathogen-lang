@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 public/
+packages/*/out/
 website/docs-static/
 playground/utils/docs-content.js
 

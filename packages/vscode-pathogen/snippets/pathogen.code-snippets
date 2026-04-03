@@ -1,0 +1,143 @@
+{
+  "For Loop": {
+    "prefix": "for",
+    "body": [
+      "for (${1:i} in ${2:0}..${3:10}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "for loop — iterate over a range"
+  },
+  "Function Definition": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2:params}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "function definition"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "if (${1:condition}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "if statement — conditional execution"
+  },
+  "If-Else Statement": {
+    "prefix": "ifelse",
+    "body": [
+      "if (${1:condition}) {",
+      "  $2",
+      "} else {",
+      "  $0",
+      "}"
+    ],
+    "description": "if-else statement"
+  },
+  "Let Declaration": {
+    "prefix": "let",
+    "body": "let ${1:name} = ${0};",
+    "description": "variable declaration"
+  },
+  "Radial Loop": {
+    "prefix": "forangle",
+    "body": [
+      "for (${1:i} in 0..${2:count}) {",
+      "  let ${3:angle} = calc(${1:i} / ${2:count} * TAU());",
+      "  $0",
+      "}"
+    ],
+    "description": "radial loop — iterate angles around a circle"
+  },
+  "Grid Loop": {
+    "prefix": "forgrid",
+    "body": [
+      "for (${1:row} in 0..${2:rows}) {",
+      "  for (${3:col} in 0..${4:cols}) {",
+      "    $0",
+      "  }",
+      "}"
+    ],
+    "description": "grid loop — nested rows and columns"
+  },
+  "Define Layer": {
+    "prefix": "define",
+    "body": "define PathLayer('${1:name}') ${ stroke: ${2:#000}; stroke-width: ${3:2}; }",
+    "description": "define a layer with styles"
+  },
+  "Layer Apply Block": {
+    "prefix": "layer",
+    "body": [
+      "layer('${1:name}').apply {",
+      "  $0",
+      "}"
+    ],
+    "description": "layer apply block — send output to a named layer"
+  },
+  "Text Element": {
+    "prefix": "text",
+    "body": "text(${1:100}, ${2:100})`${0:content}`",
+    "description": "text element (inline form)"
+  },
+  "Text Span": {
+    "prefix": "tspan",
+    "body": "tspan(${1:0}, ${2:20})`${0:content}`",
+    "description": "text span inside text() block"
+  },
+  "Path Block": {
+    "prefix": "pathblock",
+    "body": [
+      "let ${1:name} = @{",
+      "  $0",
+      "};"
+    ],
+    "description": "path block — reusable path data"
+  },
+  "Circle": {
+    "prefix": "circle",
+    "body": "circle(${1:cx}, ${2:cy}, ${3:r})",
+    "description": "circle(cx, cy, radius) — draw a circle"
+  },
+  "Rectangle": {
+    "prefix": "rect",
+    "body": "rect(${1:x}, ${2:y}, ${3:width}, ${4:height})",
+    "description": "rect(x, y, width, height) — draw a rectangle"
+  },
+  "Rounded Rectangle": {
+    "prefix": "roundRect",
+    "body": "roundRect(${1:x}, ${2:y}, ${3:width}, ${4:height}, ${5:radius})",
+    "description": "roundRect(x, y, w, h, r) — rectangle with rounded corners"
+  },
+  "Polygon": {
+    "prefix": "polygon",
+    "body": "polygon(${1:cx}, ${2:cy}, ${3:radius}, ${4:sides})",
+    "description": "polygon(cx, cy, radius, sides) — regular polygon"
+  },
+  "Star": {
+    "prefix": "star",
+    "body": "star(${1:cx}, ${2:cy}, ${3:outerR}, ${4:innerR}, ${5:points})",
+    "description": "star(cx, cy, outerR, innerR, points) — star shape"
+  },
+  "Enum Definition": {
+    "prefix": "enum",
+    "body": [
+      "enum ${1:Name} {",
+      "  ${2:MEMBER1},",
+      "  ${0:MEMBER2}",
+      "}"
+    ],
+    "description": "enum definition"
+  },
+  "ForEach Loop": {
+    "prefix": "foreach",
+    "body": [
+      "for (${1:item} in ${2:list}) {",
+      "  $0",
+      "}"
+    ],
+    "description": "for-each loop — iterate over an array"
+  }
+}

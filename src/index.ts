@@ -100,6 +100,10 @@ export {
 } from './evaluator';
 export type { FormatOptions } from './evaluator/formatter';
 
+// Language Services — shared intelligence layer for VS Code extension and playground
+export { StringTextDocument, DiagnosticSeverity, getDiagnostics, getDocumentSymbols, SymbolKind } from './language-services';
+export type { TextDocument, Diagnostic, Position, Range, DocumentSymbol } from './language-services';
+
 /**
  * Options for compile and compileWithContext
  */

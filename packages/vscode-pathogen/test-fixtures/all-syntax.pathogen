@@ -1,0 +1,134 @@
+// Pathogen syntax showcase — for TextMate grammar visual verification
+// Every language construct should be highlighted correctly
+
+// --- Variables & Literals ---
+let x = 10;
+let y = 20.5;
+let name = "hello";
+let greeting = 'world';
+let msg = `value is ${x + y}`;
+let flag = true;
+let nothing = null;
+
+// --- Numbers with units ---
+let angle = 45deg;
+let rad = 1.5rad;
+let half = 50%;
+let turns = 2pi;
+
+// --- Colors ---
+let red = #ff0000;
+let green = #0f0;
+let semiTransparent = #cc000080;
+
+// --- Operators ---
+let sum = x + y;
+let product = x * y;
+let mod = x % 3;
+let merged = obj1 << obj2;
+let cond = x > 10 && y < 50;
+let either = flag || !flag;
+let equal = x == y;
+let notEqual = x != y;
+
+// --- Control flow ---
+if (x > 0) {
+  M 10 20
+} else {
+  M 0 0
+}
+
+for (i in 0..10) {
+  let angle = calc(i / 10 * TAU());
+  M calc(100 + 50 * cos(angle)) calc(100 + 50 * sin(angle))
+}
+
+for (item in [1, 2, 3]) {
+  L item 0
+}
+
+// --- Functions ---
+fn drawStar(cx, cy, r) {
+  star(cx, cy, r, calc(r * 0.4), 5)
+  return r;
+}
+
+let result = drawStar(100, 100, 50);
+
+// --- Enum ---
+enum Direction {
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT
+}
+
+// --- SVG Path commands ---
+M 0 0
+L 100 100
+H 50
+V 75
+C 10 20 30 40 50 60
+S 70 80 90 100
+Q 25 50 75 100
+T 150 200
+A 50 50 0 1 1 100 0
+Z
+m 10 10
+l 20 20
+z
+
+// --- Stdlib calls ---
+circle(100, 100, 50)
+rect(0, 0, 200, 100)
+roundRect(10, 10, 180, 80, 10)
+polygon(100, 100, 50, 6)
+lerp(0, 100, 0.5)
+clamp(x, 0, 100)
+
+// --- Layers ---
+define PathLayer('outline') ${ stroke: #000; stroke-width: 2; fill: none; }
+define TextLayer('labels') ${ font-size: 14; fill: #333; }
+define GroupLayer('group1') ${}
+
+layer('outline').apply {
+  circle(100, 100, 50)
+}
+
+// --- Text ---
+text(50, 50)`Hello World`
+text(100, 100) {
+  tspan(0, 0)`First line`
+  tspan(0, 20)`Second line`
+}
+
+// --- Blocks ---
+let shape = @{
+  M 0 0
+  L 100 0
+  L 100 100
+  Z
+};
+
+// --- Method calls & property access ---
+let bb = shape.boundingBox();
+let len = shape.length;
+let pt = shape.get(0.5);
+let tx = pt.x;
+
+// --- Context ---
+M 50 50
+L 100 100
+let pos = ctx.position;
+let sx = ctx.start.x;
+
+// --- Font directive ---
+@font "Inter"
+
+// --- Range operator ---
+for (i in 0..count) {
+  log(i);
+}
+
+// --- calc() ---
+M calc(x + 10) calc(y * 2)

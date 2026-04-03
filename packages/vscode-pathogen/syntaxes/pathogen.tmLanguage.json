@@ -1,0 +1,250 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Pathogen",
+  "scopeName": "source.pathogen",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#font-directive" },
+    { "include": "#template-literal" },
+    { "include": "#string-single" },
+    { "include": "#string-double" },
+    { "include": "#style-block" },
+    { "include": "#path-block" },
+    { "include": "#text-block" },
+    { "include": "#layer-constructor" },
+    { "include": "#keyword" },
+    { "include": "#svg-path-command" },
+    { "include": "#boolean-null" },
+    { "include": "#color-literal" },
+    { "include": "#number-with-unit" },
+    { "include": "#number" },
+    { "include": "#calc-expression" },
+    { "include": "#function-call" },
+    { "include": "#method-call" },
+    { "include": "#range-operator" },
+    { "include": "#operator" },
+    { "include": "#identifier" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.double-slash.pathogen",
+      "match": "//.*$"
+    },
+
+    "font-directive": {
+      "match": "(@font)\\s+",
+      "captures": {
+        "1": { "name": "keyword.other.directive.pathogen" }
+      }
+    },
+
+    "keyword": {
+      "match": "\\b(let|for|in|if|else|fn|return|define|default|layer|apply|text|tspan|enum|log)\\b",
+      "name": "keyword.control.pathogen"
+    },
+
+    "boolean-null": {
+      "match": "\\b(true|false|null)\\b",
+      "name": "constant.language.pathogen"
+    },
+
+    "svg-path-command": {
+      "comment": "SVG path commands — only match when they appear at statement level (start of line or after whitespace, not after dot/letter)",
+      "match": "(?<=^|[\\s{;])([MLHVCSQTAZmlhvcsqtaz])(?=\\s|$|[0-9.(\\-+])",
+      "captures": {
+        "1": { "name": "keyword.operator.path-command.pathogen" }
+      }
+    },
+
+    "color-literal": {
+      "match": "#[0-9a-fA-F]{3,8}\\b",
+      "name": "constant.other.color.pathogen"
+    },
+
+    "number-with-unit": {
+      "match": "\\b([0-9]+\\.?[0-9]*|\\.\\d+)(deg|rad|pi|%)\\b",
+      "captures": {
+        "1": { "name": "constant.numeric.pathogen" },
+        "2": { "name": "keyword.other.unit.pathogen" }
+      }
+    },
+
+    "number": {
+      "match": "\\b[0-9]+\\.?[0-9]*\\b|\\.\\d+\\b",
+      "name": "constant.numeric.pathogen"
+    },
+
+    "string-single": {
+      "name": "string.quoted.single.pathogen",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.pathogen",
+          "match": "\\\\."
+        }
+      ]
+    },
+
+    "string-double": {
+      "name": "string.quoted.double.pathogen",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.pathogen",
+          "match": "\\\\."
+        }
+      ]
+    },
+
+    "template-literal": {
+      "name": "string.template.pathogen",
+      "begin": "`",
+      "end": "`",
+      "patterns": [
+        {
+          "name": "meta.template.expression.pathogen",
+          "begin": "\\$\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.template-expression.begin.pathogen" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.template-expression.end.pathogen" }
+          },
+          "patterns": [
+            { "include": "source.pathogen" }
+          ]
+        },
+        {
+          "name": "constant.character.escape.pathogen",
+          "match": "\\\\."
+        }
+      ]
+    },
+
+    "style-block": {
+      "comment": "Style block: ${ property: value; ... }",
+      "name": "meta.style-block.pathogen",
+      "begin": "(\\$)(\\{)",
+      "end": "\\}",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.style-block.pathogen" },
+        "2": { "name": "punctuation.definition.block.begin.pathogen" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.block.end.pathogen" }
+      },
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "comment": "Style property name",
+          "match": "([a-zA-Z][a-zA-Z0-9-]*)\\s*:",
+          "captures": {
+            "1": { "name": "support.type.property-name.pathogen" }
+          }
+        },
+        { "include": "#color-literal" },
+        { "include": "#number-with-unit" },
+        { "include": "#number" },
+        { "include": "#string-single" },
+        { "include": "#string-double" },
+        { "include": "#identifier" }
+      ]
+    },
+
+    "path-block": {
+      "comment": "Path block: @{ ... }",
+      "name": "meta.path-block.pathogen",
+      "begin": "(@)(\\{)",
+      "end": "\\}",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.path-block.pathogen" },
+        "2": { "name": "punctuation.definition.block.begin.pathogen" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.block.end.pathogen" }
+      },
+      "patterns": [
+        { "include": "source.pathogen" }
+      ]
+    },
+
+    "text-block": {
+      "comment": "Text block: &{ ... }",
+      "name": "meta.text-block.pathogen",
+      "begin": "(&)(\\{)",
+      "end": "\\}",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.text-block.pathogen" },
+        "2": { "name": "punctuation.definition.block.begin.pathogen" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.block.end.pathogen" }
+      },
+      "patterns": [
+        { "include": "source.pathogen" }
+      ]
+    },
+
+    "calc-expression": {
+      "comment": "calc(...) wrapper for path argument expressions",
+      "match": "\\b(calc)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "keyword.other.calc.pathogen" }
+      }
+    },
+
+    "layer-constructor": {
+      "comment": "Layer constructors: PathLayer(...), TextLayer(...), GroupLayer(...)",
+      "match": "\\b(PathLayer|TextLayer|GroupLayer)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "support.class.layer.pathogen" }
+      }
+    },
+
+    "function-call": {
+      "comment": "Function calls: name(...)",
+      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.pathogen" }
+      }
+    },
+
+    "method-call": {
+      "comment": "Method calls: .method(...)",
+      "match": "\\.([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.method.pathogen" }
+      }
+    },
+
+    "range-operator": {
+      "match": "\\.\\.",
+      "name": "keyword.operator.range.pathogen"
+    },
+
+    "operator": {
+      "match": "<<|&&|\\|\\||[!=]=|<=?|>=?|[-+*/%!]|=",
+      "name": "keyword.operator.pathogen"
+    },
+
+    "identifier": {
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
+      "name": "variable.other.pathogen"
+    },
+
+    "punctuation": {
+      "patterns": [
+        { "match": "[{}]", "name": "punctuation.definition.block.pathogen" },
+        { "match": "[\\[\\]]", "name": "punctuation.definition.bracket.pathogen" },
+        { "match": "[()]", "name": "punctuation.definition.paren.pathogen" },
+        { "match": ";", "name": "punctuation.terminator.pathogen" },
+        { "match": ",", "name": "punctuation.separator.pathogen" },
+        { "match": "\\.", "name": "punctuation.accessor.pathogen" }
+      ]
+    }
+  }
+}
