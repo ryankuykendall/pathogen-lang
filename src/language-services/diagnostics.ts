@@ -1,4 +1,3 @@
-import { parse } from '../parser';
 import { evaluate } from '../evaluator';
 import { parseWithRecovery } from './recovery';
 

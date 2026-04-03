@@ -120,7 +120,6 @@ import type {
   PathBlockExpression,
   PathCommand,
   Program,
-  SpreadElement,
   Statement,
   StyleBlockLiteral,
   TemplateLiteral,

@@ -262,6 +262,7 @@ export interface ArrayLiteral {
 
 // Object property: key: value
 export interface ObjectProperty {
+  type: 'ObjectProperty';
   key: string;
   value: Expression;
 }

@@ -29,6 +29,7 @@ import type {
   NumberLiteral,
   ObjectDestructuringPattern,
   ObjectLiteral,
+  ObjectProperty,
   PathArg,
   PathBlockExpression,
   PathCommand,
@@ -619,14 +620,14 @@ const arrayLiteral: Parsimmon.Parser<ArrayLiteral> = P.seq(
 );
 
 // Object literal: { key: value, ... }
-const objectProperty: Parsimmon.Parser<{ key: string; value: Expression }> = P.seqMap(
+const objectProperty: Parsimmon.Parser<ObjectProperty> = P.seqMap(
   P.alt(
     nonReservedIdentifier.map((id: Identifier) => id.name),
     stringLiteral.map((s: StringLiteral) => s.value),
   ),
   word(':'),
   P.lazy(() => expression),
-  (key, _colon, value) => ({ key, value }),
+  (key, _colon, value) => ({ type: 'ObjectProperty' as const, key, value }),
 );
 
 const objectLiteral: Parsimmon.Parser<ObjectLiteral> = P.seq(

@@ -8,8 +8,6 @@ import type {
   Statement,
   Expression,
   FunctionCall,
-  MethodCallExpression,
-  PathCommand,
   PathArg,
   SourceLocation,
 } from '../parser/ast';
@@ -315,10 +313,6 @@ function inferExprType(expr: Expression): string | null {
 }
 
 // --- Helpers ---
-
-function getExprLoc(expr: Expression): SourceLocation | undefined {
-  return (expr as { loc?: SourceLocation }).loc;
-}
 
 function isInRange(pos: Position, range: Range): boolean {
   if (pos.line < range.start.line || pos.line > range.end.line) return false;

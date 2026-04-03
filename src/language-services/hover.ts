@@ -1,17 +1,8 @@
-import { parse } from '../parser';
 import { analyzeScopes } from './scope-analysis';
 import { STDLIB_COMPLETIONS } from './completion-data';
 
 import type { TextDocument } from './document';
 import type { Position, Range } from './types';
-import type {
-  Program,
-  Statement,
-  Expression,
-  PathCommand,
-  PathArg,
-  SourceLocation,
-} from '../parser/ast';
 
 export interface HoverInfo {
   contents: string; // Markdown content

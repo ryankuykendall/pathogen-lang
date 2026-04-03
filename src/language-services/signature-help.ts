@@ -119,7 +119,6 @@ function findCallContext(source: string, offset: number): CallContext | null {
     } else if (ch === '(') {
       if (depth === 0) {
         // Found our opening paren — now find the function name
-        const nameEnd = i;
         let nameStart = i - 1;
         // Skip whitespace between name and paren
         while (nameStart >= 0 && /\s/.test(source[nameStart])) nameStart--;

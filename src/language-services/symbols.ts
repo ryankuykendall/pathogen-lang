@@ -178,7 +178,7 @@ function formatPattern(node: LetDeclaration): string {
  * Convert a 1-based SourceLocation to a 0-based Range.
  * Falls back to document start if loc is undefined.
  */
-function locToRange(loc: SourceLocation | undefined, document: TextDocument): Range {
+function locToRange(loc: SourceLocation | undefined, _document: TextDocument): Range {
   if (!loc) {
     return { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
   }

@@ -1,16 +1,7 @@
-import { parse } from '../parser';
 import { stdlib } from '../stdlib';
 import { analyzeScopes } from './scope-analysis';
 
 import type { TextDocument } from './document';
-import type {
-  Program,
-  Statement,
-  Expression,
-  PathCommand,
-  PathArg,
-  SourceLocation,
-} from '../parser/ast';
 
 // --- Token types (indices must match the legend sent during LSP initialization) ---
 
@@ -49,25 +40,12 @@ export interface SemanticToken {
 const STDLIB_NAMES = new Set(Object.keys(stdlib));
 const LAYER_TYPES = new Set(['PathLayer', 'TextLayer', 'GroupLayer']);
 const NAMESPACES = new Set(['ctx', 'Object', 'Color', 'PathBlock']);
-const KEYWORDS = new Set([
-  'let', 'for', 'in', 'if', 'else', 'fn', 'return', 'define', 'default',
-  'layer', 'apply', 'text', 'tspan', 'null', 'true', 'false', 'enum', 'calc', 'log',
-]);
-
 /**
  * Get semantic tokens for enhanced syntax highlighting.
  * Returns tokens sorted by position (line, then character).
  */
 export function getSemanticTokens(document: TextDocument): SemanticToken[] {
   const source = document.getText();
-
-  let ast: Program;
-  try {
-    ast = parse(source);
-  } catch {
-    return [];
-  }
-
   const tokens: SemanticToken[] = [];
   const scopeInfo = analyzeScopes(document);
 

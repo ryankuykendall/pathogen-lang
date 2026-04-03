@@ -102,7 +102,7 @@ export type { FormatOptions } from './evaluator/formatter';
 
 // Language Services — shared intelligence layer for VS Code extension and playground
 export { StringTextDocument, DiagnosticSeverity, getDiagnostics, getDocumentSymbols, SymbolKind, analyzeScopes, getCompletions, getHoverInfo, getDefinition, getReferences, getSignatureHelp, prepareRename, getRenameEdits, getSemanticTokens, encodeSemanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS, formatDocument, getCodeActions, getInlayHints, InlayHintKind } from './language-services';
-export type { TextDocument, Diagnostic, Position, Range, DocumentSymbol, ScopeInfo, Scope, Declaration, Reference, DeclarationKind, CompletionItem, HoverInfo, Location, SignatureHelp, SignatureInformation, ParameterInformation, TextEdit, PrepareRenameResult, SemanticToken, FormatEdit, FormatOptions, CodeAction, InlayHint } from './language-services';
+export type { TextDocument, Diagnostic, Position, Range, DocumentSymbol, ScopeInfo, Scope, Declaration, Reference, DeclarationKind, CompletionItem, HoverInfo, Location, SignatureHelp, SignatureInformation, ParameterInformation, TextEdit, PrepareRenameResult, SemanticToken, FormatEdit, FormatOptions as DocumentFormatOptions, CodeAction, InlayHint } from './language-services';
 
 /**
  * Options for compile and compileWithContext
