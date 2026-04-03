@@ -1,0 +1,416 @@
+// Pathogen Language Grammar — Lezer LR Parser
+// This grammar is the single source of truth for Pathogen syntax.
+// It powers both the compiler (via CST-to-AST conversion) and the
+// playground editor (via CodeMirror 6 native integration).
+
+@top Program { statement* }
+
+@precedence {
+  member @left,
+  call @left,
+  prefix,
+  times @left,
+  plus @left,
+  compare @left,
+  merge @left,
+  equality @left,
+  and @left,
+  or @left,
+  ternary @right
+}
+
+// ─── Statements ────────────────────────────────────────────────
+
+statement {
+  Comment |
+  FontDirective |
+  LayerDefinition |
+  LayerApplyBlock |
+  TextStatement |
+  EnumDefinition |
+  LetDeclaration |
+  ForLoop |
+  ForEachLoop |
+  IfStatement |
+  FunctionDefinition |
+  ReturnStatement |
+  IndexedAssignment |
+  MemberAssignment |
+  Assignment |
+  PathCommand |
+  ExpressionStatement
+}
+
+LetDeclaration {
+  kw<"let"> (ArrayDestructure | ObjectDestructure | VariableName) "=" expression ";"
+}
+
+Assignment {
+  VariableName !member "=" !equality expression ";"
+}
+
+IndexedAssignment {
+  expression !member "[" expression "]" "=" expression ";"
+}
+
+MemberAssignment {
+  expression !member "." PropertyName "=" expression ";"
+}
+
+ForLoop {
+  kw<"for"> "(" VariableName kw<"in"> expression RangeOp expression ")" Block
+}
+
+ForEachLoop {
+  kw<"for"> "(" (ForEachDestructure | VariableName) kw<"in"> expression ")" Block
+}
+
+ForEachDestructure {
+  "[" VariableName "," VariableName "]"
+}
+
+IfStatement {
+  kw<"if"> "(" expression ")" Block (kw<"else"> (IfStatement | Block))?
+}
+
+FunctionDefinition {
+  kw<"fn"> FunctionName "(" commaSep<ParameterName> ")" Block
+}
+
+ReturnStatement {
+  kw<"return"> expression ";"
+}
+
+EnumDefinition {
+  kw<"enum"> EnumName "{" commaSep<EnumMember> ","? "}"
+}
+
+EnumMember {
+  MemberName ("=" expression)?
+}
+
+LayerDefinition {
+  kw<"define"> kw<"default">? LayerType "(" expression ")" expression
+}
+
+LayerApplyBlock {
+  (kw<"layer"> "(" expression ")" | expression) "." kw<"apply"> Block
+}
+
+TextStatement {
+  kw<"text"> "(" expression "," expression ("," expression ("," expression)?)? ")"
+  (TemplateLiteral | TextBlock)
+}
+
+TextBlock {
+  "{" textBodyItem* "}"
+}
+
+textBodyItem {
+  TspanStatement |
+  TemplateLiteral |
+  TextForLoop |
+  TextForEachLoop |
+  TextIfStatement |
+  LetDeclaration
+}
+
+TspanStatement {
+  kw<"tspan"> "(" commaSep<expression>? ")" TemplateLiteral
+}
+
+TextForLoop {
+  kw<"for"> "(" VariableName kw<"in"> expression RangeOp expression ")" "{" textBodyItem* "}"
+}
+
+TextForEachLoop {
+  kw<"for"> "(" (ForEachDestructure | VariableName) kw<"in"> expression ")" "{" textBodyItem* "}"
+}
+
+TextIfStatement {
+  kw<"if"> "(" expression ")" "{" textBodyItem* "}" (kw<"else"> (TextIfStatement | "{" textBodyItem* "}"))?
+}
+
+FontDirective {
+  fontDirectiveKw String Number ";"?
+| fontDirectiveKw String ";"?
+}
+
+PathCommand {
+  pathCommandLetter pathArg+
+| pathCommandLetter
+}
+
+pathArg {
+  CalcExpression |
+  Identifier ArgList |
+  BooleanLiteral |
+  Number |
+  pathMemberExpression |
+  Identifier
+}
+
+pathMemberExpression {
+  Identifier (!member "." PropertyName)*
+  (!member "[" expression "]")*
+  (!call "." MethodName "(" commaSep<expression> ")")*
+}
+
+ExpressionStatement {
+  expression ";"?
+}
+
+Block {
+  "{" statement* "}"
+}
+
+// ─── Expressions ───────────────────────────────────────────────
+
+expression {
+  TernaryExpression |
+  BinaryExpression |
+  UnaryExpression |
+  postfixExpression
+}
+
+TernaryExpression {
+  expression !ternary "?" expression ":" expression
+}
+
+BinaryExpression {
+  expression !or "||" expression |
+  expression !and "&&" expression |
+  expression !equality ("==" | "!=") expression |
+  expression !compare ("<=" | ">=" | "<" | ">") expression |
+  expression !merge "<<" expression |
+  expression !plus ("+" | "-") expression |
+  expression !times ("*" | "/" | "%") expression
+}
+
+UnaryExpression {
+  !prefix ("-" | "!") expression
+}
+
+postfixExpression {
+  primaryExpression postfixOp*
+}
+
+postfixOp {
+  !call ArgList TrailingBlock? |
+  !member "." PropertyName |
+  !member "[" expression "]" |
+  !call "." MethodName ArgList TrailingBlock? |
+  !call "." MethodName TrailingBlock
+}
+
+ArgList {
+  "(" commaSep<expression> ")"
+}
+
+primaryExpression {
+  Number |
+  String |
+  TemplateLiteral |
+  BooleanLiteral |
+  NullLiteral |
+  ColorLiteral |
+  CSSColorLiteral |
+  ArrayLiteral |
+  ObjectLiteral |
+  StyleBlockLiteral |
+  PathBlockExpression |
+  TextBlockExpression |
+  CalcExpression |
+  LayerConstructor |
+  Identifier |
+  "(" expression ")"
+}
+
+TrailingBlock {
+  "{" "|" commaSep1<ParameterName> "|" statement* "}"
+}
+
+CalcExpression {
+  kw<"calc"> "(" expression ")"
+}
+
+ArrayLiteral {
+  "[" listOf<arrayElement>? "]"
+}
+
+arrayElement {
+  SpreadElement | expression
+}
+
+SpreadElement {
+  "..." expression
+}
+
+ObjectLiteral {
+  "{" listOf<objectElement>? "}"
+}
+
+objectElement {
+  SpreadElement | ObjectProperty
+}
+
+ObjectProperty {
+  PropertyName ":" expression
+}
+
+StyleBlockLiteral {
+  styleBlockOpen StyleContent "}"
+}
+
+PathBlockExpression {
+  pathBlockOpen statement* "}"
+}
+
+TextBlockExpression {
+  textBlockOpen statement* "}"
+}
+
+LayerConstructor {
+  LayerType "(" expression ")" StyleBlockLiteral?
+}
+
+// ─── Destructuring ─────────────────────────────────────────────
+
+ArrayDestructure {
+  "[" commaSep1<VariableName> ("," "..." VariableName)? "]"
+}
+
+ObjectDestructure {
+  "{" commaSep1<ObjectDestructureProp> ("," "..." VariableName)? "}"
+}
+
+ObjectDestructureProp {
+  PropertyName (":" VariableName)?
+}
+
+// ─── Template Literals ─────────────────────────────────────────
+
+TemplateLiteral {
+  templateStart (templateContent | TemplateInterpolation)* templateEnd
+}
+
+TemplateInterpolation {
+  templateInterpStart expression templateInterpEnd
+}
+
+// ─── Helpers ───────────────────────────────────────────────────
+
+commaSep<content> {
+  (content ("," content)*)?
+}
+
+commaSep1<content> {
+  content ("," content)*
+}
+
+// List with optional trailing comma
+listOf<content> {
+  content ("," content)* ","?
+}
+
+kw<term> { @specialize[@name={term}]<Identifier, term> }
+
+// ─── Tokens ────────────────────────────────────────────────────
+
+@skip { whitespace | Comment }
+
+@tokens {
+  whitespace { @whitespace+ }
+
+  Comment { "//" ![\n]* }
+
+  @precedence { Comment, "/" }
+
+  // Numbers: integer, float, with optional unit suffix
+  Number {
+    "-"? (@digit+ "." @digit* | "." @digit+ | @digit+) ("deg" | "rad" | "pi" | "%")?
+  }
+
+  // Strings
+  String {
+    "\"" (![\\\"\n] | "\\" _)* "\"" |
+    "'" (![\\\'\n] | "\\" _)* "'"
+  }
+
+  // Color literals: #fff, #ff0000, #cc000080
+  ColorLiteral { "#" $[0-9a-fA-F]+ }
+
+  // CSS color functions: rgb(...), oklch(...), etc.
+  CSSColorLiteral {
+    ("rgb" | "rgba" | "hsl" | "hsla" | "hwb" | "lab" | "lch" | "oklab" | "oklch")
+    "(" (![\)]* ) ")"
+  }
+
+  // Boolean literals
+  BooleanLiteral { "true" | "false" }
+
+  NullLiteral { "null" }
+
+  // Template literal tokens
+  templateStart { "`" }
+  templateEnd { "`" }
+  templateContent { (![\`\\$] | "\\" _ | "$" ![\{])+ }
+  templateInterpStart { "$" "{" }
+  templateInterpEnd { "}" }
+
+  // Identifiers
+  Identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
+
+  // SVG path command letters — single uppercase/lowercase letter
+  // This must come after Identifier in precedence to be specialized
+  pathCommandLetter {
+    $[MLHVCSQTAZmlhvcsqtaz]
+  }
+
+  // Layer type keywords
+  LayerType { "PathLayer" | "TextLayer" | "GroupLayer" }
+
+  // Range operator
+  RangeOp { ".." }
+
+  // Block delimiters for special blocks
+  styleBlockOpen { "$" "{" }
+  pathBlockOpen { "@" "{" }
+  textBlockOpen { "&" "{" }
+
+  // Font directive
+  fontDirectiveKw { "@" "font" }
+
+  // Operators (multi-char must precede single-char in precedence)
+  @precedence { "...", RangeOp, "." }
+  @precedence { "||" }
+  @precedence { "&&" }
+  @precedence { "==", "!=" }
+  @precedence { "<=", ">=", "<<" }
+  @precedence { fontDirectiveKw, pathBlockOpen }
+  @precedence { styleBlockOpen, templateInterpStart }
+  @precedence { Number, "-" }
+  @precedence { BooleanLiteral, NullLiteral, LayerType, CSSColorLiteral, Identifier, pathCommandLetter }
+  @precedence { templateStart, templateContent, templateEnd }
+
+  // Style block content — raw text capture until closing brace
+  StyleContent { ![}]* }
+
+  "(" ")" "[" "]" "{" "}" ";" "," ":" "?" "."
+  "+" "-" "*" "/" "%" "!" "=" "<" ">" "|"
+  "||" "&&" "==" "!=" "<=" ">=" "<<" "..."
+}
+
+// Named tokens for AST builder to distinguish usage context
+VariableName { Identifier }
+FunctionName { Identifier }
+MethodName { Identifier }
+ParameterName { Identifier }
+PropertyName { Identifier | String }
+EnumName { Identifier }
+MemberName { Identifier }
+
+// Highlighting tags for CodeMirror syntax highlighting
+@detectDelim
+
+@external propSource pathogenHighlighting from "./highlight"
