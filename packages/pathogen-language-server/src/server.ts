@@ -22,11 +22,19 @@ import {
   getSignatureHelp,
   prepareRename,
   getRenameEdits,
+  getSemanticTokens,
+  encodeSemanticTokens,
+  TOKEN_TYPES,
+  TOKEN_MODIFIERS,
+  formatDocument,
+  getCodeActions,
+  getInlayHints,
+  InlayHintKind,
   SymbolKind,
   StringTextDocument,
   DiagnosticSeverity,
 } from 'svg-path-extended';
-import type { Diagnostic, DocumentSymbol, CompletionItem, HoverInfo, Location, SignatureHelp, TextEdit } from 'svg-path-extended';
+import type { Diagnostic, DocumentSymbol, CompletionItem, HoverInfo, Location, SignatureHelp, TextEdit, SemanticToken } from 'svg-path-extended';
 
 // Create the LSP connection (stdio transport)
 const connection = createConnection(ProposedFeatures.all);
@@ -51,6 +59,16 @@ connection.onInitialize((_params: InitializeParams): InitializeResult => {
       renameProvider: {
         prepareProvider: true,
       },
+      semanticTokensProvider: {
+        full: true,
+        legend: {
+          tokenTypes: [...TOKEN_TYPES],
+          tokenModifiers: [...TOKEN_MODIFIERS],
+        },
+      },
+      documentFormattingProvider: true,
+      codeActionProvider: true,
+      inlayHintProvider: true,
     },
   };
 });
@@ -185,6 +203,81 @@ connection.onRenameRequest((params) => {
       })),
     },
   };
+});
+
+// Semantic tokens
+connection.languages.semanticTokens.on((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return { data: [] };
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const tokens = getSemanticTokens(doc);
+  const data = encodeSemanticTokens(tokens);
+  return { data };
+});
+
+// Document formatting
+connection.onDocumentFormatting((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const edits = formatDocument(doc);
+  return edits.map((edit) => ({
+    range: {
+      start: { line: edit.range.start.line, character: edit.range.start.character },
+      end: { line: edit.range.end.line, character: edit.range.end.character },
+    },
+    newText: edit.newText,
+  }));
+});
+
+// Code actions
+connection.onCodeAction((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  // Map LSP diagnostics back to our format
+  const diagnostics = (params.context.diagnostics || []).map((d) => ({
+    range: d.range,
+    severity: d.severity as number ?? 1,
+    message: d.message,
+    source: d.source ?? 'pathogen',
+  }));
+  const actions = getCodeActions(doc, params.range, diagnostics);
+  return actions.map((action) => ({
+    title: action.title,
+    kind: 'quickfix' as const,
+    diagnostics: params.context.diagnostics,
+    edit: {
+      changes: {
+        [params.textDocument.uri]: action.edit.changes.map((c) => ({
+          range: {
+            start: { line: c.range.start.line, character: c.range.start.character },
+            end: { line: c.range.end.line, character: c.range.end.character },
+          },
+          newText: c.newText,
+        })),
+      },
+    },
+  }));
+});
+
+// Inlay hints
+connection.languages.inlayHint.on((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const hints = getInlayHints(doc, params.range);
+  return hints.map((hint) => ({
+    position: { line: hint.position.line, character: hint.position.character },
+    label: hint.label,
+    kind: hint.kind === InlayHintKind.Parameter ? 1 : 2, // LSP InlayHintKind
+    paddingLeft: hint.paddingLeft,
+    paddingRight: hint.paddingRight,
+  }));
 });
 
 // Re-validate when a document changes

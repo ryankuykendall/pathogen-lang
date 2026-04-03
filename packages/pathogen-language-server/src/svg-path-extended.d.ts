@@ -120,4 +120,48 @@ declare module 'svg-path-extended' {
 
   export function prepareRename(document: TextDocument, position: Position): PrepareRenameResult | null;
   export function getRenameEdits(document: TextDocument, position: Position, newName: string): TextEdit[];
+
+  export interface SemanticToken {
+    line: number;
+    character: number;
+    length: number;
+    type: number;
+    modifiers: number;
+  }
+
+  export const TOKEN_TYPES: readonly string[];
+  export const TOKEN_MODIFIERS: readonly string[];
+  export function getSemanticTokens(document: TextDocument): SemanticToken[];
+  export function encodeSemanticTokens(tokens: SemanticToken[]): number[];
+
+  export interface FormatEdit {
+    range: Range;
+    newText: string;
+  }
+
+  export function formatDocument(document: TextDocument, options?: { indent?: string }): FormatEdit[];
+
+  export interface CodeAction {
+    title: string;
+    kind: 'quickfix';
+    diagnostics: Diagnostic[];
+    edit: { changes: TextEdit[] };
+  }
+
+  export function getCodeActions(document: TextDocument, range: Range, diagnostics: Diagnostic[]): CodeAction[];
+
+  export enum InlayHintKind {
+    Parameter = 1,
+    Type = 2,
+  }
+
+  export interface InlayHint {
+    position: Position;
+    label: string;
+    kind: InlayHintKind;
+    paddingLeft?: boolean;
+    paddingRight?: boolean;
+  }
+
+  export function getInlayHints(document: TextDocument, range: Range): InlayHint[];
 }
