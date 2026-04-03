@@ -138,29 +138,29 @@ PathCommand {
 }
 
 pathCmd[@name=PathCommandLetter] {
-  @specialize[@name=PathCommandLetter]<Identifier, "M"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "m"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "L"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "l"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "H"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "h"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "V"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "v"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "C"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "c"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "S"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "s"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "Q"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "q"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "T"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "t"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "A"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "a">
+  @extend[@name=PathCommandLetter]<Identifier, "M"> |
+  @extend[@name=PathCommandLetter]<Identifier, "m"> |
+  @extend[@name=PathCommandLetter]<Identifier, "L"> |
+  @extend[@name=PathCommandLetter]<Identifier, "l"> |
+  @extend[@name=PathCommandLetter]<Identifier, "H"> |
+  @extend[@name=PathCommandLetter]<Identifier, "h"> |
+  @extend[@name=PathCommandLetter]<Identifier, "V"> |
+  @extend[@name=PathCommandLetter]<Identifier, "v"> |
+  @extend[@name=PathCommandLetter]<Identifier, "C"> |
+  @extend[@name=PathCommandLetter]<Identifier, "c"> |
+  @extend[@name=PathCommandLetter]<Identifier, "S"> |
+  @extend[@name=PathCommandLetter]<Identifier, "s"> |
+  @extend[@name=PathCommandLetter]<Identifier, "Q"> |
+  @extend[@name=PathCommandLetter]<Identifier, "q"> |
+  @extend[@name=PathCommandLetter]<Identifier, "T"> |
+  @extend[@name=PathCommandLetter]<Identifier, "t"> |
+  @extend[@name=PathCommandLetter]<Identifier, "A"> |
+  @extend[@name=PathCommandLetter]<Identifier, "a">
 }
 
 pathCmdZ[@name=PathCommandLetter] {
-  @specialize[@name=PathCommandLetter]<Identifier, "Z"> |
-  @specialize[@name=PathCommandLetter]<Identifier, "z">
+  @extend[@name=PathCommandLetter]<Identifier, "Z"> |
+  @extend[@name=PathCommandLetter]<Identifier, "z">
 }
 
 // PathArgs is a single opaque token consumed by an external tokenizer.
