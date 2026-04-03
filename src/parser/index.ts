@@ -1458,6 +1458,29 @@ function detectMissingSemicolon(
   };
 }
 
+// --- Lezer parser (opt-in) ---
+// The Lezer parser is available for editor integration (syntax highlighting,
+// CodeMirror) via parseLezer(). The main parse() still uses Parsimmon for
+// full compatibility until the Lezer grammar covers all edge cases.
+
+import { parser as lezerParser } from './pathogen.generated';
+import { buildAST, buildASTWithComments } from './ast-builder';
+
+/**
+ * Parse using the Lezer parser. Returns the Lezer tree + AST.
+ * Used by the playground for syntax highlighting (sub-phase D).
+ * Not yet a drop-in replacement for parse() — the Lezer grammar doesn't
+ * cover all edge cases of the Parsimmon parser.
+ */
+export function parseLezer(input: string): { tree: import('@lezer/common').Tree; ast: Program } {
+  const tree = lezerParser.parse(input);
+  const ast = buildAST(tree, input);
+  return { tree, ast };
+}
+
+/** Export the Lezer parser for direct CodeMirror integration. */
+export { lezerParser };
+
 export function parse(input: string): Program {
   const result = program.parse(input);
   if (result.status) {
