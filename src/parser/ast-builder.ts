@@ -69,8 +69,10 @@ export function buildAST(tree: Tree, source: string): Program {
   if (!cursor.firstChild()) return { type: 'Program', body };
 
   do {
+    // Skip comments in the main AST (Parsimmon's parse() also strips them)
+    if (cursor.name === 'Comment' || cursor.name === 'LineComment') continue;
     const stmt = buildStatement(cursor, source);
-    if (stmt) body.push(stmt);
+    if (stmt && stmt.type !== 'Comment') body.push(stmt);
   } while (cursor.nextSibling());
 
   return { type: 'Program', body };
@@ -805,39 +807,104 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
   let expr = buildExpression(cursor, source);
 
   // Walk subsequent siblings for postfix ops
+  // Use a look-ahead approach: peek at next sibling without consuming
   while (cursor.nextSibling()) {
     const sibName = cursor.name;
-    if (sibName === '.') {
-      if (cursor.nextSibling()) {
-        const propName = text(cursor, source);
-        // Check if followed by ArgList (method call)
-        if (cursor.nextSibling() && cursor.name === 'ArgList') {
-          const args = buildArgList(cursor, source);
-          expr = { type: 'MethodCallExpression', object: expr, method: propName, args } as MethodCallExpression;
-        } else {
-          expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
-          continue; // Already moved to next sibling
-        }
-      }
-    } else if (sibName === 'ArgList') {
+
+    if (sibName === 'ArgList') {
+      // Function call: expr(args) or method call continuation
       const args = buildArgList(cursor, source);
+      // Check for TrailingBlock after ArgList
+      let block: { params: string[]; body: Statement[] } | undefined;
+      if (cursor.nextSibling() && cursor.name === 'TrailingBlock') {
+        block = buildTrailingBlock(cursor, source);
+      } else if (cursor.name !== 'TrailingBlock') {
+        // We advanced past ArgList to a non-TrailingBlock — process this sibling in next iteration
+        if (expr.type === 'Identifier') {
+          expr = { type: 'FunctionCall', name: expr.name, args, block, loc: (expr as Identifier).loc } as FunctionCall;
+        }
+        continue; // Don't call nextSibling again — already on the next one
+      }
       if (expr.type === 'Identifier') {
-        expr = { type: 'FunctionCall', name: expr.name, args, loc: (expr as Identifier).loc } as FunctionCall;
+        expr = { type: 'FunctionCall', name: expr.name, args, block, loc: (expr as Identifier).loc } as FunctionCall;
+      }
+    } else if (sibName === '.') {
+      // Member access or method call: expr.prop or expr.method(args)
+      if (!cursor.nextSibling()) break;
+      const propName = text(cursor, source);
+
+      // Peek ahead for ArgList or TrailingBlock
+      if (!cursor.nextSibling()) {
+        // Last sibling — simple member access
+        expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+        break;
+      }
+
+      if (cursor.name === 'ArgList') {
+        const args = buildArgList(cursor, source);
+        // Check for TrailingBlock after ArgList
+        let block: { params: string[]; body: Statement[] } | undefined;
+        if (cursor.nextSibling() && cursor.name === 'TrailingBlock') {
+          block = buildTrailingBlock(cursor, source);
+        } else if (cursor.name !== 'TrailingBlock') {
+          expr = { type: 'MethodCallExpression', object: expr, method: propName, args, block } as MethodCallExpression;
+          continue; // Already on next sibling
+        }
+        expr = { type: 'MethodCallExpression', object: expr, method: propName, args, block } as MethodCallExpression;
+      } else if (cursor.name === 'TrailingBlock') {
+        // Method with trailing block, no parens: .method {|x| ...}
+        const block = buildTrailingBlock(cursor, source);
+        expr = { type: 'MethodCallExpression', object: expr, method: propName, args: [], block } as MethodCallExpression;
+      } else {
+        // Simple member access — current cursor is the next token after .prop
+        expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+        continue; // Process current sibling in next iteration
       }
     } else if (sibName === '[') {
-      if (cursor.nextSibling()) {
-        const index = buildExpression(cursor, source);
-        cursor.nextSibling(); // skip ']'
-        expr = { type: 'IndexExpression', object: expr, index } as IndexExpression;
+      // Index access: expr[index]
+      if (!cursor.nextSibling()) break;
+      const index = buildExpression(cursor, source);
+      cursor.nextSibling(); // skip ']'
+      expr = { type: 'IndexExpression', object: expr, index } as IndexExpression;
+    } else if (sibName === 'TrailingBlock') {
+      // Trailing block directly after expression (rare but possible)
+      const block = buildTrailingBlock(cursor, source);
+      if (expr.type === 'FunctionCall') {
+        (expr as FunctionCall).block = block;
       }
-    } else if (sibName === ';' || sibName === '⚠' || sibName === '=' || sibName === ',') {
+    } else if (sibName === ';' || sibName === '⚠' || sibName === '=' || sibName === ',' || sibName === ')' || sibName === ']') {
       break;
     } else {
-      break; // Unknown sibling — stop
+      break; // Unknown sibling — stop postfix chain
     }
   }
 
   return expr;
+}
+
+function buildTrailingBlock(cursor: TreeCursor, source: string): { params: string[]; body: Statement[] } {
+  const params: string[] = [];
+  const body: Statement[] = [];
+
+  cursor.firstChild(); // Enter TrailingBlock
+  let inParams = false;
+  let passedParams = false;
+  do {
+    if (cursor.name === '|' && !inParams) {
+      inParams = true;
+    } else if (cursor.name === '|' && inParams) {
+      inParams = false;
+      passedParams = true;
+    } else if (inParams && (cursor.name === 'VariableName' || cursor.name === 'Identifier')) {
+      params.push(text(cursor, source));
+    } else if (passedParams && cursor.name !== '{' && cursor.name !== '}') {
+      const stmt = buildStatement(cursor, source);
+      if (stmt) body.push(stmt);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  return { params, body };
 }
 
 function buildPostfixExpression(cursor: TreeCursor, source: string): Expression {
