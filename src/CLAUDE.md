@@ -7,8 +7,31 @@ TypeScript compiler that parses extended SVG path syntax and evaluates it to SVG
 ```
 src/
 ├── parser/
-│   ├── ast.ts         # AST node types (statements, expressions, layers, text)
-│   └── index.ts       # Parsimmon-based parser
+│   ├── ast.ts                    # AST node types (statements, expressions, layers, text)
+│   ├── index.ts                  # Parser exports (Parsimmon for compilation, Lezer for editor)
+│   ├── pathogen.grammar          # Lezer grammar — single source of truth for syntax
+│   ├── pathogen.generated.ts     # Generated Lezer LR parser (from grammar)
+│   ├── pathogen.generated.terms.ts # Generated Lezer term constants
+│   ├── path-args-tokenizer.ts    # External tokenizer for greedy path arg consumption
+│   ├── highlight.ts              # CodeMirror syntax highlight tags for Lezer tree
+│   └── ast-builder.ts            # CST-to-AST converter (Lezer tree → AST nodes)
+├── language-services/
+│   ├── index.ts                  # Re-exports all language-services
+│   ├── types.ts                  # Position, Range, Diagnostic types (LSP-compatible)
+│   ├── document.ts               # TextDocument abstraction
+│   ├── diagnostics.ts            # getDiagnostics (Lezer error recovery + Parsimmon eval)
+│   ├── symbols.ts                # getDocumentSymbols (outline/breadcrumbs)
+│   ├── scope-analysis.ts         # analyzeScopes (scope tree, declarations, references)
+│   ├── completion.ts             # getCompletions (keywords, stdlib, user defs, members)
+│   ├── completion-data.ts        # Static completion entries (stdlib, keywords, properties)
+│   ├── hover.ts                  # getHoverInfo (keywords, path commands, stdlib, symbols)
+│   ├── navigation.ts             # getDefinition, getReferences
+│   ├── signature-help.ts         # getSignatureHelp (active parameter in function calls)
+│   ├── rename.ts                 # prepareRename, getRenameEdits
+│   ├── semantic-tokens.ts        # getSemanticTokens (scope-aware highlighting)
+│   ├── formatter.ts              # formatDocument (AST-based code formatting)
+│   ├── code-actions.ts           # getCodeActions (quick fixes for diagnostics)
+│   └── inlay-hints.ts            # getInlayHints (parameter names, type hints)
 ├── evaluator/
 │   ├── index.ts       # Main evaluator → SVG path strings, layers, text
 │   ├── annotated.ts   # Annotated output with comments & loop annotations
@@ -28,18 +51,33 @@ src/
 
 ```
 tests/
-├── CLAUDE.md          # Testing playbook and conventions
-├── parser.test.ts     # Parser unit tests
-├── evaluator.test.ts  # Evaluator/integration tests
-├── layers.test.ts     # Multi-layer system tests
-├── annotated.test.ts  # Annotated output tests
-├── context.test.ts    # Path context tracking tests
-├── errors.test.ts     # Error handling tests
-├── cli.test.ts        # CLI integration tests
-├── helpers.ts         # Shared test utilities (compilePath, parseSVGPath, expectSVGPathCommandSequence)
-├── helpers.test.ts    # Tests for the test utilities
-├── setup.ts           # Custom Vitest matchers (toMatchSVGPath, toContainSVGCommands, etc.)
-└── vitest.d.ts        # TypeScript declarations for custom matchers
+├── CLAUDE.md                       # Testing playbook and conventions
+├── parser.test.ts                  # Parser unit tests
+├── evaluator.test.ts               # Evaluator/integration tests
+├── layers.test.ts                  # Multi-layer system tests
+├── annotated.test.ts               # Annotated output tests
+├── context.test.ts                 # Path context tracking tests
+├── errors.test.ts                  # Error handling tests
+├── cli.test.ts                     # CLI integration tests
+├── helpers.ts                      # Shared test utilities
+├── helpers.test.ts                 # Tests for test utilities
+├── setup.ts                        # Custom Vitest matchers
+├── vitest.d.ts                     # TypeScript declarations for custom matchers
+└── language-services/              # Language intelligence tests
+    ├── document.test.ts            # TextDocument abstraction
+    ├── diagnostics.test.ts         # Diagnostic engine (Lezer + Parsimmon)
+    ├── symbols.test.ts             # Document symbols
+    ├── scope-analysis.test.ts      # Scope analysis
+    ├── completion.test.ts          # Completion provider
+    ├── hover.test.ts               # Hover provider
+    ├── navigation.test.ts          # Go-to-def, find references
+    ├── signature-help.test.ts      # Signature help
+    ├── rename.test.ts              # Rename symbol
+    ├── semantic-tokens.test.ts     # Semantic tokens
+    ├── formatter.test.ts           # Code formatter
+    ├── code-actions.test.ts        # Quick fixes
+    ├── inlay-hints.test.ts         # Inlay hints
+    └── ast-builder.test.ts         # Lezer CST-to-AST converter
 ```
 
 ## Docs
@@ -58,9 +96,21 @@ docs/
 
 ## Architecture
 
-### Parser
+### Parser (dual: Parsimmon + Lezer)
 
-Parsimmon parser combinators. Operator precedence via chained expression parsers (or → and → equality → comparison → additive → multiplicative → unary → primary). Produces AST nodes defined in `ast.ts`, including layer definitions, text/tspan statements, template literals, and style properties.
+**Parsimmon** (~1525 lines) — Primary parser for compilation. Parser combinators with operator precedence chain. Produces AST nodes defined in `ast.ts`. Used by `compile()`, `compileAnnotated()`, and the evaluator.
+
+**Lezer** (~213 line grammar + external tokenizer) — Used for editor integration. Powers the playground's syntax highlighting via CodeMirror 6 native integration. Also used for multi-error diagnostics (Lezer's built-in error recovery replaces the manual recovery wrapper). The Lezer grammar is compiled to an LR parser table by `@lezer/generator`.
+
+**CST-to-AST converter** (`ast-builder.ts`) — Bridges Lezer's concrete syntax tree to the same AST types Parsimmon produces. Not yet at full parity (handles core constructs but not all edge cases).
+
+**Migration status**: Parsimmon handles compilation; Lezer handles editor highlighting and error recovery. Full Lezer takeover is deferred until the grammar covers all edge cases (tracked in `project-docs/developer-experience/lezer-migration-decision.md`).
+
+### Language Services
+
+Shared intelligence layer (`src/language-services/`) consumed by both the VS Code extension (via LSP) and the playground (via direct import). Zero Node.js or VS Code dependencies — ships in the main npm bundle.
+
+Provides: diagnostics, document symbols, scope analysis, completion, hover, go-to-definition, find-references, signature help, rename, semantic tokens, formatting, code actions, inlay hints.
 
 ### Evaluator (4-file split)
 
@@ -95,7 +145,7 @@ Context-aware functions receive the current path context and can read pen positi
 
 | Task                         | Files                                                              |
 | ---------------------------- | ------------------------------------------------------------------ |
-| Add new syntax               | `parser/index.ts`, `parser/ast.ts`                                 |
+| Add new syntax               | `parser/index.ts`, `parser/ast.ts`, `parser/pathogen.grammar`      |
 | Add runtime behavior         | `evaluator/index.ts`                                               |
 | Add annotated output support | `evaluator/annotated.ts`                                           |
 | Add context tracking         | `evaluator/context.ts`                                             |
@@ -104,6 +154,8 @@ Context-aware functions receive the current path context and can read pen positi
 | Add context-aware stdlib fn  | `stdlib/path.ts`, `stdlib/index.ts` (add to contextAwareFunctions) |
 | Add CLI option               | `cli.ts`                                                           |
 | Add library export           | `index.ts`                                                         |
+| Add language service feature | `language-services/*.ts`, `language-services/index.ts`              |
+| Update editor highlighting   | `parser/pathogen.grammar`, `parser/highlight.ts`                   |
 
 ## CLI Options
 
@@ -130,9 +182,31 @@ svg-path-extended --src=<file>     Compile a file (explicit flag)
 ## Library Exports
 
 ```ts
+// Compilation
 compile(source, options?)          // → CompileResult { layers, logs, calledFunctions }
 compileAnnotated(source)           // → formatted annotated string
 compileWithContext(source, opts?)   // → { path, layers, context, logs }
+
+// Parsing
+parse(source)                      // → Program AST (Parsimmon)
+parseLezer(source)                 // → { tree, ast } (Lezer parse tree + AST)
+lezerParser                        // Raw Lezer LR parser for CodeMirror integration
+
+// Language Services (shared by VS Code extension and playground)
+getDiagnostics(document)           // → Diagnostic[] (Lezer error recovery + Parsimmon)
+getCompletions(document, position) // → CompletionItem[] (keywords, stdlib, user defs, members)
+getHoverInfo(document, position)   // → HoverInfo | null
+getDefinition(document, position)  // → Location | null
+getReferences(document, position)  // → Location[]
+getDocumentSymbols(document)       // → DocumentSymbol[]
+getSignatureHelp(document, pos)    // → SignatureHelp | null
+prepareRename(document, position)  // → PrepareRenameResult | null
+getRenameEdits(document, pos, name) // → TextEdit[]
+getSemanticTokens(document)        // → SemanticToken[]
+formatDocument(document, options?)  // → FormatEdit[]
+getCodeActions(document, range, diags) // → CodeAction[]
+getInlayHints(document, range)     // → InlayHint[]
+analyzeScopes(document)            // → ScopeInfo { root, declarations, references }
 ```
 
 `CompileResult.layers` is an array of `LayerOutput` objects, each containing either path data or text elements, plus per-layer style overrides.
