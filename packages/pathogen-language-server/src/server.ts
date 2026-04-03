@@ -8,16 +8,25 @@ import {
   Diagnostic as LSPDiagnostic,
   DiagnosticSeverity as LSPDiagnosticSeverity,
   SymbolKind as LSPSymbolKind,
+  CompletionItemKind,
+  InsertTextFormat,
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
   getDiagnostics,
   getDocumentSymbols,
+  getCompletions,
+  getHoverInfo,
+  getDefinition,
+  getReferences,
+  getSignatureHelp,
+  prepareRename,
+  getRenameEdits,
   SymbolKind,
   StringTextDocument,
   DiagnosticSeverity,
 } from 'svg-path-extended';
-import type { Diagnostic, DocumentSymbol } from 'svg-path-extended';
+import type { Diagnostic, DocumentSymbol, CompletionItem, HoverInfo, Location, SignatureHelp, TextEdit } from 'svg-path-extended';
 
 // Create the LSP connection (stdio transport)
 const connection = createConnection(ProposedFeatures.all);
@@ -30,6 +39,18 @@ connection.onInitialize((_params: InitializeParams): InitializeResult => {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
       documentSymbolProvider: true,
+      completionProvider: {
+        triggerCharacters: ['.', '$'],
+      },
+      hoverProvider: true,
+      definitionProvider: true,
+      referencesProvider: true,
+      signatureHelpProvider: {
+        triggerCharacters: ['(', ','],
+      },
+      renameProvider: {
+        prepareProvider: true,
+      },
     },
   };
 });
@@ -42,6 +63,128 @@ connection.onDocumentSymbol((params) => {
   const doc = new StringTextDocument(textDocument.getText());
   const symbols = getDocumentSymbols(doc);
   return symbols.map(toLSPDocumentSymbol);
+});
+
+// Completion
+connection.onCompletion((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const items = getCompletions(doc, params.position);
+  return items.map(toLSPCompletionItem);
+});
+
+// Hover
+connection.onHover((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return null;
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const info = getHoverInfo(doc, params.position);
+  if (!info) return null;
+
+  return {
+    contents: { kind: 'markdown' as const, value: info.contents },
+    range: info.range ? {
+      start: { line: info.range.start.line, character: info.range.start.character },
+      end: { line: info.range.end.line, character: info.range.end.character },
+    } : undefined,
+  };
+});
+
+// Go to definition
+connection.onDefinition((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return null;
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const location = getDefinition(doc, params.position);
+  if (!location) return null;
+
+  return {
+    uri: params.textDocument.uri,
+    range: {
+      start: { line: location.range.start.line, character: location.range.start.character },
+      end: { line: location.range.end.line, character: location.range.end.character },
+    },
+  };
+});
+
+// Find references
+connection.onReferences((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const locations = getReferences(doc, params.position, params.context.includeDeclaration);
+  return locations.map((loc) => ({
+    uri: params.textDocument.uri,
+    range: {
+      start: { line: loc.range.start.line, character: loc.range.start.character },
+      end: { line: loc.range.end.line, character: loc.range.end.character },
+    },
+  }));
+});
+
+// Signature help
+connection.onSignatureHelp((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return null;
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const help = getSignatureHelp(doc, params.position);
+  if (!help) return null;
+
+  return {
+    signatures: help.signatures.map((sig) => ({
+      label: sig.label,
+      documentation: sig.documentation,
+      parameters: sig.parameters.map((p) => ({ label: p.label })),
+    })),
+    activeSignature: help.activeSignature,
+    activeParameter: help.activeParameter,
+  };
+});
+
+// Prepare rename (validate position)
+connection.onPrepareRename((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return null;
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const result = prepareRename(doc, params.position);
+  if (!result) return null;
+
+  return {
+    range: {
+      start: { line: result.range.start.line, character: result.range.start.character },
+      end: { line: result.range.end.line, character: result.range.end.character },
+    },
+    placeholder: result.placeholder,
+  };
+});
+
+// Rename
+connection.onRenameRequest((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return null;
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const edits = getRenameEdits(doc, params.position, params.newName);
+  if (edits.length === 0) return null;
+
+  return {
+    changes: {
+      [params.textDocument.uri]: edits.map((edit) => ({
+        range: {
+          start: { line: edit.range.start.line, character: edit.range.start.character },
+          end: { line: edit.range.end.line, character: edit.range.end.character },
+        },
+        newText: edit.newText,
+      })),
+    },
+  };
 });
 
 // Re-validate when a document changes
@@ -141,6 +284,32 @@ function mapSymbolKind(kind: SymbolKind): LSPSymbolKind {
       return LSPSymbolKind.Key;
     default:
       return LSPSymbolKind.Variable;
+  }
+}
+
+/**
+ * Map a language-services CompletionItem to an LSP CompletionItem.
+ */
+function toLSPCompletionItem(item: CompletionItem) {
+  return {
+    label: item.label,
+    kind: mapCompletionKind(item.kind),
+    detail: item.detail,
+    sortText: item.sortText,
+    insertText: item.insertText ?? item.label,
+    insertTextFormat: item.isSnippet ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
+  };
+}
+
+function mapCompletionKind(kind: string): CompletionItemKind {
+  switch (kind) {
+    case 'function': return CompletionItemKind.Function;
+    case 'variable': return CompletionItemKind.Variable;
+    case 'keyword': return CompletionItemKind.Keyword;
+    case 'property': return CompletionItemKind.Property;
+    case 'constant': return CompletionItemKind.Constant;
+    case 'snippet': return CompletionItemKind.Snippet;
+    default: return CompletionItemKind.Text;
   }
 }
 

@@ -45,7 +45,48 @@
         "language": "pathogen",
         "path": "./snippets/pathogen.code-snippets"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "pathogen.openPreview",
+        "title": "Pathogen: Open Preview to the Side",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == pathogen",
+          "command": "pathogen.openPreview",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Pathogen",
+      "properties": {
+        "pathogen.preview.viewBox": {
+          "type": "string",
+          "default": "0 0 200 200",
+          "description": "SVG viewBox for the preview panel"
+        },
+        "pathogen.preview.stroke": {
+          "type": "string",
+          "default": "#000",
+          "description": "Default stroke color for preview"
+        },
+        "pathogen.preview.fill": {
+          "type": "string",
+          "default": "none",
+          "description": "Default fill color for preview"
+        },
+        "pathogen.preview.strokeWidth": {
+          "type": "string",
+          "default": "2",
+          "description": "Default stroke width for preview"
+        }
+      }
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

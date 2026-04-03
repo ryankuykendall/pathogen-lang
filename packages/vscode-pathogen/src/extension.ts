@@ -1,15 +1,16 @@
 import * as path from 'path';
-import { ExtensionContext } from 'vscode';
+import * as vscode from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
   TransportKind,
 } from 'vscode-languageclient/node';
+import { openPreview } from './preview';
 
 let client: LanguageClient;
 
-export function activate(context: ExtensionContext): void {
+export function activate(context: vscode.ExtensionContext): void {
   // Path to the language server module
   const serverModule = context.asAbsolutePath(
     path.join('..', 'pathogen-language-server', 'out', 'server.js'),
@@ -34,6 +35,13 @@ export function activate(context: ExtensionContext): void {
   );
 
   client.start();
+
+  // Register preview command
+  const previewCommand = vscode.commands.registerCommand(
+    'pathogen.openPreview',
+    () => openPreview(context),
+  );
+  context.subscriptions.push(previewCommand);
 }
 
 export function deactivate(): Thenable<void> | undefined {

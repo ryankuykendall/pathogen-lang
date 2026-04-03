@@ -64,4 +64,60 @@ declare module 'svg-path-extended' {
   }
 
   export function getDocumentSymbols(document: TextDocument): DocumentSymbol[];
+
+  export interface CompletionItem {
+    label: string;
+    kind: 'function' | 'variable' | 'keyword' | 'property' | 'constant' | 'snippet';
+    detail: string;
+    sortText: string;
+    insertText?: string;
+    isSnippet?: boolean;
+  }
+
+  export function getCompletions(document: TextDocument, position: Position): CompletionItem[];
+
+  export interface HoverInfo {
+    contents: string;
+    range?: Range;
+  }
+
+  export function getHoverInfo(document: TextDocument, position: Position): HoverInfo | null;
+
+  export interface Location {
+    range: Range;
+  }
+
+  export function getDefinition(document: TextDocument, position: Position): Location | null;
+  export function getReferences(document: TextDocument, position: Position, includeDeclaration?: boolean): Location[];
+
+  export interface ParameterInformation {
+    label: string;
+  }
+
+  export interface SignatureInformation {
+    label: string;
+    parameters: ParameterInformation[];
+    documentation?: string;
+  }
+
+  export interface SignatureHelp {
+    signatures: SignatureInformation[];
+    activeSignature: number;
+    activeParameter: number;
+  }
+
+  export function getSignatureHelp(document: TextDocument, position: Position): SignatureHelp | null;
+
+  export interface PrepareRenameResult {
+    range: Range;
+    placeholder: string;
+  }
+
+  export interface TextEdit {
+    range: Range;
+    newText: string;
+  }
+
+  export function prepareRename(document: TextDocument, position: Position): PrepareRenameResult | null;
+  export function getRenameEdits(document: TextDocument, position: Position, newName: string): TextEdit[];
 }
