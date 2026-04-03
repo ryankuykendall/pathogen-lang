@@ -7,6 +7,7 @@ import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
 import { svgPathCompletions } from '../utils/codemirror-setup.js';
 import { sharedCompletionSource } from '../utils/cm-completion-bridge.js';
 import { hoverTooltipExtension } from '../utils/cm-hover-tooltip.js';
+import { pathogenLanguage } from '../utils/pathogen-language.js';
 import { themeManager } from '../utils/theme.js';
 import styles from './code-editor-pane.css';
 
@@ -62,10 +63,6 @@ interface CmLanguageModule {
   bracketMatching(): unknown;
 }
 
-interface CmLangJsModule {
-  javascript(): unknown;
-}
-
 interface CmAutocompleteModule {
   autocompletion(config: unknown): unknown;
   completionKeymap: unknown[];
@@ -81,7 +78,6 @@ interface CmModules {
   view: CmViewModule;
   commands: CmCommandsModule;
   language: CmLanguageModule;
-  langJs: CmLangJsModule;
   autocomplete: CmAutocompleteModule;
   oneDark: CmOneDarkModule;
 }
@@ -161,17 +157,16 @@ export class CodeEditorPane extends HTMLElement {
     if (this._cmModules) return;
 
     try {
-      const [state, view, commands, language, langJs, autocomplete, oneDark] = await Promise.all([
+      const [state, view, commands, language, autocomplete, oneDark] = await Promise.all([
         import('https://esm.sh/@codemirror/state@6'),
         import('https://esm.sh/@codemirror/view@6'),
         import('https://esm.sh/@codemirror/commands@6'),
         import('https://esm.sh/@codemirror/language@6'),
-        import('https://esm.sh/@codemirror/lang-javascript@6'),
         import('https://esm.sh/@codemirror/autocomplete@6'),
         import('https://esm.sh/@codemirror/theme-one-dark@6'),
       ]);
 
-      this._cmModules = { state, view, commands, language, langJs, autocomplete, oneDark };
+      this._cmModules = { state, view, commands, language, autocomplete, oneDark };
       this.createEditor();
     } catch (err) {
       console.error('Failed to load CodeMirror:', err);
@@ -192,7 +187,7 @@ export class CodeEditorPane extends HTMLElement {
     const container = this.shadowRoot!.querySelector('#editor-container') as HTMLElement | null;
     if (!container || !this._cmModules) return;
 
-    const { state, view, commands, language, langJs, autocomplete } = this._cmModules;
+    const { state, view, commands, language, autocomplete } = this._cmModules;
 
     // Create compartments for dynamic theme swapping
     this._themeCompartment = new state.Compartment();
@@ -227,7 +222,7 @@ export class CodeEditorPane extends HTMLElement {
         language.indentOnInput(),
         language.bracketMatching(),
         this._themeCompartment.of(this._getThemeExtensions()),
-        langJs.javascript(),
+        pathogenLanguage(language as any),
         view.keymap.of([
           ...commands.defaultKeymap,
           ...commands.historyKeymap,

@@ -44,6 +44,8 @@ declare global {
       StringTextDocument: new (content: string) => LSTextDocument;
       getHoverInfo(document: LSTextDocument, position: LSPosition): LSHoverInfo | null;
       getCompletions(document: LSTextDocument, position: LSPosition): LSCompletionItem[];
+      // Lezer parser for CodeMirror syntax highlighting
+      lezerParser: unknown;
     };
   }
 
