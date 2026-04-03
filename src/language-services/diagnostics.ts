@@ -1,5 +1,6 @@
+import { parse } from '../parser';
 import { evaluate } from '../evaluator';
-import { parseWithRecovery } from './recovery';
+import { parser as lezerParser } from '../parser/pathogen.generated';
 
 import type { TextDocument } from './document';
 import type { Diagnostic } from './types';
@@ -15,51 +16,76 @@ const EVAL_ERROR_LINE_RE = /^Line (\d+): (.+)$/;
 /**
  * Get diagnostics (errors/warnings) for a Pathogen source document.
  *
- * Runs the parser (with multi-error recovery) and evaluator, converting
- * thrown errors into structured Diagnostic objects with 0-based ranges.
+ * Uses the Lezer parser's built-in error recovery to detect multiple parse
+ * errors in a single pass. Falls back to Parsimmon for detailed error messages
+ * and for evaluator error detection.
  */
 export function getDiagnostics(document: TextDocument): Diagnostic[] {
   const source = document.getText();
   const diagnostics: Diagnostic[] = [];
 
-  // Phase 1: Try to parse (with recovery for multiple errors)
-  const recovery = parseWithRecovery(source);
+  // Phase 1: Use Lezer's error recovery to find parse error positions.
+  // Lezer continues parsing after errors, so we get all error locations.
+  const lezerErrors = findLezerErrors(source, document);
 
-  if (recovery.errors.length > 0) {
-    // Convert each recovered parse error to a diagnostic
-    for (const error of recovery.errors) {
-      const diag = parseParserErrorWithOffset(error.message, error.sourceLineOffset, document);
+  if (lezerErrors.length > 0) {
+    // Try Parsimmon for a detailed error message for the first error
+    try {
+      parse(source);
+    } catch (err) {
+      const message = (err as Error).message;
+      const diag = parseParserError(message, document);
       if (diag) {
         diagnostics.push(diag);
-      } else {
-        diagnostics.push({
-          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-          severity: DiagnosticSeverity.Error,
-          message: error.message,
-          source: 'pathogen-parser',
-        });
       }
+    }
+
+    // Add Lezer error positions that don't overlap with the Parsimmon error
+    for (const lezerError of lezerErrors) {
+      // Skip if we already have an error on the same line
+      if (diagnostics.some((d) => d.range.start.line === lezerError.range.start.line)) continue;
+      diagnostics.push(lezerError);
+    }
+
+    return diagnostics;
+  }
+
+  // Phase 2: Lezer found no errors — try Parsimmon parse + evaluate.
+  let ast;
+  try {
+    ast = parse(source);
+  } catch (err) {
+    // Parsimmon found an error that Lezer didn't (edge case — Lezer is more lenient)
+    const message = (err as Error).message;
+    const diag = parseParserError(message, document);
+    if (diag) {
+      diagnostics.push(diag);
+    } else {
+      diagnostics.push({
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+        severity: DiagnosticSeverity.Error,
+        message,
+        source: 'pathogen-parser',
+      });
     }
     return diagnostics;
   }
 
-  // Parser succeeded — try to evaluate
-  if (recovery.ast) {
-    try {
-      evaluate(recovery.ast);
-    } catch (err) {
-      const message = (err as Error).message;
-      const diag = parseEvaluatorError(message, document);
-      if (diag) {
-        diagnostics.push(diag);
-      } else {
-        diagnostics.push({
-          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-          severity: DiagnosticSeverity.Error,
-          message,
-          source: 'pathogen-evaluator',
-        });
-      }
+  // Phase 3: Parse succeeded — try to evaluate
+  try {
+    evaluate(ast);
+  } catch (err) {
+    const message = (err as Error).message;
+    const diag = parseEvaluatorError(message, document);
+    if (diag) {
+      diagnostics.push(diag);
+    } else {
+      diagnostics.push({
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+        severity: DiagnosticSeverity.Error,
+        message,
+        source: 'pathogen-evaluator',
+      });
     }
   }
 
@@ -67,20 +93,42 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
 }
 
 /**
- * Parse a parser error message into a Diagnostic, adjusting line numbers
- * by the sourceLineOffset from recovery.
+ * Use the Lezer parser to find error positions via built-in error recovery.
+ * Returns at most one error per line to avoid noise from cascading errors.
  */
-function parseParserErrorWithOffset(
-  message: string,
-  sourceLineOffset: number,
-  document: TextDocument,
-): Diagnostic | null {
+function findLezerErrors(source: string, document: TextDocument): Diagnostic[] {
+  const tree = lezerParser.parse(source);
+  const cursor = tree.cursor();
+  const errors: Diagnostic[] = [];
+  const seenLines = new Set<number>();
+
+  do {
+    if (cursor.type.isError && cursor.from < source.length) {
+      const pos = document.positionAt(cursor.from);
+      // Deduplicate: one error per line
+      if (!seenLines.has(pos.line)) {
+        seenLines.add(pos.line);
+        errors.push({
+          range: makeRange(pos.line, pos.character, document),
+          severity: DiagnosticSeverity.Error,
+          message: 'Syntax error',
+          source: 'pathogen-parser',
+        });
+      }
+    }
+  } while (cursor.next());
+
+  return errors;
+}
+
+/**
+ * Parse a Parsimmon parser error message into a structured Diagnostic.
+ */
+function parseParserError(message: string, document: TextDocument): Diagnostic | null {
   const match = PARSE_ERROR_RE.exec(message);
   if (!match) return null;
 
-  // Parser lines are 1-based relative to the sub-parse.
-  // Add sourceLineOffset and convert to 0-based.
-  const line = parseInt(match[1], 10) - 1 + sourceLineOffset;
+  const line = parseInt(match[1], 10) - 1;
   const col = parseInt(match[2], 10) - 1;
   const errorMessage = match[3];
 
