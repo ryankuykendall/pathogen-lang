@@ -348,6 +348,18 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
   const expression = buildExpressionWithPostfix(cursor, source);
   cursor.parent();
 
+  // Compatibility: Parsimmon wraps standalone function calls as PathCommand
+  // with empty command, which the evaluator uses to accumulate path data.
+  // e.g., circle(50, 50, 25) → PathCommand("", [FunctionCall("circle", ...)])
+  if (expression.type === 'FunctionCall' || expression.type === 'MethodCallExpression') {
+    return {
+      type: 'PathCommand',
+      command: '',
+      args: [expression as PathArg],
+      loc: nodeLoc,
+    } as PathCommand;
+  }
+
   return {
     type: 'ExpressionStatement',
     expression,
@@ -543,24 +555,39 @@ function buildEnumDefinition(cursor: TreeCursor, source: string): EnumDefinition
   return { type: 'EnumDefinition', name, members, loc: nodeLoc };
 }
 
-function buildPathCommand(cursor: TreeCursor, source: string): PathCommand {
+function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   const nodeLoc = loc(cursor, source);
   let command = '';
-  const args: PathArg[] = [];
+  let argsText = '';
+  let argsFrom = 0;
 
   cursor.firstChild();
   do {
     if (cursor.name === 'PathCommandLetter') {
       command = text(cursor, source);
     } else if (cursor.name === 'PathArgs') {
-      // PathArgs is an opaque token — parse its content manually
-      const argsText = text(cursor, source).trim();
-      args.push(...parsePathArgs(argsText, cursor.from, source));
+      argsText = text(cursor, source);
+      argsFrom = cursor.from;
     }
   } while (cursor.nextSibling());
   cursor.parent();
 
-  return { type: 'PathCommand', command, args, loc: nodeLoc };
+  // Fixup: if a single lowercase letter is followed by "." (member access),
+  // this is actually variable.method(), not a path command.
+  // e.g., "m.draw()" should be ExpressionStatement, not PathCommand "m" + draw arg.
+  if (command.length === 1 && argsText.trimStart().startsWith('.')) {
+    const fullExpr = command + argsText;
+    const parsed = parseExpressionString(fullExpr);
+    if (parsed) {
+      return { type: 'ExpressionStatement', expression: parsed, loc: nodeLoc } as ExpressionStatement;
+    }
+  }
+
+  const args: PathArg[] = [];
+  if (argsText.trim()) {
+    args.push(...parsePathArgs(argsText.trim(), argsFrom, source));
+  }
+  return { type: 'PathCommand', command, args, loc: nodeLoc } as PathCommand;
 }
 
 /**
