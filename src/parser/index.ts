@@ -1486,23 +1486,36 @@ export function parseLezer(input: string): { tree: import('@lezer/common').Tree;
 export { lezerParser };
 
 export function parse(input: string): Program {
-  const result = program.parse(input);
-  if (result.status) {
-    return result.value;
-  }
-  const { index, expected } = result;
-  const lines = input.slice(0, index.offset).split('\n');
-  const line = lines.length;
-  const column = lines[lines.length - 1].length + 1;
+  // Primary parser: Lezer with Parsimmon fallback for error messages
+  const tree = lezerParser.parse(input);
 
-  if (expected.includes("';'")) {
-    const semiResult = detectMissingSemicolon(input, index.offset);
-    if (semiResult) {
-      throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
+  // Check for Lezer parse errors — fall back to Parsimmon for detailed messages
+  const cur = tree.cursor();
+  do {
+    if (cur.type.isError) {
+      // Try Parsimmon for a detailed error message
+      const result = program.parse(input);
+      if (result.status) {
+        // Parsimmon succeeded but Lezer found an error — use Parsimmon's AST
+        return result.value;
+      }
+      const { index, expected } = result;
+      const lines = input.slice(0, index.offset).split('\n');
+      const line = lines.length;
+      const column = lines[lines.length - 1].length + 1;
+
+      if (expected.includes("';'")) {
+        const semiResult = detectMissingSemicolon(input, index.offset);
+        if (semiResult) {
+          throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
+        }
+      }
+
+      throw new Error(`Parse error at line ${line}, column ${column}: expected ${expected.join(' or ')}`);
     }
-  }
+  } while (cur.next());
 
-  throw new Error(`Parse error at line ${line}, column ${column}: expected ${expected.join(' or ')}`);
+  return buildAST(tree, input);
 }
 
 // Extract comments from source code

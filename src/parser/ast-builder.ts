@@ -402,6 +402,11 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
   const expression = buildExpressionWithPostfix(cursor, source);
   cursor.parent();
 
+  // Propagate the statement's location to the expression for error reporting
+  if (expression && typeof expression === 'object' && !('loc' in expression && (expression as any).loc?.line > 1)) {
+    (expression as any).loc = nodeLoc;
+  }
+
   // Compatibility: Parsimmon wraps standalone function calls as PathCommand
   // with empty command, which the evaluator uses to accumulate path data.
   // e.g., circle(50, 50, 25) → PathCommand("", [FunctionCall("circle", ...)])
@@ -639,7 +644,9 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   // e.g., "m.draw()" should be PathCommand("", [MethodCallExpr]) not PathCommand("m", [draw arg]).
   if (command.length === 1 && argsText.trimStart().startsWith('.')) {
     const fullExpr = command + argsText;
-    const parsed = parseExpressionString(fullExpr);
+    // Use parseExpressionAt to get correct source locations
+    const cmdOffset = nodeLoc.offset;
+    const parsed = parseExpressionAt(fullExpr, cmdOffset, source);
     if (parsed) {
       // Wrap as PathCommand with empty command — the evaluator needs this
       // format to accumulate path data from method calls like draw().
@@ -1410,27 +1417,45 @@ function buildTernaryExpression(cursor: TreeCursor, source: string): TernaryExpr
 }
 
 function buildBinaryExpression(cursor: TreeCursor, source: string): BinaryExpression {
+  // Strategy: find the operator token, then parse left and right sides.
+  // Use raw text + Parsimmon for the left side (handles postfix like a.b.c())
+  // and buildExpressionWithPostfix for the right side.
+  const binaryStart = cursor.from;
+  const binaryEnd = cursor.to;
+
   cursor.firstChild();
   let left: Expression = { type: 'NullLiteral' };
   let operator = '+';
   let right: Expression = { type: 'NullLiteral' };
-  let phase = 0;
+  let operatorFrom = -1;
+  let operatorTo = -1;
 
+  // First pass: find the operator position
   do {
-    const n = cursor.name;
-    if (phase === 0 && isExpressionNode(n)) {
-      left = buildExpression(cursor, source);
-      phase = 1;
-    } else if (phase === 1 && isOperator(n)) {
+    if (isOperator(cursor.name)) {
+      operatorFrom = cursor.from;
+      operatorTo = cursor.to;
       operator = text(cursor, source);
-      phase = 2;
-    } else if (phase === 2 && isExpressionNode(n)) {
-      // Right operand is last — safe to use postfix (won't consume past BinaryExpr)
-      right = buildExpressionWithPostfix(cursor, source);
-      break; // Postfix consumed all remaining siblings
+      break;
     }
   } while (cursor.nextSibling());
   cursor.parent();
+
+  if (operatorFrom >= 0) {
+    // Parse left side from raw text with Parsimmon for full postfix support
+    const leftStr = source.slice(binaryStart, operatorFrom).trim();
+    if (leftStr) {
+      const parsed = parseExpressionAt(leftStr, binaryStart, source);
+      if (parsed) left = parsed;
+    }
+
+    // Parse right side — re-enter the tree after the operator
+    const rightStr = source.slice(operatorTo, binaryEnd).trim();
+    if (rightStr) {
+      const parsed = parseExpressionAt(rightStr, operatorTo + (source.slice(operatorTo, binaryEnd).length - source.slice(operatorTo, binaryEnd).trimStart().length), source);
+      if (parsed) right = parsed;
+    }
+  }
 
   return {
     type: 'BinaryExpression',
