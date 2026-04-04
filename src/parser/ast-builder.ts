@@ -1424,15 +1424,19 @@ function buildLayerConstructor(cursor: TreeCursor, source: string): LayerConstru
   let styleExpr: Expression | undefined;
 
   cursor.firstChild();
-  let foundParen = false;
+  let inParens = false;
+  let foundName = false;
   do {
     if (cursor.name === 'LayerType') {
       layerType = text(cursor, source) as 'PathLayer' | 'TextLayer' | 'GroupLayer';
     } else if (cursor.name === '(') {
-      foundParen = true;
-    } else if (foundParen && cursor.name !== ')' && isExpressionNode(cursor.name)) {
+      inParens = true;
+    } else if (cursor.name === ')') {
+      inParens = false;
+    } else if (inParens && !foundName && isExpressionNode(cursor.name)) {
       name = buildExpression(cursor, source);
-    } else if (cursor.name === 'StyleBlockLiteral') {
+      foundName = true;
+    } else if (!inParens && cursor.name === 'StyleBlockLiteral') {
       styleExpr = buildStyleBlockLiteral(cursor, source);
     }
   } while (cursor.nextSibling());
