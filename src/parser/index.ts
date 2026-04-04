@@ -1491,30 +1491,28 @@ export { lezerParser };
 export function parse(input: string): Program {
   const tree = lezerParser.parse(input);
 
-  // Check for Lezer parse errors — fall back to Parsimmon for compatibility
-  const cur = tree.cursor();
-  do {
-    if (cur.type.isError) {
-      // Parsimmon may succeed where Lezer fails (grammar coverage differences)
-      const result = program.parse(input);
-      if (result.status) return result.value;
+  // Check for Lezer parse errors — use Lezer's error-recovered AST when
+  // possible, fall back to Parsimmon only when needed
+  let hasErrors = false;
+  const errCur = tree.cursor();
+  do { if (errCur.type.isError) { hasErrors = true; break; } } while (errCur.next());
 
-      // Both parsers failed — produce an error message
-      const { index, expected } = result;
-      const lines = input.slice(0, index.offset).split('\n');
-      const line = lines.length;
-      const column = lines[lines.length - 1].length + 1;
+  if (hasErrors) {
+    // Lezer found errors — try Parsimmon as fallback
+    const result = program.parse(input);
+    if (result.status) return result.value;
 
-      if (expected.includes("';'")) {
-        const semiResult = detectMissingSemicolon(input, index.offset);
-        if (semiResult) {
-          throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
-        }
-      }
-
-      throw new Error(`Parse error at line ${line}, column ${column}: expected ${expected.join(' or ')}`);
+    // Parsimmon also fails — produce error message
+    const { index, expected } = result;
+    const lines = input.slice(0, index.offset).split('\n');
+    const line = lines.length;
+    const column = lines[lines.length - 1].length + 1;
+    if (expected.includes("';'")) {
+      const semiResult = detectMissingSemicolon(input, index.offset);
+      if (semiResult) throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
     }
-  } while (cur.next());
+    throw new Error(`Parse error at line ${line}, column ${column}: expected ${expected.join(' or ')}`);
+  }
 
   return buildAST(tree, input);
 }
