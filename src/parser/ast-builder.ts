@@ -187,6 +187,7 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
     case 'ReturnStatement': return buildReturnStatement(cursor, source);
     case 'EnumDefinition': return buildEnumDefinition(cursor, source);
     case 'PathCommand': return buildPathCommand(cursor, source);
+    case 'TspanStatement': return buildTspanStatement(cursor, source);
     case 'LayerDefinition': return buildLayerDefinition(cursor, source);
     case 'LayerApplyBlock': return buildLayerApplyBlock(cursor, source);
     case 'TextStatement': return buildTextStatement(cursor, source);
@@ -889,6 +890,36 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
   return { type: 'TextStatement', x, y, rotation, styles, content, body, loc: nodeLoc };
 }
 
+function buildTspanStatement(cursor: TreeCursor, source: string): TspanStatement {
+  const nodeLoc = loc(cursor, source);
+  let dx: Expression | undefined;
+  let dy: Expression | undefined;
+  let rotation: Expression | undefined;
+  let styles: Expression | undefined;
+  let content: TemplateLiteral = { type: 'TemplateLiteral', parts: [] };
+
+  cursor.firstChild();
+  const args: Expression[] = [];
+  let inParens = false;
+  do {
+    if (cursor.name === '(') inParens = true;
+    else if (cursor.name === ')') inParens = false;
+    else if (inParens && isExpressionNode(cursor.name) && cursor.name !== ',') {
+      args.push(buildExpression(cursor, source));
+    } else if (cursor.name === 'TemplateLiteral') {
+      content = buildTemplateLiteral(cursor, source);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  if (args.length >= 1) dx = args[0];
+  if (args.length >= 2) dy = args[1];
+  if (args.length >= 3) rotation = args[2];
+  if (args.length >= 4) styles = args[3];
+
+  return { type: 'TspanStatement', dx, dy, rotation, styles, content, loc: nodeLoc };
+}
+
 function buildTextBlock(cursor: TreeCursor, source: string): TextBodyItem[] {
   const items: TextBodyItem[] = [];
   cursor.firstChild();
@@ -960,12 +991,10 @@ function buildExpression(cursor: TreeCursor, source: string): Expression {
 function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Expression {
   // If the node is a compound expression, just build it directly
   const name = cursor.name;
+  // These compound expressions never have postfix ops at the sibling level
   if (name === 'BinaryExpression' || name === 'TernaryExpression' ||
-      name === 'UnaryExpression' || name === 'ArrayLiteral' ||
-      name === 'ObjectLiteral' || name === 'CalcExpression' ||
-      name === 'StyleBlockLiteral' || name === 'PathBlockExpression' ||
-      name === 'TextBlockExpression' || name === 'LayerConstructor' ||
-      name === 'TemplateLiteral' || name === 'ParenExpression') {
+      name === 'UnaryExpression' || name === 'CalcExpression' ||
+      name === 'StyleBlockLiteral') {
     return buildExpression(cursor, source);
   }
 
