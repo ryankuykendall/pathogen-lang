@@ -1466,9 +1466,12 @@ function detectMissingSemicolon(
 import { parser as lezerParser } from './pathogen.generated';
 import { buildAST, buildASTWithComments, setExpressionParser } from './ast-builder';
 
-// Wire the Parsimmon expression parser into the AST builder
-// (breaks the circular dependency: index.ts → ast-builder.ts → index.ts)
-setExpressionParser(expression);
+// Wire the Lezer-based expression parser into the AST builder
+import { parseExpression as lezerParseExpression } from './lezer-expression';
+setExpressionParser({ parse: (input: string) => {
+  const result = lezerParseExpression(input);
+  return { status: result !== null, value: result };
+}});
 
 /**
  * Parse using the Lezer parser. Returns the Lezer tree + AST.

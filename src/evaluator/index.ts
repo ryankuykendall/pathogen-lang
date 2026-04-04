@@ -1,4 +1,5 @@
-import { expression as expressionParser } from '../parser';
+import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
+const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { contextAwareFunctions, stdlib } from '../stdlib';
 import {
   contextToObject,

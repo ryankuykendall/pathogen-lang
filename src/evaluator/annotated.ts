@@ -17,7 +17,8 @@ import {
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { sanitizeSVGFragment } from './svg-sanitize';
-import { expression as expressionParser } from '../parser';
+import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
+const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { partitionPath, samplePathAtFraction } from './sampling';
 import { estimateTextBoundingBox } from './font-metrics';
 import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';

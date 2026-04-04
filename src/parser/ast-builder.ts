@@ -88,17 +88,20 @@ function parseExpressionAt(exprStr: string, sourceOffset: number, source: string
   return expr;
 }
 
+// Wrapper offset: `let _ = ` is 8 characters
+const WRAP_OFFSET = 8;
+
 function adjustLocations(node: any, lineOffset: number, colOffset: number): void {
   if (!node || typeof node !== 'object') return;
   if (node.loc) {
-    // For first line, adjust column; for subsequent lines, only adjust line
+    // For first line, adjust column accounting for the `let _ = ` wrapper
     if (node.loc.line === 1) {
       node.loc.line += lineOffset;
-      node.loc.column += colOffset;
+      node.loc.column = node.loc.column - WRAP_OFFSET + colOffset;
+      node.loc.offset = node.loc.offset - WRAP_OFFSET + colOffset;
     } else {
       node.loc.line += lineOffset;
     }
-    node.loc.offset += colOffset; // Approximate — not perfectly accurate
   }
   // Recurse into all object properties that could contain AST nodes
   for (const key of Object.keys(node)) {
@@ -1417,43 +1420,51 @@ function buildTernaryExpression(cursor: TreeCursor, source: string): TernaryExpr
 }
 
 function buildBinaryExpression(cursor: TreeCursor, source: string): BinaryExpression {
-  // Strategy: find the operator token, then parse left and right sides.
-  // Use raw text + Parsimmon for the left side (handles postfix like a.b.c())
-  // and buildExpressionWithPostfix for the right side.
-  const binaryStart = cursor.from;
-  const binaryEnd = cursor.to;
-
   cursor.firstChild();
   let left: Expression = { type: 'NullLiteral' };
   let operator = '+';
   let right: Expression = { type: 'NullLiteral' };
-  let operatorFrom = -1;
-  let operatorTo = -1;
 
-  // First pass: find the operator position
+  // Collect all children, find the operator, then build left and right
+  const children: Array<{ name: string; from: number; to: number }> = [];
   do {
-    if (isOperator(cursor.name)) {
-      operatorFrom = cursor.from;
-      operatorTo = cursor.to;
-      operator = text(cursor, source);
-      break;
-    }
+    children.push({ name: cursor.name, from: cursor.from, to: cursor.to });
   } while (cursor.nextSibling());
   cursor.parent();
 
-  if (operatorFrom >= 0) {
-    // Parse left side from raw text with Parsimmon for full postfix support
-    const leftStr = source.slice(binaryStart, operatorFrom).trim();
-    if (leftStr) {
-      const parsed = parseExpressionAt(leftStr, binaryStart, source);
-      if (parsed) left = parsed;
+  // Find the operator
+  const opIdx = children.findIndex(c => isOperator(c.name));
+  if (opIdx >= 0) {
+    operator = source.slice(children[opIdx].from, children[opIdx].to);
+
+    // Build left side: if it's a single expression node, use buildExpression.
+    // If multiple nodes (postfix chain), extract as raw text.
+    if (opIdx === 1) {
+      // Single node before operator — use tree
+      cursor.firstChild();
+      left = buildExpression(cursor, source);
+      cursor.parent();
+    } else if (opIdx > 1) {
+      // Multiple nodes — postfix chain. Use tree walking.
+      cursor.firstChild();
+      left = buildExpressionWithPostfix(cursor, source);
+      cursor.parent();
     }
 
-    // Parse right side — re-enter the tree after the operator
-    const rightStr = source.slice(operatorTo, binaryEnd).trim();
-    if (rightStr) {
-      const parsed = parseExpressionAt(rightStr, operatorTo + (source.slice(operatorTo, binaryEnd).length - source.slice(operatorTo, binaryEnd).trimStart().length), source);
-      if (parsed) right = parsed;
+    // Build right side: everything after operator
+    const rightChildren = children.slice(opIdx + 1);
+    if (rightChildren.length === 1) {
+      cursor.firstChild();
+      // Skip to the right operand
+      for (let i = 0; i <= opIdx; i++) cursor.nextSibling();
+      right = buildExpression(cursor, source);
+      cursor.parent();
+    } else if (rightChildren.length > 1) {
+      // Multiple nodes — use buildExpressionWithPostfix from the right start
+      cursor.firstChild();
+      for (let i = 0; i <= opIdx; i++) cursor.nextSibling();
+      right = buildExpressionWithPostfix(cursor, source);
+      cursor.parent();
     }
   }
 
