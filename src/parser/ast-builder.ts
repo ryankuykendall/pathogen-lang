@@ -296,9 +296,9 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
     const lhsChildren = children.slice(0, eqIdx);
     const rhsChildren = children.slice(eqIdx + 1).filter((c) => c.name !== ';');
 
-    // Build LHS expression
+    // Build LHS expression (with postfix for member/index assignment)
     cursor.firstChild();
-    const lhs = buildExpression(cursor, source);
+    const lhs = buildExpressionWithPostfix(cursor, source);
     cursor.parent();
 
     // Build RHS expression — find the expression after "="
@@ -308,7 +308,7 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
     do {
       if (cursor.name === '=') foundEq = true;
       else if (foundEq && cursor.name !== ';') {
-        rhs = buildExpression(cursor, source);
+        rhs = buildExpressionWithPostfix(cursor, source);
         break;
       }
     } while (cursor.nextSibling());

@@ -6,6 +6,24 @@ const KEYWORDS = new Set([
   'layer', 'apply', 'text', 'tspan', 'enum', 'log',
 ]);
 
+// Functions that should start a new statement, not be consumed as path args.
+// These are context-aware and stdlib functions that emit path data or have side effects.
+const STATEMENT_FUNCTIONS = new Set([
+  // Context-aware path functions
+  'polarPoint', 'polarOffset', 'polarMove', 'polarLine',
+  'arcFromCenter', 'arcFromPolarOffset', 'tangentLine', 'tangentArc',
+  'heading', 'turn',
+  // Shape functions that emit path data
+  'circle', 'rect', 'roundRect', 'polygon', 'star',
+  'line', 'arc', 'quadratic', 'cubic',
+  'moveTo', 'lineTo', 'closePath',
+  'cubicSpline', 'quadSpline', 'clippedQuadSpline', 'polarCubicBezier',
+  // Grid functions
+  'squareGrid', 'triangleGrid', 'hexagonGrid',
+  // Other statement-level calls
+  'radialWedge',
+]);
+
 const PATH_COMMANDS = new Set('MLHVCSQTAZmlhvcsqtaz'.split(''));
 
 /**
@@ -47,7 +65,7 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       // Check if next token starts a new statement
       if (isAlpha(input.next)) {
         const word = peekWord(input);
-        if (KEYWORDS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
+        if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
           // Rewind to before the newline
           break;
         }
@@ -115,7 +133,7 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
 
       // If at top level (not inside parens), check for statement-starting keywords
       if (depth === 0) {
-        if (KEYWORDS.has(word) && word !== 'calc' && word !== 'true' && word !== 'false') break;
+        if ((KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word)) && word !== 'calc' && word !== 'true' && word !== 'false') break;
         if (word.length === 1 && PATH_COMMANDS.has(word)) break;
       }
 
