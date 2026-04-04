@@ -56,6 +56,22 @@ import type {
   TextBodyItem,
 } from './ast';
 
+// --- Expression parser reference (set by index.ts to break circular dependency) ---
+let _expressionParser: { parse(input: string): { status: boolean; value: any } } | null = null;
+
+export function setExpressionParser(parser: { parse(input: string): { status: boolean; value: any } }): void {
+  _expressionParser = parser;
+}
+
+function parseExpressionString(exprStr: string): Expression | null {
+  if (!_expressionParser) return null;
+  try {
+    const result = _expressionParser.parse(exprStr);
+    if (result.status) return result.value;
+  } catch { /* ignore */ }
+  return null;
+}
+
 // --- Public API ---
 
 /**
@@ -387,7 +403,17 @@ function buildForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
     } else if (cursor.name === 'in') {
       foundIn = true;
     } else if (foundIn && isExpressionNode(cursor.name)) {
-      iterable = buildExpression(cursor, source);
+      // The iterable may have postfix ops (.slice(), etc.) that span multiple siblings.
+      // Extract from current position to ')' and parse with Parsimmon.
+      const iterStart = cursor.from;
+      let iterEnd = cursor.to;
+      while (cursor.nextSibling()) {
+        if (cursor.name === ')') break;
+        iterEnd = cursor.to;
+      }
+      const iterStr = source.slice(iterStart, iterEnd).trim();
+      const parsed = parseExpressionString(iterStr);
+      if (parsed) iterable = parsed;
     } else if (cursor.name === 'Block') {
       body = buildBlock(cursor, source);
     }
@@ -404,12 +430,26 @@ function buildIfStatement(cursor: TreeCursor, source: string): IfStatement {
   let alternate: Statement[] | null = null;
 
   cursor.firstChild();
-  let inCondition = false;
   do {
-    if (cursor.name === '(') inCondition = true;
-    else if (cursor.name === ')') inCondition = false;
-    else if (inCondition && isExpressionNode(cursor.name)) {
-      condition = buildExpression(cursor, source);
+    if (cursor.name === '(') {
+      // Build the condition from all tokens between ( and )
+      // Use the source text range and parse it with Parsimmon for full fidelity
+      const condStart = cursor.to; // After '('
+      // Find the matching ')'
+      let depth = 1;
+      let condEnd = condStart;
+      while (cursor.nextSibling()) {
+        if (cursor.name === '(') depth++;
+        else if (cursor.name === ')') {
+          depth--;
+          if (depth === 0) { condEnd = cursor.from; break; }
+        }
+      }
+      const condStr = source.slice(condStart, condEnd).trim();
+      if (condStr) {
+        const parsed = parseExpressionString(condStr);
+        if (parsed) condition = parsed;
+      }
     } else if (cursor.name === 'Block' && consequent.length === 0 && !alternate) {
       consequent = buildBlock(cursor, source);
     } else if (cursor.name === 'ElseClause') {
@@ -579,14 +619,8 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
           const parenContent = extractParenContent(argsText, pos);
           if (parenContent !== null) {
             // Parse the inner expression using Parsimmon for full fidelity
-            let innerExpr: Expression;
-            try {
-              const { expression: exprParser } = require('./index');
-              const parseResult = exprParser.parse(parenContent);
-              innerExpr = parseResult.status ? parseResult.value : { type: 'Identifier', name: parenContent } as Identifier;
-            } catch {
-              innerExpr = { type: 'Identifier', name: parenContent } as Identifier;
-            }
+            const innerExpr = parseExpressionString(parenContent)
+              || { type: 'Identifier', name: parenContent } as Identifier;
             args.push({ type: 'CalcExpression', expression: innerExpr } as CalcExpression);
             pos += parenContent.length + 2;
             continue;
@@ -1253,18 +1287,9 @@ function parseTemplateString(inner: string, baseOffset: number, source: string):
         end++;
       }
       const exprStr = inner.slice(pos + 2, end - 1);
-      // Try to parse the expression using Parsimmon's expression parser
-      try {
-        const { expression: exprParser } = require('./index');
-        const parseResult = exprParser.parse(exprStr);
-        if (parseResult.status) {
-          parts.push(parseResult.value);
-        } else {
-          parts.push({ type: 'Identifier', name: exprStr } as Identifier);
-        }
-      } catch {
-        parts.push({ type: 'Identifier', name: exprStr } as Identifier);
-      }
+      // Parse the interpolation expression using Parsimmon
+      const parsed = parseExpressionString(exprStr);
+      parts.push(parsed || { type: 'Identifier', name: exprStr } as Identifier);
       pos = end;
       textStart = pos;
       continue;
