@@ -91,6 +91,19 @@ export function buildAST(tree: Tree, source: string): Program {
     if (stmt && stmt.type !== 'Comment') body.push(stmt);
   } while (cursor.nextSibling());
 
+  // Post-process: merge FontDirective + bare Number (Lezer splits them)
+  for (let i = 0; i < body.length - 1; i++) {
+    if (body[i].type === 'FontDirective' && !(body[i] as FontDirective).weight) {
+      const next = body[i + 1];
+      if (next.type === 'ExpressionStatement' &&
+          (next as ExpressionStatement).expression.type === 'NumberLiteral') {
+        (body[i] as FontDirective).weight =
+          ((next as ExpressionStatement).expression as NumberLiteral).value;
+        body.splice(i + 1, 1);
+      }
+    }
+  }
+
   return { type: 'Program', body };
 }
 
@@ -516,15 +529,19 @@ function buildFunctionDefinition(cursor: TreeCursor, source: string): FunctionDe
 }
 
 function buildReturnStatement(cursor: TreeCursor, source: string): ReturnStatement {
-  cursor.firstChild();
+  // Extract text between 'return' and ';', parse with Parsimmon for full fidelity
+  const stmtStart = cursor.from;
+  const stmtEnd = cursor.to;
+  const stmtText = source.slice(stmtStart, stmtEnd);
+  // Remove 'return' prefix and trailing ';'
+  const exprText = stmtText.replace(/^\s*return\s+/, '').replace(/;\s*$/, '').trim();
+
   let value: Expression = { type: 'NullLiteral' };
-  do {
-    if (cursor.name !== 'return' && cursor.name !== ';' && isExpressionNode(cursor.name)) {
-      value = buildExpression(cursor, source);
-      break;
-    }
-  } while (cursor.nextSibling());
-  cursor.parent();
+  if (exprText) {
+    const parsed = parseExpressionString(exprText);
+    if (parsed) value = parsed;
+  }
+
   return { type: 'ReturnStatement', value };
 }
 
@@ -575,12 +592,14 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
 
   // Fixup: if a single lowercase letter is followed by "." (member access),
   // this is actually variable.method(), not a path command.
-  // e.g., "m.draw()" should be ExpressionStatement, not PathCommand "m" + draw arg.
+  // e.g., "m.draw()" should be PathCommand("", [MethodCallExpr]) not PathCommand("m", [draw arg]).
   if (command.length === 1 && argsText.trimStart().startsWith('.')) {
     const fullExpr = command + argsText;
     const parsed = parseExpressionString(fullExpr);
     if (parsed) {
-      return { type: 'ExpressionStatement', expression: parsed, loc: nodeLoc } as ExpressionStatement;
+      // Wrap as PathCommand with empty command — the evaluator needs this
+      // format to accumulate path data from method calls like draw().
+      return { type: 'PathCommand', command: '', args: [parsed as PathArg], loc: nodeLoc } as PathCommand;
     }
   }
 
@@ -925,11 +944,141 @@ function buildTextBlock(cursor: TreeCursor, source: string): TextBodyItem[] {
   cursor.firstChild();
   do {
     if (cursor.name === '{' || cursor.name === '}') continue;
-    const item = buildStatement(cursor, source);
-    if (item) items.push(item as TextBodyItem);
+    // Text blocks can contain text-specific nodes (TextForLoop, TextIfStatement, etc.)
+    // as well as regular statements (LetDeclaration, TspanStatement)
+    if (cursor.name === 'TextForLoop') {
+      items.push(buildTextForLoop(cursor, source) as TextBodyItem);
+    } else if (cursor.name === 'TextForEachLoop') {
+      items.push(buildTextForEachLoop(cursor, source) as TextBodyItem);
+    } else if (cursor.name === 'TextIfStatement') {
+      items.push(buildTextIfStatement(cursor, source) as TextBodyItem);
+    } else if (cursor.name === 'TemplateLiteral') {
+      items.push(buildTemplateLiteral(cursor, source) as TextBodyItem);
+    } else {
+      const item = buildStatement(cursor, source);
+      if (item) items.push(item as TextBodyItem);
+    }
   } while (cursor.nextSibling());
   cursor.parent();
   return items;
+}
+
+function buildTextForLoop(cursor: TreeCursor, source: string): ForLoop {
+  const nodeLoc = loc(cursor, source);
+  let variable = '';
+  let start: Expression = { type: 'NumberLiteral', value: 0 };
+  let end: Expression = { type: 'NumberLiteral', value: 0 };
+  const body: Statement[] = [];
+
+  cursor.firstChild();
+  let phase = 0;
+  do {
+    if (cursor.name === 'VariableName') {
+      variable = text(cursor, source);
+    } else if (cursor.name === 'RangeOp') {
+      phase = 2;
+    } else if (phase === 0 && isExpressionNode(cursor.name) && cursor.name !== 'for' && cursor.name !== 'in') {
+      start = buildExpression(cursor, source);
+      phase = 1;
+    } else if (phase === 2 && isExpressionNode(cursor.name)) {
+      end = buildExpression(cursor, source);
+    } else if (cursor.name === '{') {
+      // Collect text body items
+      while (cursor.nextSibling() && cursor.name !== '}') {
+        if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
+        else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
+        else if (cursor.name === 'TextForLoop') body.push(buildTextForLoop(cursor, source));
+        else if (cursor.name === 'TextIfStatement') body.push(buildTextIfStatement(cursor, source));
+        else { const s = buildStatement(cursor, source); if (s) body.push(s); }
+      }
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  return { type: 'ForLoop', variable, start, end, body, loc: nodeLoc };
+}
+
+function buildTextForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
+  const nodeLoc = loc(cursor, source);
+  let variable = '';
+  let indexVariable: string | undefined;
+  let iterable: Expression = { type: 'NullLiteral' };
+  const body: Statement[] = [];
+
+  cursor.firstChild();
+  let foundIn = false;
+  do {
+    if (cursor.name === 'VariableName' && !foundIn) variable = text(cursor, source);
+    else if (cursor.name === 'ForEachDestructure') {
+      const vars = extractVariableNames(cursor, source);
+      if (vars.length >= 1) variable = vars[0];
+      if (vars.length >= 2) indexVariable = vars[1];
+    } else if (cursor.name === 'in') foundIn = true;
+    else if (foundIn && isExpressionNode(cursor.name) && cursor.name !== ')') {
+      iterable = buildExpression(cursor, source);
+    } else if (cursor.name === '{') {
+      while (cursor.nextSibling() && cursor.name !== '}') {
+        if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
+        else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
+        else { const s = buildStatement(cursor, source); if (s) body.push(s); }
+      }
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  return { type: 'ForEachLoop', variable, indexVariable, iterable, body, loc: nodeLoc };
+}
+
+function buildTextIfStatement(cursor: TreeCursor, source: string): IfStatement {
+  const nodeLoc = loc(cursor, source);
+  let condition: Expression = { type: 'BooleanLiteral', value: true };
+  let consequent: Statement[] = [];
+  let alternate: Statement[] | null = null;
+
+  cursor.firstChild();
+  do {
+    if (cursor.name === '(') {
+      const condStart = cursor.to;
+      let condEnd = condStart;
+      while (cursor.nextSibling()) {
+        if (cursor.name === ')') { condEnd = cursor.from; break; }
+      }
+      const condStr = source.slice(condStart, condEnd).trim();
+      if (condStr) {
+        const parsed = parseExpressionString(condStr);
+        if (parsed) condition = parsed;
+      }
+    } else if (cursor.name === '{') {
+      // Text block body — collect items until }
+      const bodyItems: TextBodyItem[] = [];
+      while (cursor.nextSibling() && cursor.name !== '}') {
+        if (cursor.name === 'TspanStatement') {
+          bodyItems.push(buildTspanStatement(cursor, source) as TextBodyItem);
+        } else if (cursor.name === 'TemplateLiteral') {
+          bodyItems.push(buildTemplateLiteral(cursor, source) as TextBodyItem);
+        } else if (cursor.name === 'TextForLoop' || cursor.name === 'TextForEachLoop') {
+          bodyItems.push(buildForLoop(cursor, source) as TextBodyItem);
+        } else if (cursor.name === 'TextIfStatement') {
+          bodyItems.push(buildTextIfStatement(cursor, source) as TextBodyItem);
+        } else {
+          const stmt = buildStatement(cursor, source);
+          if (stmt) bodyItems.push(stmt as TextBodyItem);
+        }
+      }
+      if (consequent.length === 0 && !alternate) {
+        consequent = bodyItems as Statement[];
+      } else {
+        alternate = bodyItems as Statement[];
+      }
+    } else if (cursor.name === 'else') {
+      // Next should be { or TextIfStatement
+    } else if (cursor.name === 'TextIfStatement') {
+      alternate = [buildTextIfStatement(cursor, source)];
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  return { type: 'IfStatement', condition, consequent, alternate, loc: nodeLoc };
 }
 
 function buildFontDirective(cursor: TreeCursor, source: string): FontDirective {
@@ -1283,36 +1432,16 @@ function buildIdentifier(cursor: TreeCursor, source: string): Identifier {
 }
 
 function buildTemplateLiteral(cursor: TreeCursor, source: string): TemplateLiteral {
-  const parts: (string | Expression)[] = [];
-
-  // Try to walk children (works when Lezer properly tokenizes template parts)
-  if (cursor.firstChild()) {
-    do {
-      if (cursor.name === 'templateContent') {
-        parts.push(text(cursor, source));
-      } else if (cursor.name === 'TemplateInterpolation') {
-        cursor.firstChild();
-        do {
-          if (cursor.name !== 'templateInterpStart' && cursor.name !== 'templateInterpEnd') {
-            parts.push(buildExpressionWithPostfix(cursor, source));
-          }
-        } while (cursor.nextSibling());
-        cursor.parent();
-      }
-    } while (cursor.nextSibling());
-    cursor.parent();
-  } else {
-    // Fallback: TemplateLiteral is an opaque node (no child tokens).
-    // Extract content from the raw text between backticks.
-    const raw = text(cursor, source);
-    if (raw.startsWith('`') && raw.endsWith('`')) {
-      const inner = raw.slice(1, -1);
-      // Parse ${...} interpolations from the raw string
-      const templateParts = parseTemplateString(inner, cursor.from + 1, source);
-      parts.push(...templateParts);
-    }
+  // Always use the raw text approach — it's more reliable than walking
+  // Lezer's template tokens, which often have gaps (text between backtick
+  // and ${} interpolation is not captured as a node).
+  const raw = text(cursor, source);
+  if (raw.startsWith('`') && raw.endsWith('`')) {
+    const inner = raw.slice(1, -1);
+    const parts = parseTemplateString(inner, cursor.from + 1, source);
+    return { type: 'TemplateLiteral', parts };
   }
-  return { type: 'TemplateLiteral', parts };
+  return { type: 'TemplateLiteral', parts: [] };
 }
 
 /**
