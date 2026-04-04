@@ -604,8 +604,10 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   }
 
   const args: PathArg[] = [];
-  if (argsText.trim()) {
-    args.push(...parsePathArgs(argsText.trim(), argsFrom, source));
+  const trimmedArgs = argsText.trimStart();
+  const trimOffset = argsText.length - trimmedArgs.length; // Leading whitespace skipped
+  if (trimmedArgs.trim()) {
+    args.push(...parsePathArgs(trimmedArgs.trim(), argsFrom + trimOffset, source));
   }
   return { type: 'PathCommand', command, args, loc: nodeLoc } as PathCommand;
 }
@@ -1142,8 +1144,7 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
   const name = cursor.name;
   // These compound expressions never have postfix ops at the sibling level
   if (name === 'BinaryExpression' || name === 'TernaryExpression' ||
-      name === 'UnaryExpression' || name === 'CalcExpression' ||
-      name === 'StyleBlockLiteral') {
+      name === 'UnaryExpression' || name === 'CalcExpression') {
     return buildExpression(cursor, source);
   }
 
@@ -1459,9 +1460,9 @@ function parseTemplateString(inner: string, baseOffset: number, source: string):
       continue;
     }
     if (inner[pos] === '$' && pos + 1 < inner.length && inner[pos + 1] === '{') {
-      // Emit preceding text
+      // Emit preceding text (with escape processing)
       if (pos > textStart) {
-        parts.push(inner.slice(textStart, pos));
+        parts.push(unescapeTemplate(inner.slice(textStart, pos)));
       }
       // Find matching }
       let depth = 1;
@@ -1481,11 +1482,15 @@ function parseTemplateString(inner: string, baseOffset: number, source: string):
     }
     pos++;
   }
-  // Emit remaining text
+  // Emit remaining text (with escape processing)
   if (pos > textStart) {
-    parts.push(inner.slice(textStart, pos));
+    parts.push(unescapeTemplate(inner.slice(textStart, pos)));
   }
   return parts;
+}
+
+function unescapeTemplate(s: string): string {
+  return s.replace(/\\`/g, '`').replace(/\\\\/g, '\\').replace(/\\n/g, '\n').replace(/\\t/g, '\t');
 }
 
 function buildCalcExpression(cursor: TreeCursor, source: string): CalcExpression {
