@@ -566,24 +566,29 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
       continue;
     }
 
-    // Identifier (possibly followed by function call, member access, etc.)
+    // Identifier (possibly followed by member access, function call, index access)
     if (/[a-zA-Z_]/.test(ch)) {
       const idMatch = argsText.slice(pos).match(/^[a-zA-Z_]\w*/);
       if (idMatch) {
         const name = idMatch[0];
+        const argLoc = offsetToLoc(baseOffset + pos, source);
         pos += name.length;
 
         // Check for calc(...)
         if (name === 'calc' && pos < argsText.length && argsText[pos] === '(') {
           const parenContent = extractParenContent(argsText, pos);
           if (parenContent !== null) {
-            // For now, store calc expression as a CalcExpression with a simple identifier
-            // A full implementation would parse the inner expression
-            args.push({
-              type: 'CalcExpression',
-              expression: { type: 'Identifier', name: parenContent },
-            } as CalcExpression);
-            pos += parenContent.length + 2; // +2 for parens
+            // Parse the inner expression using Parsimmon for full fidelity
+            let innerExpr: Expression;
+            try {
+              const { expression: exprParser } = require('./index');
+              const parseResult = exprParser.parse(parenContent);
+              innerExpr = parseResult.status ? parseResult.value : { type: 'Identifier', name: parenContent } as Identifier;
+            } catch {
+              innerExpr = { type: 'Identifier', name: parenContent } as Identifier;
+            }
+            args.push({ type: 'CalcExpression', expression: innerExpr } as CalcExpression);
+            pos += parenContent.length + 2;
             continue;
           }
         }
@@ -592,21 +597,74 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
         if (pos < argsText.length && argsText[pos] === '(') {
           const parenContent = extractParenContent(argsText, pos);
           if (parenContent !== null) {
-            // Parse as function call with raw args
+            // Parse function args
+            const fnArgs = parseFunctionArgs(parenContent, baseOffset + pos + 1, source);
             args.push({
               type: 'FunctionCall',
               name,
-              args: [], // Simplified — full implementation would parse args
-              loc: offsetToLoc(baseOffset + pos - name.length, source),
+              args: fnArgs,
+              loc: argLoc,
             } as FunctionCall);
             pos += parenContent.length + 2;
             continue;
           }
         }
 
-        // Simple identifier (possibly with member access)
-        const argLoc = offsetToLoc(baseOffset + pos - name.length, source);
-        args.push({ type: 'Identifier', name, loc: argLoc });
+        // Build identifier, then check for member/index chains
+        let expr: PathArg = { type: 'Identifier', name, loc: argLoc } as Identifier;
+
+        // Handle .property chains, [index], and .method() calls
+        while (pos < argsText.length) {
+          if (argsText[pos] === '.') {
+            // Member access or method call
+            const propMatch = argsText.slice(pos + 1).match(/^[a-zA-Z_]\w*/);
+            if (!propMatch) break;
+            const propName = propMatch[0];
+            pos += 1 + propName.length;
+
+            // Check if followed by (args) — method call
+            if (pos < argsText.length && argsText[pos] === '(') {
+              const parenContent = extractParenContent(argsText, pos);
+              if (parenContent !== null) {
+                const methodArgs = parseFunctionArgs(parenContent, baseOffset + pos + 1, source);
+                expr = {
+                  type: 'MethodCallExpression',
+                  object: expr as Expression,
+                  method: propName,
+                  args: methodArgs,
+                } as MethodCallExpression;
+                pos += parenContent.length + 2;
+                continue;
+              }
+            }
+
+            expr = {
+              type: 'MemberExpression',
+              object: expr as Expression,
+              property: propName,
+            } as MemberExpression;
+          } else if (argsText[pos] === '[') {
+            // Index access
+            const bracketContent = extractBracketContent(argsText, pos);
+            if (bracketContent !== null) {
+              // Parse the index expression
+              const indexArgs = parsePathArgs(bracketContent, baseOffset + pos + 1, source);
+              const indexExpr = indexArgs.length > 0 ? indexArgs[0] : { type: 'NumberLiteral', value: 0 } as NumberLiteral;
+              expr = {
+                type: 'IndexExpression',
+                object: expr as Expression,
+                index: indexExpr as Expression,
+              } as IndexExpression;
+              pos += bracketContent.length + 2;
+            } else {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+
+        args.push(expr);
         continue;
       }
     }
@@ -627,6 +685,53 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
   }
 
   return args;
+}
+
+/**
+ * Parse comma-separated function arguments from a string.
+ */
+function parseFunctionArgs(argsStr: string, baseOffset: number, source: string): Expression[] {
+  if (!argsStr.trim()) return [];
+
+  // Split on commas at depth 0
+  const argStrings: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < argsStr.length; i++) {
+    if (argsStr[i] === '(' || argsStr[i] === '[') depth++;
+    else if (argsStr[i] === ')' || argsStr[i] === ']') depth--;
+    else if (argsStr[i] === ',' && depth === 0) {
+      argStrings.push(argsStr.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  argStrings.push(argsStr.slice(start).trim());
+
+  // Parse each argument as a path arg (which handles numbers, identifiers, member chains)
+  const result: Expression[] = [];
+  let offset = 0;
+  for (const argStr of argStrings) {
+    if (!argStr) continue;
+    const parsed = parsePathArgs(argStr, baseOffset + offset, source);
+    if (parsed.length > 0) {
+      result.push(parsed[0] as Expression);
+    }
+    offset += argStr.length + 1; // +1 for comma
+  }
+  return result;
+}
+
+function extractBracketContent(text: string, openPos: number): string | null {
+  if (text[openPos] !== '[') return null;
+  let depth = 1;
+  let pos = openPos + 1;
+  while (pos < text.length && depth > 0) {
+    if (text[pos] === '[') depth++;
+    else if (text[pos] === ']') depth--;
+    pos++;
+  }
+  if (depth !== 0) return null;
+  return text.slice(openPos + 1, pos - 1);
 }
 
 function extractParenContent(text: string, openPos: number): string | null {
@@ -806,68 +911,66 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
   // For primary nodes (Identifier, Number, etc.), build and check for postfix siblings
   let expr = buildExpression(cursor, source);
 
-  // Walk subsequent siblings for postfix ops
-  // Use a look-ahead approach: peek at next sibling without consuming
-  while (cursor.nextSibling()) {
+  // Walk subsequent siblings for postfix ops.
+  // Key invariant: after processing each op, the cursor must be on the LAST
+  // token consumed by that op. The while loop's nextSibling() then advances
+  // to the next unprocessed token. When an op peeks ahead and finds something
+  // it doesn't consume, we use `needsAdvance = false` to skip the next
+  // nextSibling() call.
+  let needsAdvance = true;
+  while (needsAdvance ? cursor.nextSibling() : true) {
+    needsAdvance = true; // Reset for next iteration
     const sibName = cursor.name;
 
     if (sibName === 'ArgList') {
-      // Function call: expr(args) or method call continuation
       const args = buildArgList(cursor, source);
-      // Check for TrailingBlock after ArgList
       let block: { params: string[]; body: Statement[] } | undefined;
-      if (cursor.nextSibling() && cursor.name === 'TrailingBlock') {
-        block = buildTrailingBlock(cursor, source);
-      } else if (cursor.name !== 'TrailingBlock') {
-        // We advanced past ArgList to a non-TrailingBlock — process this sibling in next iteration
-        if (expr.type === 'Identifier') {
-          expr = { type: 'FunctionCall', name: expr.name, args, block, loc: (expr as Identifier).loc } as FunctionCall;
+      // Peek for TrailingBlock
+      if (cursor.nextSibling()) {
+        if (cursor.name === 'TrailingBlock') {
+          block = buildTrailingBlock(cursor, source);
+        } else {
+          needsAdvance = false; // Don't advance — cursor is on next unprocessed token
         }
-        continue; // Don't call nextSibling again — already on the next one
       }
       if (expr.type === 'Identifier') {
         expr = { type: 'FunctionCall', name: expr.name, args, block, loc: (expr as Identifier).loc } as FunctionCall;
       }
     } else if (sibName === '.') {
-      // Member access or method call: expr.prop or expr.method(args)
       if (!cursor.nextSibling()) break;
       const propName = text(cursor, source);
 
-      // Peek ahead for ArgList or TrailingBlock
+      // Peek ahead for ArgList, TrailingBlock, or next op
       if (!cursor.nextSibling()) {
-        // Last sibling — simple member access
         expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
         break;
       }
 
       if (cursor.name === 'ArgList') {
         const args = buildArgList(cursor, source);
-        // Check for TrailingBlock after ArgList
         let block: { params: string[]; body: Statement[] } | undefined;
-        if (cursor.nextSibling() && cursor.name === 'TrailingBlock') {
-          block = buildTrailingBlock(cursor, source);
-        } else if (cursor.name !== 'TrailingBlock') {
-          expr = { type: 'MethodCallExpression', object: expr, method: propName, args, block } as MethodCallExpression;
-          continue; // Already on next sibling
+        if (cursor.nextSibling()) {
+          if (cursor.name === 'TrailingBlock') {
+            block = buildTrailingBlock(cursor, source);
+          } else {
+            needsAdvance = false;
+          }
         }
         expr = { type: 'MethodCallExpression', object: expr, method: propName, args, block } as MethodCallExpression;
       } else if (cursor.name === 'TrailingBlock') {
-        // Method with trailing block, no parens: .method {|x| ...}
         const block = buildTrailingBlock(cursor, source);
         expr = { type: 'MethodCallExpression', object: expr, method: propName, args: [], block } as MethodCallExpression;
       } else {
-        // Simple member access — current cursor is the next token after .prop
+        // Simple member access — cursor is already on the next token
         expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
-        continue; // Process current sibling in next iteration
+        needsAdvance = false; // Don't skip the current token
       }
     } else if (sibName === '[') {
-      // Index access: expr[index]
       if (!cursor.nextSibling()) break;
       const index = buildExpression(cursor, source);
       cursor.nextSibling(); // skip ']'
       expr = { type: 'IndexExpression', object: expr, index } as IndexExpression;
     } else if (sibName === 'TrailingBlock') {
-      // Trailing block directly after expression (rare but possible)
       const block = buildTrailingBlock(cursor, source);
       if (expr.type === 'FunctionCall') {
         (expr as FunctionCall).block = block;
@@ -875,7 +978,7 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
     } else if (sibName === ';' || sibName === '⚠' || sibName === '=' || sibName === ',' || sibName === ')' || sibName === ']') {
       break;
     } else {
-      break; // Unknown sibling — stop postfix chain
+      break;
     }
   }
 
@@ -974,9 +1077,10 @@ function buildArgList(cursor: TreeCursor, source: string): Expression[] {
   const args: Expression[] = [];
   cursor.firstChild();
   do {
-    if (cursor.name !== '(' && cursor.name !== ')' && cursor.name !== ',') {
-      args.push(buildExpression(cursor, source));
-    }
+    if (cursor.name === '(' || cursor.name === ')') continue;
+    if (cursor.name === ',') continue;
+    // Each argument may include postfix ops (member access, index, calls)
+    args.push(buildExpressionWithPostfix(cursor, source));
   } while (cursor.nextSibling());
   cursor.parent();
   return args;

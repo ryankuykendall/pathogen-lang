@@ -1491,7 +1491,6 @@ export function parse(input: string): Program {
   const line = lines.length;
   const column = lines[lines.length - 1].length + 1;
 
-  // Detect missing semicolons and provide targeted error messages
   if (expected.includes("';'")) {
     const semiResult = detectMissingSemicolon(input, index.offset);
     if (semiResult) {
