@@ -1489,19 +1489,17 @@ export function parseLezer(input: string): { tree: import('@lezer/common').Tree;
 export { lezerParser };
 
 export function parse(input: string): Program {
-  // Primary parser: Lezer with Parsimmon fallback for error messages
   const tree = lezerParser.parse(input);
 
-  // Check for Lezer parse errors — fall back to Parsimmon for detailed messages
+  // Check for Lezer parse errors — fall back to Parsimmon for compatibility
   const cur = tree.cursor();
   do {
     if (cur.type.isError) {
-      // Try Parsimmon for a detailed error message
+      // Parsimmon may succeed where Lezer fails (grammar coverage differences)
       const result = program.parse(input);
-      if (result.status) {
-        // Parsimmon succeeded but Lezer found an error — use Parsimmon's AST
-        return result.value;
-      }
+      if (result.status) return result.value;
+
+      // Both parsers failed — produce an error message
       const { index, expected } = result;
       const lines = input.slice(0, index.offset).split('\n');
       const line = lines.length;
