@@ -938,6 +938,22 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
       }
     } else if (sibName === '.') {
       if (!cursor.nextSibling()) break;
+
+      // Handle CSSColorLiteral after dot (e.g., Color.oklch(...) tokenized as one token)
+      if (cursor.name === 'CSSColorLiteral' || cursor.name === '⚠') {
+        const raw = text(cursor, source);
+        // Extract method name and args from e.g., "oklch(0.7, 0.15, 200)"
+        const fnMatch = raw.match(/^(\w+)\(([^)]*)\)$/);
+        if (fnMatch) {
+          const methodArgs = parseFunctionArgs(fnMatch[2], cursor.from + fnMatch[1].length + 1, source);
+          expr = { type: 'MethodCallExpression', object: expr, method: fnMatch[1], args: methodArgs } as MethodCallExpression;
+        } else {
+          expr = { type: 'MemberExpression', object: expr, property: raw } as MemberExpression;
+        }
+        // Continue — cursor is on the CSSColorLiteral, next iteration will advance
+        continue;
+      }
+
       const propName = text(cursor, source);
 
       // Peek ahead for ArgList, TrailingBlock, or next op
@@ -1178,22 +1194,88 @@ function buildIdentifier(cursor: TreeCursor, source: string): Identifier {
 
 function buildTemplateLiteral(cursor: TreeCursor, source: string): TemplateLiteral {
   const parts: (string | Expression)[] = [];
-  cursor.firstChild();
-  do {
-    if (cursor.name === 'templateContent') {
-      parts.push(text(cursor, source));
-    } else if (cursor.name === 'TemplateInterpolation') {
-      cursor.firstChild();
-      do {
-        if (cursor.name !== 'templateInterpStart' && cursor.name !== 'templateInterpEnd') {
-          parts.push(buildExpression(cursor, source));
-        }
-      } while (cursor.nextSibling());
-      cursor.parent();
+
+  // Try to walk children (works when Lezer properly tokenizes template parts)
+  if (cursor.firstChild()) {
+    do {
+      if (cursor.name === 'templateContent') {
+        parts.push(text(cursor, source));
+      } else if (cursor.name === 'TemplateInterpolation') {
+        cursor.firstChild();
+        do {
+          if (cursor.name !== 'templateInterpStart' && cursor.name !== 'templateInterpEnd') {
+            parts.push(buildExpressionWithPostfix(cursor, source));
+          }
+        } while (cursor.nextSibling());
+        cursor.parent();
+      }
+    } while (cursor.nextSibling());
+    cursor.parent();
+  } else {
+    // Fallback: TemplateLiteral is an opaque node (no child tokens).
+    // Extract content from the raw text between backticks.
+    const raw = text(cursor, source);
+    if (raw.startsWith('`') && raw.endsWith('`')) {
+      const inner = raw.slice(1, -1);
+      // Parse ${...} interpolations from the raw string
+      const templateParts = parseTemplateString(inner, cursor.from + 1, source);
+      parts.push(...templateParts);
     }
-  } while (cursor.nextSibling());
-  cursor.parent();
+  }
   return { type: 'TemplateLiteral', parts };
+}
+
+/**
+ * Parse a template string's inner content (between backticks) into parts.
+ * Handles ${expr} interpolations by re-parsing the expression content.
+ */
+function parseTemplateString(inner: string, baseOffset: number, source: string): (string | Expression)[] {
+  const parts: (string | Expression)[] = [];
+  let pos = 0;
+  let textStart = 0;
+
+  while (pos < inner.length) {
+    if (inner[pos] === '\\' && pos + 1 < inner.length) {
+      pos += 2; // Skip escape sequence
+      continue;
+    }
+    if (inner[pos] === '$' && pos + 1 < inner.length && inner[pos + 1] === '{') {
+      // Emit preceding text
+      if (pos > textStart) {
+        parts.push(inner.slice(textStart, pos));
+      }
+      // Find matching }
+      let depth = 1;
+      let end = pos + 2;
+      while (end < inner.length && depth > 0) {
+        if (inner[end] === '{') depth++;
+        else if (inner[end] === '}') depth--;
+        end++;
+      }
+      const exprStr = inner.slice(pos + 2, end - 1);
+      // Try to parse the expression using Parsimmon's expression parser
+      try {
+        const { expression: exprParser } = require('./index');
+        const parseResult = exprParser.parse(exprStr);
+        if (parseResult.status) {
+          parts.push(parseResult.value);
+        } else {
+          parts.push({ type: 'Identifier', name: exprStr } as Identifier);
+        }
+      } catch {
+        parts.push({ type: 'Identifier', name: exprStr } as Identifier);
+      }
+      pos = end;
+      textStart = pos;
+      continue;
+    }
+    pos++;
+  }
+  // Emit remaining text
+  if (pos > textStart) {
+    parts.push(inner.slice(textStart, pos));
+  }
+  return parts;
 }
 
 function buildCalcExpression(cursor: TreeCursor, source: string): CalcExpression {
