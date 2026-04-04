@@ -72,6 +72,46 @@ function parseExpressionString(exprStr: string): Expression | null {
   return null;
 }
 
+/**
+ * Parse an expression string and adjust all SourceLocations to be relative
+ * to a position in the original source. Used when we extract sub-expressions
+ * (e.g., calc() inner content, if-condition, return value) and parse them
+ * with Parsimmon — the resulting locations are relative to the sub-string
+ * and need to be adjusted to the original source position.
+ */
+function parseExpressionAt(exprStr: string, sourceOffset: number, source: string): Expression | null {
+  const expr = parseExpressionString(exprStr);
+  if (!expr) return null;
+  // Calculate the line/column offset from the source position
+  const targetLoc = offsetToLoc(sourceOffset, source);
+  adjustLocations(expr, targetLoc.line - 1, targetLoc.column - 1);
+  return expr;
+}
+
+function adjustLocations(node: any, lineOffset: number, colOffset: number): void {
+  if (!node || typeof node !== 'object') return;
+  if (node.loc) {
+    // For first line, adjust column; for subsequent lines, only adjust line
+    if (node.loc.line === 1) {
+      node.loc.line += lineOffset;
+      node.loc.column += colOffset;
+    } else {
+      node.loc.line += lineOffset;
+    }
+    node.loc.offset += colOffset; // Approximate — not perfectly accurate
+  }
+  // Recurse into all object properties that could contain AST nodes
+  for (const key of Object.keys(node)) {
+    if (key === 'loc' || key === 'type') continue;
+    const val = node[key];
+    if (Array.isArray(val)) {
+      for (const item of val) adjustLocations(item, lineOffset, colOffset);
+    } else if (val && typeof val === 'object' && val.type) {
+      adjustLocations(val, lineOffset, colOffset);
+    }
+  }
+}
+
 // --- Public API ---
 
 /**
@@ -473,7 +513,8 @@ function buildIfStatement(cursor: TreeCursor, source: string): IfStatement {
       }
       const condStr = source.slice(condStart, condEnd).trim();
       if (condStr) {
-        const parsed = parseExpressionString(condStr);
+        const condOffset = condStart + (source.slice(condStart, condEnd).length - source.slice(condStart, condEnd).trimStart().length);
+        const parsed = parseExpressionAt(condStr, condOffset, source);
         if (parsed) condition = parsed;
       }
     } else if (cursor.name === 'Block' && consequent.length === 0 && !alternate) {
@@ -538,7 +579,10 @@ function buildReturnStatement(cursor: TreeCursor, source: string): ReturnStateme
 
   let value: Expression = { type: 'NullLiteral' };
   if (exprText) {
-    const parsed = parseExpressionString(exprText);
+    // Calculate the offset where the expression starts in the source
+    const returnMatch = stmtText.match(/^\s*return\s+/);
+    const exprOffset = stmtStart + (returnMatch ? returnMatch[0].length : 7);
+    const parsed = parseExpressionAt(exprText, exprOffset, source);
     if (parsed) value = parsed;
   }
 
@@ -667,8 +711,9 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
         if (name === 'calc' && pos < argsText.length && argsText[pos] === '(') {
           const parenContent = extractParenContent(argsText, pos);
           if (parenContent !== null) {
-            // Parse the inner expression using Parsimmon for full fidelity
-            const innerExpr = parseExpressionString(parenContent)
+            // Parse the inner expression with location adjusted to source position
+            const calcInnerOffset = baseOffset + pos + 1; // +1 for opening paren
+            const innerExpr = parseExpressionAt(parenContent, calcInnerOffset, source)
               || { type: 'Identifier', name: parenContent } as Identifier;
             args.push({ type: 'CalcExpression', expression: innerExpr } as CalcExpression);
             pos += parenContent.length + 2;
@@ -1231,7 +1276,11 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
       if (expr.type === 'FunctionCall') {
         (expr as FunctionCall).block = block;
       }
-    } else if (sibName === ';' || sibName === '⚠' || sibName === '=' || sibName === ',' || sibName === ')' || sibName === ']') {
+    } else if (sibName === ';' || sibName === '⚠' || sibName === '=' || sibName === ',' || sibName === ')' || sibName === ']' ||
+               sibName === '==' || sibName === '!=' || sibName === '<' || sibName === '>' ||
+               sibName === '<=' || sibName === '>=' || sibName === '||' || sibName === '&&' ||
+               sibName === '<<' || sibName === '+' || sibName === '-' || sibName === '*' ||
+               sibName === '/' || sibName === '%' || sibName === '?' || sibName === ':') {
       break;
     } else {
       break;
@@ -1376,7 +1425,9 @@ function buildBinaryExpression(cursor: TreeCursor, source: string): BinaryExpres
       operator = text(cursor, source);
       phase = 2;
     } else if (phase === 2 && isExpressionNode(n)) {
-      right = buildExpression(cursor, source);
+      // Right operand is last — safe to use postfix (won't consume past BinaryExpr)
+      right = buildExpressionWithPostfix(cursor, source);
+      break; // Postfix consumed all remaining siblings
     }
   } while (cursor.nextSibling());
   cursor.parent();
