@@ -638,7 +638,7 @@ describe('Gradients', () => {
   describe('Pattern constructor', () => {
     it('creates Pattern with correct attributes', () => {
       const result = compile(`
-        let dot = @{ circle(10, 10, 3) };
+        let dot = @{ circle(10, 10, 3); };
         let p = Pattern('dots', 0, 0, 20, 20) {|p|
           p.append(dot, \${ fill: Color('#e63946'); });
         };
@@ -664,7 +664,7 @@ describe('Gradients', () => {
 
     it('append with styles preserves style properties', () => {
       const result = compile(`
-        let dot = @{ circle(5, 5, 2) };
+        let dot = @{ circle(5, 5, 2); };
         let p = Pattern('p1', 0, 0, 10, 10) {|p|
           p.append(dot, \${ fill: Color('#ff0000'); stroke: Color('#000000'); });
         };
@@ -714,7 +714,7 @@ describe('Gradients', () => {
 
     it('elements contain pathData and styles', () => {
       const result = compile(`
-        let dot = @{ circle(5, 5, 3) };
+        let dot = @{ circle(5, 5, 3); };
         let p = Pattern('p1', 0, 0, 10, 10) {|p|
           p.append(dot, \${ fill: Color('#f00'); });
         };
@@ -727,7 +727,7 @@ describe('Gradients', () => {
 
     it('referenced via url(#id) in layer fill', () => {
       const result = compile(`
-        let dot = @{ circle(10, 10, 3) };
+        let dot = @{ circle(10, 10, 3); };
         let p = Pattern('dots', 0, 0, 20, 20) {|p|
           p.append(dot, \${ fill: Color('#e63946'); });
         };
@@ -1743,7 +1743,7 @@ describe('Gradients', () => {
           g.colorAll(Color('#ff0000'));
         };
         define PathLayer('bg') \${ fill: g; }
-        layer('bg').apply { rect(0, 0, 100, 100) }
+        layer('bg').apply { rect(0, 0, 100, 100); }
       `);
       expect(result.layers[0].styles.fill).toBe('url(#mg)');
     });
@@ -1999,7 +1999,7 @@ describe('Gradients', () => {
           g.point(150, 50, Color('#fff'));
         };
         define PathLayer('bg') \${ fill: g; }
-        layer('bg').apply { rect(0, 0, 200, 100) }
+        layer('bg').apply { rect(0, 0, 200, 100); }
       `);
       expect(result.layers[0].styles.fill).toBe('url(#fg)');
     });
@@ -2647,12 +2647,12 @@ describe('Gradients', () => {
   describe('TopoGradient fill/stroke integration', () => {
     it('auto-wraps to url(#id) when used as fill', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         define PathLayer('bg') \${ fill: topo; }
-        layer('bg').apply { rect(0, 0, 400, 300) }
+        layer('bg').apply { rect(0, 0, 400, 300); }
       `);
       expect(result.layers[0].styles?.fill).toBe('url(#terrain)');
     });

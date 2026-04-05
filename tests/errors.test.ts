@@ -535,7 +535,7 @@ describe('Void function calls', () => {
       define PathLayer('main') \${ stroke: black; }
       fn doNothing() { let x = 1; }
       layer('main').apply {
-        doNothing()
+        doNothing();
         M 10 20
       }
     `);

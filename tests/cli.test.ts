@@ -642,7 +642,7 @@ describe('CLI', () => {
         g.stop(0, Color('red'));
         g.stop(1, Color('blue'));
         define PathLayer('p') \${ fill: url(#cg); }
-        layer('p').apply { rect(0, 0, 200, 200) }
+        layer('p').apply { rect(0, 0, 200, 200); }
       `,
       );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
@@ -670,7 +670,7 @@ describe('CLI', () => {
         g.stop(0, Color('red'));
         g.stop(1, Color('blue'));
         define PathLayer('p') \${ fill: url(#lg); }
-        layer('p').apply { rect(0, 0, 200, 200) }
+        layer('p').apply { rect(0, 0, 200, 200); }
       `,
       );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
