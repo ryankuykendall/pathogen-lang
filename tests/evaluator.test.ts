@@ -316,12 +316,12 @@ describe('Evaluator', () => {
       });
 
       it('evaluates sign', () => {
-        expect(compilePath('M calc(sign(-10)) calc(sign(10));')).toBe('M -1 1');
+        expect(compilePath('M calc(sign(-10)) calc(sign(10))')).toBe('M -1 1');
         expect(compilePath('M calc(sign(0)) 0')).toBe('M 0 0');
       });
 
       it('evaluates min/max', () => {
-        expect(compilePath('M calc(min(10, 5)) calc(max(10, 5));')).toBe('M 5 10');
+        expect(compilePath('M calc(min(10, 5)) calc(max(10, 5))')).toBe('M 5 10');
       });
     });
 
@@ -1846,7 +1846,7 @@ describe('Evaluator', () => {
     });
 
     it('uses point properties in calc expressions', () => {
-      expect(compilePath('let pt = Point(100, 200); M calc(pt.x + 10) calc(pt.y - 50);')).toBe('M 110 150');
+      expect(compilePath('let pt = Point(100, 200); M calc(pt.x + 10) calc(pt.y - 50)')).toBe('M 110 150');
     });
 
     it('.translate(dx, dy) returns offset point', () => {
@@ -1938,7 +1938,7 @@ describe('Evaluator', () => {
     });
 
     it('.offset(other) used in calc expression', () => {
-      expect(compilePath('let p1 = Point(10, 20); let p2 = Point(30, 50); let off = p1.offset(p2); M calc(p1.x + off.dx) calc(p1.y + off.dy);')).toBe(
+      expect(compilePath('let p1 = Point(10, 20); let p2 = Point(30, 50); let off = p1.offset(p2); M calc(p1.x + off.dx) calc(p1.y + off.dy)')).toBe(
         'M 30 50',
       );
     });

@@ -22,11 +22,16 @@ function needsSemicolon(source: string): boolean {
 }
 
 function addSemicolonToFunctionCall(source: string): string {
-  // If the source ends with a function call ) without ;, add ;
+  // Only add ; to standalone function/method calls — NOT path commands
   const trimmed = source.trimEnd();
   if (trimmed.endsWith(')') && !trimmed.endsWith(';')) {
-    // Verify this looks like a function call end (has alphanumeric or ) before final ))
-    if (/[a-zA-Z0-9_)'")]\)$/.test(trimmed)) {
+    // Must be a standalone call (entire source is just the call, no path commands before it)
+    // Skip if source starts with a path command letter followed by space
+    if (/^\s*[MLHVCSQTAZmlhvcsqtaz]\s/.test(trimmed)) return source;
+    // Skip if source contains path commands before the function call
+    if (/^\s*M\s|^\s*L\s|^\s*H\s|^\s*V\s/i.test(trimmed)) return source;
+    // Must look like a function call
+    if (/^[a-zA-Z_][\w.]*\([^)]*\)$/.test(trimmed) || /;\s*[a-zA-Z_][\w.]*\([^)]*\)$/.test(trimmed)) {
       return trimmed + ';';
     }
   }
