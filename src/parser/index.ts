@@ -1499,7 +1499,7 @@ export function parse(input: string): Program {
 
   if (hasErrors) {
     // Lezer found errors — use Parsimmon for error messages.
-    // Note: Parsimmon is ONLY used here for error formatting.
+    // Parsimmon is ONLY used here for error formatting.
     // All successful parsing uses Lezer (zero Parsimmon fallbacks for valid programs).
     const result = program.parse(input);
     if (result.status) return result.value; // Should not happen (all gaps closed)

@@ -25,6 +25,13 @@ interface LSHoverInfo {
   range?: LSRange;
 }
 
+interface LSDiagnostic {
+  range: LSRange;
+  severity: number; // 1=Error, 2=Warning, 3=Information, 4=Hint
+  message: string;
+  source: string;
+}
+
 interface LSCompletionItem {
   label: string;
   kind: 'function' | 'variable' | 'keyword' | 'property' | 'constant' | 'snippet';
@@ -44,6 +51,7 @@ declare global {
       StringTextDocument: new (content: string) => LSTextDocument;
       getHoverInfo(document: LSTextDocument, position: LSPosition): LSHoverInfo | null;
       getCompletions(document: LSTextDocument, position: LSPosition): LSCompletionItem[];
+      getDiagnostics(document: LSTextDocument): LSDiagnostic[];
       // Lezer parser for CodeMirror syntax highlighting
       lezerParser: unknown;
     };

@@ -842,14 +842,38 @@ export class WorkspaceView extends HTMLElement {
   }
 
   showError(message: string): void {
+    // Try structured diagnostics via getDiagnostics first
+    const { StringTextDocument, getDiagnostics } = window.SvgPathExtended;
+    if (getDiagnostics && StringTextDocument) {
+      try {
+        const code = this.editorPane.code;
+        const doc = new StringTextDocument(code);
+        const diagnostics = getDiagnostics(doc);
+        if (diagnostics.length > 0) {
+          // Show the error message (use original message for full detail)
+          const errorCount = diagnostics.length;
+          const displayMessage = errorCount > 1
+            ? `${message} (+${errorCount - 1} more error${errorCount > 2 ? 's' : ''})`
+            : message;
+          this.errorPanel.show(displayMessage);
+          // Highlight the first diagnostic's location in the editor
+          const diag = diagnostics[0];
+          // Diagnostics use 0-based lines; editor uses 1-based
+          this.editorPane.highlightError(diag.range.start.line + 1, diag.range.start.character + 1);
+          return;
+        }
+      } catch {
+        // Fall through to regex-based parsing
+      }
+    }
+
+    // Fallback: regex-based error location extraction
     this.errorPanel.show(message);
-    // Highlight error location in editor for parser errors
     const parseMatch = message.match(/Parse error at line (\d+), column (\d+)/);
     if (parseMatch) {
       this.editorPane.highlightError(parseInt(parseMatch[1], 10), parseInt(parseMatch[2], 10));
       return;
     }
-    // Highlight error location for runtime errors (with or without column)
     const runtimeMatch = message.match(/^Line (\d+)(?:, col (\d+))?: /);
     if (runtimeMatch) {
       const line = parseInt(runtimeMatch[1], 10);
