@@ -78,8 +78,8 @@ for ([oR, ri] in outerRs) {
     }
 
     // 2. XOR between sharp and rounded
-    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
-    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
     xorLayer.apply { diff.drawTo(0, 0); }
 

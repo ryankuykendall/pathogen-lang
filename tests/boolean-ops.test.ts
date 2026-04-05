@@ -453,8 +453,8 @@ describe('Boolean Operations', () => {
       const result = compilePath(`
         let fromA = 0.1 * PI();
         let toA = 0.4 * PI();
-        let sharp = @{ radialWedge(30, 80, fromA, toA, 0) };
-        let rounded = @{ radialWedge(30, 80, fromA, toA, 8) };
+        let sharp = @{ radialWedge(30, 80, fromA, toA, 0); };
+        let rounded = @{ radialWedge(30, 80, fromA, toA, 8); };
         let x = sharp.project(0, 0).xor(rounded.project(0, 0));
         x.drawTo(0, 0);
       `);

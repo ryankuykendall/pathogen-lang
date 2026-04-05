@@ -32,16 +32,16 @@ let ridge = @{
   z
 };
 
-let summit = @{ circle(0, 0, 18); closePath() };
+let summit = @{ circle(0, 0, 18); closePath(); };
 
 // --- Gradient ---
 
 let topo = TopoGradient('island', 500, 400) {|g|
-  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'))
-  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'))
-  g.contour(highland.project(120, 100), 0.55, Color('#228b22'))
-  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'))
-  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'))
+  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'));
+  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'));
+  g.contour(highland.project(120, 100), 0.55, Color('#228b22'));
+  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'));
+  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';

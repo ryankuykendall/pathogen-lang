@@ -653,7 +653,7 @@ describe('Gradients', () => {
 
     it('append adds path elements to pattern', () => {
       const result = compile(`
-        let dot = @{ circle(5, 5, 2) };
+        let dot = @{ circle(5, 5, 2); };
         let p = Pattern('p1', 0, 0, 10, 10) {|p|
           p.append(dot);
         };
@@ -675,7 +675,7 @@ describe('Gradients', () => {
 
     it('patternUnits property can be set and read', () => {
       const result = compile(`
-        let dot = @{ circle(10, 10, 3) };
+        let dot = @{ circle(10, 10, 3); };
         let p = Pattern('dots', 0, 0, 20, 20) {|p|
           p.append(dot);
         };
@@ -687,7 +687,7 @@ describe('Gradients', () => {
     it('duplicate Pattern ID throws error', () => {
       expect(() =>
         compile(`
-        let dot = @{ circle(5, 5, 2) };
+        let dot = @{ circle(5, 5, 2); };
         let a = Pattern('dup', 0, 0, 10, 10) {|p| p.append(dot); };
         let b = Pattern('dup', 0, 0, 20, 20) {|p| p.append(dot); };
       `),
@@ -1031,7 +1031,7 @@ describe('Gradients', () => {
       expect(() =>
         compile(`
         let m = Mask('shared');
-        let dot = @{ circle(5, 5, 2) };
+        let dot = @{ circle(5, 5, 2); };
         let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
       `),
       ).toThrow(/Duplicate defs ID 'shared'/);
@@ -1041,7 +1041,7 @@ describe('Gradients', () => {
       expect(() =>
         compile(`
         let g = LinearGradient('shared', 0, 0, 1, 0);
-        let dot = @{ circle(5, 5, 2) };
+        let dot = @{ circle(5, 5, 2); };
         let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
       `),
       ).toThrow(/Duplicate defs ID 'shared'/);
@@ -1050,7 +1050,7 @@ describe('Gradients', () => {
     it('duplicate ID across ConicGradient and Pattern throws error', () => {
       expect(() =>
         compile(`
-        let dot = @{ circle(5, 5, 2) };
+        let dot = @{ circle(5, 5, 2); };
         let p = Pattern('shared', 0, 0, 10, 10) {|p| p.append(dot); };
         let g = ConicGradient('shared', 50, 50) {|g| g.stop(0, Color('#000')); };
       `),
@@ -2057,9 +2057,9 @@ describe('Gradients', () => {
   describe('TopoGradient constructor', () => {
     it('creates with correct type and dimensions', () => {
       const result = compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       expect(result.gradients).toHaveLength(1);
@@ -2084,7 +2084,7 @@ describe('Gradients', () => {
     it('duplicate ID throws error', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 50); closePath() };
+        let s = @{ circle(0, 0, 50); closePath(); };
         let a = TopoGradient('dup', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#000')); };
         let b = TopoGradient('dup', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#fff')); };
       `),
@@ -2093,9 +2093,9 @@ describe('Gradients', () => {
 
     it('defaults easing to linear and method to distance', () => {
       const result = compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       expect(result.gradients[0].topoEasing).toBe('linear');
@@ -2106,7 +2106,7 @@ describe('Gradients', () => {
       expect(() =>
         compile(`
         let lg = LinearGradient('shared', 0, 0, 1, 1) {|g| g.stop(0, Color('#000')); };
-        let s = @{ circle(0, 0, 50); closePath() };
+        let s = @{ circle(0, 0, 50); closePath(); };
         let tg = TopoGradient('shared', 200, 100) {|g| g.contour(s.project(100, 50), 0.5, Color('#000')); };
       `),
       ).toThrow(/Duplicate defs ID 'shared'/);
@@ -2116,11 +2116,11 @@ describe('Gradients', () => {
   describe('TopoGradient .contour()', () => {
     it('adds contours with path, elevation, and color', () => {
       const result = compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
-        let peak = @{ circle(0, 0, 40); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
+        let peak = @{ circle(0, 0, 40); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(shore.project(200, 150), 0.3, Color('#f9e79f'))
-          g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'))
+          g.contour(shore.project(200, 150), 0.3, Color('#f9e79f'));
+          g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'));
         };
       `);
       const contours = result.gradients[0].topoContours!;
@@ -2134,7 +2134,7 @@ describe('Gradients', () => {
     it('validates 3 arguments', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 0.5);
         };
@@ -2145,7 +2145,7 @@ describe('Gradients', () => {
     it('validates first argument is ProjectedPathValue', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore, 0.5, Color('#000'));
         };
@@ -2166,7 +2166,7 @@ describe('Gradients', () => {
     it('validates elevation is a number', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 'high', Color('#000'));
         };
@@ -2177,7 +2177,7 @@ describe('Gradients', () => {
     it('rejects elevation < 0', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), -0.1, Color('#000'));
         };
@@ -2188,7 +2188,7 @@ describe('Gradients', () => {
     it('rejects elevation > 1', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 1.5, Color('#000'));
         };
@@ -2199,7 +2199,7 @@ describe('Gradients', () => {
     it('validates third argument is Color', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(shore.project(100, 50), 0.5, '#000');
         };
@@ -2210,7 +2210,7 @@ describe('Gradients', () => {
     it('rejects open paths (not ending with closePath)', () => {
       expect(() =>
         compile(`
-        let openPath = @{ moveTo(0, 0); lineTo(100, 0); lineTo(100, 100) };
+        let openPath = @{ moveTo(0, 0); lineTo(100, 0); lineTo(100, 100); };
         let topo = TopoGradient('t', 200, 100) {|g|
           g.contour(openPath.project(50, 50), 0.5, Color('#000'));
         };
@@ -2221,7 +2221,7 @@ describe('Gradients', () => {
     it('only available on topo gradients', () => {
       expect(() =>
         compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let g = LinearGradient('lg', 0, 0, 1, 1) {|g|
           g.contour(shore.project(100, 50), 0.5, Color('#000'));
         };
@@ -2231,9 +2231,9 @@ describe('Gradients', () => {
 
     it('contour path is serialized as absolute d-string', () => {
       const result = compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       const path = result.gradients[0].topoContours![0].path;
@@ -2244,11 +2244,11 @@ describe('Gradients', () => {
 
     it('accumulates multiple contours at different elevations', () => {
       const result = compile(`
-        let shore = @{ circle(0, 0, 100); closePath() };
+        let shore = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(shore.project(200, 150), 0.2, Color('#1a5276'))
-          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'))
-          g.contour(shore.project(200, 150), 0.8, Color('#ffffff'))
+          g.contour(shore.project(200, 150), 0.2, Color('#1a5276'));
+          g.contour(shore.project(200, 150), 0.5, Color('#27ae60'));
+          g.contour(shore.project(200, 150), 0.8, Color('#ffffff'));
         };
       `);
       expect(result.gradients[0].topoContours).toHaveLength(3);
@@ -2261,9 +2261,9 @@ describe('Gradients', () => {
   describe('TopoGradient properties', () => {
     it('easing defaults to linear', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       expect(result.gradients[0].topoEasing).toBe('linear');
@@ -2271,9 +2271,9 @@ describe('Gradients', () => {
 
     it('easing can be set to smoothstep', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.easing = 'smoothstep';
       `);
@@ -2283,9 +2283,9 @@ describe('Gradients', () => {
     it('easing can be set to ease-in, ease-out, ease-in-out', () => {
       for (const ease of ['ease-in', 'ease-out', 'ease-in-out']) {
         const result = compile(`
-          let s = @{ circle(0, 0, 100); closePath() };
+          let s = @{ circle(0, 0, 100); closePath(); };
           let topo = TopoGradient('t', 400, 300) {|g|
-            g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+            g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
           };
           topo.easing = '${ease}';
         `);
@@ -2296,9 +2296,9 @@ describe('Gradients', () => {
     it('easing rejects invalid values', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.easing = 'cubic';
       `),
@@ -2316,9 +2316,9 @@ describe('Gradients', () => {
 
     it('method defaults to distance', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       expect(result.gradients[0].topoMethod).toBe('distance');
@@ -2326,9 +2326,9 @@ describe('Gradients', () => {
 
     it('method = laplace is accepted', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.method = 'laplace';
       `);
@@ -2346,9 +2346,9 @@ describe('Gradients', () => {
 
     it('width, height, id are readable', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         log(topo.id);
         log(topo.width);
@@ -2361,9 +2361,9 @@ describe('Gradients', () => {
 
     it('interpolation is settable', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.interpolation = 'oklch';
       `);
@@ -2372,9 +2372,9 @@ describe('Gradients', () => {
 
     it('baseColor can be set', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.baseColor = Color('#1a5276');
       `);
@@ -2384,9 +2384,9 @@ describe('Gradients', () => {
     it('baseColor rejects non-Color values', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.baseColor = '#1a5276';
       `),
@@ -2404,9 +2404,9 @@ describe('Gradients', () => {
 
     it('iterations defaults to 200', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       expect(result.gradients[0].topoIterations).toBe(200);
@@ -2414,9 +2414,9 @@ describe('Gradients', () => {
 
     it('iterations settable and readable via log()', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.iterations = 500;
         log(topo.iterations);
@@ -2428,9 +2428,9 @@ describe('Gradients', () => {
     it('iterations must be a number', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.iterations = 'many';
       `),
@@ -2440,9 +2440,9 @@ describe('Gradients', () => {
     it('iterations rejects 0 (below range)', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.iterations = 0;
       `),
@@ -2452,9 +2452,9 @@ describe('Gradients', () => {
     it('iterations rejects 3000 (above range)', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.iterations = 3000;
       `),
@@ -2463,9 +2463,9 @@ describe('Gradients', () => {
 
     it('iterations rounds to integer', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.iterations = 150.7;
       `);
@@ -2483,9 +2483,9 @@ describe('Gradients', () => {
 
     it('laplace + custom iterations both in output', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.method = 'laplace';
         topo.iterations = 750;
@@ -2496,9 +2496,9 @@ describe('Gradients', () => {
 
     it('iterations serialized in output when method is distance', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.iterations = 100;
       `);
@@ -2510,9 +2510,9 @@ describe('Gradients', () => {
 
     it('blend defaults to 1.0', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       expect(result.gradients[0].topoBlend).toBe(1.0);
@@ -2520,9 +2520,9 @@ describe('Gradients', () => {
 
     it('blend settable and readable via log()', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.blend = 0.7;
         log(topo.blend);
@@ -2534,9 +2534,9 @@ describe('Gradients', () => {
     it('blend must be a number', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.blend = "high";
       `),
@@ -2546,18 +2546,18 @@ describe('Gradients', () => {
     it('blend range 0 to 1', () => {
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.blend = -0.1;
       `),
       ).toThrow(/blend must be between 0 and 1/);
       expect(() =>
         compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.blend = 1.5;
       `),
@@ -2568,8 +2568,8 @@ describe('Gradients', () => {
       expect(() =>
         compile(`
         let g = LinearGradient('g', 0, 0, 1, 0) {|g|
-          g.stop(0, Color('#000'))
-          g.stop(1, Color('#fff'))
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
         };
         g.blend = 0.5;
       `),
@@ -2580,10 +2580,10 @@ describe('Gradients', () => {
   describe('TopoGradient output serialization', () => {
     it('builds stopsWithOklch from contours sorted by elevation', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.8, Color('#ffffff'))
-          g.contour(s.project(200, 150), 0.3, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.8, Color('#ffffff'));
+          g.contour(s.project(200, 150), 0.3, Color('#27ae60'));
         };
       `);
       const stops = result.gradients[0].stopsWithOklch!;
@@ -2596,9 +2596,9 @@ describe('Gradients', () => {
 
     it('includes baseColor at offset 0 when set', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         topo.baseColor = Color('#1a5276');
       `);
@@ -2609,9 +2609,9 @@ describe('Gradients', () => {
 
     it('contours have oklch data in output', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
       `);
       const contour = result.gradients[0].topoContours![0];
@@ -2633,10 +2633,10 @@ describe('Gradients', () => {
   describe('TopoGradient log formatting', () => {
     it('shows contour count in log output', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('terrain', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.3, Color('#27ae60'))
-          g.contour(s.project(200, 150), 0.8, Color('#ffffff'))
+          g.contour(s.project(200, 150), 0.3, Color('#27ae60'));
+          g.contour(s.project(200, 150), 0.8, Color('#ffffff'));
         };
         log(topo);
       `);
@@ -2659,12 +2659,12 @@ describe('Gradients', () => {
 
     it('multiple topos in same program', () => {
       const result = compile(`
-        let s = @{ circle(0, 0, 100); closePath() };
+        let s = @{ circle(0, 0, 100); closePath(); };
         let topo1 = TopoGradient('t1', 400, 300) {|g|
-          g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
         let topo2 = TopoGradient('t2', 200, 200) {|g|
-          g.contour(s.project(100, 100), 0.3, Color('#ffffff'))
+          g.contour(s.project(100, 100), 0.3, Color('#ffffff'));
         };
       `);
       expect(result.gradients).toHaveLength(2);
@@ -2679,8 +2679,8 @@ describe('Gradients', () => {
         let topo = TopoGradient('rings', 400, 400) {|g|
           for ([level, i] in [0.2, 0.4, 0.6, 0.8]) {
             let r = calc(150 - i * 35);
-            let ring = @{ circle(0, 0, r); closePath() };
-            g.contour(ring.project(200, 200), level, Color('#27ae60'))
+            let ring = @{ circle(0, 0, r); closePath(); };
+            g.contour(ring.project(200, 200), level, Color('#27ae60'));
           }
         };
       `);

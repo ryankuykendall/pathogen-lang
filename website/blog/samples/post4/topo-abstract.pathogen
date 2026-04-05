@@ -18,22 +18,22 @@ let blob2 = @{
   z
 };
 
-let dot = @{ circle(0, 0, 20); closePath() };
+let dot = @{ circle(0, 0, 20); closePath(); };
 
 // --- Gradient with overlapping regions ---
 
 let topo = TopoGradient('abstract', 400, 400) {|g|
   // Lower-left cluster — warm
-  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'))
-  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'))
+  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'));
+  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'));
 
   // Upper-right cluster — cool
-  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'))
-  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'))
+  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'));
+  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'));
 
   // Center overlap — creates interesting blending
-  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'))
-  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'));
+  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'));
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'ease-in-out';

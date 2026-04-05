@@ -303,7 +303,7 @@ describe('Path Blocks', () => {
 
     it('works with stdlib path functions', () => {
       const result = compilePath(`
-        let c = @{ circle(10) };
+        let c = @{ circle(10); };
         c.drawTo(50, 50);
       `);
       // Should emit M 50 50 followed by the circle's relative commands
@@ -342,7 +342,7 @@ describe('Path Blocks', () => {
     });
 
     it('cannot be called inside a path block', () => {
-      expect(() => compilePath('let p = @{ h 10 }; let q = @{ p.drawTo(0, 0) };')).toThrow(/Cannot call.*inside a path block/);
+      expect(() => compilePath('let p = @{ h 10 }; let q = @{ p.drawTo(0, 0); };')).toThrow(/Cannot call.*inside a path block/);
     });
 
     it('works with closed paths', () => {
@@ -408,7 +408,7 @@ describe('Path Blocks', () => {
       expect(() =>
         compilePath(`
         let p = @{ v 20 };
-        let q = @{ p.draw() };
+        let q = @{ p.draw(); };
       `),
       ).toThrow(/Cannot call .draw\(\) inside a path block/);
     });
@@ -1593,7 +1593,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           l 20 0
-          tangentArc(20, 0.5pi)
+          tangentArc(20, 0.5pi);
         };
         M 100 100
         p.draw()
@@ -1610,7 +1610,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           l 20 0
-          tangentLine(30)
+          tangentLine(30);
         };
         M 100 100
         p.draw()
@@ -1625,7 +1625,7 @@ describe('Path Blocks', () => {
     it('polarLine emits relative l command inside PathBlock', () => {
       const result = compilePath(`
         let p = @{
-          polarLine(0, 30)
+          polarLine(0, 30);
         };
         M 100 100
         p.draw()
@@ -1638,7 +1638,7 @@ describe('Path Blocks', () => {
     it('polarMove emits relative command inside PathBlock', () => {
       const result = compilePath(`
         let p = @{
-          polarMove(0, 30)
+          polarMove(0, 30);
         };
         M 100 100
         p.draw()
@@ -1665,7 +1665,7 @@ describe('Path Blocks', () => {
     it('arcFromCenter emits relative commands inside PathBlock', () => {
       const result = compilePath(`
         let p = @{
-          arcFromCenter(0, 20, 20, -0.5pi, 0, 1)
+          arcFromCenter(0, 20, 20, -0.5pi, 0, 1);
         };
         M 100 100
         p.draw()
@@ -1680,7 +1680,7 @@ describe('Path Blocks', () => {
       const result = compile(`
         let p = @{
           l 20 0
-          tangentArc(20, 0.5pi)
+          tangentArc(20, 0.5pi);
         };
         moveTo(100, 100);
         p.draw();
@@ -1698,8 +1698,8 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           l 20 0
-          tangentArc(20, 0.5pi)
-          tangentLine(30)
+          tangentArc(20, 0.5pi);
+          tangentLine(30);
         };
         M 50 50
         p.draw()
@@ -2038,7 +2038,7 @@ describe('Path Blocks', () => {
 
     it('circle() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ circle(50, 50, 10) };
+        let p = @{ circle(50, 50, 10); };
         M 100 100
         p.draw()
       `);
@@ -2049,7 +2049,7 @@ describe('Path Blocks', () => {
 
     it('rect() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ rect(10, 10, 30, 20) };
+        let p = @{ rect(10, 10, 30, 20); };
         M 100 100
         p.draw()
       `);
@@ -2060,7 +2060,7 @@ describe('Path Blocks', () => {
 
     it('roundRect() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ roundRect(10, 10, 40, 30, 5) };
+        let p = @{ roundRect(10, 10, 40, 30, 5); };
         M 100 100
         p.draw()
       `);
@@ -2072,7 +2072,7 @@ describe('Path Blocks', () => {
 
     it('polygon() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ polygon(50, 50, 20, 6) };
+        let p = @{ polygon(50, 50, 20, 6); };
         M 100 100
         p.draw()
       `);
@@ -2083,7 +2083,7 @@ describe('Path Blocks', () => {
 
     it('star() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ star(50, 50, 20, 10, 5) };
+        let p = @{ star(50, 50, 20, 10, 5); };
         M 100 100
         p.draw()
       `);
@@ -2094,7 +2094,7 @@ describe('Path Blocks', () => {
 
     it('line() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ line(10, 10, 40, 50) };
+        let p = @{ line(10, 10, 40, 50); };
         M 100 100
         p.draw()
       `);
@@ -2105,7 +2105,7 @@ describe('Path Blocks', () => {
 
     it('quadratic() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ quadratic(0, 0, 25, -30, 50, 0) };
+        let p = @{ quadratic(0, 0, 25, -30, 50, 0); };
         M 100 100
         p.draw()
       `);
@@ -2116,7 +2116,7 @@ describe('Path Blocks', () => {
 
     it('cubic() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ cubic(0, 0, 10, -20, 40, -20, 50, 0) };
+        let p = @{ cubic(0, 0, 10, -20, 40, -20, 50, 0); };
         M 100 100
         p.draw()
       `);
@@ -2127,7 +2127,7 @@ describe('Path Blocks', () => {
 
     it('arc() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ arc(25, 25, 0, 0, 1, 50, 0) };
+        let p = @{ arc(25, 25, 0, 0, 1, 50, 0); };
         M 100 100
         p.draw()
       `);
@@ -2138,7 +2138,7 @@ describe('Path Blocks', () => {
 
     it('moveTo() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ moveTo(30, 40) };
+        let p = @{ moveTo(30, 40); };
         M 100 100
         p.draw()
       `);
@@ -2149,7 +2149,7 @@ describe('Path Blocks', () => {
 
     it('lineTo() emits relative commands via .draw()', () => {
       const result = compilePath(`
-        let p = @{ lineTo(30, 40) };
+        let p = @{ lineTo(30, 40); };
         M 100 100
         p.draw()
       `);
@@ -2170,7 +2170,7 @@ describe('Path Blocks', () => {
 
     it('circle drawn at offset produces correct end position', () => {
       const result = compile(`
-        let p = @{ circle(50, 50, 10) };
+        let p = @{ circle(50, 50, 10); };
         M 100 100
         let proj = p.draw();
         log(proj.endPoint);

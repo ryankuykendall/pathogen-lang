@@ -60,6 +60,47 @@ function walkStatements(stmts: Statement[], source: string, positions: number[])
     } else if (stmt.type === 'LayerApplyBlock') {
       walkStatements((stmt as any).body, source, positions);
     }
+
+    // Recurse into let declaration values that contain blocks
+    if (stmt.type === 'LetDeclaration') {
+      const value = (stmt as any).value;
+      if (value?.type === 'PathBlockExpression' && value.body) {
+        walkStatements(value.body, source, positions);
+      }
+      if (value?.type === 'TextBlockExpression' && value.body) {
+        walkStatements(value.body, source, positions);
+      }
+      // FunctionCall with block (e.g., LinearGradient(...) {|g| ... })
+      if (value?.type === 'FunctionCall' && value.block?.body) {
+        walkStatements(value.block.body, source, positions);
+      }
+      if (value?.type === 'MethodCallExpression' && value.block?.body) {
+        walkStatements(value.block.body, source, positions);
+      }
+    }
+
+    // Recurse into expression statement values with blocks
+    if (stmt.type === 'ExpressionStatement') {
+      const expr = (stmt as any).expression;
+      if (expr?.type === 'FunctionCall' && expr.block?.body) {
+        walkStatements(expr.block.body, source, positions);
+      }
+      if (expr?.type === 'MethodCallExpression' && expr.block?.body) {
+        walkStatements(expr.block.body, source, positions);
+      }
+    }
+
+    // PathCommand with function call that has a block
+    if (stmt.type === 'PathCommand') {
+      for (const arg of (stmt as any).args || []) {
+        if (arg?.type === 'FunctionCall' && arg.block?.body) {
+          walkStatements(arg.block.body, source, positions);
+        }
+        if (arg?.type === 'MethodCallExpression' && arg.block?.body) {
+          walkStatements(arg.block.body, source, positions);
+        }
+      }
+    }
   }
 }
 

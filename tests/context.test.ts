@@ -1354,8 +1354,8 @@ describe('Path Context Tracking', () => {
     it('inside path block replaces h 0.01 hack', () => {
       const result = compileWithContext(`
         let p = @{
-          heading(0)
-          tangentArc(20, 90deg)
+          heading(0);
+          tangentArc(20, 90deg);
         };
         M 50 100
         p.draw()
@@ -1369,8 +1369,8 @@ describe('Path Context Tracking', () => {
     it('path block with heading + arcs + z closes cleanly', () => {
       const result = compileWithContext(`
         let p = @{
-          heading(0)
-          tangentArc(20, 180deg)
+          heading(0);
+          tangentArc(20, 180deg);
           z
         };
         M 50 100

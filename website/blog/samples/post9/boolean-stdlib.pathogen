@@ -6,8 +6,8 @@ bg.apply { rect(0, 0, 400, 200); }
 
 // --- Plate with drilled holes ---
 
-let plate = @{ rect(0, 0, 80, 80) };
-let hole = @{ circle(0, 0, 10) };
+let plate = @{ rect(0, 0, 80, 80); };
+let hole = @{ circle(0, 0, 10); };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
 let d2 = d1.project(0, 0).difference(hole.project(55, 25));
@@ -45,8 +45,8 @@ plate_desc.apply {
 
 // --- Star union circle ---
 
-let st = @{ star(0, 0, 30, 14, 5) };
-let circ = @{ circle(0, 0, 18) };
+let st = @{ star(0, 0, 30, 14, 5); };
+let circ = @{ circle(0, 0, 18); };
 
 let badge = st.project(0, 0).union(circ.project(0, 0));
 

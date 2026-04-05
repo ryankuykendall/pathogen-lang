@@ -23,28 +23,28 @@ let p5y = 8970;
 // ─── 1. Create all five TopoGradients ───────────────────────
 
 // ── Panel 1: "Concentric Rings" ──
-let ring870 = @{ circle(0, 0, 870); closePath() };
-let ring595 = @{ circle(0, 0, 595); closePath() };
-let ring307 = @{ circle(0, 0, 307); closePath() };
+let ring870 = @{ circle(0, 0, 870); closePath(); };
+let ring595 = @{ circle(0, 0, 595); closePath(); };
+let ring307 = @{ circle(0, 0, 307); closePath(); };
 
 let volcano = TopoGradient('volcano', pw, ph) {|g|
-  g.contour(ring870.project(1024, 1024), 0.25, Color('#f4d35e'))
-  g.contour(ring595.project(1024, 1024), 0.50, Color('#45b764'))
-  g.contour(ring307.project(1024, 1024), 0.80, Color('#c0392b'))
+  g.contour(ring870.project(1024, 1024), 0.25, Color('#f4d35e'));
+  g.contour(ring595.project(1024, 1024), 0.50, Color('#45b764'));
+  g.contour(ring307.project(1024, 1024), 0.80, Color('#c0392b'));
 };
 volcano.baseColor = Color('#264653');
 volcano.easing = 'smoothstep';
 
 
 // ── Panel 2: "Oval Terrain" ──
-let outer  = @{ circle(0, 0, 820); closePath() };
-let middle = @{ circle(0, 0, 512); closePath() };
-let inner  = @{ circle(0, 0, 225); closePath() };
+let outer  = @{ circle(0, 0, 820); closePath(); };
+let middle = @{ circle(0, 0, 512); closePath(); };
+let inner  = @{ circle(0, 0, 225); closePath(); };
 
 let ovalTerrain = TopoGradient('oval', pw, ph) {|g|
-  g.contour(outer.scale(1.2, 0.8).project(1075, 1024),  0.20, Color('#e9c46a'))
-  g.contour(middle.scale(1.1, 0.85).project(1004, 975),  0.50, Color('#2a9d8f'))
-  g.contour(inner.project(922, 902),                      0.82, Color('#8b4513'))
+  g.contour(outer.scale(1.2, 0.8).project(1075, 1024),  0.20, Color('#e9c46a'));
+  g.contour(middle.scale(1.1, 0.85).project(1004, 975),  0.50, Color('#2a9d8f'));
+  g.contour(inner.project(922, 902),                      0.82, Color('#8b4513'));
 };
 ovalTerrain.baseColor = Color('#1d3557');
 ovalTerrain.easing = 'smoothstep';
@@ -57,18 +57,18 @@ let cyA = 973;
 let cxB = 1485;
 let cyB = 1178;
 
-let baseA = @{ circle(0, 0, 563); closePath() };
-let midA  = @{ circle(0, 0, 307); closePath() };
-let topA  = @{ circle(0, 0, 123); closePath() };
-let baseB = @{ circle(0, 0, 430); closePath() };
-let midB  = @{ circle(0, 0, 205); closePath() };
+let baseA = @{ circle(0, 0, 563); closePath(); };
+let midA  = @{ circle(0, 0, 307); closePath(); };
+let topA  = @{ circle(0, 0, 123); closePath(); };
+let baseB = @{ circle(0, 0, 430); closePath(); };
+let midB  = @{ circle(0, 0, 205); closePath(); };
 
 let peaks = TopoGradient('peaks', pw, ph) {|g|
-  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'))
-  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'))
-  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'))
-  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'))
-  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'))
+  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'));
+  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'));
+  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'));
+  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'));
+  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'));
 };
 peaks.baseColor = Color('#003049');
 peaks.easing = 'ease-out';
@@ -76,16 +76,16 @@ peaks.easing = 'ease-out';
 
 // ── Panel 4: "Nested Rectangles" ──
 // Sharp geometry — pure straight edges
-let rectOuter  = @{ rect(0, 0, 1600, 1600) };
-let rectMiddle = @{ rect(0, 0, 1000, 1000) };
-let rectInner  = @{ rect(0, 0, 500, 500) };
-let rectCore   = @{ rect(0, 0, 180, 180) };
+let rectOuter  = @{ rect(0, 0, 1600, 1600); };
+let rectMiddle = @{ rect(0, 0, 1000, 1000); };
+let rectInner  = @{ rect(0, 0, 500, 500); };
+let rectCore   = @{ rect(0, 0, 180, 180); };
 
 let boxes = TopoGradient('boxes', pw, ph) {|g|
-  g.contour(rectOuter.project(224, 224),   0.15, Color('#a8dadc'))
-  g.contour(rectMiddle.project(524, 524),  0.40, Color('#457b9d'))
-  g.contour(rectInner.project(774, 774),   0.65, Color('#1d3557'))
-  g.contour(rectCore.project(934, 934),    0.90, Color('#e63946'))
+  g.contour(rectOuter.project(224, 224),   0.15, Color('#a8dadc'));
+  g.contour(rectMiddle.project(524, 524),  0.40, Color('#457b9d'));
+  g.contour(rectInner.project(774, 774),   0.65, Color('#1d3557'));
+  g.contour(rectCore.project(934, 934),    0.90, Color('#e63946'));
 };
 boxes.baseColor = Color('#f1faee');
 boxes.easing = 'linear';
@@ -93,16 +93,16 @@ boxes.easing = 'linear';
 
 // ── Panel 5: "Rounded Contours" ──
 // Mixed geometry — rounded rectangles with varying corner radii
-let rrOuter  = @{ roundRect(0, 0, 1700, 1700, 200) };
-let rrMiddle = @{ roundRect(0, 0, 1100, 1100, 140) };
-let rrInner  = @{ roundRect(0, 0, 600, 600, 80) };
-let rrCore   = @{ roundRect(0, 0, 220, 220, 40) };
+let rrOuter  = @{ roundRect(0, 0, 1700, 1700, 200); };
+let rrMiddle = @{ roundRect(0, 0, 1100, 1100, 140); };
+let rrInner  = @{ roundRect(0, 0, 600, 600, 80); };
+let rrCore   = @{ roundRect(0, 0, 220, 220, 40); };
 
 let rounded = TopoGradient('rounded', pw, ph) {|g|
-  g.contour(rrOuter.project(174, 174),   0.15, Color('#ffd6a5'))
-  g.contour(rrMiddle.project(474, 474),  0.40, Color('#caffbf'))
-  g.contour(rrInner.project(724, 724),   0.65, Color('#9bf6ff'))
-  g.contour(rrCore.project(914, 914),    0.90, Color('#bdb2ff'))
+  g.contour(rrOuter.project(174, 174),   0.15, Color('#ffd6a5'));
+  g.contour(rrMiddle.project(474, 474),  0.40, Color('#caffbf'));
+  g.contour(rrInner.project(724, 724),   0.65, Color('#9bf6ff'));
+  g.contour(rrCore.project(914, 914),    0.90, Color('#bdb2ff'));
 };
 rounded.baseColor = Color('#fdffb6');
 rounded.easing = 'smoothstep';

@@ -11,28 +11,28 @@ let ph = 200;
 
 // ── Panel 1: "Concentric Rings" ──
 // Simple nested circles — smoothstep easing, srgb interpolation
-let ring85 = @{ circle(0, 0, 85); closePath() };
-let ring58 = @{ circle(0, 0, 58); closePath() };
-let ring30 = @{ circle(0, 0, 30); closePath() };
+let ring85 = @{ circle(0, 0, 85); closePath(); };
+let ring58 = @{ circle(0, 0, 58); closePath(); };
+let ring30 = @{ circle(0, 0, 30); closePath(); };
 
 let volcano = TopoGradient('volcano', pw, ph) {|g|
-  g.contour(ring85.project(100, 100), 0.25, Color('#f4d35e'))
-  g.contour(ring58.project(100, 100), 0.50, Color('#45b764'))
-  g.contour(ring30.project(100, 100), 0.80, Color('#c0392b'))
+  g.contour(ring85.project(100, 100), 0.25, Color('#f4d35e'));
+  g.contour(ring58.project(100, 100), 0.50, Color('#45b764'));
+  g.contour(ring30.project(100, 100), 0.80, Color('#c0392b'));
 };
 volcano.baseColor = Color('#264653');
 volcano.easing = 'smoothstep';
 
 // ── Panel 2: "Oval Terrain" ──
 // Elliptical contours offset from center — oklch interpolation
-let outer  = @{ circle(0, 0, 80); closePath() };
-let middle = @{ circle(0, 0, 50); closePath() };
-let inner  = @{ circle(0, 0, 22); closePath() };
+let outer  = @{ circle(0, 0, 80); closePath(); };
+let middle = @{ circle(0, 0, 50); closePath(); };
+let inner  = @{ circle(0, 0, 22); closePath(); };
 
 let ovalTerrain = TopoGradient('oval', pw, ph) {|g|
-  g.contour(outer.scale(1.2, 0.8).project(105, 100),  0.20, Color('#e9c46a'))
-  g.contour(middle.scale(1.1, 0.85).project(98, 95),  0.50, Color('#2a9d8f'))
-  g.contour(inner.project(90, 88),                     0.82, Color('#8b4513'))
+  g.contour(outer.scale(1.2, 0.8).project(105, 100),  0.20, Color('#e9c46a'));
+  g.contour(middle.scale(1.1, 0.85).project(98, 95),  0.50, Color('#2a9d8f'));
+  g.contour(inner.project(90, 88),                     0.82, Color('#8b4513'));
 };
 ovalTerrain.baseColor = Color('#1d3557');
 ovalTerrain.easing = 'smoothstep';
@@ -45,18 +45,18 @@ let cyA = 95;
 let cxB = 145;
 let cyB = 115;
 
-let baseA = @{ circle(0, 0, 55); closePath() };
-let midA  = @{ circle(0, 0, 30); closePath() };
-let topA  = @{ circle(0, 0, 12); closePath() };
-let baseB = @{ circle(0, 0, 42); closePath() };
-let midB  = @{ circle(0, 0, 20); closePath() };
+let baseA = @{ circle(0, 0, 55); closePath(); };
+let midA  = @{ circle(0, 0, 30); closePath(); };
+let topA  = @{ circle(0, 0, 12); closePath(); };
+let baseB = @{ circle(0, 0, 42); closePath(); };
+let midB  = @{ circle(0, 0, 20); closePath(); };
 
 let peaks = TopoGradient('peaks', pw, ph) {|g|
-  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'))
-  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'))
-  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'))
-  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'))
-  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'))
+  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'));
+  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'));
+  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'));
+  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'));
+  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'));
 };
 peaks.baseColor = Color('#003049');
 peaks.easing = 'ease-out';

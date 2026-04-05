@@ -47,10 +47,10 @@ let r4 = diamond.rotateAtVertexIndex(0, 0.4);
 // --- Gradient ---
 
 let topo = TopoGradient('rects', 400, 400) {|g|
-  g.contour(r1.project(100, 115), 0.15, Color('#264653'))
-  g.contour(r2.project(135, 145), 0.4, Color('#2a9d8f'))
-  g.contour(r3.project(165, 175), 0.65, Color('#e9c46a'))
-  g.contour(r4.project(195, 195), 0.88, Color('#e76f51'))
+  g.contour(r1.project(100, 115), 0.15, Color('#264653'));
+  g.contour(r2.project(135, 145), 0.4, Color('#2a9d8f'));
+  g.contour(r3.project(165, 175), 0.65, Color('#e9c46a'));
+  g.contour(r4.project(195, 195), 0.88, Color('#e76f51'));
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'smoothstep';

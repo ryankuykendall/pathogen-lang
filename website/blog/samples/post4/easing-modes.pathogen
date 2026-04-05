@@ -4,46 +4,46 @@
 
 // --- Shared contour shapes (sized for 400×400 gradient) ---
 
-let ring = @{ circle(0, 0, 160); closePath() };
-let core = @{ circle(0, 0, 60); closePath() };
+let ring = @{ circle(0, 0, 160); closePath(); };
+let core = @{ circle(0, 0, 60); closePath(); };
 
 // --- Five gradients at proper resolution ---
 
 let t1 = TopoGradient('ease-0', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t1.baseColor = Color('#1a1a2e');
 t1.easing = 'linear';
 t1.interpolation = 'oklch';
 
 let t2 = TopoGradient('ease-1', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t2.baseColor = Color('#1a1a2e');
 t2.easing = 'smoothstep';
 t2.interpolation = 'oklch';
 
 let t3 = TopoGradient('ease-2', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t3.baseColor = Color('#1a1a2e');
 t3.easing = 'ease-in';
 t3.interpolation = 'oklch';
 
 let t4 = TopoGradient('ease-3', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t4.baseColor = Color('#1a1a2e');
 t4.easing = 'ease-out';
 t4.interpolation = 'oklch';
 
 let t5 = TopoGradient('ease-4', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t5.baseColor = Color('#1a1a2e');
 t5.easing = 'ease-in-out';

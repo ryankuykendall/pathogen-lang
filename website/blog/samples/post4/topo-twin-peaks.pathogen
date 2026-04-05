@@ -11,18 +11,18 @@ let island = @{
   z
 };
 
-let summit = @{ circle(0, 0, 25); closePath() };
+let summit = @{ circle(0, 0, 25); closePath(); };
 
 // --- Gradient with two separate peaks ---
 
 let topo = TopoGradient('twins', 500, 350) {|g|
   // Left peak — warm tones
-  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'))
-  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'))
+  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'));
+  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'));
 
   // Right peak — cool tones (same elevation = separate feature)
-  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'))
-  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'))
+  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'));
+  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'));
 };
 topo.baseColor = Color('#0f2027');
 topo.easing = 'smoothstep';

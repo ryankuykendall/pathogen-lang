@@ -5,24 +5,24 @@
 // ═══════════════════════════════════════════════════════════════
 
 // --- Shared contour shapes ---
-let ring = @{ circle(0, 0, 80); closePath() };
+let ring = @{ circle(0, 0, 80); closePath(); };
 
 // ═══════════════════════════════════════════════════════════════
 // Row 1: Concentric Rings
 // ═══════════════════════════════════════════════════════════════
 
 let ringsD = TopoGradient('ringsD', 2048, 2048) {|g|
-  g.contour(ring.scale(10, 10).project(1024, 1024), 0.2, Color('#3498db'))
-  g.contour(ring.scale(7, 7).project(1024, 1024), 0.5, Color('#2ecc71'))
-  g.contour(ring.scale(4, 4).project(1024, 1024), 0.8, Color('#e74c3c'))
+  g.contour(ring.scale(10, 10).project(1024, 1024), 0.2, Color('#3498db'));
+  g.contour(ring.scale(7, 7).project(1024, 1024), 0.5, Color('#2ecc71'));
+  g.contour(ring.scale(4, 4).project(1024, 1024), 0.8, Color('#e74c3c'));
 };
 ringsD.method = 'distance';
 ringsD.baseColor = Color('#1a1a2e');
 
 let ringsL = TopoGradient('ringsL', 2048, 2048) {|g|
-  g.contour(ring.scale(10, 10).project(1024, 1024), 0.2, Color('#3498db'))
-  g.contour(ring.scale(7, 7).project(1024, 1024), 0.5, Color('#2ecc71'))
-  g.contour(ring.scale(4, 4).project(1024, 1024), 0.8, Color('#e74c3c'))
+  g.contour(ring.scale(10, 10).project(1024, 1024), 0.2, Color('#3498db'));
+  g.contour(ring.scale(7, 7).project(1024, 1024), 0.5, Color('#2ecc71'));
+  g.contour(ring.scale(4, 4).project(1024, 1024), 0.8, Color('#e74c3c'));
 };
 ringsL.method = 'laplace';
 ringsL.iterations = 300;
@@ -38,21 +38,21 @@ layer('ringsL_bg').apply { M 2200 200 h 2048 v 2048 h -2048 Z }
 // Row 2: Oval Terrain
 // ═══════════════════════════════════════════════════════════════
 
-let oval = @{ circle(0, 0, 100); closePath() };
+let oval = @{ circle(0, 0, 100); closePath(); };
 
 let ovalD = TopoGradient('ovalD', 2048, 2048) {|g|
-  g.contour(oval.scale(9, 6).project(1024, 1024), 0.3, Color('#8e44ad'))
-  g.contour(oval.scale(5, 3).project(1024, 900), 0.6, Color('#f39c12'))
-  g.contour(oval.scale(2, 1.5).project(1024, 900), 0.9, Color('#ecf0f1'))
+  g.contour(oval.scale(9, 6).project(1024, 1024), 0.3, Color('#8e44ad'));
+  g.contour(oval.scale(5, 3).project(1024, 900), 0.6, Color('#f39c12'));
+  g.contour(oval.scale(2, 1.5).project(1024, 900), 0.9, Color('#ecf0f1'));
 };
 ovalD.method = 'distance';
 ovalD.baseColor = Color('#2c3e50');
 ovalD.easing = 'smoothstep';
 
 let ovalL = TopoGradient('ovalL', 2048, 2048) {|g|
-  g.contour(oval.scale(9, 6).project(1024, 1024), 0.3, Color('#8e44ad'))
-  g.contour(oval.scale(5, 3).project(1024, 900), 0.6, Color('#f39c12'))
-  g.contour(oval.scale(2, 1.5).project(1024, 900), 0.9, Color('#ecf0f1'))
+  g.contour(oval.scale(9, 6).project(1024, 1024), 0.3, Color('#8e44ad'));
+  g.contour(oval.scale(5, 3).project(1024, 900), 0.6, Color('#f39c12'));
+  g.contour(oval.scale(2, 1.5).project(1024, 900), 0.9, Color('#ecf0f1'));
 };
 ovalL.method = 'laplace';
 ovalL.iterations = 300;
@@ -69,22 +69,22 @@ layer('ovalL_bg').apply { M 2200 2450 h 2048 v 2048 h -2048 Z }
 // Row 3: Twin Peaks (non-nested contours — biggest difference)
 // ═══════════════════════════════════════════════════════════════
 
-let peak = @{ circle(0, 0, 70); closePath() };
+let peak = @{ circle(0, 0, 70); closePath(); };
 
 let twinD = TopoGradient('twinD', 2048, 2048) {|g|
-  g.contour(peak.scale(7, 7).project(700, 1024), 0.4, Color('#1abc9c'))
-  g.contour(peak.scale(3, 3).project(700, 1024), 0.8, Color('#e74c3c'))
-  g.contour(peak.scale(7, 7).project(1348, 1024), 0.4, Color('#1abc9c'))
-  g.contour(peak.scale(3, 3).project(1348, 1024), 0.8, Color('#e74c3c'))
+  g.contour(peak.scale(7, 7).project(700, 1024), 0.4, Color('#1abc9c'));
+  g.contour(peak.scale(3, 3).project(700, 1024), 0.8, Color('#e74c3c'));
+  g.contour(peak.scale(7, 7).project(1348, 1024), 0.4, Color('#1abc9c'));
+  g.contour(peak.scale(3, 3).project(1348, 1024), 0.8, Color('#e74c3c'));
 };
 twinD.method = 'distance';
 twinD.baseColor = Color('#0d1b2a');
 
 let twinL = TopoGradient('twinL', 2048, 2048) {|g|
-  g.contour(peak.scale(7, 7).project(700, 1024), 0.4, Color('#1abc9c'))
-  g.contour(peak.scale(3, 3).project(700, 1024), 0.8, Color('#e74c3c'))
-  g.contour(peak.scale(7, 7).project(1348, 1024), 0.4, Color('#1abc9c'))
-  g.contour(peak.scale(3, 3).project(1348, 1024), 0.8, Color('#e74c3c'))
+  g.contour(peak.scale(7, 7).project(700, 1024), 0.4, Color('#1abc9c'));
+  g.contour(peak.scale(3, 3).project(700, 1024), 0.8, Color('#e74c3c'));
+  g.contour(peak.scale(7, 7).project(1348, 1024), 0.4, Color('#1abc9c'));
+  g.contour(peak.scale(3, 3).project(1348, 1024), 0.8, Color('#e74c3c'));
 };
 twinL.method = 'laplace';
 twinL.iterations = 400;
@@ -100,21 +100,21 @@ layer('twinL_bg').apply { M 2200 4700 h 2048 v 2048 h -2048 Z }
 // Row 4: Nested Rectangles
 // ═══════════════════════════════════════════════════════════════
 
-let box = @{ rect(-50, -50, 100, 100); closePath() };
+let box = @{ rect(-50, -50, 100, 100); closePath(); };
 
 let rectD = TopoGradient('rectD', 2048, 2048) {|g|
-  g.contour(box.scale(9, 9).project(1024, 1024), 0.2, Color('#2980b9'))
-  g.contour(box.scale(6, 6).project(1024, 1024), 0.5, Color('#27ae60'))
-  g.contour(box.scale(3, 3).project(1024, 1024), 0.8, Color('#f1c40f'))
+  g.contour(box.scale(9, 9).project(1024, 1024), 0.2, Color('#2980b9'));
+  g.contour(box.scale(6, 6).project(1024, 1024), 0.5, Color('#27ae60'));
+  g.contour(box.scale(3, 3).project(1024, 1024), 0.8, Color('#f1c40f'));
 };
 rectD.method = 'distance';
 rectD.baseColor = Color('#1a1a2e');
 rectD.easing = 'ease-in-out';
 
 let rectL = TopoGradient('rectL', 2048, 2048) {|g|
-  g.contour(box.scale(9, 9).project(1024, 1024), 0.2, Color('#2980b9'))
-  g.contour(box.scale(6, 6).project(1024, 1024), 0.5, Color('#27ae60'))
-  g.contour(box.scale(3, 3).project(1024, 1024), 0.8, Color('#f1c40f'))
+  g.contour(box.scale(9, 9).project(1024, 1024), 0.2, Color('#2980b9'));
+  g.contour(box.scale(6, 6).project(1024, 1024), 0.5, Color('#27ae60'));
+  g.contour(box.scale(3, 3).project(1024, 1024), 0.8, Color('#f1c40f'));
 };
 rectL.method = 'laplace';
 rectL.iterations = 300;
@@ -131,20 +131,20 @@ layer('rectL_bg').apply { M 2200 6950 h 2048 v 2048 h -2048 Z }
 // Row 5: Rounded Contours
 // ═══════════════════════════════════════════════════════════════
 
-let rrect = @{ roundRect(-60, -40, 120, 80, 20); closePath() };
+let rrect = @{ roundRect(-60, -40, 120, 80, 20); closePath(); };
 
 let roundD = TopoGradient('roundD', 2048, 2048) {|g|
-  g.contour(rrect.scale(8, 8).project(1024, 1024), 0.25, Color('#e67e22'))
-  g.contour(rrect.scale(5, 5).project(1024, 900), 0.55, Color('#9b59b6'))
-  g.contour(rrect.scale(2, 2).project(1024, 800), 0.85, Color('#ecf0f1'))
+  g.contour(rrect.scale(8, 8).project(1024, 1024), 0.25, Color('#e67e22'));
+  g.contour(rrect.scale(5, 5).project(1024, 900), 0.55, Color('#9b59b6'));
+  g.contour(rrect.scale(2, 2).project(1024, 800), 0.85, Color('#ecf0f1'));
 };
 roundD.method = 'distance';
 roundD.baseColor = Color('#2c3e50');
 
 let roundL = TopoGradient('roundL', 2048, 2048) {|g|
-  g.contour(rrect.scale(8, 8).project(1024, 1024), 0.25, Color('#e67e22'))
-  g.contour(rrect.scale(5, 5).project(1024, 900), 0.55, Color('#9b59b6'))
-  g.contour(rrect.scale(2, 2).project(1024, 800), 0.85, Color('#ecf0f1'))
+  g.contour(rrect.scale(8, 8).project(1024, 1024), 0.25, Color('#e67e22'));
+  g.contour(rrect.scale(5, 5).project(1024, 900), 0.55, Color('#9b59b6'));
+  g.contour(rrect.scale(2, 2).project(1024, 800), 0.85, Color('#ecf0f1'));
 };
 roundL.method = 'laplace';
 roundL.iterations = 300;
