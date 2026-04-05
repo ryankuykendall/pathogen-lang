@@ -1498,10 +1498,11 @@ export function parse(input: string): Program {
   do { if (errCur.type.isError) { hasErrors = true; break; } } while (errCur.next());
 
   if (hasErrors) {
-    // Lezer found errors — use Parsimmon for detailed error messages
-    // (Parsimmon's error position + detectMissingSemicolon are tuned together)
+    // Lezer found errors — use Parsimmon for error messages.
+    // Note: Parsimmon is ONLY used here for error formatting.
+    // All successful parsing uses Lezer (zero Parsimmon fallbacks for valid programs).
     const result = program.parse(input);
-    if (result.status) return result.value; // Shouldn't happen — all gaps are closed
+    if (result.status) return result.value; // Should not happen (all gaps closed)
 
     const { index, expected } = result;
     const lines = input.slice(0, index.offset).split('\n');
