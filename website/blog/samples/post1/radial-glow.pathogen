@@ -45,10 +45,10 @@ let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
 // --- Background and Nebula ---
 
 let bg = PathLayer('bg') ${ fill: #080612; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 let nebula = PathLayer('nebula-layer') ${ fill: nebula_grad; stroke: none; };
-nebula.apply { rect(0, 0, 400, 400) }
+nebula.apply { rect(0, 0, 400, 400); }
 
 // --- Stars ---
 
@@ -84,7 +84,7 @@ planet_ring.apply {
 let planet = GroupLayer('planet') ${};
 planet.append(planet_body, planet_ring)
 
-// --- Scene ---
+// --- Scene ---;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 let scene = GroupLayer('scene') ${};
 scene.append(bg, nebula, stars, planet)

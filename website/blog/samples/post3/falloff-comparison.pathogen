@@ -37,18 +37,18 @@ grad_4.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Fills ---
 
 let f1 = PathLayer('f1') ${ fill: grad_1; stroke: #333; stroke-width: 1; };
-f1.apply { roundRect(25, 50, 140, 260, 6) }
+f1.apply { roundRect(25, 50, 140, 260, 6); }
 
 let f2 = PathLayer('f2') ${ fill: grad_2; stroke: #333; stroke-width: 1; };
-f2.apply { roundRect(180, 50, 140, 260, 6) }
+f2.apply { roundRect(180, 50, 140, 260, 6); }
 
 let f3 = PathLayer('f3') ${ fill: grad_4; stroke: #333; stroke-width: 1; };
-f3.apply { roundRect(335, 50, 140, 260, 6) }
+f3.apply { roundRect(335, 50, 140, 260, 6); }
 
 // --- Labels ---
 

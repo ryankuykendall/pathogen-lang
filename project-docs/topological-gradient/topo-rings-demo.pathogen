@@ -5,10 +5,10 @@ let topo = TopoGradient('rings', 400, 400) {|g|
   for ([level, i] in [0.2, 0.4, 0.6, 0.8]) {
     let r = calc(150 - i * 35);
     let ring = @{ circle(0, 0, r); closePath() };
-    g.contour(ring.project(200, 200), level, Color('#27ae60'))
+    g.contour(ring.project(200, 200), level, Color('#27ae60'));
   }
 };
 topo.baseColor = Color('#1a5276');
 
 define PathLayer('bg') ${ fill: topo; }
-layer('bg').apply { rect(0, 0, 400, 400) }
+layer('bg').apply { rect(0, 0, 400, 400); }

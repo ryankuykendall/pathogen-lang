@@ -6,7 +6,7 @@ let bgColor = Color(CSSVar('--bg-color', #0f172a));
 
 // Background
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // Layer 1: Rotated partial grid as background texture
 let gridLayer = PathLayer('grid') ${ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };

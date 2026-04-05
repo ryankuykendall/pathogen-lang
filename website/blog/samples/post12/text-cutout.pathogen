@@ -6,7 +6,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 900, 310) }
+bg.apply { rect(0, 0, 900, 310); }
 
 // --- Palette ---
 
@@ -81,7 +81,7 @@ for (g in glyphs) {
     stroke-width: 1.5;
     fill: palette_fill[gi];
   };
-  gl.apply { g.drawTo(calc(s1_x + positions[gi]), calc(geo_y + baseline_y)) }
+  gl.apply { g.drawTo(calc(s1_x + positions[gi]), calc(geo_y + baseline_y)); }
   g_stage1.append(gl);
   gi = calc(gi + 1);
 }
@@ -161,7 +161,7 @@ subtitle.apply { text(30, 43)`7 glyph paths → .union() chain → .difference()
 let code_group = GroupLayer('code-block') ${ translate-x: 235; translate-y: 255; };
 
 let code_bg = PathLayer('code-bg') ${ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
-code_bg.apply { roundRect(0, 0, 430, 42, 4) }
+code_bg.apply { roundRect(0, 0, 430, 42, 4); }
 
 let code = TextLayer('code') ${ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
 code.apply {

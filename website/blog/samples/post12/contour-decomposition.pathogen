@@ -6,7 +6,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 660, 400) }
+bg.apply { rect(0, 0, 660, 400); }
 
 // --- Contour color palette (12 colors for 12 contours) ---
 
@@ -61,7 +61,7 @@ let asm_layer = PathLayer('assembled') ${
 let asm_cursor = 0;
 asm_layer.apply {
   for (g in asm_glyphs) {
-    g.drawTo(asm_cursor, 115)
+    g.drawTo(asm_cursor, 115);
     asm_cursor = calc(asm_cursor + g.advanceWidth);
   }
 }
@@ -222,18 +222,18 @@ let ld9 = PathLayer('ld9') ${ fill: colors[9]; stroke: none; };
 let ld10 = PathLayer('ld10') ${ fill: colors[10]; stroke: none; };
 let ld11 = PathLayer('ld11') ${ fill: colors[11]; stroke: none; };
 
-ld0.apply { rect(0, leg_top, 8, 8) }
-ld1.apply { rect(0, calc(leg_top + leg_h), 8, 8) }
-ld2.apply { rect(0, calc(leg_top + leg_h * 2), 8, 8) }
-ld3.apply { rect(0, calc(leg_top + leg_h * 3), 8, 8) }
-ld4.apply { rect(0, calc(leg_top + leg_h * 4), 8, 8) }
-ld5.apply { rect(0, calc(leg_top + leg_h * 5), 8, 8) }
-ld6.apply { rect(0, calc(leg_top + leg_h * 6), 8, 8) }
-ld7.apply { rect(0, calc(leg_top + leg_h * 7), 8, 8) }
-ld8.apply { rect(0, calc(leg_top + leg_h * 8), 8, 8) }
-ld9.apply { rect(0, calc(leg_top + leg_h * 9), 8, 8) }
-ld10.apply { rect(0, calc(leg_top + leg_h * 10), 8, 8) }
-ld11.apply { rect(0, calc(leg_top + leg_h * 11), 8, 8) }
+ld0.apply { rect(0, leg_top, 8, 8); }
+ld1.apply { rect(0, calc(leg_top + leg_h), 8, 8); }
+ld2.apply { rect(0, calc(leg_top + leg_h * 2), 8, 8); }
+ld3.apply { rect(0, calc(leg_top + leg_h * 3), 8, 8); }
+ld4.apply { rect(0, calc(leg_top + leg_h * 4), 8, 8); }
+ld5.apply { rect(0, calc(leg_top + leg_h * 5), 8, 8); }
+ld6.apply { rect(0, calc(leg_top + leg_h * 6), 8, 8); }
+ld7.apply { rect(0, calc(leg_top + leg_h * 7), 8, 8); }
+ld8.apply { rect(0, calc(leg_top + leg_h * 8), 8, 8); }
+ld9.apply { rect(0, calc(leg_top + leg_h * 9), 8, 8); }
+ld10.apply { rect(0, calc(leg_top + leg_h * 10), 8, 8); }
+ld11.apply { rect(0, calc(leg_top + leg_h * 11), 8, 8); }
 
 let leg_text = TextLayer('leg-text') ${
   font-family: monospace;

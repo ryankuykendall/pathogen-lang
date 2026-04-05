@@ -45,7 +45,7 @@ fuel_grad.spread = 'transparent';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 660, 340) }
+bg.apply { rect(0, 0, 660, 340); }
 
 // --- Gauge faces ---
 

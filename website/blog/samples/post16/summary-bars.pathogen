@@ -8,7 +8,7 @@ let textColor = Color('#2f2f2f');
 let subtleColor = Color('#9ca3af');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 450, 280) }
+bg.apply { rect(0, 0, 450, 280); }
 
 // === Data ===
 let top5 = [
@@ -65,7 +65,7 @@ for ([item, idx] in top5) {
   let y = calc(chartY + idx * barSpacing);
   let bw = calc(barMaxW * item.pct / maxVal);
 
-  bars.apply { roundRect(chartX, y, bw, barH, 3) }
+  bars.apply { roundRect(chartX, y, bw, barH, 3); }
 
   rankLabels.apply {
     text(45, calc(y + 15))`#${calc(idx + 1)}`

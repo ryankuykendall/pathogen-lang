@@ -12,7 +12,7 @@ let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 520, 400) }
+bg.apply { rect(0, 0, 520, 400); }
 
 // ============================================================
 // Group 1: Title
@@ -145,8 +145,8 @@ let legLabels = TextLayer('leg') ${
   text-anchor: start;
 };
 layer('info').append(swAll, swTop, legLabels);
-swAll.apply { roundRect(0, 14, 10, 10, 2) }
-swTop.apply { roundRect(0, 30, 10, 10, 2) }
+swAll.apply { roundRect(0, 14, 10, 10, 2); }
+swTop.apply { roundRect(0, 30, 10, 10, 2); }
 legLabels.apply {
   text(16, 23)`All BGG games`
   text(16, 39)`Top 100 games`

@@ -7,7 +7,7 @@ let corner = @{ h 100 v 80 };
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 480, 340) }
+bg.apply { rect(0, 0, 480, 340); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -211,11 +211,11 @@ let leg_v = PathLayer('leg-vert') ${ fill: Color('#ef4444'); stroke: none; };
 let leg_t = PathLayer('leg-trim') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_r = PathLayer('leg-rem') ${ fill: Color('#ef444440'); stroke: none; };
 
-leg_o.apply { rect(310, 256, 8, 8) }
-leg_c.apply { rect(310, 270, 8, 8) }
-leg_v.apply { rect(310, 284, 8, 8) }
-leg_t.apply { rect(400, 256, 8, 8) }
-leg_r.apply { rect(400, 270, 8, 8) }
+leg_o.apply { rect(310, 256, 8, 8); }
+leg_c.apply { rect(310, 270, 8, 8); }
+leg_v.apply { rect(310, 284, 8, 8); }
+leg_t.apply { rect(400, 256, 8, 8); }
+leg_r.apply { rect(400, 270, 8, 8); }
 
 leg.apply {
   text(322, 263)`Original`

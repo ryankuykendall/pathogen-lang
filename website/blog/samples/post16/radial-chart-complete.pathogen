@@ -11,7 +11,7 @@ let annotColor = Color('#6b7280');
 let subtleColor = Color('#9ca3af');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 1000, 750) }
+bg.apply { rect(0, 0, 1000, 750); }
 
 // === Chart parameters ===
 // Center in the middle of the canvas; Fantasy's long bar extends left,
@@ -261,10 +261,10 @@ let subtitleBg2 = PathLayer('subtitle-bg2') ${ fill: topBarColor; stroke: none; 
 layer('chrome').append(subtitleBg, subtitleBg2);
 
 subtitleBg.apply {
-  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2)
+  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2);
 }
 subtitleBg2.apply {
-  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2)
+  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2);
 }
 
 // Render as a single text element with tspans for color changes.
@@ -474,7 +474,7 @@ for ([s, si] in summData) {
 
   // Bar extends LEFT from dot
   summBars.apply {
-    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5)
+    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5);
   }
 
   // Open circle on the arc — shifted up 0.75 to center on bar

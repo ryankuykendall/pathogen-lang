@@ -34,10 +34,10 @@ let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
 // --- Layers ---
 
 let sky = PathLayer('sky-fill') ${ fill: sky_grad; stroke: none; };
-sky.apply { rect(0, 0, 400, 300) }
+sky.apply { rect(0, 0, 400, 300); }
 
 let sun = PathLayer('sun-streak') ${ fill: sun_grad; stroke: none; };
-sun.apply { rect(0, 155, 400, 30) }
+sun.apply { rect(0, 155, 400, 30); }
 
 let far_mtns = PathLayer('far-mountains') ${ fill: mtn_grad; stroke: none; };
 far_mtns.apply {
@@ -56,10 +56,10 @@ near_mtns.apply {
 }
 
 let ground = PathLayer('ground-fill') ${ fill: ground_grad; stroke: none; };
-ground.apply { rect(0, 255, 400, 45) }
+ground.apply { rect(0, 255, 400, 45); }
 
 let frame = PathLayer('frame') ${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
-frame.apply { rect(0, 0, 400, 300) }
+frame.apply { rect(0, 0, 400, 300); }
 
 // --- Scene Organization ---
 

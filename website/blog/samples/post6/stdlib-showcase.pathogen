@@ -4,7 +4,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 260) }
+bg.apply { rect(0, 0, 600, 260); }
 
 // --- Grid cells ---
 
@@ -14,11 +14,11 @@ let cells = PathLayer('cells') ${
   stroke-width: 1;
 };
 cells.apply {
-  roundRect(15, 50, 100, 100, 6)
-  roundRect(130, 50, 100, 100, 6)
-  roundRect(245, 50, 100, 100, 6)
-  roundRect(360, 50, 100, 100, 6)
-  roundRect(475, 50, 100, 100, 6)
+  roundRect(15, 50, 100, 100, 6);
+  roundRect(130, 50, 100, 100, 6);
+  roundRect(245, 50, 100, 100, 6);
+  roundRect(360, 50, 100, 100, 6);
+  roundRect(475, 50, 100, 100, 6);
 }
 
 // --- Shapes ---
@@ -35,7 +35,7 @@ let s2 = PathLayer('s-rect') ${
   stroke: Color('#22c55e');
   stroke-width: 1.5;
 };
-s2.apply { rect(150, 72, 60, 40) }
+s2.apply { rect(150, 72, 60, 40); }
 
 let s3 = PathLayer('s-star') ${
   fill: Color('#f59e0b18');
@@ -49,14 +49,14 @@ let s4 = PathLayer('s-polygon') ${
   stroke: Color('#ef4444');
   stroke-width: 1.5;
 };
-s4.apply { polygon(410, 100, 30, 6) }
+s4.apply { polygon(410, 100, 30, 6); }
 
 let s5 = PathLayer('s-roundrect') ${
   fill: Color('#8b5cf618');
   stroke: Color('#8b5cf6');
   stroke-width: 1.5;
 };
-s5.apply { roundRect(498, 75, 55, 40, 8) }
+s5.apply { roundRect(498, 75, 55, 40, 8); }
 
 // --- Shape names ---
 

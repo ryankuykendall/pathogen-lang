@@ -6,7 +6,7 @@ let b1 = Point(90, 150);
 let h1 = PolarVector(rad(-60), 60);
 polarCubicBezier(a1, h1, h1.mirror(), b1)
 
-// Curve 2: Wider arch using scale()
+// Curve 2: Wider arch using scale();;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 let a2 = Point(110, 150);
 let b2 = Point(190, 150);
 let h2 = PolarVector(rad(-60), 40);

@@ -9,7 +9,7 @@ let curve = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 520, 300) }
+bg.apply { rect(0, 0, 520, 300); }
 
 // --- The curve ---
 

@@ -47,15 +47,15 @@ freeform.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Fills ---
 
 let mesh_fill = PathLayer('mesh-fill') ${ fill: mesh; stroke: #333; stroke-width: 1; };
-mesh_fill.apply { roundRect(30, 50, 200, 280, 6) }
+mesh_fill.apply { roundRect(30, 50, 200, 280, 6); }
 
 let ff_fill = PathLayer('ff-fill') ${ fill: freeform; stroke: #333; stroke-width: 1; };
-ff_fill.apply { roundRect(270, 50, 200, 280, 6) }
+ff_fill.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
@@ -98,7 +98,7 @@ let left_group = GroupLayer('left-group') ${};
 left_group.append(mesh_fill)
 
 let right_group = GroupLayer('right-group') ${};
-right_group.append(ff_fill)
+right_group.append(ff_fill);
 
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_group, right_group, labels, desc, title)

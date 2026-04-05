@@ -4,7 +4,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 300) }
+bg.apply { rect(0, 0, 600, 300); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -45,7 +45,7 @@ let styled1 = info << mono_sm;
 let bb1 = styled1.boundingBox();
 
 let v1_bbox = PathLayer('v1-bbox') ${ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height) }
+v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let v1_label = TextLayer('v1-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v1_label.apply { text(0, -10)`mono 10px` }
@@ -71,7 +71,7 @@ let styled2 = info << mono_lg;
 let bb2 = styled2.boundingBox();
 
 let v2_bbox = PathLayer('v2-bbox') ${ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height) }
+v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let v2_label = TextLayer('v2-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v2_label.apply { text(0, -10)`mono 14px` }
@@ -97,7 +97,7 @@ let styled3 = info << sans;
 let bb3 = styled3.boundingBox();
 
 let v3_bbox = PathLayer('v3-bbox') ${ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height) }
+v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let v3_label = TextLayer('v3-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v3_label.apply { text(0, -10)`sans-serif 12px` }

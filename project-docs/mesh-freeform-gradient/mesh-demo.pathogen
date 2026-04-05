@@ -23,4 +23,4 @@ let mesh = MeshGradient('fire', 200, 200, 3, 2) {|grad|
 mesh.interpolation = 'oklch';
 
 define PathLayer('bg') ${ fill: mesh; stroke: none; }
-layer('bg').apply { rect(0, 0, 200, 200) }
+layer('bg').apply { rect(0, 0, 200, 200); }

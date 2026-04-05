@@ -18,7 +18,7 @@ let c_violet = Color('#8b5cf6');
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: c_bg; stroke: none; };
-bg.apply { rect(0, 0, 800, 400) }
+bg.apply { rect(0, 0, 800, 400); }
 
 // ═══════════════════════════════════════
 // Panel 1: Simple toPathBlock conversion
@@ -36,11 +36,11 @@ let pb1 = tb1.toPathBlock();
 
 // Draw with fill
 let p1_fill = PathLayer('p1-fill') ${ fill: c_blue; stroke: none; };
-p1_fill.apply { pb1.drawTo(0, 0) }
+p1_fill.apply { pb1.drawTo(0, 0); }
 
 // Draw with stroke overlay to show outlines
 let p1_stroke = PathLayer('p1-stroke') ${ fill: none; stroke: c_text; stroke-width: 0.5; opacity: 0.3; };
-p1_stroke.apply { pb1.drawTo(0, 0) }
+p1_stroke.apply { pb1.drawTo(0, 0); }
 
 let p1_label = TextLayer('p1-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p1_label.apply {
@@ -66,7 +66,7 @@ let pb2 = tb2.toPathBlock();
 
 // Draw filled
 let p2_fill = PathLayer('p2-fill') ${ fill: c_green; stroke: none; };
-p2_fill.apply { pb2.drawTo(0, 0) }
+p2_fill.apply { pb2.drawTo(0, 0); }
 
 let p2_label = TextLayer('p2-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p2_label.apply {
@@ -91,15 +91,15 @@ let pb3 = tb3.toPathBlock();
 
 // Draw at three different scales/positions
 let p3a = PathLayer('p3-normal') ${ fill: c_amber; stroke: none; };
-p3a.apply { pb3.drawTo(0, 0) }
+p3a.apply { pb3.drawTo(0, 0); }
 
 let pb3_scaled = pb3.scale(0.6, 0.6);
 let p3b = PathLayer('p3-scaled') ${ fill: c_rose; stroke: none; };
-p3b.apply { pb3_scaled.drawTo(0, 50) }
+p3b.apply { pb3_scaled.drawTo(0, 50); }
 
 let pb3_mirrored = pb3.mirror(0);
 let p3c = PathLayer('p3-mirrored') ${ fill: c_violet; stroke: none; };
-p3c.apply { pb3_mirrored.drawTo(0, 95) }
+p3c.apply { pb3_mirrored.drawTo(0, 95); }
 
 let p3_label = TextLayer('p3-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p3_label.apply {
@@ -132,13 +132,13 @@ let tb4c = &{
 let pb4c = tb4c.toPathBlock();
 
 let p4a = PathLayer('p4a') ${ fill: c_blue; stroke: none; };
-p4a.apply { pb4a.drawTo(0, 0) }
+p4a.apply { pb4a.drawTo(0, 0); }
 
 let p4b = PathLayer('p4b') ${ fill: c_green; stroke: none; };
-p4b.apply { pb4b.drawTo(0, 40) }
+p4b.apply { pb4b.drawTo(0, 40); }
 
 let p4c = PathLayer('p4c') ${ fill: c_amber; stroke: none; };
-p4c.apply { pb4c.drawTo(0, 80) }
+p4c.apply { pb4c.drawTo(0, 80); }
 
 let p4_label = TextLayer('p4-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p4_label.apply {
@@ -166,10 +166,10 @@ let tb5b = &{
 let pb5b = tb5b.toPathBlock();
 
 let p5a = PathLayer('p5-bebas') ${ fill: c_rose; stroke: none; };
-p5a.apply { pb5a.drawTo(0, 0) }
+p5a.apply { pb5a.drawTo(0, 0); }
 
 let p5b = PathLayer('p5-baumans') ${ fill: c_violet; stroke: none; };
-p5b.apply { pb5b.drawTo(0, 40) }
+p5b.apply { pb5b.drawTo(0, 40); }
 
 let p5_label = TextLayer('p5-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p5_label.apply {

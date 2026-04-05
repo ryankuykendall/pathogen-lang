@@ -4,7 +4,7 @@
 // ─── Background ─────────────────────────────────────────────────────
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 340) }
+bg.apply { rect(0, 0, 600, 340); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -43,7 +43,7 @@ let bb1_layer = PathLayer('bb1') ${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
 let cross1 = PathLayer('cross1') ${
@@ -78,7 +78,7 @@ let bb2_layer = PathLayer('bb2') ${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
 let cross2 = PathLayer('cross2') ${
@@ -206,8 +206,8 @@ let leg = TextLayer('legend') ${
 let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
 
-leg_o.apply { rect(0, 0, 8, 8) }
-leg_b.apply { rect(0, 14, 8, 8) }
+leg_o.apply { rect(0, 0, 8, 8); }
+leg_b.apply { rect(0, 14, 8, 8); }
 
 leg.apply {
   text(12, 7)`Origin`

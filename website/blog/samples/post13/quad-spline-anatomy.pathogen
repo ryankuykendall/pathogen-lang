@@ -3,7 +3,7 @@
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 350) }
+bg.apply { rect(0, 0, 540, 350); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {

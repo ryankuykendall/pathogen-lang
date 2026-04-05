@@ -15,12 +15,12 @@ mesh.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Mesh fill ---
 
 let patch = PathLayer('patch') ${ fill: mesh; stroke: none; };
-patch.apply { roundRect(30, 50, 340, 300, 8) }
+patch.apply { roundRect(30, 50, 340, 300, 8); }
 
 // --- Corner labels ---
 

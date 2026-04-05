@@ -11,7 +11,7 @@ let pad = 20;
 
 // Background
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
 let shapeColor = gridColor;

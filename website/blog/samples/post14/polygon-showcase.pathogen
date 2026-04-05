@@ -3,7 +3,7 @@
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 680, 400) }
+bg.apply { rect(0, 0, 680, 400); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -81,7 +81,7 @@ for (idx in 0..7) {
   let lName = `s${n}`;
   define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2 }
   layer(gName).append(layer(lName));
-  layer(lName).apply { pb.drawTo(drawX, drawY) }
+  layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   // Center label under the shape
   let labelX = calc(cx - name.length * 2.7);
@@ -104,7 +104,7 @@ for (idx in 0..7) {
   let cr = calc(min(r * 0.35, 8));
   let name = names[idx];
 
-  let pb = @{ roundedPolyBlock(n, cr) };
+  let pb = @{ roundedPolyBlock(n, cr); };
   let bb = pb.boundingBox();
   let cx = calc(55 + idx * spacing);
 
@@ -118,7 +118,7 @@ for (idx in 0..7) {
   let lName = `r${n}`;
   define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2 }
   layer(gName).append(layer(lName));
-  layer(lName).apply { pb.drawTo(drawX, drawY) }
+  layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   let labelX = calc(cx - name.length * 2.7);
   let tlName = `r${n}-l`;

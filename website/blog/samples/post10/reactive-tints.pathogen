@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 280) }
+bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Title
@@ -87,7 +87,7 @@ let tints = [
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`lt_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 let tint_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
@@ -120,7 +120,7 @@ let shades = [
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`dk_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 let shade_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
@@ -135,7 +135,7 @@ pct_label.apply {
 // ═══════════════════════════════════════
 
 let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
-code_bg.apply { roundRect(30, 228, 460, 40, 4) }
+code_bg.apply { roundRect(30, 228, 460, 40, 4); }
 
 let code = TextLayer('code') ${
   font-family: monospace;

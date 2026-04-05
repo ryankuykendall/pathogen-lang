@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 320) }
+bg.apply { rect(0, 0, 520, 320); }
 
 // ═══════════════════════════════════════
 // Title
@@ -108,7 +108,7 @@ row_labels.apply {
 for ([color, i] in lightness_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`l_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -128,7 +128,7 @@ row_labels.apply {
 for ([color, i] in hue_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`h_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -148,7 +148,7 @@ row_labels.apply {
 for ([color, i] in sat_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`s_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 sw_labels.apply {

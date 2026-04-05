@@ -8,7 +8,7 @@ let curve = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 560, 360) }
+bg.apply { rect(0, 0, 560, 360); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -207,10 +207,10 @@ let leg_t = PathLayer('leg-tan') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_n = PathLayer('leg-norm') ${ fill: Color('#f59e0b'); stroke: none; };
 let leg_p = PathLayer('leg-pt') ${ fill: Color('#ef4444'); stroke: none; };
 
-leg_c.apply { rect(370, 310, 8, 8) }
-leg_t.apply { rect(370, 324, 8, 8) }
-leg_n.apply { rect(460, 310, 8, 8) }
-leg_p.apply { rect(460, 324, 8, 8) }
+leg_c.apply { rect(370, 310, 8, 8); }
+leg_t.apply { rect(370, 324, 8, 8); }
+leg_n.apply { rect(460, 310, 8, 8); }
+leg_p.apply { rect(460, 324, 8, 8); }
 
 leg.apply {
   text(382, 317)`Curve path`

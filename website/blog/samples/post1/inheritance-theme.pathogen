@@ -28,28 +28,28 @@ let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Base showcase (large card) ---
 
 let base_card = PathLayer('base-card') ${ fill: base; stroke: #333; stroke-width: 1; };
-base_card.apply { roundRect(20, 40, 170, 80, 8) }
+base_card.apply { roundRect(20, 40, 170, 80, 8); }
 
 let cool_card = PathLayer('cool-card') ${ fill: cool; stroke: #333; stroke-width: 1; };
-cool_card.apply { roundRect(210, 40, 170, 80, 8) }
+cool_card.apply { roundRect(210, 40, 170, 80, 8); }
 
 // --- Vertical variant: tall sidebar ---
 
 let vert_bar = PathLayer('vert-bar') ${ fill: vertical; stroke: #333; stroke-width: 1; };
-vert_bar.apply { roundRect(20, 145, 60, 120, 8) }
+vert_bar.apply { roundRect(20, 145, 60, 120, 8); }
 
 // --- Subtle variant: UI elements ---
 
 let btn1 = PathLayer('btn1') ${ fill: subtle; stroke: none; };
-btn1.apply { roundRect(100, 145, 120, 36, 6) }
+btn1.apply { roundRect(100, 145, 120, 36, 6); }
 
 let btn2 = PathLayer('btn2') ${ fill: subtle; stroke: none; };
-btn2.apply { roundRect(100, 195, 120, 36, 6) }
+btn2.apply { roundRect(100, 195, 120, 36, 6); }
 
 // --- Small accent circles using base ---
 
@@ -65,10 +65,10 @@ dot3.apply { circle(360, 163, 18); closePath() }
 // --- Pill shapes with inherited gradient ---
 
 let pill1 = PathLayer('pill1') ${ fill: base; stroke: none; };
-pill1.apply { roundRect(240, 200, 140, 28, 14) }
+pill1.apply { roundRect(240, 200, 140, 28, 14); }
 
 let pill2 = PathLayer('pill2') ${ fill: cool; stroke: none; };
-pill2.apply { roundRect(240, 236, 140, 28, 14) }
+pill2.apply { roundRect(240, 236, 140, 28, 14); }
 
 // --- Labels ---
 
@@ -100,4 +100,4 @@ title.apply {
 // --- Scene ---
 
 let palette = GroupLayer('palette') ${};
-palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title)
+palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);

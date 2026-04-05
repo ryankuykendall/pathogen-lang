@@ -34,7 +34,7 @@ glow_c.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Light circles (overlapping for color mixing) ---
 

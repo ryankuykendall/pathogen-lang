@@ -43,15 +43,15 @@ deformed.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Mesh fills ---
 
 let left = PathLayer('left') ${ fill: uniform; stroke: #333; stroke-width: 1; };
-left.apply { roundRect(30, 50, 200, 280, 6) }
+left.apply { roundRect(30, 50, 200, 280, 6); }
 
 let right = PathLayer('right') ${ fill: deformed; stroke: #333; stroke-width: 1; };
-right.apply { roundRect(270, 50, 200, 280, 6) }
+right.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
@@ -94,7 +94,7 @@ let left_group = GroupLayer('left-group') ${};
 left_group.append(left)
 
 let right_group = GroupLayer('right-group') ${};
-right_group.append(right)
+right_group.append(right);
 
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_group, right_group, labels, desc, title)

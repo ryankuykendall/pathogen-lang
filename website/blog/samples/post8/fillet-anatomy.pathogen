@@ -4,7 +4,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 480, 340) }
+bg.apply { rect(0, 0, 480, 340); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -228,10 +228,10 @@ let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
 let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
 let leg_t = PathLayer('leg-t') ${ fill: Color('#22c55e'); stroke: none; };
 
-leg_o.apply { rect(300, 260, 8, 8) }
-leg_f.apply { rect(300, 274, 8, 8) }
-leg_v.apply { rect(390, 260, 8, 8) }
-leg_t.apply { rect(390, 274, 8, 8) }
+leg_o.apply { rect(300, 260, 8, 8); }
+leg_f.apply { rect(300, 274, 8, 8); }
+leg_v.apply { rect(390, 260, 8, 8); }
+leg_t.apply { rect(390, 274, 8, 8); }
 
 leg.apply {
   text(312, 267)`Original`

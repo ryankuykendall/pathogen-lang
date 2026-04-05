@@ -4,7 +4,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 700, 380) }
+bg.apply { rect(0, 0, 700, 380); }
 
 // --- Layers ---
 
@@ -49,7 +49,7 @@ for (i in 0..3) {
     shape.drawTo(ox, oy)
   }
   filleted.apply {
-    ef.drawTo(ox, oy)
+    ef.drawTo(ox, oy);
   }
   // vertex dot
   dots.apply {
@@ -73,7 +73,7 @@ for (i in 0..3) {
     shape.drawTo(ox, oy)
   }
   filleted.apply {
-    ef.drawTo(ox, oy)
+    ef.drawTo(ox, oy);
   }
   // vertex dot
   dots.apply {
@@ -114,9 +114,9 @@ let leg_o = PathLayer('leg-o') ${ fill: Color('#94a3b8'); stroke: none; };
 let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
 let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
 
-leg_o.apply { rect(560, 20, 8, 8) }
-leg_f.apply { rect(560, 34, 8, 8) }
-leg_v.apply { rect(640, 20, 8, 8) }
+leg_o.apply { rect(560, 20, 8, 8); }
+leg_f.apply { rect(560, 34, 8, 8); }
+leg_v.apply { rect(640, 20, 8, 8); }
 
 leg.apply {
   text(572, 27)`Original`

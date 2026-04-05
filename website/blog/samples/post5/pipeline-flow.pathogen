@@ -5,29 +5,29 @@
 // --- Background ---
 
 let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
-  g.stop(0, Color('#0a0a14'))
-  g.stop(1, Color('#12121f'))
+  g.stop(0, Color('#0a0a14'));
+  g.stop(1, Color('#12121f'));
 };
 
 let bg = PathLayer('bg') ${ fill: bg_grad; stroke: none; };
-bg.apply { rect(0, 0, 700, 250) }
+bg.apply { rect(0, 0, 700, 250); }
 
 // --- Stage boxes (5 pipeline stages) ---
 
 let box1 = PathLayer('box1') ${ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
-box1.apply { roundRect(15, 60, 115, 55, 6) }
+box1.apply { roundRect(15, 60, 115, 55, 6); }
 
 let box2 = PathLayer('box2') ${ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
-box2.apply { roundRect(160, 60, 115, 55, 6) }
+box2.apply { roundRect(160, 60, 115, 55, 6); }
 
 let box3 = PathLayer('box3') ${ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
-box3.apply { roundRect(305, 60, 115, 55, 6) }
+box3.apply { roundRect(305, 60, 115, 55, 6); }
 
 let box4 = PathLayer('box4') ${ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
-box4.apply { roundRect(450, 60, 115, 55, 6) }
+box4.apply { roundRect(450, 60, 115, 55, 6); }
 
 let box5 = PathLayer('box5') ${ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
-box5.apply { roundRect(595, 60, 90, 55, 6) }
+box5.apply { roundRect(595, 60, 90, 55, 6); }
 
 // --- Arrow lines ---
 

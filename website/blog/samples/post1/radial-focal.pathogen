@@ -5,7 +5,7 @@
 // --- Shared background ---
 
 let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
-bg.apply { rect(0, 0, 450, 180) }
+bg.apply { rect(0, 0, 450, 180); }
 
 // --- Sphere gradients with different focal points ---
 

@@ -22,7 +22,7 @@ let labelClr = base.desaturate(0.4).lighten(0.3);
 
 // ── Background ──
 let bg = PathLayer('bg') ${ fill: surface; stroke: none; };
-bg.apply { rect(0, 0, W, H) }
+bg.apply { rect(0, 0, W, H); }
 
 // ── Schematic PathBlock builder ──
 // Builds a diagram showing: inner radius circle, gradient fill
@@ -120,7 +120,7 @@ for ([cfg, i] in cfgs) {
   // ── Fill layer — rectangle filled with gradient ──
   let fillLayer = PathLayer(`fill_${i}`) ${ fill: g; stroke: none; };
   fillLayer.apply {
-    rect(rectX, rectY, fillW, fillH)
+    rect(rectX, rectY, fillW, fillH);
   }
 
   // ── Schematic overlay via PathBlock ──
@@ -130,7 +130,7 @@ for ([cfg, i] in cfgs) {
       cfg.innerR, cfg.fromDeg, cfg.toDeg,
       calc(rectX - cellX), calc(rectY - cellY),
       fillW, fillH
-    )
+    );
   };
 
   let schemaLayer = PathLayer(`schema_${i}`) ${

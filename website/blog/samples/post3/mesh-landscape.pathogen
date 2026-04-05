@@ -45,17 +45,17 @@ water.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0a0a2e; stroke: none; };
-bg.apply { rect(0, 0, 500, 300) }
+bg.apply { rect(0, 0, 500, 300); }
 
 // --- Sky fill ---
 
 let sky_layer = PathLayer('sky-layer') ${ fill: sky; stroke: none; };
-sky_layer.apply { rect(0, 0, 500, 210) }
+sky_layer.apply { rect(0, 0, 500, 210); }
 
 // --- Water fill ---
 
 let water_layer = PathLayer('water-layer') ${ fill: water; stroke: none; };
-water_layer.apply { rect(0, 210, 500, 90) }
+water_layer.apply { rect(0, 210, 500, 90); }
 
 // --- Horizon line ---
 

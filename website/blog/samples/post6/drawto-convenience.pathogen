@@ -12,7 +12,7 @@ let pent = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 520, 340) }
+bg.apply { rect(0, 0, 520, 340); }
 
 // --- Divider ---
 
@@ -76,13 +76,13 @@ let drawto_shapes = PathLayer('drawto-shapes') ${
 };
 
 drawto_shapes.apply {
-  pent.drawTo(320, 100)
-  pent.drawTo(390, 100)
-  pent.drawTo(460, 100)
+  pent.drawTo(320, 100);
+  pent.drawTo(390, 100);
+  pent.drawTo(460, 100);
 
-  pent.drawTo(320, 180)
-  pent.drawTo(390, 180)
-  pent.drawTo(460, 180)
+  pent.drawTo(320, 180);
+  pent.drawTo(390, 180);
+  pent.drawTo(460, 180);
 }
 
 // --- Code annotations ---
@@ -169,7 +169,7 @@ let badge_manual = PathLayer('badge-manual') ${
   stroke-width: 0.5;
 };
 badge_manual.apply {
-  roundRect(55, 50, 150, 22, 4)
+  roundRect(55, 50, 150, 22, 4);
 }
 
 let badge_drawto = PathLayer('badge-drawto') ${
@@ -178,7 +178,7 @@ let badge_drawto = PathLayer('badge-drawto') ${
   stroke-width: 0.5;
 };
 badge_drawto.apply {
-  roundRect(315, 50, 150, 22, 4)
+  roundRect(315, 50, 150, 22, 4);
 }
 
 // --- Title ---

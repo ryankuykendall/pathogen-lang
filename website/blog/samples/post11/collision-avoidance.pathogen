@@ -4,7 +4,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
@@ -122,8 +122,8 @@ l_collision_boxes.apply {
         if (a.intersects(b)) {
           let abb = a.boundingBox();
           let bbb = b.boundingBox();
-          rect(abb.x, abb.y, abb.width, abb.height)
-          rect(bbb.x, bbb.y, bbb.width, bbb.height)
+          rect(abb.x, abb.y, abb.width, abb.height);
+          rect(bbb.x, bbb.y, bbb.width, bbb.height);
         }
       }
       cj = calc(cj + 1);
@@ -236,7 +236,7 @@ let r_ok_rects = PathLayer('r-ok') ${
 };
 r_ok_rects.apply {
   for (sbb in smart_bboxes) {
-    rect(sbb.x, sbb.y, sbb.width, sbb.height)
+    rect(sbb.x, sbb.y, sbb.width, sbb.height);
   }
 }
 
@@ -327,9 +327,9 @@ let leg_red = PathLayer('leg-red') ${ fill: Color('#ef4444'); stroke: none; };
 let leg_green = PathLayer('leg-green') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_blue = PathLayer('leg-blue') ${ fill: Color('#3b82f6'); stroke: none; };
 
-leg_red.apply { rect(20, 370, 6, 6) }
-leg_green.apply { rect(20, 380, 6, 6) }
-leg_blue.apply { rect(110, 370, 6, 6) }
+leg_red.apply { rect(20, 370, 6, 6); }
+leg_green.apply { rect(20, 380, 6, 6); }
+leg_blue.apply { rect(110, 370, 6, 6); }
 
 leg.apply {
   text(30, 375)`Collision detected`

@@ -11,7 +11,7 @@ let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 560, 400) }
+bg.apply { rect(0, 0, 560, 400); }
 
 // ============================================================
 // Group 1: Title

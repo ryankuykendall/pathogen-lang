@@ -9,7 +9,7 @@ let road = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 540, 320) }
+bg.apply { rect(0, 0, 540, 320); }
 
 // --- Layers ---
 
@@ -38,7 +38,7 @@ let pts = proj.partition(n);
 
 // Draw the road
 roadLayer.apply {
-  road.drawTo(50, 180)
+  road.drawTo(50, 180);
 }
 
 // Place fence posts evenly along the road

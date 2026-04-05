@@ -37,27 +37,27 @@ let g270 = LinearGradient('g-up', 0, 1, 0, 0) {|g|
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #1a1a2e; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Swatch grid: 3 columns × 2 rows ---
 
 let sw1 = PathLayer('swatch-right') ${ fill: g0; stroke: #333; stroke-width: 1; };
-sw1.apply { roundRect(20, 55, 110, 70, 6) }
+sw1.apply { roundRect(20, 55, 110, 70, 6); }
 
 let sw2 = PathLayer('swatch-down-right') ${ fill: g60; stroke: #333; stroke-width: 1; };
-sw2.apply { roundRect(145, 55, 110, 70, 6) }
+sw2.apply { roundRect(145, 55, 110, 70, 6); }
 
 let sw3 = PathLayer('swatch-down') ${ fill: g90; stroke: #333; stroke-width: 1; };
-sw3.apply { roundRect(270, 55, 110, 70, 6) }
+sw3.apply { roundRect(270, 55, 110, 70, 6); }
 
 let sw4 = PathLayer('swatch-left') ${ fill: g180; stroke: #333; stroke-width: 1; };
-sw4.apply { roundRect(20, 215, 110, 70, 6) }
+sw4.apply { roundRect(20, 215, 110, 70, 6); }
 
 let sw5 = PathLayer('swatch-up-left') ${ fill: g240; stroke: #333; stroke-width: 1; };
-sw5.apply { roundRect(145, 215, 110, 70, 6) }
+sw5.apply { roundRect(145, 215, 110, 70, 6); }
 
 let sw6 = PathLayer('swatch-up') ${ fill: g270; stroke: #333; stroke-width: 1; };
-sw6.apply { roundRect(270, 215, 110, 70, 6) }
+sw6.apply { roundRect(270, 215, 110, 70, 6); }
 
 // --- Direction labels ---
 
@@ -101,4 +101,4 @@ connector.apply {
 // --- Scene ---
 
 let fan = GroupLayer('fan') ${};
-fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector)
+fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);

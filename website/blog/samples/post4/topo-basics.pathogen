@@ -23,9 +23,9 @@ let peak = @{ circle(0, 0, 35); closePath() };
 // --- Gradient ---
 
 let topo = TopoGradient('terrain', 400, 400) {|g|
-  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'))
-  g.contour(mid.project(90, 90), 0.5,  Color('#27ae60'))
-  g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'))
+  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'));
+  g.contour(mid.project(90, 90), 0.5,  Color('#27ae60'));
+  g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
@@ -34,7 +34,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Labels ---
 

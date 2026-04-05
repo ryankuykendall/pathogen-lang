@@ -6,7 +6,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 900, 310) }
+bg.apply { rect(0, 0, 900, 310); }
 
 // --- Palette ---
 
@@ -82,13 +82,13 @@ let glyph5_layer = PathLayer('glyph-n')   ${ stroke: palette[5]; stroke-width: 1
 let glyph6_layer = PathLayer('glyph-g')   ${ stroke: palette[6]; stroke-width: 1.5; fill: palette_fill[6]; };
 
 let s1_x = 30;
-glyph0_layer.apply { glyphs[0].drawTo(calc(s1_x + positions[0]), calc(geo_y + baseline_y)) }
-glyph1_layer.apply { glyphs[1].drawTo(calc(s1_x + positions[1]), calc(geo_y + baseline_y)) }
-glyph2_layer.apply { glyphs[2].drawTo(calc(s1_x + positions[2]), calc(geo_y + baseline_y)) }
-glyph3_layer.apply { glyphs[3].drawTo(calc(s1_x + positions[3]), calc(geo_y + baseline_y)) }
-glyph4_layer.apply { glyphs[4].drawTo(calc(s1_x + positions[4]), calc(geo_y + baseline_y)) }
-glyph5_layer.apply { glyphs[5].drawTo(calc(s1_x + positions[5]), calc(geo_y + baseline_y)) }
-glyph6_layer.apply { glyphs[6].drawTo(calc(s1_x + positions[6]), calc(geo_y + baseline_y)) }
+glyph0_layer.apply { glyphs[0].drawTo(calc(s1_x + positions[0]), calc(geo_y + baseline_y)); }
+glyph1_layer.apply { glyphs[1].drawTo(calc(s1_x + positions[1]), calc(geo_y + baseline_y)); }
+glyph2_layer.apply { glyphs[2].drawTo(calc(s1_x + positions[2]), calc(geo_y + baseline_y)); }
+glyph3_layer.apply { glyphs[3].drawTo(calc(s1_x + positions[3]), calc(geo_y + baseline_y)); }
+glyph4_layer.apply { glyphs[4].drawTo(calc(s1_x + positions[4]), calc(geo_y + baseline_y)); }
+glyph5_layer.apply { glyphs[5].drawTo(calc(s1_x + positions[5]), calc(geo_y + baseline_y)); }
+glyph6_layer.apply { glyphs[6].drawTo(calc(s1_x + positions[6]), calc(geo_y + baseline_y)); }
 
 let s1_label = TextLayer('s1-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 s1_label.apply {
@@ -165,7 +165,7 @@ subtitle.apply { text(30, 43)`7 glyph paths → .union() chain → .difference()
 let code_group = GroupLayer('code-block') ${ translate-x: 235; translate-y: 255; };
 
 let code_bg = PathLayer('code-bg') ${ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
-code_bg.apply { roundRect(0, 0, 430, 42, 4) }
+code_bg.apply { roundRect(0, 0, 430, 42, 4); }
 
 let code = TextLayer('code') ${ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
 code.apply {

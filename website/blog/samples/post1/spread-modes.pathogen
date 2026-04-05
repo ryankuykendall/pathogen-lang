@@ -31,18 +31,18 @@ repeat_grad.spreadMethod = 'repeat';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #14141e; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Gradient strips ---
 
 let strip_pad = PathLayer('strip-pad') ${ fill: pad_grad; stroke: #333; stroke-width: 1; };
-strip_pad.apply { roundRect(60, 45, 320, 50, 4) }
+strip_pad.apply { roundRect(60, 45, 320, 50, 4); }
 
 let strip_reflect = PathLayer('strip-reflect') ${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
-strip_reflect.apply { roundRect(60, 120, 320, 50, 4) }
+strip_reflect.apply { roundRect(60, 120, 320, 50, 4); }
 
 let strip_repeat = PathLayer('strip-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
-strip_repeat.apply { roundRect(60, 195, 320, 50, 4) }
+strip_repeat.apply { roundRect(60, 195, 320, 50, 4); }
 
 // --- Range indicator (shows the 0–30% region) ---
 

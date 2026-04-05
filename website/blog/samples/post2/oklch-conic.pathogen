@@ -35,7 +35,7 @@ oklch_rc.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 600, 540) }
+bg.apply { rect(0, 0, 600, 540); }
 
 // --- Gradient circles ---
 
@@ -109,7 +109,7 @@ let top_row = GroupLayer('top-row') ${};
 top_row.append(by_s, by_o)
 
 let bottom_row = GroupLayer('bottom-row') ${};
-bottom_row.append(rc_s, rc_o)
+bottom_row.append(rc_s, rc_o);
 
 let scene = GroupLayer('scene') ${};
 scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)

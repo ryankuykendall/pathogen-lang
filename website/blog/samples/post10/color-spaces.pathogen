@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 560, 340) }
+bg.apply { rect(0, 0, 560, 340); }
 
 // ═══════════════════════════════════════
 // Title
@@ -84,7 +84,7 @@ for ([color, i] in colors) {
 
   // Swatch
   let swatch = PathLayer(`cs_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(x, y, sw, sh, sr) }
+  swatch.apply { roundRect(x, y, sw, sh, sr); }
 
   // Space name
   space_label.apply {

@@ -25,40 +25,40 @@ let blob_inner = @{
 // --- Five gradients at proper resolution ---
 
 let t1 = TopoGradient('org-0', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
 };
 t1.baseColor = Color('#0f0f1a');
 t1.easing = 'linear';
 t1.interpolation = 'oklch';
 
 let t2 = TopoGradient('org-1', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
 };
 t2.baseColor = Color('#0f0f1a');
 t2.easing = 'smoothstep';
 t2.interpolation = 'oklch';
 
 let t3 = TopoGradient('org-2', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
 };
 t3.baseColor = Color('#0f0f1a');
 t3.easing = 'ease-in';
 t3.interpolation = 'oklch';
 
 let t4 = TopoGradient('org-3', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
 };
 t4.baseColor = Color('#0f0f1a');
 t4.easing = 'ease-out';
 t4.interpolation = 'oklch';
 
 let t5 = TopoGradient('org-4', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
 };
 t5.baseColor = Color('#0f0f1a');
 t5.easing = 'ease-in-out';
@@ -67,24 +67,24 @@ t5.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 550, 350) }
+bg.apply { rect(0, 0, 550, 350); }
 
 // --- Fills ---
 
 let p1 = PathLayer('p1') ${ fill: t1; stroke: #333; stroke-width: 1; };
-p1.apply { roundRect(15, 60, 90, 90, 6) }
+p1.apply { roundRect(15, 60, 90, 90, 6); }
 
 let p2 = PathLayer('p2') ${ fill: t2; stroke: #333; stroke-width: 1; };
-p2.apply { roundRect(120, 60, 90, 90, 6) }
+p2.apply { roundRect(120, 60, 90, 90, 6); }
 
 let p3 = PathLayer('p3') ${ fill: t3; stroke: #333; stroke-width: 1; };
-p3.apply { roundRect(225, 60, 90, 90, 6) }
+p3.apply { roundRect(225, 60, 90, 90, 6); }
 
 let p4 = PathLayer('p4') ${ fill: t4; stroke: #333; stroke-width: 1; };
-p4.apply { roundRect(330, 60, 90, 90, 6) }
+p4.apply { roundRect(330, 60, 90, 90, 6); }
 
 let p5 = PathLayer('p5') ${ fill: t5; stroke: #333; stroke-width: 1; };
-p5.apply { roundRect(435, 60, 90, 90, 6) }
+p5.apply { roundRect(435, 60, 90, 90, 6); }
 
 // --- Labels ---
 

@@ -25,7 +25,7 @@ ccw_grad.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 500, 300) }
+bg.apply { rect(0, 0, 500, 300); }
 
 // --- Gradient circles ---
 
@@ -85,7 +85,7 @@ let left = GroupLayer('left') ${};
 left.append(cw_circle, cw_arrow)
 
 let right = GroupLayer('right') ${};
-right.append(ccw_circle, ccw_arrow)
+right.append(ccw_circle, ccw_arrow);
 
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left, right, labels, note)

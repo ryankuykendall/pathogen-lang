@@ -5,7 +5,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 500, 500) }
+bg.apply { rect(0, 0, 500, 500); }
 
 // --- Title (top-level) ---
 
@@ -42,7 +42,7 @@ let hex = PathLayer('hex') ${
   stroke: Color('#3b82f6');
   stroke-width: 2;
 };
-hex.apply { polygon(0, 0, 80, 6) }
+hex.apply { polygon(0, 0, 80, 6); }
 
 // Center marker
 let center_dot = PathLayer('center-dot') ${

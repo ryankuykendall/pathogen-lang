@@ -8,7 +8,7 @@ let textColor = Color('#2f2f2f');
 let gridColor = Color('#d4c9b8');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 600, 600) }
+bg.apply { rect(0, 0, 600, 600); }
 
 // === Chart parameters ===
 let cx = 300;
@@ -81,8 +81,8 @@ let legLabels = TextLayer('legend') ${
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-swAll.apply { roundRect(230, 572, 10, 10, 2) }
-swTop.apply { roundRect(340, 572, 10, 10, 2) }
+swAll.apply { roundRect(230, 572, 10, 10, 2); }
+swTop.apply { roundRect(340, 572, 10, 10, 2); }
 legLabels.apply {
   text(244, 582)`All BGG games`
   text(354, 582)`Top 100 games`

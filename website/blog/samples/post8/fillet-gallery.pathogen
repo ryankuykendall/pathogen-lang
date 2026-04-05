@@ -6,7 +6,7 @@ let box = @{ h 70 v 70 h -70 z };
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 560, 300) }
+bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
@@ -18,11 +18,11 @@ let original = PathLayer('original') ${
 };
 
 original.apply {
-  box.drawTo(30, 60)
-  box.drawTo(140, 60)
-  box.drawTo(250, 60)
-  box.drawTo(360, 60)
-  box.drawTo(470, 60)
+  box.drawTo(30, 60);
+  box.drawTo(140, 60);
+  box.drawTo(250, 60);
+  box.drawTo(360, 60);
+  box.drawTo(470, 60);
 }
 
 // --- Filleted shapes ---
@@ -38,7 +38,7 @@ filleted.apply {
   let f1 = box.fillet(5);
   f1.drawTo(30, 60)
 
-  // Large circular
+  // Large circular;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   let f2 = box.fillet(15);
   f2.drawTo(140, 60)
 

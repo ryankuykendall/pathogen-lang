@@ -14,7 +14,7 @@ let arrow = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 380) }
+bg.apply { rect(0, 0, 600, 380); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -57,7 +57,7 @@ let bbox = PathLayer('bbox') ${
 };
 bbox.apply {
   // BBox: x=220, y=170, w=90, h=60
-  rect(220, 170, 90, 60)
+  rect(220, 170, 90, 60);
 }
 
 // --- Vertex dots ---
@@ -253,11 +253,11 @@ let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
 let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_d = PathLayer('leg-d') ${ fill: Color('#818cf8'); stroke: none; };
 
-leg_s.apply { rect(30, 335, 8, 8) }
-leg_b.apply { rect(30, 349, 8, 8) }
-leg_v.apply { rect(30, 363, 8, 8) }
-leg_o.apply { rect(120, 335, 8, 8) }
-leg_d.apply { rect(120, 349, 8, 8) }
+leg_s.apply { rect(30, 335, 8, 8); }
+leg_b.apply { rect(30, 349, 8, 8); }
+leg_v.apply { rect(30, 363, 8, 8); }
+leg_o.apply { rect(120, 335, 8, 8); }
+leg_d.apply { rect(120, 349, 8, 8); }
 
 leg.apply {
   text(42, 342)`Shape`

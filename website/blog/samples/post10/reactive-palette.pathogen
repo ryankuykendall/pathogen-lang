@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 340) }
+bg.apply { rect(0, 0, 520, 340); }
 
 // ═══════════════════════════════════════
 // Title
@@ -87,7 +87,7 @@ row_label.apply {
 for ([color, i] in ramp) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`r_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -111,7 +111,7 @@ row_label.apply {
 for ([color, i] in transforms) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`x_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -134,7 +134,7 @@ row_label.apply {
 for ([color, i] in triad) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`tri_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 let triad_names = ['0°', '+120°', '+240°'];
@@ -149,7 +149,7 @@ sw_label.apply {
 // ═══════════════════════════════════════
 
 let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
-code_bg.apply { roundRect(30, 300, 460, 28, 4) }
+code_bg.apply { roundRect(30, 300, 460, 28, 4); }
 
 let code = TextLayer('code') ${
   font-family: monospace;

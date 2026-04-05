@@ -5,7 +5,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
@@ -70,7 +70,7 @@ let hex_left = PathLayer('hex-l') ${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-hex_left.apply { polygon(150, 210, 55, 6) }
+hex_left.apply { polygon(150, 210, 55, 6); }
 
 // Manual labels — hardcoded positions with magic numbers
 let manual_labels = TextLayer('manual') ${
@@ -164,7 +164,7 @@ let hex_right = PathLayer('hex-r') ${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-hex_right.apply { polygon(450, 210, 55, 6) }
+hex_right.apply { polygon(450, 210, 55, 6); }
 
 // Polar-projected labels
 let styles = ${ font-family: monospace; font-size: 10; };

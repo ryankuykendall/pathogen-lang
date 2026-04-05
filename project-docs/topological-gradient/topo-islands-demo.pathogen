@@ -2,18 +2,18 @@
 // Non-nested contours at the same elevation create separate features
 
 let mainIsland = @{
-  M(0, 0)
-  C(80, -30, 200, 20, 240, 80)
-  C(220, 170, 20, 180, 0, 0)
+  M(0, 0);
+  C(80, -30, 200, 20, 240, 80);
+  C(220, 170, 20, 180, 0, 0);
   closePath()
 };
 
 let mainPeak = @{ circle(0, 0, 30); closePath() };
 
 let smallIsland = @{
-  M(0, 0)
-  C(40, -15, 100, 10, 120, 40)
-  C(110, 85, 10, 90, 0, 0)
+  M(0, 0);
+  C(40, -15, 100, 10, 120, 40);
+  C(110, 85, 10, 90, 0, 0);
   closePath()
 };
 
@@ -21,10 +21,10 @@ let smallPeak = @{ circle(0, 0, 20); closePath() };
 
 let topo = TopoGradient('archipelago', 600, 400) {|g|
   // Main island
-  g.contour(mainIsland.project(80, 80), 0.35, Color('#f9e79f'))
+  g.contour(mainIsland.project(80, 80), 0.35, Color('#f9e79f'));
   g.contour(mainPeak.project(180, 140), 0.7, Color('#6e2c00'))
 
-  // Small island (separate, not nested)
+  // Small island (separate, not nested);;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   g.contour(smallIsland.project(380, 220), 0.35, Color('#f9e79f'))
   g.contour(smallPeak.project(430, 260), 0.6, Color('#27ae60'))
 };

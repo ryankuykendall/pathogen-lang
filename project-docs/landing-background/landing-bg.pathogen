@@ -31,7 +31,7 @@ wheel_outer.to = 0.375pi;
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, width, height) }
+bg.apply { rect(0, 0, width, height); }
 
 // --- Outer ring (donut) ---
 

@@ -3,7 +3,7 @@
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 330) }
+bg.apply { rect(0, 0, 540, 330); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -121,7 +121,7 @@ define PathLayer('sw-tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; 
 define PathLayer('sw-angle') ${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1 }
 layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
 
-layer('sw-curve').apply { rect(0, 0, 12, 3) }
+layer('sw-curve').apply { rect(0, 0, 12, 3); }
 layer('sw-exit').apply { circle(6, 20, 4) }
 layer('sw-entry').apply { circle(6, 36, 4) }
 layer('sw-tangent').apply { M 0 50 L 12 50 }

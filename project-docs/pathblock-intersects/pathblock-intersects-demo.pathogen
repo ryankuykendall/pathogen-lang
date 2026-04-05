@@ -27,14 +27,14 @@ let hitAC = projA.intersects(projC);
 
 // Draw overlapping pair
 let layerA = PathLayer('box-a') ${ fill: #4a90d9; fill-opacity: 0.35; stroke: #4a90d9; stroke-width: 2; };
-layerA.apply { rect(panelX1, panelY1, boxW, boxH) }
+layerA.apply { rect(panelX1, panelY1, boxW, boxH); }
 
 let layerB = PathLayer('box-b') ${ fill: #d94a4a; fill-opacity: 0.35; stroke: #d94a4a; stroke-width: 2; };
-layerB.apply { rect(calc(panelX1 + 90), calc(panelY1 + 50), 80, 60) }
+layerB.apply { rect(calc(panelX1 + 90), calc(panelY1 + 50), 80, 60); }
 
 // Draw non-overlapping shape
 let layerC = PathLayer('box-c') ${ fill: #5ab55a; fill-opacity: 0.35; stroke: #5ab55a; stroke-width: 2; };
-layerC.apply { rect(calc(panelX1 + 300), calc(panelY1 + 10), 80, 60) }
+layerC.apply { rect(calc(panelX1 + 300), calc(panelY1 + 10), 80, 60); }
 
 // Labels
 let labels = TextLayer('labels') ${ font-size: 13; fill: #333; text-anchor: middle; };
@@ -91,7 +91,7 @@ let crossPts = projBox2.intersectionPoints(projDiag);
 
 // Draw the box
 let layer2Box = PathLayer('panel2-box') ${ fill: #4a90d9; fill-opacity: 0.2; stroke: #4a90d9; stroke-width: 2; };
-layer2Box.apply { rect(calc(panelX2 + 40), panelY2, boxW, boxH) }
+layer2Box.apply { rect(calc(panelX2 + 40), panelY2, boxW, boxH); }
 
 // Draw the diagonal line
 let layer2Line = PathLayer('panel2-line') ${ fill: none; stroke: #d94a4a; stroke-width: 2; stroke-dasharray: 6 3; };
@@ -155,11 +155,11 @@ let hitRect = proj3.intersects(testRect);
 
 // Draw the PathBlock
 let layer3Shape = PathLayer('panel3-shape') ${ fill: #8e6ac8; fill-opacity: 0.3; stroke: #8e6ac8; stroke-width: 2; };
-layer3Shape.apply { rect(panelX3, panelY3, 100, 80) }
+layer3Shape.apply { rect(panelX3, panelY3, 100, 80); }
 
 // Draw the test rectangle
 let layer3Rect = PathLayer('panel3-rect') ${ fill: none; stroke: #e8a735; stroke-width: 2; stroke-dasharray: 4 3; };
-layer3Rect.apply { rect(testRect.x, testRect.y, testRect.width, testRect.height) }
+layer3Rect.apply { rect(testRect.x, testRect.y, testRect.width, testRect.height); }
 
 // Result
 let result3 = TextLayer('result-3') ${

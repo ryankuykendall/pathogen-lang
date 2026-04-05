@@ -4,7 +4,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 360) }
+bg.apply { rect(0, 0, 600, 360); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -35,7 +35,7 @@ let t1_layer = TextLayer('t1') ${ font-family: monospace; font-size: 10; fill: C
 t1_layer.apply { t1.drawTo(0, 0); }
 
 let bb1_layer = PathLayer('bb1') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height) }
+bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let wy1 = calc(bb1.y - dim_above);
 let wd1 = PathLayer('wd1') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -70,7 +70,7 @@ let t2_layer = TextLayer('t2') ${ font-family: monospace; font-size: 16; fill: C
 t2_layer.apply { t2.drawTo(0, 0); }
 
 let bb2_layer = PathLayer('bb2') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height) }
+bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let wy2 = calc(bb2.y - dim_above);
 let wd2 = PathLayer('wd2') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -103,7 +103,7 @@ let t3_layer = TextLayer('t3') ${ font-family: monospace; font-size: 24; fill: C
 t3_layer.apply { t3.drawTo(0, 0); }
 
 let bb3_layer = PathLayer('bb3') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height) }
+bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let wy3 = calc(bb3.y - dim_above);
 let wd3 = PathLayer('wd3') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };

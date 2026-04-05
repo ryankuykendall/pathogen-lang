@@ -16,9 +16,9 @@ let ring58 = @{ circle(0, 0, 58); closePath() };
 let ring30 = @{ circle(0, 0, 30); closePath() };
 
 let volcano = TopoGradient('volcano', pw, ph) {|g|
-  g.contour(ring85.project(100, 100), 0.25, Color('#f4d35e'))
-  g.contour(ring58.project(100, 100), 0.50, Color('#45b764'))
-  g.contour(ring30.project(100, 100), 0.80, Color('#c0392b'))
+  g.contour(ring85.project(100, 100), 0.25, Color('#f4d35e'));
+  g.contour(ring58.project(100, 100), 0.50, Color('#45b764'));
+  g.contour(ring30.project(100, 100), 0.80, Color('#c0392b'));
 };
 volcano.baseColor = Color('#264653');
 volcano.easing = 'smoothstep';
@@ -30,9 +30,9 @@ let middle = @{ circle(0, 0, 50); closePath() };
 let inner  = @{ circle(0, 0, 22); closePath() };
 
 let ovalTerrain = TopoGradient('oval', pw, ph) {|g|
-  g.contour(outer.scale(1.2, 0.8).project(105, 100),  0.20, Color('#e9c46a'))
-  g.contour(middle.scale(1.1, 0.85).project(98, 95),  0.50, Color('#2a9d8f'))
-  g.contour(inner.project(90, 88),                     0.82, Color('#8b4513'))
+  g.contour(outer.scale(1.2, 0.8).project(105, 100),  0.20, Color('#e9c46a'));
+  g.contour(middle.scale(1.1, 0.85).project(98, 95),  0.50, Color('#2a9d8f'));
+  g.contour(inner.project(90, 88),                     0.82, Color('#8b4513'));
 };
 ovalTerrain.baseColor = Color('#1d3557');
 ovalTerrain.easing = 'smoothstep';
@@ -52,11 +52,11 @@ let baseB = @{ circle(0, 0, 42); closePath() };
 let midB  = @{ circle(0, 0, 20); closePath() };
 
 let peaks = TopoGradient('peaks', pw, ph) {|g|
-  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'))
-  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'))
-  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'))
-  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'))
-  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'))
+  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'));
+  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'));
+  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'));
+  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'));
+  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'));
 };
 peaks.baseColor = Color('#003049');
 peaks.easing = 'ease-out';
@@ -153,8 +153,8 @@ layer('ptitle').apply {
 
 // ── Panel 1 ──────────────────────────────────────────────────
 
-layer('fill1').apply { rect(p1x, py, pw, ph) }
-layer('frames').apply { rect(p1x, py, pw, ph) }
+layer('fill1').apply { rect(p1x, py, pw, ph); }
+layer('frames').apply { rect(p1x, py, pw, ph); }
 
 // Contour outlines: three concentric circles centered at (p1x+100, py+100)
 layer('contours').apply {
@@ -186,8 +186,8 @@ layer('leaders').apply {
 
 // ── Panel 2 ──────────────────────────────────────────────────
 
-layer('fill2').apply { rect(p2x, py, pw, ph) }
-layer('frames').apply { rect(p2x, py, pw, ph) }
+layer('fill2').apply { rect(p2x, py, pw, ph); }
+layer('frames').apply { rect(p2x, py, pw, ph); }
 
 // Contour outlines: ellipses approximated with scaled circles
 // outer: scale(1.2, 0.8) circle r=80 at (105, 100)
@@ -235,8 +235,8 @@ layer('leaders').apply {
 
 // ── Panel 3 ──────────────────────────────────────────────────
 
-layer('fill3').apply { rect(p3x, py, pw, ph) }
-layer('frames').apply { rect(p3x, py, pw, ph) }
+layer('fill3').apply { rect(p3x, py, pw, ph); }
+layer('frames').apply { rect(p3x, py, pw, ph); }
 
 // Peak A contour outlines
 layer('contours').apply {
@@ -286,10 +286,10 @@ layer('info').apply {
 }
 
 // Color ramp legend (Panel 1 colors as example)
-layer('sw0').apply { rect(p1x, calc(py + ph + 26), 14, 14) }
-layer('sw1').apply { rect(calc(p1x + 38), calc(py + ph + 26), 14, 14) }
-layer('sw2').apply { rect(calc(p1x + 76), calc(py + ph + 26), 14, 14) }
-layer('sw3').apply { rect(calc(p1x + 114), calc(py + ph + 26), 14, 14) }
+layer('sw0').apply { rect(p1x, calc(py + ph + 26), 14, 14); }
+layer('sw1').apply { rect(calc(p1x + 38), calc(py + ph + 26), 14, 14); }
+layer('sw2').apply { rect(calc(p1x + 76), calc(py + ph + 26), 14, 14); }
+layer('sw3').apply { rect(calc(p1x + 114), calc(py + ph + 26), 14, 14); }
 
 layer('info').apply {
   text(calc(p1x + 16), calc(py + ph + 37))`base`

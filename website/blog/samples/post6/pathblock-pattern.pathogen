@@ -19,7 +19,7 @@ let gem = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Radial leaf pattern (center) ---
 
@@ -67,7 +67,7 @@ gems.apply {
     let angle = calc(i * 0.7854 + 0.3927);
     let gx = calc(200 + cos(angle) * 90 - 5);
     let gy = calc(200 + sin(angle) * 90);
-    gem.drawTo(gx, gy)
+    gem.drawTo(gx, gy);
   }
 }
 

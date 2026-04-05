@@ -25,7 +25,7 @@ wheel_inner.innerFill = 'center';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Outer ring (donut) ---
 

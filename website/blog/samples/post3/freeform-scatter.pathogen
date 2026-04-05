@@ -18,12 +18,12 @@ nebula.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Fill ---
 
 let field = PathLayer('field') ${ fill: nebula; stroke: none; };
-field.apply { roundRect(20, 40, 360, 320, 8) }
+field.apply { roundRect(20, 40, 360, 320, 8); }
 
 // --- Point markers ---
 

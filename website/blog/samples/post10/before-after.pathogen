@@ -17,7 +17,7 @@ let base = ${ fill: #94a3b8; };
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 280) }
+bg.apply { rect(0, 0, 540, 280); }
 
 // ═══════════════════════════════════════
 // Title
@@ -77,7 +77,7 @@ let before_code_bg = PathLayer('before-code-bg') ${
   stroke: #334155;
   stroke-width: 1;
 };
-before_code_bg.apply { roundRect(30, 90, 225, 80, 6) }
+before_code_bg.apply { roundRect(30, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
 let before_code = TextLayer('before-code') ${
@@ -105,13 +105,13 @@ before_code.apply {
 
 // Swatches for before
 let b_swatch1 = PathLayer('b-sw1') ${ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
-b_swatch1.apply { roundRect(48, 183, 55, 40, 4) }
+b_swatch1.apply { roundRect(48, 183, 55, 40, 4); }
 
 let b_swatch2 = PathLayer('b-sw2') ${ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
-b_swatch2.apply { roundRect(113, 183, 55, 40, 4) }
+b_swatch2.apply { roundRect(113, 183, 55, 40, 4); }
 
 let b_swatch3 = PathLayer('b-sw3') ${ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
-b_swatch3.apply { roundRect(178, 183, 55, 40, 4) }
+b_swatch3.apply { roundRect(178, 183, 55, 40, 4); }
 
 let b_sw_labels = TextLayer('b-sw-labels') ${
   font-family: monospace;
@@ -145,7 +145,7 @@ let after_code_bg = PathLayer('after-code-bg') ${
   stroke: #38bdf8;
   stroke-width: 1;
 };
-after_code_bg.apply { roundRect(285, 90, 225, 80, 6) }
+after_code_bg.apply { roundRect(285, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
 let after_code = TextLayer('after-code') ${
@@ -177,13 +177,13 @@ after_code.apply {
 
 // Swatches for after
 let a_swatch1 = PathLayer('a-sw1') ${ fill: #cc0000; stroke: #475569; stroke-width: 1; };
-a_swatch1.apply { roundRect(298, 183, 55, 40, 4) }
+a_swatch1.apply { roundRect(298, 183, 55, 40, 4); }
 
 let a_swatch2 = PathLayer('a-sw2') ${ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
-a_swatch2.apply { roundRect(363, 183, 55, 40, 4) }
+a_swatch2.apply { roundRect(363, 183, 55, 40, 4); }
 
 let a_swatch3 = PathLayer('a-sw3') ${ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
-a_swatch3.apply { roundRect(428, 183, 55, 40, 4) }
+a_swatch3.apply { roundRect(428, 183, 55, 40, 4); }
 
 let a_sw_labels = TextLayer('a-sw-labels') ${
   font-family: monospace;

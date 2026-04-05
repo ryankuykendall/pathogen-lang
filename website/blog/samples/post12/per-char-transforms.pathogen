@@ -6,7 +6,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 220) }
+bg.apply { rect(0, 0, 600, 220); }
 
 // Shared font styles
 let styles = ${ font-family: BebasNeue-Regular; font-size: 72; };
@@ -49,7 +49,7 @@ wave_layer.apply {
   let idx = 0;
   for (g in glyphs) {
     let y_offset = calc(sin(idx * 0.8) * 15);
-    g.drawTo(wave_x, calc(wave_baseline + y_offset))
+    g.drawTo(wave_x, calc(wave_baseline + y_offset));
     wave_x = calc(wave_x + g.advanceWidth);
     idx = calc(idx + 1);
   }
