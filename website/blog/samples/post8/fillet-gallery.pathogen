@@ -18,11 +18,11 @@ let original = PathLayer('original') ${
 };
 
 original.apply {
-  box.drawTo(30, 60)
-  box.drawTo(140, 60)
-  box.drawTo(250, 60)
-  box.drawTo(360, 60)
-  box.drawTo(470, 60)
+  box.drawTo(30, 60);
+  box.drawTo(140, 60);
+  box.drawTo(250, 60);
+  box.drawTo(360, 60);
+  box.drawTo(470, 60);
 }
 
 // --- Filleted shapes ---
@@ -36,23 +36,23 @@ let filleted = PathLayer('filleted') ${
 filleted.apply {
   // Small circular
   let f1 = box.fillet(5);
-  f1.drawTo(30, 60)
+  f1.drawTo(30, 60);
 
   // Large circular
   let f2 = box.fillet(15);
-  f2.drawTo(140, 60)
+  f2.drawTo(140, 60);
 
   // Elliptical
   let f3 = box.ellipticalFillet(15, 8);
-  f3.drawTo(250, 60)
+  f3.drawTo(250, 60);
 
   // Single vertex
   let f4 = box.filletAtVertex(1, 25);
-  f4.drawTo(360, 60)
+  f4.drawTo(360, 60);
 
   // Elliptical with rotation
   let f5 = box.ellipticalFillet(15, 8, 0.3);
-  f5.drawTo(470, 60)
+  f5.drawTo(470, 60);
 }
 
 // --- Labels ---

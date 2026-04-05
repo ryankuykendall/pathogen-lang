@@ -31,28 +31,28 @@ bg.apply { rect(0, 0, W, H) }
 fn buildSchematic(coneCx, coneCy, innerR, fromDeg, toDeg, rectX, rectY, rectW, rectH) {
   // Inner radius circle
   if (innerR > 0) {
-    circle(coneCx, coneCy, innerR)
+    circle(coneCx, coneCy, innerR);
   }
 
   // Center crosshair
-  line(calc(coneCx - 4), coneCy, calc(coneCx + 4), coneCy)
-  line(coneCx, calc(coneCy - 4), coneCx, calc(coneCy + 4))
+  line(calc(coneCx - 4), coneCy, calc(coneCx + 4), coneCy);
+  line(coneCx, calc(coneCy - 4), coneCx, calc(coneCy + 4));
 
   // Gradient fill area outline
-  rect(rectX, rectY, rectW, rectH)
+  rect(rectX, rectY, rectW, rectH);
 
   // From-angle line — extends from center past the rect
   let lineLen = calc(max(rectW, rectH) * 1.1);
   let fromRad = rad(fromDeg);
   let fx = calc(coneCx + cos(fromRad) * lineLen);
   let fy = calc(coneCy + sin(fromRad) * lineLen);
-  line(coneCx, coneCy, fx, fy)
+  line(coneCx, coneCy, fx, fy);
 
   // To-angle line
   let toRad = rad(toDeg);
   let tx = calc(coneCx + cos(toRad) * lineLen);
   let ty = calc(coneCy + sin(toRad) * lineLen);
-  line(coneCx, coneCy, tx, ty)
+  line(coneCx, coneCy, tx, ty);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -87,11 +87,11 @@ for ([cfg, i] in cfgs) {
   let cellCx = calc(cellX + cellW / 2);
   let cellCy = calc(cellY + cellH / 2);
 
-  // Cone center (absolute)
+  // Cone center (absolute);
   let coneCx = calc(cellCx + cfg.coneOff.x);
   let coneCy = calc(cellCy + cfg.coneOff.y);
 
-  // Fill rect position (centered in cell)
+  // Fill rect position (centered in cell);
   let rectX = calc(cellCx - fillW / 2);
   let rectY = calc(cellCy - fillH / 2);
 
@@ -120,7 +120,7 @@ for ([cfg, i] in cfgs) {
   // ── Fill layer — rectangle filled with gradient ──
   let fillLayer = PathLayer(`fill_${i}`) ${ fill: g; stroke: none; };
   fillLayer.apply {
-    rect(rectX, rectY, fillW, fillH)
+    rect(rectX, rectY, fillW, fillH);
   }
 
   // ── Schematic overlay via PathBlock ──
@@ -130,7 +130,7 @@ for ([cfg, i] in cfgs) {
       cfg.innerR, cfg.fromDeg, cfg.toDeg,
       calc(rectX - cellX), calc(rectY - cellY),
       fillW, fillH
-    )
+    );
   };
 
   let schemaLayer = PathLayer(`schema_${i}`) ${
@@ -141,7 +141,7 @@ for ([cfg, i] in cfgs) {
   };
   schemaLayer.apply {
     M cellX cellY
-    schematic.draw()
+    schematic.draw();
   }
 
   // ── Inner radius highlight (solid) ──
@@ -152,7 +152,7 @@ for ([cfg, i] in cfgs) {
       stroke-width: 1.5;
     };
     irLayer.apply {
-      circle(coneCx, coneCy, cfg.innerR)
+      circle(coneCx, coneCy, cfg.innerR);
     }
   }
 
@@ -162,7 +162,7 @@ for ([cfg, i] in cfgs) {
     stroke: none;
   };
   dotLayer.apply {
-    circle(coneCx, coneCy, 3)
+    circle(coneCx, coneCy, 3);
   }
 }
 
@@ -223,5 +223,5 @@ for ([cfg, i] in cfgs) {
     "offset:", cfg.coneOff.x, cfg.coneOff.y,
     "iR:", cfg.innerR, "fill:", cfg.innerFill,
     "from:", cfg.fromDeg, "to:", cfg.toDeg,
-    "dir:", cfg.dir, "spread:", cfg.spread)
+    "dir:", cfg.dir, "spread:", cfg.spread);
 }

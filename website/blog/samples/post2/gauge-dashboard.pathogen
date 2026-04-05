@@ -62,9 +62,9 @@ g3.apply { circle(540, 160, 65); closePath() }
 
 let rims = PathLayer('rims') ${ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
-  circle(120, 160, 81); closePath()
-  circle(330, 160, 81); closePath()
-  circle(540, 160, 66); closePath()
+  circle(120, 160, 81); closePath();
+  circle(330, 160, 81); closePath();
+  circle(540, 160, 66); closePath();
 }
 
 // --- Tick marks for Speed gauge (135° to 405°, 270° sweep) ---
@@ -74,19 +74,19 @@ rims.apply {
 let speed_ticks = PathLayer('speed-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
 speed_ticks.apply {
   // 135° (bottom-left) — 0 km/h
-  line(51, 217, 63, 205)
+  line(51, 217, 63, 205);
   // 180° (left) — 40 km/h
-  line(33, 160, 47, 160)
+  line(33, 160, 47, 160);
   // 225° (top-left) — 80 km/h
-  line(51, 103, 63, 115)
+  line(51, 103, 63, 115);
   // 270° (top) — 120 km/h
-  line(120, 73, 120, 87)
+  line(120, 73, 120, 87);
   // 315° (top-right) — 160 km/h
-  line(189, 103, 177, 115)
+  line(189, 103, 177, 115);
   // 360° (right) — 200 km/h
-  line(207, 160, 193, 160)
+  line(207, 160, 193, 160);
   // 405° (bottom-right) — 240 km/h
-  line(189, 217, 177, 205)
+  line(189, 217, 177, 205);
 }
 
 // --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
@@ -94,19 +94,19 @@ speed_ticks.apply {
 let temp_ticks = PathLayer('temp-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
 temp_ticks.apply {
   // 135° — -20°C
-  line(261, 217, 273, 205)
+  line(261, 217, 273, 205);
   // 180° — 0°C
-  line(243, 160, 257, 160)
+  line(243, 160, 257, 160);
   // 225° — 20°C
-  line(261, 103, 273, 115)
+  line(261, 103, 273, 115);
   // 270° — 40°C
-  line(330, 73, 330, 87)
+  line(330, 73, 330, 87);
   // 315° — 60°C
-  line(399, 103, 387, 115)
+  line(399, 103, 387, 115);
   // 360° — 80°C
-  line(417, 160, 403, 160)
+  line(417, 160, 403, 160);
   // 405° — 100°C
-  line(399, 217, 387, 205)
+  line(399, 217, 387, 205);
 }
 
 // --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
@@ -114,15 +114,15 @@ temp_ticks.apply {
 let fuel_ticks = PathLayer('fuel-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
 fuel_ticks.apply {
   // 180° (left) — E
-  line(468, 160, 480, 160)
+  line(468, 160, 480, 160);
   // 225° — 1/4
-  line(487, 114, 497, 124)
+  line(487, 114, 497, 124);
   // 270° (top) — 1/2
-  line(540, 88, 540, 100)
+  line(540, 88, 540, 100);
   // 315° — 3/4
-  line(593, 114, 583, 124)
+  line(593, 114, 583, 124);
   // 360° (right) — F
-  line(612, 160, 600, 160)
+  line(612, 160, 600, 160);
 }
 
 // --- Speed tick labels ---
@@ -220,13 +220,13 @@ subtitle.apply {
 // --- Scene ---
 
 let speed_group = GroupLayer('speed-gauge') ${};
-speed_group.append(g1, speed_ticks)
+speed_group.append(g1, speed_ticks);
 
 let temp_group = GroupLayer('temp-gauge') ${};
-temp_group.append(g2, temp_ticks)
+temp_group.append(g2, temp_ticks);
 
 let fuel_group = GroupLayer('fuel-gauge') ${};
-fuel_group.append(g3, fuel_ticks)
+fuel_group.append(g3, fuel_ticks);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle)
+scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);

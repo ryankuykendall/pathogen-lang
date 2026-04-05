@@ -37,8 +37,8 @@ let guides = PathLayer('guides') ${
   fill: none;
 };
 guides.apply {
-  circle(150, 210, 75)
-  circle(450, 210, 75)
+  circle(150, 210, 75);
+  circle(450, 210, 75);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -187,10 +187,10 @@ let bottom_proj = bottom_label.polarProject(450, 210, calc(0.5 * 3.1415926535897
 let left_proj = left_label.polarProject(450, 210, calc(3.14159265358979), 75, BBoxAnchor.Right);
 
 polar_labels.apply {
-  top_proj.draw()
-  right_proj.draw()
-  bottom_proj.draw()
-  left_proj.draw()
+  top_proj.draw();
+  right_proj.draw();
+  bottom_proj.draw();
+  left_proj.draw();
 }
 
 // Green annotations showing BBoxAnchor names

@@ -19,7 +19,7 @@ let path = PathLayer('path') ${
   fill: none;
 };
 path.apply {
-  curve.drawTo(60, 150)
+  curve.drawTo(60, 150);
 }
 
 // --- Partition points (n=8) using real data ---
@@ -34,7 +34,7 @@ let dots = PathLayer('dots') ${
 };
 dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 4)
+    circle(p.point.x, p.point.y, 4);
   }
 }
 
@@ -50,23 +50,23 @@ let tvals = TextLayer('tvals') ${
 // Label each point with its t value
 // Place labels above points on the upper half, below on the lower half
 tvals.apply {
-  // t=0 (start, left)
+  // t=0 (start, left);
   text(pts[0].point.x, calc(pts[0].point.y + 18))`0.00`
-  // t=0.125 (going up)
+  // t=0.125 (going up);
   text(calc(pts[1].point.x - 8), calc(pts[1].point.y - 12))`0.125`
-  // t=0.25 (near top)
+  // t=0.25 (near top);
   text(pts[2].point.x, calc(pts[2].point.y - 12))`0.25`
-  // t=0.375 (near top)
+  // t=0.375 (near top);
   text(calc(pts[3].point.x + 8), calc(pts[3].point.y - 12))`0.375`
-  // t=0.5 (middle)
+  // t=0.5 (middle);
   text(pts[4].point.x, calc(pts[4].point.y + 18))`0.50`
-  // t=0.625 (going down)
+  // t=0.625 (going down);
   text(calc(pts[5].point.x + 8), calc(pts[5].point.y + 18))`0.625`
-  // t=0.75 (near bottom)
+  // t=0.75 (near bottom);
   text(pts[6].point.x, calc(pts[6].point.y + 18))`0.75`
-  // t=0.875 (going up)
+  // t=0.875 (going up);
   text(calc(pts[7].point.x + 8), calc(pts[7].point.y + 18))`0.875`
-  // t=1.0 (end, right)
+  // t=1.0 (end, right);
   text(pts[8].point.x, calc(pts[8].point.y + 18))`1.00`
 }
 

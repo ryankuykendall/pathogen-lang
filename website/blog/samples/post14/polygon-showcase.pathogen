@@ -18,10 +18,10 @@ fn sharpPolyBlock(sides) {
   let extRad = calc(2 * PI() / sides);
   let sideLen = calc(2 * r * sin(extRad / 2));
   let headAngle = calc(extRad / 2);
-  heading(headAngle)
+  heading(headAngle);
   for (i in 0..sides) {
-    tangentLine(sideLen)
-    turn(extRad)
+    tangentLine(sideLen);
+    turn(extRad);
   }
 }
 
@@ -32,14 +32,14 @@ fn roundedPolyBlock(sides, cornerRadius) {
   let arcOffset = calc(cornerRadius * tan(extRad / 2));
   let straight = calc(sideLen - 2 * arcOffset);
   let headAngle = calc(extRad / 2);
-  heading(headAngle)
+  heading(headAngle);
   let last = calc(sides - 1);
-  tangentLine(straight)
+  tangentLine(straight);
   for (i in 1..last) {
-    tangentArc(cornerRadius, extRad)
-    tangentLine(straight)
+    tangentArc(cornerRadius, extRad);
+    tangentLine(straight);
   }
-  tangentArc(cornerRadius, extRad)
+  tangentArc(cornerRadius, extRad);
   z
 }
 

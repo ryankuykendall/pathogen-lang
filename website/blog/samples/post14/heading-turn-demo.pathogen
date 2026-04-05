@@ -24,8 +24,8 @@ define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
 
 // C-shape
 let cBlock = @{
-  heading(-135deg)
-  tangentArc(r, 270deg)
+  heading(-135deg);
+  tangentArc(r, 270deg);
   z
 };
 let cBB = cBlock.boundingBox();
@@ -33,33 +33,33 @@ let cBB = cBlock.boundingBox();
 // S-curve (smaller radius to fit vertically)
 let sR = 15;
 let sBlock = @{
-  heading(0)
-  tangentArc(sR, 180deg)
-  turn(180deg)
-  tangentArc(sR, 180deg)
+  heading(0);
+  tangentArc(sR, 180deg);
+  turn(180deg);
+  tangentArc(sR, 180deg);
 };
 let sBB = sBlock.boundingBox();
 
 // Zigzag
 let zBlock = @{
-  heading(45deg)
-  tangentLine(25)
-  turn(-90deg)
-  tangentLine(25)
-  turn(90deg)
-  tangentLine(25)
-  turn(-90deg)
-  tangentLine(25)
+  heading(45deg);
+  tangentLine(25);
+  turn(-90deg);
+  tangentLine(25);
+  turn(90deg);
+  tangentLine(25);
+  turn(-90deg);
+  tangentLine(25);
 };
 let zBB = zBlock.boundingBox();
 
 // Spiral
 let spBlock = @{
-  heading(0)
-  tangentArc(28, 180deg)
-  tangentArc(22, 180deg)
-  tangentArc(15, 180deg)
-  tangentArc(10, 180deg)
+  heading(0);
+  tangentArc(28, 180deg);
+  tangentArc(22, 180deg);
+  tangentArc(15, 180deg);
+  tangentArc(10, 180deg);
 };
 let spBB = spBlock.boundingBox();
 
@@ -72,20 +72,20 @@ let shapes = [
 ];
 
 let codeTexts = [
-  &{ text(0, 0)`heading(-135deg)
-tangentArc(r, 270deg)
+  &{ text(0, 0)`heading(-135deg);
+tangentArc(r, 270deg);
 z` },
-  &{ text(0, 0)`heading(0)
-tangentArc(15, 180deg)
-turn(180deg)
+  &{ text(0, 0)`heading(0);
+tangentArc(15, 180deg);
+turn(180deg);
 tangentArc(15, 180deg)` },
-  &{ text(0, 0)`heading(45deg)
-tangentLine(25)
-turn(-90deg)
+  &{ text(0, 0)`heading(45deg);
+tangentLine(25);
+turn(-90deg);
 tangentLine(25) ...` },
-  &{ text(0, 0)`heading(0)
-tangentArc(28, 180deg)
-tangentArc(22, 180deg)
+  &{ text(0, 0)`heading(0);
+tangentArc(28, 180deg);
+tangentArc(22, 180deg);
 tangentArc(15, ...)` }
 ];
 

@@ -202,8 +202,8 @@ describe('Multi-Layer Support', () => {
       const result = compileWithContext(`
         define PathLayer('main') \${}
         layer('main').apply { M 100 100 L 200 200 }
-        log(layer('main').ctx.position.x)
-        log(layer('main').ctx.position.y)
+        log(layer('main').ctx.position.x);
+        log(layer('main').ctx.position.y);
       `);
       expect(result.logs).toHaveLength(2);
       expect(result.logs[0].parts[0].value).toBe('200');
@@ -227,7 +227,7 @@ describe('Multi-Layer Support', () => {
       const result = compileWithContext(`
         define PathLayer('test') \${}
         layer('test').apply { M 10 10 }
-        log(layer('test').name)
+        log(layer('test').name);
       `);
       expect(result.logs[0].parts[0].value).toBe('test');
     });
@@ -236,7 +236,7 @@ describe('Multi-Layer Support', () => {
       const result = compileWithContext(`
         define PathLayer('test') \${}
         layer('test').apply { M 42 99 }
-        log(layer('test').ctx.position.x)
+        log(layer('test').ctx.position.x);
       `);
       expect(result.logs[0].parts[0].value).toBe('42');
     });
@@ -321,7 +321,7 @@ describe('Multi-Layer Support', () => {
     it('throws on undefined layer in expression', () => {
       expect(() =>
         compileWithContext(`
-        log(layer('nonexistent').ctx)
+        log(layer('nonexistent').ctx);
       `),
       ).toThrow("Undefined layer: 'nonexistent'");
     });
@@ -752,7 +752,7 @@ describe('Multi-Layer Support', () => {
       it('sets translate transform on a layer', () => {
         const result = compile(`
           define PathLayer('main') \${ stroke: red; }
-          layer('main').ctx.transform.translate.set(50, 50)
+          layer('main').ctx.transform.translate.set(50, 50);
           layer('main').apply { M 0 0 L 100 0 }
         `);
         expect(result.layers[0].transform).toBe('translate(50, 50)');
@@ -761,9 +761,9 @@ describe('Multi-Layer Support', () => {
       it('reads translate values', () => {
         const result = compileWithContext(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.translate.set(30, 40)
-          log(layer('main').ctx.transform.translate.x)
-          log(layer('main').ctx.transform.translate.y)
+          layer('main').ctx.transform.translate.set(30, 40);
+          log(layer('main').ctx.transform.translate.x);
+          log(layer('main').ctx.transform.translate.y);
         `);
         expect(result.logs[0].parts[0].value).toBe('30');
         expect(result.logs[1].parts[0].value).toBe('40');
@@ -772,8 +772,8 @@ describe('Multi-Layer Support', () => {
       it('returns 0 for unset translate', () => {
         const result = compileWithContext(`
           define PathLayer('main') \${}
-          log(layer('main').ctx.transform.translate.x)
-          log(layer('main').ctx.transform.translate.y)
+          log(layer('main').ctx.transform.translate.x);
+          log(layer('main').ctx.transform.translate.y);
         `);
         expect(result.logs[0].parts[0].value).toBe('0');
         expect(result.logs[1].parts[0].value).toBe('0');
@@ -782,8 +782,8 @@ describe('Multi-Layer Support', () => {
       it('resets translate', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.translate.set(50, 50)
-          layer('main').ctx.transform.translate.reset()
+          layer('main').ctx.transform.translate.set(50, 50);
+          layer('main').ctx.transform.translate.reset();
           layer('main').apply { M 0 0 }
         `);
         expect(result.layers[0].transform).toBeUndefined();
@@ -794,7 +794,7 @@ describe('Multi-Layer Support', () => {
       it('sets rotate transform (angle only)', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.rotate.set(calc(PI() / 4))
+          layer('main').ctx.transform.rotate.set(calc(PI() / 4));
           layer('main').apply { M 0 0 L 100 0 }
         `);
         expect(result.layers[0].transform).toBe('rotate(45)');
@@ -803,7 +803,7 @@ describe('Multi-Layer Support', () => {
       it('sets rotate with origin', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.rotate.set(calc(PI() / 2), 50, 50)
+          layer('main').ctx.transform.rotate.set(calc(PI() / 2), 50, 50);
           layer('main').apply { M 0 0 }
         `);
         expect(result.layers[0].transform).toBe('rotate(90, 50, 50)');
@@ -812,10 +812,10 @@ describe('Multi-Layer Support', () => {
       it('reads rotate values', () => {
         const result = compileWithContext(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.rotate.set(calc(PI() / 4), 10, 20)
-          log(layer('main').ctx.transform.rotate.angle)
-          log(layer('main').ctx.transform.rotate.cx)
-          log(layer('main').ctx.transform.rotate.cy)
+          layer('main').ctx.transform.rotate.set(calc(PI() / 4), 10, 20);
+          log(layer('main').ctx.transform.rotate.angle);
+          log(layer('main').ctx.transform.rotate.cx);
+          log(layer('main').ctx.transform.rotate.cy);
         `);
         expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(Math.PI / 4);
         expect(result.logs[1].parts[0].value).toBe('10');
@@ -825,7 +825,7 @@ describe('Multi-Layer Support', () => {
       it('returns 0 for unset rotate angle', () => {
         const result = compileWithContext(`
           define PathLayer('main') \${}
-          log(layer('main').ctx.transform.rotate.angle)
+          log(layer('main').ctx.transform.rotate.angle);
         `);
         expect(result.logs[0].parts[0].value).toBe('0');
       });
@@ -835,7 +835,7 @@ describe('Multi-Layer Support', () => {
       it('sets scale transform', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.scale.set(2, 3)
+          layer('main').ctx.transform.scale.set(2, 3);
           layer('main').apply { M 0 0 }
         `);
         expect(result.layers[0].transform).toBe('scale(2, 3)');
@@ -844,7 +844,7 @@ describe('Multi-Layer Support', () => {
       it('sets scale with origin', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.scale.set(2, 2, 50, 50)
+          layer('main').ctx.transform.scale.set(2, 2, 50, 50);
           layer('main').apply { M 0 0 }
         `);
         expect(result.layers[0].transform).toBe('translate(50, 50) scale(2, 2) translate(-50, -50)');
@@ -853,9 +853,9 @@ describe('Multi-Layer Support', () => {
       it('reads scale values', () => {
         const result = compileWithContext(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.scale.set(2, 3)
-          log(layer('main').ctx.transform.scale.x)
-          log(layer('main').ctx.transform.scale.y)
+          layer('main').ctx.transform.scale.set(2, 3);
+          log(layer('main').ctx.transform.scale.x);
+          log(layer('main').ctx.transform.scale.y);
         `);
         expect(result.logs[0].parts[0].value).toBe('2');
         expect(result.logs[1].parts[0].value).toBe('3');
@@ -864,8 +864,8 @@ describe('Multi-Layer Support', () => {
       it('returns 1 for unset scale', () => {
         const result = compileWithContext(`
           define PathLayer('main') \${}
-          log(layer('main').ctx.transform.scale.x)
-          log(layer('main').ctx.transform.scale.y)
+          log(layer('main').ctx.transform.scale.x);
+          log(layer('main').ctx.transform.scale.y);
         `);
         expect(result.logs[0].parts[0].value).toBe('1');
         expect(result.logs[1].parts[0].value).toBe('1');
@@ -876,9 +876,9 @@ describe('Multi-Layer Support', () => {
       it('applies translate + rotate + scale in SVG order', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.translate.set(10, 20)
-          layer('main').ctx.transform.rotate.set(calc(PI() / 2))
-          layer('main').ctx.transform.scale.set(2, 2)
+          layer('main').ctx.transform.translate.set(10, 20);
+          layer('main').ctx.transform.rotate.set(calc(PI() / 2));
+          layer('main').ctx.transform.scale.set(2, 2);
           layer('main').apply { M 0 0 }
         `);
         expect(result.layers[0].transform).toBe('translate(10, 20) rotate(90) scale(2, 2)');
@@ -889,10 +889,10 @@ describe('Multi-Layer Support', () => {
       it('clears all transforms with transform.reset()', () => {
         const result = compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.translate.set(50, 50)
-          layer('main').ctx.transform.rotate.set(1)
-          layer('main').ctx.transform.scale.set(2, 2)
-          layer('main').ctx.transform.reset()
+          layer('main').ctx.transform.translate.set(50, 50);
+          layer('main').ctx.transform.rotate.set(1);
+          layer('main').ctx.transform.scale.set(2, 2);
+          layer('main').ctx.transform.reset();
           layer('main').apply { M 0 0 }
         `);
         expect(result.layers[0].transform).toBeUndefined();
@@ -902,7 +902,7 @@ describe('Multi-Layer Support', () => {
     describe('default context (no layers)', () => {
       it('sets transform on implicit default layer via ctx', () => {
         const result = compile(`
-          ctx.transform.translate.set(25, 25)
+          ctx.transform.translate.set(25, 25);
           M 0 0 L 100 0
         `);
         expect(result.layers[0].transform).toBe('translate(25, 25)');
@@ -910,9 +910,9 @@ describe('Multi-Layer Support', () => {
 
       it('reads transform from ctx without layers', () => {
         const result = compileWithContext(`
-          ctx.transform.scale.set(3, 4)
-          log(ctx.transform.scale.x)
-          log(ctx.transform.scale.y)
+          ctx.transform.scale.set(3, 4);
+          log(ctx.transform.scale.x);
+          log(ctx.transform.scale.y);
         `);
         expect(result.logs[0].parts[0].value).toBe('3');
         expect(result.logs[1].parts[0].value).toBe('4');
@@ -924,7 +924,7 @@ describe('Multi-Layer Support', () => {
         const result = compile(`
           define PathLayer('main') \${}
           layer('main').apply {
-            ctx.transform.translate.set(10, 20)
+            ctx.transform.translate.set(10, 20);
             M 0 0 L 50 50
           }
         `);
@@ -937,8 +937,8 @@ describe('Multi-Layer Support', () => {
         const result = compile(`
           define PathLayer('a') \${}
           define PathLayer('b') \${}
-          layer('a').ctx.transform.translate.set(10, 10)
-          layer('b').ctx.transform.scale.set(2, 2)
+          layer('a').ctx.transform.translate.set(10, 10);
+          layer('b').ctx.transform.scale.set(2, 2);
           layer('a').apply { M 0 0 }
           layer('b').apply { M 0 0 }
         `);
@@ -967,7 +967,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.translate.set(50)
+          layer('main').ctx.transform.translate.set(50);
         `),
         ).toThrow('translate.set() expects 2 arguments');
       });
@@ -976,7 +976,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.rotate.set(1, 2)
+          layer('main').ctx.transform.rotate.set(1, 2);
         `),
         ).toThrow('rotate.set() expects 1 or 3 arguments');
       });
@@ -985,7 +985,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.scale.set(2)
+          layer('main').ctx.transform.scale.set(2);
         `),
         ).toThrow('scale.set() expects 2 or 4 arguments');
       });
@@ -994,7 +994,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
           define PathLayer('main') \${}
-          layer('main').ctx.transform.translate.set("a", "b")
+          layer('main').ctx.transform.translate.set("a", "b");
         `),
         ).toThrow('arguments must be numbers');
       });
@@ -1003,7 +1003,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compileWithContext(`
           define PathLayer('main') \${}
-          log(layer('main').ctx.transform.skew)
+          log(layer('main').ctx.transform.skew);
         `),
         ).toThrow('does not exist on transform');
       });
@@ -1395,7 +1395,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let l = PathLayer('x') \${ stroke: red; };
         let s = l.styles;
-        log(s.stroke)
+        log(s.stroke);
       `);
       expect(result.logs[0].parts[0].value).toBe('red');
     });
@@ -1455,7 +1455,7 @@ describe('Multi-Layer Support', () => {
     it('supports .name property on dynamic layer', () => {
       const result = compile(`
         let l = PathLayer('test') \${};
-        log(l.name)
+        log(l.name);
       `);
       expect(result.logs[0].parts[0].value).toBe('test');
     });
@@ -1464,7 +1464,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let l = PathLayer('test') \${};
         l.apply { M 50 60 }
-        log(l.ctx.position.x, l.ctx.position.y)
+        log(l.ctx.position.x, l.ctx.position.y);
       `);
       expect(result.logs[0].parts[0].value).toBe('50');
       expect(result.logs[0].parts[1].value).toBe('60');
@@ -1580,7 +1580,7 @@ describe('Multi-Layer Support', () => {
         let g = GroupLayer('panel') \${};
         let bg = PathLayer('bg') \${ fill: #eee; };
         bg.apply { M 0 0 L 100 0 }
-        g.append(bg)
+        g.append(bg);
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].type).toBe('group');
@@ -1595,7 +1595,7 @@ describe('Multi-Layer Support', () => {
         let g = GroupLayer('g') \${};
         let a = PathLayer('a') \${};
         let b = PathLayer('b') \${};
-        g.append(a, b)
+        g.append(a, b);
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].children).toHaveLength(2);
@@ -1621,9 +1621,9 @@ describe('Multi-Layer Support', () => {
         let inner = GroupLayer('inner') \${};
         let child = PathLayer('child') \${};
         child.apply { M 5 5 }
-        inner.append(child)
+        inner.append(child);
         let outer = GroupLayer('outer') \${};
-        outer.append(inner)
+        outer.append(inner);
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].name).toBe('outer');
@@ -1650,7 +1650,7 @@ describe('Multi-Layer Support', () => {
         let g = GroupLayer('g') \${};
         let a = PathLayer('a') \${};
         let b = PathLayer('b') \${};
-        g.append(a)
+        g.append(a);
       `);
       // Top level: g and b (a is inside g)
       expect(result.layers).toHaveLength(2);
@@ -1669,7 +1669,7 @@ describe('Multi-Layer Support', () => {
     it('applies imperative transform via ctx', () => {
       const result = compile(`
         let g = GroupLayer('panel') \${};
-        g.ctx.transform.translate.set(50, 75)
+        g.ctx.transform.translate.set(50, 75);
       `);
       expect(result.layers[0].transform).toBe('translate(50, 75)');
     });
@@ -1677,7 +1677,7 @@ describe('Multi-Layer Support', () => {
     it('style block transform takes precedence over imperative', () => {
       const result = compile(`
         let g = GroupLayer('panel') \${ transform: scale(2, 2); };
-        g.ctx.transform.translate.set(50, 75)
+        g.ctx.transform.translate.set(50, 75);
       `);
       expect(result.layers[0].transform).toBe('scale(2, 2)');
     });
@@ -1687,7 +1687,7 @@ describe('Multi-Layer Support', () => {
         compile(`
         let p = PathLayer('p') \${};
         let q = PathLayer('q') \${};
-        p.append(q)
+        p.append(q);
       `),
       ).toThrow(/\.append\(\) is only available on GroupLayer/);
     });
@@ -1696,7 +1696,7 @@ describe('Multi-Layer Support', () => {
       expect(() =>
         compile(`
         let g = GroupLayer('g') \${};
-        g.append(42)
+        g.append(42);
       `),
       ).toThrow(/\.append\(\) arguments must be layer references/);
     });
@@ -1706,8 +1706,8 @@ describe('Multi-Layer Support', () => {
         let g1 = GroupLayer('g1') \${};
         let g2 = GroupLayer('g2') \${};
         let child = PathLayer('child') \${};
-        g1.append(child)
-        g2.append(child)
+        g1.append(child);
+        g2.append(child);
       `);
       // child should be in g2, not g1
       expect(result.layers[0].children).toHaveLength(0); // g1
@@ -1722,7 +1722,7 @@ describe('Multi-Layer Support', () => {
       expect(() =>
         compile(`
         let g = GroupLayer('g') \${};
-        g.append(g)
+        g.append(g);
       `),
       ).toThrow(/Cannot append group 'g' to itself/);
     });
@@ -1731,8 +1731,8 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let g = GroupLayer('g') \${};
         let child = PathLayer('child') \${};
-        g.append(child)
-        g.append(child)
+        g.append(child);
+        g.append(child);
       `);
       expect(result.layers[0].children).toHaveLength(1);
     });
@@ -1749,7 +1749,7 @@ describe('Multi-Layer Support', () => {
     it('ctx.transform.rotate.set works on GroupLayer', () => {
       const result = compile(`
         let g = GroupLayer('g') \${};
-        g.ctx.transform.rotate.set(0.785)
+        g.ctx.transform.rotate.set(0.785);
       `);
       expect(result.layers[0].transform).toContain('rotate(');
     });
@@ -1757,7 +1757,7 @@ describe('Multi-Layer Support', () => {
     it('ctx.transform.scale.set works on GroupLayer', () => {
       const result = compile(`
         let g = GroupLayer('g') \${};
-        g.ctx.transform.scale.set(2, 3)
+        g.ctx.transform.scale.set(2, 3);
       `);
       expect(result.layers[0].transform).toBe('scale(2, 3)');
     });

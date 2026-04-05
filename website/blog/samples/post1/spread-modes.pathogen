@@ -92,4 +92,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title)
+scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);

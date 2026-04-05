@@ -138,4 +138,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, glow, card, card_border, bar, b1, b2, sidebar, chip1, chip2, chip3, track, fill_bar, track2, fill_bar2, labels, title)
+scene.append(bg, glow, card, card_border, bar, b1, b2, sidebar, chip1, chip2, chip3, track, fill_bar, track2, fill_bar2, labels, title);

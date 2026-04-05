@@ -48,4 +48,4 @@ ring.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, ring)
+scene.append(bg, ring);

@@ -10,9 +10,9 @@ let inner = @{ circle(0, 0, 25); closePath() };
 // --- Distance method (left) ---
 
 let topo_d = TopoGradient('dist', 220, 220) {|g|
-  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
-  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
-  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'));
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'));
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'));
 };
 topo_d.method = 'distance';
 topo_d.baseColor = Color('#1a1a2e');
@@ -21,9 +21,9 @@ topo_d.easing = 'smoothstep';
 // --- Laplace method (right) ---
 
 let topo_l = TopoGradient('lapl', 220, 220) {|g|
-  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
-  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
-  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'));
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'));
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'));
 };
 topo_l.method = 'laplace';
 topo_l.iterations = 300;
@@ -81,10 +81,10 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') ${};
-left_group.append(left)
+left_group.append(left);
 
 let right_group = GroupLayer('right-group') ${};
-right_group.append(right)
+right_group.append(right);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_group, right_group, labels, desc, title)
+scene.append(bg, left_group, right_group, labels, desc, title);

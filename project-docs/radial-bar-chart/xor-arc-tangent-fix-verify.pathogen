@@ -1,0 +1,122 @@
+// viewBox="0 0 820 520"
+// Visual verification: XOR arc tangent fix
+// Grid of radialWedge XOR (sharp vs rounded) across varying theta and outer radius.
+// Expected: small corner crescents only — NO diagonal artifacts.
+
+let innerR = 30;
+let cornerR = 8;
+
+let thetas = [0.1pi, 0.18pi, 0.26pi, 0.34pi, 0.42pi];
+let thetaLabels = ["0.1pi", "0.18pi", "0.26pi", "0.34pi", "0.42pi"];
+let outerRs = [50, 80, 110];
+let outerLabels = ["oR=50", "oR=80", "oR=110"];
+
+let colSpacing = 160;
+let rowSpacing = 160;
+let startX = 80;
+let startY = 90;
+
+let bg = PathLayer('bg') ${ fill: '#f8f8f8'; stroke: none; };
+let roundedFill = PathLayer('rounded-fill') ${ fill: '#ffcccc'; stroke: none; };
+let xorFill = PathLayer('xor-fill') ${ fill: '#cc2222'; stroke: none; };
+let sharpOutline = PathLayer('sharp-outline') ${ fill: none; stroke: '#22aa44'; stroke-width: 1.5; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
+let guideLayer = PathLayer('guides') ${ fill: none; stroke: '#4477aa'; stroke-width: 0.8; stroke-dasharray: 3 3; };
+
+let headers = TextLayer('headers') ${
+  font-size: 10;
+  fill: '#333';
+  font-family: monospace, monospace;
+  text-anchor: middle;
+};
+
+let rowHeaders = TextLayer('row-headers') ${
+  font-size: 10;
+  fill: '#333';
+  font-family: monospace, monospace;
+  text-anchor: end;
+};
+
+let info = TextLayer('info') ${
+  font-size: 8;
+  fill: '#333';
+  font-family: monospace, monospace;
+  text-anchor: middle;
+};
+
+let title = TextLayer('title') ${
+  font-size: 13;
+  fill: '#333';
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: start;
+};
+
+bg.apply { rect(0, 0, 820, 520) }
+
+// Column headers
+headers.apply {
+  for ([label, ci] in thetaLabels) {
+    text(calc(startX + ci * colSpacing), 30)`${label}`
+  }
+}
+
+// Row headers
+rowHeaders.apply {
+  for ([label, ri] in outerLabels) {
+    text(45, calc(startY + ri * rowSpacing + 5))`${label}`
+  }
+}
+
+for ([oR, ri] in outerRs) {
+  for ([theta, ci] in thetas) {
+    let cx = calc(startX + ci * colSpacing);
+    let cy = calc(startY + ri * rowSpacing);
+    let halfTheta = calc(theta / 2);
+    let fromA = calc(-90deg - halfTheta);
+    let toA = calc(-90deg + halfTheta);
+
+    // 1. Rounded wedge (light fill);
+    roundedFill.apply {
+      M cx cy
+      radialWedge(innerR, oR, fromA, toA, cornerR);
+    }
+
+    // 2. XOR between sharp and rounded (should be corner crescents only);
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
+    xorFill.apply { diff.drawTo(0, 0) }
+
+    // 3. Sharp outline (dotted green);
+    sharpOutline.apply {
+      M cx cy
+      radialWedge(innerR, oR, fromA, toA, 0);
+    }
+
+    // 4. Guide circles
+    guideLayer.apply {
+      circle(cx, cy, innerR);
+      circle(cx, cy, oR);
+    }
+
+    // Effective corner radii
+    let absSweep = theta;
+    let halfSweep = calc(absSweep / 2);
+    let sinHalf = sin(halfSweep);
+    let maxICr = calc(innerR * sinHalf / (1 - sinHalf));
+    let maxOCr = calc(oR * sinHalf / (1 + sinHalf));
+    let iCr = min(cornerR, calc((oR - innerR) / 2), maxICr);
+    let oCr = min(cornerR, calc((oR - innerR) / 2), maxOCr);
+
+    info.apply {
+      text(cx, calc(cy + oR + 14))`iCr:${round(iCr)} oCr:${round(oCr)}`
+    }
+  }
+}
+
+title.apply {
+  text(60, 505)`XOR arc tangent fix verification — cr=${cornerR}, iR=${innerR} | green=sharp, dark=XOR diff, blue=guides`
+}
+
+let g = GroupLayer('all') ${};
+g.append(bg, roundedFill, xorFill, sharpOutline, guideLayer, headers, rowHeaders, info, title);

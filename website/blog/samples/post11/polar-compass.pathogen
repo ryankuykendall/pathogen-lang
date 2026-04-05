@@ -88,7 +88,7 @@ dots.apply {
     let angle = calc(i * 0.7854 - 1.5708);
     let dx = calc(cos(angle) * 140);
     let dy = calc(sin(angle) * 140);
-    circle(dx, dy, 3)
+    circle(dx, dy, 3);
   }
 }
 
@@ -127,13 +127,13 @@ layer('labels').apply {
 
     // Verify label doesn't overlap central hexagon
     if (proj.intersects(hex_bb)) {
-      log(`WARN: label "${names[i]}" intersects central hexagon`)
+      log(`WARN: label "${names[i]}" intersects central hexagon`);
     }
 
     // Verify label doesn't overlap any previously placed label
     for (prev in placed_labels) {
       if (proj.intersects(prev)) {
-        log(`WARN: label "${names[i]}" intersects a previously placed label`)
+        log(`WARN: label "${names[i]}" intersects a previously placed label`);
       }
     }
 

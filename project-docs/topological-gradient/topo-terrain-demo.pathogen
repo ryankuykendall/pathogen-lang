@@ -2,28 +2,28 @@
 // Three nested contours creating a terrain-like elevation map
 
 let shore = @{
-  M(0, 0)
-  C(100, -40, 250, 30, 300, 100)
-  C(270, 210, 30, 220, 0, 0)
-  closePath()
+  M(0, 0);
+  C(100, -40, 250, 30, 300, 100);
+  C(270, 210, 30, 220, 0, 0);
+  closePath();
 };
 
 let mid = @{
-  M(0, 0)
-  C(60, -20, 160, 25, 200, 70)
-  C(180, 140, 20, 150, 0, 0)
-  closePath()
+  M(0, 0);
+  C(60, -20, 160, 25, 200, 70);
+  C(180, 140, 20, 150, 0, 0);
+  closePath();
 };
 
 let peak = @{ circle(0, 0, 40); closePath() };
 
 let topo = TopoGradient('terrain', 400, 300) {|g|
   // Shore contour — sandy color at 0.3 elevation
-  g.contour(shore.project(50, 50), 0.3, Color('#f9e79f'))
+  g.contour(shore.project(50, 50), 0.3, Color('#f9e79f'));
   // Mid-elevation — green at 0.55
-  g.contour(mid.project(80, 70), 0.55, Color('#27ae60'))
+  g.contour(mid.project(80, 70), 0.55, Color('#27ae60'));
   // Peak — brown at 0.8
-  g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'))
+  g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'));
 };
 topo.baseColor = Color('#1a5276');  // Deep ocean blue
 topo.easing = 'smoothstep';

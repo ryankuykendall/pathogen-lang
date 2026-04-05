@@ -118,11 +118,11 @@ describe('Runtime errors', () => {
     });
 
     it('throws on undefined variable in function call', () => {
-      expect(() => compilePath('circle(x, 100, 50)')).toThrow(/[Uu]ndefined variable.*x/);
+      expect(() => compilePath('circle(x, 100, 50);')).toThrow(/[Uu]ndefined variable.*x/);
     });
 
     it('throws on undefined function', () => {
-      expect(() => compilePath('unknownFunc(10, 20)')).toThrow(/[Uu]ndefined/);
+      expect(() => compilePath('unknownFunc(10, 20);')).toThrow(/[Uu]ndefined/);
     });
   });
 
@@ -485,31 +485,31 @@ describe('Edge cases', () => {
 
 describe('Method call error locations', () => {
   it('unknown PathBlock method includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo()')).toThrow(
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo();')).toThrow(
       /^Line 2, col 2: Unknown PathBlock method: foo$/,
     );
   });
 
   it('unknown ProjectedPath method includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo()')).toThrow(
+    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo();')).toThrow(
       /^Line 3, col 2: Unknown ProjectedPath method: foo$/,
     );
   });
 
   it('argument type error on method call includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x")')).toThrow(/^Line 2, col 2:.*must be a number$/);
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x");')).toThrow(/^Line 2, col 2:.*must be a number$/);
   });
 
   it('unknown array method includes line and column', () => {
-    expect(() => compilePath('let list = [1, 2];\nlist.foo()')).toThrow(/^Line 2, col 5:.*Unknown array method: foo$/);
+    expect(() => compilePath('let list = [1, 2];\nlist.foo();')).toThrow(/^Line 2, col 5:.*Unknown array method: foo$/);
   });
 
   it('unknown Point method includes line and column', () => {
-    expect(() => compilePath('let pt = Point(1, 2);\npt.foo()')).toThrow(/^Line 2, col 3:.*Unknown Point method: foo$/);
+    expect(() => compilePath('let pt = Point(1, 2);\npt.foo();')).toThrow(/^Line 2, col 3:.*Unknown Point method: foo$/);
   });
 
   it('unknown string method includes line and column', () => {
-    expect(() => compilePath('let s = `hello`;\ns.foo()')).toThrow(/^Line 2, col 2:.*Unknown string method: foo$/);
+    expect(() => compilePath('let s = `hello`;\ns.foo();')).toThrow(/^Line 2, col 2:.*Unknown string method: foo$/);
   });
 });
 
@@ -535,7 +535,7 @@ describe('Void function calls', () => {
       define PathLayer('main') \${ stroke: black; }
       fn doNothing() { let x = 1; }
       layer('main').apply {
-        doNothing()
+        doNothing();
         M 10 20
       }
     `);

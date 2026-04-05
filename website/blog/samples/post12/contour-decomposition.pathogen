@@ -61,7 +61,7 @@ let asm_layer = PathLayer('assembled') ${
 let asm_cursor = 0;
 asm_layer.apply {
   for (g in asm_glyphs) {
-    g.drawTo(asm_cursor, 115)
+    g.drawTo(asm_cursor, 115);
     asm_cursor = calc(asm_cursor + g.advanceWidth);
   }
 }

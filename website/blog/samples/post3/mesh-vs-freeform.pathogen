@@ -95,10 +95,10 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') ${};
-left_group.append(mesh_fill)
+left_group.append(mesh_fill);
 
 let right_group = GroupLayer('right-group') ${};
-right_group.append(ff_fill)
+right_group.append(ff_fill);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_group, right_group, labels, desc, title)
+scene.append(bg, left_group, right_group, labels, desc, title);

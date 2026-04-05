@@ -20,8 +20,8 @@ let u_orig = PathLayer('u-orig') ${
   fill: none;
 };
 u_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let u_result = PathLayer('u-result') ${
@@ -31,7 +31,7 @@ let u_result = PathLayer('u-result') ${
 };
 u_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0)
+  u.drawTo(0, 0);
 }
 
 let u_ab = TextLayer('u-ab') ${
@@ -80,8 +80,8 @@ let d_orig = PathLayer('d-orig') ${
   fill: none;
 };
 d_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let d_result = PathLayer('d-result') ${
@@ -91,7 +91,7 @@ let d_result = PathLayer('d-result') ${
 };
 d_result.apply {
   let d = sq.project(0, 0).difference(sq.project(25, 25));
-  d.drawTo(0, 0)
+  d.drawTo(0, 0);
 }
 
 let d_ab = TextLayer('d-ab') ${
@@ -140,8 +140,8 @@ let i_orig = PathLayer('i-orig') ${
   fill: none;
 };
 i_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let i_result = PathLayer('i-result') ${
@@ -151,7 +151,7 @@ let i_result = PathLayer('i-result') ${
 };
 i_result.apply {
   let ix = sq.project(0, 0).intersection(sq.project(25, 25));
-  ix.drawTo(0, 0)
+  ix.drawTo(0, 0);
 }
 
 let i_ab = TextLayer('i-ab') ${
@@ -200,8 +200,8 @@ let x_orig = PathLayer('x-orig') ${
   fill: none;
 };
 x_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let x_result = PathLayer('x-result') ${
@@ -211,7 +211,7 @@ let x_result = PathLayer('x-result') ${
 };
 x_result.apply {
   let xr = sq.project(0, 0).xor(sq.project(25, 25));
-  xr.drawTo(0, 0)
+  xr.drawTo(0, 0);
 }
 
 let x_ab = TextLayer('x-ab') ${

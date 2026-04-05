@@ -89,4 +89,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, sky_layer, water_layer, horizon, sun, title)
+scene.append(bg, sky_layer, water_layer, horizon, sun, title);

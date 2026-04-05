@@ -14,11 +14,11 @@ let cells = PathLayer('cells') ${
   stroke-width: 1;
 };
 cells.apply {
-  roundRect(15, 50, 100, 100, 6)
-  roundRect(130, 50, 100, 100, 6)
-  roundRect(245, 50, 100, 100, 6)
-  roundRect(360, 50, 100, 100, 6)
-  roundRect(475, 50, 100, 100, 6)
+  roundRect(15, 50, 100, 100, 6);
+  roundRect(130, 50, 100, 100, 6);
+  roundRect(245, 50, 100, 100, 6);
+  roundRect(360, 50, 100, 100, 6);
+  roundRect(475, 50, 100, 100, 6);
 }
 
 // --- Shapes ---

@@ -380,9 +380,9 @@ describe('Color type', () => {
 
     it('method chaining works', () => {
       const result = compile(`
-        let c = Color(0.5, 0.2, 30)
-          .lighten(0.1)
-          .desaturate(0.5)
+        let c = Color(0.5, 0.2, 30);
+          .lighten(0.1);
+          .desaturate(0.5);
           .alpha(0.9);
         log(c.lightness);
         log(c.chroma);
@@ -902,7 +902,7 @@ describe('Color type', () => {
       const result = compile(`
         let c = Color.lightDark(
           Color(CSSVar('--fg-light', '#333')),
-          Color(CSSVar('--fg-dark', '#eee'))
+          Color(CSSVar('--fg-dark', '#eee'));
         );
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }
@@ -914,7 +914,7 @@ describe('Color type', () => {
       const result = compile(`
         let c = Color.lightDark(
           Color(CSSVar('--fg-light', '#333')),
-          Color('#eee')
+          Color('#eee');
         );
         define PathLayer('a') \${ fill: c; }
         layer('a').apply { M 0 0 }

@@ -5,16 +5,16 @@
 // --- Gradients ---
 
 let warm = LinearGradient('warm', 0, 0, 1, 1) {|g|
-  g.stop(0, Color('#ff6b6b'))
-  g.stop(0.5, Color('#feca57'))
-  g.stop(1, Color('#48dbfb'))
+  g.stop(0, Color('#ff6b6b'));
+  g.stop(0.5, Color('#feca57'));
+  g.stop(1, Color('#48dbfb'));
 };
 warm.interpolation = 'oklch';
 
 let cool = RadialGradient('cool', 0.5, 0.45, 0.55) {|g|
-  g.stop(0, Color('#ff9ff3'))
-  g.stop(0.6, Color('#a29bfe'))
-  g.stop(1, Color('#2d1b69'))
+  g.stop(0, Color('#ff9ff3'));
+  g.stop(0.6, Color('#a29bfe'));
+  g.stop(1, Color('#2d1b69'));
 };
 
 let blob1 = @{
@@ -32,12 +32,12 @@ let blob2 = @{
 let dot = @{ circle(0, 0, 8); closePath() };
 
 let topo_fill = TopoGradient('topo-card', 170, 140) {|g|
-  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'))
-  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'))
-  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'))
-  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'))
-  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'))
-  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'));
+  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'));
+  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'));
+  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'));
+  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'));
+  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'));
 };
 topo_fill.baseColor = Color('#0a0a1a');
 topo_fill.easing = 'ease-in-out';
@@ -77,7 +77,7 @@ let c1_tag = TextLayer('c1-tag') ${
 };
 c1_tag.apply { text(85, 174)`native SVG element` }
 
-card1.append(c1_fill, c1_label, c1_tag)
+card1.append(c1_fill, c1_label, c1_tag);
 
 // --- Card 2: Radial (center) ---
 
@@ -106,7 +106,7 @@ let c2_tag = TextLayer('c2-tag') ${
 };
 c2_tag.apply { text(85, 174)`native SVG element` }
 
-card2.append(c2_fill, c2_label, c2_tag)
+card2.append(c2_fill, c2_label, c2_tag);
 
 // --- Card 3: Topo (right) ---
 
@@ -135,7 +135,7 @@ let c3_tag = TextLayer('c3-tag') ${
 };
 c3_tag.apply { text(85, 174)`GPU rendered (base64)` }
 
-card3.append(c3_fill, c3_label, c3_tag)
+card3.append(c3_fill, c3_label, c3_tag);
 
 // --- Title ---
 
@@ -162,4 +162,4 @@ subtitle.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, card1, card2, card3, title, subtitle)
+scene.append(bg, card1, card2, card3, title, subtitle);

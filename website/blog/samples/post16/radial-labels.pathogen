@@ -40,8 +40,8 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings + center ===
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 let center = PathLayer('center') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 center.apply { circle(cx, cy, innerR) }
@@ -57,7 +57,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
   }
 
   if (d.top > 0) {
@@ -66,7 +66,7 @@ for ([d, i] in data) {
     let topOff = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
     }
   }
 }
@@ -101,7 +101,7 @@ for ([d, i] in data) {
   } << ${ font-size: 11; };
 
   catLabels.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 }
 

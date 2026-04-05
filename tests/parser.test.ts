@@ -442,7 +442,7 @@ describe('Parser', () => {
 
   describe('function call statements', () => {
     it('parses function call without semicolon', () => {
-      const ast = parse('circle(50, 50, 20)');
+      const ast = parse('circle(50, 50, 20);');
       expect(ast.body).toHaveLength(1);
       expect(ast.body[0]).toMatchObject({
         type: 'PathCommand',
@@ -498,7 +498,7 @@ describe('Parser', () => {
     });
 
     it('captures location for function calls at statement level', () => {
-      const ast = parse('circle(50, 50, 25)');
+      const ast = parse('circle(50, 50, 25);');
       const cmd = ast.body[0];
       expect(cmd.type).toBe('PathCommand');
       if (cmd.type === 'PathCommand') {

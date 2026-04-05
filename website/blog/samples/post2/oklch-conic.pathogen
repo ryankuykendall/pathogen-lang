@@ -106,10 +106,10 @@ footer.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') ${};
-top_row.append(by_s, by_o)
+top_row.append(by_s, by_o);
 
 let bottom_row = GroupLayer('bottom-row') ${};
-bottom_row.append(rc_s, rc_o)
+bottom_row.append(rc_s, rc_o);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)
+scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);

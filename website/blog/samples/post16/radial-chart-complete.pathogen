@@ -79,8 +79,8 @@ centerCircle.apply { circle(cx, cy, innerR) }
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
 layer('chart').append(grid);
 grid.apply {
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal))
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal))
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal));
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal));
 }
 
 let gridLabels = TextLayer('grid-labels') ${
@@ -124,18 +124,18 @@ for ([d, i] in data) {
   let catGroup = GroupLayer(`group-${i}-${firstWords[i]}`) ${};
   layer('chart').append(catGroup);
 
-  // Red bar (all BGG games)
+  // Red bar (all BGG games);
   if (d.all > 0) {
     let outerR = calc(barInnerR + (maxR - barInnerR) * d.all / maxVal);
     let barLayer = PathLayer(`bar-all-${i}`) ${ fill: allBarColor; stroke: bgColor; stroke-width: 1; };
     catGroup.append(barLayer);
     barLayer.apply {
       M cx cy
-      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR)
+      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR);
     }
   }
 
-  // Dark bar overlaid (top 100)
+  // Dark bar overlaid (top 100);
   if (d.top > 0) {
     let topOuterR = calc(barInnerR + (maxR - barInnerR) * d.top / maxVal);
     let topFrom = calc(sliceFrom + topBarOffset);
@@ -144,7 +144,7 @@ for ([d, i] in data) {
     catGroup.append(topLayer);
     topLayer.apply {
       M cx cy
-      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR)
+      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR);
     }
   }
 
@@ -172,10 +172,10 @@ for ([d, i] in data) {
   } << ${ font-size: 9; };
 
   catLabel.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 
-  // Badge (if applicable)
+  // Badge (if applicable);
   let hasBadge = d.name == "Economic" || d.name == "Wargame" || d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric" ? 1 : 0;
 
   if (hasBadge == 1) {
@@ -261,10 +261,10 @@ let subtitleBg2 = PathLayer('subtitle-bg2') ${ fill: topBarColor; stroke: none; 
 layer('chrome').append(subtitleBg, subtitleBg2);
 
 subtitleBg.apply {
-  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2)
+  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2);
 }
 subtitleBg2.apply {
-  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2)
+  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2);
 }
 
 // Render as a single text element with tspans for color changes.
@@ -312,11 +312,11 @@ let legRedWedges = PathLayer('leg-red') ${ fill: legRedColor; stroke: bgColor; s
 layer('legend').append(legRedWedges);
 legRedWedges.apply {
   M legOX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for red
@@ -337,11 +337,11 @@ let legDarkWedges = PathLayer('leg-dark') ${ fill: legDarkColor; stroke: bgColor
 layer('legend').append(legDarkWedges);
 legDarkWedges.apply {
   M legDarkX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for dark
@@ -474,7 +474,7 @@ for ([s, si] in summData) {
 
   // Bar extends LEFT from dot
   summBars.apply {
-    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5)
+    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5);
   }
 
   // Open circle on the arc — shifted up 0.75 to center on bar

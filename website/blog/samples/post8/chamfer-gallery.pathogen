@@ -18,11 +18,11 @@ let original = PathLayer('original') ${
 };
 
 original.apply {
-  box.drawTo(30, 60)
-  box.drawTo(140, 60)
-  box.drawTo(250, 60)
-  box.drawTo(360, 60)
-  box.drawTo(470, 60)
+  box.drawTo(30, 60);
+  box.drawTo(140, 60);
+  box.drawTo(250, 60);
+  box.drawTo(360, 60);
+  box.drawTo(470, 60);
 }
 
 // --- Chamfered shapes ---
@@ -36,23 +36,23 @@ let chamfered = PathLayer('chamfered') ${
 chamfered.apply {
   // Symmetric 5px
   let c1 = box.chamfer(5);
-  c1.drawTo(30, 60)
+  c1.drawTo(30, 60);
 
   // Symmetric 15px
   let c2 = box.chamfer(15);
-  c2.drawTo(140, 60)
+  c2.drawTo(140, 60);
 
   // Symmetric 30px
   let c3 = box.chamfer(30);
-  c3.drawTo(250, 60)
+  c3.drawTo(250, 60);
 
   // Asymmetric 5/25
   let c4 = box.chamfer(5, 25);
-  c4.drawTo(360, 60)
+  c4.drawTo(360, 60);
 
   // Single vertex
   let c5 = box.chamferAtVertex(1, 20);
-  c5.drawTo(470, 60)
+  c5.drawTo(470, 60);
 }
 
 // --- Labels ---

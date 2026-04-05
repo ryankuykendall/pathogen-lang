@@ -68,7 +68,7 @@ let s5 = PathLayer('s5') ${ fill: star_grad; stroke: none; };
 s5.apply { circle(200, 40, 10); closePath() }
 
 let stars = GroupLayer('stars') ${};
-stars.append(s1, s2, s3, s4, s5)
+stars.append(s1, s2, s3, s4, s5);
 
 // --- Planet with Ring ---
 
@@ -82,9 +82,9 @@ planet_ring.apply {
 }
 
 let planet = GroupLayer('planet') ${};
-planet.append(planet_body, planet_ring)
+planet.append(planet_body, planet_ring);
 
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, nebula, stars, planet)
+scene.append(bg, nebula, stars, planet);

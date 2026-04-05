@@ -46,14 +46,14 @@ for (i in 0..3) {
   let ef = shape.ellipticalFillet(32, 16);
 
   original.apply {
-    shape.drawTo(ox, oy)
+    shape.drawTo(ox, oy);
   }
   filleted.apply {
-    ef.drawTo(ox, oy)
+    ef.drawTo(ox, oy);
   }
   // vertex dot
   dots.apply {
-    circle(calc(ox + 50), oy, 3)
+    circle(calc(ox + 50), oy, 3);
   }
 }
 
@@ -70,14 +70,14 @@ for (i in 0..3) {
   let ef = shape.ellipticalFillet(24, 48);
 
   original.apply {
-    shape.drawTo(ox, oy)
+    shape.drawTo(ox, oy);
   }
   filleted.apply {
-    ef.drawTo(ox, oy)
+    ef.drawTo(ox, oy);
   }
   // vertex dot
   dots.apply {
-    circle(calc(ox + 50), oy, 3)
+    circle(calc(ox + 50), oy, 3);
   }
 }
 

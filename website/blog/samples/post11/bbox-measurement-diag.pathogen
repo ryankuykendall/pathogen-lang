@@ -36,7 +36,7 @@ log("=== WIDTH LABEL vs BOUNDING BOX COLLISION CHECK ===");
 let w_label_s = &{ text(0, 8)`w = ${bb_s.width}` } << ${ font-size: 8; font-family: monospace; };
 let w_label_s_proj = w_label_s.project(
   calc(x0 + bb_s.width / 2 - w_label_s.boundingBox().width / 2),
-  calc(y_s + bb_s.y - 12)
+  calc(y_s + bb_s.y - 12);
 );
 let w_label_s_bb = w_label_s_proj.boundingBox();
 
@@ -56,7 +56,7 @@ log("small w-label intersects bbox:", w_label_s_proj.intersects(bbox_rect_s));
 let w_label_m = &{ text(0, 8)`w = ${bb_m.width}` } << ${ font-size: 8; font-family: monospace; };
 let w_label_m_proj = w_label_m.project(
   calc(x0 + bb_m.width / 2 - w_label_m.boundingBox().width / 2),
-  calc(y_m + bb_m.y - 12)
+  calc(y_m + bb_m.y - 12);
 );
 let w_label_m_bb = w_label_m_proj.boundingBox();
 let bbox_rect_m = { x: calc(x0 + bb_m.x), y: calc(y_m + bb_m.y), width: bb_m.width, height: bb_m.height };
@@ -71,7 +71,7 @@ log("med w-label intersects bbox:", w_label_m_proj.intersects(bbox_rect_m));
 let w_label_l = &{ text(0, 8)`w = ${bb_l.width}` } << ${ font-size: 8; font-family: monospace; };
 let w_label_l_proj = w_label_l.project(
   calc(x0 + bb_l.width / 2 - w_label_l.boundingBox().width / 2),
-  calc(y_l + bb_l.y - 12)
+  calc(y_l + bb_l.y - 12);
 );
 let w_label_l_bb = w_label_l_proj.boundingBox();
 let bbox_rect_l = { x: calc(x0 + bb_l.x), y: calc(y_l + bb_l.y), width: bb_l.width, height: bb_l.height };
@@ -90,21 +90,21 @@ log("=== HEIGHT LABEL vs BOUNDING BOX COLLISION CHECK ===");
 let h_label_s = &{ text(0, 8)`h = ${bb_s.height}` } << ${ font-size: 8; font-family: monospace; };
 let h_label_s_proj = h_label_s.project(
   calc(x0 + bb_s.width + 12),
-  calc(y_s + bb_s.y + bb_s.height / 2 + 3)
+  calc(y_s + bb_s.y + bb_s.height / 2 + 3);
 );
 log("small h-label intersects bbox:", h_label_s_proj.intersects(bbox_rect_s));
 
 let h_label_m = &{ text(0, 8)`h = ${bb_m.height}` } << ${ font-size: 8; font-family: monospace; };
 let h_label_m_proj = h_label_m.project(
   calc(x0 + bb_m.width + 12),
-  calc(y_m + bb_m.y + bb_m.height / 2 + 3)
+  calc(y_m + bb_m.y + bb_m.height / 2 + 3);
 );
 log("med h-label intersects bbox:", h_label_m_proj.intersects(bbox_rect_m));
 
 let h_label_l = &{ text(0, 8)`h = ${bb_l.height}` } << ${ font-size: 8; font-family: monospace; };
 let h_label_l_proj = h_label_l.project(
   calc(x0 + bb_l.width + 12),
-  calc(y_l + bb_l.y + bb_l.height / 2 + 3)
+  calc(y_l + bb_l.y + bb_l.height / 2 + 3);
 );
 log("large h-label intersects bbox:", h_label_l_proj.intersects(bbox_rect_l));
 

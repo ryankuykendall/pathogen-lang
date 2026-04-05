@@ -122,8 +122,8 @@ l_collision_boxes.apply {
         if (a.intersects(b)) {
           let abb = a.boundingBox();
           let bbb = b.boundingBox();
-          rect(abb.x, abb.y, abb.width, abb.height)
-          rect(bbb.x, bbb.y, bbb.width, bbb.height)
+          rect(abb.x, abb.y, abb.width, abb.height);
+          rect(bbb.x, bbb.y, bbb.width, bbb.height);
         }
       }
       cj = calc(cj + 1);
@@ -205,7 +205,7 @@ r_labels.apply {
           }
         }
 
-        // Also check against all dot positions (as rects)
+        // Also check against all dot positions (as rects);
         if (ok) {
           for (dpt in points) {
             let dot_rect = { x: calc(dpt.x - dot_r), y: calc(dpt.y - dot_r), width: calc(dot_r * 2), height: calc(dot_r * 2) };
@@ -236,7 +236,7 @@ let r_ok_rects = PathLayer('r-ok') ${
 };
 r_ok_rects.apply {
   for (sbb in smart_bboxes) {
-    rect(sbb.x, sbb.y, sbb.width, sbb.height)
+    rect(sbb.x, sbb.y, sbb.width, sbb.height);
   }
 }
 

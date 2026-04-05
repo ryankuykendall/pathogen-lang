@@ -10,7 +10,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 40 v 40 h -40 z };
         let u = a.project(0, 0).union(b.project(20, 20));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Overlapping rect union produces an L-shaped polygon with ≥ 6 vertices
@@ -26,7 +26,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 20 v 20 h -20 z };
         let b = @{ h 20 v 20 h -20 z };
         let u = a.project(0, 0).union(b.project(100, 100));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       // Non-overlapping union: two separate closed subpaths
       expect(result).toHaveSVGCommandCount('z', 2);
@@ -37,7 +37,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 30 v 30 h -30 z };
         let b = @{ h 30 v 30 h -30 z };
         let u = a.union(b);
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       // Same shape union: boolean library may emit both subpaths for degenerate case
       expect(result).toClosePath();
@@ -49,7 +49,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 40 v 40 h -40 z };
         let u = a.project(0, 0).union(b.project(20, 20));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Overlapping union produces a single closed polygon
@@ -60,21 +60,21 @@ describe('Boolean Operations', () => {
       expect(() => compilePath(`
         let a = @{ h 30 v 30 };
         let b = @{ h 30 v 30 h -30 z };
-        a.project(0, 0).union(b.project(0, 0))
+        a.project(0, 0).union(b.project(0, 0));
       `)).toThrow(/closed/i);
     });
 
     it('requires exactly 1 argument', () => {
       expect(() => compilePath(`
         let a = @{ h 30 v 30 h -30 z };
-        a.union()
+        a.union();
       `)).toThrow(/expects 1 argument/);
     });
 
     it('requires path argument', () => {
       expect(() => compilePath(`
         let a = @{ h 30 v 30 h -30 z };
-        a.union(5)
+        a.union(5);
       `)).toThrow(/must be a PathBlock or ProjectedPath/);
     });
   });
@@ -85,7 +85,7 @@ describe('Boolean Operations', () => {
         let big = @{ h 60 v 60 h -60 z };
         let small = @{ h 20 v 20 h -20 z };
         let d = big.project(0, 0).difference(small.project(20, 20));
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       // Contained subtraction: outer boundary + inner hole = 2 closed subpaths
       const zCount = (result.match(/z/gi) || []).length;
@@ -97,7 +97,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 40 v 40 h -40 z };
         let d = a.project(0, 0).difference(b.project(20, 20));
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Result should be a closed polygon (the remaining part of A after removing overlap)
@@ -112,7 +112,7 @@ describe('Boolean Operations', () => {
       expect(() => compilePath(`
         let a = @{ h 30 v 30 h -30 z };
         let b = @{ h 30 v 30 };
-        a.project(0, 0).difference(b.project(0, 0))
+        a.project(0, 0).difference(b.project(0, 0));
       `)).toThrow(/closed/i);
     });
   });
@@ -125,7 +125,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 40 v 40 h -40 z };
         let i = a.project(0, 0).intersection(b.project(20, 20));
-        i.drawTo(0, 0)
+        i.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       expect(result).toHaveSVGCommandCount('z', 1);
@@ -141,7 +141,7 @@ describe('Boolean Operations', () => {
       expect(() => compilePath(`
         let a = @{ h 30 v 30 };
         let b = @{ h 30 v 30 h -30 z };
-        a.project(0, 0).intersection(b.project(0, 0))
+        a.project(0, 0).intersection(b.project(0, 0));
       `)).toThrow(/closed/i);
     });
   });
@@ -152,7 +152,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 40 v 40 h -40 z };
         let x = a.project(0, 0).xor(b.project(20, 20));
-        x.drawTo(0, 0)
+        x.drawTo(0, 0);
       `);
       // XOR of overlapping rects produces 2 closed subpaths (A\B and B\A)
       const zCount = (result.match(/z/gi) || []).length;
@@ -163,7 +163,7 @@ describe('Boolean Operations', () => {
       const result = compilePath(`
         let sq = @{ h 50 v 50 h -50 z };
         let x = sq.project(0, 0).xor(sq.project(25, 25));
-        x.drawTo(0, 0)
+        x.drawTo(0, 0);
       `);
       // Should have exactly 2 subpaths (2 z commands)
       const zCount = (result.match(/z/gi) || []).length;
@@ -183,7 +183,7 @@ describe('Boolean Operations', () => {
       expect(() => compilePath(`
         let a = @{ h 30 v 30 };
         let b = @{ h 30 v 30 h -30 z };
-        a.project(0, 0).xor(b.project(0, 0))
+        a.project(0, 0).xor(b.project(0, 0));
       `)).toThrow(/closed/i);
     });
   });
@@ -193,7 +193,7 @@ describe('Boolean Operations', () => {
       const result = compilePath(`
         let a = @{ h 40 v 40 h -40 z };
         let u = a.union(a);
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       // Identical shapes: boolean library may emit duplicate subpaths for degenerate case
       expect(result).toClosePath();
@@ -210,7 +210,7 @@ describe('Boolean Operations', () => {
       const result = compilePath(`
         let a = @{ h 40 v 40 h -40 z };
         let i = a.intersection(a);
-        i.drawTo(0, 0)
+        i.drawTo(0, 0);
       `);
       // Intersection of identical shapes: boolean library may produce degenerate output
       expect(result).toClosePath();
@@ -237,7 +237,7 @@ describe('Boolean Operations', () => {
         let b = @{ h 40 v 40 h -40 z };
         let u = a.project(0, 0).union(b.project(20, 20));
         let c = u.chamfer(3);
-        c.drawTo(0, 0)
+        c.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Chamfer produces additional L commands at corners
@@ -250,7 +250,7 @@ describe('Boolean Operations', () => {
         let b = @{ h 40 v 40 h -40 z };
         let u = a.project(0, 0).union(b.project(20, 20));
         let f = u.fillet(3);
-        f.drawTo(0, 0)
+        f.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Fillet produces arc commands (A/a) or quadratic curves (Q/q) at corners
@@ -266,7 +266,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 20 v 20 h -20 z };
         let d = a.project(0, 0).difference(b.project(100, 100));
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       // Non-overlapping difference: original shape preserved
       expect(result).toClosePath();
@@ -284,7 +284,7 @@ describe('Boolean Operations', () => {
         let outer = @{ h 60 v 60 h -60 z };
         let inner = @{ h 20 v 20 h -20 z };
         let d = outer.project(0, 0).difference(inner.project(20, 20));
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       // Outer boundary + inner hole = 2 closed subpaths with opposite winding
       expect(result).toHaveSVGCommandCount('z', 2);
@@ -301,7 +301,7 @@ describe('Boolean Operations', () => {
         let b = @{ h 20 v 20 h -20 z };
         let combined = a.project(10, 10).union(b.project(60, 60));
         let d = plate.project(0, 0).difference(combined);
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       // Plate + 2 holes = 3 closed subpaths
       expect(result).toHaveSVGCommandCount('z', 3);
@@ -313,7 +313,7 @@ describe('Boolean Operations', () => {
         let b = @{ h 20 v 20 h -20 z };
         let c = @{ h 20 v 20 h -20 z };
         let u = a.project(0, 0).union(b.project(50, 0)).union(c.project(100, 0));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       expect(result).toHaveSVGCommandCount('z', 3);
     });
@@ -326,7 +326,7 @@ describe('Boolean Operations', () => {
         let h2 = @{ h 20 v 20 h -20 z };
         let d1 = plate.project(0, 0).difference(h1.project(10, 10));
         let d2 = d1.difference(h2.project(60, 60));
-        d2.drawTo(0, 0)
+        d2.drawTo(0, 0);
       `);
       expect(result).toHaveSVGCommandCount('z', 3);
     });
@@ -340,7 +340,7 @@ describe('Boolean Operations', () => {
         let b = @{ h 20 v 20 h -20 z };
         let combined = a.project(10, 10).union(b.project(100, 100));
         let i = plate.project(0, 0).intersection(combined);
-        i.drawTo(0, 0)
+        i.drawTo(0, 0);
       `);
       // Both small squares are inside the plate, so intersection = both squares
       expect(result).toHaveSVGCommandCount('z', 2);
@@ -355,7 +355,7 @@ describe('Boolean Operations', () => {
         let b = @{ h 20 v 20 h -20 z };
         let combined = a.project(10, 10).union(b.project(60, 60));
         let x = plate.project(0, 0).xor(combined);
-        x.drawTo(0, 0)
+        x.drawTo(0, 0);
       `);
       // XOR = (plate - combined) + (combined - plate)
       // plate - combined = plate with 2 holes = 3 subpaths
@@ -373,7 +373,7 @@ describe('Boolean Operations', () => {
         let c = @{ h 10 v 10 h -10 z };
         let holes = a.project(10, 15).union(b.project(50, 15)).union(c.project(90, 15));
         let d = plate.project(0, 0).difference(holes);
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       // Plate + 3 holes = 4 closed subpaths
       expect(result).toHaveSVGCommandCount('z', 4);
@@ -386,7 +386,7 @@ describe('Boolean Operations', () => {
         let a = @{ a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0 z };
         let b = @{ a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0 z };
         let u = a.project(0, 0).union(b.project(15, 0));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Overlapping circle union should produce exactly 1 closed subpath
@@ -403,7 +403,7 @@ describe('Boolean Operations', () => {
         let a = @{ a 30 20 0 1 1 60 0 a 30 20 0 1 1 -60 0 z };
         let b = @{ a 30 20 0 1 1 60 0 a 30 20 0 1 1 -60 0 z };
         let u = a.project(0, 0).union(b.project(25, 0));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Overlapping ellipse union should produce exactly 1 closed subpath
@@ -415,7 +415,7 @@ describe('Boolean Operations', () => {
         let plate = @{ h 80 v 60 h -80 z };
         let circle = @{ a 15 15 0 1 1 30 0 a 15 15 0 1 1 -30 0 z };
         let d = plate.project(0, 0).difference(circle.project(25, 15));
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Outer boundary + circle hole = 2 subpaths
@@ -427,7 +427,7 @@ describe('Boolean Operations', () => {
         let a = @{ a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0 z };
         let b = @{ a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0 z };
         let i = a.project(0, 0).intersection(b.project(15, 0));
-        i.drawTo(0, 0)
+        i.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       expect(result).toHaveSVGCommandCount('z', 1);
@@ -442,7 +442,7 @@ describe('Boolean Operations', () => {
         let a = @{ a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0 z };
         let b = @{ a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0 z };
         let x = a.project(0, 0).xor(b.project(15, 0));
-        x.drawTo(0, 0)
+        x.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // XOR of overlapping circles = 2 crescent shapes
@@ -456,7 +456,7 @@ describe('Boolean Operations', () => {
         let sharp = @{ radialWedge(30, 80, fromA, toA, 0) };
         let rounded = @{ radialWedge(30, 80, fromA, toA, 8) };
         let x = sharp.project(0, 0).xor(rounded.project(0, 0));
-        x.drawTo(0, 0)
+        x.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // XOR of same-geometry wedges with different corner radii produces
@@ -481,7 +481,7 @@ describe('Boolean Operations', () => {
         let plate = @{ h 60 v 40 h -60 z };
         let circle = @{ a 25 25 0 1 1 50 0 a 25 25 0 1 1 -50 0 z };
         let d = plate.project(0, 0).difference(circle.project(35, -15));
-        d.drawTo(0, 0)
+        d.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // Circle partially overlaps top-right corner → single modified boundary
@@ -499,7 +499,7 @@ describe('Boolean Operations', () => {
         let a = @{ a 30 15 30 1 1 40 20 a 30 15 30 1 1 -40 -20 z };
         let b = @{ a 30 15 30 1 1 40 20 a 30 15 30 1 1 -40 -20 z };
         let x = a.project(0, 0).xor(b.project(10, 5));
-        x.drawTo(0, 0)
+        x.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       // XOR of overlapping ellipses = 2 crescent shapes
@@ -515,7 +515,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 30 v -30 h -30 z };
         let u = a.project(0, 0).union(b.project(5, 0));
-        u.drawTo(0, 0)
+        u.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;

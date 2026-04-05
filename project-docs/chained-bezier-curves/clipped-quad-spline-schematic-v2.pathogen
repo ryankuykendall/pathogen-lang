@@ -21,7 +21,7 @@ layer('t100').apply {
     { x: 60, y: 170, angle: sAngle, exit: sExit, exitTime: 1.0 },
     [{ x: 200, y: 40, exit: 80, exitTime: 1.0, entryTime: 1.0 }],
     { x: 340, y: 170, entryTime: 1.0 }
-  )
+  );
 }
 
 // t = 0.75
@@ -31,7 +31,7 @@ layer('t075').apply {
     { x: 60, y: 170, angle: sAngle, exit: sExit, exitTime: 0.75 },
     [{ x: 200, y: 40, exit: 80, exitTime: 0.75, entryTime: 0.75 }],
     { x: 340, y: 170, entryTime: 0.75 }
-  )
+  );
 }
 
 // t = 0.5
@@ -41,7 +41,7 @@ layer('t050').apply {
     { x: 60, y: 170, angle: sAngle, exit: sExit, exitTime: 0.5 },
     [{ x: 200, y: 40, exit: 80, exitTime: 0.5, entryTime: 0.5 }],
     { x: 340, y: 170, entryTime: 0.5 }
-  )
+  );
 }
 
 // t = 0.25
@@ -51,15 +51,15 @@ layer('t025').apply {
     { x: 60, y: 170, angle: sAngle, exit: sExit, exitTime: 0.25 },
     [{ x: 200, y: 40, exit: 80, exitTime: 0.25, entryTime: 0.25 }],
     { x: 340, y: 170, entryTime: 0.25 }
-  )
+  );
 }
 
 // On-curve points
 define PathLayer('pts') ${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5 }
 layer('pts').apply {
-  circle(60, 170, 5)
-  circle(200, 40, 5)
-  circle(340, 170, 5)
+  circle(60, 170, 5);
+  circle(200, 40, 5);
+  circle(340, 170, 5);
 }
 
 // Labels & legend
@@ -145,8 +145,8 @@ layer('lerp-marks2').apply {
 // Endpoints
 define PathLayer('demo-pts') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('demo-pts').apply {
-  circle(sx, sy, 5)
-  circle(ex, ey, 5)
+  circle(sx, sy, 5);
+  circle(ex, ey, 5);
 }
 
 // Annotations

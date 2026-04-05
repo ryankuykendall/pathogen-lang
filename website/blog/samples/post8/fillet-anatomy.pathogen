@@ -60,7 +60,7 @@ let center_dot = PathLayer('center-dot') ${
   stroke-width: 1;
 };
 center_dot.apply {
-  circle(160, 160, 3)
+  circle(160, 160, 3);
 }
 
 // --- Radius lines (from center to trim points) ---
@@ -84,7 +84,7 @@ let vertex = PathLayer('vertex') ${
   stroke-width: 1.5;
 };
 vertex.apply {
-  circle(200, 120, 4)
+  circle(200, 120, 4);
 }
 
 // --- Trim points ---
@@ -95,8 +95,8 @@ let trim_dots = PathLayer('trim-dots') ${
   stroke-width: 1.5;
 };
 trim_dots.apply {
-  circle(160, 120, 4)
-  circle(200, 160, 4)
+  circle(160, 120, 4);
+  circle(200, 160, 4);
 }
 
 // --- Removed corner area ---
@@ -119,7 +119,7 @@ let r_dim = PathLayer('r-dim') ${
   fill: none;
 };
 r_dim.apply {
-  // Radius line from center toward upper-right (along 45° between edges)
+  // Radius line from center toward upper-right (along 45° between edges);
   M 160 160 L calc(160 + 28) calc(160 - 28)
 }
 
@@ -128,7 +128,7 @@ let r_arrow = PathLayer('r-arrow') ${
   stroke: none;
 };
 r_arrow.apply {
-  // Arrowhead at end of radius line, pointing along 45° direction (up-right)
+  // Arrowhead at end of radius line, pointing along 45° direction (up-right);
   M calc(160 + 28) calc(160 - 28)
   l calc(-0.707 * 8 + 0.707 * 3.5) calc(0.707 * 8 + 0.707 * 3.5)
   l calc(-0.707 * 7) calc(0.707 * 7)

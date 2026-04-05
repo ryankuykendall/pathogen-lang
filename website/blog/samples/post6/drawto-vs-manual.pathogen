@@ -31,13 +31,13 @@ let label = PathLayer('label') ${
 manual.apply {
   for (i in 0..3) {
     M calc(60 + i * 50) 70
-    diamond.draw()
+    diamond.draw();
   }
 }
 
 // drawTo approach: single call
 drawto.apply {
   for (i in 0..3) {
-    diamond.drawTo(calc(60 + i * 50), 140)
+    diamond.drawTo(calc(60 + i * 50), 140);
   }
 }
