@@ -147,7 +147,7 @@ M x y`);
     });
 
     it('evaluates calc expressions', () => {
-      const result = compileAnnotated('M calc(10 + 20) calc(5 * 3)');
+      const result = compileAnnotated('M calc(10 + 20) calc(5 * 3);');
       expect(result).toContain('M 30 15');
     });
   });
@@ -310,13 +310,13 @@ M add(triple(2), 4) 0`);
 
   describe('heading and turn', () => {
     it('heading() does not emit commands', () => {
-      const result = compileAnnotated('M 50 100\nheading(0)\ntangentLine(30)');
+      const result = compileAnnotated('M 50 100\nheading(0)\ntangentLine(30);');
       expect(result).toContain('M 50 100');
       expect(result).toContain('L 80 100');
     });
 
     it('turn() adjusts heading', () => {
-      const result = compileAnnotated('M 0 0\nL 50 0\nturn(90deg)\ntangentLine(30)');
+      const result = compileAnnotated('M 0 0\nL 50 0\nturn(90deg)\ntangentLine(30);');
       expect(result).toContain('L 50 30');
     });
   });

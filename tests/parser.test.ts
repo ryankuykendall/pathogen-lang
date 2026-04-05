@@ -38,7 +38,7 @@ describe('Parser', () => {
     });
 
     it('parses path commands with calc()', () => {
-      const ast = parse('L calc(x + 10) calc(y * 2)');
+      const ast = parse('L calc(x + 10) calc(y * 2);');
       expect(ast.body[0]).toMatchObject({
         type: 'PathCommand',
         command: 'L',
@@ -247,7 +247,7 @@ describe('Parser', () => {
     });
 
     it('parses function calls', () => {
-      const ast = parse('M sin(0) cos(0)');
+      const ast = parse('M sin(0) cos(0);');
       expect(ast.body[0].type === 'PathCommand' && ast.body[0].args[0]).toMatchObject({
         type: 'FunctionCall',
         name: 'sin',
@@ -508,7 +508,7 @@ describe('Parser', () => {
     });
 
     it('captures location for function calls in path arguments', () => {
-      const ast = parse('M sin(0) cos(0)');
+      const ast = parse('M sin(0) cos(0);');
       const cmd = ast.body[0];
       if (cmd.type === 'PathCommand') {
         const arg0 = cmd.args[0];

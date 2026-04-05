@@ -145,7 +145,7 @@ describe('Path Context Tracking', () => {
     });
 
     it('accesses ctx.position.y', () => {
-      const result = compileWithContext('M 10 20 L ctx.position.x calc(ctx.position.y + 5)');
+      const result = compileWithContext('M 10 20 L ctx.position.x calc(ctx.position.y + 5);');
       expect(result.path).toBe('M 10 20 L 10 25');
     });
 

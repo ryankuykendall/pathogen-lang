@@ -168,7 +168,7 @@ describe('Runtime errors', () => {
     });
 
     it('wrong function argument count includes line number', () => {
-      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 }\nadd(1)')).toThrow(
+      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 }\nadd(1);')).toThrow(
         /^Line 2, col 1: Function add expects 2 arguments, got 1$/,
       );
     });
@@ -497,7 +497,7 @@ describe('Method call error locations', () => {
   });
 
   it('argument type error on method call includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x")')).toThrow(/^Line 2, col 2:.*must be a number$/);
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x");')).toThrow(/^Line 2, col 2:.*must be a number$/);
   });
 
   it('unknown array method includes line and column', () => {
@@ -526,7 +526,7 @@ describe('Void function calls', () => {
   });
 
   it('function with explicit return value still works normally', () => {
-    const result = compilePath('fn makeCircle(r) { return circle(50, 50, r); }\nmakeCircle(25)');
+    const result = compilePath('fn makeCircle(r) { return circle(50, 50, r); }\nmakeCircle(25);');
     expect(result).toContain('M');
   });
 
