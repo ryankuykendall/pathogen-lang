@@ -1498,14 +1498,11 @@ export function parse(input: string): Program {
   do { if (errCur.type.isError) { hasErrors = true; break; } } while (errCur.next());
 
   if (hasErrors) {
-    // Lezer found errors — try Parsimmon as fallback for error messages
+    // Lezer found errors — use Parsimmon for detailed error messages
+    // (Parsimmon's error position + detectMissingSemicolon are tuned together)
     const result = program.parse(input);
-    if (result.status) {
-      // This path should be rare — log if it happens
-      return result.value;
-    }
+    if (result.status) return result.value; // Shouldn't happen — all gaps are closed
 
-    // Parsimmon also fails — produce error message
     const { index, expected } = result;
     const lines = input.slice(0, index.offset).split('\n');
     const line = lines.length;
