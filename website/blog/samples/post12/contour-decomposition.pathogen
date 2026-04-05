@@ -100,47 +100,47 @@ let contours_B = dec_glyphs[0].contours;
 let cB0 = PathLayer('cB0') ${ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
 let cB1 = PathLayer('cB1') ${ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
 let cB2 = PathLayer('cB2') ${ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
-cB0.apply { contours_B[0].drawTo(x_B, dec_y) }
-cB1.apply { contours_B[1].drawTo(x_B, dec_y) }
-cB2.apply { contours_B[2].drawTo(x_B, dec_y) }
+cB0.apply { contours_B[0].drawTo(x_B, dec_y); }
+cB1.apply { contours_B[1].drawTo(x_B, dec_y); }
+cB2.apply { contours_B[2].drawTo(x_B, dec_y); }
 g_decomp.append(cB0, cB1, cB2);
 
 // --- i: 2 contours (body + dot) ---
 let contours_i = dec_glyphs[1].contours;
 let ci0 = PathLayer('ci0') ${ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
 let ci1 = PathLayer('ci1') ${ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
-ci0.apply { contours_i[0].drawTo(x_i, dec_y) }
-ci1.apply { contours_i[1].drawTo(x_i, dec_y) }
+ci0.apply { contours_i[0].drawTo(x_i, dec_y); }
+ci1.apply { contours_i[1].drawTo(x_i, dec_y); }
 g_decomp.append(ci0, ci1);
 
 // --- n: 1 contour ---
 let contours_n = dec_glyphs[2].contours;
 let cn0 = PathLayer('cn0') ${ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
-cn0.apply { contours_n[0].drawTo(x_n, dec_y) }
+cn0.apply { contours_n[0].drawTo(x_n, dec_y); }
 g_decomp.append(cn0);
 
 // --- g: 2 contours (body + tail) ---
 let contours_g = dec_glyphs[3].contours;
 let cg0 = PathLayer('cg0') ${ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
 let cg1 = PathLayer('cg1') ${ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
-cg0.apply { contours_g[0].drawTo(x_g, dec_y) }
-cg1.apply { contours_g[1].drawTo(x_g, dec_y) }
+cg0.apply { contours_g[0].drawTo(x_g, dec_y); }
+cg1.apply { contours_g[1].drawTo(x_g, dec_y); }
 g_decomp.append(cg0, cg1);
 
 // --- o: 2 contours (outer + hole) ---
 let contours_o = dec_glyphs[4].contours;
 let co0 = PathLayer('co0') ${ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
 let co1 = PathLayer('co1') ${ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
-co0.apply { contours_o[0].drawTo(x_o, dec_y) }
-co1.apply { contours_o[1].drawTo(x_o, dec_y) }
+co0.apply { contours_o[0].drawTo(x_o, dec_y); }
+co1.apply { contours_o[1].drawTo(x_o, dec_y); }
 g_decomp.append(co0, co1);
 
 // --- !: 2 contours (body + dot) ---
 let contours_ex = dec_glyphs[5].contours;
 let cex0 = PathLayer('cex0') ${ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
 let cex1 = PathLayer('cex1') ${ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
-cex0.apply { contours_ex[0].drawTo(x_ex, dec_y) }
-cex1.apply { contours_ex[1].drawTo(x_ex, dec_y) }
+cex0.apply { contours_ex[0].drawTo(x_ex, dec_y); }
+cex1.apply { contours_ex[1].drawTo(x_ex, dec_y); }
 g_decomp.append(cex0, cex1);
 
 // --- Letter labels and contour counts ---

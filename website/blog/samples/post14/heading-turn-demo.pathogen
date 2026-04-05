@@ -112,7 +112,7 @@ for ([shape, idx] in shapes) {
   let plName = `p${idx}`;
   define PathLayer(plName) ${ fill: none; stroke: shape.col; stroke-width: 2.5 }
   layer(gName).append(layer(plName));
-  layer(plName).apply { shape.pb.drawTo(drawX, drawY) }
+  layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
   // --- Code snippet ---
   let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);

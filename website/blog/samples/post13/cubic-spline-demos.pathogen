@@ -29,7 +29,7 @@ layer('s-curve').apply {
     { x: 0,  y: 105, angle: 0, exit: 30 },
     { x: 50, y: 30,  angle: 0, entry: 30, exit: 30 },
     { x: 100, y: 105, angle: 0, entry: 30 }
-  ])
+  ]);
 }
 
 // --- Sine wave group ---
@@ -49,7 +49,7 @@ layer('sine').apply {
     { x: 50, y: 65,  angle: 90deg, entry: 18, exit: 18 },
     { x: 75, y: 30,  angle: 0,     entry: 15, exit: 15 },
     { x: 100, y: 65,  angle: 90deg, entry: 18 }
-  ])
+  ]);
 }
 
 // --- Closed loop group ---
@@ -69,5 +69,5 @@ layer('loop').apply {
     { x: 60, y: 102, angle: 180deg, entry: 22, exit: 22 },
     { x: 10, y: 65,  angle: -90deg, entry: 22, exit: 22 },
     { x: 60, y: 28,  angle: 0,      entry: 22 }
-  ])
+  ]);
 }

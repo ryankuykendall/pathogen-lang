@@ -54,13 +54,13 @@ btn2.apply { roundRect(100, 195, 120, 36, 6); }
 // --- Small accent circles using base ---
 
 let dot1 = PathLayer('dot1') ${ fill: base; stroke: none; };
-dot1.apply { circle(260, 163, 18); closePath() }
+dot1.apply { circle(260, 163, 18); closePath(); }
 
 let dot2 = PathLayer('dot2') ${ fill: cool; stroke: none; };
-dot2.apply { circle(310, 163, 18); closePath() }
+dot2.apply { circle(310, 163, 18); closePath(); }
 
 let dot3 = PathLayer('dot3') ${ fill: vertical; stroke: none; };
-dot3.apply { circle(360, 163, 18); closePath() }
+dot3.apply { circle(360, 163, 18); closePath(); }
 
 // --- Pill shapes with inherited gradient ---
 

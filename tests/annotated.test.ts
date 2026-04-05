@@ -86,7 +86,7 @@ for (i in 0..2) { L i 0 }`);
 
   describe('function calls', () => {
     it('annotates stdlib function calls', () => {
-      const result = compileAnnotated('circle(50, 50, 25)');
+      const result = compileAnnotated('circle(50, 50, 25);');
       expect(result).toContain('//--- circle(50, 50, 25) called from line 1');
     });
 
@@ -94,7 +94,7 @@ for (i in 0..2) { L i 0 }`);
       // Note: Function calls need to be separate statements (not after path commands)
       // because otherwise they're parsed as path arguments
       const result = compileAnnotated(`// Setup
-circle(100, 100, 50)`);
+circle(100, 100, 50);`);
       expect(result).toContain('from line 2');
     });
 
@@ -106,7 +106,7 @@ circle(100, 100, 50)`);
   L x calc(y + s)
   Z
 }
-square(10, 10, 50)`);
+square(10, 10, 50);`);
       expect(result).toContain('//--- square(10, 10, 50) called from line');
       expect(result).toContain('M 10 10');
       expect(result).toContain('L 60 10');
@@ -130,7 +130,7 @@ for (i in 0..2) {
     it('handles function calls inside loops', () => {
       const result = compileAnnotated(`
 for (i in 0..3) {
-  circle(calc(i * 50), 50, 20)
+  circle(calc(i * 50), 50, 20);
 }`);
       expect(result).toContain('//--- for (i in 0..3)');
       expect(result).toContain('//--- circle');
@@ -191,7 +191,7 @@ fn steps(count, tread, riser) {
     v riser
   }
 }
-steps(3, 20, 10)`);
+steps(3, 20, 10);`);
       expect(result).toContain('//--- steps(3, 20, 10)');
       expect(result).toContain('//--- for (i in 0..3)');
       expect(result).toContain('h 20');
@@ -201,20 +201,20 @@ steps(3, 20, 10)`);
 
   describe('context-aware functions', () => {
     it('handles polarLine', () => {
-      const result = compileAnnotated('M 50 50 polarLine(0, 100)');
+      const result = compileAnnotated('M 50 50 polarLine(0, 100);');
       expect(result).toContain('L');
       expect(result).toContain('150'); // 50 + 100*cos(0) = 150
     });
 
     it('handles arcFromCenter', () => {
-      const result = compileAnnotated('arcFromCenter(0, 0, 50, 0, 90deg, 1)');
+      const result = compileAnnotated('arcFromCenter(0, 0, 50, 0, 90deg, 1);');
       // arcFromCenter now emits L (not M) to keep paths continuous
       expect(result).toContain('L');
       expect(result).toContain('A');
     });
 
     it('handles arcFromPolarOffset', () => {
-      const result = compileAnnotated('arcFromPolarOffset(0, 50, 90deg)');
+      const result = compileAnnotated('arcFromPolarOffset(0, 50, 90deg);');
       // arcFromPolarOffset emits only A (no L or M)
       expect(result).toContain('A 50 50');
       expect(result).not.toContain('L');
@@ -222,13 +222,13 @@ steps(3, 20, 10)`);
 
     it('handles tangentLine after arc', () => {
       const result = compileAnnotated(`
-arcFromCenter(0, 0, 50, 0, 90deg, 1)
-tangentLine(20)`);
+arcFromCenter(0, 0, 50, 0, 90deg, 1);
+tangentLine(20);`);
       expect(result).toContain('L');
     });
 
     it('handles polarMove', () => {
-      const result = compileAnnotated('M 0 0 polarMove(0, 100)');
+      const result = compileAnnotated('M 0 0 polarMove(0, 100);');
       expect(result).toContain('L');
       expect(result).toContain('100'); // 0 + 100*cos(0) = 100
     });
@@ -259,7 +259,7 @@ M add(triple(2), 4) 0`);
 
     it('handles degrees in polarLine', () => {
       // polarLine(90deg, 100) at position (50, 50) should go to (50, 150)
-      const result = compileAnnotated('M 50 50 polarLine(90deg, 100)');
+      const result = compileAnnotated('M 50 50 polarLine(90deg, 100);');
       expect(result).toContain('L');
       expect(result).toContain('150'); // 50 + 100*sin(90deg) = 150
     });
@@ -278,7 +278,7 @@ M add(triple(2), 4) 0`);
       const result = compileAnnotated(`cubicSpline([
         { x: 0, y: 0, angle: 0, exit: 30 },
         { x: 100, y: 0, angle: 0, entry: 30 }
-      ])`);
+      ]);`);
       expect(result).toContain('//--- cubicSpline');
       expect(result).toContain('called from line 1');
       expect(result).toContain('m 0 0');
@@ -290,7 +290,7 @@ M add(triple(2), 4) 0`);
         { x: 0, y: 0, angle: 0, exit: 40 },
         [],
         { x: 100, y: 50 }
-      )`);
+      );`);
       expect(result).toContain('//--- quadSpline');
       expect(result).toContain('m 0 0');
       expect(result).toContain('q 40 0 100 50');
@@ -301,7 +301,7 @@ M add(triple(2), 4) 0`);
         { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
         [],
         { x: 100, y: 0, entryTime: 1 }
-      )`);
+      );`);
       expect(result).toContain('//--- clippedQuadSpline');
       expect(result).toContain('m 0 0');
       expect(result).toContain('c 50 0 50 0 100 0');

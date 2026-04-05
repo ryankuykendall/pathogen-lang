@@ -168,7 +168,7 @@ describe('Evaluator', () => {
     });
 
     it('shadows variables in function scope', () => {
-      const result = compilePath('let x = 100; fn f(x) { M x 0 } f(5) M x 0');
+      const result = compilePath('let x = 100; fn f(x) { M x 0 } f(5); M x 0');
       expect(result).toBe('M 5 0 M 100 0');
     });
 
@@ -452,23 +452,23 @@ describe('Evaluator', () => {
 
   describe('stdlib path functions', () => {
     it('evaluates circle', () => {
-      const result = compilePath('circle(50, 50, 25)');
+      const result = compilePath('circle(50, 50, 25);');
       expect(result).toContain('M 25 50');
       expect(result).toContain('A 25 25');
     });
 
     it('evaluates arc', () => {
-      const result = compilePath('arc(10, 10, 0, 1, 1, 50, 50)');
+      const result = compilePath('arc(10, 10, 0, 1, 1, 50, 50);');
       expect(result).toBe('A 10 10 0 1 1 50 50');
     });
 
     it('evaluates rect', () => {
-      const result = compilePath('rect(0, 0, 100, 50)');
+      const result = compilePath('rect(0, 0, 100, 50);');
       expect(result).toBe('M 0 0 L 100 0 L 100 50 L 0 50 Z');
     });
 
     it('evaluates roundRect', () => {
-      const result = compilePath('roundRect(10, 10, 80, 60, 10)');
+      const result = compilePath('roundRect(10, 10, 80, 60, 10);');
       // roundRect(x=10, y=10, w=80, h=60, r=min(10,40,30)=10)
       expect(result).toBe(
         'M 20 10 L 80 10 Q 90 10 90 20 L 90 60 Q 90 70 80 70 L 20 70 Q 10 70 10 60 L 10 20 Q 10 10 20 10 Z',
@@ -477,7 +477,7 @@ describe('Evaluator', () => {
 
     it('evaluates roundRect with large radius (clamped)', () => {
       // radius is clamped to min(50, 40/2=20, 20/2=10) = 10
-      const result = compilePath('roundRect(0, 0, 40, 20, 50)');
+      const result = compilePath('roundRect(0, 0, 40, 20, 50);');
       expect(result).toBe(
         'M 10 0 L 30 0 Q 40 0 40 10 L 40 10 Q 40 20 30 20 L 10 20 Q 0 20 0 10 L 0 10 Q 0 0 10 0 Z',
       );
@@ -485,18 +485,18 @@ describe('Evaluator', () => {
 
     it('evaluates polygon', () => {
       // polygon(cx=50, cy=50, r=25, sides=4) — square rotated 45°
-      const result = compilePath('polygon(50, 50, 25, 4)');
+      const result = compilePath('polygon(50, 50, 25, 4);');
       expect(result).toBe('M 50 25 L 75 50 L 50 75 L 25 50 Z');
     });
 
     it('evaluates polygon with different side counts', () => {
       // Triangle: M + 2 L's + Z
-      const triangle = compilePath('polygon(50, 50, 25, 3)');
+      const triangle = compilePath('polygon(50, 50, 25, 3);');
       expect(triangle.match(/L/g)?.length).toBe(2);
       expect(triangle).toMatch(/^M .+ L .+ L .+ Z$/);
 
       // Hexagon: M + 5 L's + Z
-      const hexagon = compilePath('polygon(50, 50, 25, 6)');
+      const hexagon = compilePath('polygon(50, 50, 25, 6);');
       expect(hexagon.match(/L/g)?.length).toBe(5);
       expect(hexagon).toMatch(/^M .+ Z$/);
     });
@@ -504,7 +504,7 @@ describe('Evaluator', () => {
     it('evaluates star', () => {
       // star(cx=50, cy=50, outerR=30, innerR=15, points=5)
       // 10 vertices: 5 outer + 5 inner alternating → M + 9 L's + Z
-      const result = compilePath('star(50, 50, 30, 15, 5)');
+      const result = compilePath('star(50, 50, 30, 15, 5);');
       expect(result.match(/L/g)?.length).toBe(9);
       // First vertex at top: cx=50, cy=50-30=20
       expect(result).toMatch(/^M 50 20 L/);
@@ -512,37 +512,37 @@ describe('Evaluator', () => {
     });
 
     it('evaluates line', () => {
-      const result = compilePath('line(10, 20, 30, 40)');
+      const result = compilePath('line(10, 20, 30, 40);');
       expect(result).toBe('M 10 20 L 30 40');
     });
 
     it('evaluates quadratic', () => {
-      const result = compilePath('quadratic(0, 0, 50, 100, 100, 0)');
+      const result = compilePath('quadratic(0, 0, 50, 100, 100, 0);');
       expect(result).toBe('M 0 0 Q 50 100 100 0');
     });
 
     it('evaluates cubic', () => {
-      const result = compilePath('cubic(0, 0, 25, 100, 75, 100, 100, 0)');
+      const result = compilePath('cubic(0, 0, 25, 100, 75, 100, 100, 0);');
       expect(result).toBe('M 0 0 C 25 100 75 100 100 0');
     });
 
     it('evaluates moveTo', () => {
-      const result = compilePath('moveTo(50, 100)');
+      const result = compilePath('moveTo(50, 100);');
       expect(result).toBe('M 50 100');
     });
 
     it('evaluates lineTo', () => {
-      const result = compilePath('lineTo(50, 100)');
+      const result = compilePath('lineTo(50, 100);');
       expect(result).toBe('L 50 100');
     });
 
     it('evaluates closePath', () => {
-      const result = compilePath('closePath()');
+      const result = compilePath('closePath();');
       expect(result).toBe('Z');
     });
 
     it('combines multiple path functions', () => {
-      const result = compilePath('moveTo(0, 0) lineTo(100, 0) lineTo(100, 100) closePath()');
+      const result = compilePath('moveTo(0, 0); lineTo(100, 0); lineTo(100, 100); closePath();');
       expect(result).toBe('M 0 0 L 100 0 L 100 100 Z');
     });
   });
@@ -724,15 +724,15 @@ describe('Evaluator', () => {
 
   describe('function definitions', () => {
     it('evaluates user function', () => {
-      expect(compilePath('fn double(x) { M calc(x * 2) 0 } double(5)')).toBe('M 10 0');
+      expect(compilePath('fn double(x) { M calc(x * 2) 0 } double(5);')).toBe('M 10 0');
     });
 
     it('evaluates function with multiple params', () => {
-      expect(compilePath('fn add(a, b) { M calc(a + b) 0 } add(3, 7)')).toBe('M 10 0');
+      expect(compilePath('fn add(a, b) { M calc(a + b) 0 } add(3, 7);')).toBe('M 10 0');
     });
 
     it('evaluates function called multiple times', () => {
-      expect(compilePath('fn point(x) { M x 0 } point(1) point(2) point(3)')).toBe('M 1 0 M 2 0 M 3 0');
+      expect(compilePath('fn point(x) { M x 0 } point(1); point(2); point(3);')).toBe('M 1 0 M 2 0 M 3 0');
     });
   });
 
@@ -778,7 +778,7 @@ describe('Evaluator', () => {
           L 0 10
           Z
         }
-        square()
+        square();
       `);
       expect(result).toBe('M 0 0 L 10 0 L 10 10 L 0 10 Z');
     });
@@ -889,7 +889,7 @@ describe('Evaluator', () => {
     });
 
     it('works with stdlib functions', () => {
-      const result = compilePath('circle(100, 100, calc(100/3))', { toFixed: 2 });
+      const result = compilePath('circle(100, 100, calc(100/3));', { toFixed: 2 });
       // All decimals should have at most 2 decimal places
       const numbers = result.match(/-?\d+\.?\d*/g) || [];
       for (const num of numbers) {
@@ -2604,7 +2604,7 @@ describe('Evaluator', () => {
             { x: 0, y: 100, angle: 0, exit: 30 },
             { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
             { x: 100, y: 100, angle: 0, entry: 30 }
-          ])
+          ]);
         `);
         // angle=0: cos(0)=1, sin(0)=0
         // Absolute: M(0,100) C(30,100)(30,0)(50,0) C(75,0)(70,100)(100,100)
@@ -2615,7 +2615,7 @@ describe('Evaluator', () => {
 
       it('single-point array: emits only m', () => {
         const result = compilePath(`
-          cubicSpline([{ x: 50, y: 50, angle: 0 }])
+          cubicSpline([{ x: 50, y: 50, angle: 0 }]);
         `);
         expect(result).toBe('m 50 50');
       });
@@ -2626,7 +2626,7 @@ describe('Evaluator', () => {
             { x: 0, y: 100, angle: 0, exit: 30 },
             { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
             { x: 100, y: 100, angle: 0, entry: 30 }
-          ])
+          ]);
         `);
         const cmds = parseSVGPath(result);
         // Relative coords — convert to absolute for collinearity check
@@ -2649,7 +2649,7 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: 0, y: 0, angle: calc(PI() / 2), exit: 40 },
             { x: 100, y: 100, angle: calc(PI() / 2), entry: 30 }
-          ])
+          ]);
         `);
         // angle=π/2: cos≈0, sin=1
         // Absolute: CP1=(0,40), CP2=(100,70), end=(100,100)
@@ -2668,7 +2668,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 40 },
             [],
             { x: 100, y: 50 }
-          )
+          );
         `);
         // Absolute: cp=(40,0), end=(100,50). Relative from pen (0,0): same values
         expect(result).toBe('m 0 0 q 40 0 100 50');
@@ -2680,7 +2680,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 30 },
             [{ x: 60, y: 0, exit: 30 }],
             { x: 120, y: 0 }
-          )
+          );
         `);
         // Absolute: M 0 0  Q(30,0)(60,0)  Q(90,0)(120,0)
         // Seg 1 pen=(0,0):  q(30,0)(60,0)
@@ -2694,7 +2694,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 40 },
             [{ x: 50, y: 30, exit: 30 }],
             { x: 100, y: 50 }
-          )
+          );
         `);
         // Absolute: Q(40,0)(50,30)  then Q(newCPx, newCPy)(100,50)
         // Seg 1 pen=(0,0):  q(40,0)(50,30)
@@ -2716,7 +2716,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
             [],
             { x: 100, y: 0, entryTime: 1 }
-          )
+          );
         `);
         // Absolute: CP1=(50,0), CP2=(50,0), end=(100,0)
         // Relative from pen (0,0): same values
@@ -2729,7 +2729,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
             [],
             { x: 200, y: 0, entryTime: 0.5 }
-          )
+          );
         `);
         // Absolute: CP1=(50,0), CP2=(150,0), end=(200,0)
         // Relative from pen (0,0): same values
@@ -2742,7 +2742,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 40, exitTime: 0.8 },
             [],
             { x: 100, y: 0, entryTime: 0.8 }
-          )
+          );
         `);
         expect(result).toContainSVGCommands(['m', 'c']);
         expect(result).not.toContain('q ');
@@ -2771,7 +2771,7 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 100, y: 0, angle: 0, entry: 20 }
-          ])
+          ]);
         `);
         // User fn emits absolute commands (M, C) — different from stdlib's relative (m, c)
         expect(result).toBe('M 0 0 C 20 0 80 0 100 0');
@@ -2786,7 +2786,7 @@ describe('Evaluator', () => {
             cubicSpline([
               { x: ox, y: 0, angle: 0, exit: 20 },
               { x: calc(ox + 50), y: 50, angle: 0, entry: 20 }
-            ])
+            ]);
           }
         `);
         // i=0: m(0,0) c(20,0)(30,50)(50,50)  — pen at (0,0), rel from (0,0)
@@ -2808,12 +2808,12 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 50, y: 0, angle: 0, entry: 20 }
-          ])
+          ]);
           quadSpline(
             { x: 60, y: 0, angle: 0, exit: 20 },
             [],
             { x: 100, y: 0 }
-          )
+          );
         `);
         // cubicSpline: m 0 0 c 20 0 30 0 50 0
         // quadSpline:  m 60 0 q 20 0 40 0  (cp abs=80, end abs=100; rel from 60: 20, 40)
@@ -2973,7 +2973,7 @@ describe('Evaluator', () => {
           PolarVector(0, 30),
           PolarVector(PI(), 30),
           Point(100, 100)
-        )
+        );
       `);
       expect(result).toBe('m 0 100 c 30 0 70 0 100 0');
     });
@@ -2989,7 +2989,7 @@ describe('Evaluator', () => {
           PolarVector(calc(PI() / 2), 40),
           PolarVector(calc(-1 * PI() / 2), 40),
           Point(50, 100)
-        )
+        );
       `);
       expect(result).toBe('m 50 0 c 0 40 0 60 0 100');
     });
@@ -3001,7 +3001,7 @@ describe('Evaluator', () => {
       // Relative: m 0 0 c 25 0 75 0 100 0
       const result = compilePath(`
         let handle = PolarVector(0, 25);
-        polarCubicBezier(Point(0, 0), handle, handle.mirror(), Point(100, 0))
+        polarCubicBezier(Point(0, 0), handle, handle.mirror(), Point(100, 0));
       `);
       expectSVGPathCommandSequence(result, [
         ['m', 0, 0],
@@ -3016,7 +3016,7 @@ describe('Evaluator', () => {
       // Relative: m 0 0 c 30 0 80 0 100 0
       const result = compilePath(`
         let h = PolarVector(0, 20);
-        polarCubicBezier(Point(0, 0), h.scale(1.5), h.mirror(), Point(100, 0))
+        polarCubicBezier(Point(0, 0), h.scale(1.5), h.mirror(), Point(100, 0));
       `);
       expectSVGPathCommandSequence(result, [
         ['m', 0, 0],
@@ -3032,7 +3032,7 @@ describe('Evaluator', () => {
       // Relative c: (0,40), (100,40), (100,0)
       const result = compilePath(`
         let pv = PolarVector(0, 40).turn(calc(PI() / 2));
-        polarCubicBezier(Point(0, 0), pv, pv, Point(100, 0))
+        polarCubicBezier(Point(0, 0), pv, pv, Point(100, 0));
       `);
       expectSVGPathCommandSequence(result, [
         ['m', 0, 0],
@@ -3041,19 +3041,19 @@ describe('Evaluator', () => {
     });
 
     it('rejects wrong number of arguments', () => {
-      expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1))')).toThrow(/expects 4 arguments/);
+      expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1));')).toThrow(/expects 4 arguments/);
     });
 
     it('rejects non-Point start', () => {
-      expect(() => compilePath('polarCubicBezier(5, PolarVector(0,1), PolarVector(0,1), Point(1,1))')).toThrow(/must be a Point/);
+      expect(() => compilePath('polarCubicBezier(5, PolarVector(0,1), PolarVector(0,1), Point(1,1));')).toThrow(/must be a Point/);
     });
 
     it('rejects non-PolarVector control handles', () => {
-      expect(() => compilePath('polarCubicBezier(Point(0,0), 5, PolarVector(0,1), Point(1,1))')).toThrow(/must be a PolarVector/);
+      expect(() => compilePath('polarCubicBezier(Point(0,0), 5, PolarVector(0,1), Point(1,1));')).toThrow(/must be a PolarVector/);
     });
 
     it('rejects non-Point end', () => {
-      expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1), 5)')).toThrow(/must be a Point/);
+      expect(() => compilePath('polarCubicBezier(Point(0,0), PolarVector(0,1), PolarVector(0,1), 5);')).toThrow(/must be a Point/);
     });
   });
 

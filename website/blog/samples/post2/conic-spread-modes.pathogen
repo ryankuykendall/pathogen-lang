@@ -52,22 +52,22 @@ checks.apply {
 // --- Gradient circles ---
 
 let c1 = PathLayer('c-clamp') ${ fill: clamp_grad; stroke: #333; stroke-width: 1; };
-c1.apply { circle(110, 180, 80); closePath() }
+c1.apply { circle(110, 180, 80); closePath(); }
 
 let c2 = PathLayer('c-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
-c2.apply { circle(270, 180, 80); closePath() }
+c2.apply { circle(270, 180, 80); closePath(); }
 
 let c3 = PathLayer('c-trans') ${ fill: trans_grad; stroke: #333; stroke-width: 1; };
-c3.apply { circle(430, 180, 80); closePath() }
+c3.apply { circle(430, 180, 80); closePath(); }
 
 // --- Arc range indicators ---
 
 let arcs = PathLayer('arc-lines') ${ fill: none; stroke: #ffffff44; stroke-width: 1; stroke-dasharray: 3 3; };
 arcs.apply {
   // Vertical lines at 90° (top) and 270° (bottom) for each circle
-  line(110, 92, 110, 98)   line(110, 262, 110, 268)
-  line(270, 92, 270, 98)   line(270, 262, 270, 268)
-  line(430, 92, 430, 98)   line(430, 262, 430, 268)
+  line(110, 92, 110, 98);   line(110, 262, 110, 268);
+  line(270, 92, 270, 98);   line(270, 262, 270, 268);
+  line(430, 92, 430, 98);   line(430, 262, 430, 268);
 }
 
 // --- Labels ---
@@ -121,4 +121,4 @@ angle_note.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, checks, c1, c2, c3, arcs, labels, desc, title, angle_note)
+scene.append(bg, checks, c1, c2, c3, arcs, labels, desc, title, angle_note);

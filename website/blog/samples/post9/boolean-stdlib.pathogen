@@ -6,7 +6,7 @@ bg.apply { rect(0, 0, 400, 200); }
 
 // --- Plate with drilled holes ---
 
-let plate = @{ rect(0, 0, 80, 80); };
+let plate = @{ rect(0, 0, 80, 80) };
 let hole = @{ circle(0, 0, 10) };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));

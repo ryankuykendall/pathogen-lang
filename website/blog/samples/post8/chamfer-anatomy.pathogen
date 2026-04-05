@@ -63,7 +63,7 @@ let vertex_dot = PathLayer('vertex-dot') ${
   stroke-width: 1.5;
 };
 vertex_dot.apply {
-  circle(200, 120, 4)
+  circle(200, 120, 4);
 }
 
 // --- Trim points ---
@@ -74,8 +74,8 @@ let trim_dots = PathLayer('trim-dots') ${
   stroke-width: 1.5;
 };
 trim_dots.apply {
-  circle(170, 120, 4)
-  circle(200, 150, 4)
+  circle(170, 120, 4);
+  circle(200, 150, 4);
 }
 
 // --- Dimension lines ---

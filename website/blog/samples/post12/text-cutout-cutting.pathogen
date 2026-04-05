@@ -105,7 +105,7 @@ g_stage1.append(glyph0_layer, glyph1_layer, glyph2_layer, glyph3_layer, glyph4_l
 let g_stage2 = GroupLayer('stage2') ${ translate-x: 320; translate-y: 0; };
 
 let union_layer = PathLayer('union-result') ${ fill: c_blue; stroke: none; };
-union_layer.apply { combined.drawTo(30, calc(geo_y + baseline_y)) }
+union_layer.apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
 
 let s2_label = TextLayer('s2-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 s2_label.apply { text(30, label_y)`single united path` }
@@ -119,7 +119,7 @@ g_stage2.append(union_layer, s2_label);
 let g_stage3 = GroupLayer('stage3') ${ translate-x: 610; translate-y: 0; };
 
 let cutout_layer = PathLayer('cutout-result') ${ fill: c_green; stroke: none; };
-cutout_layer.apply { cutout.drawTo(30, calc(geo_y + baseline_y)) }
+cutout_layer.apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
 
 let s3_label = TextLayer('s3-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 s3_label.apply { text(30, label_y)`text punched from plate` }

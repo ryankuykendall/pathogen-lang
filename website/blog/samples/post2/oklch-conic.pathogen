@@ -40,16 +40,16 @@ bg.apply { rect(0, 0, 600, 540); }
 // --- Gradient circles ---
 
 let by_s = PathLayer('by-srgb') ${ fill: srgb_by; stroke: #333; stroke-width: 1; };
-by_s.apply { circle(160, 165, 85); closePath() }
+by_s.apply { circle(160, 165, 85); closePath(); }
 
 let by_o = PathLayer('by-oklch') ${ fill: oklch_by; stroke: #333; stroke-width: 1; };
-by_o.apply { circle(440, 165, 85); closePath() }
+by_o.apply { circle(440, 165, 85); closePath(); }
 
 let rc_s = PathLayer('rc-srgb') ${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
-rc_s.apply { circle(160, 400, 85); closePath() }
+rc_s.apply { circle(160, 400, 85); closePath(); }
 
 let rc_o = PathLayer('rc-oklch') ${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
-rc_o.apply { circle(440, 400, 85); closePath() }
+rc_o.apply { circle(440, 400, 85); closePath(); }
 
 // --- Column headers ---
 
@@ -106,10 +106,10 @@ footer.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') ${};
-top_row.append(by_s, by_o)
+top_row.append(by_s, by_o);
 
 let bottom_row = GroupLayer('bottom-row') ${};
 bottom_row.append(rc_s, rc_o);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)
+scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);

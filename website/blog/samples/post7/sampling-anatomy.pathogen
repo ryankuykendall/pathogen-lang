@@ -34,7 +34,7 @@ let path = PathLayer('path') ${
   fill: none;
 };
 path.apply {
-  curve.drawTo(80, 240)
+  curve.drawTo(80, 240);
 }
 
 // --- Get real sampling data at t=0.4 ---
@@ -52,7 +52,7 @@ let sample_dot = PathLayer('sample-dot') ${
   stroke-width: 2;
 };
 sample_dot.apply {
-  circle(pt.x, pt.y, 5)
+  circle(pt.x, pt.y, 5);
 }
 
 // --- Tangent line ---
@@ -117,8 +117,8 @@ let endpoints = PathLayer('endpoints') ${
   stroke-width: 1.5;
 };
 endpoints.apply {
-  circle(80, 240, 3.5)
-  circle(300, 240, 3.5)
+  circle(80, 240, 3.5);
+  circle(300, 240, 3.5);
 }
 
 // --- Leader lines ---

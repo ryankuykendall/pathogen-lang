@@ -3,7 +3,7 @@
 let baseColor = Color('#e63946');
 
 fn swatch(cx, cy, r) {
-circle(cx, cy, r)
+circle(cx, cy, r);
 }
 
 // Layout
@@ -31,17 +31,17 @@ define PathLayer('mix') ${ fill: baseColor.mix(Color('#457b9d'), 0.5); stroke: n
 define TextLayer('labels') ${ font-size: 9; fill: #333; text-anchor: middle; font-family: monospace; }
 
 // Draw Row 1
-layer('base').apply { swatch(sx, y1, r) }
-layer('lighten').apply { swatch(calc(sx + sp), y1, r) }
-layer('darken').apply { swatch(calc(sx + sp * 2), y1, r) }
-layer('saturate').apply { swatch(calc(sx + sp * 3), y1, r) }
-layer('desaturate').apply { swatch(calc(sx + sp * 4), y1, r) }
+layer('base').apply { swatch(sx, y1, r); }
+layer('lighten').apply { swatch(calc(sx + sp), y1, r); }
+layer('darken').apply { swatch(calc(sx + sp * 2), y1, r); }
+layer('saturate').apply { swatch(calc(sx + sp * 3), y1, r); }
+layer('desaturate').apply { swatch(calc(sx + sp * 4), y1, r); }
 
 // Draw Row 2
-layer('hueshift').apply { swatch(sx, y2, r) }
-layer('complement').apply { swatch(calc(sx + sp), y2, r) }
-layer('alpha').apply { swatch(calc(sx + sp * 2), y2, r) }
-layer('mix').apply { swatch(calc(sx + sp * 3), y2, r) }
+layer('hueshift').apply { swatch(sx, y2, r); }
+layer('complement').apply { swatch(calc(sx + sp), y2, r); }
+layer('alpha').apply { swatch(calc(sx + sp * 2), y2, r); }
+layer('mix').apply { swatch(calc(sx + sp * 3), y2, r); }
 
 // Labels
 layer('labels').apply {

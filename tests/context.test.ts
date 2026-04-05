@@ -125,8 +125,7 @@ describe('Path Context Tracking', () => {
     });
 
     it('records commands in loops', () => {
-      const result = compileWithContext(
-        `
+      const result = compileWithContext(`
         M 0 0
         for (i in 1..3) {
           L calc(i * 10) calc(i * 10)
@@ -183,7 +182,7 @@ describe('Path Context Tracking', () => {
     it('captures log output with line numbers and labels', () => {
       const result = compileWithContext(`
         M 10 20
-        log(ctx)
+        log(ctx);
       `);
       expect(result.logs).toHaveLength(1);
       expect(result.logs[0].line).toBe(3);
@@ -198,9 +197,9 @@ describe('Path Context Tracking', () => {
     it('captures multiple log calls', () => {
       const result = compileWithContext(`
         M 10 20
-        log(ctx)
+        log(ctx);
         L 30 40
-        log(ctx)
+        log(ctx);
       `);
       expect(result.logs).toHaveLength(2);
     });
@@ -208,7 +207,7 @@ describe('Path Context Tracking', () => {
     it('logs specific properties with labels', () => {
       const result = compileWithContext(`
         M 10 20
-        log(ctx.position)
+        log(ctx.position);
       `);
       expect(result.logs).toHaveLength(1);
       expect(result.logs[0].parts[0].label).toBe('ctx.position');
@@ -219,7 +218,7 @@ describe('Path Context Tracking', () => {
     it('logs numeric values with labels', () => {
       const result = compileWithContext(`
         M 10 20
-        log(ctx.position.x)
+        log(ctx.position.x);
       `);
       expect(result.logs).toHaveLength(1);
       expect(result.logs[0].parts[0].label).toBe('ctx.position.x');
@@ -229,7 +228,7 @@ describe('Path Context Tracking', () => {
     it('logs string literals without labels', () => {
       const result = compileWithContext(`
         M 10 20
-        log("position:", ctx.position)
+        log("position:", ctx.position);
       `);
       expect(result.logs).toHaveLength(1);
       expect(result.logs[0].parts).toHaveLength(2);
@@ -242,7 +241,7 @@ describe('Path Context Tracking', () => {
     it('supports multiple arguments with mixed types', () => {
       const result = compileWithContext(`
         M 10 20
-        log("x =", ctx.position.x, "y =", ctx.position.y)
+        log("x =", ctx.position.x, "y =", ctx.position.y);
       `);
       expect(result.logs).toHaveLength(1);
       expect(result.logs[0].parts).toHaveLength(4);
@@ -253,7 +252,7 @@ describe('Path Context Tracking', () => {
     });
 
     it('does not add to path output', () => {
-      const result = compileWithContext('M 10 20 log(ctx) L 30 40');
+      const result = compileWithContext('M 10 20 log(ctx); L 30 40');
       expect(result.path).toBe('M 10 20 L 30 40');
     });
   });
@@ -304,7 +303,7 @@ describe('Path Context Tracking', () => {
           l dx dy
         }
         M 0 0
-        if (1) { myLine(10, 20) }
+        if (1) { myLine(10, 20); }
         L ctx.position.x ctx.position.y
       `);
       expect(result.path).toBe('M 0 0 l 10 20 L 10 20');
@@ -340,7 +339,7 @@ describe('Path Context Tracking', () => {
     it('converts deg to radians', () => {
       const result = compileWithContext(`
         M 100 100
-        log(90deg)
+        log(90deg);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -350,7 +349,7 @@ describe('Path Context Tracking', () => {
     it('keeps rad as-is', () => {
       const result = compileWithContext(`
         M 100 100
-        log(1.5rad)
+        log(1.5rad);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -362,7 +361,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let x = 1.5;
-        log(x)
+        log(x);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -373,7 +372,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let sum = calc(90deg + 90deg);
-        log(sum)
+        log(sum);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -384,7 +383,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let doubled = calc(45deg * 2);
-        log(doubled)
+        log(doubled);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -395,7 +394,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let halved = calc(90deg / 2);
-        log(halved)
+        log(halved);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -407,7 +406,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let mixed = calc(90deg + PI() / 2);
-        log(mixed)
+        log(mixed);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -462,8 +461,8 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let off = polarOffset(0, 50);
-        log(off.dx)
-        log(off.dy)
+        log(off.dx);
+        log(off.dy);
       `);
       expect(result.logs).toHaveLength(2);
       expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(50, 5);
@@ -474,8 +473,8 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let off = polarOffset(90deg, 50);
-        log(off.dx)
-        log(off.dy)
+        log(off.dx);
+        log(off.dy);
       `);
       expect(result.logs).toHaveLength(2);
       expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 5);
@@ -498,12 +497,12 @@ describe('Path Context Tracking', () => {
       const result1 = compileWithContext(`
         M 0 0
         let off = polarOffset(0, 30);
-        log(off.dx)
+        log(off.dx);
       `);
       const result2 = compileWithContext(`
         M 100 200
         let off = polarOffset(0, 30);
-        log(off.dx)
+        log(off.dx);
       `);
       expect(parseFloat(result1.logs[0].parts[0].value)).toBeCloseTo(30, 5);
       expect(parseFloat(result2.logs[0].parts[0].value)).toBeCloseTo(30, 5);
@@ -514,7 +513,7 @@ describe('Path Context Tracking', () => {
     it('generates L command by default', () => {
       const result = compileWithContext(`
         M 100 100
-        polarMove(0, 50)
+        polarMove(0, 50);
       `);
       expect(result.path).toContain('L 150 100');
       expect(result.context.position.x).toBeCloseTo(150, 5);
@@ -523,7 +522,7 @@ describe('Path Context Tracking', () => {
     it('generates M command when isMoveTo=1', () => {
       const result = compileWithContext(`
         M 100 100
-        polarMove(0, 50, 1)
+        polarMove(0, 50, 1);
       `);
       expect(result.path).toContain('M 150 100');
     });
@@ -531,8 +530,8 @@ describe('Path Context Tracking', () => {
     it('updates heading', () => {
       const result = compileWithContext(`
         M 100 100
-        polarMove(90deg, 50)
-        log(ctx.heading)
+        polarMove(90deg, 50);
+        log(ctx.heading);
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -544,7 +543,7 @@ describe('Path Context Tracking', () => {
     it('always generates L command', () => {
       const result = compileWithContext(`
         M 100 100
-        polarLine(0, 50)
+        polarLine(0, 50);
       `);
       expect(result.path).toContain('L 150 100');
     });
@@ -552,8 +551,8 @@ describe('Path Context Tracking', () => {
     it('updates position and heading', () => {
       const result = compileWithContext(`
         M 100 100
-        polarLine(45deg, 50)
-        log(ctx.heading)
+        polarLine(45deg, 50);
+        log(ctx.heading);
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -564,7 +563,7 @@ describe('Path Context Tracking', () => {
   describe('arcFromCenter', () => {
     it('draws arc clockwise', () => {
       const result = compileWithContext(`
-        arcFromCenter(100, 100, 50, 0, 90deg, 1)
+        arcFromCenter(100, 100, 50, 0, 90deg, 1);
       `);
       // Should draw line to (150, 100) then arc to (100, 150)
       // Uses L (not M) to keep path continuous
@@ -576,7 +575,7 @@ describe('Path Context Tracking', () => {
 
     it('draws arc counter-clockwise', () => {
       const result = compileWithContext(`
-        arcFromCenter(100, 100, 50, 0, -90deg, 0)
+        arcFromCenter(100, 100, 50, 0, -90deg, 0);
       `);
       // Should draw line to (150, 100) then arc to (100, 50)
       // Uses L (not M) to keep path continuous
@@ -588,7 +587,7 @@ describe('Path Context Tracking', () => {
     it('returns correct tangent angle', () => {
       const result = compileWithContext(`
         let arc = arcFromCenter(100, 100, 50, 0, 90deg, 1);
-        log(arc.angle)
+        log(arc.angle);
       `);
       expect(result.logs).toHaveLength(1);
       const angle = parseFloat(result.logs[0].parts[0].value);
@@ -598,8 +597,8 @@ describe('Path Context Tracking', () => {
 
     it('sets heading in context', () => {
       const result = compileWithContext(`
-        arcFromCenter(100, 100, 50, 0, 90deg, 1)
-        log(ctx.heading)
+        arcFromCenter(100, 100, 50, 0, 90deg, 1);
+        log(ctx.heading);
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -613,7 +612,7 @@ describe('Path Context Tracking', () => {
       // End: (80, 80 + 20) = (80, 100)
       const result = compileWithContext(`
         M 50 50
-        arcFromCenter(30, 30, 20, 0, 90deg, 1)
+        arcFromCenter(30, 30, 20, 0, 90deg, 1);
       `);
       // Uses L (not M) to keep path continuous
       expect(result.path).toContain('L 100 80');
@@ -629,11 +628,11 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         L 90 10
-        arcFromCenter(0, 10, 10, -90deg, 0, 1)
+        arcFromCenter(0, 10, 10, -90deg, 0, 1);
         L 90 90
-        arcFromCenter(-10, 0, 10, 0, 90deg, 1)
+        arcFromCenter(-10, 0, 10, 0, 90deg, 1);
         L 10 90
-        arcFromCenter(0, -10, 10, 90deg, 180deg, 1)
+        arcFromCenter(0, -10, 10, 90deg, 180deg, 1);
         L 10 10
         Z
       `);
@@ -654,7 +653,7 @@ describe('Path Context Tracking', () => {
       // angleOfArc = 90deg clockwise → endAngle = π + 90deg = 3π/2
       // End position: (50 + 50*cos(3π/2), 0 + 50*sin(3π/2)) = (50, -50)
       const result = compileWithContext(`
-        arcFromPolarOffset(0, 50, 90deg)
+        arcFromPolarOffset(0, 50, 90deg);
       `);
       expect(result.path).toContain('A 50 50');
       expect(result.path).not.toContain('L'); // Should only emit A, not L
@@ -668,7 +667,7 @@ describe('Path Context Tracking', () => {
       // angleOfArc = -90deg counter-clockwise → endAngle = π - 90deg = π/2
       // End position: (50 + 50*cos(π/2), 0 + 50*sin(π/2)) = (50, 50)
       const result = compileWithContext(`
-        arcFromPolarOffset(0, 50, -90deg)
+        arcFromPolarOffset(0, 50, -90deg);
       `);
       expect(result.path).toContain('A 50 50');
       expect(result.context.position.x).toBeCloseTo(50, 5);
@@ -677,7 +676,7 @@ describe('Path Context Tracking', () => {
 
     it('handles large arc (angleOfArc > 180deg)', () => {
       const result = compileWithContext(`
-        arcFromPolarOffset(0, 50, 270deg)
+        arcFromPolarOffset(0, 50, 270deg);
       `);
       // largeArc flag should be 1 for angles > π
       expect(result.path).toMatch(/A 50 50 0 1/);
@@ -686,7 +685,7 @@ describe('Path Context Tracking', () => {
     it('returns correct tangent angle for clockwise arc', () => {
       const result = compileWithContext(`
         let arc = arcFromPolarOffset(0, 50, 90deg);
-        log(arc.angle)
+        log(arc.angle);
       `);
       expect(result.logs).toHaveLength(1);
       const angle = parseFloat(result.logs[0].parts[0].value);
@@ -697,8 +696,8 @@ describe('Path Context Tracking', () => {
 
     it('sets heading in context', () => {
       const result = compileWithContext(`
-        arcFromPolarOffset(0, 50, 90deg)
-        log(ctx.heading)
+        arcFromPolarOffset(0, 50, 90deg);
+        log(ctx.heading);
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -711,8 +710,8 @@ describe('Path Context Tracking', () => {
       // Start at (0, 0), arc to (50, -50) with tangent pointing right (angle ≈ 0)
       // tangentLine(30) should go 30px right: (80, -50)
       const result = compileWithContext(`
-        arcFromPolarOffset(0, 50, 90deg)
-        tangentLine(30)
+        arcFromPolarOffset(0, 50, 90deg);
+        tangentLine(30);
       `);
       expect(result.context.position.x).toBeCloseTo(80, 5);
       expect(result.context.position.y).toBeCloseTo(-50, 5);
@@ -720,7 +719,7 @@ describe('Path Context Tracking', () => {
 
     it('emits only A command (no M or L)', () => {
       const result = compileWithContext(`
-        arcFromPolarOffset(0, 50, 90deg)
+        arcFromPolarOffset(0, 50, 90deg);
       `);
       // Path should only be "A ..." with no M or L
       expect(result.path).toMatch(/^A /);
@@ -736,7 +735,7 @@ describe('Path Context Tracking', () => {
       // For CW 90deg arc: endAngle = -π/2 + π/2 = 0
       // End position: (0 + 50*cos(0), 50 + 50*sin(0)) = (50, 50)
       const result = compileWithContext(`
-        arcFromPolarOffset(90deg, 50, 90deg)
+        arcFromPolarOffset(90deg, 50, 90deg);
       `);
       expect(result.context.position.x).toBeCloseTo(50, 5);
       expect(result.context.position.y).toBeCloseTo(50, 5);
@@ -747,8 +746,8 @@ describe('Path Context Tracking', () => {
     it('continues in tangent direction after polarLine', () => {
       const result = compileWithContext(`
         M 100 100
-        polarLine(0, 50)
-        tangentLine(30)
+        polarLine(0, 50);
+        tangentLine(30);
       `);
       // After polarLine(0, 50), position is (150, 100), tangent is 0
       // tangentLine(30) should go to (180, 100)
@@ -760,15 +759,15 @@ describe('Path Context Tracking', () => {
       expect(() => {
         compileWithContext(`
           M 100 100
-          tangentLine(30)
+          tangentLine(30);
         `);
       }).toThrow('tangentLine requires a previous path command that establishes direction');
     });
 
     it('works after arcFromCenter', () => {
       const result = compileWithContext(`
-        arcFromCenter(100, 100, 50, 0, 90deg, 1)
-        tangentLine(30)
+        arcFromCenter(100, 100, 50, 0, 90deg, 1);
+        tangentLine(30);
       `);
       // After arc, position is (100, 150), tangent is π (pointing left)
       // tangentLine(30) should go 30px left: (70, 150)
@@ -781,8 +780,8 @@ describe('Path Context Tracking', () => {
     it('creates smooth continuation with positive sweep', () => {
       const result = compileWithContext(`
         M 50 100
-        polarLine(0, 50)
-        tangentArc(20, 90deg)
+        polarLine(0, 50);
+        tangentArc(20, 90deg);
       `);
       // After polarLine, position is (100, 100), tangent is 0 (pointing right)
       // tangentArc with positive sweep curves "down" (clockwise)
@@ -795,8 +794,8 @@ describe('Path Context Tracking', () => {
     it('handles negative sweepAngle (counter-clockwise)', () => {
       const result = compileWithContext(`
         M 50 100
-        polarLine(0, 50)
-        tangentArc(20, -90deg)
+        polarLine(0, 50);
+        tangentArc(20, -90deg);
       `);
       // tangentArc with negative sweep curves "up" (counter-clockwise)
       // Center is at (100, 80) - 20px above current position
@@ -808,9 +807,9 @@ describe('Path Context Tracking', () => {
     it('updates heading for chaining', () => {
       const result = compileWithContext(`
         M 50 100
-        polarLine(0, 50)
-        tangentArc(20, 90deg)
-        log(ctx.heading)
+        polarLine(0, 50);
+        tangentArc(20, 90deg);
+        log(ctx.heading);
       `);
       expect(result.logs).toHaveLength(1);
       const tangent = parseFloat(result.logs[0].parts[0].value);
@@ -822,7 +821,7 @@ describe('Path Context Tracking', () => {
       expect(() => {
         compileWithContext(`
           M 100 100
-          tangentArc(20, 90deg)
+          tangentArc(20, 90deg);
         `);
       }).toThrow('tangentArc requires a previous path command that establishes direction');
     });
@@ -832,11 +831,11 @@ describe('Path Context Tracking', () => {
     it('chains multiple tangent operations', () => {
       const result = compileWithContext(`
         M 20 100
-        polarLine(0, 40)
-        tangentArc(30, 90deg)
-        tangentLine(20)
-        tangentArc(30, -90deg)
-        tangentLine(40)
+        polarLine(0, 40);
+        tangentArc(30, 90deg);
+        tangentLine(20);
+        tangentArc(30, -90deg);
+        tangentLine(40);
       `);
       // This creates a path that:
       // 1. Goes right 40px: (60, 100)
@@ -852,9 +851,9 @@ describe('Path Context Tracking', () => {
 
     it('chains arcFromCenter with tangentLine', () => {
       const result = compileWithContext(`
-        arcFromCenter(50, 50, 30, 0, 90deg, 1)
-        tangentLine(40)
-        tangentLine(40)
+        arcFromCenter(50, 50, 30, 0, 90deg, 1);
+        tangentLine(40);
+        tangentLine(40);
       `);
       // After arc, tangent points left (π)
       // Two tangentLines of 40 each should move 80px left total
@@ -872,7 +871,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -881,7 +880,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 50
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 4, 5);
     });
@@ -890,7 +889,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 0 -50
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(-Math.PI / 2, 5);
     });
@@ -899,7 +898,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         H 50
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -908,7 +907,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 50 0
         H -50
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // H -50 means go to x=-50, which is leftward from x=50
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI, 5);
@@ -918,7 +917,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         V 50
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 2, 5);
     });
@@ -927,7 +926,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         V -50
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(-Math.PI / 2, 5);
     });
@@ -937,7 +936,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         C 10 0 40 20 50 20
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // Direction from (40, 20) to (50, 20) is rightward (0)
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
@@ -948,7 +947,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         Q 25 50 50 0
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // Direction from (25, 50) to (50, 0) is atan2(-50, 25)
       expect(getTangentFromLog(result)).toBeCloseTo(Math.atan2(-50, 25), 5);
@@ -959,7 +958,7 @@ describe('Path Context Tracking', () => {
         M 0 0
         C 10 0 20 0 30 0
         S 50 20 60 20
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // S: CP2 at (50, 20), endpoint at (60, 20) → direction is rightward (0)
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
@@ -970,7 +969,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         A 50 50 0 0 1 100 0
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // Verify the tangent is defined and is a finite number
       const tangent = getTangentFromLog(result);
@@ -983,7 +982,7 @@ describe('Path Context Tracking', () => {
         L 100 0
         L 100 100
         Z
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // Z goes from (100, 100) back to (0, 0)
       // Direction: atan2(0-100, 0-100) = atan2(-100, -100)
@@ -1006,7 +1005,7 @@ describe('Path Context Tracking', () => {
           M 0 0
           L 50 0
           M 100 100
-          tangentArc(20, 90deg)
+          tangentArc(20, 90deg);
         `);
       }).toThrow(/tangentArc requires a previous path command that establishes direction/);
     });
@@ -1016,7 +1015,7 @@ describe('Path Context Tracking', () => {
         M 0 0
         L 50 0
         L 50 0
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       // Zero-length L should preserve previous tangent (0, rightward)
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
@@ -1026,7 +1025,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         l 20 0
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -1035,7 +1034,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         h 20
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(0, 5);
     });
@@ -1044,7 +1043,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 10 10
         v 20
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       expect(getTangentFromLog(result)).toBeCloseTo(Math.PI / 2, 5);
     });
@@ -1055,7 +1054,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       // After L rightward (tangent=0), tangentArc with positive sweep curves down
       // Center at (50, 20), start angle = -π/2, end angle = 0
@@ -1068,7 +1067,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         H 50
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       // Same geometry as L rightward
       expect(result.context.position.x).toBeCloseTo(70, 5);
@@ -1079,7 +1078,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         V 50
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       // After V downward (tangent=π/2), tangentArc with positive sweep curves left
       // Center at (-20, 50), endpoint at (-20, 70)
@@ -1091,7 +1090,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         C 0 20 20 20 20 0
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       // CP2 at (20,20), endpoint at (20,0) → tangent = atan2(-20, 0) = -π/2 (upward)
       // tangentArc with positive sweep from upward heading curves right
@@ -1102,7 +1101,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         Q 25 50 50 0
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       expect(result.path).toContain('A');
     });
@@ -1111,7 +1110,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         A 50 50 0 0 1 100 0
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       expect(result.path).toContain('A');
     });
@@ -1122,7 +1121,7 @@ describe('Path Context Tracking', () => {
         L 100 0
         L 100 100
         Z
-        tangentArc(20, 90deg)
+        tangentArc(20, 90deg);
       `);
       // Z goes from (100,100) to (0,0), tangent toward origin
       expect(result.path).toContain('A');
@@ -1134,7 +1133,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        tangentLine(30)
+        tangentLine(30);
       `);
       // After L rightward, tangentLine continues right 30px
       expect(result.context.position.x).toBeCloseTo(80, 5);
@@ -1145,7 +1144,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         V 50
-        tangentLine(30)
+        tangentLine(30);
       `);
       // After V downward, tangentLine continues down 30px
       expect(result.context.position.x).toBeCloseTo(0, 5);
@@ -1156,7 +1155,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         C 0 20 20 20 20 0
-        tangentLine(20)
+        tangentLine(20);
       `);
       // CP2 at (20,20), endpoint at (20,0) → tangent = atan2(-20, 0) = -π/2 (upward)
       // tangentLine(20) should go 20px upward
@@ -1168,7 +1167,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         H 50
-        tangentLine(30)
+        tangentLine(30);
       `);
       expect(result.context.position.x).toBeCloseTo(80, 5);
       expect(result.context.position.y).toBeCloseTo(0, 5);
@@ -1178,8 +1177,8 @@ describe('Path Context Tracking', () => {
   describe('tangentArc after stdlib path functions', () => {
     it('works after line() function', () => {
       const result = compileWithContext(`
-        line(0, 0, 100, 0)
-        tangentArc(20, 90deg)
+        line(0, 0, 100, 0);
+        tangentArc(20, 90deg);
       `);
       // line() emits M 0 0 L 100 0, tangent from L is rightward
       expect(result.context.position.x).toBeCloseTo(120, 5);
@@ -1189,9 +1188,9 @@ describe('Path Context Tracking', () => {
     it('works after lineTo() function', () => {
       // Use moveTo() instead of M to avoid parser treating lineTo as arg to M
       const result = compileWithContext(`
-        moveTo(0, 0)
-        lineTo(100, 0)
-        tangentArc(20, 90deg)
+        moveTo(0, 0);
+        lineTo(100, 0);
+        tangentArc(20, 90deg);
       `);
       // lineTo emits L, tangent rightward
       expect(result.context.position.x).toBeCloseTo(120, 5);
@@ -1201,7 +1200,7 @@ describe('Path Context Tracking', () => {
     it('lineTo() sets tangent and position even without preceding M', () => {
       // Standalone lineTo — no M before it, so no parser ambiguity
       const result = compileWithContext(`
-        lineTo(100, 0)
+        lineTo(100, 0);
       `);
       expect(result.context.heading).toBeCloseTo(0, 5);
       expect(result.context.position.x).toBeCloseTo(100, 5);
@@ -1211,9 +1210,9 @@ describe('Path Context Tracking', () => {
     it('works after arc() function', () => {
       // Use moveTo() instead of M to avoid parser treating arc as arg to M
       const result = compileWithContext(`
-        moveTo(0, 0)
-        arc(50, 50, 0, 0, 1, 100, 0)
-        tangentArc(15, 90deg)
+        moveTo(0, 0);
+        arc(50, 50, 0, 0, 1, 100, 0);
+        tangentArc(15, 90deg);
       `);
       // arc() emits A command, tangent from arc exit
       expect(result.path).toContain('A');
@@ -1226,8 +1225,8 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let p = @{ l 20 0 };
-        p.draw()
-        tangentArc(20, 90deg)
+        p.draw();
+        tangentArc(20, 90deg);
       `);
       // PathBlock l 20 0 goes right, tangent = 0
       // tangentArc curves down
@@ -1241,10 +1240,10 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        tangentArc(20, 90deg)
-        tangentLine(30)
+        tangentArc(20, 90deg);
+        tangentLine(30);
         H 100
-        tangentArc(15, -90deg)
+        tangentArc(15, -90deg);
       `);
       // Complex chain — just verify no errors and output contains arcs
       expect(result.path).toContain('A');
@@ -1256,8 +1255,8 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 50 50
         let p = @{ l 20 0 };
-        p.draw()
-        tangentArc(10, 90deg)
+        p.draw();
+        tangentArc(10, 90deg);
       `);
       // l 20 0 goes right, tangent=0
       // tangentArc(10, 90deg) curves down from (70, 50)
@@ -1267,7 +1266,7 @@ describe('Path Context Tracking', () => {
 
     it('error message includes line/col info', () => {
       expect(() => {
-        compileWithContext(`tangentArc(20, 90deg)`);
+        compileWithContext(`tangentArc(20, 90deg);`);
       }).toThrow(/Line.*tangentArc requires/);
     });
   });
@@ -1276,7 +1275,7 @@ describe('Path Context Tracking', () => {
     it('sets tangent without emitting commands or moving cursor', () => {
       const result = compileWithContext(`
         M 50 50
-        heading(0)
+        heading(0);
       `);
       // Position unchanged
       expect(result.context.position).toEqual({ x: 50, y: 50 });
@@ -1289,8 +1288,8 @@ describe('Path Context Tracking', () => {
     it('followed by tangentArc produces correct geometry', () => {
       const result = compileWithContext(`
         M 50 100
-        heading(0)
-        tangentArc(20, 90deg)
+        heading(0);
+        tangentArc(20, 90deg);
       `);
       // heading(0) = rightward, tangentArc curves down
       // Center at (50, 120), end at (70, 120)
@@ -1301,8 +1300,8 @@ describe('Path Context Tracking', () => {
     it('followed by tangentLine produces correct geometry', () => {
       const result = compileWithContext(`
         M 50 100
-        heading(0)
-        tangentLine(30)
+        heading(0);
+        tangentLine(30);
       `);
       // heading(0) = rightward, tangentLine draws 30px right
       expect(result.context.position.x).toBeCloseTo(80, 5);
@@ -1312,8 +1311,8 @@ describe('Path Context Tracking', () => {
     it('after M enables tangent functions without dummy segment', () => {
       const result = compileWithContext(`
         M 100 100
-        heading(90deg)
-        tangentLine(40)
+        heading(90deg);
+        tangentLine(40);
       `);
       // heading(90deg) = downward, tangentLine draws 40px down
       expect(result.context.position.x).toBeCloseTo(100, 5);
@@ -1325,8 +1324,8 @@ describe('Path Context Tracking', () => {
     it('works with radians', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(calc(PI() / 4))
-        log(ctx.heading)
+        heading(calc(PI() / 4));
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 4, 5);
@@ -1335,8 +1334,8 @@ describe('Path Context Tracking', () => {
     it('works with deg suffix', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(45deg)
-        log(ctx.heading)
+        heading(45deg);
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 4, 5);
@@ -1345,8 +1344,8 @@ describe('Path Context Tracking', () => {
     it('works with pi multiplier', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(0.5pi)
-        log(ctx.heading)
+        heading(0.5pi);
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 2, 5);
@@ -1388,9 +1387,9 @@ describe('Path Context Tracking', () => {
     it('adds delta to current heading', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(0)
-        turn(90deg)
-        log(ctx.heading)
+        heading(0);
+        turn(90deg);
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 2, 5);
@@ -1400,7 +1399,7 @@ describe('Path Context Tracking', () => {
       expect(() => {
         compileWithContext(`
           M 100 100
-          turn(45deg)
+          turn(45deg);
         `);
       }).toThrow('turn requires an existing heading');
     });
@@ -1408,9 +1407,9 @@ describe('Path Context Tracking', () => {
     it('chains: heading(0) → turn(90deg) → read ctx.heading = π/2', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(0)
-        turn(90deg)
-        log(ctx.heading)
+        heading(0);
+        turn(90deg);
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 2, 5);
@@ -1419,9 +1418,9 @@ describe('Path Context Tracking', () => {
     it('works with negative delta', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(90deg)
-        turn(-45deg)
-        log(ctx.heading)
+        heading(90deg);
+        turn(-45deg);
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 4, 5);
@@ -1431,8 +1430,8 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        turn(90deg)
-        tangentLine(30)
+        turn(90deg);
+        tangentLine(30);
       `);
       // L 50 0 sets heading to 0, turn(90deg) sets to π/2 (downward)
       // tangentLine(30) draws 30px down from (50, 0) → (50, 30)
@@ -1443,11 +1442,11 @@ describe('Path Context Tracking', () => {
     it('multiple turns accumulate', () => {
       const result = compileWithContext(`
         M 0 0
-        heading(0)
-        turn(30deg)
-        turn(30deg)
-        turn(30deg)
-        log(ctx.heading)
+        heading(0);
+        turn(30deg);
+        turn(30deg);
+        turn(30deg);
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(Math.PI / 2, 5);
@@ -1459,7 +1458,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 0 0
         L 50 0
-        log(ctx.heading)
+        log(ctx.heading);
       `);
       const heading = parseFloat(result.logs[0].parts[0].value);
       expect(heading).toBeCloseTo(0, 5);

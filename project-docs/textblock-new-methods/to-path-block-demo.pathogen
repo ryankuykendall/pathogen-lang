@@ -18,7 +18,7 @@ let c_violet = Color('#8b5cf6');
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: c_bg; stroke: none; };
-bg.apply { rect(0, 0, 800, 400); }
+bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, 800, 400); }
 
 // ═══════════════════════════════════════
 // Panel 1: Simple toPathBlock conversion

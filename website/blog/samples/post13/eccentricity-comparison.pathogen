@@ -24,7 +24,7 @@ layer('t100').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 1.0 },
     [{ x: 190, y: 45, exit: 70, exitTime: 1.0, entryTime: 1.0 }],
     { x: 320, y: 165, entryTime: 1.0 }
-  )
+  );
 }
 
 // t = 0.75
@@ -34,7 +34,7 @@ layer('t075').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.75 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.75, entryTime: 0.75 }],
     { x: 320, y: 165, entryTime: 0.75 }
-  )
+  );
 }
 
 // t = 0.5
@@ -44,7 +44,7 @@ layer('t050').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.5 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.5, entryTime: 0.5 }],
     { x: 320, y: 165, entryTime: 0.5 }
-  )
+  );
 }
 
 // t = 0.25
@@ -54,16 +54,16 @@ layer('t025').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.25 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.25, entryTime: 0.25 }],
     { x: 320, y: 165, entryTime: 0.25 }
-  )
+  );
 }
 
 // On-curve points
 define PathLayer('pts') ${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5 }
 layer('diagram').append(layer('t100'), layer('t075'), layer('t050'), layer('t025'), layer('pts'));
 layer('pts').apply {
-  circle(60, 165, 5)
-  circle(190, 45, 5)
-  circle(320, 165, 5)
+  circle(60, 165, 5);
+  circle(190, 45, 5);
+  circle(320, 165, 5);
 }
 
 // === Legend group ===

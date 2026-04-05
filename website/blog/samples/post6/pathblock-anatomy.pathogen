@@ -44,7 +44,7 @@ let shape = PathLayer('shape') ${
 // V0(220,190) V1(280,190) V2(280,170) V3(310,200)
 // V4(280,230) V5(280,210) V6(220,210)
 shape.apply {
-  arrow.drawTo(220, 190)
+  arrow.drawTo(220, 190);
 }
 
 // --- Bounding box overlay ---
@@ -68,13 +68,13 @@ let vdots = PathLayer('vdots') ${
   stroke-width: 1.5;
 };
 vdots.apply {
-  circle(220, 190, 3.5)
-  circle(280, 190, 3.5)
-  circle(280, 170, 3.5)
-  circle(310, 200, 3.5)
-  circle(280, 230, 3.5)
-  circle(280, 210, 3.5)
-  circle(220, 210, 3.5)
+  circle(220, 190, 3.5);
+  circle(280, 190, 3.5);
+  circle(280, 170, 3.5);
+  circle(310, 200, 3.5);
+  circle(280, 230, 3.5);
+  circle(280, 210, 3.5);
+  circle(220, 210, 3.5);
 }
 
 // --- Origin crosshair ---

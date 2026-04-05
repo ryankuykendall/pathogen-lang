@@ -28,9 +28,9 @@ let ring595 = @{ circle(0, 0, 595); closePath() };
 let ring307 = @{ circle(0, 0, 307); closePath() };
 
 let volcano = TopoGradient('volcano', pw, ph) {|g|
-  g.contour(ring870.project(1024, 1024), 0.25, Color('#f4d35e'));
-  g.contour(ring595.project(1024, 1024), 0.50, Color('#45b764'));
-  g.contour(ring307.project(1024, 1024), 0.80, Color('#c0392b'));
+  g.contour(ring870.project(1024, 1024), 0.25, Color('#f4d35e'))
+  g.contour(ring595.project(1024, 1024), 0.50, Color('#45b764'))
+  g.contour(ring307.project(1024, 1024), 0.80, Color('#c0392b'))
 };
 volcano.baseColor = Color('#264653');
 volcano.easing = 'smoothstep';
@@ -42,9 +42,9 @@ let middle = @{ circle(0, 0, 512); closePath() };
 let inner  = @{ circle(0, 0, 225); closePath() };
 
 let ovalTerrain = TopoGradient('oval', pw, ph) {|g|
-  g.contour(outer.scale(1.2, 0.8).project(1075, 1024),  0.20, Color('#e9c46a'));
-  g.contour(middle.scale(1.1, 0.85).project(1004, 975),  0.50, Color('#2a9d8f'));
-  g.contour(inner.project(922, 902),                      0.82, Color('#8b4513'));
+  g.contour(outer.scale(1.2, 0.8).project(1075, 1024),  0.20, Color('#e9c46a'))
+  g.contour(middle.scale(1.1, 0.85).project(1004, 975),  0.50, Color('#2a9d8f'))
+  g.contour(inner.project(922, 902),                      0.82, Color('#8b4513'))
 };
 ovalTerrain.baseColor = Color('#1d3557');
 ovalTerrain.easing = 'smoothstep';
@@ -64,11 +64,11 @@ let baseB = @{ circle(0, 0, 430); closePath() };
 let midB  = @{ circle(0, 0, 205); closePath() };
 
 let peaks = TopoGradient('peaks', pw, ph) {|g|
-  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'));
-  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'));
-  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'));
-  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'));
-  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'));
+  g.contour(baseA.project(cxA, cyA), 0.20, Color('#dda15e'))
+  g.contour(midA.project(cxA, cyA),  0.50, Color('#606c38'))
+  g.contour(topA.project(cxA, cyA),  0.80, Color('#bc6c25'))
+  g.contour(baseB.project(cxB, cyB), 0.20, Color('#dda15e'))
+  g.contour(midB.project(cxB, cyB),  0.45, Color('#606c38'))
 };
 peaks.baseColor = Color('#003049');
 peaks.easing = 'ease-out';
@@ -76,16 +76,16 @@ peaks.easing = 'ease-out';
 
 // ── Panel 4: "Nested Rectangles" ──
 // Sharp geometry — pure straight edges
-let rectOuter  = @{ rect(0, 0, 1600, 1600); };
-let rectMiddle = @{ rect(0, 0, 1000, 1000); };
-let rectInner  = @{ rect(0, 0, 500, 500); };
-let rectCore   = @{ rect(0, 0, 180, 180); };
+let rectOuter  = @{ rect(0, 0, 1600, 1600) };
+let rectMiddle = @{ rect(0, 0, 1000, 1000) };
+let rectInner  = @{ rect(0, 0, 500, 500) };
+let rectCore   = @{ rect(0, 0, 180, 180) };
 
 let boxes = TopoGradient('boxes', pw, ph) {|g|
-  g.contour(rectOuter.project(224, 224),   0.15, Color('#a8dadc'));
-  g.contour(rectMiddle.project(524, 524),  0.40, Color('#457b9d'));
-  g.contour(rectInner.project(774, 774),   0.65, Color('#1d3557'));
-  g.contour(rectCore.project(934, 934),    0.90, Color('#e63946'));
+  g.contour(rectOuter.project(224, 224),   0.15, Color('#a8dadc'))
+  g.contour(rectMiddle.project(524, 524),  0.40, Color('#457b9d'))
+  g.contour(rectInner.project(774, 774),   0.65, Color('#1d3557'))
+  g.contour(rectCore.project(934, 934),    0.90, Color('#e63946'))
 };
 boxes.baseColor = Color('#f1faee');
 boxes.easing = 'linear';
@@ -93,16 +93,16 @@ boxes.easing = 'linear';
 
 // ── Panel 5: "Rounded Contours" ──
 // Mixed geometry — rounded rectangles with varying corner radii
-let rrOuter  = @{ roundRect(0, 0, 1700, 1700, 200); };
-let rrMiddle = @{ roundRect(0, 0, 1100, 1100, 140); };
-let rrInner  = @{ roundRect(0, 0, 600, 600, 80); };
-let rrCore   = @{ roundRect(0, 0, 220, 220, 40); };
+let rrOuter  = @{ roundRect(0, 0, 1700, 1700, 200) };
+let rrMiddle = @{ roundRect(0, 0, 1100, 1100, 140) };
+let rrInner  = @{ roundRect(0, 0, 600, 600, 80) };
+let rrCore   = @{ roundRect(0, 0, 220, 220, 40) };
 
 let rounded = TopoGradient('rounded', pw, ph) {|g|
-  g.contour(rrOuter.project(174, 174),   0.15, Color('#ffd6a5'));
-  g.contour(rrMiddle.project(474, 474),  0.40, Color('#caffbf'));
-  g.contour(rrInner.project(724, 724),   0.65, Color('#9bf6ff'));
-  g.contour(rrCore.project(914, 914),    0.90, Color('#bdb2ff'));
+  g.contour(rrOuter.project(174, 174),   0.15, Color('#ffd6a5'))
+  g.contour(rrMiddle.project(474, 474),  0.40, Color('#caffbf'))
+  g.contour(rrInner.project(724, 724),   0.65, Color('#9bf6ff'))
+  g.contour(rrCore.project(914, 914),    0.90, Color('#bdb2ff'))
 };
 rounded.baseColor = Color('#fdffb6');
 rounded.easing = 'smoothstep';
@@ -138,9 +138,9 @@ let p1Frame = PathLayer('p1-frame') ${ stroke: #bbb; stroke-width: 3; fill: none
 p1Frame.apply { rect(px, p1y, pw, ph); }
 
 let p1Gradient = GroupLayer('panel1-gradient') ${};
-p1Gradient.append(p1Fill, p1Frame)
+p1Gradient.append(p1Fill, p1Frame);
 
-// -- schematic sub-group: contour outlines + leader lines --;;;;;;;;;;;
+// -- schematic sub-group: contour outlines + leader lines --
 let p1Contours = PathLayer('p1-contours') ${
   stroke: rgba(255, 255, 255, 0.5);
   stroke-width: 4;
@@ -148,12 +148,12 @@ let p1Contours = PathLayer('p1-contours') ${
   stroke-dasharray: 24 14;
 };
 p1Contours.apply {
-  circle(calc(px + 1024), calc(p1y + 1024), 870)
-  closePath()
-  circle(calc(px + 1024), calc(p1y + 1024), 595)
-  closePath()
-  circle(calc(px + 1024), calc(p1y + 1024), 307)
-  closePath()
+  circle(calc(px + 1024), calc(p1y + 1024), 870);
+  closePath();
+  circle(calc(px + 1024), calc(p1y + 1024), 595);
+  closePath();
+  circle(calc(px + 1024), calc(p1y + 1024), 307);
+  closePath();
 }
 
 let p1Leaders = PathLayer('p1-leaders') ${
@@ -163,16 +163,16 @@ let p1Leaders = PathLayer('p1-leaders') ${
   stroke-dasharray: 10 8;
 };
 p1Leaders.apply {
-  moveTo(calc(px + 1675), calc(p1y + 328))
-  lineTo(calc(px + 1630), calc(p1y + 370))
-  moveTo(calc(px + 1525), calc(p1y + 528))
-  lineTo(calc(px + 1490), calc(p1y + 560))
-  moveTo(calc(px + 1298), calc(p1y + 764))
-  lineTo(calc(px + 1270), calc(p1y + 790))
+  moveTo(calc(px + 1675), calc(p1y + 328));
+  lineTo(calc(px + 1630), calc(p1y + 370));
+  moveTo(calc(px + 1525), calc(p1y + 528));
+  lineTo(calc(px + 1490), calc(p1y + 560));
+  moveTo(calc(px + 1298), calc(p1y + 764));
+  lineTo(calc(px + 1270), calc(p1y + 790));
 }
 
 let p1Schematic = GroupLayer('panel1-schematic') ${};
-p1Schematic.append(p1Contours, p1Leaders)
+p1Schematic.append(p1Contours, p1Leaders);
 
 // -- description sub-group: title + elevation labels --
 let p1Title = TextLayer('p1-title') ${
@@ -199,11 +199,11 @@ p1Elev.apply {
 }
 
 let p1Desc = GroupLayer('panel1-description') ${};
-p1Desc.append(p1Title, p1Elev)
+p1Desc.append(p1Title, p1Elev);
 
 // -- panel container --
 let panel1 = GroupLayer('panel1') ${};
-panel1.append(p1Gradient, p1Schematic, p1Desc)
+panel1.append(p1Gradient, p1Schematic, p1Desc);
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -212,13 +212,13 @@ panel1.append(p1Gradient, p1Schematic, p1Desc)
 
 // -- gradient sub-group --
 let p2Fill = PathLayer('p2-fill') ${ fill: ovalTerrain; stroke: none; };
-p2Fill.apply { rect(px, p2y, pw, ph) }
+p2Fill.apply { rect(px, p2y, pw, ph); }
 
 let p2Frame = PathLayer('p2-frame') ${ stroke: #bbb; stroke-width: 3; fill: none; };
-p2Frame.apply { rect(px, p2y, pw, ph) }
+p2Frame.apply { rect(px, p2y, pw, ph); }
 
 let p2Gradient = GroupLayer('panel2-gradient') ${};
-p2Gradient.append(p2Fill, p2Frame)
+p2Gradient.append(p2Fill, p2Frame);
 
 // -- schematic sub-group --
 let p2Contours = PathLayer('p2-contours') ${
@@ -230,20 +230,20 @@ let p2Contours = PathLayer('p2-contours') ${
 p2Contours.apply {
   let ecx = calc(px + 1075);
   let ecy = calc(p2y + 1024);
-  moveTo(calc(ecx - 984), ecy)
-  arc(984, 656, 0, 0, 1, calc(ecx + 984), ecy)
-  arc(984, 656, 0, 0, 1, calc(ecx - 984), ecy)
-  closePath()
+  moveTo(calc(ecx - 984), ecy);
+  arc(984, 656, 0, 0, 1, calc(ecx + 984), ecy);
+  arc(984, 656, 0, 0, 1, calc(ecx - 984), ecy);
+  closePath();
 
   let mcx = calc(px + 1004);
   let mcy = calc(p2y + 975);
-  moveTo(calc(mcx - 563), mcy)
-  arc(563, 435, 0, 0, 1, calc(mcx + 563), mcy)
-  arc(563, 435, 0, 0, 1, calc(mcx - 563), mcy)
-  closePath()
+  moveTo(calc(mcx - 563), mcy);
+  arc(563, 435, 0, 0, 1, calc(mcx + 563), mcy);
+  arc(563, 435, 0, 0, 1, calc(mcx - 563), mcy);
+  closePath();
 
-  circle(calc(px + 922), calc(p2y + 902), 225)
-  closePath()
+  circle(calc(px + 922), calc(p2y + 902), 225);
+  closePath();
 }
 
 let p2Leaders = PathLayer('p2-leaders') ${
@@ -253,14 +253,14 @@ let p2Leaders = PathLayer('p2-leaders') ${
   stroke-dasharray: 10 8;
 };
 p2Leaders.apply {
-  moveTo(calc(px + 1745), calc(p2y + 508))
-  lineTo(calc(px + 1700), calc(p2y + 545))
-  moveTo(calc(px + 1475), calc(p2y + 638))
-  lineTo(calc(px + 1440), calc(p2y + 665))
+  moveTo(calc(px + 1745), calc(p2y + 508));
+  lineTo(calc(px + 1700), calc(p2y + 545));
+  moveTo(calc(px + 1475), calc(p2y + 638));
+  lineTo(calc(px + 1440), calc(p2y + 665));
 }
 
 let p2Schematic = GroupLayer('panel2-schematic') ${};
-p2Schematic.append(p2Contours, p2Leaders)
+p2Schematic.append(p2Contours, p2Leaders);
 
 // -- description sub-group --
 let p2Title = TextLayer('p2-title') ${
@@ -287,11 +287,11 @@ p2Elev.apply {
 }
 
 let p2Desc = GroupLayer('panel2-description') ${};
-p2Desc.append(p2Title, p2Elev)
+p2Desc.append(p2Title, p2Elev);
 
 // -- panel container --
 let panel2 = GroupLayer('panel2') ${};
-panel2.append(p2Gradient, p2Schematic, p2Desc)
+panel2.append(p2Gradient, p2Schematic, p2Desc);
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -300,13 +300,13 @@ panel2.append(p2Gradient, p2Schematic, p2Desc)
 
 // -- gradient sub-group --
 let p3Fill = PathLayer('p3-fill') ${ fill: peaks; stroke: none; };
-p3Fill.apply { rect(px, p3y, pw, ph) }
+p3Fill.apply { rect(px, p3y, pw, ph); }
 
 let p3Frame = PathLayer('p3-frame') ${ stroke: #bbb; stroke-width: 3; fill: none; };
-p3Frame.apply { rect(px, p3y, pw, ph) }
+p3Frame.apply { rect(px, p3y, pw, ph); }
 
 let p3Gradient = GroupLayer('panel3-gradient') ${};
-p3Gradient.append(p3Fill, p3Frame)
+p3Gradient.append(p3Fill, p3Frame);
 
 // -- schematic sub-group --
 let p3Contours = PathLayer('p3-contours') ${
@@ -317,21 +317,21 @@ let p3Contours = PathLayer('p3-contours') ${
 };
 p3Contours.apply {
   // Peak A contours
-  circle(calc(px + cxA), calc(p3y + cyA), 563)
-  closePath()
-  circle(calc(px + cxA), calc(p3y + cyA), 307)
-  closePath()
-  circle(calc(px + cxA), calc(p3y + cyA), 123)
-  closePath()
+  circle(calc(px + cxA), calc(p3y + cyA), 563);
+  closePath();
+  circle(calc(px + cxA), calc(p3y + cyA), 307);
+  closePath();
+  circle(calc(px + cxA), calc(p3y + cyA), 123);
+  closePath();
   // Peak B contours
-  circle(calc(px + cxB), calc(p3y + cyB), 430)
-  closePath()
-  circle(calc(px + cxB), calc(p3y + cyB), 205)
-  closePath()
+  circle(calc(px + cxB), calc(p3y + cyB), 430);
+  closePath();
+  circle(calc(px + cxB), calc(p3y + cyB), 205);
+  closePath();
 }
 
 let p3Schematic = GroupLayer('panel3-schematic') ${};
-p3Schematic.append(p3Contours)
+p3Schematic.append(p3Contours);
 
 // -- description sub-group --
 let p3Title = TextLayer('p3-title') ${
@@ -362,11 +362,11 @@ p3Elev.apply {
 }
 
 let p3Desc = GroupLayer('panel3-description') ${};
-p3Desc.append(p3Title, p3Elev)
+p3Desc.append(p3Title, p3Elev);
 
 // -- panel container --
 let panel3 = GroupLayer('panel3') ${};
-panel3.append(p3Gradient, p3Schematic, p3Desc)
+panel3.append(p3Gradient, p3Schematic, p3Desc);
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -375,13 +375,13 @@ panel3.append(p3Gradient, p3Schematic, p3Desc)
 
 // -- gradient sub-group --
 let p4Fill = PathLayer('p4-fill') ${ fill: boxes; stroke: none; };
-p4Fill.apply { rect(px, p4y, pw, ph) }
+p4Fill.apply { rect(px, p4y, pw, ph); }
 
 let p4Frame = PathLayer('p4-frame') ${ stroke: #bbb; stroke-width: 3; fill: none; };
-p4Frame.apply { rect(px, p4y, pw, ph) }
+p4Frame.apply { rect(px, p4y, pw, ph); }
 
 let p4Gradient = GroupLayer('panel4-gradient') ${};
-p4Gradient.append(p4Fill, p4Frame)
+p4Gradient.append(p4Fill, p4Frame);
 
 // -- schematic sub-group --
 let p4Contours = PathLayer('p4-contours') ${
@@ -391,10 +391,10 @@ let p4Contours = PathLayer('p4-contours') ${
   stroke-dasharray: 24 14;
 };
 p4Contours.apply {
-  rect(calc(px + 224), calc(p4y + 224), 1600, 1600)
-  rect(calc(px + 524), calc(p4y + 524), 1000, 1000)
-  rect(calc(px + 774), calc(p4y + 774), 500, 500)
-  rect(calc(px + 934), calc(p4y + 934), 180, 180)
+  rect(calc(px + 224), calc(p4y + 224), 1600, 1600);
+  rect(calc(px + 524), calc(p4y + 524), 1000, 1000);
+  rect(calc(px + 774), calc(p4y + 774), 500, 500);
+  rect(calc(px + 934), calc(p4y + 934), 180, 180);
 }
 
 let p4Leaders = PathLayer('p4-leaders') ${
@@ -404,16 +404,16 @@ let p4Leaders = PathLayer('p4-leaders') ${
   stroke-dasharray: 10 8;
 };
 p4Leaders.apply {
-  moveTo(calc(px + 310), calc(p4y + 268))
-  lineTo(calc(px + 340), calc(p4y + 290))
-  moveTo(calc(px + 610), calc(p4y + 568))
-  lineTo(calc(px + 640), calc(p4y + 590))
-  moveTo(calc(px + 860), calc(p4y + 818))
-  lineTo(calc(px + 880), calc(p4y + 840))
+  moveTo(calc(px + 310), calc(p4y + 268));
+  lineTo(calc(px + 340), calc(p4y + 290));
+  moveTo(calc(px + 610), calc(p4y + 568));
+  lineTo(calc(px + 640), calc(p4y + 590));
+  moveTo(calc(px + 860), calc(p4y + 818));
+  lineTo(calc(px + 880), calc(p4y + 840));
 }
 
 let p4Schematic = GroupLayer('panel4-schematic') ${};
-p4Schematic.append(p4Contours, p4Leaders)
+p4Schematic.append(p4Contours, p4Leaders);
 
 // -- description sub-group --
 let p4Title = TextLayer('p4-title') ${
@@ -441,11 +441,11 @@ p4Elev.apply {
 }
 
 let p4Desc = GroupLayer('panel4-description') ${};
-p4Desc.append(p4Title, p4Elev)
+p4Desc.append(p4Title, p4Elev);
 
 // -- panel container --
 let panel4 = GroupLayer('panel4') ${};
-panel4.append(p4Gradient, p4Schematic, p4Desc)
+panel4.append(p4Gradient, p4Schematic, p4Desc);
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -454,13 +454,13 @@ panel4.append(p4Gradient, p4Schematic, p4Desc)
 
 // -- gradient sub-group --
 let p5Fill = PathLayer('p5-fill') ${ fill: rounded; stroke: none; };
-p5Fill.apply { rect(px, p5y, pw, ph) }
+p5Fill.apply { rect(px, p5y, pw, ph); }
 
 let p5Frame = PathLayer('p5-frame') ${ stroke: #bbb; stroke-width: 3; fill: none; };
-p5Frame.apply { rect(px, p5y, pw, ph) }
+p5Frame.apply { rect(px, p5y, pw, ph); }
 
 let p5Gradient = GroupLayer('panel5-gradient') ${};
-p5Gradient.append(p5Fill, p5Frame)
+p5Gradient.append(p5Fill, p5Frame);
 
 // -- schematic sub-group --
 let p5Contours = PathLayer('p5-contours') ${
@@ -470,10 +470,10 @@ let p5Contours = PathLayer('p5-contours') ${
   stroke-dasharray: 24 14;
 };
 p5Contours.apply {
-  roundRect(calc(px + 174), calc(p5y + 174), 1700, 1700, 200)
-  roundRect(calc(px + 474), calc(p5y + 474), 1100, 1100, 140)
-  roundRect(calc(px + 724), calc(p5y + 724), 600, 600, 80)
-  roundRect(calc(px + 914), calc(p5y + 914), 220, 220, 40)
+  roundRect(calc(px + 174), calc(p5y + 174), 1700, 1700, 200);
+  roundRect(calc(px + 474), calc(p5y + 474), 1100, 1100, 140);
+  roundRect(calc(px + 724), calc(p5y + 724), 600, 600, 80);
+  roundRect(calc(px + 914), calc(p5y + 914), 220, 220, 40);
 }
 
 let p5Leaders = PathLayer('p5-leaders') ${
@@ -483,16 +483,16 @@ let p5Leaders = PathLayer('p5-leaders') ${
   stroke-dasharray: 10 8;
 };
 p5Leaders.apply {
-  moveTo(calc(px + 310), calc(p5y + 218))
-  lineTo(calc(px + 340), calc(p5y + 250))
-  moveTo(calc(px + 610), calc(p5y + 518))
-  lineTo(calc(px + 640), calc(p5y + 545))
-  moveTo(calc(px + 860), calc(p5y + 768))
-  lineTo(calc(px + 880), calc(p5y + 790))
+  moveTo(calc(px + 310), calc(p5y + 218));
+  lineTo(calc(px + 340), calc(p5y + 250));
+  moveTo(calc(px + 610), calc(p5y + 518));
+  lineTo(calc(px + 640), calc(p5y + 545));
+  moveTo(calc(px + 860), calc(p5y + 768));
+  lineTo(calc(px + 880), calc(p5y + 790));
 }
 
 let p5Schematic = GroupLayer('panel5-schematic') ${};
-p5Schematic.append(p5Contours, p5Leaders)
+p5Schematic.append(p5Contours, p5Leaders);
 
 // -- description sub-group --
 let p5Title = TextLayer('p5-title') ${
@@ -520,11 +520,11 @@ p5Elev.apply {
 }
 
 let p5Desc = GroupLayer('panel5-description') ${};
-p5Desc.append(p5Title, p5Elev)
+p5Desc.append(p5Title, p5Elev);
 
 // -- panel container --
 let panel5 = GroupLayer('panel5') ${};
-panel5.append(p5Gradient, p5Schematic, p5Desc)
+panel5.append(p5Gradient, p5Schematic, p5Desc);
 
 
 // ─── Page-level content ─────────────────────────────────────

@@ -70,12 +70,12 @@ let shard_r2 = shard.rotateAtVertexIndex(0, -0.3);
 
 let topo = TopoGradient('crystal', 400, 400) {|g|
   // Primary cluster — center (blue facets)
-  g.contour(hex_r.project(190, 185), 0.12, Color('#1e3a5f'));
-  g.contour(pent_r.project(195, 188), 0.35, Color('#4a90d9'));
-  g.contour(sq_r.project(195, 190), 0.6, Color('#a5d8ff'));
+  g.contour(hex_r.project(190, 185), 0.12, Color('#1e3a5f'))
+  g.contour(pent_r.project(195, 188), 0.35, Color('#4a90d9'))
+  g.contour(sq_r.project(195, 190), 0.6, Color('#a5d8ff'))
   g.contour(tri_r.project(198, 192), 0.85, Color('#ffffff'))
 
-  // Secondary cluster — lower right (magenta);;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  // Secondary cluster — lower right (magenta)
   g.contour(wedge_r.project(310, 295), 0.15, Color('#5f1e3a'))
   g.contour(shard_r.project(315, 298), 0.5, Color('#d94a90'))
 
@@ -92,15 +92,15 @@ topo.interpolation = 'oklch';
 // ========== LEFT PANEL: Rendered Gradient ==========
 
 let bg = PathLayer('bg') ${ fill: #111; stroke: none; };
-bg.apply { rect(0, 0, 840, 420) }
+bg.apply { rect(0, 0, 840, 420); }
 
 let left_fill = PathLayer('left-fill') ${ fill: topo; stroke: #333; stroke-width: 1; };
-left_fill.apply { roundRect(10, 10, 400, 400, 6) }
+left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(430, 10, 400, 400, 6) }
+schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic offset: +420 to x for all projections
 // Primary cluster: hex(190,185)→(610,185), pent(195,188)→(615,188), sq(195,190)→(615,190), tri(198,192)→(618,192)
@@ -140,27 +140,27 @@ o_tri2.apply { M 512 97 tri_r.draw() }
 // --- Paint chips + labels: Primary cluster (right of center) ---
 
 let cp1 = PathLayer('cp1') ${ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
-cp1.apply { rect(700, 120, 12, 10) }
+cp1.apply { rect(700, 120, 12, 10); }
 let cp2 = PathLayer('cp2') ${ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
-cp2.apply { rect(700, 138, 12, 10) }
+cp2.apply { rect(700, 138, 12, 10); }
 let cp3 = PathLayer('cp3') ${ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
-cp3.apply { rect(700, 156, 12, 10) }
+cp3.apply { rect(700, 156, 12, 10); }
 let cp4 = PathLayer('cp4') ${ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
-cp4.apply { rect(700, 174, 12, 10) }
+cp4.apply { rect(700, 174, 12, 10); }
 
 // --- Paint chips + labels: Secondary cluster ---
 
 let cs1 = PathLayer('cs1') ${ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
-cs1.apply { rect(770, 280, 12, 10) }
+cs1.apply { rect(770, 280, 12, 10); }
 let cs2 = PathLayer('cs2') ${ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
-cs2.apply { rect(770, 298, 12, 10) }
+cs2.apply { rect(770, 298, 12, 10); }
 
 // --- Paint chips + labels: Tertiary cluster ---
 
 let ct1 = PathLayer('ct1') ${ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
-ct1.apply { rect(460, 55, 12, 10) }
+ct1.apply { rect(460, 55, 12, 10); }
 let ct2 = PathLayer('ct2') ${ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
-ct2.apply { rect(460, 73, 12, 10) }
+ct2.apply { rect(460, 73, 12, 10); }
 
 // --- Elevation labels ---
 
@@ -246,4 +246,4 @@ panel_labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels)
+scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);

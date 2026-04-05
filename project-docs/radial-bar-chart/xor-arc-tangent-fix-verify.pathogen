@@ -51,7 +51,7 @@ let title = TextLayer('title') ${
   text-anchor: start;
 };
 
-bg.apply { rect(0, 0, 820, 520); }
+bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, 820, 520); }
 
 // Column headers
 headers.apply {

@@ -30,10 +30,10 @@ bg.apply { rect(0, 0, 500, 300); }
 // --- Gradient circles ---
 
 let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
-cw_circle.apply { circle(140, 150, 90); closePath() }
+cw_circle.apply { circle(140, 150, 90); closePath(); }
 
 let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
-ccw_circle.apply { circle(360, 150, 90); closePath() }
+ccw_circle.apply { circle(360, 150, 90); closePath(); }
 
 // --- Direction arrows (curved sweep arcs with arrowheads) ---
 
@@ -82,10 +82,10 @@ note.apply {
 // --- Scene ---
 
 let left = GroupLayer('left') ${};
-left.append(cw_circle, cw_arrow)
+left.append(cw_circle, cw_arrow);
 
 let right = GroupLayer('right') ${};
 right.append(ccw_circle, ccw_arrow);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left, right, labels, note)
+scene.append(bg, left, right, labels, note);

@@ -321,7 +321,7 @@ describe('Multi-Layer Support', () => {
     it('throws on undefined layer in expression', () => {
       expect(() =>
         compileWithContext(`
-        log(layer('nonexistent').ctx)
+        log(layer('nonexistent').ctx);
       `),
       ).toThrow("Undefined layer: 'nonexistent'");
     });
@@ -902,7 +902,7 @@ describe('Multi-Layer Support', () => {
     describe('default context (no layers)', () => {
       it('sets transform on implicit default layer via ctx', () => {
         const result = compile(`
-          ctx.transform.translate.set(25, 25)
+          ctx.transform.translate.set(25, 25);
           M 0 0 L 100 0
         `);
         expect(result.layers[0].transform).toBe('translate(25, 25)');
@@ -910,9 +910,9 @@ describe('Multi-Layer Support', () => {
 
       it('reads transform from ctx without layers', () => {
         const result = compileWithContext(`
-          ctx.transform.scale.set(3, 4)
-          log(ctx.transform.scale.x)
-          log(ctx.transform.scale.y)
+          ctx.transform.scale.set(3, 4);
+          log(ctx.transform.scale.x);
+          log(ctx.transform.scale.y);
         `);
         expect(result.logs[0].parts[0].value).toBe('3');
         expect(result.logs[1].parts[0].value).toBe('4');

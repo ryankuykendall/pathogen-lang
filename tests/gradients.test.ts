@@ -157,7 +157,7 @@ describe('Gradients', () => {
     it('.id property returns gradient string ID', () => {
       const result = compile(`
         let g = LinearGradient('myid', 0, 0, 1, 0);
-        log(g.id)
+        log(g.id);
       `);
       expect(result.logs[0].parts[0].value).toBe('myid');
     });
@@ -419,7 +419,7 @@ describe('Gradients', () => {
       const result = compile(`
         let g = LinearGradient('readip', 0, 0, 1, 0);
         g.interpolation = 'oklch';
-        log(g.interpolation)
+        log(g.interpolation);
       `);
       expect(result.logs[0].parts[0].value).toBe('oklch');
     });
@@ -428,7 +428,7 @@ describe('Gradients', () => {
       const result = compile(`
         let g = LinearGradient('readsteps', 0, 0, 1, 0);
         g.steps = 15;
-        log(g.steps)
+        log(g.steps);
       `);
       expect(result.logs[0].parts[0].value).toBe('15');
     });
@@ -436,8 +436,8 @@ describe('Gradients', () => {
     it('defaults to null', () => {
       const result = compile(`
         let g = LinearGradient('defaults', 0, 0, 1, 0);
-        log(g.interpolation)
-        log(g.steps)
+        log(g.interpolation);
+        log(g.steps);
       `);
       expect(result.logs[0].parts[0].value).toBe('null');
       expect(result.logs[1].parts[0].value).toBe('null');
@@ -484,8 +484,8 @@ describe('Gradients', () => {
         base.interpolation = 'oklch';
         base.steps = 8;
         let child = base.inherit('ichild');
-        log(child.interpolation)
-        log(child.steps)
+        log(child.interpolation);
+        log(child.steps);
       `);
       // Child's output shouldn't have expanded stops since it has no stops of its own
       // But the properties should be propagated
@@ -508,7 +508,7 @@ describe('Gradients', () => {
         base.interpolation = 'oklch';
         let child = base.inherit('ochild');
         child.interpolation = 'linearRGB';
-        log(child.interpolation)
+        log(child.interpolation);
       `);
       expect(result.logs[0].parts[0].value).toBe('linearRGB');
     });
@@ -1103,7 +1103,7 @@ describe('Gradients', () => {
           g.stop(1, Color('#fff'));
         };
         g.innerRadius = 25;
-        log(g.innerRadius)
+        log(g.innerRadius);
       `);
       expect(result.logs[0].parts[0].value).toBe('25');
     });
@@ -1138,7 +1138,7 @@ describe('Gradients', () => {
         };
         parent.innerRadius = 20;
         let child = parent.inherit('c');
-        log(child.innerRadius)
+        log(child.innerRadius);
       `);
       expect(result.logs[0].parts[0].value).toBe('20');
       const child = result.gradients.find((g) => g.id === 'c');
@@ -1265,7 +1265,7 @@ describe('Gradients', () => {
           g.stop(1, Color('#fff'));
         };
         g.innerFill = 'center';
-        log(g.innerFill)
+        log(g.innerFill);
       `);
       expect(result.logs[0].parts[0].value).toBe('center');
     });
@@ -1300,7 +1300,7 @@ describe('Gradients', () => {
         };
         parent.innerFill = 'center';
         let child = parent.inherit('c');
-        log(child.innerFill)
+        log(child.innerFill);
       `);
       expect(result.logs[0].parts[0].value).toBe('center');
     });
@@ -2350,9 +2350,9 @@ describe('Gradients', () => {
         let topo = TopoGradient('terrain', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
-        log(topo.id)
-        log(topo.width)
-        log(topo.height)
+        log(topo.id);
+        log(topo.width);
+        log(topo.height);
       `);
       expect(result.logs[0].parts[0].value).toBe('terrain');
       expect(result.logs[1].parts[0].value).toBe('400');
@@ -2419,7 +2419,7 @@ describe('Gradients', () => {
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'))
         };
         topo.iterations = 500;
-        log(topo.iterations)
+        log(topo.iterations);
       `);
       expect(result.gradients[0].topoIterations).toBe(500);
       expect(result.logs[0].parts[0].value).toBe('500');
@@ -2638,7 +2638,7 @@ describe('Gradients', () => {
           g.contour(s.project(200, 150), 0.3, Color('#27ae60'))
           g.contour(s.project(200, 150), 0.8, Color('#ffffff'))
         };
-        log(topo)
+        log(topo);
       `);
       expect(result.logs[0].parts[0].value).toBe('TopoGradient(terrain, 2 contours)');
     });

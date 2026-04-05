@@ -20,14 +20,14 @@ let endPt = { x: 560, y: 140 };
 
 // --- The curve ---
 define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
-layer('curve').apply { quadSpline(startPt, midPts, endPt) }
+layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // --- On-curve points ---
 define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('anchors').apply {
-  circle(startPt.x, startPt.y, 5)
-  for ([p, i] in midPts) { circle(p.x, p.y, 5) }
-  circle(endPt.x, endPt.y, 5)
+  circle(startPt.x, startPt.y, 5);
+  for ([p, i] in midPts) { circle(p.x, p.y, 5); }
+  circle(endPt.x, endPt.y, 5);
 }
 
 // --- Shared CPs & tangent lines ---
@@ -41,7 +41,7 @@ define PathLayer('derived-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.
 let cp0x = calc(startPt.x + startPt.exit * cos(startPt.angle));
 let cp0y = calc(startPt.y + startPt.exit * sin(startPt.angle));
 
-layer('shared-cp').apply { circle(cp0x, cp0y, 4) }
+layer('shared-cp').apply { circle(cp0x, cp0y, 4); }
 layer('tangent-full').apply { M startPt.x startPt.y L cp0x cp0y }
 
 // Subsequent CPs from derived angles
@@ -57,7 +57,7 @@ for ([pt, idx] in midPts) {
   // Show tangent extension: pt → newCP (orange dashed)
   layer('tangent-full').apply { M pt.x pt.y L newCPx newCPy }
   // Shared CP marker
-  layer('shared-cp').apply { circle(newCPx, newCPy, 4) }
+  layer('shared-cp').apply { circle(newCPx, newCPy, 4); }
 
   prevCPx = newCPx;
   prevCPy = newCPy;
@@ -118,16 +118,16 @@ layer('demo-tangent').apply {
 // Points
 define PathLayer('demo-pts') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('demo-pts').apply {
-  circle(demoPt.x, demoPt.y, 6)
-  circle(80, 420, 4)
-  circle(420, 400, 4)
+  circle(demoPt.x, demoPt.y, 6);
+  circle(80, 420, 4);
+  circle(420, 400, 4);
 }
 
 // CPs
 define PathLayer('demo-cps') ${ fill: #f97316; stroke: #7c2d12; stroke-width: 1 }
 layer('demo-cps').apply {
-  circle(demoCP.x, demoCP.y, 4)
-  circle(demoNewCPx, demoNewCPy, 4)
+  circle(demoCP.x, demoCP.y, 4);
+  circle(demoNewCPx, demoNewCPy, 4);
 }
 
 // Annotations

@@ -30,15 +30,15 @@ layer('title').apply { text(30, 24)`quadSpline — implicit angle derivation` }
 // The curve
 define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
 layer('diagram').append(layer('curve'));
-layer('curve').apply { quadSpline(startPt, midPts, endPt) }
+layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // On-curve points
 define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
-  circle(startPt.x, startPt.y, 5)
-  for ([p, i] in midPts) { circle(p.x, p.y, 5) }
-  circle(endPt.x, endPt.y, 5)
+  circle(startPt.x, startPt.y, 5);
+  for ([p, i] in midPts) { circle(p.x, p.y, 5); }
+  circle(endPt.x, endPt.y, 5);
 }
 
 // Recompute CPs for visualization
@@ -51,7 +51,7 @@ layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derive
 let cp0x = calc(startPt.x + startPt.exit * cos(startPt.angle));
 let cp0y = calc(startPt.y + startPt.exit * sin(startPt.angle));
 
-layer('shared-cp').apply { circle(cp0x, cp0y, 4) }
+layer('shared-cp').apply { circle(cp0x, cp0y, 4); }
 layer('tangent-line').apply { M startPt.x startPt.y L cp0x cp0y }
 
 // Subsequent CPs from derived angles
@@ -67,7 +67,7 @@ for ([pt, idx] in midPts) {
   // Tangent extension: pt -> newCP (orange dashed)
   layer('tangent-line').apply { M pt.x pt.y L newCPx newCPy }
   // Shared CP marker
-  layer('shared-cp').apply { circle(newCPx, newCPy, 4) }
+  layer('shared-cp').apply { circle(newCPx, newCPy, 4); }
 
   prevCPx = newCPx;
   prevCPy = newCPy;
@@ -94,7 +94,7 @@ define PathLayer('lg-tan') ${ fill: none; stroke: #f97316; stroke-width: 1; stro
 layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
 
 layer('lg-curve').apply { M 0 0 L 16 0 }
-layer('lg-cp').apply { circle(8, 16, 4) }
+layer('lg-cp').apply { circle(8, 16, 4); }
 layer('lg-dir').apply { M 0 30 L 16 30 }
 layer('lg-tan').apply { M 0 44 L 16 44 }
 

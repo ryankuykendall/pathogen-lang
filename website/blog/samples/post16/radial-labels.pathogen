@@ -40,11 +40,11 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings + center ===
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 let center = PathLayer('center') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
-center.apply { circle(cx, cy, innerR) }
+center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
 let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
@@ -101,7 +101,7 @@ for ([d, i] in data) {
   } << ${ font-size: 11; };
 
   catLabels.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 }
 

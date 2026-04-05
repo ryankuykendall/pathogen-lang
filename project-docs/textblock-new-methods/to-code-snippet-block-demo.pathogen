@@ -10,7 +10,7 @@ let c_muted  = Color('#64748b');
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: c_bg; stroke: none; };
-bg.apply { rect(0, 0, 800, 500); }
+bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, 800, 500); }
 
 // ═══════════════════════════════════════
 // Snippet 1: Shapes with control flow

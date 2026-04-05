@@ -22,7 +22,7 @@ let labelClr = base.desaturate(0.4).lighten(0.3);
 
 // ── Background ──
 let bg = PathLayer('bg') ${ fill: surface; stroke: none; };
-bg.apply { rect(0, 0, W, H); }
+bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, W, H); }
 
 // ── Schematic PathBlock builder ──
 // Builds a diagram showing: inner radius circle, gradient fill

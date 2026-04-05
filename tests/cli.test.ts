@@ -89,7 +89,7 @@ describe('CLI', () => {
     });
 
     it('compiles stdlib function calls', () => {
-      const result = runCli(['-e', 'circle(100, 100, 50)']);
+      const result = runCli(['-e', 'circle(100, 100, 50);']);
       expect(result.stdout.trim()).toBe('M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100');
     });
 
@@ -268,7 +268,7 @@ describe('CLI', () => {
     });
 
     it('compiles user-defined functions', () => {
-      const result = runCli(['-e', 'fn sq(x, y, s) { rect(x, y, s, s) } sq(10, 10, 20)']);
+      const result = runCli(['-e', 'fn sq(x, y, s) { rect(x, y, s, s); } sq(10, 10, 20);']);
       expect(result.stdout.trim()).toBe('M 10 10 L 30 10 L 30 30 L 10 30 Z');
     });
 
@@ -361,7 +361,7 @@ describe('CLI', () => {
     });
 
     it('shows function call annotations', () => {
-      const result = runCli(['-e', 'circle(50, 50, 25)', '--annotated']);
+      const result = runCli(['-e', 'circle(50, 50, 25);', '--annotated']);
       expect(result.stdout).toContain('//--- circle(50, 50, 25)');
     });
 

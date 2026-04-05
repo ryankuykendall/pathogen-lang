@@ -39,13 +39,13 @@ sphere3_grad.interpolation = 'oklch';
 // --- Sphere layers ---
 
 let s1 = PathLayer('s1') ${ fill: sphere1_grad; stroke: none; };
-s1.apply { circle(80, 80, 60); closePath() }
+s1.apply { circle(80, 80, 60); closePath(); }
 
 let s2 = PathLayer('s2') ${ fill: sphere2_grad; stroke: none; };
-s2.apply { circle(225, 80, 60); closePath() }
+s2.apply { circle(225, 80, 60); closePath(); }
 
 let s3 = PathLayer('s3') ${ fill: sphere3_grad; stroke: none; };
-s3.apply { circle(370, 80, 60); closePath() }
+s3.apply { circle(370, 80, 60); closePath(); }
 
 // --- Labels ---
 
@@ -64,4 +64,4 @@ labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, s1, s2, s3, labels)
+scene.append(bg, s1, s2, s3, labels);

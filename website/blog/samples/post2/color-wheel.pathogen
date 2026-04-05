@@ -30,20 +30,20 @@ bg.apply { rect(0, 0, 400, 400); }
 // --- Outer ring (donut) ---
 
 let ring = PathLayer('ring') ${ fill: wheel_outer; stroke: none; };
-ring.apply { circle(200, 200, 155); closePath() }
+ring.apply { circle(200, 200, 155); closePath(); }
 
 // --- Inner disc ---
 
 let disc = PathLayer('disc') ${ fill: wheel_inner; stroke: none; };
-disc.apply { circle(200, 200, 62); closePath() }
+disc.apply { circle(200, 200, 62); closePath(); }
 
 // --- Subtle frame ---
 
 let frame = PathLayer('frame') ${ fill: none; stroke: #333; stroke-width: 1; };
-frame.apply { circle(200, 200, 155); closePath() }
+frame.apply { circle(200, 200, 155); closePath(); }
 
 let inner_frame = PathLayer('inner-frame') ${ fill: none; stroke: #333; stroke-width: 0.5; };
-inner_frame.apply { circle(200, 200, 62); closePath() }
+inner_frame.apply { circle(200, 200, 62); closePath(); }
 
 // --- Title ---
 
@@ -60,4 +60,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, ring, disc, frame, inner_frame, title)
+scene.append(bg, ring, disc, frame, inner_frame, title);

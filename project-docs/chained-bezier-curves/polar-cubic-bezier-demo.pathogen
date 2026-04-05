@@ -4,21 +4,21 @@
 let a1 = Point(10, 150);
 let b1 = Point(90, 150);
 let h1 = PolarVector(rad(-60), 60);
-polarCubicBezier(a1, h1, h1.mirror(), b1)
+polarCubicBezier(a1, h1, h1.mirror(), b1);
 
 // Curve 2: Wider arch using scale();;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 let a2 = Point(110, 150);
 let b2 = Point(190, 150);
 let h2 = PolarVector(rad(-60), 40);
-polarCubicBezier(a2, h2.scale(1.5), h2.mirror().scale(1.5), b2)
+polarCubicBezier(a2, h2.scale(1.5), h2.mirror().scale(1.5), b2);
 
 // Curve 3: Turned handles for S-curve
 let a3 = Point(10, 80);
 let b3 = Point(90, 80);
 let h3 = PolarVector(rad(-45), 50);
-polarCubicBezier(a3, h3, h3.turn(rad(90)), b3)
+polarCubicBezier(a3, h3, h3.turn(rad(90)), b3);
 
 // Curve 4: Straight line (angle 0, handles point along line)
 let a4 = Point(110, 80);
 let b4 = Point(190, 80);
-polarCubicBezier(a4, PolarVector(0, 30), PolarVector(rad(180), 30), b4)
+polarCubicBezier(a4, PolarVector(0, 30), PolarVector(rad(180), 30), b4);

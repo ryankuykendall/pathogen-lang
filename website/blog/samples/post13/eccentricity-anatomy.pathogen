@@ -55,8 +55,8 @@ layer('virtual').apply {
 define PathLayer('cp1') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
 define PathLayer('cp2') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
 layer('diagram').append(layer('cp1'), layer('cp2'));
-layer('cp1').apply { circle(cp1x, cp1y, 5) }
-layer('cp2').apply { circle(cp2x, cp2y, 5) }
+layer('cp1').apply { circle(cp1x, cp1y, 5); }
+layer('cp2').apply { circle(cp2x, cp2y, 5); }
 
 // Lines from endpoints to actual CPs
 define PathLayer('cp1-arm') ${ fill: none; stroke: #ef4444; stroke-width: 1.5 }
@@ -79,8 +79,8 @@ layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 define PathLayer('endpoints') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(sx, sy, 5)
-  circle(ex, ey, 5)
+  circle(sx, sy, 5);
+  circle(ex, ey, 5);
 }
 
 // Labels — positioned with clearance from geometry

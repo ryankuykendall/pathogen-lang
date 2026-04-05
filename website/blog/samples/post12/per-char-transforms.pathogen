@@ -103,7 +103,7 @@ scale_layer.apply {
   for (g in glyphs2) {
     let s = calc(0.5 + idx2 * 0.25);
     let scaled = g.scale(s, s);
-    scaled.drawTo(scale_x, 90)
+    scaled.drawTo(scale_x, 90);
     scale_x = calc(scale_x + g.advanceWidth * s);
     idx2 = calc(idx2 + 1);
   }
@@ -176,7 +176,7 @@ arc_layer.apply {
 
     // Rotate glyph to follow the arc tangent
     let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5pi));
-    rotated.drawTo(cx, cy)
+    rotated.drawTo(cx, cy);
 
     arc_cursor = calc(arc_cursor + g.advanceWidth);
   }
@@ -189,7 +189,7 @@ let guide = PathLayer('guide') ${
   stroke-dasharray: "2 3";
   fill: none;
 };
-guide.apply { circle(calc(arc_cx), calc(arc_cy), arc_r) }
+guide.apply { circle(calc(arc_cx), calc(arc_cy), arc_r); }
 
 // Description label
 let arc_label_block = &{ text(0, 8)`rotateAtVertexIndex along arc` } << label_styles;

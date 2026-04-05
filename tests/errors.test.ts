@@ -118,11 +118,11 @@ describe('Runtime errors', () => {
     });
 
     it('throws on undefined variable in function call', () => {
-      expect(() => compilePath('circle(x, 100, 50)')).toThrow(/[Uu]ndefined variable.*x/);
+      expect(() => compilePath('circle(x, 100, 50);')).toThrow(/[Uu]ndefined variable.*x/);
     });
 
     it('throws on undefined function', () => {
-      expect(() => compilePath('unknownFunc(10, 20)')).toThrow(/[Uu]ndefined/);
+      expect(() => compilePath('unknownFunc(10, 20);')).toThrow(/[Uu]ndefined/);
     });
   });
 
@@ -138,11 +138,11 @@ describe('Runtime errors', () => {
 
   describe('function argument errors', () => {
     it('throws on wrong argument count for user function (too few)', () => {
-      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 } add(1)')).toThrow(/expects 2 arguments.*got 1/i);
+      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 } add(1);')).toThrow(/expects 2 arguments.*got 1/i);
     });
 
     it('throws on wrong argument count for user function (too many)', () => {
-      expect(() => compilePath('fn single(a) { M a 0 } single(1, 2, 3)')).toThrow(/expects 1 argument.*got 3/i);
+      expect(() => compilePath('fn single(a) { M a 0 } single(1, 2, 3);')).toThrow(/expects 1 argument.*got 3/i);
     });
   });
 

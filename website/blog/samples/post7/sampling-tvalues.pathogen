@@ -19,7 +19,7 @@ let path = PathLayer('path') ${
   fill: none;
 };
 path.apply {
-  curve.drawTo(60, 150)
+  curve.drawTo(60, 150);
 }
 
 // --- Partition points (n=8) using real data ---
@@ -34,7 +34,7 @@ let dots = PathLayer('dots') ${
 };
 dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 4)
+    circle(p.point.x, p.point.y, 4);
   }
 }
 

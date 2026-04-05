@@ -73,14 +73,14 @@ define GroupLayer('chart') ${}
 // Solid center circle
 let centerCircle = PathLayer('center-circle') ${ fill: none; stroke: gridColor; stroke-width: 0.8; };
 layer('chart').append(centerCircle);
-centerCircle.apply { circle(cx, cy, innerR) }
+centerCircle.apply { circle(cx, cy, innerR); }
 
 // Dashed concentric grid rings at 5% and 10%
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
 layer('chart').append(grid);
 grid.apply {
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal))
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal))
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal));
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal));
 }
 
 let gridLabels = TextLayer('grid-labels') ${
@@ -172,7 +172,7 @@ for ([d, i] in data) {
   } << ${ font-size: 9; };
 
   catLabel.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 
   // Badge (if applicable)
@@ -188,20 +188,20 @@ for ([d, i] in data) {
       let bc = PathLayer(`badge-circ-${i}`) ${ fill: textColor; stroke: none; };
       let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
-      bc.apply { circle(bx, by, 4.5) }
-      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+      bc.apply { circle(bx, by, 4.5); }
+      bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Wargame") {
       let bc = PathLayer(`badge-circ-${i}`) ${ fill: allBarColor; stroke: none; };
       let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
-      bc.apply { circle(bx, by, 4.5) }
-      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+      bc.apply { circle(bx, by, 4.5); }
+      bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric") {
       let bs = PathLayer(`badge-star-${i}`) ${ fill: textColor; stroke: none; };
       catGroup.append(bs);
-      bs.apply { star(bx, by, 4, 1.6, 5) }
+      bs.apply { star(bx, by, 4, 1.6, 5); }
     }
   }
 }
@@ -328,7 +328,7 @@ legRedGuides.apply {
 }
 let legRedCenter = PathLayer('leg-red-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legRedCenter);
-legRedCenter.apply { circle(legOX, legOY, legIR) }
+legRedCenter.apply { circle(legOX, legOY, legIR); }
 
 // Dark wedge fan — same radii, lightened 8%
 let legDX = 130;
@@ -353,7 +353,7 @@ legDarkGuides.apply {
 }
 let legDarkCenter = PathLayer('leg-dark-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legDarkCenter);
-legDarkCenter.apply { circle(legDarkX, legOY, legIR) }
+legDarkCenter.apply { circle(legDarkX, legOY, legIR); }
 
 // 5%/10% labels
 let legGuideLabels = TextLayer('leg-guide-labels') ${
@@ -478,7 +478,7 @@ for ([s, si] in summData) {
   }
 
   // Open circle on the arc — shifted up 0.75 to center on bar
-  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR) }
+  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR); }
 
   // Label to the RIGHT of dot
   summLabels.apply {
@@ -498,8 +498,8 @@ let a1y = polarY(cy, a1Angle, annotR);
 let badge1Circle = PathLayer('badge1-circle') ${ fill: textColor; stroke: none; };
 let badge1Star = PathLayer('badge1-star') ${ fill: bgColor; stroke: none; };
 layer('chrome').append(badge1Circle, badge1Star);
-badge1Circle.apply { circle(a1x, a1y, 6.5) }
-badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5) }
+badge1Circle.apply { circle(a1x, a1y, 6.5); }
+badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5); }
 
 let badge1Text = TextLayer('badge1-text') ${
   font-size: 9;
@@ -524,8 +524,8 @@ let a2y = polarY(cy, a2Angle, annotR);
 let badge2Circle = PathLayer('badge2-circle') ${ fill: allBarColor; stroke: none; };
 let badge2Star = PathLayer('badge2-star') ${ fill: bgColor; stroke: none; };
 layer('chrome').append(badge2Circle, badge2Star);
-badge2Circle.apply { circle(a2x, a2y, 6.5) }
-badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5) }
+badge2Circle.apply { circle(a2x, a2y, 6.5); }
+badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5); }
 
 let badge2Text = TextLayer('badge2-text') ${
   font-size: 9;
@@ -547,7 +547,7 @@ let a3y = polarY(cy, a3Angle, annotR);
 
 let badge3Star = PathLayer('badge3-star') ${ fill: textColor; stroke: none; };
 layer('chrome').append(badge3Star);
-badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5) }
+badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5); }
 
 let badge3Text = TextLayer('badge3-text') ${
   font-size: 9;

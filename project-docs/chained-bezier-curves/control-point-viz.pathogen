@@ -32,7 +32,7 @@ let pts = [
 define PathLayer('curve') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
 
 layer('curve').apply {
-  cubicSpline(pts)
+  cubicSpline(pts);
 }
 
 
@@ -42,7 +42,7 @@ define PathLayer('on-points') ${ fill: #2563eb; stroke: none }
 
 layer('on-points').apply {
   for ([p, i] in pts) {
-    circle(p.x, p.y, 3)
+    circle(p.x, p.y, 3);
   }
 }
 
@@ -63,8 +63,8 @@ for (i in 1..n) {
 
   // CP markers
   layer('cp-markers').apply {
-    circle(c1x, c1y, 2.5)
-    circle(c2x, c2y, 2.5)
+    circle(c1x, c1y, 2.5);
+    circle(c2x, c2y, 2.5);
   }
 
   // Tangent lines from anchor to CP

@@ -60,7 +60,7 @@ water_layer.apply { rect(0, 210, 500, 90); }
 // --- Horizon line ---
 
 let horizon = PathLayer('horizon') ${ fill: none; stroke: #f9c74f44; stroke-width: 1; };
-horizon.apply { line(0, 210, 500, 210) }
+horizon.apply { line(0, 210, 500, 210); }
 
 // --- Sun glow (simple circle) ---
 
@@ -72,7 +72,7 @@ let sun_grad = RadialGradient('sun-glow', 0.5, 0.5, 0.5) {|g|
 };
 
 let sun = PathLayer('sun') ${ fill: sun_grad; stroke: none; };
-sun.apply { circle(250, 195, 55); closePath() }
+sun.apply { circle(250, 195, 55); closePath(); }
 
 // --- Title ---
 
@@ -89,4 +89,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, sky_layer, water_layer, horizon, sun, title)
+scene.append(bg, sky_layer, water_layer, horizon, sun, title);

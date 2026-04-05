@@ -25,40 +25,40 @@ let blob_inner = @{
 // --- Five gradients at proper resolution ---
 
 let t1 = TopoGradient('org-0', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
 };
 t1.baseColor = Color('#0f0f1a');
 t1.easing = 'linear';
 t1.interpolation = 'oklch';
 
 let t2 = TopoGradient('org-1', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
 };
 t2.baseColor = Color('#0f0f1a');
 t2.easing = 'smoothstep';
 t2.interpolation = 'oklch';
 
 let t3 = TopoGradient('org-2', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
 };
 t3.baseColor = Color('#0f0f1a');
 t3.easing = 'ease-in';
 t3.interpolation = 'oklch';
 
 let t4 = TopoGradient('org-3', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
 };
 t4.baseColor = Color('#0f0f1a');
 t4.easing = 'ease-out';
 t4.interpolation = 'oklch';
 
 let t5 = TopoGradient('org-4', 400, 400) {|g|
-  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'));
-  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'));
+  g.contour(blob_outer.project(50, 120), 0.25, Color('#6366f1'))
+  g.contour(blob_inner.project(115, 145), 0.7, Color('#ec4899'))
 };
 t5.baseColor = Color('#0f0f1a');
 t5.easing = 'ease-in-out';
@@ -130,4 +130,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title)
+scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title);

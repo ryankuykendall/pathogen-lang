@@ -73,7 +73,7 @@ let l_dots = PathLayer('l-dots') ${
   stroke-width: 1.5;
 };
 l_dots.apply {
-  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+  for (pt in points) { circle(pt.x, pt.y, dot_r); }
 }
 
 // Labels — all placed to the right (naive)
@@ -165,7 +165,7 @@ let r_dots = PathLayer('r-dots') ${
   stroke-width: 1.5;
 };
 r_dots.apply {
-  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+  for (pt in points) { circle(pt.x, pt.y, dot_r); }
 }
 
 // Labels — smart placement using polarProject with collision avoidance

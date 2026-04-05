@@ -43,21 +43,21 @@ layer('curves').apply {
 // Join point
 define PathLayer('anchor') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
 layer('diagram').append(layer('anchor'));
-layer('anchor').apply { circle(joinPt.x, joinPt.y, 6) }
+layer('anchor').apply { circle(joinPt.x, joinPt.y, 6); }
 
 // Control points
 define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
 define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
 layer('diagram').append(layer('cp-entry'), layer('cp-exit'));
-layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4) }
-layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4) }
+layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4); }
+layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4); }
 
 // Endpoint markers
 define PathLayer('endpoints') ${ fill: #64748b; stroke: #334155; stroke-width: 1 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(75, 175, 3)
-  circle(365, 120, 3)
+  circle(75, 175, 3);
+  circle(365, 120, 3);
 }
 
 // Labels — positioned with clearance from geometry

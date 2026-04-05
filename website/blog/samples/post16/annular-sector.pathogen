@@ -46,8 +46,8 @@ let toA = rad(35);
 let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
 layer('diagram').append(guides);
 guides.apply {
-  circle(cx, cy, innerR)
-  circle(cx, cy, outerR)
+  circle(cx, cy, innerR);
+  circle(cx, cy, outerR);
 }
 
 // Sharp corners (ghost)
@@ -92,7 +92,7 @@ let labelsEnd = TextLayer('labels-end') ${
 layer('diagram').append(arcs, leaders, dots, labelsMid, labelsStart, labelsEnd);
 
 // --- Center dot + label ---
-dots.apply { circle(cx, cy, 2.5) }
+dots.apply { circle(cx, cy, 2.5); }
 labelsEnd.apply {
   text(calc(cx - 5), calc(cy - 4))`center`
 }
@@ -101,7 +101,7 @@ labelsEnd.apply {
 let innerDotAngle = calc((fromA + toA) / 2 - 0.15);  // slightly off-center on inner arc
 let innerDotX = polarX(cx, innerDotAngle, innerR);
 let innerDotY = polarY(cy, innerDotAngle, innerR);
-dots.apply { circle(innerDotX, innerDotY, 2) }
+dots.apply { circle(innerDotX, innerDotY, 2); }
 
 // Label above the inner concentric circle
 let innerLabelX = calc(innerDotX - 12);
@@ -118,7 +118,7 @@ labelsEnd.apply {
 let outerLabelAngle = calc((fromA + toA) / 2);
 let outerDotX = polarX(cx, outerLabelAngle, outerR);
 let outerDotY = polarY(cy, outerLabelAngle, outerR);
-dots.apply { circle(outerDotX, outerDotY, 2) }
+dots.apply { circle(outerDotX, outerDotY, 2); }
 labelsStart.apply {
   text(calc(outerDotX + 6), calc(outerDotY + 3))`outerR`
 }
@@ -134,7 +134,7 @@ arcs.apply {
 // fromAngle label — short dashed leader to label above-left
 let fromTipX = polarX(cx, fromA, arcR);
 let fromTipY = polarY(cy, fromA, arcR);
-dots.apply { circle(fromTipX, fromTipY, 1.5) }
+dots.apply { circle(fromTipX, fromTipY, 1.5); }
 leaders.apply {
   M fromTipX fromTipY
   L calc(fromTipX - 16) calc(fromTipY - 10)
@@ -151,7 +151,7 @@ arcs.apply {
 // toAngle label — short dashed leader to label below-left
 let toTipX = polarX(cx, toA, arcR);
 let toTipY = polarY(cy, toA, arcR);
-dots.apply { circle(toTipX, toTipY, 1.5) }
+dots.apply { circle(toTipX, toTipY, 1.5); }
 leaders.apply {
   M toTipX toTipY
   L calc(toTipX - 12) calc(toTipY + 12)

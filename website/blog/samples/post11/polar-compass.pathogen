@@ -49,7 +49,7 @@ let center_dot = PathLayer('center-dot') ${
   fill: Color('#22c55e');
   stroke: none;
 };
-center_dot.apply { circle(0, 0, 3) }
+center_dot.apply { circle(0, 0, 3); }
 
 // Guide circle
 let guide = PathLayer('guide') ${
@@ -58,7 +58,7 @@ let guide = PathLayer('guide') ${
   stroke-dasharray: "3 4";
   fill: none;
 };
-guide.apply { circle(0, 0, 140) }
+guide.apply { circle(0, 0, 140); }
 
 // Radial lines from hex edge to guide circle
 let radials = PathLayer('radials') ${
@@ -88,7 +88,7 @@ dots.apply {
     let angle = calc(i * 0.7854 - 1.5708);
     let dx = calc(cos(angle) * 140);
     let dy = calc(sin(angle) * 140);
-    circle(dx, dy, 3)
+    circle(dx, dy, 3);
   }
 }
 
@@ -127,13 +127,13 @@ layer('labels').apply {
 
     // Verify label doesn't overlap central hexagon
     if (proj.intersects(hex_bb)) {
-      log(`WARN: label "${names[i]}" intersects central hexagon`)
+      log(`WARN: label "${names[i]}" intersects central hexagon`);
     }
 
     // Verify label doesn't overlap any previously placed label
     for (prev in placed_labels) {
       if (proj.intersects(prev)) {
-        log(`WARN: label "${names[i]}" intersects a previously placed label`)
+        log(`WARN: label "${names[i]}" intersects a previously placed label`);
       }
     }
 

@@ -28,7 +28,7 @@ let s1 = PathLayer('s-circle') ${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-s1.apply { circle(65, 100, 30) }
+s1.apply { circle(65, 100, 30); }
 
 let s2 = PathLayer('s-rect') ${
   fill: Color('#22c55e18');
@@ -42,7 +42,7 @@ let s3 = PathLayer('s-star') ${
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
 };
-s3.apply { star(295, 100, 32, 14, 5) }
+s3.apply { star(295, 100, 32, 14, 5); }
 
 let s4 = PathLayer('s-polygon') ${
   fill: Color('#ef444418');

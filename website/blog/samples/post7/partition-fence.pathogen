@@ -75,7 +75,7 @@ let base_dots = PathLayer('base-dots') ${
 };
 base_dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 2)
+    circle(p.point.x, p.point.y, 2);
   }
 }
 

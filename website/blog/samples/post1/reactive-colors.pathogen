@@ -55,7 +55,7 @@ bg.apply { rect(0, 0, 400, 400); }
 // --- Ambient glow behind the card ---
 
 let glow = PathLayer('glow') ${ fill: glow_grad; stroke: none; opacity: 0.5; };
-glow.apply { circle(200, 200, 180); closePath() }
+glow.apply { circle(200, 200, 180); closePath(); }
 
 // --- Hero card with primary gradient ---
 
@@ -73,10 +73,10 @@ bar.apply { roundRect(40, 220, 320, 8, 4); }
 // --- Badge circles ---
 
 let b1 = PathLayer('badge1') ${ fill: badge_grad; stroke: none; };
-b1.apply { circle(300, 100, 35); closePath() }
+b1.apply { circle(300, 100, 35); closePath(); }
 
 let b2 = PathLayer('badge2') ${ fill: badge_grad; stroke: none; opacity: 0.6; };
-b2.apply { circle(340, 155, 20); closePath() }
+b2.apply { circle(340, 155, 20); closePath(); }
 
 // --- Complement sidebar ---
 
@@ -138,4 +138,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, glow, card, card_border, bar, b1, b2, sidebar, chip1, chip2, chip3, track, fill_bar, track2, fill_bar2, labels, title)
+scene.append(bg, glow, card, card_border, bar, b1, b2, sidebar, chip1, chip2, chip3, track, fill_bar, track2, fill_bar2, labels, title);

@@ -39,15 +39,15 @@ bg.apply { rect(0, 0, 400, 300); }
 // --- Light circles (overlapping for color mixing) ---
 
 let la = PathLayer('light-a') ${ fill: glow_a; stroke: none; opacity: 0.8; };
-la.apply { circle(140, 120, 130); closePath() }
+la.apply { circle(140, 120, 130); closePath(); }
 
 let lb = PathLayer('light-b') ${ fill: glow_b; stroke: none; opacity: 0.8; };
-lb.apply { circle(280, 110, 130); closePath() }
+lb.apply { circle(280, 110, 130); closePath(); }
 
 let lc = PathLayer('light-c') ${ fill: glow_c; stroke: none; opacity: 0.8; };
-lc.apply { circle(200, 220, 130); closePath() }
+lc.apply { circle(200, 220, 130); closePath(); }
 
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, la, lb, lc)
+scene.append(bg, la, lb, lc);
