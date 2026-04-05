@@ -87,7 +87,7 @@ LayerDefinition {
 }
 
 LayerApplyBlock {
-  kw<"layer"> "(" expression ")" "." kw<"apply"> Block
+  kw<"layer"> "(" expression ")" ~layerDot "." kw<"apply"> Block
 }
 
 TextStatement {
@@ -126,8 +126,8 @@ TextIfStatement {
 }
 
 FontDirective {
-  fontDirectiveKw String ~fontWeight Number |
-  fontDirectiveKw String ~fontWeight
+  fontDirectiveKw String ~fontWeight Number ";"? |
+  fontDirectiveKw String ~fontWeight ";"?
 }
 
 // Path commands: always greedy when args are available.
@@ -171,9 +171,6 @@ pathCmdZ[@name=PathCommandLetter] {
   PathArgs
 }
 
-// ExpressionStatement requires ";" to avoid ambiguity with path command args.
-// Standalone function calls like circle() that don't end with ";" are handled
-// as PathCommand with empty command letter (the AST builder handles this).
 ExpressionStatement {
   expression ("=" expression)? ";"
 }
@@ -238,8 +235,13 @@ primaryExpression {
   TextBlockExpression |
   CalcExpression |
   LayerConstructor |
+  LayerCallExpression |
   Identifier |
   ParenExpression
+}
+
+LayerCallExpression {
+  kw<"layer"> "(" expression ")" ~layerDot
 }
 
 ParenExpression { "(" expression ")" }

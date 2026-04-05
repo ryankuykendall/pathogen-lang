@@ -1498,9 +1498,12 @@ export function parse(input: string): Program {
   do { if (errCur.type.isError) { hasErrors = true; break; } } while (errCur.next());
 
   if (hasErrors) {
-    // Lezer found errors — try Parsimmon as fallback
+    // Lezer found errors — try Parsimmon as fallback for error messages
     const result = program.parse(input);
-    if (result.status) return result.value;
+    if (result.status) {
+      // This path should be rare — log if it happens
+      return result.value;
+    }
 
     // Parsimmon also fails — produce error message
     const { index, expected } = result;

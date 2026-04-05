@@ -1177,6 +1177,7 @@ function buildExpression(cursor: TreeCursor, source: string): Expression {
     case 'TextBlockExpression': return buildTextBlockExpression(cursor, source);
     case 'CalcExpression': return buildCalcExpression(cursor, source);
     case 'LayerConstructor': return buildLayerConstructor(cursor, source);
+    case 'LayerCallExpression': return buildLayerCallExpression(cursor, source);
     case 'Identifier': return buildIdentifier(cursor, source);
     case 'ParenExpression': return buildParenExpression(cursor, source);
     case 'ArgList': return { type: 'NullLiteral' }; // ArgList is a postfix, handled in context
@@ -1722,6 +1723,22 @@ function buildLayerConstructor(cursor: TreeCursor, source: string): LayerConstru
   return { type: 'LayerConstructorExpression', layerType, name, styleExpr, loc: nodeLoc };
 }
 
+function buildLayerCallExpression(cursor: TreeCursor, source: string): FunctionCall {
+  const nodeLoc = loc(cursor, source);
+  const args: Expression[] = [];
+  cursor.firstChild();
+  let inParens = false;
+  do {
+    if (cursor.name === '(') inParens = true;
+    else if (cursor.name === ')') inParens = false;
+    else if (inParens && isExpressionNode(cursor.name)) {
+      args.push(buildExpression(cursor, source));
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+  return { type: 'FunctionCall', name: 'layer', args, loc: nodeLoc };
+}
+
 function buildParenExpression(cursor: TreeCursor, source: string): Expression {
   cursor.firstChild();
   let expr: Expression = { type: 'NullLiteral' };
@@ -1767,7 +1784,7 @@ function isExpressionNode(name: string): boolean {
     name === 'TemplateLiteral' || name === 'BooleanLiteral' || name === 'NullLiteral' ||
     name === 'ColorLiteral' || name === 'CSSColorLiteral' || name === 'ArrayLiteral' ||
     name === 'ObjectLiteral' || name === 'StyleBlockLiteral' || name === 'PathBlockExpression' ||
-    name === 'TextBlockExpression' || name === 'CalcExpression' || name === 'LayerConstructor' ||
+    name === 'TextBlockExpression' || name === 'CalcExpression' || name === 'LayerConstructor' || name === 'LayerCallExpression' ||
     name === 'Identifier' || name === 'ParenExpression' || name === 'ArgList';
 }
 
