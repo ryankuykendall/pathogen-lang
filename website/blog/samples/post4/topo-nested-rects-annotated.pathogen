@@ -48,10 +48,10 @@ let r4 = diamond.rotateAtVertexIndex(0, 0.22);
 // Projections computed to center all shapes at (200, 200)
 
 let topo = TopoGradient('rects', 400, 400) {|g|
-  g.contour(r1.project(209, 189), 0.15, Color('#264653'));
-  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'));
-  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'));
-  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'));
+  g.contour(r1.project(209, 189), 0.15, Color('#264653'))
+  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'))
+  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'))
+  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'))
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'smoothstep';
@@ -141,4 +141,4 @@ panel_labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);
+scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels)

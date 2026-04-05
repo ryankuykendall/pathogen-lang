@@ -37,8 +37,8 @@ for (j in 0..8) {
 
 // Reuse the arrow at different positions
 arrows.apply {
-  arrow.drawTo(80, 90);
-  arrow.drawTo(200, 130);
-  arrow.drawTo(160, 210);
-  arrow.drawTo(280, 170);
+  arrow.drawTo(80, 90)
+  arrow.drawTo(200, 130)
+  arrow.drawTo(160, 210)
+  arrow.drawTo(280, 170)
 }

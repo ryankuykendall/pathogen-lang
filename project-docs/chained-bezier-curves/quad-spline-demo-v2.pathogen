@@ -11,7 +11,7 @@ layer('simple-arc').apply {
     { x: 10, y: 80, angle: 0, exit: 40 },
     [],
     { x: 90, y: 80 }
-  );
+  )
 }
 
 
@@ -28,7 +28,7 @@ layer('flowing').apply {
       { x: 210, y: 20, exit: 25 }
     ],
     { x: 250, y: 80 }
-  );
+  )
 }
 
 
@@ -45,5 +45,5 @@ layer('zigzag').apply {
       { x: 360, y: 20, exit: 25 }
     ],
     { x: 390, y: 80 }
-  );
+  )
 }

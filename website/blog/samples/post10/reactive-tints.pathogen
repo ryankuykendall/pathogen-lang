@@ -81,7 +81,7 @@ let tints = [
   base.lighten(30%),
   base.lighten(40%),
   base.lighten(50%),
-  base.lighten(60%);
+  base.lighten(60%)
 ];
 
 for ([color, i] in tints) {
@@ -114,7 +114,7 @@ let shades = [
   base.darken(30%),
   base.darken(40%),
   base.darken(50%),
-  base.darken(60%);
+  base.darken(60%)
 ];
 
 for ([color, i] in shades) {

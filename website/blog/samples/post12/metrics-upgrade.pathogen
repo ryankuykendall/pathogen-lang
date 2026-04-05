@@ -50,7 +50,7 @@ let combined_w = calc(last_bb.x + last_bb.width - first_bb.x);
 let combined_h = calc(first_bb.height);
 
 total_bbox.apply {
-  rect(first_bb.x, first_bb.y, combined_w, combined_h);
+  rect(first_bb.x, first_bb.y, combined_w, combined_h)
 }
 
 // Per-glyph advance width markers
@@ -107,7 +107,7 @@ let text_bbox = PathLayer('text-bbox') ${
   stroke-dasharray: "4 3";
 };
 text_bbox.apply {
-  rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height);
+  rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height)
 }
 
 let right_label = TextLayer('right-label') ${

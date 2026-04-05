@@ -122,10 +122,10 @@ title.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') ${};
-top_row.append(c1, c2);
+top_row.append(c1, c2)
 
 let bottom_row = GroupLayer('bottom-row') ${};
-bottom_row.append(c3, c4);
+bottom_row.append(c3, c4)
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, top_row, bottom_row, labels, desc, title);
+scene.append(bg, top_row, bottom_row, labels, desc, title)

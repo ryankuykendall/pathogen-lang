@@ -100,4 +100,4 @@ title.apply {
 // --- Scene ---
 
 let palette = GroupLayer('palette') ${};
-palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
+palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title)

@@ -91,10 +91,10 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') ${};
-left_group.append(left);
+left_group.append(left)
 
 let right_group = GroupLayer('right-group') ${};
-right_group.append(right);
+right_group.append(right)
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_group, right_group, labels, desc, title);
+scene.append(bg, left_group, right_group, labels, desc, title)

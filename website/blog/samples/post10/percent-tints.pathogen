@@ -44,7 +44,7 @@ let tints = [
   (base).lighten(10%),
   (base).lighten(20%),
   (base).lighten(30%),
-  (base).lighten(40%);
+  (base).lighten(40%)
 ];
 let tint_labels = ['0%', '10%', '20%', '30%', '40%'];
 
@@ -55,7 +55,7 @@ let shades = [
   (base).darken(10%),
   (base).darken(20%),
   (base).darken(30%),
-  (base).darken(40%);
+  (base).darken(40%)
 ];
 let shade_labels = ['0%', '10%', '20%', '30%', '40%'];
 
@@ -66,7 +66,7 @@ let alphas = [
   (base).alpha(80%),
   (base).alpha(60%),
   (base).alpha(40%),
-  (base).alpha(20%);
+  (base).alpha(20%)
 ];
 let alpha_labels = ['100%', '80%', '60%', '40%', '20%'];
 

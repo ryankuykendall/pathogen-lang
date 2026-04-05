@@ -27,7 +27,7 @@ let cursor_x = start_x;
 
 glyph_layer.apply {
   for (g in glyphs) {
-    g.drawTo(cursor_x, baseline_y);
+    g.drawTo(cursor_x, baseline_y)
     cursor_x = calc(cursor_x + g.advanceWidth);
   }
 }
@@ -78,7 +78,7 @@ let cursor_x2 = start_x;
 
 glyph_layer2.apply {
   for (g in glyphs2) {
-    g.drawTo(cursor_x2, baseline_y2);
+    g.drawTo(cursor_x2, baseline_y2)
     cursor_x2 = calc(cursor_x2 + g.advanceWidth);
   }
 }

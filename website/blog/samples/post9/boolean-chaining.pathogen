@@ -20,8 +20,8 @@ let s1_orig = PathLayer('s1-orig') ${
   fill: none;
 };
 s1_orig.apply {
-  sq.drawTo(0, 0);
-  sq.drawTo(25, 25);
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
 let s1_label = TextLayer('s1-label') ${
@@ -58,8 +58,8 @@ let s2_orig = PathLayer('s2-orig') ${
   fill: none;
 };
 s2_orig.apply {
-  sq.drawTo(0, 0);
-  sq.drawTo(25, 25);
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
 let s2_result = PathLayer('s2-result') ${
@@ -69,7 +69,7 @@ let s2_result = PathLayer('s2-result') ${
 };
 s2_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.drawTo(0, 0)
 }
 
 let s2_label = TextLayer('s2-label') ${
@@ -106,8 +106,8 @@ let s3_orig = PathLayer('s3-orig') ${
   fill: none;
 };
 s3_orig.apply {
-  sq.drawTo(0, 0);
-  sq.drawTo(25, 25);
+  sq.drawTo(0, 0)
+  sq.drawTo(25, 25)
 }
 
 let s3_result = PathLayer('s3-result') ${
@@ -118,7 +118,7 @@ let s3_result = PathLayer('s3-result') ${
 s3_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
   let rounded = u.fillet(8);
-  rounded.drawTo(0, 0);
+  rounded.drawTo(0, 0)
 }
 
 let s3_label = TextLayer('s3-label') ${

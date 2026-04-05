@@ -28,7 +28,7 @@ let proj = curve.project(50, 150);
 
 // Draw the curve
 path.apply {
-  curve.drawTo(50, 150);
+  curve.drawTo(50, 150)
 }
 
 // Sample 8 points along the curve

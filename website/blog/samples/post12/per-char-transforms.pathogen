@@ -49,7 +49,7 @@ wave_layer.apply {
   let idx = 0;
   for (g in glyphs) {
     let y_offset = calc(sin(idx * 0.8) * 15);
-    g.drawTo(wave_x, calc(wave_baseline + y_offset));
+    g.drawTo(wave_x, calc(wave_baseline + y_offset))
     wave_x = calc(wave_x + g.advanceWidth);
     idx = calc(idx + 1);
   }
@@ -103,7 +103,7 @@ scale_layer.apply {
   for (g in glyphs2) {
     let s = calc(0.5 + idx2 * 0.25);
     let scaled = g.scale(s, s);
-    scaled.drawTo(scale_x, 90);
+    scaled.drawTo(scale_x, 90)
     scale_x = calc(scale_x + g.advanceWidth * s);
     idx2 = calc(idx2 + 1);
   }
@@ -176,7 +176,7 @@ arc_layer.apply {
 
     // Rotate glyph to follow the arc tangent
     let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5pi));
-    rotated.drawTo(cx, cy);
+    rotated.drawTo(cx, cy)
 
     arc_cursor = calc(arc_cursor + g.advanceWidth);
   }

@@ -82,10 +82,10 @@ note.apply {
 // --- Scene ---
 
 let left = GroupLayer('left') ${};
-left.append(cw_circle, cw_arrow);
+left.append(cw_circle, cw_arrow)
 
 let right = GroupLayer('right') ${};
-right.append(ccw_circle, ccw_arrow);
+right.append(ccw_circle, ccw_arrow)
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left, right, labels, note);
+scene.append(bg, left, right, labels, note)

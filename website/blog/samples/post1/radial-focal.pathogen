@@ -64,4 +64,4 @@ labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, s1, s2, s3, labels);
+scene.append(bg, s1, s2, s3, labels)

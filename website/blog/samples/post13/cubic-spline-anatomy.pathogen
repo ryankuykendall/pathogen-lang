@@ -28,7 +28,7 @@ fn angleWedge(cx, cy, radius, angle) {
     M calc(cx + radius) cy
     A radius radius 0 0 sweep ex ey
   }
-  // Baseline tick (0° reference);
+  // Baseline tick (0° reference)
   layer('angle-ticks').apply {
     M cx cy L calc(cx + radius + 4) cy
   }

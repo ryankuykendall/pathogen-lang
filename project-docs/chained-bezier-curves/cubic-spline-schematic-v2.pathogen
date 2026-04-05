@@ -49,9 +49,9 @@ for (i in 1..n) {
   let c2x = calc(curr.x - curr.entry * cos(curr.angle));
   let c2y = calc(curr.y - curr.entry * sin(curr.angle));
 
-  // Exit CP (red diamond);
+  // Exit CP (red diamond)
   layer('cp-exit').apply { circle(c1x, c1y, 4) }
-  // Entry CP (green diamond);
+  // Entry CP (green diamond)
   layer('cp-entry').apply { circle(c2x, c2y, 4) }
   // Tangent lines
   layer('tangent').apply {
@@ -63,7 +63,7 @@ for (i in 1..n) {
 // Angle arcs at each point
 layer('angle-arcs').apply {
   for ([p, i] in pts) {
-    angleArc(p.x, p.y, 18, p.angle);
+    angleArc(p.x, p.y, 18, p.angle)
   }
 }
 

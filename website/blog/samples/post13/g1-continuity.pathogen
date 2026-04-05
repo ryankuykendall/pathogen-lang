@@ -56,8 +56,8 @@ layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4) }
 define PathLayer('endpoints') ${ fill: #64748b; stroke: #334155; stroke-width: 1 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(75, 175, 3);
-  circle(365, 120, 3);
+  circle(75, 175, 3)
+  circle(365, 120, 3)
 }
 
 // Labels — positioned with clearance from geometry

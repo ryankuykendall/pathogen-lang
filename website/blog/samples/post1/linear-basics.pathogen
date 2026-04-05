@@ -64,4 +64,4 @@ frame.apply { rect(0, 0, 400, 300) }
 // --- Scene Organization ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
+scene.append(sky, sun, far_mtns, near_mtns, ground, frame)

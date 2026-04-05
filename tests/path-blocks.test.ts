@@ -78,7 +78,7 @@ describe('Path Blocks', () => {
       const result = compile(`
         let p = @{
           v 20
-          arcFromPolarOffset(1pi, 20, -0.5pi);
+          arcFromPolarOffset(1pi, 20, -0.5pi)
           h 20
         };
         log(p.endPoint);
@@ -152,7 +152,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ v 20 h 20 };
         M 10 10
-        p.draw();
+        p.draw()
       `);
       expect(result).toBe('M 10 10 v 20 h 20');
     });
@@ -161,7 +161,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ v 20 h 20 };
         M 10 10
-        p.draw();
+        p.draw()
         l 5 5
       `);
       // After draw(), cursor is at (30, 30) relative to (10, 10)
@@ -173,9 +173,9 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ v 20 h 20 };
         M 10 10
-        p.draw();
+        p.draw()
         M 50 50
-        p.draw();
+        p.draw()
       `);
       expect(result).toBe('M 10 10 v 20 h 20 M 50 50 v 20 h 20');
     });
@@ -196,7 +196,7 @@ describe('Path Blocks', () => {
         let p = @{ v 10 h 10 };
         for (i in 0..2) {
           M calc(i * 30) 0
-          p.draw();
+          p.draw()
         }
       `);
       expect(result).toBe('M 0 0 v 10 h 10 M 30 0 v 10 h 10 M 60 0 v 10 h 10');
@@ -267,7 +267,7 @@ describe('Path Blocks', () => {
     it('emits M followed by relative commands', () => {
       const result = compilePath(`
         let shape = @{ v 20 h 20 v -20 z };
-        shape.drawTo(10, 10);
+        shape.drawTo(10, 10)
       `);
       expect(result).toBe('M 10 10 v 20 h 20 v -20 z');
     });
@@ -286,8 +286,8 @@ describe('Path Blocks', () => {
     it('can be called multiple times at different positions', () => {
       const result = compilePath(`
         let shape = @{ h 20 v 10 };
-        shape.drawTo(0, 0);
-        shape.drawTo(50, 50);
+        shape.drawTo(0, 0)
+        shape.drawTo(50, 50)
       `);
       expect(result).toBe('M 0 0 h 20 v 10 M 50 50 h 20 v 10');
     });
@@ -304,7 +304,7 @@ describe('Path Blocks', () => {
     it('works with stdlib path functions', () => {
       const result = compilePath(`
         let c = @{ circle(10) };
-        c.drawTo(50, 50);
+        c.drawTo(50, 50)
       `);
       // Should emit M 50 50 followed by the circle's relative commands
       expect(result).toMatch(/^M 50 50 /);
@@ -314,7 +314,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let shape = @{ h 50 v 30 };
         let proj = shape.project(0, 0);
-        proj.drawTo(100, 100);
+        proj.drawTo(100, 100)
       `);
       expect(result).toMatch(/^M 100 100 /);
     });
@@ -333,12 +333,12 @@ describe('Path Blocks', () => {
     });
 
     it('requires exactly 2 arguments', () => {
-      expect(() => compilePath('let p = @{ h 10 }; p.drawTo(10);')).toThrow(/drawTo\(\) expects 2 arguments/);
-      expect(() => compilePath('let p = @{ h 10 }; p.drawTo(10, 20, 30);')).toThrow(/drawTo\(\) expects 2 arguments/);
+      expect(() => compilePath('let p = @{ h 10 }; p.drawTo(10)')).toThrow(/drawTo\(\) expects 2 arguments/);
+      expect(() => compilePath('let p = @{ h 10 }; p.drawTo(10, 20, 30)')).toThrow(/drawTo\(\) expects 2 arguments/);
     });
 
     it('requires numeric arguments', () => {
-      expect(() => compilePath('let p = @{ h 10 }; p.drawTo("a", 10);')).toThrow(/must be a number/);
+      expect(() => compilePath('let p = @{ h 10 }; p.drawTo("a", 10)')).toThrow(/must be a number/);
     });
 
     it('cannot be called inside a path block', () => {
@@ -348,7 +348,7 @@ describe('Path Blocks', () => {
     it('works with closed paths', () => {
       const result = compilePath(`
         let box = @{ h 30 v 30 h -30 z };
-        box.drawTo(10, 10);
+        box.drawTo(10, 10)
       `);
       expect(result).toBe('M 10 10 h 30 v 30 h -30 z');
     });
@@ -356,7 +356,7 @@ describe('Path Blocks', () => {
     it('works with curve commands', () => {
       const result = compilePath(`
         let curve = @{ c 0 -40 50 -40 50 0 };
-        curve.drawTo(20, 60);
+        curve.drawTo(20, 60)
       `);
       expect(result).toMatch(/^M 20 60 c 0 -40 50 -40 50 0$/);
     });
@@ -439,10 +439,10 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         fn drawAt(path, x, y) {
           M x y
-          path.draw();
+          path.draw()
         }
         let p = @{ v 20 h 20 };
-        drawAt(p, 10, 10);
+        drawAt(p, 10, 10)
       `);
       expect(result).toBe('M 10 10 v 20 h 20');
     });
@@ -454,7 +454,7 @@ describe('Path Blocks', () => {
         }
         let p = makeLine(30, 40);
         M 0 0
-        p.draw();
+        p.draw()
       `);
       expect(result).toBe('M 0 0 l 30 40');
     });
@@ -481,7 +481,7 @@ describe('Path Blocks', () => {
       const output = compileAnnotated(`
         let p = @{ v 20 h 20 };
         M 10 10
-        p.draw();
+        p.draw()
       `);
       expect(output).toContain('M 10 10');
       expect(output).toContain('//--- p.draw() called from line');
@@ -494,7 +494,7 @@ describe('Path Blocks', () => {
         let shape = @{ v 10 h 10 v -10 z };
         for (i in 0..1) {
           M calc(i * 20) 0
-          shape.draw();
+          shape.draw()
         }
       `);
       expect(output).toContain('//--- shape.draw() called from line');
@@ -881,13 +881,13 @@ describe('Path Blocks', () => {
           let p = @{ h 30 v 30 h -30 z };
           let r = p.reverse();
           M 10 10
-          r.draw();
+          r.draw()
         `);
         const path = compilePath(`
           let p = @{ h 30 v 30 h -30 z };
           let r = p.reverse();
           M 10 10
-          r.draw();
+          r.draw()
         `);
         expect(path).toContain('z');
       });
@@ -940,7 +940,7 @@ describe('Path Blocks', () => {
           let p = @{ h 50 v 30 };
           let r = p.reverse();
           M 100 100
-          r.draw();
+          r.draw()
         `);
         expect(path).toContain('M 100 100');
         expect(path.length).toBeGreaterThan('M 100 100'.length);
@@ -1081,7 +1081,7 @@ describe('Path Blocks', () => {
           let p = @{ h 60 v 40 };
           let o = p.offset(5);
           M 10 10
-          o.draw();
+          o.draw()
         `);
         expect(path).toContain('M 10 10');
         expect(path.length).toBeGreaterThan('M 10 10'.length);
@@ -1177,7 +1177,7 @@ describe('Path Blocks', () => {
           let p = @{ h 50 v 30 };
           let m = p.mirror(calc(90 * 3.14159265358979 / 180));
           M 100 100
-          m.draw();
+          m.draw()
         `);
         expect(path).toContain('M 100 100');
         expect(path.length).toBeGreaterThan('M 100 100'.length);
@@ -1279,7 +1279,7 @@ describe('Path Blocks', () => {
           let p = @{ h 50 v 50 };
           let r = p.rotateAtVertexIndex(0, calc(45 * 3.14159265358979 / 180));
           M 100 100
-          r.draw();
+          r.draw()
         `);
         expect(path).toContain('M 100 100');
         expect(path.length).toBeGreaterThan('M 100 100'.length);
@@ -1420,7 +1420,7 @@ describe('Path Blocks', () => {
           let p = @{ h 50 v 30 };
           let s = p.scale(2, 2);
           M 10 10
-          s.draw();
+          s.draw()
         `);
         expect(path).toContain('M 10 10');
         expect(path.length).toBeGreaterThan('M 10 10'.length);
@@ -1489,7 +1489,7 @@ describe('Path Blocks', () => {
           let b = @{ v 30 };
           let c = calc(a << b);
           M 10 10
-          c.draw();
+          c.draw()
         `);
         expect(path).toContain('M 10 10');
         expect(path).toContain('h 50');
@@ -1593,10 +1593,10 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           l 20 0
-          tangentArc(20, 0.5pi);
+          tangentArc(20, 0.5pi)
         };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       // Should NOT contain uppercase A with absolute coords
       expect(result).not.toMatch(/A /);
@@ -1610,10 +1610,10 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           l 20 0
-          tangentLine(30);
+          tangentLine(30)
         };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).not.toMatch(/L /);
       expect(result).toContain('M 100 100');
@@ -1625,10 +1625,10 @@ describe('Path Blocks', () => {
     it('polarLine emits relative l command inside PathBlock', () => {
       const result = compilePath(`
         let p = @{
-          polarLine(0, 30);
+          polarLine(0, 30)
         };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).not.toMatch(/L /);
       expect(result).toMatch(/l /);
@@ -1638,10 +1638,10 @@ describe('Path Blocks', () => {
     it('polarMove emits relative command inside PathBlock', () => {
       const result = compilePath(`
         let p = @{
-          polarMove(0, 30);
+          polarMove(0, 30)
         };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).not.toMatch(/L /);
       expect(result).toMatch(/l /);
@@ -1652,10 +1652,10 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           v 20
-          arcFromPolarOffset(1pi, 20, -0.5pi);
+          arcFromPolarOffset(1pi, 20, -0.5pi)
         };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).not.toMatch(/A /);
       expect(result).toMatch(/a /);
@@ -1665,10 +1665,10 @@ describe('Path Blocks', () => {
     it('arcFromCenter emits relative commands inside PathBlock', () => {
       const result = compilePath(`
         let p = @{
-          arcFromCenter(0, 20, 20, -0.5pi, 0, 1);
+          arcFromCenter(0, 20, 20, -0.5pi, 0, 1)
         };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).not.toMatch(/A /);
       expect(result).toMatch(/a /);
@@ -1680,10 +1680,10 @@ describe('Path Blocks', () => {
       const result = compile(`
         let p = @{
           l 20 0
-          tangentArc(20, 0.5pi);
+          tangentArc(20, 0.5pi)
         };
-        moveTo(100, 100);
-        p.draw();
+        moveTo(100, 100)
+        p.draw()
         log(ctx.position.x);
         log(ctx.position.y);
       `);
@@ -1698,11 +1698,11 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           l 20 0
-          tangentArc(20, 0.5pi);
-          tangentLine(30);
+          tangentArc(20, 0.5pi)
+          tangentLine(30)
         };
         M 50 50
-        p.draw();
+        p.draw()
       `);
       // No uppercase absolute commands should appear in the PathBlock portion
       const afterMove = result.substring(result.indexOf('M 50 50') + 7);
@@ -1896,7 +1896,7 @@ describe('Path Blocks', () => {
         let p = @{ h 100 };
         let proj = p.project(10, 20);
         let sub = proj.subPath(0, 0.5);
-        // Returns PathBlock normalized to (0,0);
+        // Returns PathBlock normalized to (0,0)
         log(sub.startPoint.x);
         log(sub.startPoint.y);
         log(sub.endPoint.x);
@@ -1915,7 +1915,7 @@ describe('Path Blocks', () => {
         let sub = proj.subPath(0, 0.5);
         let start = proj.get(0);
         M start.x start.y
-        sub.draw();
+        sub.draw()
       `);
       expect(result).toContain('M 10 20');
     });
@@ -1925,7 +1925,7 @@ describe('Path Blocks', () => {
         let p = @{ h 100 };
         let sub = p.subPath(0, 0.5);
         M 10 10
-        sub.draw();
+        sub.draw()
       `);
       expect(result).toContain('M 10 10');
     });
@@ -2006,7 +2006,7 @@ describe('Path Blocks', () => {
         let p = @{ h 100 };
         let sub = p.subPath(0, 0.5);
         M 10 10
-        sub.draw();
+        sub.draw()
       `);
       expect(result).toContain('M 10 10');
     });
@@ -2040,7 +2040,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ circle(50, 50, 10) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2051,7 +2051,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ rect(10, 10, 30, 20) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2062,7 +2062,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ roundRect(10, 10, 40, 30, 5) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2074,7 +2074,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ polygon(50, 50, 20, 6) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2085,7 +2085,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ star(50, 50, 20, 10, 5) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2096,7 +2096,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ line(10, 10, 40, 50) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2107,7 +2107,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ quadratic(0, 0, 25, -30, 50, 0) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2118,7 +2118,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ cubic(0, 0, 10, -20, 40, -20, 50, 0) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2129,7 +2129,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ arc(25, 25, 0, 0, 1, 50, 0) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2140,7 +2140,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ moveTo(30, 40) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2151,7 +2151,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ lineTo(30, 40) };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       assertRelativeAfterMove(result);
@@ -2162,7 +2162,7 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{ l 20 20 l 20 -20 closePath() };
         M 100 100
-        p.draw();
+        p.draw()
       `);
       expect(result).toContain('M 100 100');
       expect(result).toContain('z');
@@ -2187,7 +2187,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let c = box.chamfer(5);
         M 10 10
-        c.draw();
+        c.draw()
       `);
       // Should have line segments connecting trim points
       expect(result).toContain('M 10 10');
@@ -2200,7 +2200,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let c = box.chamfer(5);
         M 10 10
-        c.draw();
+        c.draw()
       `);
       expect(result).toMatch(/z$/);
     });
@@ -2229,7 +2229,7 @@ describe('Path Blocks', () => {
       const result = compile(`
         let box = @{ h 60 v 40 h -60 z };
         let c = box.chamferAtVertex(1, 10);
-        // Original 4 corners, only 1 chamfered → 5 vertices (4 original - 1 + 2 new);
+        // Original 4 corners, only 1 chamfered → 5 vertices (4 original - 1 + 2 new)
         log(c.vertices.length);
       `);
       expect(result.logs[0].parts[0].value).toBe('5');
@@ -2249,7 +2249,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let c = box.chamferAtVertex(10, 5);
         M 10 10
-        c.draw();
+        c.draw()
       `)).toThrow(/vertex index.*out of range/i);
     });
 
@@ -2268,17 +2268,17 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let proj = box.project(10, 10);
         let c = proj.chamfer(5);
-        c.drawTo(0, 0);
+        c.drawTo(0, 0)
       `);
       expect(result).toContain('M 0 0');
     });
 
     it('requires at least 1 argument', () => {
-      expect(() => compilePath('let p = @{ h 40 v 40 }; p.chamfer();')).toThrow(/chamfer\(\) expects/);
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.chamfer()')).toThrow(/chamfer\(\) expects/);
     });
 
     it('requires numeric arguments', () => {
-      expect(() => compilePath('let p = @{ h 40 v 40 }; p.chamfer("x");')).toThrow(/must be a number/);
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.chamfer("x")')).toThrow(/must be a number/);
     });
 
     it('works with open paths', () => {
@@ -2286,7 +2286,7 @@ describe('Path Blocks', () => {
         let path = @{ h 40 v 40 h -40 };
         let c = path.chamfer(5);
         M 10 10
-        c.draw();
+        c.draw()
       `);
       // Open path with interior corners should still be chamfered
       expect(result).toContain('M 10 10');
@@ -2297,7 +2297,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let c = box.chamfer(0);
         M 10 10
-        c.draw();
+        c.draw()
       `);
       expect(result).toContain('M 10 10');
     });
@@ -2309,7 +2309,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.fillet(5);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       expect(result).toContain('M 10 10');
       // Should contain arc commands for the rounded corners
@@ -2321,7 +2321,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.fillet(5);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       expect(result).toMatch(/z$/);
     });
@@ -2331,7 +2331,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.filletAtVertex(1, 8);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       // Should have exactly one arc command
       const arcCount = (result.match(/\ba /g) || []).length;
@@ -2352,7 +2352,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.filletAtVertex(10, 5);
         M 10 10
-        f.draw();
+        f.draw()
       `)).toThrow(/vertex index.*out of range/i);
     });
 
@@ -2361,17 +2361,17 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let proj = box.project(10, 10);
         let f = proj.fillet(5);
-        f.drawTo(0, 0);
+        f.drawTo(0, 0)
       `);
       expect(result).toMatch(/a /);
     });
 
     it('requires exactly 1 argument', () => {
-      expect(() => compilePath('let p = @{ h 40 v 40 }; p.fillet();')).toThrow(/fillet\(\) expects/);
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.fillet()')).toThrow(/fillet\(\) expects/);
     });
 
     it('requires numeric argument', () => {
-      expect(() => compilePath('let p = @{ h 40 v 40 }; p.fillet("x");')).toThrow(/must be a number/);
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.fillet("x")')).toThrow(/must be a number/);
     });
 
     it('arc has correct radius', () => {
@@ -2379,7 +2379,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.fillet(10);
         M 0 0
-        f.draw();
+        f.draw()
       `);
       // Arc commands should contain radius 10
       expect(result).toMatch(/a 10 10/);
@@ -2390,7 +2390,7 @@ describe('Path Blocks', () => {
         let path = @{ h 40 v 40 h -40 };
         let f = path.fillet(5);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       expect(result).toMatch(/a /);
     });
@@ -2412,7 +2412,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.ellipticalFillet(12, 6);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       expect(result).toMatch(/a /);
       // Arc should have rx != ry
@@ -2424,7 +2424,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.ellipticalFillet(12, 6, 0.3);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       expect(result).toMatch(/a /);
     });
@@ -2434,7 +2434,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.ellipticalFilletAtVertex(1, 12, 6);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       const arcCount = (result.match(/\ba /g) || []).length;
       expect(arcCount).toBe(1);
@@ -2445,7 +2445,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.ellipticalFilletAtVertex(2, 15, 8, 0.5);
         M 10 10
-        f.draw();
+        f.draw()
       `);
       expect(result).toMatch(/a /);
     });
@@ -2455,7 +2455,7 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let f = box.ellipticalFilletAtVertex(10, 12, 6);
         M 10 10
-        f.draw();
+        f.draw()
       `)).toThrow(/vertex index.*out of range/i);
     });
 
@@ -2464,13 +2464,13 @@ describe('Path Blocks', () => {
         let box = @{ h 60 v 40 h -60 z };
         let proj = box.project(10, 10);
         let f = proj.ellipticalFillet(12, 6);
-        f.drawTo(0, 0);
+        f.drawTo(0, 0)
       `);
       expect(result).toMatch(/a /);
     });
 
     it('requires at least 2 arguments', () => {
-      expect(() => compilePath('let p = @{ h 40 v 40 }; p.ellipticalFillet(12);')).toThrow(/ellipticalFillet\(\) expects/);
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.ellipticalFillet(12)')).toThrow(/ellipticalFillet\(\) expects/);
     });
 
     describe('trim distance correctness', () => {
@@ -2494,7 +2494,7 @@ describe('Path Blocks', () => {
           let box = @{ h 60 v 40 h -60 z };
           let f = box.ellipticalFillet(15, 8);
           M 0 0
-          f.draw();
+          f.draw()
         `);
         const segs = parseSegments(result);
 
@@ -2530,13 +2530,13 @@ describe('Path Blocks', () => {
           let box = @{ h 60 v 40 h -60 z };
           let f = box.fillet(10);
           M 0 0
-          f.draw();
+          f.draw()
         `);
         const elliptical = compilePath(`
           let box = @{ h 60 v 40 h -60 z };
           let f = box.ellipticalFillet(10, 10);
           M 0 0
-          f.draw();
+          f.draw()
         `);
 
         // Parse and compare segment by segment (allow floating point tolerance)
@@ -2558,7 +2558,7 @@ describe('Path Blocks', () => {
           let box = @{ h 100 v 80 h -100 z };
           let f = box.ellipticalFillet(20, 10);
           M 0 0
-          f.draw();
+          f.draw()
         `);
         const segs = parseSegments(result);
 
@@ -2602,7 +2602,7 @@ describe('Path Blocks', () => {
             };
             let f = shape.ellipticalFillet(8, 5);
             M 50 50
-            f.draw();
+            f.draw()
           `);
           // Should produce exactly 1 arc
           const arcCount = (result.match(/\ba /g) || []).length;

@@ -96,14 +96,14 @@ layer2Box.apply { rect(calc(panelX2 + 40), panelY2, boxW, boxH) }
 // Draw the diagonal line
 let layer2Line = PathLayer('panel2-line') ${ fill: none; stroke: #d94a4a; stroke-width: 2; stroke-dasharray: 6 3; };
 layer2Line.apply {
-  line(panelX2, calc(panelY2 + 20), calc(panelX2 + 200), calc(panelY2 + 140));
+  line(panelX2, calc(panelY2 + 20), calc(panelX2 + 200), calc(panelY2 + 140))
 }
 
 // Draw crossing points as circles
 let layer2Pts = PathLayer('panel2-points') ${ fill: #e8a735; stroke: #b07818; stroke-width: 1.5; };
 layer2Pts.apply {
   for (pt in crossPts) {
-    circle(pt.x, pt.y, 5);
+    circle(pt.x, pt.y, 5)
   }
 }
 
@@ -195,4 +195,4 @@ scene.append(
   title1, title2,
   label3a, label3b, result3,
   mainTitle
-);
+)

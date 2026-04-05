@@ -49,7 +49,7 @@ for (item in [1, 2, 3]) {
 
 // --- Functions ---
 fn drawStar(cx, cy, r) {
-  star(cx, cy, r, calc(r * 0.4), 5);
+  star(cx, cy, r, calc(r * 0.4), 5)
   return r;
 }
 
@@ -79,12 +79,12 @@ l 20 20
 z
 
 // --- Stdlib calls ---
-circle(100, 100, 50);
-rect(0, 0, 200, 100);
-roundRect(10, 10, 180, 80, 10);
-polygon(100, 100, 50, 6);
-lerp(0, 100, 0.5);
-clamp(x, 0, 100);
+circle(100, 100, 50)
+rect(0, 0, 200, 100)
+roundRect(10, 10, 180, 80, 10)
+polygon(100, 100, 50, 6)
+lerp(0, 100, 0.5)
+clamp(x, 0, 100)
 
 // --- Layers ---
 define PathLayer('outline') ${ stroke: #000; stroke-width: 2; fill: none; }
@@ -92,7 +92,7 @@ define TextLayer('labels') ${ font-size: 14; fill: #333; }
 define GroupLayer('group1') ${}
 
 layer('outline').apply {
-  circle(100, 100, 50);
+  circle(100, 100, 50)
 }
 
 // --- Text ---

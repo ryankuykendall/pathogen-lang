@@ -43,10 +43,10 @@ bg.apply { rect(0, 0, 540, 400) }
 
 let checks = PathLayer('checks') ${ fill: #1e1e2a; stroke: none; };
 checks.apply {
-  rect(398, 148, 16, 16) rect(430, 148, 16, 16);
-  rect(414, 164, 16, 16) rect(446, 164, 16, 16);
-  rect(398, 180, 16, 16) rect(430, 180, 16, 16);
-  rect(414, 196, 16, 16) rect(446, 196, 16, 16);
+  rect(398, 148, 16, 16) rect(430, 148, 16, 16)
+  rect(414, 164, 16, 16) rect(446, 164, 16, 16)
+  rect(398, 180, 16, 16) rect(430, 180, 16, 16)
+  rect(414, 196, 16, 16) rect(446, 196, 16, 16)
 }
 
 // --- Gradient circles ---
@@ -65,9 +65,9 @@ c3.apply { circle(430, 180, 80); closePath() }
 let arcs = PathLayer('arc-lines') ${ fill: none; stroke: #ffffff44; stroke-width: 1; stroke-dasharray: 3 3; };
 arcs.apply {
   // Vertical lines at 90° (top) and 270° (bottom) for each circle
-  line(110, 92, 110, 98)   line(110, 262, 110, 268);
-  line(270, 92, 270, 98)   line(270, 262, 270, 268);
-  line(430, 92, 430, 98)   line(430, 262, 430, 268);
+  line(110, 92, 110, 98)   line(110, 262, 110, 268)
+  line(270, 92, 270, 98)   line(270, 262, 270, 268)
+  line(430, 92, 430, 98)   line(430, 262, 430, 268)
 }
 
 // --- Labels ---
@@ -121,4 +121,4 @@ angle_note.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, checks, c1, c2, c3, arcs, labels, desc, title, angle_note);
+scene.append(bg, checks, c1, c2, c3, arcs, labels, desc, title, angle_note)

@@ -71,10 +71,10 @@ for ([oR, ri] in outerRs) {
     let fromA = calc(-90deg - halfTheta);
     let toA = calc(-90deg + halfTheta);
 
-    // 1. Rounded wedge (lightened);
+    // 1. Rounded wedge (lightened)
     wedges.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, cornerR);
+      radialWedge(innerR, oR, fromA, toA, cornerR)
     }
 
     // 2. XOR between sharp and rounded
@@ -83,16 +83,16 @@ for ([oR, ri] in outerRs) {
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
     xorLayer.apply { diff.drawTo(0, 0) }
 
-    // 3. Sharp outline (dotted green);
+    // 3. Sharp outline (dotted green)
     outlines.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, 0);
+      radialWedge(innerR, oR, fromA, toA, 0)
     }
 
-    // 4. Guide circles (on top);
+    // 4. Guide circles (on top)
     guides.apply {
-      circle(cx, cy, innerR);
-      circle(cx, cy, oR);
+      circle(cx, cy, innerR)
+      circle(cx, cy, oR)
     }
 
     // Effective corner radii info

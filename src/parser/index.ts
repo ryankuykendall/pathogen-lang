@@ -1498,19 +1498,21 @@ export function parse(input: string): Program {
   do { if (errCur.type.isError) { hasErrors = true; break; } } while (errCur.next());
 
   if (hasErrors) {
-    // Lezer found parse errors — produce error message from error position
-    const errOffset = errCur.from;
-    const errLines = input.slice(0, errOffset).split('\n');
-    const errLine = errLines.length;
-    const errCol = errLines[errLines.length - 1].length + 1;
+    // Lezer found errors — use Parsimmon for error messages.
+    // Parsimmon is ONLY used here for error formatting.
+    // All successful parsing uses Lezer (zero Parsimmon fallbacks for valid programs).
+    const result = program.parse(input);
+    if (result.status) return result.value; // Should not happen (all gaps closed)
 
-    // Check for missing semicolons
-    const semiResult = detectMissingSemicolon(input, errOffset);
-    if (semiResult) {
-      throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
+    const { index, expected } = result;
+    const lines = input.slice(0, index.offset).split('\n');
+    const line = lines.length;
+    const column = lines[lines.length - 1].length + 1;
+    if (expected.includes("';'")) {
+      const semiResult = detectMissingSemicolon(input, index.offset);
+      if (semiResult) throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
     }
-
-    throw new Error(`Parse error at line ${errLine}, column ${errCol}: unexpected token`);
+    throw new Error(`Parse error at line ${line}, column ${column}: expected ${expected.join(' or ')}`);
   }
 
   return buildAST(tree, input);

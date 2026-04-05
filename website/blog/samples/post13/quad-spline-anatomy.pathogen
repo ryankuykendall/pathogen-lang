@@ -36,9 +36,9 @@ layer('curve').apply { quadSpline(startPt, midPts, endPt) }
 define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
-  circle(startPt.x, startPt.y, 5);
+  circle(startPt.x, startPt.y, 5)
   for ([p, i] in midPts) { circle(p.x, p.y, 5) }
-  circle(endPt.x, endPt.y, 5);
+  circle(endPt.x, endPt.y, 5)
 }
 
 // Recompute CPs for visualization
@@ -62,9 +62,9 @@ for ([pt, idx] in midPts) {
   let newCPx = calc(pt.x + pt.exit * cos(angle));
   let newCPy = calc(pt.y + pt.exit * sin(angle));
 
-  // Derived direction: prevCP -> pt (cyan dashed);
+  // Derived direction: prevCP -> pt (cyan dashed)
   layer('derived-dir').apply { M prevCPx prevCPy L pt.x pt.y }
-  // Tangent extension: pt -> newCP (orange dashed);
+  // Tangent extension: pt -> newCP (orange dashed)
   layer('tangent-line').apply { M pt.x pt.y L newCPx newCPy }
   // Shared CP marker
   layer('shared-cp').apply { circle(newCPx, newCPy, 4) }

@@ -79,8 +79,8 @@ layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 define PathLayer('endpoints') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(sx, sy, 5);
-  circle(ex, ey, 5);
+  circle(sx, sy, 5)
+  circle(ex, ey, 5)
 }
 
 // Labels — positioned with clearance from geometry

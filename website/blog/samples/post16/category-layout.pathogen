@@ -39,8 +39,8 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings ===
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
 }
 
 // Center circle
@@ -58,7 +58,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
   }
 
   if (d.top > 0) {
@@ -67,7 +67,7 @@ for ([d, i] in data) {
     let topOffset = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOffset), calc(sliceFrom + topOffset + topSweep), cornerR);
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOffset), calc(sliceFrom + topOffset + topSweep), cornerR)
     }
   }
 }

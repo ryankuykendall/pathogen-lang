@@ -3,7 +3,7 @@
 let baseColor = Color('#e63946');
 
 fn swatch(cx, cy, r) {
-circle(cx, cy, r);
+circle(cx, cy, r)
 }
 
 // Layout

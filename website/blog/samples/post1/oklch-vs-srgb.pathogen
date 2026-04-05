@@ -106,4 +106,4 @@ pair_labels.apply {
 // --- Scene ---
 
 let comparison = GroupLayer('comparison') ${};
-comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
+comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels)

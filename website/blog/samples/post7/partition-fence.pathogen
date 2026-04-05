@@ -38,7 +38,7 @@ let pts = proj.partition(n);
 
 // Draw the road
 roadLayer.apply {
-  road.drawTo(50, 180);
+  road.drawTo(50, 180)
 }
 
 // Place fence posts evenly along the road
@@ -75,7 +75,7 @@ let base_dots = PathLayer('base-dots') ${
 };
 base_dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 2);
+    circle(p.point.x, p.point.y, 2)
   }
 }
 

@@ -13,7 +13,7 @@ layer('full').apply {
     { x: 20, y: 80, angle: -45deg, exit: 50, exitTime: 1.0 },
     [{ x: 100, y: 20, exit: 50, exitTime: 1.0, entryTime: 1.0 }],
     { x: 180, y: 80, entryTime: 1.0 }
-  );
+  )
 }
 
 // time = 0.7 (moderate dampening)
@@ -24,7 +24,7 @@ layer('moderate').apply {
     { x: 20, y: 80, angle: -45deg, exit: 50, exitTime: 0.7 },
     [{ x: 100, y: 20, exit: 50, exitTime: 0.7, entryTime: 0.7 }],
     { x: 180, y: 80, entryTime: 0.7 }
-  );
+  )
 }
 
 // time = 0.4 (heavy dampening)
@@ -35,7 +35,7 @@ layer('damped').apply {
     { x: 20, y: 80, angle: -45deg, exit: 50, exitTime: 0.4 },
     [{ x: 100, y: 20, exit: 50, exitTime: 0.4, entryTime: 0.4 }],
     { x: 180, y: 80, entryTime: 0.4 }
-  );
+  )
 }
 
 // --- Asymmetric times ---
@@ -48,5 +48,5 @@ layer('asymmetric').apply {
     { x: 220, y: 80, angle: -45deg, exit: 50, exitTime: 1.0 },
     [{ x: 300, y: 20, exit: 50, exitTime: 0.3, entryTime: 1.0 }],
     { x: 380, y: 80, entryTime: 0.3 }
-  );
+  )
 }

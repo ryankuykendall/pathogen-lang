@@ -32,9 +32,9 @@ let spire = @{
 // --- Distance method (left panel) ---
 
 let topo_d = TopoGradient('dist-org', 220, 260) {|g|
-  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'));
-  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'));
-  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'));
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
 };
 topo_d.method = 'distance';
 topo_d.baseColor = Color('#0a0a1a');
@@ -44,9 +44,9 @@ topo_d.interpolation = 'oklch';
 // --- Laplace method (center panel) ---
 
 let topo_l = TopoGradient('lapl-org', 220, 260) {|g|
-  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'));
-  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'));
-  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'));
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
 };
 topo_l.method = 'laplace';
 topo_l.iterations = 350;
@@ -179,10 +179,10 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') ${};
-left_group.append(left);
+left_group.append(left)
 
 let center_group = GroupLayer('center-group') ${};
-center_group.append(center);
+center_group.append(center)
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title);
+scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title)

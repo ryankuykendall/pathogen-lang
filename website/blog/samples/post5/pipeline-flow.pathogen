@@ -5,8 +5,8 @@
 // --- Background ---
 
 let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
-  g.stop(0, Color('#0a0a14'));
-  g.stop(1, Color('#12121f'));
+  g.stop(0, Color('#0a0a14'))
+  g.stop(1, Color('#12121f'))
 };
 
 let bg = PathLayer('bg') ${ fill: bg_grad; stroke: none; };
@@ -120,4 +120,4 @@ subtitle.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle);
+scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle)

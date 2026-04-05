@@ -29,7 +29,7 @@ layer('arc').apply {
     { x: 0, y: 100, angle: -30deg, exit: 40 },
     [],
     { x: 100, y: 100 }
-  );
+  )
 }
 
 // --- Flowing curve group ---
@@ -51,7 +51,7 @@ layer('flowing').apply {
       { x: 100, y: 35, exit: 25 }
     ],
     { x: 140, y: 100 }
-  );
+  )
 }
 
 // --- Zigzag group ---
@@ -73,5 +73,5 @@ layer('zigzag').apply {
       { x: 90,  y: 35, exit: 25 }
     ],
     { x: 120, y: 100 }
-  );
+  )
 }

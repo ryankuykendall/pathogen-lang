@@ -101,4 +101,4 @@ connector.apply {
 // --- Scene ---
 
 let fan = GroupLayer('fan') ${};
-fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
+fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector)

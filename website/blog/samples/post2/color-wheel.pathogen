@@ -60,4 +60,4 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, ring, disc, frame, inner_frame, title);
+scene.append(bg, ring, disc, frame, inner_frame, title)

@@ -50,4 +50,4 @@ lc.apply { circle(200, 220, 130); closePath() }
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, la, lb, lc);
+scene.append(bg, la, lb, lc)
