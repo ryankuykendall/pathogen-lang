@@ -1172,6 +1172,58 @@ L 10 20 // end point`;
         rotation: { type: 'NumberLiteral', value: 45 },
       });
     });
+
+    it('parses text with member expression arguments', () => {
+      const ast = parse('text(p.point.x, p.point.y)`label`');
+      const stmt = ast.body[0] as any;
+      expect(stmt.x).toMatchObject({
+        type: 'MemberExpression',
+        object: {
+          type: 'MemberExpression',
+          object: { type: 'Identifier', name: 'p' },
+          property: 'point',
+        },
+        property: 'x',
+      });
+      expect(stmt.y).toMatchObject({
+        type: 'MemberExpression',
+        property: 'y',
+      });
+      expect(stmt.rotation).toBeUndefined();
+      expect(stmt.content.parts).toEqual(['label']);
+    });
+
+    it('parses tspan with member expression arguments', () => {
+      const ast = parse('text(0, 0) { tspan(obj.dx, obj.dy)`hi` }');
+      const stmt = ast.body[0] as any;
+      const tspan = stmt.body[0];
+      expect(tspan.dx).toMatchObject({
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'obj' },
+        property: 'dx',
+      });
+      expect(tspan.dy).toMatchObject({
+        type: 'MemberExpression',
+        property: 'dy',
+      });
+    });
+
+    it('accepts optional trailing semicolon on text statement', () => {
+      const ast = parse('text(10, 20)`hello`;');
+      expect(ast.body).toHaveLength(1);
+      expect(ast.body[0]).toMatchObject({
+        type: 'TextStatement',
+        x: { type: 'NumberLiteral', value: 10 },
+        y: { type: 'NumberLiteral', value: 20 },
+        content: { type: 'TemplateLiteral', parts: ['hello'] },
+      });
+    });
+
+    it('parses text statement without trailing semicolon', () => {
+      const ast = parse('text(10, 20)`hello`');
+      expect(ast.body).toHaveLength(1);
+      expect(ast.body[0].type).toBe('TextStatement');
+    });
   });
 
   describe('color literals', () => {

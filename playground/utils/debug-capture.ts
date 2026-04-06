@@ -8,7 +8,12 @@ export function buildDebugCapture(): string {
   const workspace = state.workspaceName || 'unsaved';
   const code = state.code || '';
   const status = state.compilationStatus || 'idle';
-  const error = state.compilationError || 'none';
+  const rawError = state.compilationError || 'none';
+  // Format multi-line errors as markdown list for proper rendering
+  const errorLines = rawError.split('\n').filter((l: string) => l.trim());
+  const error = errorLines.length > 1
+    ? '\n' + errorLines.map((l: string) => `- ${l}`).join('\n')
+    : rawError;
   const toFixed = state.toFixed != null ? state.toFixed : 'off';
   const layers = (state.layers || []) as LayerOutput[];
   const layerVisibility = (state.layerVisibility || {}) as Record<string, boolean>;

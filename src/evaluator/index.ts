@@ -6657,6 +6657,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       // Declarative metadata — font loading handled by host environment before compilation
       return;
 
+    case 'Comment':
+      // Comments are no-ops at runtime
+      return;
+
     default:
       throw new Error(`Unknown statement type: ${(stmt as Statement).type}`);
   }

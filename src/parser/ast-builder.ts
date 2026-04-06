@@ -941,18 +941,34 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
   let content: TemplateLiteral | undefined;
   let body: TextBodyItem[] | undefined;
 
-  // Extract expressions between parens, then template or block
+  // Extract expressions between parens (with member-chain support), then template or block.
+  // Flat CST tokens like `p . point . x` must be assembled into MemberExpression chains.
   cursor.firstChild();
   const exprs: Expression[] = [];
   let inParens = false;
   do {
-    if (cursor.name === '(') inParens = true;
-    else if (cursor.name === ')') inParens = false;
-    else if (inParens && isExpressionNode(cursor.name)) {
-      exprs.push(buildExpression(cursor, source));
-    } else if (cursor.name === 'TemplateLiteral') {
+    if (cursor.name === '(') { inParens = true; continue; }
+    if (cursor.name === ')') { inParens = false; continue; }
+    if (inParens && cursor.name === ',') continue;
+    if (inParens && isExpressionNode(cursor.name)) {
+      let expr = buildExpression(cursor, source);
+      // Consume postfix `.property` chains within the paren region
+      while (cursor.nextSibling()) {
+        if (cursor.name === '.' && cursor.nextSibling() && isExpressionNode(cursor.name)) {
+          const propName = text(cursor, source);
+          expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+        } else {
+          // Hit comma or closing paren — let the outer loop handle this token
+          if (cursor.name === ')') inParens = false;
+          break;
+        }
+      }
+      exprs.push(expr);
+      continue;
+    }
+    if (!inParens && cursor.name === 'TemplateLiteral') {
       content = buildTemplateLiteral(cursor, source);
-    } else if (cursor.name === 'TextBlock') {
+    } else if (!inParens && cursor.name === 'TextBlock') {
       body = buildTextBlock(cursor, source);
     }
   } while (cursor.nextSibling());
@@ -978,11 +994,24 @@ function buildTspanStatement(cursor: TreeCursor, source: string): TspanStatement
   const args: Expression[] = [];
   let inParens = false;
   do {
-    if (cursor.name === '(') inParens = true;
-    else if (cursor.name === ')') inParens = false;
-    else if (inParens && isExpressionNode(cursor.name) && cursor.name !== ',') {
-      args.push(buildExpression(cursor, source));
-    } else if (cursor.name === 'TemplateLiteral') {
+    if (cursor.name === '(') { inParens = true; continue; }
+    if (cursor.name === ')') { inParens = false; continue; }
+    if (inParens && cursor.name === ',') continue;
+    if (inParens && isExpressionNode(cursor.name)) {
+      let expr = buildExpression(cursor, source);
+      while (cursor.nextSibling()) {
+        if (cursor.name === '.' && cursor.nextSibling() && isExpressionNode(cursor.name)) {
+          const propName = text(cursor, source);
+          expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+        } else {
+          if (cursor.name === ')') inParens = false;
+          break;
+        }
+      }
+      args.push(expr);
+      continue;
+    }
+    if (!inParens && cursor.name === 'TemplateLiteral') {
       content = buildTemplateLiteral(cursor, source);
     }
   } while (cursor.nextSibling());
@@ -1757,9 +1786,9 @@ function buildBlock(cursor: TreeCursor, source: string): Statement[] {
   const stmts: Statement[] = [];
   cursor.firstChild();
   do {
-    if (cursor.name !== '{' && cursor.name !== '}') {
+    if (cursor.name !== '{' && cursor.name !== '}' && cursor.name !== 'Comment' && cursor.name !== 'LineComment') {
       const stmt = buildStatement(cursor, source);
-      if (stmt) stmts.push(stmt);
+      if (stmt && stmt.type !== 'Comment') stmts.push(stmt);
     }
   } while (cursor.nextSibling());
   cursor.parent();

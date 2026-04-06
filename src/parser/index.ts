@@ -13,7 +13,7 @@ setExpressionParser({ parse: (input: string) => {
   return { status: result !== null, value: result };
 }});
 
-function detectMissingSemicolon(
+export function detectMissingSemicolon(
   input: string,
   offset: number,
 ): { message: string; line: number; column: number } | null {

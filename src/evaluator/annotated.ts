@@ -3810,6 +3810,9 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
     case 'FontDirective':
       return '';
 
+    case 'Comment':
+      return '';
+
     default:
       throw new Error(`Unknown statement type: ${(stmt as Statement).type}`);
   }
@@ -4377,6 +4380,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'FontDirective':
       // Declarative metadata — no annotated output
+      break;
+
+    case 'Comment':
+      // Comments are no-ops at runtime
       break;
 
     default:

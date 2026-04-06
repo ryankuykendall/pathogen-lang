@@ -85,6 +85,7 @@ interface CmModules {
 interface ErrorHighlightResult {
   extension: unknown[];
   setError(editorView: unknown, position: { line: number; column: number }): void;
+  setErrors(editorView: unknown, positions: Array<{ line: number; column: number }>): void;
   clearError(editorView: unknown): void;
 }
 
@@ -284,6 +285,13 @@ export class CodeEditorPane extends HTMLElement {
     this._applyPendingError();
   }
 
+  highlightErrors(errors: Array<{ line: number; column: number }>): void {
+    if (errors.length === 0) return;
+    this._pendingError = errors[0];
+    if (!this._editor || !this._errorHighlight) return;
+    this._errorHighlight.setErrors(this._editor, errors);
+  }
+
   clearError(): void {
     this._pendingError = null;
     if (!this._editor || !this._errorHighlight) return;
@@ -294,10 +302,13 @@ export class CodeEditorPane extends HTMLElement {
     if (!this._pendingError || !this._editor || !this._errorHighlight) return;
     const { line, column } = this._pendingError;
     this._errorHighlight.setError(this._editor, { line, column });
-    // Scroll error line into view
+  }
+
+  private _scrollToError(error: { line: number; column: number }): void {
+    if (!this._editor) return;
     const doc = this._editor.state.doc;
-    if (line >= 1 && line <= doc.lines) {
-      const lineObj = doc.line(line);
+    if (error.line >= 1 && error.line <= doc.lines) {
+      const lineObj = doc.line(error.line);
       this._editor.dispatch({
         effects: this._cmModules!.view.EditorView.scrollIntoView(lineObj.from, { y: 'center' }),
       });

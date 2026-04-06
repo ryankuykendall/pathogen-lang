@@ -805,12 +805,12 @@ export class WorkspaceView extends HTMLElement {
       if (isStale(compilationId)) return;
 
       this.previewPane.hideLoading();
-      this.showError(e.message);
+      const displayError = this.showError(e.message);
       this.consolePane.logs = [];
       store.set('layers', []);
       store.update({
         compilationStatus: 'error',
-        compilationError: e.message,
+        compilationError: displayError,
       });
     }
   }
@@ -841,7 +841,7 @@ export class WorkspaceView extends HTMLElement {
     }
   }
 
-  showError(message: string): void {
+  showError(message: string): string {
     // Try structured diagnostics via getDiagnostics first
     const { StringTextDocument, getDiagnostics } = window.SvgPathExtended;
     if (getDiagnostics && StringTextDocument) {
@@ -850,17 +850,21 @@ export class WorkspaceView extends HTMLElement {
         const doc = new StringTextDocument(code);
         const diagnostics = getDiagnostics(doc);
         if (diagnostics.length > 0) {
-          // Show the error message (use original message for full detail)
-          const errorCount = diagnostics.length;
-          const displayMessage = errorCount > 1
-            ? `${message} (+${errorCount - 1} more error${errorCount > 2 ? 's' : ''})`
-            : message;
-          this.errorPanel.show(displayMessage);
-          // Highlight the first diagnostic's location in the editor
-          const diag = diagnostics[0];
-          // Diagnostics use 0-based lines; editor uses 1-based
-          this.editorPane.highlightError(diag.range.start.line + 1, diag.range.start.character + 1);
-          return;
+          // Format message: show each diagnostic on its own line
+          const messages = diagnostics.map((d: { range: { start: { line: number; character: number } }; message: string }) => {
+            const line = d.range.start.line + 1;
+            const col = d.range.start.character + 1;
+            return `Line ${line}:${col} — ${d.message}`;
+          });
+          const displayMessage = messages.join('\n');
+          this.errorPanel.show(displayMessage, diagnostics.length);
+          // Highlight all diagnostic locations in the editor (0-based → 1-based)
+          const errors = diagnostics.map((d: { range: { start: { line: number; character: number } } }) => ({
+            line: d.range.start.line + 1,
+            column: d.range.start.character + 1,
+          }));
+          this.editorPane.highlightErrors(errors);
+          return displayMessage;
         }
       } catch {
         // Fall through to regex-based parsing
@@ -872,7 +876,7 @@ export class WorkspaceView extends HTMLElement {
     const parseMatch = message.match(/Parse error at line (\d+), column (\d+)/);
     if (parseMatch) {
       this.editorPane.highlightError(parseInt(parseMatch[1], 10), parseInt(parseMatch[2], 10));
-      return;
+      return message;
     }
     const runtimeMatch = message.match(/^Line (\d+)(?:, col (\d+))?: /);
     if (runtimeMatch) {
@@ -880,6 +884,7 @@ export class WorkspaceView extends HTMLElement {
       const col = runtimeMatch[2] ? parseInt(runtimeMatch[2], 10) : 1;
       this.editorPane.highlightError(line, col);
     }
+    return message;
   }
 
   hideError(): void {

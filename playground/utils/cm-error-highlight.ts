@@ -1,5 +1,5 @@
-// CodeMirror 6 error highlight extension — marks error line and character position
-// Shows a red/pink background on the error line and a wavy underline at the error column
+// CodeMirror 6 error highlight extension — marks error lines and character positions
+// Supports multiple simultaneous error highlights
 
 interface ErrorPosition {
   line: number;
@@ -7,13 +7,14 @@ interface ErrorPosition {
 }
 
 interface ErrorState {
-  error: ErrorPosition | null;
+  errors: ErrorPosition[];
   decorations: unknown; // Decoration.none or DecorationSet
 }
 
 interface ErrorHighlightResult {
   extension: unknown[];
   setError(editorView: unknown, position: ErrorPosition): void;
+  setErrors(editorView: unknown, positions: ErrorPosition[]): void;
   clearError(editorView: unknown): void;
 }
 
@@ -53,15 +54,14 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
   const { StateEffect, StateField } = cmStateModule;
   const { Decoration, EditorView } = cmViewModule;
 
-  const setErrorEffect = StateEffect.define<ErrorPosition>();
+  const setErrorsEffect = StateEffect.define<ErrorPosition[]>();
   const clearErrorEffect = StateEffect.define<null>();
 
-  // Build decorations for a given error position and document
-  function buildDecorations(doc: { lines: number; line(n: number): { from: number; to: number; length: number }; sliceString(from: number, to: number): string }, line: number, column: number): unknown {
-    if (line < 1 || line > doc.lines) return Decoration.none;
+  // Build decorations for a single error position
+  function buildDecosForPosition(doc: { lines: number; line(n: number): { from: number; to: number; length: number }; sliceString(from: number, to: number): string }, line: number, column: number, decos: unknown[]): void {
+    if (line < 1 || line > doc.lines) return;
 
     const lineObj = doc.line(line);
-    const decos: unknown[] = [];
 
     // Line highlight
     decos.push(Decoration.line({ class: 'cm-error-line' }).range(lineObj.from));
@@ -81,29 +81,37 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
     if (charFrom < effectiveTo) {
       decos.push(Decoration.mark({ class: 'cm-error-char' }).range(charFrom, effectiveTo));
     }
+  }
 
-    return Decoration.set(decos, true);
+  // Build decorations for all error positions
+  function buildDecorations(doc: Parameters<typeof buildDecosForPosition>[0], errors: ErrorPosition[]): unknown {
+    if (errors.length === 0) return Decoration.none;
+    const decos: unknown[] = [];
+    for (const { line, column } of errors) {
+      buildDecosForPosition(doc, line, column, decos);
+    }
+    return decos.length > 0 ? Decoration.set(decos, true) : Decoration.none;
   }
 
   const errorField = StateField.define<ErrorState>({
     create(): ErrorState {
-      return { error: null, decorations: Decoration.none };
+      return { errors: [], decorations: Decoration.none };
     },
     update(state: ErrorState, tr: { effects: Array<{ is(type: StateEffectType): boolean; value: unknown }>; docChanged: boolean; state: { doc: unknown } }): ErrorState {
       for (const effect of tr.effects) {
-        if (effect.is(setErrorEffect)) {
-          const { line, column } = effect.value as ErrorPosition;
-          return { error: { line, column }, decorations: buildDecorations(tr.state.doc as Parameters<typeof buildDecorations>[0], line, column) };
+        if (effect.is(setErrorsEffect)) {
+          const errors = effect.value as ErrorPosition[];
+          return { errors, decorations: buildDecorations(tr.state.doc as Parameters<typeof buildDecosForPosition>[0], errors) };
         }
         if (effect.is(clearErrorEffect)) {
-          return { error: null, decorations: Decoration.none };
+          return { errors: [], decorations: Decoration.none };
         }
       }
-      // On doc change, re-create decorations from stored error to survive full doc replacement
-      if (tr.docChanged && state.error) {
+      // On doc change, re-create decorations from stored errors to survive full doc replacement
+      if (tr.docChanged && state.errors.length > 0) {
         return {
-          error: state.error,
-          decorations: buildDecorations(tr.state.doc as Parameters<typeof buildDecorations>[0], state.error.line, state.error.column),
+          errors: state.errors,
+          decorations: buildDecorations(tr.state.doc as Parameters<typeof buildDecosForPosition>[0], state.errors),
         };
       }
       return state;
@@ -113,8 +121,11 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
 
   return {
     extension: [errorField],
-    setError(editorView: unknown, { line, column }: ErrorPosition): void {
-      (editorView as { dispatch(spec: { effects: unknown }): void }).dispatch({ effects: (setErrorEffect as unknown as { of(value: ErrorPosition): unknown }).of({ line, column }) });
+    setError(editorView: unknown, position: ErrorPosition): void {
+      this.setErrors(editorView, [position]);
+    },
+    setErrors(editorView: unknown, positions: ErrorPosition[]): void {
+      (editorView as { dispatch(spec: { effects: unknown }): void }).dispatch({ effects: (setErrorsEffect as unknown as { of(value: ErrorPosition[]): unknown }).of(positions) });
     },
     clearError(editorView: unknown): void {
       (editorView as { dispatch(spec: { effects: unknown }): void }).dispatch({ effects: (clearErrorEffect as unknown as { of(value: null): unknown }).of(null) });

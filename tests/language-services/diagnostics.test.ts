@@ -153,6 +153,31 @@ describe('getDiagnostics', () => {
       expect(errorLines.some((l) => l >= 3)).toBe(true);
     });
 
+    it('filters cascade errors adjacent to the real error', () => {
+      // Missing ';' after style block — only one real error, the next line is cascade noise
+      const source = [
+        "let bg = PathLayer('bg') ${ fill: red; }",  // line 0: missing ;
+        'bg.apply {',                                  // line 1: cascade
+        '  rect(0, 0, 100, 100);',
+        '}',
+      ].join('\n');
+      const diags = diagnose(source);
+      expect(diags).toHaveLength(1);
+      expect(diags[0].message).toContain("Missing ';'");
+    });
+
+    it('preserves genuinely separate errors across distant lines', () => {
+      const source = [
+        'let x = 10',     // line 0: missing ;
+        'M x 0',          // line 1: valid (cascade filtered)
+        'L 20 20',        // line 2: valid
+        'let y = 20',     // line 3: missing ; (separate error, >2 lines away)
+        'M y 0',          // line 4: valid
+      ].join('\n');
+      const diags = diagnose(source);
+      expect(diags.length).toBeGreaterThanOrEqual(2);
+    });
+
     it('does not produce false positives for valid programs', () => {
       const source = [
         'let x = 10;',
@@ -191,6 +216,45 @@ describe('getDiagnostics', () => {
       const diags = diagnose('let x = 10');
       expect(diags[0].range.start.line).toBe(0);
       expect(diags[0].range.start.character).toBe(10);
+    });
+  });
+
+  describe('contextual error messages', () => {
+    it('reports expected = after variable name', () => {
+      const diags = diagnose('let x 10;');
+      expect(diags).toHaveLength(1);
+      expect(diags[0].message).toBe("Expected '=' after variable name");
+    });
+
+    it('reports expected ) before { in for loop', () => {
+      const diags = diagnose('for (i in 0..5 { M i 0 }');
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags[0].message).toBe("Expected ')' before '{'");
+    });
+
+    it('reports expected { for function body', () => {
+      const diags = diagnose('fn draw()\nM 0 0');
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags[0].message).toBe("Expected '{' for function body");
+    });
+
+    it('reports unexpected ) after expression', () => {
+      const diags = diagnose('let x = (10 + 20));');
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags[0].message).toContain("Unexpected ')'");
+    });
+
+    it('reports missing ; after expression statement', () => {
+      const diags = diagnose('let x = 10;\ncircle(50, 50, 25)\nM 0 0');
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags[0].message).toContain("Missing ';'");
+    });
+
+    it('reports missing ; after let across multiple errors', () => {
+      const diags = diagnose('let a = 10\nM a 0\nlet b = 20\nM b 0');
+      expect(diags.length).toBeGreaterThanOrEqual(2);
+      expect(diags[0].message).toContain("Missing ';'");
+      expect(diags[1].message).toContain("Missing ';'");
     });
   });
 });

@@ -1,4 +1,4 @@
-import { parse } from '../parser';
+import { parse, detectMissingSemicolon } from '../parser';
 import { evaluate } from '../evaluator';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
@@ -29,33 +29,28 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
   const lezerErrors = findLezerErrors(source, document);
 
   if (lezerErrors.length > 0) {
-    // Try Parsimmon for a detailed error message for the first error
-    try {
-      parse(source);
-    } catch (err) {
-      const message = (err as Error).message;
-      const diag = parseParserError(message, document);
-      if (diag) {
-        diagnostics.push(diag);
-      }
-    }
-
-    // Add Lezer error positions that don't overlap with the Parsimmon error
+    // Filter cascade errors: Lezer errors on the same line as a prior
+    // diagnostic are duplicates; errors on the immediately next line are
+    // usually cascade noise from the parser not recovering cleanly.
     for (const lezerError of lezerErrors) {
-      // Skip if we already have an error on the same line
-      if (diagnostics.some((d) => d.range.start.line === lezerError.range.start.line)) continue;
+      const lezerLine = lezerError.range.start.line;
+      const isCascade = diagnostics.some((d) => {
+        const diagLine = d.range.start.line;
+        return lezerLine === diagLine || (lezerLine === diagLine + 1);
+      });
+      if (isCascade) continue;
       diagnostics.push(lezerError);
     }
 
     return diagnostics;
   }
 
-  // Phase 2: Lezer found no errors — try Parsimmon parse + evaluate.
+  // Phase 2: Lezer found no errors — try parse + evaluate.
   let ast;
   try {
     ast = parse(source);
   } catch (err) {
-    // Parsimmon found an error that Lezer didn't (edge case — Lezer is more lenient)
+    // parse() found an error that Lezer didn't (edge case — Lezer is more lenient)
     const message = (err as Error).message;
     const diag = parseParserError(message, document);
     if (diag) {
@@ -104,14 +99,14 @@ function findLezerErrors(source: string, document: TextDocument): Diagnostic[] {
 
   do {
     if (cursor.type.isError && cursor.from < source.length) {
-      const pos = document.positionAt(cursor.from);
+      const { message, line, character } = describeErrorWithPosition(cursor.node, source, document);
       // Deduplicate: one error per line
-      if (!seenLines.has(pos.line)) {
-        seenLines.add(pos.line);
+      if (!seenLines.has(line)) {
+        seenLines.add(line);
         errors.push({
-          range: makeRange(pos.line, pos.character, document),
+          range: makeRange(line, character, document),
           severity: DiagnosticSeverity.Error,
-          message: 'Syntax error',
+          message,
           source: 'pathogen-parser',
         });
       }
@@ -119,6 +114,119 @@ function findLezerErrors(source: string, document: TextDocument): Diagnostic[] {
   } while (cursor.next());
 
   return errors;
+}
+
+/**
+ * Generate a contextual error message and adjusted position from the Lezer
+ * error node's location in the partially-recovered parse tree.
+ * For missing-semicolon errors, the position is adjusted to point at the end
+ * of the unterminated statement rather than the start of the next token.
+ */
+function describeErrorWithPosition(
+  errorNode: import('@lezer/common').SyntaxNode,
+  source: string,
+  document: TextDocument,
+): { message: string; line: number; character: number } {
+  const defaultPos = document.positionAt(errorNode.from);
+  const message = describeError(errorNode, source);
+
+  // For missing-semicolon errors, use detectMissingSemicolon to get the
+  // correct position (end of unterminated statement, not start of next token)
+  if (message.startsWith("Missing ';'")) {
+    const semi = detectMissingSemicolon(source, errorNode.from);
+    if (semi) {
+      // detectMissingSemicolon returns 1-based line/column; convert to 0-based
+      return { message, line: semi.line - 1, character: semi.column - 1 };
+    }
+  }
+
+  return { message, line: defaultPos.line, character: defaultPos.character };
+}
+
+function describeError(errorNode: import('@lezer/common').SyntaxNode, source: string): string {
+  const parent = errorNode.parent;
+  const prev = errorNode.prevSibling;
+  const next = errorNode.nextSibling;
+  const parentName = parent?.name ?? '';
+  const prevName = prev?.name ?? '';
+  const nextName = next?.name ?? '';
+  const errText = source.slice(errorNode.from, Math.min(errorNode.to, errorNode.from + 30)).trim();
+
+  // ── Missing semicolon patterns ──
+  // LetDeclaration: previous is a value expression, no ';' follows
+  if (parentName === 'LetDeclaration' && prevName && !nextName && !errText) {
+    if (prevName === '=') return "Expected expression after '='";
+    if (prevName === 'VariableName' || prevName === 'let') return "Expected '=' after variable name";
+    return "Missing ';' after let declaration";
+  }
+  // ExpressionStatement: previous is an expression, no ';'
+  if (parentName === 'ExpressionStatement' && !errText) {
+    return "Missing ';' after expression";
+  }
+  // ReturnStatement missing ';'
+  if (parentName === 'ReturnStatement' && !errText) {
+    return "Missing ';' after return statement";
+  }
+
+  // ── let declaration issues ──
+  if (parentName === 'LetDeclaration') {
+    if (prevName === 'VariableName' && !errText) return "Expected '=' after variable name";
+    if (prevName === '=' && errText) return `Unexpected '${errText}' in let declaration`;
+    if (prev && prev.name === 'ParenExpression' && errText) return `Unexpected '${errText}' after expression`;
+    // Fallback with semicolon heuristic
+    const semi = detectMissingSemicolon(source, errorNode.from);
+    if (semi) return semi.message;
+    return "Invalid let declaration";
+  }
+
+  // ── Unclosed / mismatched blocks ──
+  if (parentName === 'Block' && !errText) {
+    return "Expected '}' to close block";
+  }
+  if (parentName === 'TextBlock' && !errText) {
+    return "Expected '}' to close text block";
+  }
+
+  // ── for loop issues ──
+  if (parentName === 'ForLoop' || parentName === 'ForEachLoop') {
+    if (errText === '{') return "Expected ')' before '{'";
+    if (!errText) return "Incomplete for loop";
+    return `Unexpected '${errText}' in for loop`;
+  }
+
+  // ── if statement issues ──
+  if (parentName === 'IfStatement') {
+    if (errText === '{') return "Expected ')' before '{'";
+    if (!errText) return "Incomplete if statement";
+    return `Unexpected '${errText}' in if statement`;
+  }
+
+  // ── Function definition issues ──
+  if (parentName === 'FunctionDefinition') {
+    if (prevName === ')' && !errText) return "Expected '{' for function body";
+    if (!errText) return "Incomplete function definition";
+    return `Unexpected '${errText}' in function definition`;
+  }
+
+  // ── Enum issues ──
+  if (parentName === 'EnumDefinition') {
+    return errText ? `Unexpected '${errText}' in enum` : "Incomplete enum definition";
+  }
+
+  // ── Unexpected token with text ──
+  if (errText) {
+    // Check for common unexpected tokens
+    if (errText === '}') return "Unexpected '}'";
+    if (errText === ')') return "Unexpected ')'";
+    if (errText === ']') return "Unexpected ']'";
+    return `Unexpected '${errText}'`;
+  }
+
+  // ── Fallback: use semicolon heuristic ──
+  const semi = detectMissingSemicolon(source, errorNode.from);
+  if (semi) return semi.message;
+
+  return 'Syntax error';
 }
 
 /**

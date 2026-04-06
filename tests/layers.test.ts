@@ -146,6 +146,28 @@ describe('Multi-Layer Support', () => {
       `);
       expect(result.layers[0].data).toBe('M 5 5 h 10 v 10 h -10 z');
     });
+
+    it('supports variable-based apply blocks', () => {
+      const result = compile(`
+        let p = PathLayer('main') \${};
+        p.apply { M 10 20 L 30 40 }
+      `);
+      expect(result.layers[0].name).toBe('main');
+      expect(result.layers[0].data).toBe('M 10 20 L 30 40');
+    });
+
+    it('supports comments inside apply blocks', () => {
+      const result = compile(`
+        define PathLayer('main') \${}
+        layer('main').apply {
+          // first command
+          M 0 0
+          // second command
+          L 10 10
+        }
+      `);
+      expect(result.layers[0].data).toBe('M 0 0 L 10 10');
+    });
   });
 
   describe('default layer routing', () => {
@@ -493,6 +515,19 @@ describe('Multi-Layer Support', () => {
       expect(result.layers[0].data).toBe('Hello World');
     });
 
+    it('accepts optional trailing semicolon on text statements', () => {
+      const result = compile(`
+        define TextLayer('labels') \${}
+        layer('labels').apply {
+          text(10, 20)\`Hello\`;
+          text(50, 60)\`World\`;
+        }
+      `);
+      expect(result.layers[0].textElements).toHaveLength(2);
+      expect(result.layers[0].textElements![0].x).toBe(10);
+      expect(result.layers[0].textElements![1].x).toBe(50);
+    });
+
     it('mixes PathLayer and TextLayer', () => {
       const result = compile(`
         define default PathLayer('shape') \${ stroke: #333; fill: none; }
@@ -549,6 +584,23 @@ describe('Multi-Layer Support', () => {
       expect(result.layers[0].textElements![0].x).toBe(0);
       expect(result.layers[0].textElements![1].x).toBe(50);
       expect(result.layers[0].textElements![2].x).toBe(100);
+    });
+
+    it('supports member expression args in text() inside for loop', () => {
+      const result = compile(`
+        let points = [{ x: 10, y: 20 }, { x: 30, y: 40 }];
+        define TextLayer('labels') \${}
+        layer('labels').apply {
+          for ([p, idx] in points) {
+            text(p.x, p.y)\`pt\${idx}\`
+          }
+        }
+      `);
+      expect(result.layers[0].textElements).toHaveLength(2);
+      expect(result.layers[0].textElements![0].x).toBe(10);
+      expect(result.layers[0].textElements![0].y).toBe(20);
+      expect(result.layers[0].textElements![1].x).toBe(30);
+      expect(result.layers[0].textElements![1].y).toBe(40);
     });
   });
 

@@ -87,12 +87,13 @@ LayerDefinition {
 }
 
 LayerApplyBlock {
-  kw<"layer"> "(" expression ")" ~layerDot "." kw<"apply"> Block
+  kw<"layer"> "(" expression ")" ~layerDot "." kw<"apply"> Block |
+  Identifier ~applyDot "." kw<"apply"> Block
 }
 
 TextStatement {
   kw<"text"> "(" expression "," expression ("," expression ("," expression)?)? ")"
-  (TemplateLiteral | TextBlock)
+  (TemplateLiteral | TextBlock) ";"?
 }
 
 TextBlock {
@@ -236,7 +237,7 @@ primaryExpression {
   CalcExpression |
   LayerConstructor |
   LayerCallExpression |
-  Identifier |
+  Identifier ~applyDot |
   ParenExpression
 }
 

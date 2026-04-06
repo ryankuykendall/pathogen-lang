@@ -2,11 +2,13 @@
 
 export class ErrorPanel extends HTMLElement {
   private _message: string;
+  private _count: number;
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._message = '';
+    this._count = 0;
   }
 
   static get observedAttributes(): string[] {
@@ -35,19 +37,32 @@ export class ErrorPanel extends HTMLElement {
     this.updateContent();
   }
 
-  show(message: string): void {
+  show(message: string, count?: number): void {
+    this._count = count ?? 0;
     this.message = message;
   }
 
   hide(): void {
+    this._count = 0;
     this.message = '';
   }
 
   updateContent(): void {
     const content = this.shadowRoot!.querySelector('.content');
+    const badge = this.shadowRoot!.querySelector('.count-badge') as HTMLElement | null;
 
     if (content) {
       content.textContent = this._message;
+    }
+
+    if (badge) {
+      if (this._count > 1) {
+        badge.textContent = `${this._count} errors`;
+        badge.style.display = '';
+      } else {
+        badge.textContent = '';
+        badge.style.display = 'none';
+      }
     }
 
     if (this._message) {
@@ -114,6 +129,19 @@ export class ErrorPanel extends HTMLElement {
           word-break: break-word;
         }
 
+        .count-badge {
+          flex-shrink: 0;
+          padding: 2px 8px;
+          border-radius: 10px;
+          background: var(--error-text, #c00);
+          color: #fff;
+          font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+          font-size: 0.7rem;
+          font-weight: 600;
+          white-space: nowrap;
+          line-height: 1.4;
+        }
+
         .capture-btn {
           flex-shrink: 0;
           padding: 4px 10px;
@@ -141,6 +169,7 @@ export class ErrorPanel extends HTMLElement {
       </style>
       <div class="header">
         <div class="content">${this._message}</div>
+        <span class="count-badge" style="display: none"></span>
         <button class="capture-btn" title="Copy debug info to clipboard">Copy Debug Info</button>
       </div>
     `;
