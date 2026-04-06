@@ -8,7 +8,7 @@ TypeScript compiler that parses extended SVG path syntax and evaluates it to SVG
 src/
 ├── parser/
 │   ├── ast.ts                    # AST node types (statements, expressions, layers, text)
-│   ├── index.ts                  # Parser exports (Parsimmon for compilation, Lezer for editor)
+│   ├── index.ts                  # Parser exports (Lezer-only: parse, parseLezer, extractComments)
 │   ├── pathogen.grammar          # Lezer grammar — single source of truth for syntax
 │   ├── pathogen.generated.ts     # Generated Lezer LR parser (from grammar)
 │   ├── pathogen.generated.terms.ts # Generated Lezer term constants
@@ -19,7 +19,7 @@ src/
 │   ├── index.ts                  # Re-exports all language-services
 │   ├── types.ts                  # Position, Range, Diagnostic types (LSP-compatible)
 │   ├── document.ts               # TextDocument abstraction
-│   ├── diagnostics.ts            # getDiagnostics (Lezer error recovery + Parsimmon eval)
+│   ├── diagnostics.ts            # getDiagnostics (Lezer error recovery)
 │   ├── symbols.ts                # getDocumentSymbols (outline/breadcrumbs)
 │   ├── scope-analysis.ts         # analyzeScopes (scope tree, declarations, references)
 │   ├── completion.ts             # getCompletions (keywords, stdlib, user defs, members)
@@ -96,15 +96,13 @@ docs/
 
 ## Architecture
 
-### Parser (dual: Parsimmon + Lezer)
+### Parser (Lezer)
 
-**Parsimmon** (~1525 lines) — Primary parser for compilation. Parser combinators with operator precedence chain. Produces AST nodes defined in `ast.ts`. Used by `compile()`, `compileAnnotated()`, and the evaluator.
+**Lezer** (~213 line grammar + external tokenizer) — Sole parser for both compilation and editor integration. The grammar (`pathogen.grammar`) is compiled to an LR parser table by `@lezer/generator`. Lezer's built-in error recovery powers multi-error diagnostics. The parser also provides CodeMirror 6 native syntax highlighting for the playground.
 
-**Lezer** (~213 line grammar + external tokenizer) — Used for editor integration. Powers the playground's syntax highlighting via CodeMirror 6 native integration. Also used for multi-error diagnostics (Lezer's built-in error recovery replaces the manual recovery wrapper). The Lezer grammar is compiled to an LR parser table by `@lezer/generator`.
+**CST-to-AST converter** (`ast-builder.ts`) — Converts Lezer's concrete syntax tree to AST nodes defined in `ast.ts`. Full parity with all language constructs.
 
-**CST-to-AST converter** (`ast-builder.ts`) — Bridges Lezer's concrete syntax tree to the same AST types Parsimmon produces. Not yet at full parity (handles core constructs but not all edge cases).
-
-**Migration status**: Parsimmon handles compilation; Lezer handles editor highlighting and error recovery. Full Lezer takeover is deferred until the grammar covers all edge cases (tracked in `project-docs/developer-experience/lezer-migration-decision.md`).
+**Expression parser** (`lezer-expression.ts`) — Parses standalone expression strings (e.g., style block values) by wrapping them as `let _ = expr;` and extracting the AST.
 
 ### Language Services
 
@@ -145,11 +143,11 @@ Context-aware functions receive the current path context and can read pen positi
 
 | Task                         | Files                                                              |
 | ---------------------------- | ------------------------------------------------------------------ |
-| Add new syntax               | `parser/index.ts`, `parser/ast.ts`, `parser/pathogen.grammar`      |
+| Add new syntax               | `parser/pathogen.grammar`, `parser/ast.ts`, `parser/ast-builder.ts` |
 | Add runtime behavior         | `evaluator/index.ts`                                               |
 | Add annotated output support | `evaluator/annotated.ts`                                           |
 | Add context tracking         | `evaluator/context.ts`                                             |
-| Add layer features           | `evaluator/index.ts`, `parser/ast.ts`, `parser/index.ts`           |
+| Add layer features           | `evaluator/index.ts`, `parser/ast.ts`, `parser/pathogen.grammar`   |
 | Add stdlib function          | `stdlib/math.ts` or `stdlib/path.ts`, `stdlib/index.ts`            |
 | Add context-aware stdlib fn  | `stdlib/path.ts`, `stdlib/index.ts` (add to contextAwareFunctions) |
 | Add CLI option               | `cli.ts`                                                           |

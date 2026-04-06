@@ -21,14 +21,14 @@ describe('getDefinition', () => {
   });
 
   it('jumps to variable declaration', () => {
-    const source = 'let radius = 50;\ncircle(0, 0, radius)';
+    const source = 'let radius = 50;\ncircle(0, 0, radius);';
     const result = def(source, 1, 15); // cursor on "radius" in circle call
     expect(result).not.toBeNull();
     expect(result!.range.start.line).toBe(0); // defined on line 0
   });
 
   it('jumps to function definition', () => {
-    const source = 'fn draw() {\n  M 0 0\n}\ndraw()';
+    const source = 'fn draw() {\n  M 0 0\n}\ndraw();';
     const result = def(source, 3, 2); // cursor on "draw" call
     expect(result).not.toBeNull();
     expect(result!.range.start.line).toBe(0); // fn on line 0
@@ -73,7 +73,7 @@ describe('getReferences', () => {
   });
 
   it('finds references from a usage site', () => {
-    const source = 'let radius = 50;\ncircle(0, 0, radius)';
+    const source = 'let radius = 50;\ncircle(0, 0, radius);';
     const result = refs(source, 1, 15); // cursor on "radius" usage
     expect(result.length).toBeGreaterThanOrEqual(2); // decl + usage
   });

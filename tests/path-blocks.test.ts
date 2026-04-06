@@ -78,7 +78,7 @@ describe('Path Blocks', () => {
       const result = compile(`
         let p = @{
           v 20
-          arcFromPolarOffset(1pi, 20, -0.5pi)
+          arcFromPolarOffset(1pi, 20, -0.5pi);
           h 20
         };
         log(p.endPoint);
@@ -1652,10 +1652,9 @@ describe('Path Blocks', () => {
       const result = compilePath(`
         let p = @{
           v 20
-          arcFromPolarOffset(1pi, 20, -0.5pi)
+          arcFromPolarOffset(1pi, 20, -0.5pi);
         };
-        M 100 100
-        p.draw()
+        p.drawTo(100, 100);
       `);
       expect(result).not.toMatch(/A /);
       expect(result).toMatch(/a /);
@@ -2160,9 +2159,8 @@ describe('Path Blocks', () => {
 
     it('closePath() emits z via .draw()', () => {
       const result = compilePath(`
-        let p = @{ l 20 20 l 20 -20 closePath() };
-        M 100 100
-        p.draw()
+        let p = @{ l 20 20 l 20 -20 closePath(); };
+        p.drawTo(100, 100);
       `);
       expect(result).toContain('M 100 100');
       expect(result).toContain('z');

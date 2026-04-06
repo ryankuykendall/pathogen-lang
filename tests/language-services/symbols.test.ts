@@ -51,7 +51,7 @@ describe('getDocumentSymbols', () => {
 
   describe('function definitions', () => {
     it('extracts function with params', () => {
-      const syms = symbols('fn draw(cx, cy, r) {\n  circle(cx, cy, r)\n}');
+      const syms = symbols('fn draw(cx, cy, r) {\n  circle(cx, cy, r);\n}');
       expect(syms).toHaveLength(1);
       expect(syms[0].name).toBe('draw(cx, cy, r)');
       expect(syms[0].kind).toBe(SymbolKind.Function);
@@ -64,7 +64,7 @@ describe('getDocumentSymbols', () => {
     });
 
     it('includes child symbols from function body', () => {
-      const syms = symbols('fn draw() {\n  let r = 50;\n  circle(0, 0, r)\n}');
+      const syms = symbols('fn draw() {\n  let r = 50;\n  circle(0, 0, r);\n}');
       expect(syms).toHaveLength(1);
       expect(syms[0].children).toHaveLength(1);
       expect(syms[0].children![0].name).toBe('r');
@@ -127,7 +127,7 @@ describe('getDocumentSymbols', () => {
         'let r = 50;',
         "define PathLayer('main') ${ stroke: #000; }",
         'fn draw(x, y) {',
-        '  circle(x, y, r)',
+        '  circle(x, y, r);',
         '}',
         'enum Mode { FILL, STROKE }',
         'for (i in 0..5) {',

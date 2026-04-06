@@ -68,7 +68,7 @@ describe('getCompletions', () => {
     });
 
     it('offers user-defined functions', () => {
-      const items = completeAtEnd('fn drawCircle(x, y) {\n  circle(x, y, 10)\n}\n');
+      const items = completeAtEnd('fn drawCircle(x, y) {\n  circle(x, y, 10);\n}\n');
       expect(labels(items)).toContain('drawCircle');
     });
 

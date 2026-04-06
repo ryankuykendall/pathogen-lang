@@ -91,7 +91,7 @@ describe('getHoverInfo', () => {
 
   describe('user-defined symbols', () => {
     it('shows hover for user variable', () => {
-      const result = hover('let radius = 50;\ncircle(0, 0, radius)', 1, 15);
+      const result = hover('let radius = 50;\ncircle(0, 0, radius);', 1, 15);
       expect(result).not.toBeNull();
       expect(result!.contents).toContain('**radius**');
       expect(result!.contents).toContain('variable');
@@ -105,7 +105,7 @@ describe('getHoverInfo', () => {
     });
 
     it('shows hover for user function', () => {
-      const result = hover('fn draw() {\n  M 0 0\n}\ndraw()', 3, 2);
+      const result = hover('fn draw() {\n  M 0 0\n}\ndraw();', 3, 2);
       expect(result).not.toBeNull();
       expect(result!.contents).toContain('**draw**');
       expect(result!.contents).toContain('function');

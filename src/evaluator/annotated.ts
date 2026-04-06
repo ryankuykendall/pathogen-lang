@@ -930,7 +930,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     let resolvedValue = prop.value;
     try {
       const parseResult = expressionParser.parse(prop.value);
-      if (parseResult.status) {
+      if (parseResult.status && parseResult.value) {
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
           resolvedValue = String(evaluated);

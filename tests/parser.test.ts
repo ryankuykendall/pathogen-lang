@@ -432,10 +432,10 @@ describe('Parser', () => {
     });
 
     it('parses function with multiple params', () => {
-      const ast = parse('fn add(a, b, c) { M a b }');
+      const ast = parse('fn add(x, y, z) { M x y }');
       expect(ast.body[0]).toMatchObject({
         type: 'FunctionDefinition',
-        params: ['a', 'b', 'c'],
+        params: ['x', 'y', 'z'],
       });
     });
   });
@@ -459,8 +459,8 @@ describe('Parser', () => {
       });
     });
 
-    it('parses multiple function calls with mixed semicolons', () => {
-      const ast = parse('circle(50, 50, 20);\nrect(0, 0, 10, 10)\nlog(ctx);');
+    it('parses multiple function calls with semicolons', () => {
+      const ast = parse('circle(50, 50, 20);\nrect(0, 0, 10, 10);\nlog(ctx);');
       expect(ast.body).toHaveLength(3);
     });
   });

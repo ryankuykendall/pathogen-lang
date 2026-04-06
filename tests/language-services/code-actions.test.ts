@@ -36,7 +36,7 @@ describe('getCodeActions', () => {
     });
 
     it('suggests circle for circl typo', () => {
-      const actions = actionsFor('circl(50, 50, 25)');
+      const actions = actionsFor('circl(50, 50, 25);');
       const suggestion = actions.find((a) => a.title.includes('circle'));
       expect(suggestion).toBeDefined();
     });
@@ -48,7 +48,7 @@ describe('getCodeActions', () => {
     });
 
     it('suggests user-defined variables', () => {
-      const actions = actionsFor('let radius = 50;\ncircle(0, 0, radiu)');
+      const actions = actionsFor('let radius = 50;\ncircle(0, 0, radiu);');
       const suggestion = actions.find((a) => a.title.includes('radius'));
       expect(suggestion).toBeDefined();
     });

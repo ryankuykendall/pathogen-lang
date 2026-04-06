@@ -147,7 +147,7 @@ describe('Evaluator', () => {
       });
 
       it('evaluates division', () => {
-        expect(compilePath('M calc(10 / 2) 0')).toBe('M 5 0');
+        expect(compilePath('let d = calc(10 / 2); M d 0')).toBe('M 5 0');
       });
 
       it('evaluates modulo', () => {
@@ -155,7 +155,7 @@ describe('Evaluator', () => {
       });
 
       it('evaluates complex expressions', () => {
-        expect(compilePath('M calc(2 + 3 * 4 - 6 / 2) 0')).toBe('M 11 0');
+        expect(compilePath('let r = calc(2 + 3 * 4 - 6 / 2); M r 0')).toBe('M 11 0');
       });
     });
   });
@@ -422,7 +422,7 @@ describe('Evaluator', () => {
       });
 
       it('evaluates calc(0.5pi / 2) — divide pi suffix by scalar', () => {
-        const result = compilePath('M calc(0.5pi / 2) 0');
+        const result = compilePath('let pi_val = 0.5pi; let result = calc(pi_val / 2); M result 0');
         const match = /^M ([\d.]+) 0$/.exec(result);
         expect(match).not.toBeNull();
         expect(parseFloat(match![1])).toBeCloseTo(Math.PI / 4);
@@ -860,15 +860,15 @@ describe('Evaluator', () => {
 
   describe('toFixed option', () => {
     it('rounds decimals to specified precision', () => {
-      expect(compilePath('M calc(10/3) calc(20/7)', { toFixed: 2 })).toBe('M 3.33 2.86');
+      expect(compilePath('let x1 = calc(10 / 3); let x2 = calc(20 / 7); M x1 x2', { toFixed: 2 })).toBe('M 3.33 2.86');
     });
 
     it('rounds to 0 decimal places', () => {
-      expect(compilePath('M calc(10/3) calc(20/7)', { toFixed: 0 })).toBe('M 3 3');
+      expect(compilePath('let x1 = calc(10 / 3); let x2 = calc(20 / 7); M x1 x2', { toFixed: 0 })).toBe('M 3 3');
     });
 
     it('rounds to 4 decimal places', () => {
-      expect(compilePath('M calc(10/3) 0', { toFixed: 4 })).toBe('M 3.3333 0');
+      expect(compilePath('let x1 = calc(10 / 3); M x1 0', { toFixed: 4 })).toBe('M 3.3333 0');
     });
 
     it('does not modify integers', () => {
@@ -880,11 +880,11 @@ describe('Evaluator', () => {
     });
 
     it('handles negative decimals', () => {
-      expect(compilePath('M calc(-10/3) calc(-20/7)', { toFixed: 2 })).toBe('M -3.33 -2.86');
+      expect(compilePath('let x1 = calc(-10 / 3); let x2 = calc(-20 / 7); M x1 x2', { toFixed: 2 })).toBe('M -3.33 -2.86');
     });
 
     it('does not round when option not provided', () => {
-      const result = compilePath('M calc(10/3) 0');
+      const result = compilePath('let x1 = calc(10 / 3); M x1 0');
       expect(result).toBe(`M ${10 / 3} 0`);
     });
 
@@ -2307,11 +2307,12 @@ describe('Evaluator', () => {
           let prevCPx = cpx;
           let prevCPy = cpy;
           for ([pt, idx] in points) {
-            let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+            let angle = atan2(calc(pt.y - prevCPy), calc(pt.x - prevCPx));
             let newCPx = calc(pt.x + pt.exit * cos(angle));
             let newCPy = calc(pt.y + pt.exit * sin(angle));
             if (idx < calc(points.length - 1)) {
-              Q newCPx newCPy points[calc(idx + 1)].x points[calc(idx + 1)].y
+              let nextIdx = calc(idx + 1);
+              Q newCPx newCPy points[nextIdx].x points[nextIdx].y
             } else {
               Q newCPx newCPy end.x end.y
             }
@@ -2330,37 +2331,37 @@ describe('Evaluator', () => {
         let cpx = calc(start.x + start.exit * cos(start.angle));
         let cpy = calc(start.y + start.exit * sin(start.angle));
         if (points.length > 0) {
-          let c1x = calc(lerp(start.x, cpx, start.exitTime));
-          let c1y = calc(lerp(start.y, cpy, start.exitTime));
-          let c2x = calc(lerp(points[0].x, cpx, points[0].entryTime));
-          let c2y = calc(lerp(points[0].y, cpy, points[0].entryTime));
+          let c1x = lerp(start.x, cpx, start.exitTime);
+          let c1y = lerp(start.y, cpy, start.exitTime);
+          let c2x = lerp(points[0].x, cpx, points[0].entryTime);
+          let c2y = lerp(points[0].y, cpy, points[0].entryTime);
           C c1x c1y c2x c2y points[0].x points[0].y
           let prevCPx = cpx;
           let prevCPy = cpy;
           for ([pt, idx] in points) {
-            let angle = calc(atan2(pt.y - prevCPy, pt.x - prevCPx));
+            let angle = atan2(calc(pt.y - prevCPy), calc(pt.x - prevCPx));
             let newCPx = calc(pt.x + pt.exit * cos(angle));
             let newCPy = calc(pt.y + pt.exit * sin(angle));
-            let c1x = calc(lerp(pt.x, newCPx, pt.exitTime));
-            let c1y = calc(lerp(pt.y, newCPy, pt.exitTime));
+            let c1x = lerp(pt.x, newCPx, pt.exitTime);
+            let c1y = lerp(pt.y, newCPy, pt.exitTime);
             if (idx < calc(points.length - 1)) {
               let nextIdx = calc(idx + 1);
-              let c2x = calc(lerp(points[nextIdx].x, newCPx, points[nextIdx].entryTime));
-              let c2y = calc(lerp(points[nextIdx].y, newCPy, points[nextIdx].entryTime));
+              let c2x = lerp(points[nextIdx].x, newCPx, points[nextIdx].entryTime);
+              let c2y = lerp(points[nextIdx].y, newCPy, points[nextIdx].entryTime);
               C c1x c1y c2x c2y points[nextIdx].x points[nextIdx].y
             } else {
-              let c2x = calc(lerp(end.x, newCPx, end.entryTime));
-              let c2y = calc(lerp(end.y, newCPy, end.entryTime));
+              let c2x = lerp(end.x, newCPx, end.entryTime);
+              let c2y = lerp(end.y, newCPy, end.entryTime);
               C c1x c1y c2x c2y end.x end.y
             }
             prevCPx = newCPx;
             prevCPy = newCPy;
           }
         } else {
-          let c1x = calc(lerp(start.x, cpx, start.exitTime));
-          let c1y = calc(lerp(start.y, cpy, start.exitTime));
-          let c2x = calc(lerp(end.x, cpx, end.entryTime));
-          let c2y = calc(lerp(end.y, cpy, end.entryTime));
+          let c1x = lerp(start.x, cpx, start.exitTime);
+          let c1y = lerp(start.y, cpy, start.exitTime);
+          let c2x = lerp(end.x, cpx, end.entryTime);
+          let c2y = lerp(end.y, cpy, end.entryTime);
           C c1x c1y c2x c2y end.x end.y
         }
       }
@@ -2374,7 +2375,7 @@ describe('Evaluator', () => {
             { x: 0, y: 100, angle: 0, exit: 30 },
             { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
             { x: 100, y: 100, angle: 0, entry: 30 }
-          ])
+          ]);
         `);
         // angle=0: cos(0)=1, sin(0)=0
         // Seg 1: CP1=(0+30,100+0)=(30,100), CP2=(50-20,0-0)=(30,0)
@@ -2388,7 +2389,7 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: 0, y: 0, angle: 0, exit: 40 },
             { x: 100, y: 50, angle: 0, entry: 30 }
-          ])
+          ]);
         `);
         // CP1=(0+40,0)=(40,0), CP2=(100-30,50)=(70,50)
         expect(result).toBe('M 0 0 C 40 0 70 50 100 50');
@@ -2401,7 +2402,7 @@ describe('Evaluator', () => {
             { x: 0, y: 100, angle: 0, exit: 30 },
             { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
             { x: 100, y: 100, angle: 0, entry: 30 }
-          ])
+          ]);
         `);
         const cmds = parseSVGPath(result);
         // At shared point P1=(50,0):
@@ -2417,7 +2418,7 @@ describe('Evaluator', () => {
       it('single-point array: emits only M', () => {
         const result = compilePath(`
           ${cubicSplineFn}
-          cubicSpline([{ x: 50, y: 50, angle: 0 }])
+          cubicSpline([{ x: 50, y: 50, angle: 0 }]);
         `);
         expect(result).toBe('M 50 50');
       });
@@ -2428,7 +2429,7 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 100, y: 0, angle: 0, entry: 20 }
-          ])
+          ]);
         `);
         // exit on last and entry on first are never accessed by the algorithm
         expect(result).toBe('M 0 0 C 20 0 80 0 100 0');
@@ -2443,7 +2444,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 40 },
             [],
             { x: 100, y: 50 }
-          )
+          );
         `);
         // cp = (0+40*1, 0+40*0) = (40, 0)
         expect(result).toBe('M 0 0 Q 40 0 100 50');
@@ -2456,7 +2457,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 30 },
             [{ x: 60, y: 0, exit: 30 }],
             { x: 120, y: 0 }
-          )
+          );
         `);
         // First cp=(30,0), Q 30 0 60 0
         // At (60,0): prevCP=(30,0), angle=atan2(0,30)=0
@@ -2471,7 +2472,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 40 },
             [{ x: 50, y: 30, exit: 30 }],
             { x: 100, y: 50 }
-          )
+          );
         `);
         // First cp=(40,0), Q 40 0 50 30
         // At (50,30): prevCP=(40,0), angle=atan2(30,10)
@@ -2493,7 +2494,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 50 },
             [{ x: 100, y: 0, exit: 50 }],
             { x: 200, y: 0 }
-          )
+          );
         `);
         // cp1=(50,0), Q 50 0 100 0
         // At (100,0): angle=0, newCP=(150,0), Q 150 0 200 0
@@ -2509,7 +2510,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
             [],
             { x: 100, y: 0, entryTime: 1 }
-          )
+          );
         `);
         // sharedCP=(50,0)
         // CP1=lerp(0,50,1)=50, CP2=lerp(100,50,1)=50
@@ -2523,7 +2524,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
             [],
             { x: 200, y: 0, entryTime: 0.5 }
-          )
+          );
         `);
         // sharedCP=(100,0)
         // CP1=lerp(0,100,0.5)=50, CP2=lerp(200,100,0.5)=150
@@ -2537,7 +2538,7 @@ describe('Evaluator', () => {
             { x: 0, y: 0, angle: 0, exit: 40, exitTime: 0.8 },
             [],
             { x: 100, y: 0, entryTime: 0.8 }
-          )
+          );
         `);
         expect(result).toContainSVGCommands(['M', 'C']);
         expect(result).not.toContain('Q ');
@@ -2553,7 +2554,7 @@ describe('Evaluator', () => {
             cubicSpline([
               { x: ox, y: 0, angle: 0, exit: 20 },
               { x: calc(ox + 50), y: 50, angle: 0, entry: 20 }
-            ])
+            ]);
           }
         `);
         // i=0: M 0 0 C 20 0 30 50 50 50
@@ -2569,7 +2570,7 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: bx, y: by, angle: 0, exit: 15 },
             { x: calc(bx + 50), y: calc(by + 30), angle: 0, entry: 15 }
-          ])
+          ]);
         `);
         // P0=(10,20), P1=(60,50), CP1=(25,20), CP2=(45,50)
         expect(result).toBe('M 10 20 C 25 20 45 50 60 50');
@@ -2582,12 +2583,12 @@ describe('Evaluator', () => {
           cubicSpline([
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 50, y: 0, angle: 0, entry: 20 }
-          ])
+          ]);
           quadSpline(
             { x: 60, y: 0, angle: 0, exit: 20 },
             [],
             { x: 100, y: 0 }
-          )
+          );
         `);
         // cubicSpline: M 0 0 C 20 0 30 0 50 0
         // quadSpline: M 60 0 Q 80 0 100 0
@@ -2932,7 +2933,8 @@ describe('Evaluator', () => {
         const result = compilePath(`
           let pv = PolarVector(0.5, 10);
           let m = pv.mirror();
-          M calc(round(m.angle * 1000) / 1000) 0
+          let val = calc(round(m.angle * 1000) / 1000);
+          M val 0
         `);
         const expected = Math.round((0.5 + Math.PI) * 1000) / 1000;
         expect(result).toBe(`M ${expected} 0`);

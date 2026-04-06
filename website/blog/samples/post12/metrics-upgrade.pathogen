@@ -7,7 +7,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 340); }
+layer('bg').apply { rect(0, 0, 600, 340); }
 
 // ─── Left: fromGlyph() — paths AND metrics from the same font ──
 
@@ -25,7 +25,7 @@ let path_layer = PathLayer('glyph-paths') ${
 // Draw glyphs using advanceWidth — inherently precise
 let cursor = 0;
 let glyph_bboxes = [];
-path_layer.apply {
+layer('glyph-paths').apply {
   for (g in glyphs) {
     let proj = g.drawTo(cursor, 60);
     glyph_bboxes.push(proj.boundingBox());
@@ -47,9 +47,9 @@ let total_bbox = PathLayer('total-bbox') ${
 let first_bb = glyph_bboxes[0];
 let last_bb = glyph_bboxes[calc(glyph_bboxes.length - 1)];
 let combined_w = calc(last_bb.x + last_bb.width - first_bb.x);
-let combined_h = calc(first_bb.height);
+let combined_h = first_bb.height;
 
-total_bbox.apply {
+layer('total-bbox').apply {
   rect(first_bb.x, first_bb.y, combined_w, combined_h);
 }
 
@@ -61,7 +61,7 @@ let tick_layer = PathLayer('ticks') ${
   fill: none;
 };
 let tick_cursor = 0;
-tick_layer.apply {
+layer('ticks').apply {
   for (g in glyphs) {
     M tick_cursor calc(first_bb.y - 2) v calc(combined_h + 4)
     let tick_cursor = calc(tick_cursor + g.advanceWidth);
@@ -75,7 +75,7 @@ let left_label = TextLayer('left-label') ${
   fill: Color('#22c55e');
   text-anchor: start;
 };
-left_label.apply {
+layer('left-label').apply {
   text(0, 100)`advanceWidth layout = ${round(total_w * 10) / 10}px total`
   text(0, 112)`paths + metrics from same font file`
 }
@@ -92,7 +92,7 @@ let text_layer = TextLayer('svg-text') ${
   font-size: 24;
   fill: Color('#94a3b8');
 };
-text_layer.apply {
+layer('svg-text').apply {
   text(0, 60)`LAYOUT`
 }
 
@@ -106,7 +106,7 @@ let text_bbox = PathLayer('text-bbox') ${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-text_bbox.apply {
+layer('text-bbox').apply {
   rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height);
 }
 
@@ -116,7 +116,7 @@ let right_label = TextLayer('right-label') ${
   fill: Color('#f59e0b');
   text-anchor: start;
 };
-right_label.apply {
+layer('right-label').apply {
   text(0, 100)`estimation table = ${round(text_bb.width * 10) / 10}px`
   text(0, 112)`browser picks its own monospace font`
 }
@@ -128,7 +128,7 @@ let note = TextLayer('note') ${
   fill: Color('#64748b');
   text-anchor: start;
 };
-note.apply {
+layer('note').apply {
   text(0, 132)`bbox may not match — different font`
   text(0, 144)`than what the browser renders`
 }
@@ -143,7 +143,7 @@ let left_title = TextLayer('l-title') ${
   fill: Color('#22c55e');
   text-anchor: start;
 };
-left_title.apply { text(30, 42)`PathBlock.fromGlyph() — exact` }
+layer('l-title').apply { text(30, 42)`PathBlock.fromGlyph() — exact` }
 
 let right_title = TextLayer('r-title') ${
   font-family: system-ui, sans-serif;
@@ -151,7 +151,7 @@ let right_title = TextLayer('r-title') ${
   fill: Color('#f59e0b');
   text-anchor: start;
 };
-right_title.apply { text(310, 42)`SVG <text> — estimated` }
+layer('r-title').apply { text(310, 42)`SVG <text> — estimated` }
 
 // ─── Divider ─────────────────────────────────────────────────────
 
@@ -160,7 +160,7 @@ let divider = PathLayer('divider') ${
   stroke-width: 1;
   fill: none;
 };
-divider.apply { M 295 40 v 170 }
+layer('divider').apply { M 295 40 v 170 }
 
 // ─── Title ───────────────────────────────────────────────────────
 
@@ -170,7 +170,7 @@ let title = TextLayer('title') ${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-title.apply { text(30, 25)`Why @font Matters: Paths vs Text` }
+layer('title').apply { text(30, 25)`Why @font Matters: Paths vs Text` }
 
 // ─── Bottom annotation ──────────────────────────────────────────
 
@@ -180,7 +180,7 @@ let anno = TextLayer('anno') ${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-anno.apply {
+layer('anno').apply {
   text(30, 270)`fromGlyph() renders text AS paths — the loaded font is`
   text(30, 282)`both the renderer and the measurer. No mismatch possible.`
   text(30, 300)`SVG <text> relies on the browser's font — estimation tables`
@@ -195,6 +195,6 @@ let insight = TextLayer('insight') ${
   fill: Color('#3b82f6');
   text-anchor: start;
 };
-insight.apply {
+layer('insight').apply {
   text(30, 332)`Paths = single source of truth for geometry AND metrics`
 }

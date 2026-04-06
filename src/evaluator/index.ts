@@ -841,7 +841,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     let resolvedValue = prop.value;
     try {
       const parseResult = expressionParser.parse(prop.value);
-      if (parseResult.status) {
+      if (parseResult.status && parseResult.value) {
         // If the expression is a bare color literal (#hex), preserve raw value in style blocks
         if (parseResult.value.type === 'ColorLiteral') {
           resolvedValue = parseResult.value.raw;

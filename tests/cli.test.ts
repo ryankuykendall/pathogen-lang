@@ -104,7 +104,7 @@ describe('CLI', () => {
     const inputFile = join(TMP_DIR, 'test-input.svgx');
 
     it('compiles file with --src flag', () => {
-      writeFileSync(inputFile, 'let r = 25; circle(50, 50, r)');
+      writeFileSync(inputFile, 'let r = 25; circle(50, 50, r);');
       const result = runCli([`--src=${inputFile}`]);
       expect(result.stdout.trim()).toBe('M 25 50 A 25 25 0 1 1 75 50 A 25 25 0 1 1 25 50');
     });
@@ -140,7 +140,7 @@ describe('CLI', () => {
     });
 
     it('writes path to file with -o', () => {
-      writeFileSync(inputFile, 'circle(100, 100, 50)');
+      writeFileSync(inputFile, 'circle(100, 100, 50);');
       runCli([`--src=${inputFile}`, '-o', outputTxt]);
       expect(existsSync(outputTxt)).toBe(true);
       const content = readFileSync(outputTxt, 'utf-8');
@@ -154,7 +154,7 @@ describe('CLI', () => {
     });
 
     it('writes SVG file with --output-svg-file', () => {
-      writeFileSync(inputFile, 'circle(100, 100, 50)');
+      writeFileSync(inputFile, 'circle(100, 100, 50);');
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
       expect(existsSync(outputSvg)).toBe(true);
       const content = readFileSync(outputSvg, 'utf-8');
@@ -388,13 +388,13 @@ describe('CLI', () => {
 
   describe('--to-fixed option', () => {
     it('rounds decimals with --to-fixed=2', () => {
-      const result = runCli(['-e', 'M calc(10/3) calc(20/7)', '--to-fixed=2']);
+      const result = runCli(['-e', 'let x1 = calc(10 / 3); let x2 = calc(20 / 7); M x1 x2', '--to-fixed=2']);
       expect(result.stdout.trim()).toBe('M 3.33 2.86');
       expect(result.status).toBe(0);
     });
 
     it('rounds to 0 places with --to-fixed=0', () => {
-      const result = runCli(['-e', 'M calc(10/3) calc(20/7)', '--to-fixed=0']);
+      const result = runCli(['-e', 'let x1 = calc(10 / 3); let x2 = calc(20 / 7); M x1 x2', '--to-fixed=0']);
       expect(result.stdout.trim()).toBe('M 3 3');
       expect(result.status).toBe(0);
     });
@@ -415,7 +415,7 @@ describe('CLI', () => {
       const outputFile = join(TMP_DIR, 'to-fixed-output.svg');
       if (existsSync(outputFile)) unlinkSync(outputFile);
 
-      const result = runCli(['-e', 'M calc(10/3) 0', '--to-fixed=2', `--output-svg-file=${outputFile}`]);
+      const result = runCli(['-e', 'let x1 = calc(10 / 3); M x1 0', '--to-fixed=2', `--output-svg-file=${outputFile}`]);
       expect(result.status).toBe(0);
       expect(existsSync(outputFile)).toBe(true);
 

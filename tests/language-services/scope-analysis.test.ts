@@ -78,7 +78,7 @@ describe('analyzeScopes', () => {
     });
 
     it('records parameters in function scope', () => {
-      const info = analyze('fn draw(cx, cy, r) {\n  circle(cx, cy, r)\n}');
+      const info = analyze('fn draw(cx, cy, r) {\n  circle(cx, cy, r);\n}');
       const params = info.declarations.filter((d) => d.kind === 'parameter');
       expect(params.map((p) => p.name)).toEqual(['cx', 'cy', 'r']);
     });
@@ -92,7 +92,7 @@ describe('analyzeScopes', () => {
     });
 
     it('resolves outer scope variables inside function body', () => {
-      const info = analyze('let r = 50;\nfn draw() {\n  circle(0, 0, r)\n}');
+      const info = analyze('let r = 50;\nfn draw() {\n  circle(0, 0, r);\n}');
       const rRef = info.references.find((r) => r.name === 'r');
       expect(rRef).toBeDefined();
       expect(rRef!.declaration).not.toBeNull();
@@ -170,7 +170,7 @@ describe('analyzeScopes', () => {
 
   describe('stdlib and builtins', () => {
     it('marks stdlib function references as builtin', () => {
-      const info = analyze('circle(50, 50, 25)');
+      const info = analyze('circle(50, 50, 25);');
       expect(builtinRefs(info)).toContain('circle');
     });
 
@@ -205,11 +205,11 @@ describe('analyzeScopes', () => {
         'let r = 50;',
         'fn draw(cx, cy) {',
         '  for (i in 0..5) {',
-        '    let angle = calc(i / 5 * TAU());',
+        '    let angle = calc(i * TAU() / 5);',
         '    M calc(cx + r * cos(angle)) calc(cy + r * sin(angle))',
         '  }',
         '}',
-        'draw(100, 100)',
+        'draw(100, 100);',
       ].join('\n');
       const info = analyze(source);
 

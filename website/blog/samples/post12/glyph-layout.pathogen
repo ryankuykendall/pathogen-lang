@@ -7,7 +7,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 300); }
+layer('bg').apply { rect(0, 0, 600, 300); }
 
 // ─── Glyph layout with advance widths ────────────────────────────
 
@@ -25,7 +25,7 @@ let baseline_y = 140;
 let start_x = 60;
 let cursor_x = start_x;
 
-glyph_layer.apply {
+layer('glyphs').apply {
   for (g in glyphs) {
     g.drawTo(cursor_x, baseline_y);
     cursor_x = calc(cursor_x + g.advanceWidth);
@@ -41,7 +41,7 @@ let markers = PathLayer('markers') ${
 };
 
 // Baseline
-markers.apply {
+layer('markers').apply {
   M start_x baseline_y h calc(cursor_x - start_x)
 }
 
@@ -54,7 +54,7 @@ let ticks = PathLayer('ticks') ${
 };
 
 let tick_x = start_x;
-ticks.apply {
+layer('ticks').apply {
   for (g in glyphs) {
     M tick_x calc(baseline_y - 70) v 80
     let tick_x = calc(tick_x + g.advanceWidth);
@@ -76,7 +76,7 @@ let glyph_layer2 = PathLayer('glyphs2') ${
 let baseline_y2 = 230;
 let cursor_x2 = start_x;
 
-glyph_layer2.apply {
+layer('glyphs2').apply {
   for (g in glyphs2) {
     g.drawTo(cursor_x2, baseline_y2);
     cursor_x2 = calc(cursor_x2 + g.advanceWidth);
@@ -89,7 +89,7 @@ let markers2 = PathLayer('markers2') ${
   stroke-width: 0.75;
   fill: none;
 };
-markers2.apply {
+layer('markers2').apply {
   M start_x baseline_y2 h calc(cursor_x2 - start_x)
 }
 
@@ -101,7 +101,7 @@ let labels = TextLayer('labels') ${
   fill: Color('#64748b');
   text-anchor: start;
 };
-labels.apply {
+layer('labels').apply {
   text(start_x, calc(baseline_y + 16))`Bebas Neue · 64px · advanceWidth layout`
   text(start_x, calc(baseline_y2 + 16))`Inconsolata · 48px · uniform advance widths`
 }
@@ -114,7 +114,7 @@ let title = TextLayer('title') ${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-title.apply { text(30, 30)`Glyph Layout with Advance Widths` }
+layer('title').apply { text(30, 30)`Glyph Layout with Advance Widths` }
 
 // --- Code snippet ---
 
@@ -126,7 +126,7 @@ let code = TextLayer('code') ${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-code.apply {
+layer('code').apply {
   text(0, 0)`let cursor_x = start_x;`
   text(0, 12)`for (g in glyphs) {`
   text(8, 24)`g.drawTo(cursor_x, baseline)`
@@ -140,7 +140,7 @@ let kw = TextLayer('kw') ${
   fill: Color('#c084fc');
   text-anchor: start;
 };
-kw.apply {
+layer('kw').apply {
   text(0, 0)`let`
   text(0, 12)`for`
 }

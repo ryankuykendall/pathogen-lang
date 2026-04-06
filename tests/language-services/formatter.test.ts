@@ -61,7 +61,7 @@ describe('formatDocument', () => {
 
   describe('functions', () => {
     it('formats function with params', () => {
-      const result = format('fn draw(cx, cy, r) {\ncircle(cx, cy, r)\n}');
+      const result = format('fn draw(cx, cy, r) {\ncircle(cx, cy, r);\n}');
       expect(result).toBe('fn draw(cx, cy, r) {\n  circle(cx, cy, r)\n}');
     });
   });

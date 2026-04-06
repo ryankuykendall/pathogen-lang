@@ -25,19 +25,19 @@ describe('prepareRename', () => {
   });
 
   it('succeeds for user variable', () => {
-    const result = prepare('let radius = 50;\ncircle(0, 0, radius)', 0, 5);
+    const result = prepare('let radius = 50;\ncircle(0, 0, radius);', 0, 5);
     expect(result).not.toBeNull();
     expect(result!.placeholder).toBe('radius');
   });
 
   it('succeeds for user function', () => {
-    const result = prepare('fn draw() {\n  M 0 0\n}\ndraw()', 0, 4);
+    const result = prepare('fn draw() {\n  M 0 0\n}\ndraw();', 0, 4);
     expect(result).not.toBeNull();
     expect(result!.placeholder).toBe('draw');
   });
 
   it('succeeds from reference site', () => {
-    const result = prepare('let radius = 50;\ncircle(0, 0, radius)', 1, 15);
+    const result = prepare('let radius = 50;\ncircle(0, 0, radius);', 1, 15);
     expect(result).not.toBeNull();
     expect(result!.placeholder).toBe('radius');
   });
@@ -49,7 +49,7 @@ describe('getRenameEdits', () => {
   });
 
   it('renames variable declaration and usages', () => {
-    const source = 'let radius = 50;\ncircle(0, 0, radius)';
+    const source = 'let radius = 50;\ncircle(0, 0, radius);';
     const edits = rename(source, 0, 5, 'r');
     expect(edits.length).toBeGreaterThanOrEqual(2); // declaration + usage
     // All edits should replace with 'r'
@@ -57,7 +57,7 @@ describe('getRenameEdits', () => {
   });
 
   it('renames from reference site', () => {
-    const source = 'let radius = 50;\ncircle(0, 0, radius)';
+    const source = 'let radius = 50;\ncircle(0, 0, radius);';
     const edits = rename(source, 1, 15, 'r');
     expect(edits.length).toBeGreaterThanOrEqual(2);
   });

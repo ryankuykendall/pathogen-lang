@@ -6,7 +6,7 @@
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 900, 310); }
+layer('bg').apply { rect(0, 0, 900, 310); }
 
 // --- Palette ---
 
@@ -82,16 +82,16 @@ let glyph5_layer = PathLayer('glyph-n')   ${ stroke: palette[5]; stroke-width: 1
 let glyph6_layer = PathLayer('glyph-g')   ${ stroke: palette[6]; stroke-width: 1.5; fill: palette_fill[6]; };
 
 let s1_x = 30;
-glyph0_layer.apply { glyphs[0].drawTo(calc(s1_x + positions[0]), calc(geo_y + baseline_y)); }
-glyph1_layer.apply { glyphs[1].drawTo(calc(s1_x + positions[1]), calc(geo_y + baseline_y)); }
-glyph2_layer.apply { glyphs[2].drawTo(calc(s1_x + positions[2]), calc(geo_y + baseline_y)); }
-glyph3_layer.apply { glyphs[3].drawTo(calc(s1_x + positions[3]), calc(geo_y + baseline_y)); }
-glyph4_layer.apply { glyphs[4].drawTo(calc(s1_x + positions[4]), calc(geo_y + baseline_y)); }
-glyph5_layer.apply { glyphs[5].drawTo(calc(s1_x + positions[5]), calc(geo_y + baseline_y)); }
-glyph6_layer.apply { glyphs[6].drawTo(calc(s1_x + positions[6]), calc(geo_y + baseline_y)); }
+layer('glyph-c').apply { glyphs[0].drawTo(calc(s1_x + positions[0]), calc(geo_y + baseline_y)); }
+layer('glyph-u').apply { glyphs[1].drawTo(calc(s1_x + positions[1]), calc(geo_y + baseline_y)); }
+layer('glyph-t1').apply { glyphs[2].drawTo(calc(s1_x + positions[2]), calc(geo_y + baseline_y)); }
+layer('glyph-t2').apply { glyphs[3].drawTo(calc(s1_x + positions[3]), calc(geo_y + baseline_y)); }
+layer('glyph-i').apply { glyphs[4].drawTo(calc(s1_x + positions[4]), calc(geo_y + baseline_y)); }
+layer('glyph-n').apply { glyphs[5].drawTo(calc(s1_x + positions[5]), calc(geo_y + baseline_y)); }
+layer('glyph-g').apply { glyphs[6].drawTo(calc(s1_x + positions[6]), calc(geo_y + baseline_y)); }
 
 let s1_label = TextLayer('s1-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
-s1_label.apply {
+layer('s1-label').apply {
   text(s1_x, label_y)`7 glyph PathBlocks`
   text(s1_x, calc(label_y + 12))`laid out by advanceWidth`
 }
@@ -105,10 +105,10 @@ g_stage1.append(glyph0_layer, glyph1_layer, glyph2_layer, glyph3_layer, glyph4_l
 let g_stage2 = GroupLayer('stage2') ${ translate-x: 320; translate-y: 0; };
 
 let union_layer = PathLayer('union-result') ${ fill: c_blue; stroke: none; };
-union_layer.apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
+layer('union-result').apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
 
 let s2_label = TextLayer('s2-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
-s2_label.apply { text(30, label_y)`single united path` }
+layer('s2-label').apply { text(30, label_y)`single united path` }
 
 g_stage2.append(union_layer, s2_label);
 
@@ -119,10 +119,10 @@ g_stage2.append(union_layer, s2_label);
 let g_stage3 = GroupLayer('stage3') ${ translate-x: 610; translate-y: 0; };
 
 let cutout_layer = PathLayer('cutout-result') ${ fill: c_green; stroke: none; };
-cutout_layer.apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
+layer('cutout-result').apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
 
 let s3_label = TextLayer('s3-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
-s3_label.apply { text(30, label_y)`text punched from plate` }
+layer('s3-label').apply { text(30, label_y)`text punched from plate` }
 
 g_stage3.append(cutout_layer, s3_label);
 
@@ -135,28 +135,28 @@ let arrow_y = calc(geo_y + baseline_y - 20);
 // Arrow 1: Stage 1 → Stage 2 (x=240..320, centered at x=280)
 let a1_x = 252;
 let arrow1 = PathLayer('arrow1') ${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
-arrow1.apply { M a1_x arrow_y h 50  M calc(a1_x + 46) calc(arrow_y - 4) l 8 4 l -8 4 z }
+layer('arrow1').apply { M a1_x arrow_y h 50  M calc(a1_x + 46) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
 let arrow1_label = TextLayer('arrow1-label') ${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
-arrow1_label.apply { text(280, calc(arrow_y + 16))`.union()` }
+layer('arrow1-label').apply { text(280, calc(arrow_y + 16))`.union()` }
 
 // Arrow 2: Stage 2 → Stage 3 (x=520..610, centered at x=565)
 let a2_x = 532;
 let arrow2 = PathLayer('arrow2') ${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
-arrow2.apply { M a2_x arrow_y h 60  M calc(a2_x + 56) calc(arrow_y - 4) l 8 4 l -8 4 z }
+layer('arrow2').apply { M a2_x arrow_y h 60  M calc(a2_x + 56) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
 let arrow2_label = TextLayer('arrow2-label') ${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
-arrow2_label.apply { text(565, calc(arrow_y + 16))`.difference()` }
+layer('arrow2-label').apply { text(565, calc(arrow_y + 16))`.difference()` }
 
 // ═══════════════════════════════════════
 // Title and subtitle
 // ═══════════════════════════════════════
 
 let title = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 14; fill: c_text; text-anchor: start; };
-title.apply { text(30, 28)`Text Cutout with Boolean Operations` }
+layer('title').apply { text(30, 28)`Text Cutout with Boolean Operations` }
 
 let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 9; fill: c_muted; text-anchor: start; };
-subtitle.apply { text(30, 43)`7 glyph paths → .union() chain → .difference() from rectangle` }
+layer('subtitle').apply { text(30, 43)`7 glyph paths → .union() chain → .difference() from rectangle` }
 
 // ═══════════════════════════════════════
 // Code snippet (bottom, fitted to content)
@@ -165,16 +165,16 @@ subtitle.apply { text(30, 43)`7 glyph paths → .union() chain → .difference()
 let code_group = GroupLayer('code-block') ${ translate-x: 235; translate-y: 255; };
 
 let code_bg = PathLayer('code-bg') ${ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
-code_bg.apply { roundRect(0, 0, 430, 42, 4); }
+layer('code-bg').apply { roundRect(0, 0, 430, 42, 4); }
 
 let code = TextLayer('code') ${ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
-code.apply {
+layer('code').apply {
   text(10, 16)`let combined = projected[0];  for ... combined.union(projected[i]);`
   text(10, 30)`let cutout = plate.difference(combined);`
 }
 
 let kw = TextLayer('kw') ${ font-family: monospace; font-size: 8; fill: Color('#c084fc'); text-anchor: start; };
-kw.apply {
+layer('kw').apply {
   text(10, 16)`let`
   text(10, 30)`let`
 }

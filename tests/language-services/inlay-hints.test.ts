@@ -39,7 +39,7 @@ describe('getInlayHints', () => {
     });
 
     it('shows parameter names for circle()', () => {
-      const h = paramHints('circle(50, 50, 25)');
+      const h = paramHints('circle(50, 50, 25);');
       expect(h.length).toBe(3);
       expect(h[0].label).toBe('cx:');
       expect(h[1].label).toBe('cy:');
@@ -74,7 +74,7 @@ describe('getInlayHints', () => {
     });
 
     it('has correct positions', () => {
-      const h = paramHints('lerp(0, 100, 0.5)');
+      const h = paramHints('lerp(0, 100, 0.5);');
       // 'a:' before the 0 at position (0, 5)
       expect(h[0].position).toEqual({ line: 0, character: 5 });
     });

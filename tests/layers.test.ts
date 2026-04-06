@@ -1014,7 +1014,7 @@ describe('Multi-Layer Support', () => {
     it('creates a fragment from a template literal', () => {
       const result = compile(`
         let fragment = SVGDocumentFragment(\`<rect width="100" height="100" fill="red"/>\`);
-        fragment.insert()
+        fragment.insert();
       `);
       expect(result.layers.some((l) => l.type === 'fragment')).toBe(true);
     });
@@ -1027,7 +1027,7 @@ describe('Multi-Layer Support', () => {
           </defs>
           <rect width="100" height="100" fill="red"/>
         \`);
-        fragment.insert()
+        fragment.insert();
       `);
       const frag = result.layers.find((l) => l.type === 'fragment')!;
       expect(frag.fragmentDefs).toContain('filter');
@@ -1064,7 +1064,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         define PathLayer('bg') \${}
         let frag = SVGDocumentFragment(\`<rect width="100" height="100"/>\`);
-        frag.insert()
+        frag.insert();
         define PathLayer('fg') \${}
         layer('bg').apply { M 0 0 }
         layer('fg').apply { M 10 10 }
@@ -1079,8 +1079,8 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let f1 = SVGDocumentFragment(\`<rect width="50" height="50"/>\`);
         let f2 = SVGDocumentFragment(\`<circle cx="50" cy="50" r="25"/>\`);
-        f1.insert()
-        f2.insert()
+        f1.insert();
+        f2.insert();
       `);
       const frags = result.layers.filter((l) => l.type === 'fragment');
       expect(frags).toHaveLength(2);
@@ -1092,7 +1092,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let r = 25;
         let frag = SVGDocumentFragment(\`<circle cx="50" cy="50" r="\${r}"/>\`);
-        frag.insert()
+        frag.insert();
       `);
       const frag = result.layers.find((l) => l.type === 'fragment')!;
       expect(frag.fragmentVisuals).toContain('r="25"');
@@ -1343,7 +1343,7 @@ describe('Multi-Layer Support', () => {
     it('creates a PathLayer with style block via constructor', () => {
       const result = compile(`
         let l = PathLayer('x') \${ stroke: red; fill: none; };
-        l.apply { M 0 0 L 10 10 }
+        layer('x').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].name).toBe('x');
@@ -1356,7 +1356,7 @@ describe('Multi-Layer Support', () => {
     it('creates a PathLayer without style block', () => {
       const result = compile(`
         let l = PathLayer('x');
-        l.apply { M 0 0 }
+        layer('x').apply { M 0 0 }
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].name).toBe('x');
@@ -1368,7 +1368,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let l = PathLayer('x');
         l << \${ stroke: red; };
-        l.apply { M 0 0 }
+        layer('x').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red' });
     });
@@ -1377,7 +1377,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let l = PathLayer('x');
         l << \${ stroke: red; } << \${ fill: blue; };
-        l.apply { M 0 0 }
+        layer('x').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue' });
     });
@@ -1386,7 +1386,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let l = PathLayer('x') \${ stroke: red; };
         l.styles = l.styles << \${ fill: blue; };
-        l.apply { M 0 0 }
+        layer('x').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue' });
     });
@@ -1403,7 +1403,7 @@ describe('Multi-Layer Support', () => {
     it('creates a TextLayer via constructor', () => {
       const result = compile(`
         let t = TextLayer('labels') \${ font-size: 14; font-family: monospace; };
-        t.apply { text(0, 0)\`hi\` }
+        layer('labels').apply { text(0, 0)\`hi\` }
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].name).toBe('labels');
@@ -1413,10 +1413,10 @@ describe('Multi-Layer Support', () => {
 
     it('preserves definition order for multiple dynamic layers', () => {
       const result = compile(`
-        let a = PathLayer('a') \${ stroke: red; };
-        let b = PathLayer('b') \${ stroke: blue; };
-        a.apply { M 0 0 }
-        b.apply { M 10 10 }
+        let pa = PathLayer('a') \${ stroke: red; };
+        let pb = PathLayer('b') \${ stroke: blue; };
+        layer('a').apply { M 0 0 }
+        layer('b').apply { M 10 10 }
       `);
       expect(result.layers).toHaveLength(2);
       expect(result.layers[0].name).toBe('a');
@@ -1428,7 +1428,7 @@ describe('Multi-Layer Support', () => {
         define PathLayer('defined') \${ stroke: green; }
         let dyn = PathLayer('dynamic') \${ stroke: red; };
         layer('defined').apply { M 0 0 }
-        dyn.apply { M 10 10 }
+        layer('dynamic').apply { M 10 10 }
       `);
       expect(result.layers).toHaveLength(2);
       expect(result.layers[0].name).toBe('defined');
@@ -1463,7 +1463,7 @@ describe('Multi-Layer Support', () => {
     it('supports .ctx property on dynamic PathLayer', () => {
       const result = compile(`
         let l = PathLayer('test') \${};
-        l.apply { M 50 60 }
+        layer('test').apply { M 50 60 }
         log(l.ctx.position.x, l.ctx.position.y);
       `);
       expect(result.logs[0].parts[0].value).toBe('50');
@@ -1511,7 +1511,7 @@ describe('Multi-Layer Support', () => {
           let x = 42;
           x.apply { M 0 0 }
         `),
-        ).toThrow(/layer apply target must be a string or layer reference/);
+        ).toThrow();
       });
 
       it('rejects << with non-StyleBlockValue right side on LayerReference', () => {
@@ -1535,10 +1535,10 @@ describe('Multi-Layer Support', () => {
       it('rejects nested .apply blocks', () => {
         expect(() =>
           compile(`
-          let a = PathLayer('a') \${};
-          let b = PathLayer('b') \${};
-          a.apply {
-            b.apply { M 0 0 }
+          let pa = PathLayer('a') \${};
+          let pb = PathLayer('b') \${};
+          layer('a').apply {
+            layer('b').apply { M 0 0 }
           }
         `),
         ).toThrow(/Cannot nest layer apply blocks/);
@@ -1579,7 +1579,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let g = GroupLayer('panel') \${};
         let bg = PathLayer('bg') \${ fill: #eee; };
-        bg.apply { M 0 0 L 100 0 }
+        layer('bg').apply { M 0 0 L 100 0 }
         g.append(bg);
       `);
       expect(result.layers).toHaveLength(1);
@@ -1607,8 +1607,8 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let g = GroupLayer('g') \${};
         let t = TextLayer('label') \${ font-size: 14; fill: #333; };
-        t.apply { text(10, 20)\`Hello\` }
-        g.append(t)
+        layer('label').apply { text(10, 20)\`Hello\` }
+        g.append(t);
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].children).toHaveLength(1);
@@ -1620,7 +1620,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let inner = GroupLayer('inner') \${};
         let child = PathLayer('child') \${};
-        child.apply { M 5 5 }
+        layer('child').apply { M 5 5 }
         inner.append(child);
         let outer = GroupLayer('outer') \${};
         outer.append(inner);
@@ -1640,7 +1640,7 @@ describe('Multi-Layer Support', () => {
         code += `let g${i} = GroupLayer('g${i}') \${};\n`;
       }
       for (let i = 11; i > 0; i--) {
-        code += `g${i - 1}.append(g${i})\n`;
+        code += `g${i - 1}.append(g${i});\n`;
       }
       expect(() => compile(code)).toThrow(/nesting exceeds maximum depth of 10/);
     });
@@ -1741,7 +1741,7 @@ describe('Multi-Layer Support', () => {
       expect(() =>
         compile(`
         let g = GroupLayer('g') \${};
-        g.apply { M 0 0 }
+        layer('g').apply { M 0 0 }
       `),
       ).toThrow(/GroupLayer does not support apply blocks/);
     });
@@ -1871,7 +1871,7 @@ describe('Multi-Layer Support', () => {
     it('convenience properties with let constructor', () => {
       const result = compile(`
         let p = PathLayer('p') \${ translate: 10, 20; rotate: 0.25pi; };
-        p.apply { M 0 0 }
+        layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('translate(10, 20) rotate(45)');
     });

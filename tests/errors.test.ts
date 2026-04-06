@@ -142,7 +142,7 @@ describe('Runtime errors', () => {
     });
 
     it('throws on wrong argument count for user function (too many)', () => {
-      expect(() => compilePath('fn single(a) { M a 0 } single(1, 2, 3);')).toThrow(/expects 1 argument.*got 3/i);
+      expect(() => compilePath('fn single(x) { M x 0 } single(1, 2, 3);')).toThrow(/expects 1 argument.*got 3/i);
     });
   });
 
@@ -168,7 +168,7 @@ describe('Runtime errors', () => {
     });
 
     it('wrong function argument count includes line number', () => {
-      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 }\nadd(1)')).toThrow(
+      expect(() => compilePath('fn add(a, b) { M calc(a + b) 0 }\nadd(1);')).toThrow(
         /^Line 2, col 1: Function add expects 2 arguments, got 1$/,
       );
     });
@@ -386,7 +386,7 @@ describe('Edge cases', () => {
 
   describe('division and modulo', () => {
     it('handles division', () => {
-      expect(compilePath('M calc(10 / 2) 0')).toBe('M 5 0');
+      expect(compilePath('let d = calc(10 / 2); M d 0')).toBe('M 5 0');
     });
 
     it('handles modulo', () => {
@@ -394,7 +394,7 @@ describe('Edge cases', () => {
     });
 
     it('handles division by zero (returns Infinity)', () => {
-      const result = compilePath('M calc(10 / 0) 0');
+      const result = compilePath('let d = calc(10 / 0); M d 0');
       expect(result).toContain('Infinity');
     });
 
@@ -437,7 +437,7 @@ describe('Edge cases', () => {
     });
 
     it('allows dividing deg by plain number', () => {
-      const result = compilePath('M calc(90deg / 2) 0');
+      const result = compilePath('let d = calc(90deg / 2); M d 0');
       expect(result).toMatch(/^M [\d.]+ 0$/);
     });
 
@@ -485,48 +485,48 @@ describe('Edge cases', () => {
 
 describe('Method call error locations', () => {
   it('unknown PathBlock method includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo()')).toThrow(
-      /^Line 2, col 2: Unknown PathBlock method: foo$/,
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.foo();')).toThrow(
+      /^Line 2, col 1: Unknown PathBlock method: foo$/,
     );
   });
 
   it('unknown ProjectedPath method includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo()')).toThrow(
-      /^Line 3, col 2: Unknown ProjectedPath method: foo$/,
+    expect(() => compilePath('let b = @{ l 10 0 };\nlet p = b.project(0, 0);\np.foo();')).toThrow(
+      /^Line 3, col 1: Unknown ProjectedPath method: foo$/,
     );
   });
 
   it('argument type error on method call includes line and column', () => {
-    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x")')).toThrow(/^Line 2, col 2:.*must be a number$/);
+    expect(() => compilePath('let b = @{ l 10 0 };\nb.get("x");')).toThrow(/^Line 2, col 1:.*must be a number$/);
   });
 
   it('unknown array method includes line and column', () => {
-    expect(() => compilePath('let list = [1, 2];\nlist.foo()')).toThrow(/^Line 2, col 5:.*Unknown array method: foo$/);
+    expect(() => compilePath('let list = [1, 2];\nlist.foo();')).toThrow(/^Line 2, col 1:.*Unknown array method: foo$/);
   });
 
   it('unknown Point method includes line and column', () => {
-    expect(() => compilePath('let pt = Point(1, 2);\npt.foo()')).toThrow(/^Line 2, col 3:.*Unknown Point method: foo$/);
+    expect(() => compilePath('let pt = Point(1, 2);\npt.foo();')).toThrow(/^Line 2, col 1:.*Unknown Point method: foo$/);
   });
 
   it('unknown string method includes line and column', () => {
-    expect(() => compilePath('let s = `hello`;\ns.foo()')).toThrow(/^Line 2, col 2:.*Unknown string method: foo$/);
+    expect(() => compilePath('let s = `hello`;\ns.foo();')).toThrow(/^Line 2, col 1:.*Unknown string method: foo$/);
   });
 });
 
 describe('Void function calls', () => {
   it('void function as bare statement does not throw', () => {
     // A user-defined function that doesn't return anything
-    const result = compilePath('fn doNothing() { let x = 1; }\ndoNothing()');
+    const result = compilePath('fn doNothing() { let x = 1; }\ndoNothing();');
     expect(result).toBe('');
   });
 
   it('void function with path commands still works', () => {
-    const result = compilePath('fn setup() { let x = 1; }\nsetup()\nM 10 20');
+    const result = compilePath('fn setup() { let x = 1; }\nsetup();\nM 10 20');
     expect(result).toBe('M 10 20');
   });
 
   it('function with explicit return value still works normally', () => {
-    const result = compilePath('fn makeCircle(r) { return circle(50, 50, r); }\nmakeCircle(25)');
+    const result = compilePath('fn makeCircle(r) { return circle(50, 50, r); }\nmakeCircle(25);');
     expect(result).toContain('M');
   });
 

@@ -50,7 +50,7 @@ describe('getSemanticTokens', () => {
     });
 
     it('classifies function call as function without declaration', () => {
-      const t = tokens('fn draw() {\n  M 0 0\n}\ndraw()');
+      const t = tokens('fn draw() {\n  M 0 0\n}\ndraw();');
       const callTokens = t.filter((tok) => tok.line === 3 && typeOf(tok) === 'function');
       expect(callTokens.length).toBeGreaterThanOrEqual(1);
     });
@@ -74,7 +74,7 @@ describe('getSemanticTokens', () => {
 
   describe('builtins', () => {
     it('classifies stdlib function calls as function', () => {
-      const t = tokensByType('circle(50, 50, 25)', 'function');
+      const t = tokensByType('circle(50, 50, 25);', 'function');
       expect(t.length).toBeGreaterThanOrEqual(1);
     });
 
