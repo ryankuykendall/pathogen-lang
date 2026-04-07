@@ -39,11 +39,21 @@ Docs first → failing tests → implement → visual verify → full test suite
 
 Build library → scope components → identify reuse → storybook-driven design → integrate → visual verify. See `playground/CLAUDE.md` for detailed steps.
 
-### Cross-Cutting (both `src/` and `playground/`)
+### Cross-Cutting (compiler, language-services, VS Code extension, playground)
 
-1. Make compiler changes first following the compiler lifecycle above
-2. Run `npm run build` — playground loads `dist/index.global.js`
-3. Make playground changes following the playground lifecycle above
+For changes spanning multiple systems, see the [cross-system feature lifecycle](project-docs/developer-experience/cross-system-feature-lifecycle.md).
+
+**Quick checklist:**
+
+| Change type | Systems to update |
+|-------------|------------------|
+| New keyword | Grammar, evaluator, `completion-data.ts`, `hover.ts`, TextMate grammar, snippets, docs |
+| New stdlib function | `stdlib/*.ts`, `completion-data.ts`, `hover.ts`, docs |
+| New enum | evaluator `BUILTIN_ENUMS`, `completion-data.ts` (gap — see audit), docs |
+| New type with members | evaluator, `completion-data.ts`, `completion.ts` (inferType + getMembersForObject) |
+| New syntax construct | Lezer grammar, AST, ast-builder, evaluator, TextMate grammar, language-services, docs |
+
+**Build order:** compiler → language-services → `npm run build` → VS Code packages → playground → docs
 
 ### Agent Workflow Hints
 

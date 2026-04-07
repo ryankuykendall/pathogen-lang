@@ -108,7 +108,7 @@ docs/
 
 Shared intelligence layer (`src/language-services/`) consumed by both the VS Code extension (via LSP) and the playground (via direct import). Zero Node.js or VS Code dependencies — ships in the main npm bundle.
 
-Provides: diagnostics, document symbols, scope analysis, completion, hover, go-to-definition, find-references, signature help, rename, semantic tokens, formatting, code actions, inlay hints.
+Provides: diagnostics, document symbols, scope analysis, completion, hover, go-to-definition, find-references, signature help, rename, semantic tokens, formatting, code actions, inlay hints. See `src/language-services/CLAUDE.md` for module details and sync requirements.
 
 ### Evaluator (4-file split)
 
@@ -153,7 +153,11 @@ Context-aware functions receive the current path context and can read pen positi
 | Add CLI option               | `cli.ts`                                                           |
 | Add library export           | `index.ts`                                                         |
 | Add language service feature | `language-services/*.ts`, `language-services/index.ts`              |
+| Add stdlib completion        | `language-services/completion-data.ts`, `language-services/hover.ts`|
+| Add type member completions  | `language-services/completion-data.ts`, `language-services/completion.ts` |
 | Update editor highlighting   | `parser/pathogen.grammar`, `parser/highlight.ts`                   |
+| Update VS Code highlighting  | `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json`       |
+| Add VS Code snippet          | `packages/vscode-pathogen/snippets/pathogen.code-snippets`         |
 
 ## CLI Options
 
@@ -221,6 +225,7 @@ analyzeScopes(document)            // → ScopeInfo { root, declarations, refere
    - Error handling → `tests/errors.test.ts`
    - CLI → `tests/cli.test.ts`
 3. **Implement** — Make tests pass. Follow existing evaluator patterns for consistency — this is a language runtime, so predictability matters more than cleverness.
+3.5. **Update language-services** — If the change adds or modifies keywords, stdlib functions, types, enums, or member access, update the language-services layer so completions, hover, and signature help reflect the new API surface. See `src/language-services/CLAUDE.md` for the specific files to update per change type, and the [cross-system feature lifecycle](../project-docs/developer-experience/cross-system-feature-lifecycle.md) for the full checklist.
 4. **Visual verify** — Generate SVGs with `--output-svg-file` and confirm the output renders correctly, paths are smooth, and edge cases produce reasonable visual results.
 5. **Code review** — Run the `@code-reviewer` agent to get a read-only review of all changes before committing.
 6. **Full test suite** — `npm run test:run` before commit. This is the regression safety net — verify existing user expectations aren't broken, not just that the new feature works.

@@ -1,0 +1,155 @@
+# Cross-System Feature Lifecycle
+
+**Date**: 2026-04-07
+
+When a language feature is added to Pathogen (keyword, stdlib function, enum, type, syntax construct), multiple systems need coordinating updates. This document is the comprehensive reference for that process.
+
+**Quick-reference versions**: See the cross-cutting section in `.claude/CLAUDE.md` and the per-system CLAUDE.md files for concise checklists.
+
+## System Map
+
+```
+                ┌─────────────┐
+                │   docs/     │  User-facing documentation
+                └──────┬──────┘
+                       │
+    ┌──────────────────┼──────────────────┐
+    │                  │                  │
+┌───┴────┐    ┌────────┴────────┐   ┌────┴───────────────────┐
+│Compiler│    │Language Services│   │VS Code Extension       │
+│src/    │───▶│src/language-    │◀──│packages/vscode-pathogen│
+│parser/ │    │services/        │   │packages/pathogen-      │
+│evaluat.│    │(16 files)       │   │  language-server/      │
+│stdlib/ │    └────────┬────────┘   └────────────────────────┘
+└────────┘             │
+                       │
+              ┌────────┴────────┐
+              │   Playground    │
+              │  playground/    │
+              │ (via dist/      │
+              │  index.global.js│
+              └─────────────────┘
+```
+
+**Dependency chain**: Compiler → Language Services → dist/ bundle → { Playground, Language Server → VS Code Extension }
+
+## Feature Type Checklists
+
+### Adding a New Keyword
+
+1. `docs/syntax.md` — Document the keyword's usage and semantics (docs first)
+2. `src/parser/pathogen.grammar` — Add keyword rule to Lezer grammar
+3. Regenerate parser: the Lezer generator converts grammar → `pathogen.generated.ts`
+4. `src/parser/ast.ts` — Add AST node type if new statement kind
+5. `src/parser/ast-builder.ts` — Handle new CST node in converter
+6. `src/evaluator/index.ts` — Implement evaluation logic
+7. `tests/parser.test.ts` + `tests/evaluator.test.ts` — Add tests
+8. `src/language-services/completion-data.ts` — Add to `KEYWORD_COMPLETIONS`
+9. `src/language-services/hover.ts` — Add to `KEYWORD_HOVER` map
+10. `src/language-services/formatter.ts` — Add formatting rules if it introduces blocks
+11. `src/language-services/scope-analysis.ts` — If it introduces scope (like `for`, `fn`)
+12. `src/parser/highlight.ts` — Add to Lezer highlight tags (CodeMirror highlighting)
+13. `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json` — Add to TextMate keyword pattern
+14. `packages/vscode-pathogen/snippets/pathogen.code-snippets` — Add snippet if templatable
+15. `npm run build` to rebuild dist/
+
+### Adding a New Stdlib Function
+
+1. `docs/stdlib.md` — Document the function (docs first)
+2. `src/stdlib/math.ts` or `src/stdlib/path.ts` — Implement the function
+3. `src/stdlib/index.ts` — Export it; add to `contextAwareFunctions` if context-aware
+4. `tests/evaluator.test.ts` — Add tests
+5. `src/language-services/completion-data.ts` — Add to `STDLIB_COMPLETIONS`
+6. `src/language-services/hover.ts` — Hover uses `STDLIB_COMPLETIONS` detail strings; verify it picks up the new entry
+7. `src/language-services/signature-help.ts` — Verify signature extraction works from the new detail string
+8. `tests/language-services/completion.test.ts` — Test completion appears
+9. `npm run build` to rebuild dist/
+10. No VS Code extension changes needed — stdlib completions flow through language-services via LSP
+11. No playground changes needed — uses shared completion bridge via `cm-completion-bridge.ts`
+
+### Adding a New Enum
+
+1. `docs/` relevant section — Document the enum and its values
+2. `src/evaluator/index.ts` — Add to `BUILTIN_ENUMS` (~line 283)
+3. `tests/evaluator.test.ts` — Add tests
+4. `src/language-services/completion-data.ts` — Add enum name to top-level completions, add member completions
+5. `src/language-services/completion.ts` — Extend `getMembersForObject()` to return members for `EnumName.Member` access
+6. `npm run build` to rebuild dist/
+
+> **Note**: As of 2026-04-06, no enum completion infrastructure exists. All 13 enums are missing from completions. See `completion-coverage-audit.md` for details and `completion-engine-generation-plan.md` for the proposed fix.
+
+### Adding a New Type with Member Access
+
+1. `docs/` — Document the type and its properties/methods
+2. `src/evaluator/index.ts` — Implement member dispatch (property access + method calls)
+3. `tests/evaluator.test.ts` — Add tests
+4. `src/language-services/completion-data.ts` — Add new `*_MEMBERS: MemberCompletionSet` export
+5. `src/language-services/completion.ts` — Add to `getMembersForObject()` and extend `inferType()` with constructor pattern
+6. `src/language-services/hover.ts` — Add member hover info if appropriate
+7. `tests/language-services/completion.test.ts` — Test member completions appear
+8. `npm run build` to rebuild dist/
+
+### Adding New Syntax (Block Type / Construct)
+
+This is the heaviest lift — combines the keyword checklist plus:
+
+- `src/language-services/diagnostics.ts` — If new error patterns are possible
+- `src/language-services/symbols.ts` — If it should appear in document outline
+- `src/language-services/semantic-tokens.ts` — If new token types are needed
+- `src/language-services/formatter.ts` — Formatting rules for new block structure
+- `src/language-services/code-actions.ts` — If new quick fixes apply
+- `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json` — New TextMate pattern or updated regex
+- `packages/vscode-pathogen/test-fixtures/all-syntax.pathogen` — Ensure syntax coverage
+
+### Adding a New Style Property
+
+1. `src/evaluator/index.ts` — Handle the property when building SVG/text layer attributes
+2. `src/language-services/completion-data.ts` — Add to `STYLE_PROPERTY_COMPLETIONS`
+3. `tests/evaluator.test.ts` — Add tests
+4. `npm run build` to rebuild dist/
+
+## Build Order
+
+When making cross-system changes, build in this order:
+
+```
+1. src/parser/         ← Regenerate Lezer parser if grammar changed
+2. src/evaluator/      ← Runtime implementation
+   src/stdlib/
+3. src/language-       ← Intelligence updates (completions, hover, etc.)
+   services/
+4. npm run build       ← Produces dist/ consumed by everything downstream
+5. packages/pathogen-  ← Rebuild if svg-path-extended exports changed
+   language-server/
+6. packages/vscode-    ← Rebuild if TextMate/snippets/extension code changed
+   pathogen/
+7. playground/         ← No build step (loads dist/index.global.js at runtime)
+8. docs/               ← npm run build:docs
+```
+
+## Known Gaps and Future Automation
+
+Several steps in these checklists will become unnecessary once automation is in place:
+
+**Completion data generation** (`completion-engine-generation-plan.md`): A proposed `scripts/generate-completions.ts` will derive completion data from annotated stdlib source + an `api-surface.ts` registry. Once implemented:
+- "Add to `STDLIB_COMPLETIONS`" becomes "Add `@completion` JSDoc to the function"
+- "Add enum members to completion-data" becomes "Add to `api-surface.ts`"
+- A CI gate catches drift between evaluator and registry
+
+**TextMate auto-generation**: The Lezer migration decision doc (sub-phase G) proposes generating the TextMate grammar from the Lezer grammar. This would eliminate the dual-grammar maintenance burden for keywords and syntax constructs.
+
+**Snippet sync**: VS Code snippets currently duplicate the snippet bodies from `completion-data.ts` `KEYWORD_COMPLETIONS` entries. These could be generated from the same source.
+
+Update these checklists once any of these automations are implemented.
+
+## Post-Change Verification Checklist
+
+After making cross-system changes:
+
+- [ ] `npm run test:run` passes (compiler + language-services tests)
+- [ ] `npm run build` succeeds
+- [ ] New feature appears in completions (verify in playground or VS Code)
+- [ ] Hover info shows for new constructs
+- [ ] TextMate grammar highlights new syntax correctly (check `test-fixtures/all-syntax.pathogen` in VS Code)
+- [ ] Documentation updated and passes `npm run build:docs`
+- [ ] CHANGELOG.md updated
