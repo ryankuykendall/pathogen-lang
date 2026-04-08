@@ -259,6 +259,67 @@ describe('getCompletions', () => {
     });
   });
 
+  describe('layer member completions', () => {
+    it('offers PathLayer members', () => {
+      const items = completeAtEnd("let pLayer = PathLayer('main');\npLayer.");
+      const names = labels(items);
+      expect(names).toContain('name');
+      expect(names).toContain('styles');
+      expect(names).toContain('ctx');
+    });
+
+    it('offers TextLayer members', () => {
+      const items = completeAtEnd("let tLayer = TextLayer('text');\ntLayer.");
+      const names = labels(items);
+      expect(names).toContain('name');
+      expect(names).toContain('styles');
+    });
+
+    it('offers GroupLayer members including append', () => {
+      const items = completeAtEnd("let gLayer = GroupLayer('group');\ngLayer.");
+      const names = labels(items);
+      expect(names).toContain('name');
+      expect(names).toContain('styles');
+      expect(names).toContain('ctx');
+      expect(names).toContain('append');
+    });
+  });
+
+  describe('Color namespace completions', () => {
+    it('offers Color methods after Color.', () => {
+      const items = completeAtEnd('Color.');
+      const names = labels(items);
+      expect(names).toContain('mix');
+      expect(names).toContain('palette');
+      expect(names).toContain('lightDark');
+    });
+  });
+
+  describe('PolarVector member completions', () => {
+    it('offers PolarVector members', () => {
+      const items = completeAtEnd('let pv = PolarVector(45, 10);\npv.');
+      const names = labels(items);
+      expect(names).toContain('angle');
+      expect(names).toContain('distance');
+      expect(names).toContain('turn');
+      expect(names).toContain('scale');
+      expect(names).toContain('mirror');
+    });
+  });
+
+  describe('PathBlock geometry methods', () => {
+    it('offers chamfer and fillet methods on PathBlock', () => {
+      const items = completeAtEnd('let shape = @{\n  M 0 0\n  L 100 0\n  L 100 100\n  Z\n};\nshape.');
+      const names = labels(items);
+      expect(names).toContain('chamfer');
+      expect(names).toContain('fillet');
+      expect(names).toContain('union');
+      expect(names).toContain('difference');
+      expect(names).toContain('subPath');
+      expect(names).toContain('intersectionPoints');
+    });
+  });
+
   describe('style block completions', () => {
     it('offers style properties inside ${ }', () => {
       const items = completeAtEnd("define PathLayer('main') ${ ");

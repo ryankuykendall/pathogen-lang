@@ -16,48 +16,40 @@
 type AngleSuffix = 'deg' | 'rad' | 'pi';
 type AngleValue = `${number}${AngleSuffix}` | number;
 
-// Branded types for Pathogen runtime values
+// Forward-declared types (interfaces for runtime types defined at end of file)
 declare type PathSegment = { __brand: 'PathSegment' };
-declare type PointValue = { __brand: 'PointValue' };
-declare type PolarVectorValue = { __brand: 'PolarVectorValue' };
 declare type ColorValue = { __brand: 'ColorValue' };
-declare type CyclerValue = { __brand: 'CyclerValue' };
-declare type CSSVarValue = { __brand: 'CSSVarValue' };
-declare type LayerReference = { __brand: 'LayerReference' };
-declare type PathContext = { __brand: 'PathContext' };
-declare type ObjectValue = { __brand: 'ObjectValue' };
-declare type PathogenArray<T = unknown> = { __brand: 'ArrayValue' };
-declare type Value = string | number | boolean | null | ObjectValue;
+declare type Value = string | number | boolean | null;
 
 // =============================================================================
 // Constructors
 // =============================================================================
 
 /** Point(x, y) — Create a 2D point @boost 15 */
-export declare function Point(x: number, y: number): PointValue;
+export declare function Point(x: number, y: number): PathogenPoint;
 /** PolarVector(angle, distance) — Polar direction/distance @boost 14 */
-export declare function PolarVector(angle: AngleValue, distance: number): PolarVectorValue;
+export declare function PolarVector(angle: AngleValue, distance: number): PathogenPolarVector;
 /** Cycler(array, shuffle?) — Round-robin iterator @boost 12 */
-export declare function Cycler(array: PathogenArray, shuffle?: boolean): CyclerValue;
+export declare function Cycler(array: PathogenArray, shuffle?: boolean): PathogenCycler;
 /** CSSVar('name', fallback?) — CSS custom property @boost 10 */
-export declare function CSSVar(name: string, fallback?: Value): CSSVarValue;
+export declare function CSSVar(name: string, fallback?: Value): PathogenCSSVar;
 
 // Layer constructors
 /** PathLayer('name') — Path layer constructor @boost 12 */
-export declare function PathLayer(name: string): LayerReference;
+export declare function PathLayer(name: string): PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer;
 /** TextLayer('name') — Text layer constructor @boost 12 */
-export declare function TextLayer(name: string): LayerReference;
+export declare function TextLayer(name: string): PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer;
 /** GroupLayer('name') — Group layer constructor @boost 12 */
-export declare function GroupLayer(name: string): LayerReference;
+export declare function GroupLayer(name: string): PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer;
 
 // =============================================================================
 // Context-Aware Functions (implemented in evaluator, not stdlib)
 // =============================================================================
 
 /** polarPoint(angle, distance) — Point at polar offset @boost 14 */
-export declare function polarPoint(angle: AngleValue, distance: number): PointValue;
+export declare function polarPoint(angle: AngleValue, distance: number): PathogenPoint;
 /** polarOffset(angle, distance) — Relative polar offset @boost 14 */
-export declare function polarOffset(angle: AngleValue, distance: number): PointValue;
+export declare function polarOffset(angle: AngleValue, distance: number): PathogenPoint;
 /** polarMove(angle, distance) — Move in polar direction @boost 14 */
 export declare function polarMove(angle: AngleValue, distance: number): PathSegment;
 /** polarLine(angle, distance) — Line in polar direction @boost 14 */
@@ -116,11 +108,11 @@ export declare function closePath(): PathSegment;
 /** cubicSpline(points) — Smooth cubic spline @boost 8 */
 export declare function cubicSpline(points: PathogenArray): PathSegment;
 /** quadSpline(start, points, end) — Smooth quad spline @boost 8 */
-export declare function quadSpline(start: ObjectValue, points: PathogenArray, end: ObjectValue): PathSegment;
+export declare function quadSpline(start: PathogenObject, points: PathogenArray, end: PathogenObject): PathSegment;
 /** clippedQuadSpline(start, points, end) — Clipped quad spline @boost 8 */
-export declare function clippedQuadSpline(start: ObjectValue, points: PathogenArray, end: ObjectValue): PathSegment;
+export declare function clippedQuadSpline(start: PathogenObject, points: PathogenArray, end: PathogenObject): PathSegment;
 /** polarCubicBezier(start, pv1, pv2, end) — Polar cubic bezier @boost 8 */
-export declare function polarCubicBezier(start: PointValue, pv1: PolarVectorValue, pv2: PolarVectorValue, end: PointValue): PathSegment;
+export declare function polarCubicBezier(start: PathogenPoint, pv1: PathogenPolarVector, pv2: PathogenPolarVector, end: PathogenPoint): PathSegment;
 
 // =============================================================================
 // Stdlib: Radial Wedge
@@ -272,6 +264,20 @@ export declare function cbrt(x: number): number;
 // Namespaces
 // =============================================================================
 
+/** Object — Static methods (keys, values, entries) @boost 6 @kind variable */
+export declare namespace Object {
+  /** Object.keys(obj) — Get keys */
+  function keys(obj: PathogenObject): string[];
+  /** Object.values(obj) — Get values */
+  function values(obj: PathogenObject): Value[];
+  /** Object.entries(obj) — Key-value pairs */
+  function entries(obj: PathogenObject): [string, Value][];
+  /** Object.delete(obj, key) — Remove key */
+  function delete_(obj: PathogenObject, key: string): Value;
+  /** Object.has(obj, key) — Check if key exists */
+  function has(obj: PathogenObject, key: string): boolean;
+}
+
 /** Color — Color creation and manipulation @boost 8 @kind variable */
 export declare namespace Color {
   /** Color.mix(c1, c2, t) — Interpolate colors */
@@ -288,3 +294,253 @@ export declare namespace Color {
 
 /** ctx — Path context (position, start, heading) @boost 16 @kind variable */
 export declare const ctx: PathContext;
+
+// =============================================================================
+// Type Interfaces — extracted by generation script for member completions
+// =============================================================================
+
+/** @type Point */
+export interface PathogenPoint {
+  /** X coordinate */
+  readonly x: number;
+  /** Y coordinate */
+  readonly y: number;
+  /** translate(dx, dy) — Offset point */
+  translate(dx: number, dy: number): PathogenPoint;
+  /** rotate(angle, origin?) — Rotate around point */
+  rotate(angle: AngleValue, origin?: PathogenPoint): PathogenPoint;
+  /** distanceTo(other) — Euclidean distance */
+  distanceTo(other: PathogenPoint): number;
+  /** angleTo(other) — Angle to other point */
+  angleTo(other: PathogenPoint): number;
+  /** lerp(other, t) — Interpolate toward point */
+  lerp(other: PathogenPoint, t: number): PathogenPoint;
+  /** midpoint(other) — Midpoint between two points */
+  midpoint(other: PathogenPoint): PathogenPoint;
+  /** polarTranslate(angle, distance) — Polar offset */
+  polarTranslate(angle: AngleValue, distance: number): PathogenPoint;
+  /** offset(other) — Get {dx, dy} delta */
+  offset(other: PathogenPoint): { dx: number; dy: number };
+}
+
+/** @type array */
+export interface PathogenArray<T = Value> {
+  /** Number of elements */
+  readonly length: number;
+  /** push(item) — Add to end */
+  push(item: T): number;
+  /** pop() — Remove and return last element */
+  pop(): T | null;
+  /** shift() — Remove and return first element */
+  shift(): T | null;
+  /** unshift(item) — Add to beginning */
+  unshift(item: T): number;
+  /** empty() — Check if array is empty */
+  empty(): boolean;
+  /** map {|item| ...} — Transform elements */
+  map(block: (item: T, index?: number) => unknown): PathogenArray;
+  /** reduce(init) {|acc, item| ...} — Reduce */
+  reduce(init: Value, block: (acc: Value, item: T) => Value): Value;
+  /** mapSlice(length) — Sliding window slices */
+  mapSlice(length: number): PathogenArray;
+  /** slice(start, end?) — Get sub-array */
+  slice(start: number, end?: number): PathogenArray<T>;
+}
+
+/** @type string */
+export interface PathogenString {
+  /** String length */
+  readonly length: number;
+  /** split() — Split into character array */
+  split(): PathogenArray<string>;
+  /** append(str) — Concatenate */
+  append(str: string): string;
+  /** prepend(str) — Prepend string */
+  prepend(str: string): string;
+  /** includes(str) — Check if contains */
+  includes(str: string): boolean;
+  /** slice(start, end?) — Get substring */
+  slice(start: number, end?: number): string;
+  /** empty() — Check if empty */
+  empty(): boolean;
+}
+
+/** @type PathBlock */
+export interface PathogenPathBlock {
+  // Properties
+  /** Path length */
+  readonly length: number;
+  /** Vertex points */
+  readonly vertices: PathogenArray<PathogenPoint>;
+  /** Number of subpaths */
+  readonly subPathCount: number;
+  /** Array of command objects */
+  readonly subPathCommands: PathogenArray;
+  /** First point */
+  readonly startPoint: PathogenPoint;
+  /** Last point */
+  readonly endPoint: PathogenPoint;
+  /** Glyph advance width */
+  readonly advanceWidth: number;
+  /** Per-contour PathBlocks */
+  readonly contours: PathogenArray<PathogenPathBlock>;
+
+  // Core methods
+  /** draw() — Emit path data */
+  draw(): void;
+  /** drawTo(layerName) — Emit to layer */
+  drawTo(layerName: string): void;
+  /** get(t) — Sample point at t */
+  get(t: number): PathogenPoint;
+  /** tangent(t) — Tangent angle at t */
+  tangent(t: number): { point: PathogenPoint; angle: number };
+  /** normal(t) — Normal angle at t */
+  normal(t: number): { point: PathogenPoint; angle: number };
+  /** partition(n) — Split into segments */
+  partition(n: number): PathogenArray;
+  /** reverse() — Reverse direction */
+  reverse(): PathogenPathBlock;
+  /** boundingBox() — Get bounding box */
+  boundingBox(): { x: number; y: number; width: number; height: number };
+
+  // Transforms
+  /** offset(distance) — Offset path */
+  offset(distance: number): PathogenPathBlock;
+  /** mirror(angle) — Mirror path */
+  mirror(angle: AngleValue): PathogenPathBlock;
+  /** scale(sx, sy) — Scale path */
+  scale(sx: number, sy?: number): PathogenPathBlock;
+  /** rotateAtVertexIndex(index, angle) — Rotate at vertex */
+  rotateAtVertexIndex(index: number, angle: AngleValue): PathogenPathBlock;
+  /** subPath(startT, endT) — Extract sub-path */
+  subPath(startT: number, endT: number): PathogenPathBlock;
+  /** project(x, y) — Project to position */
+  project(x: number, y: number): PathogenPathBlock;
+
+  // Fillets and chamfers
+  /** chamfer(distance) — Chamfer all corners */
+  chamfer(distance: number): PathogenPathBlock;
+  /** chamferAtVertex(index, distance) — Chamfer at vertex */
+  chamferAtVertex(index: number, distance: number): PathogenPathBlock;
+  /** fillet(radius) — Round all corners */
+  fillet(radius: number): PathogenPathBlock;
+  /** filletAtVertex(index, radius) — Round at vertex */
+  filletAtVertex(index: number, radius: number): PathogenPathBlock;
+  /** ellipticalFillet(rx, ry) — Elliptical fillet */
+  ellipticalFillet(rx: number, ry: number): PathogenPathBlock;
+  /** ellipticalFilletAtVertex(index, rx, ry) — Elliptical fillet at vertex */
+  ellipticalFilletAtVertex(index: number, rx: number, ry: number): PathogenPathBlock;
+
+  // Boolean operations
+  /** union(other) — Boolean union */
+  union(other: PathogenPathBlock): PathogenPathBlock;
+  /** difference(other) — Boolean difference */
+  difference(other: PathogenPathBlock): PathogenPathBlock;
+  /** intersection(other) — Boolean intersection */
+  intersection(other: PathogenPathBlock): PathogenPathBlock;
+  /** xor(other) — Boolean XOR */
+  xor(other: PathogenPathBlock): PathogenPathBlock;
+  /** intersects(other) — Check for intersections */
+  intersects(other: PathogenPathBlock): boolean;
+  /** intersectionPoints(other) — Get intersection points */
+  intersectionPoints(other: PathogenPathBlock): PathogenArray<PathogenPoint>;
+}
+
+/** @type PolarVector */
+export interface PathogenPolarVector {
+  /** Angle in radians */
+  readonly angle: number;
+  /** Distance magnitude */
+  readonly distance: number;
+  /** turn(delta) — Turn by angle delta */
+  turn(delta: AngleValue): PathogenPolarVector;
+  /** scale(factor) — Scale distance */
+  scale(factor: number): PathogenPolarVector;
+  /** mirror() — Flip direction */
+  mirror(): PathogenPolarVector;
+}
+
+/** @type Cycler */
+export interface PathogenCycler {
+  /** Number of elements */
+  readonly length: number;
+  /** pick() — Get next element */
+  pick(): Value;
+}
+
+/** @type SVGFragment */
+export interface PathogenSVGFragment {
+  /** insert() — Insert fragment into layer */
+  insert(): void;
+}
+
+/** @type TextLayer */
+export interface PathogenTextLayer {
+  /** Layer name */
+  readonly name: string;
+  /** Style block */
+  readonly styles: Value;
+}
+
+/** @type PathLayer */
+export interface PathogenPathLayer {
+  /** Layer name */
+  readonly name: string;
+  /** Style block */
+  readonly styles: Value;
+  /** Path context (position, heading, transform) */
+  readonly ctx: PathContext;
+}
+
+/** @type GroupLayer */
+export interface PathogenGroupLayer {
+  /** Layer name */
+  readonly name: string;
+  /** Style block */
+  readonly styles: Value;
+  /** Path context (position, heading, transform) */
+  readonly ctx: PathContext;
+  /** append(layer) — Add child layer */
+  append(layer: PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer): void;
+}
+
+/** @type PathContext */
+export interface PathContext {
+  /** Current pen position {x, y} */
+  readonly position: PathogenPoint;
+  /** Subpath start position {x, y} */
+  readonly start: PathogenPoint;
+  /** Current heading angle @boost 10 */
+  readonly heading: number;
+  /** Tangent angle at current position */
+  readonly tangentAngle: number;
+  /** Layer transform state */
+  readonly transform: Value;
+  /** Array of executed commands */
+  readonly commands: PathogenArray;
+}
+
+/** @type ObjectValue */
+export interface PathogenObject {
+  /** Number of properties */
+  readonly length: number;
+  /** has(key) — Check if key exists */
+  has(key: string): boolean;
+}
+
+/** @type ProjectedText */
+export interface PathogenProjectedText {
+  /** Number of text elements */
+  readonly elementCount: number;
+  /** Style block */
+  readonly styles: Value;
+  /** Origin point */
+  readonly origin: PathogenPoint;
+  /** translate(dx, dy) — Offset projected text */
+  translate(dx: number, dy: number): PathogenProjectedText;
+}
+
+/** @type CSSVar */
+export interface PathogenCSSVar {
+  // CSSVar values are opaque — no member access
+}

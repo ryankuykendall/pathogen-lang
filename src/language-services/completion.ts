@@ -2,14 +2,14 @@ import { analyzeScopes } from './scope-analysis';
 import {
   KEYWORD_COMPLETIONS,
   STYLE_PROPERTY_COMPLETIONS,
-  CTX_MEMBERS,
-  POINT_MEMBERS,
-  ARRAY_MEMBERS,
-  STRING_MEMBERS,
-  PATHBLOCK_MEMBERS,
-  OBJECT_NAMESPACE_MEMBERS,
 } from './completion-data';
-import { ENUM_COMPLETIONS, ENUM_MEMBER_MAP, STDLIB_COMPLETIONS } from './completion-data.generated';
+import {
+  ENUM_COMPLETIONS,
+  ENUM_MEMBER_MAP,
+  STDLIB_COMPLETIONS,
+  TYPE_MEMBERS,
+  NAMESPACE_MEMBERS,
+} from './completion-data.generated';
 
 import type { TextDocument } from './document';
 import type { Position } from './types';
@@ -115,20 +115,20 @@ function isInsideStyleBlock(textBefore: string): boolean {
 }
 
 function getMembersForObject(name: string, source: string): MemberCompletionSet | null {
-  if (name === 'ctx') return CTX_MEMBERS;
-  if (name === 'Object') return OBJECT_NAMESPACE_MEMBERS;
+  // Namespaces (Color, Object)
+  if (name in NAMESPACE_MEMBERS) return NAMESPACE_MEMBERS[name];
 
   // Enum member access (GridPatternType.Shape, Easing.Linear, etc.)
   if (name in ENUM_MEMBER_MAP) {
     return { properties: ENUM_MEMBER_MAP[name], methods: [] };
   }
 
+  // Special names with known types
+  if (name === 'ctx' && 'PathContext' in TYPE_MEMBERS) return TYPE_MEMBERS['PathContext'];
+
   // Try to infer type from source
   const type = inferType(name, source);
-  if (type === 'Point') return POINT_MEMBERS;
-  if (type === 'array') return ARRAY_MEMBERS;
-  if (type === 'string') return STRING_MEMBERS;
-  if (type === 'PathBlock') return PATHBLOCK_MEMBERS;
+  if (type && type in TYPE_MEMBERS) return TYPE_MEMBERS[type];
 
   return null;
 }
@@ -136,7 +136,7 @@ function getMembersForObject(name: string, source: string): MemberCompletionSet 
 function getDeepMembers(obj: string, prop: string): MemberCompletionSet | null {
   // ctx.position.x, ctx.start.y
   if (obj === 'ctx' && (prop === 'position' || prop === 'start')) {
-    return POINT_MEMBERS;
+    return TYPE_MEMBERS['Point'] ?? null;
   }
   // ctx.transform has its own members
   if (obj === 'ctx' && prop === 'transform') {
@@ -160,21 +160,34 @@ function getDeepMembers(obj: string, prop: string): MemberCompletionSet | null {
  * Matches patterns like `let x = Point(...)`, `let x = @{...}`, `let x = [...]`, etc.
  */
 function inferType(name: string, source: string): string | null {
+  const esc = escapeRegex(name);
+
   // let name = Point(...)
-  const pointRe = new RegExp(`let\\s+${escapeRegex(name)}\\s*=\\s*Point\\s*\\(`);
-  if (pointRe.test(source)) return 'Point';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*Point\\s*\\(`).test(source)) return 'Point';
+
+  // let name = PolarVector(...)
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*PolarVector\\s*\\(`).test(source)) return 'PolarVector';
+
+  // let name = Cycler(...)
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*Cycler\\s*\\(`).test(source)) return 'Cycler';
+
+  // let name = PathLayer(...) or define PathLayer(...)
+  if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*PathLayer\\s*\\(`).test(source)) return 'PathLayer';
+
+  // let name = TextLayer(...)
+  if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*TextLayer\\s*\\(`).test(source)) return 'TextLayer';
+
+  // let name = GroupLayer(...)
+  if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*GroupLayer\\s*\\(`).test(source)) return 'GroupLayer';
 
   // let name = @{ ... }
-  const pathBlockRe = new RegExp(`let\\s+${escapeRegex(name)}\\s*=\\s*@\\s*\\{`);
-  if (pathBlockRe.test(source)) return 'PathBlock';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*@\\s*\\{`).test(source)) return 'PathBlock';
 
   // let name = [...] or method returning array
-  const arrayRe = new RegExp(`let\\s+${escapeRegex(name)}\\s*=\\s*\\[`);
-  if (arrayRe.test(source)) return 'array';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*\\[`).test(source)) return 'array';
 
   // let name = "..." or let name = '...' or let name = `...`
-  const stringRe = new RegExp(`let\\s+${escapeRegex(name)}\\s*=\\s*["'\`]`);
-  if (stringRe.test(source)) return 'string';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*["'\`]`).test(source)) return 'string';
 
   return null;
 }
