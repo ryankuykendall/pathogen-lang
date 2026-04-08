@@ -183,11 +183,13 @@ export const POINT_MEMBERS: MemberCompletionSet = {
   ],
   methods: [
     { label: 'translate', kind: 'function', detail: 'translate(dx, dy) — Offset point', boost: 8 },
-    { label: 'rotate', kind: 'function', detail: 'rotate(angle, cx?, cy?) — Rotate point', boost: 8 },
-    { label: 'scale', kind: 'function', detail: 'scale(sx, sy?, cx?, cy?) — Scale point', boost: 6 },
-    { label: 'distance', kind: 'function', detail: 'distance(other) — Distance to another point', boost: 8 },
+    { label: 'rotate', kind: 'function', detail: 'rotate(angle, origin?) — Rotate around point', boost: 8 },
+    { label: 'distanceTo', kind: 'function', detail: 'distanceTo(other) — Euclidean distance', boost: 8 },
+    { label: 'angleTo', kind: 'function', detail: 'angleTo(other) — Angle to other point', boost: 8 },
     { label: 'lerp', kind: 'function', detail: 'lerp(other, t) — Interpolate toward point', boost: 8 },
     { label: 'midpoint', kind: 'function', detail: 'midpoint(other) — Midpoint between two points', boost: 6 },
+    { label: 'polarTranslate', kind: 'function', detail: 'polarTranslate(angle, distance) — Polar offset', boost: 8 },
+    { label: 'offset', kind: 'function', detail: 'offset(other) — Get {dx, dy} delta', boost: 6 },
   ],
 };
 
@@ -209,16 +211,14 @@ export const ARRAY_MEMBERS: MemberCompletionSet = {
   ],
   methods: [
     { label: 'push', kind: 'function', detail: 'push(item) — Add to end', boost: 12 },
+    { label: 'pop', kind: 'function', detail: 'pop() — Remove and return last element', boost: 10 },
+    { label: 'shift', kind: 'function', detail: 'shift() — Remove and return first element', boost: 8 },
+    { label: 'unshift', kind: 'function', detail: 'unshift(item) — Add to beginning', boost: 8 },
+    { label: 'empty', kind: 'function', detail: 'empty() — Check if array is empty', boost: 6 },
     { label: 'map', kind: 'function', detail: 'map {|item| ...} — Transform elements', boost: 14 },
-    { label: 'filter', kind: 'function', detail: 'filter {|item| ...} — Filter elements', boost: 12 },
     { label: 'reduce', kind: 'function', detail: 'reduce(init) {|acc, item| ...} — Reduce', boost: 10 },
-    { label: 'flatMap', kind: 'function', detail: 'flatMap {|item| ...} — Map and flatten', boost: 8 },
-    { label: 'includes', kind: 'function', detail: 'includes(value) — Check if contains', boost: 8 },
-    { label: 'indexOf', kind: 'function', detail: 'indexOf(value) — Find index', boost: 6 },
-    { label: 'join', kind: 'function', detail: 'join(separator) — Join to string', boost: 8 },
+    { label: 'mapSlice', kind: 'function', detail: 'mapSlice(length) — Sliding window slices', boost: 8 },
     { label: 'slice', kind: 'function', detail: 'slice(start, end?) — Get sub-array', boost: 8 },
-    { label: 'reverse', kind: 'function', detail: 'reverse() — Reverse order', boost: 6 },
-    { label: 'sort', kind: 'function', detail: 'sort() — Sort elements', boost: 6 },
   ],
 };
 
@@ -227,7 +227,7 @@ export const STRING_MEMBERS: MemberCompletionSet = {
     { label: 'length', kind: 'property', detail: 'String length', boost: 15 },
   ],
   methods: [
-    { label: 'split', kind: 'function', detail: 'split(sep) — Split into array', boost: 10 },
+    { label: 'split', kind: 'function', detail: 'split() — Split into character array', boost: 10 },
     { label: 'includes', kind: 'function', detail: 'includes(str) — Check if contains', boost: 10 },
     { label: 'slice', kind: 'function', detail: 'slice(start, end?) — Get substring', boost: 8 },
     { label: 'append', kind: 'function', detail: 'append(str) — Concatenate', boost: 8 },
@@ -268,5 +268,6 @@ export const OBJECT_NAMESPACE_MEMBERS: MemberCompletionSet = {
     { label: 'values', kind: 'function', detail: 'Object.values(obj) — Get values', boost: 12 },
     { label: 'entries', kind: 'function', detail: 'Object.entries(obj) — Get key-value pairs', boost: 12 },
     { label: 'delete', kind: 'function', detail: 'Object.delete(obj, key) — Remove key', boost: 8 },
+    { label: 'has', kind: 'function', detail: 'Object.has(obj, key) — Check if key exists', boost: 8 },
   ],
 };

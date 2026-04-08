@@ -280,7 +280,7 @@ function toNumber(v: Value): number | undefined {
 }
 
 /** Built-in enum definitions — constant map of enum name → member name → string value */
-const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
+export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   Easing: { Linear: 'linear', Smoothstep: 'smoothstep', EaseIn: 'ease-in', EaseOut: 'ease-out', EaseInOut: 'ease-in-out' },
   Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
   SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },

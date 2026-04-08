@@ -4,7 +4,7 @@ import { parse, parseWithComments } from './parser';
 import type { CompileResult } from './evaluator';
 
 export { parse, parseWithComments, parseLezer, lezerParser } from './parser';
-export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated } from './evaluator';
+export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated, BUILTIN_ENUMS } from './evaluator';
 export { stdlib } from './stdlib';
 export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
 

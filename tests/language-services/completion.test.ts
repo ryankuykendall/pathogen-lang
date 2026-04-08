@@ -111,7 +111,17 @@ describe('getCompletions', () => {
       expect(names).toContain('x');
       expect(names).toContain('y');
       expect(names).toContain('translate');
-      expect(names).toContain('distance');
+      expect(names).toContain('distanceTo');
+      expect(names).toContain('angleTo');
+      expect(names).toContain('polarTranslate');
+      expect(names).toContain('offset');
+    });
+
+    it('does not offer phantom Point methods', () => {
+      const items = completeAtEnd('let p = Point(10, 20);\np.');
+      const names = labels(items);
+      expect(names).not.toContain('scale');
+      expect(names).not.toContain('distance');
     });
 
     it('offers PathBlock members for path block variables', () => {
@@ -128,8 +138,19 @@ describe('getCompletions', () => {
       const names = labels(items);
       expect(names).toContain('length');
       expect(names).toContain('map');
-      expect(names).toContain('filter');
       expect(names).toContain('push');
+      expect(names).toContain('pop');
+      expect(names).toContain('mapSlice');
+    });
+
+    it('does not offer phantom Array methods', () => {
+      const items = completeAtEnd('let a = [1, 2, 3];\na.');
+      const names = labels(items);
+      expect(names).not.toContain('filter');
+      expect(names).not.toContain('flatMap');
+      expect(names).not.toContain('sort');
+      expect(names).not.toContain('reverse');
+      expect(names).not.toContain('indexOf');
     });
 
     it('offers string members for string variables', () => {
@@ -162,6 +183,64 @@ describe('getCompletions', () => {
       expect(names).toContain('rotate');
       expect(names).toContain('scale');
       expect(names).toContain('reset');
+    });
+  });
+
+  describe('enum completions', () => {
+    it('offers enum names at top level', () => {
+      const items = completeAtEnd('');
+      const names = labels(items);
+      expect(names).toContain('GridPatternType');
+      expect(names).toContain('Easing');
+      expect(names).toContain('BBoxAnchor');
+    });
+
+    it('offers all 12 enum names', () => {
+      const items = completeAtEnd('');
+      const names = labels(items);
+      for (const enumName of [
+        'Easing', 'Interpolation', 'SpreadMethod', 'GradientUnits',
+        'Direction', 'ConicSpread', 'InnerFill', 'TopoMethod',
+        'BBoxAnchor', 'GridPatternType', 'HexagonOrientation', 'VerticalAnchor',
+      ]) {
+        expect(names).toContain(enumName);
+      }
+    });
+
+    it('offers enum members after enum name dot', () => {
+      const items = completeAtEnd('GridPatternType.');
+      const names = labels(items);
+      expect(names).toContain('Shape');
+      expect(names).toContain('Dot');
+      expect(names).toContain('Intersection');
+      expect(names).toContain('Partial');
+    });
+
+    it('offers Easing members after Easing.', () => {
+      const items = completeAtEnd('Easing.');
+      const names = labels(items);
+      expect(names).toContain('Linear');
+      expect(names).toContain('Smoothstep');
+      expect(names).toContain('EaseIn');
+      expect(names).toContain('EaseOut');
+      expect(names).toContain('EaseInOut');
+    });
+
+    it('filters enum members by prefix', () => {
+      const items = completeAtEnd('Easing.E');
+      const names = labels(items);
+      expect(names).toContain('EaseIn');
+      expect(names).toContain('EaseOut');
+      expect(names).toContain('EaseInOut');
+      expect(names).not.toContain('Linear');
+      expect(names).not.toContain('Smoothstep');
+    });
+
+    it('filters enum names by prefix', () => {
+      const items = completeAtEnd('Grid');
+      const names = labels(items);
+      expect(names).toContain('GridPatternType');
+      expect(names).not.toContain('Easing');
     });
   });
 

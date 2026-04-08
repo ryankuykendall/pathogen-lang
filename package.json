@@ -21,6 +21,7 @@
     "dist"
   ],
   "scripts": {
+    "generate:completions": "tsx scripts/generate-completions.ts",
     "build": "tsup",
     "build:docs": "tsx scripts/build-docs.ts",
     "build:blog": "tsx scripts/build-blog.ts",

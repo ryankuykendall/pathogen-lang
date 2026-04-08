@@ -10,6 +10,7 @@ import {
   PATHBLOCK_MEMBERS,
   OBJECT_NAMESPACE_MEMBERS,
 } from './completion-data';
+import { ENUM_COMPLETIONS, ENUM_MEMBER_MAP } from './completion-data.generated';
 
 import type { TextDocument } from './document';
 import type { Position } from './types';
@@ -71,9 +72,10 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // Collect all completions
   const items: CompletionItem[] = [];
 
-  // Keywords and stdlib
+  // Keywords, stdlib, and enums
   items.push(...KEYWORD_COMPLETIONS.map(toCompletionItem));
   items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
+  items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
 
   // Scope-aware user definitions
   const scopeInfo = analyzeScopes(document);
@@ -116,6 +118,11 @@ function isInsideStyleBlock(textBefore: string): boolean {
 function getMembersForObject(name: string, source: string): MemberCompletionSet | null {
   if (name === 'ctx') return CTX_MEMBERS;
   if (name === 'Object') return OBJECT_NAMESPACE_MEMBERS;
+
+  // Enum member access (GridPatternType.Shape, Easing.Linear, etc.)
+  if (name in ENUM_MEMBER_MAP) {
+    return { properties: ENUM_MEMBER_MAP[name], methods: [] };
+  }
 
   // Try to infer type from source
   const type = inferType(name, source);
