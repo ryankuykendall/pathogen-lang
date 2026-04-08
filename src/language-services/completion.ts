@@ -1,7 +1,6 @@
 import { analyzeScopes } from './scope-analysis';
 import {
   KEYWORD_COMPLETIONS,
-  STDLIB_COMPLETIONS,
   STYLE_PROPERTY_COMPLETIONS,
   CTX_MEMBERS,
   POINT_MEMBERS,
@@ -10,7 +9,7 @@ import {
   PATHBLOCK_MEMBERS,
   OBJECT_NAMESPACE_MEMBERS,
 } from './completion-data';
-import { ENUM_COMPLETIONS, ENUM_MEMBER_MAP } from './completion-data.generated';
+import { ENUM_COMPLETIONS, ENUM_MEMBER_MAP, STDLIB_COMPLETIONS } from './completion-data.generated';
 
 import type { TextDocument } from './document';
 import type { Position } from './types';

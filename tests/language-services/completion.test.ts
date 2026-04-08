@@ -55,6 +55,21 @@ describe('getCompletions', () => {
       expect(labels(items)).not.toContain('rect');
     });
 
+    it('includes previously-missing stdlib functions', () => {
+      const items = completeAtEnd('');
+      const names = labels(items);
+      // Hyperbolic trig (were missing from completion-data.ts)
+      expect(names).toContain('sinh');
+      expect(names).toContain('cosh');
+      expect(names).toContain('tanh');
+      // Polar coordinate helpers
+      expect(names).toContain('polarX');
+      expect(names).toContain('polarY');
+      // Path functions
+      expect(names).toContain('radialWedge');
+      expect(names).toContain('clippedQuadSpline');
+    });
+
     it('offers ctx', () => {
       const items = completeAtEnd('ct');
       expect(labels(items)).toContain('ctx');

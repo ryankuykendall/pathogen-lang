@@ -1,5 +1,5 @@
 import { analyzeScopes } from './scope-analysis';
-import { STDLIB_COMPLETIONS } from './completion-data';
+import { STDLIB_COMPLETIONS } from './completion-data.generated';
 
 import type { TextDocument } from './document';
 import type { Position, Range } from './types';

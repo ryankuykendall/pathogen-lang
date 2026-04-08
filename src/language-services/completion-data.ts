@@ -1,4 +1,5 @@
-// Static completion data extracted from playground/utils/codemirror-setup.ts.
+// Static completion data: keywords, style properties, and type member sets.
+// Stdlib completions are now generated — see completion-data.generated.ts.
 // Shared by VS Code (via LSP) and playground (via direct import).
 
 export interface CompletionEntry {
@@ -29,114 +30,6 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'true', kind: 'constant', detail: 'Boolean true', boost: 2 },
   { label: 'false', kind: 'constant', detail: 'Boolean false', boost: 2 },
   { label: 'null', kind: 'constant', detail: 'Null value', boost: 2 },
-];
-
-// --- Stdlib functions ---
-
-export const STDLIB_COMPLETIONS: CompletionEntry[] = [
-  // Constructors
-  { label: 'Point', kind: 'function', detail: 'Point(x, y) — Create a 2D point', boost: 15 },
-  { label: 'PolarVector', kind: 'function', detail: 'PolarVector(angle, distance) — Polar direction/distance', boost: 14 },
-  { label: 'Cycler', kind: 'function', detail: 'Cycler(array, shuffle?) — Round-robin iterator', boost: 12 },
-  { label: 'CSSVar', kind: 'function', detail: "CSSVar('name', fallback?) — CSS custom property", boost: 10 },
-
-  // Layer constructors
-  { label: 'PathLayer', kind: 'function', detail: "PathLayer('name') — Path layer constructor", boost: 12 },
-  { label: 'TextLayer', kind: 'function', detail: "TextLayer('name') — Text layer constructor", boost: 12 },
-  { label: 'GroupLayer', kind: 'function', detail: "GroupLayer('name') — Group layer constructor", boost: 12 },
-
-  // Context-aware (polar, tangent)
-  { label: 'polarPoint', kind: 'function', detail: 'polarPoint(angle, distance) — Point at polar offset', boost: 14 },
-  { label: 'polarOffset', kind: 'function', detail: 'polarOffset(angle, distance) — Relative polar offset', boost: 14 },
-  { label: 'polarMove', kind: 'function', detail: 'polarMove(angle, distance) — Move in polar direction', boost: 14 },
-  { label: 'polarLine', kind: 'function', detail: 'polarLine(angle, distance) — Line in polar direction', boost: 14 },
-  { label: 'arcFromCenter', kind: 'function', detail: 'arcFromCenter(dcx, dcy, r, start, end, cw) — Arc from center', boost: 12 },
-  { label: 'arcFromPolarOffset', kind: 'function', detail: 'arcFromPolarOffset(angle, radius, sweepAngle) — Arc from polar center', boost: 12 },
-  { label: 'tangentLine', kind: 'function', detail: 'tangentLine(length) — Line following tangent', boost: 12 },
-  { label: 'tangentArc', kind: 'function', detail: 'tangentArc(radius, sweepAngle) — Arc from tangent', boost: 12 },
-  { label: 'heading', kind: 'function', detail: 'heading(angle) — Set heading direction', boost: 10 },
-  { label: 'turn', kind: 'function', detail: 'turn(delta) — Turn heading by delta', boost: 10 },
-
-  // Shapes
-  { label: 'circle', kind: 'function', detail: 'circle(cx, cy, r) — Draw circle', boost: 15 },
-  { label: 'rect', kind: 'function', detail: 'rect(x, y, w, h) — Draw rectangle', boost: 15 },
-  { label: 'roundRect', kind: 'function', detail: 'roundRect(x, y, w, h, r) — Rounded rectangle', boost: 13 },
-  { label: 'polygon', kind: 'function', detail: 'polygon(cx, cy, r, sides) — Regular polygon', boost: 13 },
-  { label: 'star', kind: 'function', detail: 'star(cx, cy, outer, inner, points) — Star shape', boost: 13 },
-
-  // Curves
-  { label: 'quadratic', kind: 'function', detail: 'quadratic(x1, y1, cx, cy, x2, y2) — Quadratic bezier', boost: 10 },
-  { label: 'cubic', kind: 'function', detail: 'cubic(x1, y1, c1x, c1y, c2x, c2y, x2, y2) — Cubic bezier', boost: 10 },
-  { label: 'arc', kind: 'function', detail: 'arc(rx, ry, rot, large, sweep, x, y) — Arc command', boost: 10 },
-  { label: 'line', kind: 'function', detail: 'line(x1, y1, x2, y2) — Line segment', boost: 10 },
-  { label: 'moveTo', kind: 'function', detail: 'moveTo(x, y) — Move command', boost: 8 },
-  { label: 'lineTo', kind: 'function', detail: 'lineTo(x, y) — Line command', boost: 8 },
-  { label: 'closePath', kind: 'function', detail: 'closePath() — Close path (Z)', boost: 8 },
-
-  // Splines
-  { label: 'cubicSpline', kind: 'function', detail: 'cubicSpline(points) — Smooth cubic spline', boost: 8 },
-  { label: 'quadSpline', kind: 'function', detail: 'quadSpline(start, points, end) — Smooth quad spline', boost: 8 },
-  { label: 'polarCubicBezier', kind: 'function', detail: 'polarCubicBezier(start, pv1, pv2, end) — Polar cubic bezier', boost: 8 },
-
-  // Grids
-  { label: 'squareGrid', kind: 'function', detail: 'squareGrid(type, x, y, w, h, cellSize) — Square grid', boost: 8 },
-  { label: 'triangleGrid', kind: 'function', detail: 'triangleGrid(type, x, y, w, h, cellSize) — Triangle grid', boost: 8 },
-  { label: 'hexagonGrid', kind: 'function', detail: 'hexagonGrid(type, x, y, w, h, cellSize, orient?) — Hex grid', boost: 8 },
-
-  // Constants
-  { label: 'PI', kind: 'function', detail: 'PI() — Returns pi', boost: 12 },
-  { label: 'TAU', kind: 'function', detail: 'TAU() — Returns 2*pi', boost: 12 },
-  { label: 'E', kind: 'function', detail: 'E() — Returns e', boost: 8 },
-  { label: 'mpi', kind: 'function', detail: 'mpi(x) — Multiply by pi', boost: 6 },
-
-  // Angle conversion
-  { label: 'deg', kind: 'function', detail: 'deg(radians) — Convert radians to degrees', boost: 10 },
-  { label: 'rad', kind: 'function', detail: 'rad(degrees) — Convert degrees to radians', boost: 10 },
-  { label: 'normalizeAngle', kind: 'function', detail: 'normalizeAngle(angle) — Normalize to [0, 2pi)', boost: 6 },
-
-  // Interpolation
-  { label: 'lerp', kind: 'function', detail: 'lerp(a, b, t) — Linear interpolation', boost: 14 },
-  { label: 'clamp', kind: 'function', detail: 'clamp(value, min, max) — Constrain to range', boost: 14 },
-  { label: 'map', kind: 'function', detail: 'map(val, inMin, inMax, outMin, outMax) — Map between ranges', boost: 12 },
-
-  // Trig
-  { label: 'sin', kind: 'function', detail: 'sin(x) — Sine', boost: 12 },
-  { label: 'cos', kind: 'function', detail: 'cos(x) — Cosine', boost: 12 },
-  { label: 'tan', kind: 'function', detail: 'tan(x) — Tangent', boost: 8 },
-  { label: 'asin', kind: 'function', detail: 'asin(x) — Arc sine', boost: 6 },
-  { label: 'acos', kind: 'function', detail: 'acos(x) — Arc cosine', boost: 6 },
-  { label: 'atan', kind: 'function', detail: 'atan(x) — Arc tangent', boost: 6 },
-  { label: 'atan2', kind: 'function', detail: 'atan2(y, x) — Two-argument arc tangent', boost: 8 },
-
-  // Rounding
-  { label: 'floor', kind: 'function', detail: 'floor(x) — Round down', boost: 8 },
-  { label: 'ceil', kind: 'function', detail: 'ceil(x) — Round up', boost: 8 },
-  { label: 'round', kind: 'function', detail: 'round(x) — Round to nearest', boost: 8 },
-  { label: 'trunc', kind: 'function', detail: 'trunc(x) — Truncate decimal', boost: 6 },
-
-  // Utility
-  { label: 'abs', kind: 'function', detail: 'abs(x) — Absolute value', boost: 10 },
-  { label: 'sign', kind: 'function', detail: 'sign(x) — Sign (-1, 0, or 1)', boost: 6 },
-  { label: 'min', kind: 'function', detail: 'min(a, b, ...) — Minimum', boost: 10 },
-  { label: 'max', kind: 'function', detail: 'max(a, b, ...) — Maximum', boost: 10 },
-
-  // Random
-  { label: 'random', kind: 'function', detail: 'random() — Random 0-1', boost: 8 },
-  { label: 'randomRange', kind: 'function', detail: 'randomRange(min, max) — Random in range', boost: 8 },
-
-  // Exp/Log
-  { label: 'exp', kind: 'function', detail: 'exp(x) — e^x', boost: 6 },
-  { label: 'log', kind: 'function', detail: 'log(...) — Natural log or debug log', boost: 8 },
-  { label: 'log10', kind: 'function', detail: 'log10(x) — Base-10 log', boost: 6 },
-  { label: 'log2', kind: 'function', detail: 'log2(x) — Base-2 log', boost: 6 },
-  { label: 'pow', kind: 'function', detail: 'pow(x, y) — x^y', boost: 8 },
-  { label: 'sqrt', kind: 'function', detail: 'sqrt(x) — Square root', boost: 10 },
-  { label: 'cbrt', kind: 'function', detail: 'cbrt(x) — Cube root', boost: 6 },
-
-  // Namespaces
-  { label: 'Object', kind: 'variable', detail: 'Object — Static methods (keys, values, entries)', boost: 6 },
-  { label: 'Color', kind: 'variable', detail: 'Color — Color creation and manipulation', boost: 8 },
-  { label: 'ctx', kind: 'variable', detail: 'ctx — Path context (position, start, heading)', boost: 16 },
 ];
 
 // --- Style properties (for inside ${ } blocks) ---
