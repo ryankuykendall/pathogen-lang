@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "generate:completions": "tsx scripts/generate-completions.ts",
+    "check:completions": "npm run generate:completions && git diff --exit-code src/language-services/completion-data.generated.ts",
     "build": "tsup",
     "build:docs": "tsx scripts/build-docs.ts",
     "build:blog": "tsx scripts/build-blog.ts",

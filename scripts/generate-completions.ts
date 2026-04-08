@@ -4,6 +4,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { Project } from 'ts-morph';
 import { BUILTIN_ENUMS, ENUM_METADATA } from '../src/api-surface';
+import { stdlib, contextAwareFunctions } from '../src/stdlib';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -174,6 +175,78 @@ function extractNamespaceMembers(apiPath: string): MemberSet[] {
   return memberSets;
 }
 
+interface SignatureEntry {
+  name: string;
+  label: string;
+  params: string[];
+  doc: string;
+}
+
+/**
+ * Extract function signature data from pathogen-api.ts for signature help.
+ */
+function extractSignatureData(apiPath: string): SignatureEntry[] {
+  const project = new Project({ compilerOptions: { strict: false } });
+  const sourceFile = project.addSourceFileAtPath(apiPath);
+  const signatures: SignatureEntry[] = [];
+
+  for (const fn of sourceFile.getFunctions()) {
+    const name = fn.getName();
+    if (!name) continue;
+
+    const params = fn.getParameters().map((p) => p.getName());
+    // Skip rest params marker
+    const cleanParams = params.map((p) => p.replace(/^\.\.\./, ''));
+
+    const comment = getRawJsDocComment(fn.getJsDocs());
+    const doc = comment ? parseJsDoc(comment).detail : `${name}()`;
+
+    const paramsStr = cleanParams.join(', ');
+    signatures.push({
+      name,
+      label: `${name}(${paramsStr})`,
+      params: cleanParams,
+      doc,
+    });
+  }
+
+  return signatures;
+}
+
+/**
+ * Cross-check pathogen-api.ts declarations against runtime stdlib + contextAwareFunctions.
+ * Warns about drift between declarations and runtime.
+ */
+function crossCheck(declaredFunctions: Set<string>): void {
+  const stdlibNames = new Set(Object.keys(stdlib));
+  const contextNames = new Set(contextAwareFunctions);
+
+  // Functions in stdlib but not declared
+  const missingFromDecl: string[] = [];
+  for (const name of stdlibNames) {
+    if (!declaredFunctions.has(name)) missingFromDecl.push(name);
+  }
+  for (const name of contextNames) {
+    if (!declaredFunctions.has(name)) missingFromDecl.push(name);
+  }
+
+  if (missingFromDecl.length > 0) {
+    console.warn(`⚠ Runtime functions not declared in pathogen-api.ts: ${missingFromDecl.join(', ')}`);
+    console.warn('  Add declarations to src/pathogen-api.ts');
+  }
+
+  // Declared functions not in runtime (excluding constructors, namespaces, variables)
+  const runtimeNames = new Set([...stdlibNames, ...contextNames, 'Point', 'PolarVector', 'Cycler', 'CSSVar', 'PathLayer', 'TextLayer', 'GroupLayer']);
+  const extraDecl: string[] = [];
+  for (const name of declaredFunctions) {
+    if (!runtimeNames.has(name)) extraDecl.push(name);
+  }
+
+  if (extraDecl.length > 0) {
+    console.warn(`⚠ Declared in pathogen-api.ts but not in runtime: ${extraDecl.join(', ')}`);
+  }
+}
+
 const program = new Command();
 program
   .name('generate-completions')
@@ -216,6 +289,20 @@ program
     });
 
     // =========================================================================
+    // Phase 4: Signature data + cross-check
+    // =========================================================================
+
+    const signatureData = extractSignatureData(apiPath);
+    const signatureEntries = signatureData.map((s) => {
+      const paramsArr = s.params.map((p) => `'${p}'`).join(', ');
+      return `  '${s.name}': { label: '${escapeString(s.label)}', params: [${paramsArr}], doc: '${escapeString(s.doc)}' }`;
+    });
+
+    // Cross-check: compare declarations against runtime
+    const declaredFunctions = new Set(signatureData.map((s) => s.name));
+    crossCheck(declaredFunctions);
+
+    // =========================================================================
     // Phase 3: Type members + namespace members (from pathogen-api.ts interfaces)
     // =========================================================================
 
@@ -245,7 +332,7 @@ program
 // Source: src/api-surface.ts (enums) + src/pathogen-api.ts (stdlib, types, namespaces)
 // Regenerate: npm run generate:completions
 
-import type { CompletionEntry, MemberCompletionSet } from './completion-data';
+import type { CompletionEntry, MemberCompletionSet } from './completion-data-static';
 
 /** Top-level enum name completions (GridPatternType, Easing, etc.) */
 export const ENUM_COMPLETIONS: CompletionEntry[] = [
@@ -271,6 +358,11 @@ ${typeMemberEntries.join(',\n')},
 export const NAMESPACE_MEMBERS: Record<string, MemberCompletionSet> = {
 ${namespaceMemberEntries.join(',\n')},
 };
+
+/** Signature data for signature help, keyed by function name */
+export const SIGNATURE_DATA: Record<string, { label: string; params: string[]; doc: string }> = {
+${signatureEntries.join(',\n')},
+};
 `;
 
     fs.writeFileSync(outputPath, output, 'utf-8');
@@ -281,6 +373,7 @@ ${namespaceMemberEntries.join(',\n')},
     console.log(`  ${stdlibCompletions.length} stdlib/constructor/namespace completions`);
     console.log(`  ${typeMembers.length} type member sets (${typeMembers.reduce((n, m) => n + m.properties.length + m.methods.length, 0)} total members)`);
     console.log(`  ${namespaceMembers.length} namespace member sets (${namespaceMembers.reduce((n, m) => n + m.methods.length, 0)} total methods)`);
+    console.log(`  ${signatureData.length} function signatures`);
   });
 
 function escapeString(s: string): string {

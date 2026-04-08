@@ -1,5 +1,5 @@
 import { analyzeScopes } from './scope-analysis';
-import { STDLIB_COMPLETIONS } from './completion-data.generated';
+import { SIGNATURE_DATA } from './completion-data.generated';
 
 import type { TextDocument } from './document';
 import type { Position } from './types';
@@ -20,28 +20,6 @@ export interface ParameterInformation {
   label: string;
 }
 
-// --- Signature data ---
-
-interface FunctionSignature {
-  label: string;
-  params: string[];
-  doc: string;
-}
-
-const SIGNATURES = new Map<string, FunctionSignature>();
-
-// Build from stdlib completion data (extract params from detail string)
-for (const entry of STDLIB_COMPLETIONS) {
-  if (entry.kind !== 'function') continue;
-  const match = entry.detail.match(/^(\w+)\(([^)]*)\)/);
-  if (match) {
-    const name = match[1];
-    const paramsStr = match[2].trim();
-    const params = paramsStr ? paramsStr.split(/,\s*/) : [];
-    SIGNATURES.set(name, { label: `${name}(${paramsStr})`, params, doc: entry.detail });
-  }
-}
-
 /**
  * Get signature help at a position in a document.
  * Returns null if the cursor is not inside function call parentheses.
@@ -54,8 +32,8 @@ export function getSignatureHelp(document: TextDocument, position: Position): Si
   const callInfo = findCallContext(source, offset);
   if (!callInfo) return null;
 
-  // Look up signature
-  let sig = SIGNATURES.get(callInfo.functionName);
+  // Look up signature from generated data
+  let sig = SIGNATURE_DATA[callInfo.functionName] as { label: string; params: string[]; doc: string } | undefined;
 
   // If not in stdlib, check user-defined functions via scope analysis
   if (!sig) {

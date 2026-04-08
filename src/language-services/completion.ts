@@ -2,7 +2,7 @@ import { analyzeScopes } from './scope-analysis';
 import {
   KEYWORD_COMPLETIONS,
   STYLE_PROPERTY_COMPLETIONS,
-} from './completion-data';
+} from './completion-data-static';
 import {
   ENUM_COMPLETIONS,
   ENUM_MEMBER_MAP,
@@ -13,7 +13,7 @@ import {
 
 import type { TextDocument } from './document';
 import type { Position } from './types';
-import type { CompletionEntry, MemberCompletionSet } from './completion-data';
+import type { CompletionEntry, MemberCompletionSet } from './completion-data-static';
 
 export interface CompletionItem {
   label: string;

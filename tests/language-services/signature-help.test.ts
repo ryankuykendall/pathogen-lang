@@ -86,6 +86,30 @@ describe('getSignatureHelp', () => {
     });
   });
 
+  describe('previously-missing functions', () => {
+    it('shows signature for radialWedge', () => {
+      const result = sigHelpAtEnd('radialWedge(');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].label).toContain('radialWedge');
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual([
+        'innerR', 'outerR', 'fromAngle', 'toAngle', 'cornerR',
+      ]);
+    });
+
+    it('shows signature for sinh', () => {
+      const result = sigHelpAtEnd('let y = sinh(');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters).toHaveLength(1);
+      expect(result!.signatures[0].parameters[0].label).toBe('x');
+    });
+
+    it('shows signature for polarX', () => {
+      const result = sigHelpAtEnd('let x = polarX(');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['cx', 'angle', 'radius']);
+    });
+  });
+
   describe('edge cases', () => {
     it('returns null after closing paren', () => {
       expect(sigHelpAtEnd('circle(50, 50, 25)')).toBeNull();
