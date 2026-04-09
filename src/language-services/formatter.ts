@@ -8,6 +8,11 @@ import type {
   Expression,
   PathCommand,
   PathArg,
+  FunctionCall,
+  MethodCallExpression,
+  TernaryExpression,
+  BinaryExpression,
+  TextBodyItem,
 } from '../parser/ast';
 
 export interface FormatOptions {
@@ -36,7 +41,10 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
     return []; // Can't format unparseable source
   }
 
-  const formatted = formatStatements(ast.body, 0, indent);
+  const raw = formatStatements(ast.body, 0, indent, source);
+
+  // Strip trailing whitespace on every line
+  const formatted = raw.split('\n').map((line) => line.trimEnd()).join('\n');
 
   // If already formatted, return no edits
   if (formatted === source) return [];
@@ -50,23 +58,51 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
   }];
 }
 
+// --- Blank line helpers ---
+
+function countBlankLinesBetween(source: string, fromOffset: number, toOffset: number): number {
+  const segment = source.slice(fromOffset, toOffset);
+  const lines = segment.split('\n');
+  // Skip first line (belongs to previous stmt) and last line (belongs to current stmt)
+  let blanks = 0;
+  for (let i = 1; i < lines.length - 1; i++) {
+    if (lines[i].trim() === '') blanks++;
+  }
+  return blanks;
+}
+
 // --- Formatting ---
 
-function formatStatements(stmts: Statement[], depth: number, indent: string): string {
+function formatStatements(stmts: Statement[], depth: number, indent: string, source?: string): string {
   const lines: string[] = [];
   const prefix = indent.repeat(depth);
 
-  for (const stmt of stmts) {
-    lines.push(formatStatement(stmt, depth, indent, prefix));
+  for (let i = 0; i < stmts.length; i++) {
+    const stmt = stmts[i];
+
+    // Preserve blank lines from source, normalize 3+ → 2
+    if (source && i > 0) {
+      const prevLoc = (stmts[i - 1] as any).loc;
+      const currLoc = (stmt as any).loc;
+      if (prevLoc?.offset != null && currLoc?.offset != null) {
+        const blanks = countBlankLinesBetween(source, prevLoc.offset, currLoc.offset);
+        const normalized = Math.min(blanks, 2);
+        for (let j = 0; j < normalized; j++) {
+          lines.push('');
+        }
+      }
+    }
+
+    lines.push(formatStatement(stmt, depth, indent, prefix, source));
   }
 
   return lines.join('\n');
 }
 
-function formatStatement(stmt: Statement, depth: number, indent: string, prefix: string): string {
+function formatStatement(stmt: Statement, depth: number, indent: string, prefix: string, source?: string): string {
   switch (stmt.type) {
     case 'LetDeclaration': {
-      const value = formatExpression(stmt.value);
+      const value = formatExpression(stmt.value, depth, indent, source);
       if (stmt.pattern) {
         if (stmt.pattern.type === 'ArrayDestructuringPattern') {
           const elements = stmt.pattern.elements.join(', ');
@@ -84,96 +120,142 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       return `${prefix}let ${stmt.name} = ${value};`;
     }
     case 'AssignmentStatement':
-      return `${prefix}${stmt.name} = ${formatExpression(stmt.value)};`;
+      return `${prefix}${stmt.name} = ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'FunctionDefinition': {
-      const params = stmt.params.join(', ');
-      const body = formatStatements(stmt.body, depth + 1, indent);
-      return `${prefix}fn ${stmt.name}(${params}) {\n${body}\n${prefix}}`;
+      const paramStr = formatParamList(stmt.params, depth, indent);
+      const body = formatStatements(stmt.body, depth + 1, indent, source);
+      return `${prefix}fn ${stmt.name}(${paramStr}) {\n${body}\n${prefix}}`;
     }
     case 'EnumDefinition': {
       const members = stmt.members.map((m) => {
-        if (m.value) return `${indent.repeat(depth + 1)}${m.name} = ${formatExpression(m.value)}`;
-        return `${indent.repeat(depth + 1)}${m.name}`;
-      }).join(',\n');
+        const val = m.value ? ` = ${formatExpression(m.value, depth + 1, indent, source)}` : '';
+        return `${indent.repeat(depth + 1)}${m.name}${val},`;
+      }).join('\n');
       return `${prefix}enum ${stmt.name} {\n${members}\n${prefix}}`;
     }
     case 'ForLoop': {
-      const start = formatExpression(stmt.start);
-      const end = formatExpression(stmt.end);
-      const body = formatStatements(stmt.body, depth + 1, indent);
+      const start = formatExpression(stmt.start, depth, indent, source);
+      const end = formatExpression(stmt.end, depth, indent, source);
+      const body = formatStatements(stmt.body, depth + 1, indent, source);
       return `${prefix}for (${stmt.variable} in ${start}..${end}) {\n${body}\n${prefix}}`;
     }
     case 'ForEachLoop': {
-      const iterable = formatExpression(stmt.iterable);
+      const iterable = formatExpression(stmt.iterable, depth, indent, source);
       const varName = stmt.indexVariable
         ? `[${stmt.variable}, ${stmt.indexVariable}]`
         : stmt.variable;
-      const body = formatStatements(stmt.body, depth + 1, indent);
+      const body = formatStatements(stmt.body, depth + 1, indent, source);
       return `${prefix}for (${varName} in ${iterable}) {\n${body}\n${prefix}}`;
     }
     case 'IfStatement': {
-      const condition = formatExpression(stmt.condition);
-      const consequent = formatStatements(stmt.consequent, depth + 1, indent);
+      const condition = formatExpression(stmt.condition, depth, indent, source);
+      const consequent = formatStatements(stmt.consequent, depth + 1, indent, source);
       let result = `${prefix}if (${condition}) {\n${consequent}\n${prefix}}`;
       if (stmt.alternate) {
-        const alternate = formatStatements(stmt.alternate, depth + 1, indent);
+        const alternate = formatStatements(stmt.alternate, depth + 1, indent, source);
         result += ` else {\n${alternate}\n${prefix}}`;
       }
       return result;
     }
     case 'PathCommand':
-      return `${prefix}${formatPathCommand(stmt)}`;
+      return `${prefix}${formatPathCommand(stmt, depth, indent, source)}`;
     case 'ReturnStatement':
-      return `${prefix}return ${formatExpression(stmt.value)};`;
+      return `${prefix}return ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'ExpressionStatement':
-      return `${prefix}${formatExpression(stmt.expression)}`;
+      return `${prefix}${formatExpression(stmt.expression, depth, indent, source)};`;
     case 'LayerDefinition': {
-      const name = formatExpression(stmt.name);
-      const style = formatExpression(stmt.styleExpr);
+      const name = formatExpression(stmt.name, depth, indent, source);
+      const style = formatExpression(stmt.styleExpr, depth, indent, source);
       const def = stmt.isDefault ? 'default ' : '';
       return `${prefix}define ${def}${stmt.layerType}(${name}) ${style}`;
     }
     case 'LayerApplyBlock': {
-      const name = formatExpression(stmt.layerName);
-      const body = formatStatements(stmt.body, depth + 1, indent);
+      const body = formatStatements(stmt.body, depth + 1, indent, source);
+      if (stmt.layerName.type === 'Identifier') {
+        const name = formatExpression(stmt.layerName, depth, indent, source);
+        return `${prefix}${name}.apply {\n${body}\n${prefix}}`;
+      }
+      const name = formatExpression(stmt.layerName, depth, indent, source);
       return `${prefix}layer(${name}).apply {\n${body}\n${prefix}}`;
     }
     case 'TextStatement': {
-      const x = formatExpression(stmt.x);
-      const y = formatExpression(stmt.y);
+      const args: string[] = [
+        formatExpression(stmt.x, depth, indent, source),
+        formatExpression(stmt.y, depth, indent, source),
+      ];
+      if (stmt.rotation) args.push(formatExpression(stmt.rotation, depth, indent, source));
+      if (stmt.styles) args.push(formatExpression(stmt.styles, depth, indent, source));
       if (stmt.content) {
-        return `${prefix}text(${x}, ${y})${formatExpression(stmt.content)}`;
+        return `${prefix}text(${args.join(', ')})${formatExpression(stmt.content, depth, indent, source)};`;
       }
       if (stmt.body) {
         const body = stmt.body.map((item) =>
-          formatStatement(item as Statement, depth + 1, indent, indent.repeat(depth + 1)),
+          formatTextBodyItem(item, depth + 1, indent, source),
         ).join('\n');
-        return `${prefix}text(${x}, ${y}) {\n${body}\n${prefix}}`;
+        return `${prefix}text(${args.join(', ')}) {\n${body}\n${prefix}}`;
       }
-      return `${prefix}text(${x}, ${y})`;
+      return `${prefix}text(${args.join(', ')});`;
     }
     case 'Comment':
       return `${prefix}${stmt.text}`;
     case 'IndexedAssignmentStatement':
-      return `${prefix}${formatExpression(stmt.object)}[${formatExpression(stmt.index)}] = ${formatExpression(stmt.value)};`;
+      return `${prefix}${formatExpression(stmt.object, depth, indent, source)}[${formatExpression(stmt.index, depth, indent, source)}] = ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'MemberAssignmentStatement':
-      return `${prefix}${formatExpression(stmt.object)}.${stmt.property} = ${formatExpression(stmt.value)};`;
+      return `${prefix}${formatExpression(stmt.object, depth, indent, source)}.${stmt.property} = ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'FontDirective':
-      return `${prefix}@font "${stmt.source}"${stmt.weight ? ` ${stmt.weight}` : ''}`;
+      return `${prefix}@font "${stmt.source}"${stmt.weight ? ` ${stmt.weight}` : ''};`;
     default:
       return prefix;
   }
 }
 
-function formatPathCommand(cmd: PathCommand): string {
+// --- Text body item formatting ---
+
+function formatTextBodyItem(item: TextBodyItem, depth: number, indent: string, source?: string): string {
+  const prefix = indent.repeat(depth);
+  if (item.type === 'TspanStatement') {
+    const args: string[] = [];
+    if (item.dx) args.push(formatExpression(item.dx, depth, indent, source));
+    if (item.dy) args.push(formatExpression(item.dy, depth, indent, source));
+    if (item.rotation) args.push(formatExpression(item.rotation, depth, indent, source));
+    if (item.styles) args.push(formatExpression(item.styles, depth, indent, source));
+    const content = formatExpression(item.content, depth, indent, source);
+    return `${prefix}tspan(${args.join(', ')})${content};`;
+  }
+  if (item.type === 'TemplateLiteral') {
+    const content = formatExpression(item, depth, indent, source);
+    return `${prefix}${content};`;
+  }
+  // ForLoop, ForEachLoop, IfStatement, LetDeclaration are Statement types
+  return formatStatement(item as Statement, depth, indent, prefix, source);
+}
+
+// --- Function param wrapping ---
+
+function formatParamList(params: string[], depth: number, indent: string): string {
+  if (params.length < 5) return params.join(', ');
+  // Break after every 4th param, 4-space continuation indent
+  const contIndent = indent.repeat(depth) + '    ';
+  const chunks: string[][] = [];
+  for (let i = 0; i < params.length; i += 4) {
+    chunks.push(params.slice(i, i + 4));
+  }
+  return chunks.map((chunk, i) =>
+    i === 0 ? chunk.join(', ') : `${contIndent}${chunk.join(', ')}`,
+  ).join(',\n');
+}
+
+// --- Path commands ---
+
+function formatPathCommand(cmd: PathCommand, depth: number, indent: string, source?: string): string {
   if (cmd.args.length === 0) return cmd.command;
-  const args = cmd.args.map(formatPathArg).join(' ');
+  const args = cmd.args.map((a) => formatPathArg(a, depth, indent, source)).join(' ');
   // Empty command (e.g., standalone function call like circle(cx, cy, r))
   if (!cmd.command) return args;
   return `${cmd.command} ${args}`;
 }
 
-function formatPathArg(arg: PathArg): string {
+function formatPathArg(arg: PathArg, depth: number, indent: string, source?: string): string {
   switch (arg.type) {
     case 'NumberLiteral': {
       const unit = arg.unit ?? '';
@@ -184,21 +266,193 @@ function formatPathArg(arg: PathArg): string {
     case 'Identifier':
       return arg.name;
     case 'CalcExpression':
-      return `calc(${formatExpression(arg.expression)})`;
+      return `calc(${formatExpression(arg.expression, depth, indent, source)})`;
     case 'FunctionCall':
-      return formatFunctionCall(arg);
+      return formatFunctionCallExpr(arg as FunctionCall, depth, indent, source);
     case 'MemberExpression':
-      return formatExpression(arg);
+      return formatExpression(arg as any, depth, indent, source);
     case 'IndexExpression':
-      return `${formatExpression(arg.object)}[${formatExpression(arg.index)}]`;
+      return `${formatExpression((arg as any).object, depth, indent, source)}[${formatExpression((arg as any).index, depth, indent, source)}]`;
     case 'MethodCallExpression':
-      return formatExpression(arg);
+      return formatExpression(arg as any, depth, indent, source);
     default:
       return '';
   }
 }
 
-function formatExpression(expr: Expression): string {
+// --- Method chain helpers ---
+
+function countMethodChainDepth(expr: Expression): number {
+  let count = 0;
+  let current: Expression = expr;
+  while (current.type === 'MethodCallExpression') {
+    count++;
+    current = (current as MethodCallExpression).object;
+  }
+  return count;
+}
+
+function formatMethodChain(expr: MethodCallExpression, depth: number, indent: string, source?: string): string {
+  // Collect chain steps from innermost to outermost
+  const steps: { method: string; args: Expression[]; block?: { params: string[]; body: Statement[] } }[] = [];
+  let base: Expression = expr;
+  while (base.type === 'MethodCallExpression') {
+    const mce = base as MethodCallExpression;
+    steps.unshift({ method: mce.method, args: mce.args, block: mce.block });
+    base = mce.object;
+  }
+
+  const baseStr = formatExpression(base, depth, indent, source);
+  const contIndent = indent.repeat(depth) + '    ';
+
+  let result = baseStr;
+  for (const step of steps) {
+    const argStr = formatArgList(step.args, depth, indent, source);
+    const blockStr = step.block ? formatTrailingBlock(step.block, depth, indent, source) : '';
+    result += `\n${contIndent}.${step.method}(${argStr})${blockStr}`;
+  }
+  return result;
+}
+
+// --- Trailing block ---
+
+function formatTrailingBlock(
+  block: { params: string[]; body: Statement[] },
+  depth: number,
+  indent: string,
+  source?: string,
+): string {
+  const paramStr = block.params.length > 0 ? `|${block.params.join(', ')}|` : '';
+  if (block.body.length === 0) {
+    return ` {${paramStr}}`;
+  }
+  const bodyLines = formatStatements(block.body, depth + 1, indent, source);
+
+  // Attempt gradient stop column alignment
+  const aligned = alignGradientStops(bodyLines, indent.repeat(depth + 1));
+
+  return ` {${paramStr}\n${aligned}\n${indent.repeat(depth)}}`;
+}
+
+// --- Gradient stop alignment ---
+
+function alignGradientStops(bodyText: string, innerIndent: string): string {
+  const lines = bodyText.split('\n');
+  // Check if all non-empty lines match the stop pattern
+  const stopPattern = /^(\s*\S+\.stop\()([^,]+)(,\s*.+);$/;
+  const matches = lines.map((line) => line.trim() === '' ? null : stopPattern.exec(line));
+  const allStops = matches.every((m, i) => m !== null || lines[i].trim() === '');
+
+  if (!allStops || matches.filter(Boolean).length < 2) return bodyText;
+
+  const maxOffsetWidth = Math.max(...matches.map((m) => m ? m[2].length : 0));
+
+  return lines.map((line, i) => {
+    const m = matches[i];
+    if (!m) return line;
+    const padded = m[2].padEnd(maxOffsetWidth);
+    return `${m[1]}${padded}${m[3]};`;
+  }).join('\n');
+}
+
+// --- Function call formatting ---
+
+function shouldWrapArgs(args: Expression[]): boolean {
+  // Style guide: wrap if 5+ args
+  if (args.length >= 5) return true;
+  // Also wrap if 4 args and any is a complex expression (calc, function call, method call)
+  if (args.length >= 4) {
+    return args.some((a) =>
+      a.type === 'FunctionCall' || a.type === 'CalcExpression' || a.type === 'MethodCallExpression',
+    );
+  }
+  return false;
+}
+
+function formatArgList(args: Expression[], depth: number, indent: string, source?: string): string {
+  return args.map((a) => formatExpression(a, depth, indent, source)).join(', ');
+}
+
+function formatFunctionCallExpr(
+  expr: FunctionCall,
+  depth: number,
+  indent: string,
+  source?: string,
+): string {
+  const args = expr.args.map((a) => formatExpression(a, depth, indent, source));
+
+  let result: string;
+  if (shouldWrapArgs(expr.args) && expr.args.length > 0) {
+    const contIndent = indent.repeat(depth) + '    ';
+    const wrapped = args.map((a, i) =>
+      i === 0 ? a : `${contIndent}${a}`,
+    );
+    result = `${expr.name}(${wrapped[0]},\n${wrapped.slice(1).join(',\n')})`;
+  } else {
+    result = `${expr.name}(${args.join(', ')})`;
+  }
+
+  if (expr.block) {
+    result += formatTrailingBlock(expr.block, depth, indent, source);
+  }
+
+  return result;
+}
+
+// --- Ternary helpers ---
+
+function countLogicalOps(expr: Expression): number {
+  if (expr.type !== 'BinaryExpression') return 0;
+  const be = expr as BinaryExpression;
+  if (be.operator === '||' || be.operator === '&&') {
+    return 1 + countLogicalOps(be.left) + countLogicalOps(be.right);
+  }
+  return 0;
+}
+
+function formatTernary(expr: TernaryExpression, depth: number, indent: string, source?: string): string {
+  const cond = formatExpression(expr.condition, depth, indent, source);
+  const cons = formatExpression(expr.consequent, depth, indent, source);
+  const alt = formatExpression(expr.alternate, depth, indent, source);
+
+  const isNestedAlternate = expr.alternate.type === 'TernaryExpression';
+
+  if (isNestedAlternate) {
+    const contIndent = indent.repeat(depth + 1);
+    const altFormatted = formatExpression(expr.alternate, depth + 1, indent, source);
+    return `${cond} ?\n${contIndent}${cons} : ${altFormatted}`;
+  }
+
+  const logicalOpCount = countLogicalOps(expr.condition);
+  if (logicalOpCount >= 3) {
+    const contIndent = indent.repeat(depth + 1);
+    // Break the condition at top-level || or && operators
+    const condParts = splitAtLogicalOps(expr.condition, depth, indent, source);
+    const firstPart = condParts[0];
+    const restParts = condParts.slice(1).map((p) => `${contIndent}${p}`);
+    const allParts = [firstPart, ...restParts];
+    return `${allParts.join('\n')} ? ${cons} : ${alt}`;
+  }
+
+  return `${cond} ? ${cons} : ${alt}`;
+}
+
+function splitAtLogicalOps(expr: Expression, depth: number, indent: string, source?: string): string[] {
+  if (expr.type !== 'BinaryExpression') return [formatExpression(expr, depth, indent, source)];
+  const be = expr as BinaryExpression;
+  if (be.operator === '||' || be.operator === '&&') {
+    const leftParts = splitAtLogicalOps(be.left, depth, indent, source);
+    const rightParts = splitAtLogicalOps(be.right, depth, indent, source);
+    // Append operator to last part of left
+    leftParts[leftParts.length - 1] += ` ${be.operator}`;
+    return [...leftParts, ...rightParts];
+  }
+  return [formatExpression(expr, depth, indent, source)];
+}
+
+// --- Expression formatting ---
+
+function formatExpression(expr: Expression, depth: number, indent: string, source?: string): string {
   switch (expr.type) {
     case 'NumberLiteral': {
       const unit = expr.unit ?? '';
@@ -208,7 +462,7 @@ function formatExpression(expr: Expression): string {
       return `'${expr.value}'`;
     case 'TemplateLiteral': {
       const parts = expr.parts.map((p) =>
-        typeof p === 'string' ? p : `\${${formatExpression(p)}}`,
+        typeof p === 'string' ? p : `\${${formatExpression(p, depth, indent, source)}}`,
       );
       return `\`${parts.join('')}\``;
     }
@@ -221,59 +475,89 @@ function formatExpression(expr: Expression): string {
     case 'ColorLiteral':
       return expr.raw;
     case 'BinaryExpression':
-      return `${formatExpression(expr.left)} ${expr.operator} ${formatExpression(expr.right)}`;
+      return `${formatExpression(expr.left, depth, indent, source)} ${expr.operator} ${formatExpression(expr.right, depth, indent, source)}`;
     case 'UnaryExpression':
-      return `${expr.operator}${formatExpression(expr.argument)}`;
+      return `${expr.operator}${formatExpression(expr.argument, depth, indent, source)}`;
     case 'TernaryExpression':
-      return `${formatExpression(expr.condition)} ? ${formatExpression(expr.consequent)} : ${formatExpression(expr.alternate)}`;
+      return formatTernary(expr, depth, indent, source);
     case 'CalcExpression':
-      return `calc(${formatExpression(expr.expression)})`;
+      return `calc(${formatExpression(expr.expression, depth, indent, source)})`;
     case 'FunctionCall':
-      return formatFunctionCall(expr);
+      return formatFunctionCallExpr(expr, depth, indent, source);
     case 'MethodCallExpression': {
-      const obj = formatExpression(expr.object);
-      const args = expr.args.map(formatExpression).join(', ');
-      return `${obj}.${expr.method}(${args})`;
+      const chainDepth = countMethodChainDepth(expr);
+      if (chainDepth >= 3) {
+        return formatMethodChain(expr, depth, indent, source);
+      }
+      const obj = formatExpression(expr.object, depth, indent, source);
+      const args = expr.args.map((a) => formatExpression(a, depth, indent, source));
+      let argStr: string;
+      if (shouldWrapArgs(expr.args) && expr.args.length > 0) {
+        const contIndent = indent.repeat(depth) + '    ';
+        const wrapped = args.map((a, i) =>
+          i === 0 ? a : `${contIndent}${a}`,
+        );
+        argStr = `${wrapped[0]},\n${wrapped.slice(1).join(',\n')}`;
+      } else {
+        argStr = args.join(', ');
+      }
+      let result = `${obj}.${expr.method}(${argStr})`;
+      if (expr.block) {
+        result += formatTrailingBlock(expr.block, depth, indent, source);
+      }
+      return result;
     }
     case 'MemberExpression':
-      return `${formatExpression(expr.object)}.${expr.property}`;
+      return `${formatExpression(expr.object, depth, indent, source)}.${expr.property}`;
     case 'IndexExpression':
-      return `${formatExpression(expr.object)}[${formatExpression(expr.index)}]`;
+      return `${formatExpression(expr.object, depth, indent, source)}[${formatExpression(expr.index, depth, indent, source)}]`;
     case 'ArrayLiteral': {
-      const elements = expr.elements.map((e) =>
-        e.type === 'SpreadElement' ? `...${formatExpression(e.argument)}` : formatExpression(e),
-      );
-      return `[${elements.join(', ')}]`;
+      if (expr.elements.length === 0) return '[]';
+      const inner = indent.repeat(depth + 1);
+      const close = indent.repeat(depth);
+      const elements = expr.elements.map((e) => {
+        const formatted = e.type === 'SpreadElement'
+          ? `...${formatExpression(e.argument, depth + 1, indent, source)}`
+          : formatExpression(e, depth + 1, indent, source);
+        return `${inner}${formatted},`;
+      });
+      return `[\n${elements.join('\n')}\n${close}]`;
     }
     case 'ObjectLiteral': {
-      const props = expr.properties.map((p) =>
-        p.type === 'SpreadElement' ? `...${formatExpression(p.argument)}` : `${p.key}: ${formatExpression(p.value)}`,
-      );
-      return `{ ${props.join(', ')} }`;
+      if (expr.properties.length === 0) return '{}';
+      const inner = indent.repeat(depth + 1);
+      const close = indent.repeat(depth);
+      const props = expr.properties.map((p) => {
+        if (p.type === 'SpreadElement') {
+          return `${inner}...${formatExpression(p.argument, depth + 1, indent, source)},`;
+        }
+        return `${inner}${p.key}: ${formatExpression(p.value, depth + 1, indent, source)},`;
+      });
+      return `{\n${props.join('\n')}\n${close}}`;
     }
     case 'StyleBlockLiteral': {
-      const props = expr.properties.map((p) => `${p.name}: ${p.value}`).join('; ');
-      return '${ ' + props + '; }';
+      if (expr.properties.length === 0) return '${}';
+      const inner = indent.repeat(depth + 1);
+      const close = indent.repeat(depth);
+      const props = expr.properties.map((p) => `${inner}${p.name}: ${p.value};`);
+      return `\${\n${props.join('\n')}\n${close}}`;
     }
     case 'LayerConstructorExpression': {
-      const name = formatExpression(expr.name);
-      const style = expr.styleExpr ? ` ${formatExpression(expr.styleExpr)}` : '';
+      const name = formatExpression(expr.name, depth, indent, source);
+      const style = expr.styleExpr ? ` ${formatExpression(expr.styleExpr, depth, indent, source)}` : '';
       return `${expr.layerType}(${name})${style}`;
     }
     case 'PathBlockExpression': {
-      const body = formatStatements(expr.body as Statement[], 1, '  ');
-      return `@{\n${body}\n}`;
+      const body = formatStatements(expr.body as Statement[], depth + 1, indent, source);
+      return `@{\n${body}\n${indent.repeat(depth)}}`;
     }
     case 'TextBlockExpression': {
-      const body = formatStatements(expr.body as Statement[], 1, '  ');
-      return `&{\n${body}\n}`;
+      const body = (expr.body as any[]).map((item: any) =>
+        formatTextBodyItem(item, depth + 1, indent, source),
+      ).join('\n');
+      return `&{\n${body}\n${indent.repeat(depth)}}`;
     }
     default:
       return '';
   }
-}
-
-function formatFunctionCall(expr: { name: string; args: Expression[] }): string {
-  const args = expr.args.map(formatExpression).join(', ');
-  return `${expr.name}(${args})`;
 }

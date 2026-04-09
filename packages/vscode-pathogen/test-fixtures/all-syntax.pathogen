@@ -130,5 +130,29 @@ for (i in 0..count) {
   log(i);
 }
 
+// --- Constructors ---
+let pt = Point(100, 200);
+let cv = CSSVar('--primary', #ff0000);
+let clr = Color('#3b82f6');
+let pv = PolarVector(45deg, 100);
+let cyc = Cycler([1, 2, 3]);
+let mask = Mask('m1');
+let clip = ClipPath('c1');
+
+// --- Gradient constructors with trailing blocks ---
+let sky = LinearGradient('sky', 0, 0, 0, 1) {|g|
+  g.stop(0,   Color('#0d1b2a'));
+  g.stop(0.5, Color('#415a77'));
+  g.stop(1,   Color('#778da9'));
+};
+
+let glow = RadialGradient('glow', 0.5, 0.5, 0.5) {|g|
+  g.stop(0, Color('#fff'));
+  g.stop(1, Color('#000'));
+};
+
+// --- Enum member access ---
+let dir = Direction.UP;
+
 // --- calc() ---
 M calc(x + 10) calc(y * 2)

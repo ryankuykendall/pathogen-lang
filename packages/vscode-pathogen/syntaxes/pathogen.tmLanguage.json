@@ -12,6 +12,8 @@
     { "include": "#path-block" },
     { "include": "#text-block" },
     { "include": "#layer-constructor" },
+    { "include": "#constructor-call" },
+    { "include": "#trailing-block-params" },
     { "include": "#keyword" },
     { "include": "#svg-path-command" },
     { "include": "#boolean-null" },
@@ -202,6 +204,25 @@
       "match": "\\b(PathLayer|TextLayer|GroupLayer)\\s*(?=\\()",
       "captures": {
         "1": { "name": "support.class.layer.pathogen" }
+      }
+    },
+
+    "constructor-call": {
+      "comment": "Constructor calls: LinearGradient, RadialGradient, ConicGradient, Color, Point, etc.",
+      "match": "\\b(LinearGradient|RadialGradient|ConicGradient|MeshGradient|FreeformGradient|TopoGradient|Color|Point|PolarVector|CSSVar|Cycler|Mask|ClipPath|Pattern|SVGDocumentFragment)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "support.class.constructor.pathogen" }
+      }
+    },
+
+    "trailing-block-params": {
+      "comment": "Trailing block parameters: {|param1, param2| ... }",
+      "match": "(\\{)(\\|)([^|]*)(\\|)",
+      "captures": {
+        "1": { "name": "punctuation.definition.block.begin.pathogen" },
+        "2": { "name": "punctuation.definition.parameters.begin.pathogen" },
+        "3": { "name": "variable.parameter.pathogen" },
+        "4": { "name": "punctuation.definition.parameters.end.pathogen" }
       }
     },
 

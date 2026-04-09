@@ -65,7 +65,13 @@
   },
   "Define Layer": {
     "prefix": "define",
-    "body": "define PathLayer('${1:name}') ${ stroke: ${2:#000}; stroke-width: ${3:2}; }",
+    "body": [
+      "define PathLayer('${1:name}') ${",
+      "  stroke: ${2:#000};",
+      "  stroke-width: ${3:2};",
+      "  fill: ${4:none};",
+      "}"
+    ],
     "description": "define a layer with styles"
   },
   "Layer Apply Block": {
@@ -79,12 +85,12 @@
   },
   "Text Element": {
     "prefix": "text",
-    "body": "text(${1:100}, ${2:100})`${0:content}`",
+    "body": "text(${1:100}, ${2:100})`${0:content}`;",
     "description": "text element (inline form)"
   },
   "Text Span": {
     "prefix": "tspan",
-    "body": "tspan(${1:0}, ${2:20})`${0:content}`",
+    "body": "tspan(${1:0}, ${2:20})`${0:content}`;",
     "description": "text span inside text() block"
   },
   "Path Block": {
@@ -126,7 +132,7 @@
     "body": [
       "enum ${1:Name} {",
       "  ${2:MEMBER1},",
-      "  ${0:MEMBER2}",
+      "  ${0:MEMBER2},",
       "}"
     ],
     "description": "enum definition"
@@ -139,5 +145,73 @@
       "}"
     ],
     "description": "for-each loop — iterate over an array"
+  },
+  "Linear Gradient": {
+    "prefix": "lineargradient",
+    "body": [
+      "let ${1:grad} = LinearGradient('${2:id}', ${3:0}, ${4:0}, ${5:0}, ${6:1}) {|g|",
+      "  g.stop(0,   ${7:Color('#000')});",
+      "  g.stop(0.5, ${8:Color('#888')});",
+      "  g.stop(1,   ${0:Color('#fff')});",
+      "};"
+    ],
+    "description": "LinearGradient constructor with stops"
+  },
+  "Radial Gradient": {
+    "prefix": "radialgradient",
+    "body": [
+      "let ${1:grad} = RadialGradient('${2:id}', ${3:0.5}, ${4:0.5}, ${5:0.5}) {|g|",
+      "  g.stop(0,   ${6:Color('#000')});",
+      "  g.stop(0.5, ${7:Color('#888')});",
+      "  g.stop(1,   ${0:Color('#fff')});",
+      "};"
+    ],
+    "description": "RadialGradient constructor with stops"
+  },
+  "Conic Gradient": {
+    "prefix": "conicgradient",
+    "body": [
+      "let ${1:grad} = ConicGradient('${2:id}', ${3:cx}, ${4:cy}) {|g|",
+      "  g.stop(0,   ${5:Color('#000')});",
+      "  g.stop(0.5, ${6:Color('#888')});",
+      "  g.stop(1,   ${0:Color('#fff')});",
+      "};"
+    ],
+    "description": "ConicGradient constructor with stops"
+  },
+  "Color Constructor": {
+    "prefix": "Color",
+    "body": "Color('${0:#000}')",
+    "description": "Color() constructor"
+  },
+  "Text Block": {
+    "prefix": "textblock",
+    "body": [
+      "let ${1:tb} = &{",
+      "  text(${2:0}, ${3:14})`${4:line 1}`;",
+      "  text(${5:0}, ${6:28})`${0:line 2}`;",
+      "};"
+    ],
+    "description": "text block — reusable text content"
+  },
+  "Style Block": {
+    "prefix": "styleblock",
+    "body": [
+      "\\${",
+      "  ${1:fill}: ${2:none};",
+      "  ${3:stroke}: ${0:#000};",
+      "}"
+    ],
+    "description": "standalone style block literal"
+  },
+  "Point Constructor": {
+    "prefix": "Point",
+    "body": "Point(${1:x}, ${0:y})",
+    "description": "Point(x, y) — create a point"
+  },
+  "CSS Variable": {
+    "prefix": "CSSVar",
+    "body": "CSSVar('${1:--var-name}', ${0:#000})",
+    "description": "CSSVar(name, fallback) — CSS custom property"
   }
 }
