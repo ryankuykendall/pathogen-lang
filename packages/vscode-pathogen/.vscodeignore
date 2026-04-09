@@ -4,8 +4,4 @@ src/**
 tsconfig.json
 test-fixtures/**
 CLAUDE.md
-**/*.ts
-!out/**/*.js
-!server/**/*.js
 **/*.map
-**/*.d.ts

@@ -55,6 +55,20 @@ For changes spanning multiple systems, see the [cross-system feature lifecycle](
 
 **Build order:** compiler → language-services → `npm run build` → VS Code packages → playground → docs
 
+### VS Code Extension (`packages/`)
+
+Build → end-to-end install verify → test all advertised features → full test suite. See `packages/vscode-pathogen/CLAUDE.md` for details.
+
+### Quality Standard
+
+**Everything we build is intended for users, not for internal validation.** When Claude is asked to implement a feature, the default expectation is that the result is production-ready: it installs, activates, and works as advertised from the user's perspective. Specifically:
+
+- **No placeholders in shipped code.** If a feature isn't ready, don't register the command / expose the UI / add the menu item. Stub code that shows "not yet implemented" to a user is not acceptable — either implement it or don't ship it.
+- **No silent failures.** If something can fail at runtime (module resolution, file not found, missing dependency), handle the error with a user-visible message that explains what went wrong and how to fix it.
+- **End-to-end verification is mandatory.** For CLI tools: run the command and verify output. For VS Code extensions: build the `.vsix`, install it in a clean VS Code instance, and verify every advertised feature works (activation, commands, completions, hover, diagnostics, preview). For web features: load the page and verify interactivity. "It compiles" or "tests pass" is necessary but not sufficient — the artifact must work when a user encounters it.
+- **Dependency packaging must be verified.** If a feature ships as a distributable artifact (`.vsix`, npm package, browser bundle), verify that all runtime dependencies are included and resolve correctly in the installed context, not just in the development workspace.
+- **Be honest about readiness.** If work is incomplete, say so explicitly and document what remains. Never present scaffolding as a finished feature. If Claude discovers during implementation that something previously built is broken or incomplete, it must flag this to the user before proceeding rather than building on top of a broken foundation.
+
 ### Agent Workflow Hints
 
 - **Parallel exploration**: For cross-cutting work, launch explore agents for `src/` and `playground/` simultaneously — they're fully independent codebases connected only by `dist/index.global.js`

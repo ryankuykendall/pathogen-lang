@@ -93,10 +93,52 @@ fs.writeFileSync(path.join(serverNodeModules, 'package.json'), JSON.stringify({
   main: './dist/index.cjs',
 }, null, 2));
 
+// Copy external dependencies required by the CJS bundle (@lezer/*, opentype.js)
+const rootNM = path.join(ROOT, 'node_modules');
+const bundledNM = path.join(BUNDLED_SERVER_DIR, 'node_modules');
+const cjsExternalDeps = ['@lezer/lr', '@lezer/highlight', '@lezer/common', 'opentype.js'];
+for (const dep of cjsExternalDeps) {
+  const src = path.join(rootNM, dep);
+  const dest = path.join(bundledNM, dep);
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+  if (fs.existsSync(src)) {
+    const realSrc = fs.realpathSync(src);
+    fs.cpSync(realSrc, dest, { recursive: true });
+    console.log(`  Copied ${dep} (CJS external)`);
+  }
+}
+
 console.log(`  Bundled server to ${path.relative(ROOT, BUNDLED_SERVER_DIR)}`);
 
-// --- Step 5: Package with vsce ---
-step('5/5  Packaging .vsix');
+// Copy extension's runtime dependency (vscode-languageclient + transitive deps)
+// into server/node_modules which vsce --no-dependencies includes (it skips
+// the extension's own node_modules/ but includes server/ as a regular directory)
+step('5/6  Bundling extension runtime dependencies');
+const rootNodeModules = path.join(ROOT, 'node_modules');
+const bundledNodeModules = path.join(BUNDLED_SERVER_DIR, 'node_modules');
+const clientDeps = [
+  'vscode-languageclient',
+  'vscode-languageserver-protocol',
+  'vscode-languageserver-types',
+  'vscode-jsonrpc',
+];
+for (const dep of clientDeps) {
+  const src = path.join(rootNodeModules, dep);
+  const dest = path.join(bundledNodeModules, dep);
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+  if (fs.existsSync(src)) {
+    const realSrc = fs.realpathSync(src);
+    fs.cpSync(realSrc, dest, { recursive: true });
+    console.log(`  Copied ${dep}`);
+  }
+}
+
+// --- Step 6: Package with vsce ---
+step('6/6  Packaging .vsix');
 
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 const vsixPath = path.join(OUTPUT_DIR, 'vscode-pathogen.vsix');

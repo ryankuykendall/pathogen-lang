@@ -1,16 +1,42 @@
 import * as path from 'path';
+import * as fs from 'fs';
+import * as nodeModule from 'module';
 import * as vscode from 'vscode';
-import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind,
-} from 'vscode-languageclient/node';
 import { openPreview } from './preview';
 
-let client: LanguageClient;
+let client: any;
 
 export function activate(context: vscode.ExtensionContext): void {
+  // Register preview command first (doesn't depend on language server)
+  const previewCommand = vscode.commands.registerCommand(
+    'pathogen.openPreview',
+    () => openPreview(context),
+  );
+  context.subscriptions.push(previewCommand);
+
+  // Resolve vscode-languageclient from bundled server/node_modules
+  // when installed from .vsix (vsce --no-dependencies strips the ext's own node_modules)
+  let lc: any;
+  try {
+    lc = require('vscode-languageclient/node');
+  } catch {
+    // Fallback: resolve from bundled server/node_modules
+    const bundledModules = path.join(context.extensionPath, 'server', 'node_modules');
+    if (fs.existsSync(bundledModules)) {
+      const serverRequire = nodeModule.createRequire(
+        path.join(bundledModules, '_resolve.js'),
+      );
+      lc = serverRequire('vscode-languageclient/node');
+    }
+  }
+
+  if (!lc) {
+    vscode.window.showErrorMessage('Pathogen: Could not load language client module.');
+    return;
+  }
+
+  const { LanguageClient, TransportKind } = lc;
+
   // Path to the language server module — check bundled location first, then dev
   const bundledServer = context.asAbsolutePath(
     path.join('server', 'out', 'server.js'),
@@ -18,16 +44,14 @@ export function activate(context: vscode.ExtensionContext): void {
   const devServer = context.asAbsolutePath(
     path.join('..', 'pathogen-language-server', 'out', 'server.js'),
   );
-  const serverModule = require('fs').existsSync(bundledServer) ? bundledServer : devServer;
+  const serverModule = fs.existsSync(bundledServer) ? bundledServer : devServer;
 
-  // Server runs in a separate Node process via stdio
-  const serverOptions: ServerOptions = {
+  const serverOptions = {
     run: { module: serverModule, transport: TransportKind.stdio },
     debug: { module: serverModule, transport: TransportKind.stdio },
   };
 
-  // Register the client for .pathogen files
-  const clientOptions: LanguageClientOptions = {
+  const clientOptions = {
     documentSelector: [{ scheme: 'file', language: 'pathogen' }],
   };
 
@@ -39,13 +63,6 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   client.start();
-
-  // Register preview command
-  const previewCommand = vscode.commands.registerCommand(
-    'pathogen.openPreview',
-    () => openPreview(context),
-  );
-  context.subscriptions.push(previewCommand);
 }
 
 export function deactivate(): Thenable<void> | undefined {

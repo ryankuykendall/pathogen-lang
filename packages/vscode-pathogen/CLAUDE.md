@@ -25,7 +25,7 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/extension.ts` | Entry point. Starts LanguageClient, registers preview command |
-| `src/preview.ts` | SVG preview webview panel (placeholder — not yet functional) |
+| `src/preview.ts` | SVG preview webview panel — **NOT FUNCTIONAL** (see Readiness Status below) |
 | `syntaxes/pathogen.tmLanguage.json` | TextMate grammar for syntax highlighting |
 | `snippets/pathogen.code-snippets` | 18 code snippets (for, fn, if, shapes, etc.) |
 | `language-configuration.json` | Comment toggling, brackets, auto-closing, indentation, folding |
@@ -104,3 +104,37 @@ Snippets in `snippets/pathogen.code-snippets` (18 entries) mirror the snippet bo
 | New language-service feature | `server.ts` — add new `connection.on*` handler |
 
 For the full cross-system checklist, see `project-docs/developer-experience/cross-system-feature-lifecycle.md`.
+
+## Readiness Status
+
+**This extension is NOT production-ready.** The following issues must be resolved before it can be considered shippable:
+
+### Broken
+
+- [ ] **Language server does not activate when installed from .vsix** — The packaging pipeline bundles dependencies into `server/node_modules/`, but the language server process fails to start. The extension activates (preview command works) but no LSP features are available (no completions, hover, diagnostics, or formatting). Root cause: the server subprocess runs in its own Node process and may not resolve dependencies from the bundled path.
+- [ ] **Preview panel shows placeholder** — `src/preview.ts` renders a static "Compile preview requires runtime bundle" message. The compiler is not bundled into the webview. This command is registered and visible to users but does nothing useful.
+
+### Missing
+
+- [ ] **No extension tests** — `"test": "echo 'No tests yet'"`. There are zero automated tests verifying that the extension activates, the language server starts, commands register, or LSP features work.
+- [ ] **No end-to-end install verification** — The build script (`scripts/build-vscode-extension.ts`) packages a `.vsix` but does not verify that it works when installed. The packaging was never tested until 2026-04-08 and multiple dependency resolution issues were discovered.
+
+### Known Gaps
+
+- [ ] Language file icons (`icons/pathogen-light.svg`, `icons/pathogen-dark.svg`) are referenced but don't exist (removed from package.json to prevent errors)
+- [ ] No bundling (esbuild) — the extension ships raw `node_modules/` which is fragile and bloated; vsce warns about this
+- [ ] Snippet count in this doc says "18 entries" but there are now 27 after the formatter style guide work
+
+## Development Lifecycle
+
+The VS Code extension follows the same quality standard as the rest of the project:
+
+1. **Verify the problem** — Before changing extension code, reproduce the issue by installing the `.vsix` and testing in VS Code, not just by reading source.
+2. **Build and install** — `npm run build:vscode:install` builds everything and installs the `.vsix`.
+3. **End-to-end verify** — After installing, reload VS Code and verify:
+   - Extension activates (check Extension Host output for errors)
+   - "Pathogen Language Server" appears in the Output dropdown
+   - Completions, hover, diagnostics work on a `.pathogen` file
+   - Preview command opens and renders (when implemented)
+4. **No dead features** — Do not register commands, menu items, or UI that don't work. If a feature isn't ready, don't expose it to users.
+5. **Full test suite** — Run `npm run test:run` from the project root before committing.
