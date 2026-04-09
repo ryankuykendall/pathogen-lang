@@ -97,43 +97,44 @@ export class ErrorPanel extends HTMLElement {
           display: none;
           position: absolute;
           bottom: var(--footer-height, 52px);
-          left: var(--view-padding, 1rem);
-          right: var(--view-padding, 1rem);
+          left: 0;
+          width: 50%;
           z-index: 10;
           background: var(--error-bg, #fee);
           color: var(--error-text, #c00);
           padding: 12px 20px;
           font-family: var(--font-mono, 'SF Mono', Monaco, monospace);
           font-size: 0.875rem;
+          line-height: 1.4;
           border: 1px solid var(--error-border, #fcc);
           border-radius: var(--radius-md, 8px);
           box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.15));
-          max-height: 30vh;
-          overflow-y: auto;
-          transform: translateY(50%);
+          box-sizing: border-box;
         }
 
         :host(.visible) {
           display: block;
         }
 
-        .header {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
+        .wrapper {
+          position: relative;
         }
 
         .content {
-          flex: 1;
           white-space: pre-wrap;
           word-break: break-word;
+          max-height: calc(1.4em * 5);
+          overflow-y: auto;
+          padding-right: 120px;
         }
 
         .count-badge {
-          flex-shrink: 0;
+          position: absolute;
+          top: 0;
+          right: 0;
           padding: 2px 8px;
           border-radius: 10px;
-          background: var(--error-text, #c00);
+          background: var(--error-color, #ef4444);
           color: #fff;
           font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
           font-size: 0.7rem;
@@ -143,7 +144,9 @@ export class ErrorPanel extends HTMLElement {
         }
 
         .capture-btn {
-          flex-shrink: 0;
+          position: absolute;
+          bottom: 0;
+          right: 0;
           padding: 4px 10px;
           border: 1px solid var(--error-text, #c00);
           border-radius: var(--radius-sm, 4px);
@@ -167,7 +170,7 @@ export class ErrorPanel extends HTMLElement {
           cursor: default;
         }
       </style>
-      <div class="header">
+      <div class="wrapper">
         <div class="content">${this._message}</div>
         <span class="count-badge" style="display: none"></span>
         <button class="capture-btn" title="Copy debug info to clipboard">Copy Debug Info</button>

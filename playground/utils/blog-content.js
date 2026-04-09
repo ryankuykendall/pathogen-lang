@@ -196,7 +196,7 @@ C 367.6 141.7  410.9 72.6  470 70
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 330) }
+bg.apply { rect(0, 0, 540, 330); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -253,13 +253,13 @@ layer('title').apply { text(30, 24)\`cubicSpline — waypoints, tangent lines, a
 // The curve
 define PathLayer('curve') \${ fill: none; stroke: #3b82f6; stroke-width: 3 }
 layer('diagram').append(layer('curve'));
-layer('curve').apply { cubicSpline(pts) }
+layer('curve').apply { cubicSpline(pts); }
 
 // On-curve points
 define PathLayer('anchors') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
-  for ([p, i] in pts) { circle(p.x, p.y, 5) }
+  for ([p, i] in pts) { circle(p.x, p.y, 5); }
 }
 
 // Control points and tangent lines
@@ -277,8 +277,8 @@ for (i in 1..n) {
   let c2x = calc(curr.x - curr.entry * cos(curr.angle));
   let c2y = calc(curr.y - curr.entry * sin(curr.angle));
 
-  layer('cp-exit').apply { circle(c1x, c1y, 4) }
-  layer('cp-entry').apply { circle(c2x, c2y, 4) }
+  layer('cp-exit').apply { circle(c1x, c1y, 4); }
+  layer('cp-entry').apply { circle(c2x, c2y, 4); }
   layer('tangent').apply {
     M prev.x prev.y L c1x c1y
     M curr.x curr.y L c2x c2y
@@ -292,7 +292,7 @@ define PathLayer('angle-ticks') \${ fill: none; stroke: #f59e0b; stroke-width: 0
 define TextLayer('angle-labels') \${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif }
 layer('diagram').append(layer('angle-fills'), layer('angle-arcs'), layer('angle-ticks'), layer('angle-labels'));
 
-for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle) }
+for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle); }
 
 // Point labels
 define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
@@ -314,9 +314,9 @@ define PathLayer('sw-tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1;
 define PathLayer('sw-angle') \${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1 }
 layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
 
-layer('sw-curve').apply { rect(0, 0, 12, 3) }
-layer('sw-exit').apply { circle(6, 20, 4) }
-layer('sw-entry').apply { circle(6, 36, 4) }
+layer('sw-curve').apply { rect(0, 0, 12, 3); }
+layer('sw-exit').apply { circle(6, 20, 4); }
+layer('sw-entry').apply { circle(6, 36, 4); }
 layer('sw-tangent').apply { M 0 50 L 12 50 }
 layer('sw-angle').apply {
   M 0 64 L 12 64 A 6 6 0 0 0 6 58 Z
@@ -342,7 +342,7 @@ layer('legend-text').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 420, 255) }
+bg.apply { rect(0, 0, 420, 255); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -382,21 +382,21 @@ layer('curves').apply {
 // Join point
 define PathLayer('anchor') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
 layer('diagram').append(layer('anchor'));
-layer('anchor').apply { circle(joinPt.x, joinPt.y, 6) }
+layer('anchor').apply { circle(joinPt.x, joinPt.y, 6); }
 
 // Control points
 define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
 define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
 layer('diagram').append(layer('cp-entry'), layer('cp-exit'));
-layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4) }
-layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4) }
+layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4); }
+layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4); }
 
 // Endpoint markers
 define PathLayer('endpoints') \${ fill: #64748b; stroke: #334155; stroke-width: 1 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(75, 175, 3)
-  circle(365, 120, 3)
+  circle(75, 175, 3);
+  circle(365, 120, 3);
 }
 
 // Labels — positioned with clearance from geometry
@@ -428,7 +428,7 @@ layer('note').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 460, 145) }
+bg.apply { rect(0, 0, 460, 145); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -454,7 +454,7 @@ layer('s-curve').apply {
     { x: 0,  y: 105, angle: 0, exit: 30 },
     { x: 50, y: 30,  angle: 0, entry: 30, exit: 30 },
     { x: 100, y: 105, angle: 0, entry: 30 }
-  ])
+  ]);
 }
 
 // --- Sine wave group ---
@@ -474,7 +474,7 @@ layer('sine').apply {
     { x: 50, y: 65,  angle: 90deg, entry: 18, exit: 18 },
     { x: 75, y: 30,  angle: 0,     entry: 15, exit: 15 },
     { x: 100, y: 65,  angle: 90deg, entry: 18 }
-  ])
+  ]);
 }
 
 // --- Closed loop group ---
@@ -494,7 +494,7 @@ layer('loop').apply {
     { x: 60, y: 102, angle: 180deg, entry: 22, exit: 22 },
     { x: 10, y: 65,  angle: -90deg, entry: 22, exit: 22 },
     { x: 60, y: 28,  angle: 0,      entry: 22 }
-  ])
+  ]);
 }
 </code>
   <img src="/pathogen/blog/samples/post13/cubic-spline-demos.svg" alt="cubicSpline examples — S-curve, sine wave, and closed loop" loading="lazy">
@@ -541,7 +541,7 @@ layer('loop').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 350) }
+bg.apply { rect(0, 0, 540, 350); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -568,15 +568,15 @@ layer('title').apply { text(30, 24)\`quadSpline — implicit angle derivation\` 
 // The curve
 define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
 layer('diagram').append(layer('curve'));
-layer('curve').apply { quadSpline(startPt, midPts, endPt) }
+layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // On-curve points
 define PathLayer('anchors') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
-  circle(startPt.x, startPt.y, 5)
-  for ([p, i] in midPts) { circle(p.x, p.y, 5) }
-  circle(endPt.x, endPt.y, 5)
+  circle(startPt.x, startPt.y, 5);
+  for ([p, i] in midPts) { circle(p.x, p.y, 5); }
+  circle(endPt.x, endPt.y, 5);
 }
 
 // Recompute CPs for visualization
@@ -589,7 +589,7 @@ layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derive
 let cp0x = calc(startPt.x + startPt.exit * cos(startPt.angle));
 let cp0y = calc(startPt.y + startPt.exit * sin(startPt.angle));
 
-layer('shared-cp').apply { circle(cp0x, cp0y, 4) }
+layer('shared-cp').apply { circle(cp0x, cp0y, 4); }
 layer('tangent-line').apply { M startPt.x startPt.y L cp0x cp0y }
 
 // Subsequent CPs from derived angles
@@ -605,7 +605,7 @@ for ([pt, idx] in midPts) {
   // Tangent extension: pt -&gt; newCP (orange dashed)
   layer('tangent-line').apply { M pt.x pt.y L newCPx newCPy }
   // Shared CP marker
-  layer('shared-cp').apply { circle(newCPx, newCPy, 4) }
+  layer('shared-cp').apply { circle(newCPx, newCPy, 4); }
 
   prevCPx = newCPx;
   prevCPy = newCPy;
@@ -632,7 +632,7 @@ define PathLayer('lg-tan') \${ fill: none; stroke: #f97316; stroke-width: 1; str
 layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
 
 layer('lg-curve').apply { M 0 0 L 16 0 }
-layer('lg-cp').apply { circle(8, 16, 4) }
+layer('lg-cp').apply { circle(8, 16, 4); }
 layer('lg-dir').apply { M 0 30 L 16 30 }
 layer('lg-tan').apply { M 0 44 L 16 44 }
 
@@ -661,7 +661,7 @@ layer('note').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 460, 145) }
+bg.apply { rect(0, 0, 460, 145); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -687,7 +687,7 @@ layer('arc').apply {
     { x: 0, y: 100, angle: -30deg, exit: 40 },
     [],
     { x: 100, y: 100 }
-  )
+  );
 }
 
 // --- Flowing curve group ---
@@ -709,7 +709,7 @@ layer('flowing').apply {
       { x: 100, y: 35, exit: 25 }
     ],
     { x: 140, y: 100 }
-  )
+  );
 }
 
 // --- Zigzag group ---
@@ -731,7 +731,7 @@ layer('zigzag').apply {
       { x: 90,  y: 35, exit: 25 }
     ],
     { x: 120, y: 100 }
-  )
+  );
 }
 </code>
   <img src="/pathogen/blog/samples/post13/quad-spline-demos.svg" alt="quadSpline examples — simple arc, flowing curve, and zigzag" loading="lazy">
@@ -781,7 +781,7 @@ layer('zigzag').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 460, 270) }
+bg.apply { rect(0, 0, 460, 270); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -833,8 +833,8 @@ layer('virtual').apply {
 define PathLayer('cp1') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
 define PathLayer('cp2') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
 layer('diagram').append(layer('cp1'), layer('cp2'));
-layer('cp1').apply { circle(cp1x, cp1y, 5) }
-layer('cp2').apply { circle(cp2x, cp2y, 5) }
+layer('cp1').apply { circle(cp1x, cp1y, 5); }
+layer('cp2').apply { circle(cp2x, cp2y, 5); }
 
 // Lines from endpoints to actual CPs
 define PathLayer('cp1-arm') \${ fill: none; stroke: #ef4444; stroke-width: 1.5 }
@@ -857,8 +857,8 @@ layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 define PathLayer('endpoints') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(sx, sy, 5)
-  circle(ex, ey, 5)
+  circle(sx, sy, 5);
+  circle(ex, ey, 5);
 }
 
 // Labels — positioned with clearance from geometry
@@ -899,7 +899,7 @@ layer('ref-note').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 250) }
+bg.apply { rect(0, 0, 520, 250); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -920,7 +920,7 @@ layer('t100').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 1.0 },
     [{ x: 190, y: 45, exit: 70, exitTime: 1.0, entryTime: 1.0 }],
     { x: 320, y: 165, entryTime: 1.0 }
-  )
+  );
 }
 
 // t = 0.75
@@ -930,7 +930,7 @@ layer('t075').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.75 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.75, entryTime: 0.75 }],
     { x: 320, y: 165, entryTime: 0.75 }
-  )
+  );
 }
 
 // t = 0.5
@@ -940,7 +940,7 @@ layer('t050').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.5 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.5, entryTime: 0.5 }],
     { x: 320, y: 165, entryTime: 0.5 }
-  )
+  );
 }
 
 // t = 0.25
@@ -950,16 +950,16 @@ layer('t025').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.25 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.25, entryTime: 0.25 }],
     { x: 320, y: 165, entryTime: 0.25 }
-  )
+  );
 }
 
 // On-curve points
 define PathLayer('pts') \${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5 }
 layer('diagram').append(layer('t100'), layer('t075'), layer('t050'), layer('t025'), layer('pts'));
 layer('pts').apply {
-  circle(60, 165, 5)
-  circle(190, 45, 5)
-  circle(320, 165, 5)
+  circle(60, 165, 5);
+  circle(190, 45, 5);
+  circle(320, 165, 5);
 }
 
 // === Legend group ===
@@ -1137,7 +1137,7 @@ let base = \${ fill: #94a3b8; };
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 280) }
+bg.apply { rect(0, 0, 540, 280); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1197,7 +1197,7 @@ let before_code_bg = PathLayer('before-code-bg') \${
   stroke: #334155;
   stroke-width: 1;
 };
-before_code_bg.apply { roundRect(30, 90, 225, 80, 6) }
+before_code_bg.apply { roundRect(30, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
 let before_code = TextLayer('before-code') \${
@@ -1225,13 +1225,13 @@ before_code.apply {
 
 // Swatches for before
 let b_swatch1 = PathLayer('b-sw1') \${ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
-b_swatch1.apply { roundRect(48, 183, 55, 40, 4) }
+b_swatch1.apply { roundRect(48, 183, 55, 40, 4); }
 
 let b_swatch2 = PathLayer('b-sw2') \${ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
-b_swatch2.apply { roundRect(113, 183, 55, 40, 4) }
+b_swatch2.apply { roundRect(113, 183, 55, 40, 4); }
 
 let b_swatch3 = PathLayer('b-sw3') \${ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
-b_swatch3.apply { roundRect(178, 183, 55, 40, 4) }
+b_swatch3.apply { roundRect(178, 183, 55, 40, 4); }
 
 let b_sw_labels = TextLayer('b-sw-labels') \${
   font-family: monospace;
@@ -1265,7 +1265,7 @@ let after_code_bg = PathLayer('after-code-bg') \${
   stroke: #38bdf8;
   stroke-width: 1;
 };
-after_code_bg.apply { roundRect(285, 90, 225, 80, 6) }
+after_code_bg.apply { roundRect(285, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
 let after_code = TextLayer('after-code') \${
@@ -1297,13 +1297,13 @@ after_code.apply {
 
 // Swatches for after
 let a_swatch1 = PathLayer('a-sw1') \${ fill: #cc0000; stroke: #475569; stroke-width: 1; };
-a_swatch1.apply { roundRect(298, 183, 55, 40, 4) }
+a_swatch1.apply { roundRect(298, 183, 55, 40, 4); }
 
 let a_swatch2 = PathLayer('a-sw2') \${ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
-a_swatch2.apply { roundRect(363, 183, 55, 40, 4) }
+a_swatch2.apply { roundRect(363, 183, 55, 40, 4); }
 
 let a_swatch3 = PathLayer('a-sw3') \${ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
-a_swatch3.apply { roundRect(428, 183, 55, 40, 4) }
+a_swatch3.apply { roundRect(428, 183, 55, 40, 4); }
 
 let a_sw_labels = TextLayer('a-sw-labels') \${
   font-family: monospace;
@@ -1354,7 +1354,7 @@ equals.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 320) }
+bg.apply { rect(0, 0, 520, 320); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1455,7 +1455,7 @@ row_labels.apply {
 for ([color, i] in lightness_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`l_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -1475,7 +1475,7 @@ row_labels.apply {
 for ([color, i] in hue_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`h_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -1495,7 +1495,7 @@ row_labels.apply {
 for ([color, i] in sat_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`s_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -1558,7 +1558,7 @@ base_line.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 560, 340) }
+bg.apply { rect(0, 0, 560, 340); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1635,7 +1635,7 @@ for ([color, i] in colors) {
 
   // Swatch
   let swatch = PathLayer(\`cs_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(x, y, sw, sh, sr) }
+  swatch.apply { roundRect(x, y, sw, sh, sr); }
 
   // Space name
   space_label.apply {
@@ -1696,7 +1696,7 @@ arrow_line.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 300) }
+bg.apply { rect(0, 0, 520, 300); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1794,7 +1794,7 @@ row_label.apply {
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`t_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1814,7 +1814,7 @@ row_label.apply {
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`d_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1835,13 +1835,13 @@ row_label.apply {
 for ([_, i] in alphas) {
   let x = calc(sx + i * sp - sw / 2);
   let checker = PathLayer(\`ck_\${i}\`) \${ fill: #ffffff; stroke: none; };
-  checker.apply { roundRect(x, row3_y, sw, sh, sr) }
+  checker.apply { roundRect(x, row3_y, sw, sh, sr); }
 }
 
 for ([color, i] in alphas) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`a_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1884,7 +1884,7 @@ base_ind.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 340) }
+bg.apply { rect(0, 0, 520, 340); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1964,7 +1964,7 @@ row_label.apply {
 for ([color, i] in ramp) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`r_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1988,7 +1988,7 @@ row_label.apply {
 for ([color, i] in transforms) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`x_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -2011,7 +2011,7 @@ row_label.apply {
 for ([color, i] in triad) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`tri_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 let triad_names = ['0°', '+120°', '+240°'];
@@ -2026,7 +2026,7 @@ sw_label.apply {
 // ═══════════════════════════════════════
 
 let code_bg = PathLayer('code-bg') \${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
-code_bg.apply { roundRect(30, 300, 460, 28, 4) }
+code_bg.apply { roundRect(30, 300, 460, 28, 4); }
 
 let code = TextLayer('code') \${
   font-family: monospace;
@@ -2061,7 +2061,7 @@ code_kw.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 280) }
+bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Title
@@ -2141,7 +2141,7 @@ let tints = [
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`lt_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 let tint_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
@@ -2174,7 +2174,7 @@ let shades = [
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(\`dk_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 let shade_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
@@ -2189,7 +2189,7 @@ pct_label.apply {
 // ═══════════════════════════════════════
 
 let code_bg = PathLayer('code-bg') \${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
-code_bg.apply { roundRect(30, 228, 460, 40, 4) }
+code_bg.apply { roundRect(30, 228, 460, 40, 4); }
 
 let code = TextLayer('code') \${
   font-family: monospace;
@@ -2280,25 +2280,25 @@ wheel_inner.innerFill = 'center';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Outer ring (donut) ---
 
 let ring = PathLayer('ring') \${ fill: wheel_outer; stroke: none; };
-ring.apply { circle(200, 200, 155); closePath() }
+ring.apply { circle(200, 200, 155); closePath(); }
 
 // --- Inner disc ---
 
 let disc = PathLayer('disc') \${ fill: wheel_inner; stroke: none; };
-disc.apply { circle(200, 200, 62); closePath() }
+disc.apply { circle(200, 200, 62); closePath(); }
 
 // --- Subtle frame ---
 
 let frame = PathLayer('frame') \${ fill: none; stroke: #333; stroke-width: 1; };
-frame.apply { circle(200, 200, 155); closePath() }
+frame.apply { circle(200, 200, 155); closePath(); }
 
 let inner_frame = PathLayer('inner-frame') \${ fill: none; stroke: #333; stroke-width: 0.5; };
-inner_frame.apply { circle(200, 200, 62); closePath() }
+inner_frame.apply { circle(200, 200, 62); closePath(); }
 
 // --- Title ---
 
@@ -2315,7 +2315,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, ring, disc, frame, inner_frame, title)
+scene.append(bg, ring, disc, frame, inner_frame, title);
 </code>
   <img src="/pathogen/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
@@ -2379,26 +2379,26 @@ fuel_grad.spread = 'transparent';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 660, 340) }
+bg.apply { rect(0, 0, 660, 340); }
 
 // --- Gauge faces ---
 
 let g1 = PathLayer('g1') \${ fill: speed_grad; stroke: none; };
-g1.apply { circle(120, 160, 80); closePath() }
+g1.apply { circle(120, 160, 80); closePath(); }
 
 let g2 = PathLayer('g2') \${ fill: temp_grad; stroke: none; };
-g2.apply { circle(330, 160, 80); closePath() }
+g2.apply { circle(330, 160, 80); closePath(); }
 
 let g3 = PathLayer('g3') \${ fill: fuel_grad; stroke: none; };
-g3.apply { circle(540, 160, 65); closePath() }
+g3.apply { circle(540, 160, 65); closePath(); }
 
 // --- Gauge rims ---
 
 let rims = PathLayer('rims') \${ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
-  circle(120, 160, 81); closePath()
-  circle(330, 160, 81); closePath()
-  circle(540, 160, 66); closePath()
+  circle(120, 160, 81); closePath();
+  circle(330, 160, 81); closePath();
+  circle(540, 160, 66); closePath();
 }
 
 // --- Tick marks for Speed gauge (135° to 405°, 270° sweep) ---
@@ -2408,19 +2408,19 @@ rims.apply {
 let speed_ticks = PathLayer('speed-ticks') \${ fill: none; stroke: #ccc; stroke-width: 4; };
 speed_ticks.apply {
   // 135° (bottom-left) — 0 km/h
-  line(51, 217, 63, 205)
+  line(51, 217, 63, 205);
   // 180° (left) — 40 km/h
-  line(33, 160, 47, 160)
+  line(33, 160, 47, 160);
   // 225° (top-left) — 80 km/h
-  line(51, 103, 63, 115)
+  line(51, 103, 63, 115);
   // 270° (top) — 120 km/h
-  line(120, 73, 120, 87)
+  line(120, 73, 120, 87);
   // 315° (top-right) — 160 km/h
-  line(189, 103, 177, 115)
+  line(189, 103, 177, 115);
   // 360° (right) — 200 km/h
-  line(207, 160, 193, 160)
+  line(207, 160, 193, 160);
   // 405° (bottom-right) — 240 km/h
-  line(189, 217, 177, 205)
+  line(189, 217, 177, 205);
 }
 
 // --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
@@ -2428,19 +2428,19 @@ speed_ticks.apply {
 let temp_ticks = PathLayer('temp-ticks') \${ fill: none; stroke: #ccc; stroke-width: 4; };
 temp_ticks.apply {
   // 135° — -20°C
-  line(261, 217, 273, 205)
+  line(261, 217, 273, 205);
   // 180° — 0°C
-  line(243, 160, 257, 160)
+  line(243, 160, 257, 160);
   // 225° — 20°C
-  line(261, 103, 273, 115)
+  line(261, 103, 273, 115);
   // 270° — 40°C
-  line(330, 73, 330, 87)
+  line(330, 73, 330, 87);
   // 315° — 60°C
-  line(399, 103, 387, 115)
+  line(399, 103, 387, 115);
   // 360° — 80°C
-  line(417, 160, 403, 160)
+  line(417, 160, 403, 160);
   // 405° — 100°C
-  line(399, 217, 387, 205)
+  line(399, 217, 387, 205);
 }
 
 // --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
@@ -2448,15 +2448,15 @@ temp_ticks.apply {
 let fuel_ticks = PathLayer('fuel-ticks') \${ fill: none; stroke: #ccc; stroke-width: 4; };
 fuel_ticks.apply {
   // 180° (left) — E
-  line(468, 160, 480, 160)
+  line(468, 160, 480, 160);
   // 225° — 1/4
-  line(487, 114, 497, 124)
+  line(487, 114, 497, 124);
   // 270° (top) — 1/2
-  line(540, 88, 540, 100)
+  line(540, 88, 540, 100);
   // 315° — 3/4
-  line(593, 114, 583, 124)
+  line(593, 114, 583, 124);
   // 360° (right) — F
-  line(612, 160, 600, 160)
+  line(612, 160, 600, 160);
 }
 
 // --- Speed tick labels ---
@@ -2554,16 +2554,16 @@ subtitle.apply {
 // --- Scene ---
 
 let speed_group = GroupLayer('speed-gauge') \${};
-speed_group.append(g1, speed_ticks)
+speed_group.append(g1, speed_ticks);
 
 let temp_group = GroupLayer('temp-gauge') \${};
-temp_group.append(g2, temp_ticks)
+temp_group.append(g2, temp_ticks);
 
 let fuel_group = GroupLayer('fuel-gauge') \${};
-fuel_group.append(g3, fuel_ticks)
+fuel_group.append(g3, fuel_ticks);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle)
+scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);
 </code>
   <img src="/pathogen/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
 </mini-workspace></p>
@@ -2604,15 +2604,15 @@ ccw_grad.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 500, 300) }
+bg.apply { rect(0, 0, 500, 300); }
 
 // --- Gradient circles ---
 
 let cw_circle = PathLayer('cw-circle') \${ fill: cw_grad; stroke: #333; stroke-width: 1; };
-cw_circle.apply { circle(140, 150, 90); closePath() }
+cw_circle.apply { circle(140, 150, 90); closePath(); }
 
 let ccw_circle = PathLayer('ccw-circle') \${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
-ccw_circle.apply { circle(360, 150, 90); closePath() }
+ccw_circle.apply { circle(360, 150, 90); closePath(); }
 
 // --- Direction arrows (curved sweep arcs with arrowheads) ---
 
@@ -2661,13 +2661,13 @@ note.apply {
 // --- Scene ---
 
 let left = GroupLayer('left') \${};
-left.append(cw_circle, cw_arrow)
+left.append(cw_circle, cw_arrow);
 
 let right = GroupLayer('right') \${};
-right.append(ccw_circle, ccw_arrow)
+right.append(ccw_circle, ccw_arrow);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left, right, labels, note)
+scene.append(bg, left, right, labels, note);
 </code>
   <img src="/pathogen/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
 </mini-workspace></p>
@@ -2751,21 +2751,21 @@ g4.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 520, 530) }
+bg.apply { rect(0, 0, 520, 530); }
 
 // --- Circles ---
 
 let c1 = PathLayer('c1') \${ fill: g1; stroke: #333; stroke-width: 1; };
-c1.apply { circle(cx1, cy1, r); closePath() }
+c1.apply { circle(cx1, cy1, r); closePath(); }
 
 let c2 = PathLayer('c2') \${ fill: g2; stroke: #333; stroke-width: 1; };
-c2.apply { circle(cx2, cy2, r); closePath() }
+c2.apply { circle(cx2, cy2, r); closePath(); }
 
 let c3 = PathLayer('c3') \${ fill: g3; stroke: #333; stroke-width: 1; };
-c3.apply { circle(cx3, cy3, r); closePath() }
+c3.apply { circle(cx3, cy3, r); closePath(); }
 
 let c4 = PathLayer('c4') \${ fill: g4; stroke: #333; stroke-width: 1; };
-c4.apply { circle(cx4, cy4, r); closePath() }
+c4.apply { circle(cx4, cy4, r); closePath(); }
 
 // --- Labels ---
 
@@ -2810,13 +2810,13 @@ title.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') \${};
-top_row.append(c1, c2)
+top_row.append(c1, c2);
 
 let bottom_row = GroupLayer('bottom-row') \${};
-bottom_row.append(c3, c4)
+bottom_row.append(c3, c4);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, top_row, bottom_row, labels, desc, title)
+scene.append(bg, top_row, bottom_row, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
 </mini-workspace></p>
@@ -2861,21 +2861,21 @@ oklch_rc.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 600, 540) }
+bg.apply { rect(0, 0, 600, 540); }
 
 // --- Gradient circles ---
 
 let by_s = PathLayer('by-srgb') \${ fill: srgb_by; stroke: #333; stroke-width: 1; };
-by_s.apply { circle(160, 165, 85); closePath() }
+by_s.apply { circle(160, 165, 85); closePath(); }
 
 let by_o = PathLayer('by-oklch') \${ fill: oklch_by; stroke: #333; stroke-width: 1; };
-by_o.apply { circle(440, 165, 85); closePath() }
+by_o.apply { circle(440, 165, 85); closePath(); }
 
 let rc_s = PathLayer('rc-srgb') \${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
-rc_s.apply { circle(160, 400, 85); closePath() }
+rc_s.apply { circle(160, 400, 85); closePath(); }
 
 let rc_o = PathLayer('rc-oklch') \${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
-rc_o.apply { circle(440, 400, 85); closePath() }
+rc_o.apply { circle(440, 400, 85); closePath(); }
 
 // --- Column headers ---
 
@@ -2932,13 +2932,13 @@ footer.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') \${};
-top_row.append(by_s, by_o)
+top_row.append(by_s, by_o);
 
 let bottom_row = GroupLayer('bottom-row') \${};
-bottom_row.append(rc_s, rc_o)
+bottom_row.append(rc_s, rc_o);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)
+scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </code>
   <img src="/pathogen/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
 </mini-workspace></p>
@@ -3008,10 +3008,10 @@ let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
 // --- Layers ---
 
 let sky = PathLayer('sky-fill') \${ fill: sky_grad; stroke: none; };
-sky.apply { rect(0, 0, 400, 300) }
+sky.apply { rect(0, 0, 400, 300); }
 
 let sun = PathLayer('sun-streak') \${ fill: sun_grad; stroke: none; };
-sun.apply { rect(0, 155, 400, 30) }
+sun.apply { rect(0, 155, 400, 30); }
 
 let far_mtns = PathLayer('far-mountains') \${ fill: mtn_grad; stroke: none; };
 far_mtns.apply {
@@ -3030,15 +3030,15 @@ near_mtns.apply {
 }
 
 let ground = PathLayer('ground-fill') \${ fill: ground_grad; stroke: none; };
-ground.apply { rect(0, 255, 400, 45) }
+ground.apply { rect(0, 255, 400, 45); }
 
 let frame = PathLayer('frame') \${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
-frame.apply { rect(0, 0, 400, 300) }
+frame.apply { rect(0, 0, 400, 300); }
 
 // --- Scene Organization ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(sky, sun, far_mtns, near_mtns, ground, frame)
+scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 </code>
   <img src="/pathogen/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
 </mini-workspace></p>
@@ -3085,27 +3085,27 @@ let g270 = LinearGradient('g-up', 0, 1, 0, 0) {|g|
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #1a1a2e; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Swatch grid: 3 columns × 2 rows ---
 
 let sw1 = PathLayer('swatch-right') \${ fill: g0; stroke: #333; stroke-width: 1; };
-sw1.apply { roundRect(20, 55, 110, 70, 6) }
+sw1.apply { roundRect(20, 55, 110, 70, 6); }
 
 let sw2 = PathLayer('swatch-down-right') \${ fill: g60; stroke: #333; stroke-width: 1; };
-sw2.apply { roundRect(145, 55, 110, 70, 6) }
+sw2.apply { roundRect(145, 55, 110, 70, 6); }
 
 let sw3 = PathLayer('swatch-down') \${ fill: g90; stroke: #333; stroke-width: 1; };
-sw3.apply { roundRect(270, 55, 110, 70, 6) }
+sw3.apply { roundRect(270, 55, 110, 70, 6); }
 
 let sw4 = PathLayer('swatch-left') \${ fill: g180; stroke: #333; stroke-width: 1; };
-sw4.apply { roundRect(20, 215, 110, 70, 6) }
+sw4.apply { roundRect(20, 215, 110, 70, 6); }
 
 let sw5 = PathLayer('swatch-up-left') \${ fill: g240; stroke: #333; stroke-width: 1; };
-sw5.apply { roundRect(145, 215, 110, 70, 6) }
+sw5.apply { roundRect(145, 215, 110, 70, 6); }
 
 let sw6 = PathLayer('swatch-up') \${ fill: g270; stroke: #333; stroke-width: 1; };
-sw6.apply { roundRect(270, 215, 110, 70, 6) }
+sw6.apply { roundRect(270, 215, 110, 70, 6); }
 
 // --- Direction labels ---
 
@@ -3149,7 +3149,7 @@ connector.apply {
 // --- Scene ---
 
 let fan = GroupLayer('fan') \${};
-fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector)
+fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </code>
   <img src="/pathogen/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
 </mini-workspace></p>
@@ -3209,35 +3209,35 @@ let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
 // --- Background and Nebula ---
 
 let bg = PathLayer('bg') \${ fill: #080612; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 let nebula = PathLayer('nebula-layer') \${ fill: nebula_grad; stroke: none; };
-nebula.apply { rect(0, 0, 400, 400) }
+nebula.apply { rect(0, 0, 400, 400); }
 
 // --- Stars ---
 
 let s1 = PathLayer('s1') \${ fill: star_grad; stroke: none; };
-s1.apply { circle(70, 55, 18); closePath() }
+s1.apply { circle(70, 55, 18); closePath(); }
 
 let s2 = PathLayer('s2') \${ fill: warm_star; stroke: none; };
-s2.apply { circle(330, 80, 22); closePath() }
+s2.apply { circle(330, 80, 22); closePath(); }
 
 let s3 = PathLayer('s3') \${ fill: star_grad; stroke: none; };
-s3.apply { circle(60, 320, 14); closePath() }
+s3.apply { circle(60, 320, 14); closePath(); }
 
 let s4 = PathLayer('s4') \${ fill: warm_star; stroke: none; };
-s4.apply { circle(350, 290, 16); closePath() }
+s4.apply { circle(350, 290, 16); closePath(); }
 
 let s5 = PathLayer('s5') \${ fill: star_grad; stroke: none; };
-s5.apply { circle(200, 40, 10); closePath() }
+s5.apply { circle(200, 40, 10); closePath(); }
 
 let stars = GroupLayer('stars') \${};
-stars.append(s1, s2, s3, s4, s5)
+stars.append(s1, s2, s3, s4, s5);
 
 // --- Planet with Ring ---
 
 let planet_body = PathLayer('planet-body') \${ fill: planet_grad; stroke: none; };
-planet_body.apply { circle(260, 280, 45); closePath() }
+planet_body.apply { circle(260, 280, 45); closePath(); }
 
 let planet_ring = PathLayer('planet-ring') \${ fill: ring_grad; stroke: none; opacity: 0.6; };
 planet_ring.apply {
@@ -3246,12 +3246,12 @@ planet_ring.apply {
 }
 
 let planet = GroupLayer('planet') \${};
-planet.append(planet_body, planet_ring)
+planet.append(planet_body, planet_ring);
 
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, nebula, stars, planet)
+scene.append(bg, nebula, stars, planet);
 </code>
   <img src="/pathogen/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
 </mini-workspace></p>
@@ -3272,7 +3272,7 @@ scene.append(bg, nebula, stars, planet)
 // --- Shared background ---
 
 let bg = PathLayer('bg') \${ fill: #0a0a1a; stroke: none; };
-bg.apply { rect(0, 0, 450, 180) }
+bg.apply { rect(0, 0, 450, 180); }
 
 // --- Sphere gradients with different focal points ---
 
@@ -3306,13 +3306,13 @@ sphere3_grad.interpolation = 'oklch';
 // --- Sphere layers ---
 
 let s1 = PathLayer('s1') \${ fill: sphere1_grad; stroke: none; };
-s1.apply { circle(80, 80, 60); closePath() }
+s1.apply { circle(80, 80, 60); closePath(); }
 
 let s2 = PathLayer('s2') \${ fill: sphere2_grad; stroke: none; };
-s2.apply { circle(225, 80, 60); closePath() }
+s2.apply { circle(225, 80, 60); closePath(); }
 
 let s3 = PathLayer('s3') \${ fill: sphere3_grad; stroke: none; };
-s3.apply { circle(370, 80, 60); closePath() }
+s3.apply { circle(370, 80, 60); closePath(); }
 
 // --- Labels ---
 
@@ -3331,7 +3331,7 @@ labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, s1, s2, s3, labels)
+scene.append(bg, s1, s2, s3, labels);
 </code>
   <img src="/pathogen/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
 </mini-workspace></p>
@@ -3391,7 +3391,7 @@ oklch_mag_green.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Gradient bars ---
 
@@ -3401,24 +3401,24 @@ let x0 = 50;
 
 // Pair 1
 let by_srgb = PathLayer('by-srgb') \${ fill: srgb_blue_yellow; stroke: none; };
-by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4) }
+by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4); }
 
 let by_oklch = PathLayer('by-oklch') \${ fill: oklch_blue_yellow; stroke: none; };
-by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4) }
+by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4); }
 
 // Pair 2
 let rc_srgb = PathLayer('rc-srgb') \${ fill: srgb_red_cyan; stroke: none; };
-rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4) }
+rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4); }
 
 let rc_oklch = PathLayer('rc-oklch') \${ fill: oklch_red_cyan; stroke: none; };
-rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4) }
+rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4); }
 
 // Pair 3
 let mg_srgb = PathLayer('mg-srgb') \${ fill: srgb_mag_green; stroke: none; };
-mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4) }
+mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4); }
 
 let mg_oklch = PathLayer('mg-oklch') \${ fill: oklch_mag_green; stroke: none; };
-mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4) }
+mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4); }
 
 // --- Labels ---
 
@@ -3453,7 +3453,7 @@ pair_labels.apply {
 // --- Scene ---
 
 let comparison = GroupLayer('comparison') \${};
-comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels)
+comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
 </code>
   <img src="/pathogen/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
 </mini-workspace></p>
@@ -3506,18 +3506,18 @@ repeat_grad.spreadMethod = 'repeat';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #14141e; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Gradient strips ---
 
 let strip_pad = PathLayer('strip-pad') \${ fill: pad_grad; stroke: #333; stroke-width: 1; };
-strip_pad.apply { roundRect(60, 45, 320, 50, 4) }
+strip_pad.apply { roundRect(60, 45, 320, 50, 4); }
 
 let strip_reflect = PathLayer('strip-reflect') \${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
-strip_reflect.apply { roundRect(60, 120, 320, 50, 4) }
+strip_reflect.apply { roundRect(60, 120, 320, 50, 4); }
 
 let strip_repeat = PathLayer('strip-repeat') \${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
-strip_repeat.apply { roundRect(60, 195, 320, 50, 4) }
+strip_repeat.apply { roundRect(60, 195, 320, 50, 4); }
 
 // --- Range indicator (shows the 0–30% region) ---
 
@@ -3567,7 +3567,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title)
+scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
 </mini-workspace></p>
@@ -3617,47 +3617,47 @@ let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Base showcase (large card) ---
 
 let base_card = PathLayer('base-card') \${ fill: base; stroke: #333; stroke-width: 1; };
-base_card.apply { roundRect(20, 40, 170, 80, 8) }
+base_card.apply { roundRect(20, 40, 170, 80, 8); }
 
 let cool_card = PathLayer('cool-card') \${ fill: cool; stroke: #333; stroke-width: 1; };
-cool_card.apply { roundRect(210, 40, 170, 80, 8) }
+cool_card.apply { roundRect(210, 40, 170, 80, 8); }
 
 // --- Vertical variant: tall sidebar ---
 
 let vert_bar = PathLayer('vert-bar') \${ fill: vertical; stroke: #333; stroke-width: 1; };
-vert_bar.apply { roundRect(20, 145, 60, 120, 8) }
+vert_bar.apply { roundRect(20, 145, 60, 120, 8); }
 
 // --- Subtle variant: UI elements ---
 
 let btn1 = PathLayer('btn1') \${ fill: subtle; stroke: none; };
-btn1.apply { roundRect(100, 145, 120, 36, 6) }
+btn1.apply { roundRect(100, 145, 120, 36, 6); }
 
 let btn2 = PathLayer('btn2') \${ fill: subtle; stroke: none; };
-btn2.apply { roundRect(100, 195, 120, 36, 6) }
+btn2.apply { roundRect(100, 195, 120, 36, 6); }
 
 // --- Small accent circles using base ---
 
 let dot1 = PathLayer('dot1') \${ fill: base; stroke: none; };
-dot1.apply { circle(260, 163, 18); closePath() }
+dot1.apply { circle(260, 163, 18); closePath(); }
 
 let dot2 = PathLayer('dot2') \${ fill: cool; stroke: none; };
-dot2.apply { circle(310, 163, 18); closePath() }
+dot2.apply { circle(310, 163, 18); closePath(); }
 
 let dot3 = PathLayer('dot3') \${ fill: vertical; stroke: none; };
-dot3.apply { circle(360, 163, 18); closePath() }
+dot3.apply { circle(360, 163, 18); closePath(); }
 
 // --- Pill shapes with inherited gradient ---
 
 let pill1 = PathLayer('pill1') \${ fill: base; stroke: none; };
-pill1.apply { roundRect(240, 200, 140, 28, 14) }
+pill1.apply { roundRect(240, 200, 140, 28, 14); }
 
 let pill2 = PathLayer('pill2') \${ fill: cool; stroke: none; };
-pill2.apply { roundRect(240, 236, 140, 28, 14) }
+pill2.apply { roundRect(240, 236, 140, 28, 14); }
 
 // --- Labels ---
 
@@ -3689,7 +3689,7 @@ title.apply {
 // --- Scene ---
 
 let palette = GroupLayer('palette') \${};
-palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title)
+palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
 </mini-workspace></p>
@@ -3733,23 +3733,23 @@ glow_c.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0a0a1a; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Light circles (overlapping for color mixing) ---
 
 let la = PathLayer('light-a') \${ fill: glow_a; stroke: none; opacity: 0.8; };
-la.apply { circle(140, 120, 130); closePath() }
+la.apply { circle(140, 120, 130); closePath(); }
 
 let lb = PathLayer('light-b') \${ fill: glow_b; stroke: none; opacity: 0.8; };
-lb.apply { circle(280, 110, 130); closePath() }
+lb.apply { circle(280, 110, 130); closePath(); }
 
 let lc = PathLayer('light-c') \${ fill: glow_c; stroke: none; opacity: 0.8; };
-lc.apply { circle(200, 220, 130); closePath() }
+lc.apply { circle(200, 220, 130); closePath(); }
 
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, la, lb, lc)
+scene.append(bg, la, lb, lc);
 </code>
   <img src="/pathogen/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
 </mini-workspace></p>
@@ -3787,12 +3787,12 @@ mesh.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Mesh fill ---
 
 let patch = PathLayer('patch') \${ fill: mesh; stroke: none; };
-patch.apply { roundRect(30, 50, 340, 300, 8) }
+patch.apply { roundRect(30, 50, 340, 300, 8); }
 
 // --- Corner labels ---
 
@@ -3822,7 +3822,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, patch, labels, title)
+scene.append(bg, patch, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post3/mesh-basics.svg" alt="2x2 mesh — four corner colors with bilinear OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
@@ -3882,15 +3882,15 @@ deformed.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Mesh fills ---
 
 let left = PathLayer('left') \${ fill: uniform; stroke: #333; stroke-width: 1; };
-left.apply { roundRect(30, 50, 200, 280, 6) }
+left.apply { roundRect(30, 50, 200, 280, 6); }
 
 let right = PathLayer('right') \${ fill: deformed; stroke: #333; stroke-width: 1; };
-right.apply { roundRect(270, 50, 200, 280, 6) }
+right.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
@@ -3930,13 +3930,13 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') \${};
-left_group.append(left)
+left_group.append(left);
 
 let right_group = GroupLayer('right-group') \${};
-right_group.append(right)
+right_group.append(right);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left_group, right_group, labels, desc, title)
+scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post3/mesh-deformation.svg" alt="Uniform grid vs deformed grid — same colors, different point positions" loading="lazy">
 </mini-workspace></p>
@@ -3975,23 +3975,23 @@ nebula.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Fill ---
 
 let field = PathLayer('field') \${ fill: nebula; stroke: none; };
-field.apply { roundRect(20, 40, 360, 320, 8) }
+field.apply { roundRect(20, 40, 360, 320, 8); }
 
 // --- Point markers ---
 
 let dots = PathLayer('dots') \${ fill: #ffffff88; stroke: #fff; stroke-width: 1; };
 dots.apply {
-  circle(60,  70,  4); closePath()
-  circle(340, 60,  4); closePath()
-  circle(200, 200, 4); closePath()
-  circle(80,  340, 4); closePath()
-  circle(330, 320, 4); closePath()
-  circle(200, 80,  4); closePath()
+  circle(60,  70,  4); closePath();
+  circle(340, 60,  4); closePath();
+  circle(200, 200, 4); closePath();
+  circle(80,  340, 4); closePath();
+  circle(330, 320, 4); closePath();
+  circle(200, 80,  4); closePath();
 }
 
 // --- Labels ---
@@ -4024,7 +4024,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, field, dots, point_labels, title)
+scene.append(bg, field, dots, point_labels, title);
 </code>
   <img src="/pathogen/blog/samples/post3/freeform-scatter.svg" alt="Six color points blended with inverse-distance weighting" loading="lazy">
 </mini-workspace></p>
@@ -4075,18 +4075,18 @@ grad_4.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Fills ---
 
 let f1 = PathLayer('f1') \${ fill: grad_1; stroke: #333; stroke-width: 1; };
-f1.apply { roundRect(25, 50, 140, 260, 6) }
+f1.apply { roundRect(25, 50, 140, 260, 6); }
 
 let f2 = PathLayer('f2') \${ fill: grad_2; stroke: #333; stroke-width: 1; };
-f2.apply { roundRect(180, 50, 140, 260, 6) }
+f2.apply { roundRect(180, 50, 140, 260, 6); }
 
 let f3 = PathLayer('f3') \${ fill: grad_4; stroke: #333; stroke-width: 1; };
-f3.apply { roundRect(335, 50, 140, 260, 6) }
+f3.apply { roundRect(335, 50, 140, 260, 6); }
 
 // --- Labels ---
 
@@ -4128,7 +4128,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, f1, f2, f3, labels, desc, title)
+scene.append(bg, f1, f2, f3, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post3/falloff-comparison.svg" alt="Same five points at three falloff exponents: 1.0, 2.0, 4.0" loading="lazy">
 </mini-workspace></p>
@@ -4185,15 +4185,15 @@ freeform.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Fills ---
 
 let mesh_fill = PathLayer('mesh-fill') \${ fill: mesh; stroke: #333; stroke-width: 1; };
-mesh_fill.apply { roundRect(30, 50, 200, 280, 6) }
+mesh_fill.apply { roundRect(30, 50, 200, 280, 6); }
 
 let ff_fill = PathLayer('ff-fill') \${ fill: freeform; stroke: #333; stroke-width: 1; };
-ff_fill.apply { roundRect(270, 50, 200, 280, 6) }
+ff_fill.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
@@ -4233,13 +4233,13 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') \${};
-left_group.append(mesh_fill)
+left_group.append(mesh_fill);
 
 let right_group = GroupLayer('right-group') \${};
-right_group.append(ff_fill)
+right_group.append(ff_fill);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left_group, right_group, labels, desc, title)
+scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post3/mesh-vs-freeform.svg" alt="Same 9 colors — bilinear grid vs inverse-distance scatter" loading="lazy">
 </mini-workspace></p>
@@ -4267,29 +4267,29 @@ scene.append(bg, left_group, right_group, labels, desc, title)
 // --- Background ---
 
 let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
-  g.stop(0, Color('#0a0a14'))
-  g.stop(1, Color('#12121f'))
+  g.stop(0, Color('#0a0a14'));
+  g.stop(1, Color('#12121f'));
 };
 
 let bg = PathLayer('bg') \${ fill: bg_grad; stroke: none; };
-bg.apply { rect(0, 0, 700, 250) }
+bg.apply { rect(0, 0, 700, 250); }
 
 // --- Stage boxes (5 pipeline stages) ---
 
 let box1 = PathLayer('box1') \${ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
-box1.apply { roundRect(15, 60, 115, 55, 6) }
+box1.apply { roundRect(15, 60, 115, 55, 6); }
 
 let box2 = PathLayer('box2') \${ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
-box2.apply { roundRect(160, 60, 115, 55, 6) }
+box2.apply { roundRect(160, 60, 115, 55, 6); }
 
 let box3 = PathLayer('box3') \${ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
-box3.apply { roundRect(305, 60, 115, 55, 6) }
+box3.apply { roundRect(305, 60, 115, 55, 6); }
 
 let box4 = PathLayer('box4') \${ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
-box4.apply { roundRect(450, 60, 115, 55, 6) }
+box4.apply { roundRect(450, 60, 115, 55, 6); }
 
 let box5 = PathLayer('box5') \${ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
-box5.apply { roundRect(595, 60, 90, 55, 6) }
+box5.apply { roundRect(595, 60, 90, 55, 6); }
 
 // --- Arrow lines ---
 
@@ -4382,7 +4382,7 @@ subtitle.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle)
+scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle);
 </code>
   <img src="/pathogen/blog/samples/post5/pipeline-flow.svg" alt="Five stages: source, compiler, GPU renderer, SVG output, blog embed" loading="lazy">
 </mini-workspace></p>
@@ -4415,16 +4415,16 @@ card.<span class="hljs-title function_">append</span>(fill_layer, label_layer, t
 // --- Gradients ---
 
 let warm = LinearGradient('warm', 0, 0, 1, 1) {|g|
-  g.stop(0, Color('#ff6b6b'))
-  g.stop(0.5, Color('#feca57'))
-  g.stop(1, Color('#48dbfb'))
+  g.stop(0, Color('#ff6b6b'));
+  g.stop(0.5, Color('#feca57'));
+  g.stop(1, Color('#48dbfb'));
 };
 warm.interpolation = 'oklch';
 
 let cool = RadialGradient('cool', 0.5, 0.45, 0.55) {|g|
-  g.stop(0, Color('#ff9ff3'))
-  g.stop(0.6, Color('#a29bfe'))
-  g.stop(1, Color('#2d1b69'))
+  g.stop(0, Color('#ff9ff3'));
+  g.stop(0.6, Color('#a29bfe'));
+  g.stop(1, Color('#2d1b69'));
 };
 
 let blob1 = @{
@@ -4439,15 +4439,15 @@ let blob2 = @{
   c -10 50 -105 45 -110 -50
   z
 };
-let dot = @{ circle(0, 0, 8); closePath() };
+let dot = @{ circle(0, 0, 8); closePath(); };
 
 let topo_fill = TopoGradient('topo-card', 170, 140) {|g|
-  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'))
-  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'))
-  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'))
-  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'))
-  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'))
-  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'));
+  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'));
+  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'));
+  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'));
+  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'));
+  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'));
 };
 topo_fill.baseColor = Color('#0a0a1a');
 topo_fill.easing = 'ease-in-out';
@@ -4458,7 +4458,7 @@ topo_fill.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 600, 320) }
+bg.apply { rect(0, 0, 600, 320); }
 
 // --- Card 1: Linear (left) ---
 
@@ -4468,7 +4468,7 @@ let card1 = GroupLayer('card-1') \${
 };
 
 let c1_fill = PathLayer('c1-fill') \${ fill: warm; stroke: #444; stroke-width: 1; };
-c1_fill.apply { roundRect(0, 0, 170, 140, 8) }
+c1_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
 let c1_label = TextLayer('c1-label') \${
   font-family: system-ui, sans-serif;
@@ -4487,7 +4487,7 @@ let c1_tag = TextLayer('c1-tag') \${
 };
 c1_tag.apply { text(85, 174)\`native SVG element\` }
 
-card1.append(c1_fill, c1_label, c1_tag)
+card1.append(c1_fill, c1_label, c1_tag);
 
 // --- Card 2: Radial (center) ---
 
@@ -4497,7 +4497,7 @@ let card2 = GroupLayer('card-2') \${
 };
 
 let c2_fill = PathLayer('c2-fill') \${ fill: cool; stroke: #444; stroke-width: 1; };
-c2_fill.apply { roundRect(0, 0, 170, 140, 8) }
+c2_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
 let c2_label = TextLayer('c2-label') \${
   font-family: system-ui, sans-serif;
@@ -4516,7 +4516,7 @@ let c2_tag = TextLayer('c2-tag') \${
 };
 c2_tag.apply { text(85, 174)\`native SVG element\` }
 
-card2.append(c2_fill, c2_label, c2_tag)
+card2.append(c2_fill, c2_label, c2_tag);
 
 // --- Card 3: Topo (right) ---
 
@@ -4526,7 +4526,7 @@ let card3 = GroupLayer('card-3') \${
 };
 
 let c3_fill = PathLayer('c3-fill') \${ fill: topo_fill; stroke: #444; stroke-width: 1; };
-c3_fill.apply { roundRect(0, 0, 170, 140, 8) }
+c3_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
 let c3_label = TextLayer('c3-label') \${
   font-family: system-ui, sans-serif;
@@ -4545,7 +4545,7 @@ let c3_tag = TextLayer('c3-tag') \${
 };
 c3_tag.apply { text(85, 174)\`GPU rendered (base64)\` }
 
-card3.append(c3_fill, c3_label, c3_tag)
+card3.append(c3_fill, c3_label, c3_tag);
 
 // --- Title ---
 
@@ -4572,7 +4572,7 @@ subtitle.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, card1, card2, card3, title, subtitle)
+scene.append(bg, card1, card2, card3, title, subtitle);
 </code>
   <img src="/pathogen/blog/samples/post5/grouplayer-cards.svg" alt="Three cards positioned with GroupLayer translate — mixing native and GPU gradients" loading="lazy">
 </mini-workspace></p>
@@ -4617,27 +4617,27 @@ npm run dev:website   <span class="hljs-comment"># Build + serve at localhost:30
 // --- Linear ---
 
 let g_lin = LinearGradient('lin', 0, 0, 1, 1) {|g|
-  g.stop(0, Color('#ff6b6b'))
-  g.stop(0.5, Color('#feca57'))
-  g.stop(1, Color('#48dbfb'))
+  g.stop(0, Color('#ff6b6b'));
+  g.stop(0.5, Color('#feca57'));
+  g.stop(1, Color('#48dbfb'));
 };
 g_lin.interpolation = 'oklch';
 
 // --- Radial ---
 
 let g_rad = RadialGradient('rad', 0.5, 0.45, 0.55) {|g|
-  g.stop(0, Color('#ff9ff3'))
-  g.stop(0.6, Color('#a29bfe'))
-  g.stop(1, Color('#2d1b69'))
+  g.stop(0, Color('#ff9ff3'));
+  g.stop(0.6, Color('#a29bfe'));
+  g.stop(1, Color('#2d1b69'));
 };
 
 // --- Conic ---
 
 let g_con = ConicGradient('con', 480, 80) {|g|
-  g.stop(0, Color('#e74c3c'))
-  g.stop(0.33, Color('#f1c40f'))
-  g.stop(0.66, Color('#3498db'))
-  g.stop(1, Color('#e74c3c'))
+  g.stop(0, Color('#e74c3c'));
+  g.stop(0.33, Color('#f1c40f'));
+  g.stop(0.66, Color('#3498db'));
+  g.stop(1, Color('#e74c3c'));
 };
 
 // --- Mesh ---
@@ -4652,11 +4652,11 @@ let g_mesh = MeshGradient('mesh', 160, 120, 2, 2) {|g|
 // --- Freeform ---
 
 let g_free = FreeformGradient('free', 160, 120) {|g|
-  g.point(25, 25, Color('#e74c3c'))
-  g.point(135, 20, Color('#f1c40f'))
-  g.point(80, 100, Color('#3498db'))
-  g.point(20, 95, Color('#2ecc71'))
-  g.point(140, 85, Color('#9b59b6'))
+  g.point(25, 25, Color('#e74c3c'));
+  g.point(135, 20, Color('#f1c40f'));
+  g.point(80, 100, Color('#3498db'));
+  g.point(20, 95, Color('#2ecc71'));
+  g.point(140, 85, Color('#9b59b6'));
 };
 
 // --- Topo (abstract overlapping contours) ---
@@ -4673,15 +4673,15 @@ let blob2 = @{
   c -10 50 -105 45 -110 -50
   z
 };
-let tdot = @{ circle(0, 0, 8); closePath() };
+let tdot = @{ circle(0, 0, 8); closePath(); };
 
 let g_topo = TopoGradient('topo', 160, 120) {|g|
-  g.contour(blob1.scale(0.38, 0.38).project(10, 45), 0.2, Color('#f72585'))
-  g.contour(tdot.project(38, 68), 0.5, Color('#f9c74f'))
-  g.contour(blob2.scale(0.38, 0.38).project(75, 12), 0.25, Color('#4cc9f0'))
-  g.contour(tdot.project(100, 32), 0.6, Color('#7209b7'))
-  g.contour(blob1.scale(0.28, 0.28).project(50, 35), 0.35, Color('#43aa8b'))
-  g.contour(tdot.project(78, 55), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.38, 0.38).project(10, 45), 0.2, Color('#f72585'));
+  g.contour(tdot.project(38, 68), 0.5, Color('#f9c74f'));
+  g.contour(blob2.scale(0.38, 0.38).project(75, 12), 0.25, Color('#4cc9f0'));
+  g.contour(tdot.project(100, 32), 0.6, Color('#7209b7'));
+  g.contour(blob1.scale(0.28, 0.28).project(50, 35), 0.35, Color('#43aa8b'));
+  g.contour(tdot.project(78, 55), 0.75, Color('#f4a261'));
 };
 g_topo.baseColor = Color('#0a0a1a');
 g_topo.easing = 'ease-in-out';
@@ -4692,27 +4692,27 @@ g_topo.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 580, 400) }
+bg.apply { rect(0, 0, 580, 400); }
 
 // --- Panels (2 rows × 3 columns) ---
 
 let p1 = PathLayer('p-lin') \${ fill: g_lin; stroke: #444; stroke-width: 1; };
-p1.apply { roundRect(20, 20, 160, 120, 6) }
+p1.apply { roundRect(20, 20, 160, 120, 6); }
 
 let p2 = PathLayer('p-rad') \${ fill: g_rad; stroke: #444; stroke-width: 1; };
-p2.apply { roundRect(210, 20, 160, 120, 6) }
+p2.apply { roundRect(210, 20, 160, 120, 6); }
 
 let p3 = PathLayer('p-con') \${ fill: g_con; stroke: #444; stroke-width: 1; };
-p3.apply { roundRect(400, 20, 160, 120, 6) }
+p3.apply { roundRect(400, 20, 160, 120, 6); }
 
 let p4 = PathLayer('p-mesh') \${ fill: g_mesh; stroke: #444; stroke-width: 1; };
-p4.apply { roundRect(20, 210, 160, 120, 6) }
+p4.apply { roundRect(20, 210, 160, 120, 6); }
 
 let p5 = PathLayer('p-free') \${ fill: g_free; stroke: #444; stroke-width: 1; };
-p5.apply { roundRect(210, 210, 160, 120, 6) }
+p5.apply { roundRect(210, 210, 160, 120, 6); }
 
 let p6 = PathLayer('p-topo') \${ fill: g_topo; stroke: #444; stroke-width: 1; };
-p6.apply { roundRect(400, 210, 160, 120, 6) }
+p6.apply { roundRect(400, 210, 160, 120, 6); }
 
 // --- Labels ---
 
@@ -4762,7 +4762,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title)
+scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);
 </code>
   <img src="/pathogen/blog/samples/post5/gradient-gallery.svg" alt="The complete Pathogen gradient system — six types, one language" loading="lazy">
 </mini-workspace></p>
@@ -4820,14 +4820,14 @@ let mid = @{
   z
 };
 
-let peak = @{ circle(0, 0, 35); closePath() };
+let peak = @{ circle(0, 0, 35); closePath(); };
 
 // --- Gradient ---
 
 let topo = TopoGradient('terrain', 400, 400) {|g|
-  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'))
-  g.contour(mid.project(90, 90), 0.5,  Color('#27ae60'))
-  g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'))
+  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'));
+  g.contour(mid.project(90, 90), 0.5,  Color('#27ae60'));
+  g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
@@ -4836,7 +4836,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Labels ---
 
@@ -4866,7 +4866,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, labels, title)
+scene.append(bg, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
 </mini-workspace></p>
@@ -4896,18 +4896,18 @@ let island = @{
   z
 };
 
-let summit = @{ circle(0, 0, 25); closePath() };
+let summit = @{ circle(0, 0, 25); closePath(); };
 
 // --- Gradient with two separate peaks ---
 
 let topo = TopoGradient('twins', 500, 350) {|g|
   // Left peak — warm tones
-  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'))
-  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'))
+  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'));
+  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'));
 
   // Right peak — cool tones (same elevation = separate feature)
-  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'))
-  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'))
+  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'));
+  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'));
 };
 topo.baseColor = Color('#0f2027');
 topo.easing = 'smoothstep';
@@ -4916,7 +4916,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 500, 350) }
+bg.apply { rect(0, 0, 500, 350); }
 
 // --- Labels ---
 
@@ -4944,7 +4944,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, labels, title)
+scene.append(bg, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
 </mini-workspace></p>
@@ -4966,15 +4966,15 @@ topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">3
 
 // --- Shared contour shapes ---
 
-let ring = @{ circle(0, 0, 60); closePath() };
-let inner = @{ circle(0, 0, 25); closePath() };
+let ring = @{ circle(0, 0, 60); closePath(); };
+let inner = @{ circle(0, 0, 25); closePath(); };
 
 // --- Distance method (left) ---
 
 let topo_d = TopoGradient('dist', 220, 220) {|g|
-  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
-  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
-  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'));
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'));
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'));
 };
 topo_d.method = 'distance';
 topo_d.baseColor = Color('#1a1a2e');
@@ -4983,9 +4983,9 @@ topo_d.easing = 'smoothstep';
 // --- Laplace method (right) ---
 
 let topo_l = TopoGradient('lapl', 220, 220) {|g|
-  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
-  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
-  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'));
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'));
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'));
 };
 topo_l.method = 'laplace';
 topo_l.iterations = 300;
@@ -4995,15 +4995,15 @@ topo_l.easing = 'smoothstep';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 300) }
+bg.apply { rect(0, 0, 500, 300); }
 
 // --- Fills ---
 
 let left = PathLayer('left') \${ fill: topo_d; stroke: #333; stroke-width: 1; };
-left.apply { roundRect(20, 30, 220, 220, 6) }
+left.apply { roundRect(20, 30, 220, 220, 6); }
 
 let right = PathLayer('right') \${ fill: topo_l; stroke: #333; stroke-width: 1; };
-right.apply { roundRect(260, 30, 220, 220, 6) }
+right.apply { roundRect(260, 30, 220, 220, 6); }
 
 // --- Labels ---
 
@@ -5043,13 +5043,13 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') \${};
-left_group.append(left)
+left_group.append(left);
 
 let right_group = GroupLayer('right-group') \${};
-right_group.append(right)
+right_group.append(right);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left_group, right_group, labels, desc, title)
+scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
 </mini-workspace></p>
@@ -5070,46 +5070,46 @@ scene.append(bg, left_group, right_group, labels, desc, title)
 
 // --- Shared contour shapes (sized for 400×400 gradient) ---
 
-let ring = @{ circle(0, 0, 160); closePath() };
-let core = @{ circle(0, 0, 60); closePath() };
+let ring = @{ circle(0, 0, 160); closePath(); };
+let core = @{ circle(0, 0, 60); closePath(); };
 
 // --- Five gradients at proper resolution ---
 
 let t1 = TopoGradient('ease-0', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t1.baseColor = Color('#1a1a2e');
 t1.easing = 'linear';
 t1.interpolation = 'oklch';
 
 let t2 = TopoGradient('ease-1', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t2.baseColor = Color('#1a1a2e');
 t2.easing = 'smoothstep';
 t2.interpolation = 'oklch';
 
 let t3 = TopoGradient('ease-2', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t3.baseColor = Color('#1a1a2e');
 t3.easing = 'ease-in';
 t3.interpolation = 'oklch';
 
 let t4 = TopoGradient('ease-3', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t4.baseColor = Color('#1a1a2e');
 t4.easing = 'ease-out';
 t4.interpolation = 'oklch';
 
 let t5 = TopoGradient('ease-4', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t5.baseColor = Color('#1a1a2e');
 t5.easing = 'ease-in-out';
@@ -5118,24 +5118,24 @@ t5.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 550, 350) }
+bg.apply { rect(0, 0, 550, 350); }
 
 // --- Fills ---
 
 let p1 = PathLayer('p1') \${ fill: t1; stroke: #333; stroke-width: 1; };
-p1.apply { roundRect(15, 60, 90, 90, 6) }
+p1.apply { roundRect(15, 60, 90, 90, 6); }
 
 let p2 = PathLayer('p2') \${ fill: t2; stroke: #333; stroke-width: 1; };
-p2.apply { roundRect(120, 60, 90, 90, 6) }
+p2.apply { roundRect(120, 60, 90, 90, 6); }
 
 let p3 = PathLayer('p3') \${ fill: t3; stroke: #333; stroke-width: 1; };
-p3.apply { roundRect(225, 60, 90, 90, 6) }
+p3.apply { roundRect(225, 60, 90, 90, 6); }
 
 let p4 = PathLayer('p4') \${ fill: t4; stroke: #333; stroke-width: 1; };
-p4.apply { roundRect(330, 60, 90, 90, 6) }
+p4.apply { roundRect(330, 60, 90, 90, 6); }
 
 let p5 = PathLayer('p5') \${ fill: t5; stroke: #333; stroke-width: 1; };
-p5.apply { roundRect(435, 60, 90, 90, 6) }
+p5.apply { roundRect(435, 60, 90, 90, 6); }
 
 // --- Labels ---
 
@@ -5191,7 +5191,7 @@ note.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note)
+scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 </code>
   <img src="/pathogen/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
 </mini-workspace></p>
@@ -5234,16 +5234,16 @@ let ridge = @{
   z
 };
 
-let summit = @{ circle(0, 0, 18); closePath() };
+let summit = @{ circle(0, 0, 18); closePath(); };
 
 // --- Gradient ---
 
 let topo = TopoGradient('island', 500, 400) {|g|
-  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'))
-  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'))
-  g.contour(highland.project(120, 100), 0.55, Color('#228b22'))
-  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'))
-  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'))
+  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'));
+  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'));
+  g.contour(highland.project(120, 100), 0.55, Color('#228b22'));
+  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'));
+  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
@@ -5254,25 +5254,25 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Elevation legend ---
 
 let legend_bg = PathLayer('legend-bg') \${ fill: #00000066; stroke: none; };
-legend_bg.apply { roundRect(350, 270, 135, 110, 4) }
+legend_bg.apply { roundRect(350, 270, 135, 110, 4); }
 
 let s1 = PathLayer('s1') \${ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
-s1.apply { rect(360, 280, 14, 10) }
+s1.apply { rect(360, 280, 14, 10); }
 let s2 = PathLayer('s2') \${ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
-s2.apply { rect(360, 296, 14, 10) }
+s2.apply { rect(360, 296, 14, 10); }
 let s3 = PathLayer('s3') \${ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
-s3.apply { rect(360, 312, 14, 10) }
+s3.apply { rect(360, 312, 14, 10); }
 let s4 = PathLayer('s4') \${ fill: #228b22; stroke: #444; stroke-width: 0.5; };
-s4.apply { rect(360, 328, 14, 10) }
+s4.apply { rect(360, 328, 14, 10); }
 let s5 = PathLayer('s5') \${ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
-s5.apply { rect(360, 344, 14, 10) }
+s5.apply { rect(360, 344, 14, 10); }
 let s6 = PathLayer('s6') \${ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
-s6.apply { rect(360, 360, 14, 10) }
+s6.apply { rect(360, 360, 14, 10); }
 
 let legend = TextLayer('legend') \${
   font-family: monospace;
@@ -5302,10 +5302,10 @@ title.apply {
 // --- Scene ---
 
 let legend_group = GroupLayer('legend-group') \${};
-legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend)
+legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, legend_group, title)
+scene.append(bg, legend_group, title);
 </code>
   <img src="/pathogen/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
 </mini-workspace></p>
@@ -5333,22 +5333,22 @@ let blob2 = @{
   z
 };
 
-let dot = @{ circle(0, 0, 20); closePath() };
+let dot = @{ circle(0, 0, 20); closePath(); };
 
 // --- Gradient with overlapping regions ---
 
 let topo = TopoGradient('abstract', 400, 400) {|g|
   // Lower-left cluster — warm
-  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'))
-  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'))
+  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'));
+  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'));
 
   // Upper-right cluster — cool
-  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'))
-  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'))
+  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'));
+  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'));
 
   // Center overlap — creates interesting blending
-  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'))
-  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'));
+  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'));
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'ease-in-out';
@@ -5359,7 +5359,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 let title = TextLayer('title') \${
   font-family: system-ui, sans-serif;
@@ -5374,7 +5374,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, title)
+scene.append(bg, title);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
 </mini-workspace></p>
@@ -5431,10 +5431,10 @@ let r4 = diamond.rotateAtVertexIndex(0, 0.22);
 // Projections computed to center all shapes at (200, 200)
 
 let topo = TopoGradient('rects', 400, 400) {|g|
-  g.contour(r1.project(209, 189), 0.15, Color('#264653'))
-  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'))
-  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'))
-  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'))
+  g.contour(r1.project(209, 189), 0.15, Color('#264653'));
+  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'));
+  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'));
+  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'));
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'smoothstep';
@@ -5445,15 +5445,15 @@ topo.interpolation = 'oklch';
 // ========== LEFT PANEL: Rendered Gradient ==========
 
 let bg = PathLayer('bg') \${ fill: #111; stroke: none; };
-bg.apply { rect(0, 0, 840, 420) }
+bg.apply { rect(0, 0, 840, 420); }
 
 let left_fill = PathLayer('left-fill') \${ fill: topo; stroke: #333; stroke-width: 1; };
-left_fill.apply { roundRect(10, 10, 400, 400, 6) }
+left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') \${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(430, 10, 400, 400, 6) }
+schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic: same shapes drawn at +430 x offset (center ≈ 630, 200)
 // M positions mirror the gradient projections offset into right panel
@@ -5473,16 +5473,16 @@ outline4.apply { M 633 200 r4.draw() }
 // --- Paint chips (25% larger: 15x13) + elevation labels ---
 
 let chip1 = PathLayer('chip1') \${ fill: #264653; stroke: #555; stroke-width: 0.5; };
-chip1.apply { rect(770, 145, 15, 13) }
+chip1.apply { rect(770, 145, 15, 13); }
 
 let chip2 = PathLayer('chip2') \${ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
-chip2.apply { rect(770, 190, 15, 13) }
+chip2.apply { rect(770, 190, 15, 13); }
 
 let chip3 = PathLayer('chip3') \${ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
-chip3.apply { rect(770, 235, 15, 13) }
+chip3.apply { rect(770, 235, 15, 13); }
 
 let chip4 = PathLayer('chip4') \${ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
-chip4.apply { rect(770, 280, 15, 13) }
+chip4.apply { rect(770, 280, 15, 13); }
 
 let elev_labels = TextLayer('elev-labels') \${
   font-family: monospace;
@@ -5524,7 +5524,7 @@ panel_labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels)
+scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
 </mini-workspace></p>
@@ -5602,18 +5602,18 @@ let shard_r2 = shard.rotateAtVertexIndex(0, -0.3);
 
 let topo = TopoGradient('crystal', 400, 400) {|g|
   // Primary cluster — center (blue facets)
-  g.contour(hex_r.project(190, 185), 0.12, Color('#1e3a5f'))
-  g.contour(pent_r.project(195, 188), 0.35, Color('#4a90d9'))
-  g.contour(sq_r.project(195, 190), 0.6, Color('#a5d8ff'))
-  g.contour(tri_r.project(198, 192), 0.85, Color('#ffffff'))
+  g.contour(hex_r.project(190, 185), 0.12, Color('#1e3a5f'));
+  g.contour(pent_r.project(195, 188), 0.35, Color('#4a90d9'));
+  g.contour(sq_r.project(195, 190), 0.6, Color('#a5d8ff'));
+  g.contour(tri_r.project(198, 192), 0.85, Color('#ffffff'));
 
   // Secondary cluster — lower right (magenta)
-  g.contour(wedge_r.project(310, 295), 0.15, Color('#5f1e3a'))
-  g.contour(shard_r.project(315, 298), 0.5, Color('#d94a90'))
+  g.contour(wedge_r.project(310, 295), 0.15, Color('#5f1e3a'));
+  g.contour(shard_r.project(315, 298), 0.5, Color('#d94a90'));
 
   // Tertiary shard — upper left (green)
-  g.contour(shard_r2.scale(1.3, 1.3).project(85, 90), 0.18, Color('#3a5f1e'))
-  g.contour(tri_r.project(92, 97), 0.55, Color('#90d94a'))
+  g.contour(shard_r2.scale(1.3, 1.3).project(85, 90), 0.18, Color('#3a5f1e'));
+  g.contour(tri_r.project(92, 97), 0.55, Color('#90d94a'));
 };
 topo.baseColor = Color('#08080f');
 topo.easing = 'ease-in-out';
@@ -5624,15 +5624,15 @@ topo.interpolation = 'oklch';
 // ========== LEFT PANEL: Rendered Gradient ==========
 
 let bg = PathLayer('bg') \${ fill: #111; stroke: none; };
-bg.apply { rect(0, 0, 840, 420) }
+bg.apply { rect(0, 0, 840, 420); }
 
 let left_fill = PathLayer('left-fill') \${ fill: topo; stroke: #333; stroke-width: 1; };
-left_fill.apply { roundRect(10, 10, 400, 400, 6) }
+left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') \${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(430, 10, 400, 400, 6) }
+schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic offset: +420 to x for all projections
 // Primary cluster: hex(190,185)→(610,185), pent(195,188)→(615,188), sq(195,190)→(615,190), tri(198,192)→(618,192)
@@ -5672,27 +5672,27 @@ o_tri2.apply { M 512 97 tri_r.draw() }
 // --- Paint chips + labels: Primary cluster (right of center) ---
 
 let cp1 = PathLayer('cp1') \${ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
-cp1.apply { rect(700, 120, 12, 10) }
+cp1.apply { rect(700, 120, 12, 10); }
 let cp2 = PathLayer('cp2') \${ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
-cp2.apply { rect(700, 138, 12, 10) }
+cp2.apply { rect(700, 138, 12, 10); }
 let cp3 = PathLayer('cp3') \${ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
-cp3.apply { rect(700, 156, 12, 10) }
+cp3.apply { rect(700, 156, 12, 10); }
 let cp4 = PathLayer('cp4') \${ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
-cp4.apply { rect(700, 174, 12, 10) }
+cp4.apply { rect(700, 174, 12, 10); }
 
 // --- Paint chips + labels: Secondary cluster ---
 
 let cs1 = PathLayer('cs1') \${ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
-cs1.apply { rect(770, 280, 12, 10) }
+cs1.apply { rect(770, 280, 12, 10); }
 let cs2 = PathLayer('cs2') \${ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
-cs2.apply { rect(770, 298, 12, 10) }
+cs2.apply { rect(770, 298, 12, 10); }
 
 // --- Paint chips + labels: Tertiary cluster ---
 
 let ct1 = PathLayer('ct1') \${ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
-ct1.apply { rect(460, 55, 12, 10) }
+ct1.apply { rect(460, 55, 12, 10); }
 let ct2 = PathLayer('ct2') \${ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
-ct2.apply { rect(460, 73, 12, 10) }
+ct2.apply { rect(460, 73, 12, 10); }
 
 // --- Elevation labels ---
 
@@ -5778,7 +5778,7 @@ panel_labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels)
+scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
 </mini-workspace></p>
@@ -5819,9 +5819,9 @@ let spire = @{
 // --- Distance method (left panel) ---
 
 let topo_d = TopoGradient('dist-org', 220, 260) {|g|
-  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
-  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
-  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'));
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'));
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'));
 };
 topo_d.method = 'distance';
 topo_d.baseColor = Color('#0a0a1a');
@@ -5831,9 +5831,9 @@ topo_d.interpolation = 'oklch';
 // --- Laplace method (center panel) ---
 
 let topo_l = TopoGradient('lapl-org', 220, 260) {|g|
-  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
-  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
-  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'));
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'));
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'));
 };
 topo_l.method = 'laplace';
 topo_l.iterations = 350;
@@ -5844,22 +5844,22 @@ topo_l.interpolation = 'oklch';
 // ========== BACKGROUND ==========
 
 let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 740, 370) }
+bg.apply { rect(0, 0, 740, 370); }
 
 // ========== LEFT PANEL: Distance ==========
 
 let left = PathLayer('left') \${ fill: topo_d; stroke: #333; stroke-width: 1; };
-left.apply { roundRect(15, 30, 220, 260, 6) }
+left.apply { roundRect(15, 30, 220, 260, 6); }
 
 // ========== CENTER PANEL: Laplace ==========
 
 let center = PathLayer('center') \${ fill: topo_l; stroke: #333; stroke-width: 1; };
-center.apply { roundRect(255, 30, 220, 260, 6) }
+center.apply { roundRect(255, 30, 220, 260, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') \${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(495, 30, 230, 260, 6) }
+schema_border.apply { roundRect(495, 30, 230, 260, 6); }
 
 // Contour outlines — offset shapes into schematic panel
 // Original projections: coast(30,50), mesa(55,85), spire(110,130)
@@ -5877,13 +5877,13 @@ o_spire.apply { M 605 160 spire.draw() }
 // --- Paint chips ---
 
 let chip_coast = PathLayer('chip-coast') \${ fill: #4cc9f0; stroke: #555; stroke-width: 0.5; };
-chip_coast.apply { rect(680, 90, 12, 10) }
+chip_coast.apply { rect(680, 90, 12, 10); }
 
 let chip_mesa = PathLayer('chip-mesa') \${ fill: #43aa8b; stroke: #555; stroke-width: 0.5; };
-chip_mesa.apply { rect(680, 140, 12, 10) }
+chip_mesa.apply { rect(680, 140, 12, 10); }
 
 let chip_spire = PathLayer('chip-spire') \${ fill: #f9c74f; stroke: #555; stroke-width: 0.5; };
-chip_spire.apply { rect(680, 190, 12, 10) }
+chip_spire.apply { rect(680, 190, 12, 10); }
 
 // --- Elevation labels ---
 
@@ -5966,13 +5966,13 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') \${};
-left_group.append(left)
+left_group.append(left);
 
 let center_group = GroupLayer('center-group') \${};
-center_group.append(center)
+center_group.append(center);
 
 let scene = GroupLayer('scene') \${};
-scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title)
+scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
 </mini-workspace></p>
@@ -6022,7 +6022,7 @@ let pad = 20;
 
 // Background
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers — each pattern in a different hue
 let shapeColor = gridColor;
@@ -6089,7 +6089,7 @@ let pad = 20;
 
 // Background
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
 let shapeColor = gridColor;
@@ -6175,7 +6175,7 @@ let pad = 20;
 
 // Background
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
 let shapeColor = gridColor;
@@ -6240,7 +6240,7 @@ let pad = 20;
 
 // Background
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 200) }
+bg.apply { rect(0, 0, 400, 200); }
 
 // Grid layers
 let flatColor = gridColor;
@@ -6316,7 +6316,7 @@ let bgColor = Color(CSSVar('--bg-color', #0f172a));
 
 // Background
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // Layer 1: Rotated partial grid as background texture
 let gridLayer = PathLayer('grid') \${ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };
@@ -6393,7 +6393,7 @@ h <span class="hljs-number">0.01</span>            <span class="hljs-comment">//
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 220) }
+bg.apply { rect(0, 0, 540, 220); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -6414,8 +6414,8 @@ define GroupLayer('layout') \${ translate-x: 0; translate-y: 0; }
 
 // C-shape
 let cBlock = @{
-  heading(-135deg)
-  tangentArc(r, 270deg)
+  heading(-135deg);
+  tangentArc(r, 270deg);
   z
 };
 let cBB = cBlock.boundingBox();
@@ -6423,33 +6423,33 @@ let cBB = cBlock.boundingBox();
 // S-curve (smaller radius to fit vertically)
 let sR = 15;
 let sBlock = @{
-  heading(0)
-  tangentArc(sR, 180deg)
-  turn(180deg)
-  tangentArc(sR, 180deg)
+  heading(0);
+  tangentArc(sR, 180deg);
+  turn(180deg);
+  tangentArc(sR, 180deg);
 };
 let sBB = sBlock.boundingBox();
 
 // Zigzag
 let zBlock = @{
-  heading(45deg)
-  tangentLine(25)
-  turn(-90deg)
-  tangentLine(25)
-  turn(90deg)
-  tangentLine(25)
-  turn(-90deg)
-  tangentLine(25)
+  heading(45deg);
+  tangentLine(25);
+  turn(-90deg);
+  tangentLine(25);
+  turn(90deg);
+  tangentLine(25);
+  turn(-90deg);
+  tangentLine(25);
 };
 let zBB = zBlock.boundingBox();
 
 // Spiral
 let spBlock = @{
-  heading(0)
-  tangentArc(28, 180deg)
-  tangentArc(22, 180deg)
-  tangentArc(15, 180deg)
-  tangentArc(10, 180deg)
+  heading(0);
+  tangentArc(28, 180deg);
+  tangentArc(22, 180deg);
+  tangentArc(15, 180deg);
+  tangentArc(10, 180deg);
 };
 let spBB = spBlock.boundingBox();
 
@@ -6502,7 +6502,7 @@ for ([shape, idx] in shapes) {
   let plName = \`p\${idx}\`;
   define PathLayer(plName) \${ fill: none; stroke: shape.col; stroke-width: 2.5 }
   layer(gName).append(layer(plName));
-  layer(plName).apply { shape.pb.drawTo(drawX, drawY) }
+  layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
   // --- Code snippet ---
   let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
@@ -6541,7 +6541,7 @@ fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-param
 
 // --- Background ---
 let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 680, 400) }
+bg.apply { rect(0, 0, 680, 400); }
 
 let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -6556,10 +6556,10 @@ fn sharpPolyBlock(sides) {
   let extRad = calc(2 * PI() / sides);
   let sideLen = calc(2 * r * sin(extRad / 2));
   let headAngle = calc(extRad / 2);
-  heading(headAngle)
+  heading(headAngle);
   for (i in 0..sides) {
-    tangentLine(sideLen)
-    turn(extRad)
+    tangentLine(sideLen);
+    turn(extRad);
   }
 }
 
@@ -6570,14 +6570,14 @@ fn roundedPolyBlock(sides, cornerRadius) {
   let arcOffset = calc(cornerRadius * tan(extRad / 2));
   let straight = calc(sideLen - 2 * arcOffset);
   let headAngle = calc(extRad / 2);
-  heading(headAngle)
+  heading(headAngle);
   let last = calc(sides - 1);
-  tangentLine(straight)
+  tangentLine(straight);
   for (i in 1..last) {
-    tangentArc(cornerRadius, extRad)
-    tangentLine(straight)
+    tangentArc(cornerRadius, extRad);
+    tangentLine(straight);
   }
-  tangentArc(cornerRadius, extRad)
+  tangentArc(cornerRadius, extRad);
   z
 }
 
@@ -6604,7 +6604,7 @@ for (idx in 0..7) {
   let name = names[idx];
 
   // Create PathBlock and query its bounds
-  let pb = @{ sharpPolyBlock(n) };
+  let pb = @{ sharpPolyBlock(n); };
   let bb = pb.boundingBox();
   let cx = calc(55 + idx * spacing);
 
@@ -6619,7 +6619,7 @@ for (idx in 0..7) {
   let lName = \`s\${n}\`;
   define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2 }
   layer(gName).append(layer(lName));
-  layer(lName).apply { pb.drawTo(drawX, drawY) }
+  layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   // Center label under the shape
   let labelX = calc(cx - name.length * 2.7);
@@ -6642,7 +6642,7 @@ for (idx in 0..7) {
   let cr = calc(min(r * 0.35, 8));
   let name = names[idx];
 
-  let pb = @{ roundedPolyBlock(n, cr) };
+  let pb = @{ roundedPolyBlock(n, cr); };
   let bb = pb.boundingBox();
   let cx = calc(55 + idx * spacing);
 
@@ -6656,7 +6656,7 @@ for (idx in 0..7) {
   let lName = \`r\${n}\`;
   define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2 }
   layer(gName).append(layer(lName));
-  layer(lName).apply { pb.drawTo(drawX, drawY) }
+  layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   let labelX = calc(cx - name.length * 2.7);
   let tlName = \`r\${n}-l\`;
@@ -6737,7 +6737,7 @@ let sq = @{ h 50 v 50 h -50 z };
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 580, 480) }
+bg.apply { rect(0, 0, 580, 480); }
 
 // ═══════════════════════════════════════
 // Union (top-left quadrant)
@@ -6750,8 +6750,8 @@ let u_orig = PathLayer('u-orig') \${
   fill: none;
 };
 u_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let u_result = PathLayer('u-result') \${
@@ -6761,7 +6761,7 @@ let u_result = PathLayer('u-result') \${
 };
 u_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0)
+  u.drawTo(0, 0);
 }
 
 let u_ab = TextLayer('u-ab') \${
@@ -6810,8 +6810,8 @@ let d_orig = PathLayer('d-orig') \${
   fill: none;
 };
 d_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let d_result = PathLayer('d-result') \${
@@ -6821,7 +6821,7 @@ let d_result = PathLayer('d-result') \${
 };
 d_result.apply {
   let d = sq.project(0, 0).difference(sq.project(25, 25));
-  d.drawTo(0, 0)
+  d.drawTo(0, 0);
 }
 
 let d_ab = TextLayer('d-ab') \${
@@ -6870,8 +6870,8 @@ let i_orig = PathLayer('i-orig') \${
   fill: none;
 };
 i_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let i_result = PathLayer('i-result') \${
@@ -6881,7 +6881,7 @@ let i_result = PathLayer('i-result') \${
 };
 i_result.apply {
   let ix = sq.project(0, 0).intersection(sq.project(25, 25));
-  ix.drawTo(0, 0)
+  ix.drawTo(0, 0);
 }
 
 let i_ab = TextLayer('i-ab') \${
@@ -6930,8 +6930,8 @@ let x_orig = PathLayer('x-orig') \${
   fill: none;
 };
 x_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let x_result = PathLayer('x-result') \${
@@ -6941,7 +6941,7 @@ let x_result = PathLayer('x-result') \${
 };
 x_result.apply {
   let xr = sq.project(0, 0).xor(sq.project(25, 25));
-  xr.drawTo(0, 0)
+  xr.drawTo(0, 0);
 }
 
 let x_ab = TextLayer('x-ab') \${
@@ -7115,7 +7115,7 @@ let sq = @{ h 60 v 60 h -60 z };
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 520, 280) }
+bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Step 1: Two overlapping squares (input)
@@ -7128,8 +7128,8 @@ let s1_orig = PathLayer('s1-orig') \${
   fill: none;
 };
 s1_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let s1_label = TextLayer('s1-label') \${
@@ -7166,8 +7166,8 @@ let s2_orig = PathLayer('s2-orig') \${
   fill: none;
 };
 s2_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let s2_result = PathLayer('s2-result') \${
@@ -7177,7 +7177,7 @@ let s2_result = PathLayer('s2-result') \${
 };
 s2_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0)
+  u.drawTo(0, 0);
 }
 
 let s2_label = TextLayer('s2-label') \${
@@ -7214,8 +7214,8 @@ let s3_orig = PathLayer('s3-orig') \${
   fill: none;
 };
 s3_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let s3_result = PathLayer('s3-result') \${
@@ -7226,7 +7226,7 @@ let s3_result = PathLayer('s3-result') \${
 s3_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
   let rounded = u.fillet(8);
-  rounded.drawTo(0, 0)
+  rounded.drawTo(0, 0);
 }
 
 let s3_label = TextLayer('s3-label') \${
@@ -7344,12 +7344,12 @@ drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 // Standard library shapes with boolean operations
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 400, 200) }
+bg.apply { rect(0, 0, 400, 200); }
 
 // --- Plate with drilled holes ---
 
-let plate = @{ rect(0, 0, 80, 80) };
-let hole = @{ circle(0, 0, 10) };
+let plate = @{ rect(0, 0, 80, 80); };
+let hole = @{ circle(0, 0, 10); };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
 let d2 = d1.project(0, 0).difference(hole.project(55, 25));
@@ -7362,7 +7362,7 @@ let plate_result = PathLayer('plate-result') \${
   fill: Color('#3b82f618');
 };
 plate_result.apply {
-  drilled.drawTo(30, 55)
+  drilled.drawTo(30, 55);
 }
 
 let plate_label = TextLayer('plate-label') \${
@@ -7387,8 +7387,8 @@ plate_desc.apply {
 
 // --- Star union circle ---
 
-let st = @{ star(0, 0, 30, 14, 5) };
-let circ = @{ circle(0, 0, 18) };
+let st = @{ star(0, 0, 30, 14, 5); };
+let circ = @{ circle(0, 0, 18); };
 
 let badge = st.project(0, 0).union(circ.project(0, 0));
 
@@ -7398,7 +7398,7 @@ let badge_result = PathLayer('badge-result') \${
   fill: Color('#3b82f618');
 };
 badge_result.apply {
-  badge.drawTo(260, 100)
+  badge.drawTo(260, 100);
 }
 
 let badge_label = TextLayer('badge-label') \${
@@ -7476,7 +7476,7 @@ let corner = @{ h 100 v 80 };
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 480, 340) }
+bg.apply { rect(0, 0, 480, 340); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -7532,7 +7532,7 @@ let vertex_dot = PathLayer('vertex-dot') \${
   stroke-width: 1.5;
 };
 vertex_dot.apply {
-  circle(200, 120, 4)
+  circle(200, 120, 4);
 }
 
 // --- Trim points ---
@@ -7543,8 +7543,8 @@ let trim_dots = PathLayer('trim-dots') \${
   stroke-width: 1.5;
 };
 trim_dots.apply {
-  circle(170, 120, 4)
-  circle(200, 150, 4)
+  circle(170, 120, 4);
+  circle(200, 150, 4);
 }
 
 // --- Dimension lines ---
@@ -7680,11 +7680,11 @@ let leg_v = PathLayer('leg-vert') \${ fill: Color('#ef4444'); stroke: none; };
 let leg_t = PathLayer('leg-trim') \${ fill: Color('#22c55e'); stroke: none; };
 let leg_r = PathLayer('leg-rem') \${ fill: Color('#ef444440'); stroke: none; };
 
-leg_o.apply { rect(310, 256, 8, 8) }
-leg_c.apply { rect(310, 270, 8, 8) }
-leg_v.apply { rect(310, 284, 8, 8) }
-leg_t.apply { rect(400, 256, 8, 8) }
-leg_r.apply { rect(400, 270, 8, 8) }
+leg_o.apply { rect(310, 256, 8, 8); }
+leg_c.apply { rect(310, 270, 8, 8); }
+leg_v.apply { rect(310, 284, 8, 8); }
+leg_t.apply { rect(400, 256, 8, 8); }
+leg_r.apply { rect(400, 270, 8, 8); }
 
 leg.apply {
   text(322, 263)\`Original\`
@@ -7727,7 +7727,7 @@ let box = @{ h 70 v 70 h -70 z };
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 560, 300) }
+bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
@@ -7739,11 +7739,11 @@ let original = PathLayer('original') \${
 };
 
 original.apply {
-  box.drawTo(30, 60)
-  box.drawTo(140, 60)
-  box.drawTo(250, 60)
-  box.drawTo(360, 60)
-  box.drawTo(470, 60)
+  box.drawTo(30, 60);
+  box.drawTo(140, 60);
+  box.drawTo(250, 60);
+  box.drawTo(360, 60);
+  box.drawTo(470, 60);
 }
 
 // --- Chamfered shapes ---
@@ -7757,23 +7757,23 @@ let chamfered = PathLayer('chamfered') \${
 chamfered.apply {
   // Symmetric 5px
   let c1 = box.chamfer(5);
-  c1.drawTo(30, 60)
+  c1.drawTo(30, 60);
 
   // Symmetric 15px
   let c2 = box.chamfer(15);
-  c2.drawTo(140, 60)
+  c2.drawTo(140, 60);
 
   // Symmetric 30px
   let c3 = box.chamfer(30);
-  c3.drawTo(250, 60)
+  c3.drawTo(250, 60);
 
   // Asymmetric 5/25
   let c4 = box.chamfer(5, 25);
-  c4.drawTo(360, 60)
+  c4.drawTo(360, 60);
 
   // Single vertex
   let c5 = box.chamferAtVertex(1, 20);
-  c5.drawTo(470, 60)
+  c5.drawTo(470, 60);
 }
 
 // --- Labels ---
@@ -7879,7 +7879,7 @@ oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numb
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 480, 340) }
+bg.apply { rect(0, 0, 480, 340); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -7935,7 +7935,7 @@ let center_dot = PathLayer('center-dot') \${
   stroke-width: 1;
 };
 center_dot.apply {
-  circle(160, 160, 3)
+  circle(160, 160, 3);
 }
 
 // --- Radius lines (from center to trim points) ---
@@ -7959,7 +7959,7 @@ let vertex = PathLayer('vertex') \${
   stroke-width: 1.5;
 };
 vertex.apply {
-  circle(200, 120, 4)
+  circle(200, 120, 4);
 }
 
 // --- Trim points ---
@@ -7970,8 +7970,8 @@ let trim_dots = PathLayer('trim-dots') \${
   stroke-width: 1.5;
 };
 trim_dots.apply {
-  circle(160, 120, 4)
-  circle(200, 160, 4)
+  circle(160, 120, 4);
+  circle(200, 160, 4);
 }
 
 // --- Removed corner area ---
@@ -8103,10 +8103,10 @@ let leg_f = PathLayer('leg-f') \${ fill: Color('#8b5cf6'); stroke: none; };
 let leg_v = PathLayer('leg-v') \${ fill: Color('#ef4444'); stroke: none; };
 let leg_t = PathLayer('leg-t') \${ fill: Color('#22c55e'); stroke: none; };
 
-leg_o.apply { rect(300, 260, 8, 8) }
-leg_f.apply { rect(300, 274, 8, 8) }
-leg_v.apply { rect(390, 260, 8, 8) }
-leg_t.apply { rect(390, 274, 8, 8) }
+leg_o.apply { rect(300, 260, 8, 8); }
+leg_f.apply { rect(300, 274, 8, 8); }
+leg_v.apply { rect(390, 260, 8, 8); }
+leg_t.apply { rect(390, 274, 8, 8); }
 
 leg.apply {
   text(312, 267)\`Original\`
@@ -8161,7 +8161,7 @@ rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 700, 380) }
+bg.apply { rect(0, 0, 700, 380); }
 
 // --- Layers ---
 
@@ -8203,14 +8203,14 @@ for (i in 0..3) {
   let ef = shape.ellipticalFillet(32, 16);
 
   original.apply {
-    shape.drawTo(ox, oy)
+    shape.drawTo(ox, oy);
   }
   filleted.apply {
-    ef.drawTo(ox, oy)
+    ef.drawTo(ox, oy);
   }
   // vertex dot
   dots.apply {
-    circle(calc(ox + 50), oy, 3)
+    circle(calc(ox + 50), oy, 3);
   }
 }
 
@@ -8227,14 +8227,14 @@ for (i in 0..3) {
   let ef = shape.ellipticalFillet(24, 48);
 
   original.apply {
-    shape.drawTo(ox, oy)
+    shape.drawTo(ox, oy);
   }
   filleted.apply {
-    ef.drawTo(ox, oy)
+    ef.drawTo(ox, oy);
   }
   // vertex dot
   dots.apply {
-    circle(calc(ox + 50), oy, 3)
+    circle(calc(ox + 50), oy, 3);
   }
 }
 
@@ -8271,9 +8271,9 @@ let leg_o = PathLayer('leg-o') \${ fill: Color('#94a3b8'); stroke: none; };
 let leg_f = PathLayer('leg-f') \${ fill: Color('#8b5cf6'); stroke: none; };
 let leg_v = PathLayer('leg-v') \${ fill: Color('#ef4444'); stroke: none; };
 
-leg_o.apply { rect(560, 20, 8, 8) }
-leg_f.apply { rect(560, 34, 8, 8) }
-leg_v.apply { rect(640, 20, 8, 8) }
+leg_o.apply { rect(560, 20, 8, 8); }
+leg_f.apply { rect(560, 34, 8, 8); }
+leg_v.apply { rect(640, 20, 8, 8); }
 
 leg.apply {
   text(572, 27)\`Original\`
@@ -8327,7 +8327,7 @@ let box = @{ h 70 v 70 h -70 z };
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 560, 300) }
+bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
@@ -8339,11 +8339,11 @@ let original = PathLayer('original') \${
 };
 
 original.apply {
-  box.drawTo(30, 60)
-  box.drawTo(140, 60)
-  box.drawTo(250, 60)
-  box.drawTo(360, 60)
-  box.drawTo(470, 60)
+  box.drawTo(30, 60);
+  box.drawTo(140, 60);
+  box.drawTo(250, 60);
+  box.drawTo(360, 60);
+  box.drawTo(470, 60);
 }
 
 // --- Filleted shapes ---
@@ -8357,23 +8357,23 @@ let filleted = PathLayer('filleted') \${
 filleted.apply {
   // Small circular
   let f1 = box.fillet(5);
-  f1.drawTo(30, 60)
+  f1.drawTo(30, 60);
 
   // Large circular
   let f2 = box.fillet(15);
-  f2.drawTo(140, 60)
+  f2.drawTo(140, 60);
 
   // Elliptical
   let f3 = box.ellipticalFillet(15, 8);
-  f3.drawTo(250, 60)
+  f3.drawTo(250, 60);
 
   // Single vertex
   let f4 = box.filletAtVertex(1, 25);
-  f4.drawTo(360, 60)
+  f4.drawTo(360, 60);
 
   // Elliptical with rotation
   let f5 = box.ellipticalFillet(15, 8, 0.3);
-  f5.drawTo(470, 60)
+  f5.drawTo(470, 60);
 }
 
 // --- Labels ---
@@ -8557,7 +8557,7 @@ glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">dr
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 300) }
+layer('bg').apply { rect(0, 0, 600, 300); }
 
 // ─── Glyph layout with advance widths ────────────────────────────
 
@@ -8575,9 +8575,9 @@ let baseline_y = 140;
 let start_x = 60;
 let cursor_x = start_x;
 
-glyph_layer.apply {
+layer('glyphs').apply {
   for (g in glyphs) {
-    g.drawTo(cursor_x, baseline_y)
+    g.drawTo(cursor_x, baseline_y);
     cursor_x = calc(cursor_x + g.advanceWidth);
   }
 }
@@ -8591,7 +8591,7 @@ let markers = PathLayer('markers') \${
 };
 
 // Baseline
-markers.apply {
+layer('markers').apply {
   M start_x baseline_y h calc(cursor_x - start_x)
 }
 
@@ -8604,7 +8604,7 @@ let ticks = PathLayer('ticks') \${
 };
 
 let tick_x = start_x;
-ticks.apply {
+layer('ticks').apply {
   for (g in glyphs) {
     M tick_x calc(baseline_y - 70) v 80
     let tick_x = calc(tick_x + g.advanceWidth);
@@ -8626,9 +8626,9 @@ let glyph_layer2 = PathLayer('glyphs2') \${
 let baseline_y2 = 230;
 let cursor_x2 = start_x;
 
-glyph_layer2.apply {
+layer('glyphs2').apply {
   for (g in glyphs2) {
-    g.drawTo(cursor_x2, baseline_y2)
+    g.drawTo(cursor_x2, baseline_y2);
     cursor_x2 = calc(cursor_x2 + g.advanceWidth);
   }
 }
@@ -8639,7 +8639,7 @@ let markers2 = PathLayer('markers2') \${
   stroke-width: 0.75;
   fill: none;
 };
-markers2.apply {
+layer('markers2').apply {
   M start_x baseline_y2 h calc(cursor_x2 - start_x)
 }
 
@@ -8651,7 +8651,7 @@ let labels = TextLayer('labels') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-labels.apply {
+layer('labels').apply {
   text(start_x, calc(baseline_y + 16))\`Bebas Neue · 64px · advanceWidth layout\`
   text(start_x, calc(baseline_y2 + 16))\`Inconsolata · 48px · uniform advance widths\`
 }
@@ -8664,7 +8664,7 @@ let title = TextLayer('title') \${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-title.apply { text(30, 30)\`Glyph Layout with Advance Widths\` }
+layer('title').apply { text(30, 30)\`Glyph Layout with Advance Widths\` }
 
 // --- Code snippet ---
 
@@ -8676,7 +8676,7 @@ let code = TextLayer('code') \${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-code.apply {
+layer('code').apply {
   text(0, 0)\`let cursor_x = start_x;\`
   text(0, 12)\`for (g in glyphs) {\`
   text(8, 24)\`g.drawTo(cursor_x, baseline)\`
@@ -8690,7 +8690,7 @@ let kw = TextLayer('kw') \${
   fill: Color('#c084fc');
   text-anchor: start;
 };
-kw.apply {
+layer('kw').apply {
   text(0, 0)\`let\`
   text(0, 12)\`for\`
 }
@@ -8754,7 +8754,7 @@ code_group.append(code, kw);
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 660, 400) }
+layer('bg').apply { rect(0, 0, 660, 400); }
 
 // --- Contour color palette (12 colors for 12 contours) ---
 
@@ -8787,7 +8787,7 @@ let title = TextLayer('title') \${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-title.apply { text(0, 30)\`Contour Decomposition\` }
+layer('title').apply { text(0, 30)\`Contour Decomposition\` }
 
 let subtitle = TextLayer('subtitle') \${
   font-family: system-ui, sans-serif;
@@ -8795,7 +8795,7 @@ let subtitle = TextLayer('subtitle') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-subtitle.apply { text(0, 44)\`.contours splits glyphs into individual PathBlocks\` }
+layer('subtitle').apply { text(0, 44)\`.contours splits glyphs into individual PathBlocks\` }
 
 // Assembled word — size to fit within ~290px column
 let asm_styles = \${ font-family: Raleway-Bold; font-size: 72; };
@@ -8807,9 +8807,9 @@ let asm_layer = PathLayer('assembled') \${
 };
 
 let asm_cursor = 0;
-asm_layer.apply {
+layer('assembled').apply {
   for (g in asm_glyphs) {
-    g.drawTo(asm_cursor, 115)
+    g.drawTo(asm_cursor, 115);
     asm_cursor = calc(asm_cursor + g.advanceWidth);
   }
 }
@@ -8820,7 +8820,7 @@ let asm_label = TextLayer('asm-label') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-asm_label.apply { text(0, 148)\`Assembled — 6 characters, solid fill\` }
+layer('asm-label').apply { text(0, 148)\`Assembled — 6 characters, solid fill\` }
 
 g_left.append(title, subtitle, asm_layer, asm_label);
 
@@ -8848,47 +8848,47 @@ let contours_B = dec_glyphs[0].contours;
 let cB0 = PathLayer('cB0') \${ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
 let cB1 = PathLayer('cB1') \${ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
 let cB2 = PathLayer('cB2') \${ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
-cB0.apply { contours_B[0].drawTo(x_B, dec_y) }
-cB1.apply { contours_B[1].drawTo(x_B, dec_y) }
-cB2.apply { contours_B[2].drawTo(x_B, dec_y) }
+layer('cB0').apply { contours_B[0].drawTo(x_B, dec_y); }
+layer('cB1').apply { contours_B[1].drawTo(x_B, dec_y); }
+layer('cB2').apply { contours_B[2].drawTo(x_B, dec_y); }
 g_decomp.append(cB0, cB1, cB2);
 
 // --- i: 2 contours (body + dot) ---
 let contours_i = dec_glyphs[1].contours;
 let ci0 = PathLayer('ci0') \${ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
 let ci1 = PathLayer('ci1') \${ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
-ci0.apply { contours_i[0].drawTo(x_i, dec_y) }
-ci1.apply { contours_i[1].drawTo(x_i, dec_y) }
+layer('ci0').apply { contours_i[0].drawTo(x_i, dec_y); }
+layer('ci1').apply { contours_i[1].drawTo(x_i, dec_y); }
 g_decomp.append(ci0, ci1);
 
 // --- n: 1 contour ---
 let contours_n = dec_glyphs[2].contours;
 let cn0 = PathLayer('cn0') \${ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
-cn0.apply { contours_n[0].drawTo(x_n, dec_y) }
+layer('cn0').apply { contours_n[0].drawTo(x_n, dec_y); }
 g_decomp.append(cn0);
 
 // --- g: 2 contours (body + tail) ---
 let contours_g = dec_glyphs[3].contours;
 let cg0 = PathLayer('cg0') \${ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
 let cg1 = PathLayer('cg1') \${ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
-cg0.apply { contours_g[0].drawTo(x_g, dec_y) }
-cg1.apply { contours_g[1].drawTo(x_g, dec_y) }
+layer('cg0').apply { contours_g[0].drawTo(x_g, dec_y); }
+layer('cg1').apply { contours_g[1].drawTo(x_g, dec_y); }
 g_decomp.append(cg0, cg1);
 
 // --- o: 2 contours (outer + hole) ---
 let contours_o = dec_glyphs[4].contours;
 let co0 = PathLayer('co0') \${ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
 let co1 = PathLayer('co1') \${ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
-co0.apply { contours_o[0].drawTo(x_o, dec_y) }
-co1.apply { contours_o[1].drawTo(x_o, dec_y) }
+layer('co0').apply { contours_o[0].drawTo(x_o, dec_y); }
+layer('co1').apply { contours_o[1].drawTo(x_o, dec_y); }
 g_decomp.append(co0, co1);
 
 // --- !: 2 contours (body + dot) ---
 let contours_ex = dec_glyphs[5].contours;
 let cex0 = PathLayer('cex0') \${ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
 let cex1 = PathLayer('cex1') \${ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
-cex0.apply { contours_ex[0].drawTo(x_ex, dec_y) }
-cex1.apply { contours_ex[1].drawTo(x_ex, dec_y) }
+layer('cex0').apply { contours_ex[0].drawTo(x_ex, dec_y); }
+layer('cex1').apply { contours_ex[1].drawTo(x_ex, dec_y); }
 g_decomp.append(cex0, cex1);
 
 // --- Letter labels and contour counts ---
@@ -8910,7 +8910,7 @@ let cnt_layer = TextLayer('char-counts') \${
   text-anchor: middle;
 };
 
-lbl_layer.apply {
+layer('char-labels').apply {
   text(calc(x_B + dec_glyphs[0].advanceWidth / 2), 100)\`B\`
   text(calc(x_i + dec_glyphs[1].advanceWidth / 2), 100)\`i\`
   text(calc(x_n + dec_glyphs[2].advanceWidth / 2), 100)\`n\`
@@ -8919,7 +8919,7 @@ lbl_layer.apply {
   text(calc(x_ex + dec_glyphs[5].advanceWidth / 2), 100)\`!\`
 }
 
-cnt_layer.apply {
+layer('char-counts').apply {
   text(calc(x_B + dec_glyphs[0].advanceWidth / 2), 112)\`3\`
   text(calc(x_i + dec_glyphs[1].advanceWidth / 2), 112)\`2\`
   text(calc(x_n + dec_glyphs[2].advanceWidth / 2), 112)\`1\`
@@ -8937,7 +8937,7 @@ let dec_footer = TextLayer('dec-footer') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-dec_footer.apply { text(0, 135)\`12 contours across 6 characters\` }
+layer('dec-footer').apply { text(0, 135)\`12 contours across 6 characters\` }
 g_decomp.append(dec_footer);
 
 // ─── RIGHT COLUMN ────────────────────────────────────────────────
@@ -8951,7 +8951,7 @@ let leg_title = TextLayer('leg-title') \${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-leg_title.apply { text(0, 30)\`Contour Color Key\` }
+layer('leg-title').apply { text(0, 30)\`Contour Color Key\` }
 
 // Legend entries — 12 rows
 let leg_top = 44;
@@ -8970,18 +8970,18 @@ let ld9 = PathLayer('ld9') \${ fill: colors[9]; stroke: none; };
 let ld10 = PathLayer('ld10') \${ fill: colors[10]; stroke: none; };
 let ld11 = PathLayer('ld11') \${ fill: colors[11]; stroke: none; };
 
-ld0.apply { rect(0, leg_top, 8, 8) }
-ld1.apply { rect(0, calc(leg_top + leg_h), 8, 8) }
-ld2.apply { rect(0, calc(leg_top + leg_h * 2), 8, 8) }
-ld3.apply { rect(0, calc(leg_top + leg_h * 3), 8, 8) }
-ld4.apply { rect(0, calc(leg_top + leg_h * 4), 8, 8) }
-ld5.apply { rect(0, calc(leg_top + leg_h * 5), 8, 8) }
-ld6.apply { rect(0, calc(leg_top + leg_h * 6), 8, 8) }
-ld7.apply { rect(0, calc(leg_top + leg_h * 7), 8, 8) }
-ld8.apply { rect(0, calc(leg_top + leg_h * 8), 8, 8) }
-ld9.apply { rect(0, calc(leg_top + leg_h * 9), 8, 8) }
-ld10.apply { rect(0, calc(leg_top + leg_h * 10), 8, 8) }
-ld11.apply { rect(0, calc(leg_top + leg_h * 11), 8, 8) }
+layer('ld0').apply { rect(0, leg_top, 8, 8); }
+layer('ld1').apply { rect(0, calc(leg_top + leg_h), 8, 8); }
+layer('ld2').apply { rect(0, calc(leg_top + leg_h * 2), 8, 8); }
+layer('ld3').apply { rect(0, calc(leg_top + leg_h * 3), 8, 8); }
+layer('ld4').apply { rect(0, calc(leg_top + leg_h * 4), 8, 8); }
+layer('ld5').apply { rect(0, calc(leg_top + leg_h * 5), 8, 8); }
+layer('ld6').apply { rect(0, calc(leg_top + leg_h * 6), 8, 8); }
+layer('ld7').apply { rect(0, calc(leg_top + leg_h * 7), 8, 8); }
+layer('ld8').apply { rect(0, calc(leg_top + leg_h * 8), 8, 8); }
+layer('ld9').apply { rect(0, calc(leg_top + leg_h * 9), 8, 8); }
+layer('ld10').apply { rect(0, calc(leg_top + leg_h * 10), 8, 8); }
+layer('ld11').apply { rect(0, calc(leg_top + leg_h * 11), 8, 8); }
 
 let leg_text = TextLayer('leg-text') \${
   font-family: monospace;
@@ -8990,7 +8990,7 @@ let leg_text = TextLayer('leg-text') \${
   text-anchor: start;
 };
 let ty = calc(leg_top + 7);
-leg_text.apply {
+layer('leg-text').apply {
   text(14, ty)\`B outer\`
   text(14, calc(ty + leg_h))\`B hole 1\`
   text(14, calc(ty + leg_h * 2))\`B hole 2\`
@@ -9016,7 +9016,7 @@ let code_title = TextLayer('code-title') \${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-code_title.apply { text(0, code_top)\`Usage\` }
+layer('code-title').apply { text(0, code_top)\`Usage\` }
 
 let code = TextLayer('code') \${
   font-family: monospace;
@@ -9025,7 +9025,7 @@ let code = TextLayer('code') \${
   text-anchor: start;
 };
 let cl = calc(code_top + 18);
-code.apply {
+layer('code').apply {
   text(0, cl)\`let glyphs = PathBlock.fromGlyph("Bingo!", styles);\`
   text(0, calc(cl + 18))\`for (g in glyphs) {\`
   text(10, calc(cl + 30))\`let parts = g.contours;\`
@@ -9039,7 +9039,7 @@ let kw = TextLayer('kw') \${
   fill: Color('#c084fc');
   text-anchor: start;
 };
-kw.apply {
+layer('kw').apply {
   text(0, cl)\`let\`
   text(0, calc(cl + 18))\`for\`
   text(10, calc(cl + 30))\`let\`
@@ -9054,7 +9054,7 @@ let divider = PathLayer('divider') \${
   stroke-width: 1;
   fill: none;
 };
-divider.apply { M 345 20 v 370 }
+layer('divider').apply { M 345 20 v 370 }
 </code>
   <img src="/pathogen/blog/samples/post12/contour-decomposition.svg" alt="Contour decomposition — 12 contours across 6 characters of 'Bingo!'" loading="lazy">
 </mini-workspace></p>
@@ -9106,7 +9106,7 @@ divider.apply { M 345 20 v 370 }
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 220) }
+layer('bg').apply { rect(0, 0, 600, 220); }
 
 // Shared font styles
 let styles = \${ font-family: BebasNeue-Regular; font-size: 72; };
@@ -9132,7 +9132,7 @@ let wave_title = TextLayer('wave-title') \${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-wave_title.apply { text(0, 0)\`WAVE\` }
+layer('wave-title').apply { text(0, 0)\`WAVE\` }
 
 let word = "WAVE";
 let glyphs = PathBlock.fromGlyph(word, styles);
@@ -9145,11 +9145,11 @@ let wave_layer = PathLayer('wave') \${
 let wave_x = 0;
 let wave_baseline = 90;
 
-wave_layer.apply {
+layer('wave').apply {
   let idx = 0;
   for (g in glyphs) {
     let y_offset = calc(sin(idx * 0.8) * 15);
-    g.drawTo(wave_x, calc(wave_baseline + y_offset))
+    g.drawTo(wave_x, calc(wave_baseline + y_offset));
     wave_x = calc(wave_x + g.advanceWidth);
     idx = calc(idx + 1);
   }
@@ -9165,7 +9165,7 @@ let wave_label = TextLayer('wave-label') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-wave_label.apply {
+layer('wave-label').apply {
   wave_label_proj.draw();
 }
 
@@ -9186,7 +9186,7 @@ let grow_title = TextLayer('grow-title') \${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-grow_title.apply { text(0, 0)\`GROW\` }
+layer('grow-title').apply { text(0, 0)\`GROW\` }
 
 let word2 = "GROW";
 let glyphs2 = PathBlock.fromGlyph(word2, styles);
@@ -9198,12 +9198,12 @@ let scale_layer = PathLayer('scale') \${
 
 let scale_x = 0;
 
-scale_layer.apply {
+layer('scale').apply {
   let idx2 = 0;
   for (g in glyphs2) {
     let s = calc(0.5 + idx2 * 0.25);
     let scaled = g.scale(s, s);
-    scaled.drawTo(scale_x, 90)
+    scaled.drawTo(scale_x, 90);
     scale_x = calc(scale_x + g.advanceWidth * s);
     idx2 = calc(idx2 + 1);
   }
@@ -9219,7 +9219,7 @@ let scale_label = TextLayer('scale-label') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-scale_label.apply {
+layer('scale-label').apply {
   scale_label_proj.draw();
 }
 
@@ -9240,7 +9240,7 @@ let arc_title = TextLayer('arc-title') \${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-arc_title.apply { text(0, 0)\`CIRCULAR\` }
+layer('arc-title').apply { text(0, 0)\`CIRCULAR\` }
 
 let word3 = "CIRCULAR";
 let arc_styles = \${ font-family: BebasNeue-Regular; font-size: 30; };
@@ -9266,7 +9266,7 @@ let arc_span = calc(total_width / arc_r);
 let arc_start = calc(-0.5pi - arc_span / 2);
 let arc_cursor = 0;
 
-arc_layer.apply {
+layer('arc').apply {
   for (g in glyphs3) {
     let char_mid = calc(arc_cursor + g.advanceWidth / 2);
     let angle = calc(arc_start + char_mid / arc_r);
@@ -9274,9 +9274,8 @@ arc_layer.apply {
     let cx = calc(arc_cx + cos(angle) * arc_r);
     let cy = calc(arc_cy + sin(angle) * arc_r);
 
-    // Rotate glyph to follow the arc tangent
     let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5pi));
-    rotated.drawTo(cx, cy)
+    rotated.drawTo(cx, cy);
 
     arc_cursor = calc(arc_cursor + g.advanceWidth);
   }
@@ -9289,7 +9288,7 @@ let guide = PathLayer('guide') \${
   stroke-dasharray: "2 3";
   fill: none;
 };
-guide.apply { circle(calc(arc_cx), calc(arc_cy), arc_r) }
+layer('guide').apply { circle(calc(arc_cx), calc(arc_cy), arc_r); }
 
 // Description label
 let arc_label_block = &amp;{ text(0, 8)\`rotateAtVertexIndex along arc\` } &lt;&lt; label_styles;
@@ -9301,7 +9300,7 @@ let arc_label = TextLayer('arc-label') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-arc_label.apply {
+layer('arc-label').apply {
   arc_label_proj.draw();
 }
 
@@ -9340,7 +9339,7 @@ let title = TextLayer('title') \${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-title.apply { text(30, 205)\`Per-Character Transforms\` }
+layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
 </code>
   <img src="/pathogen/blog/samples/post12/per-char-transforms.svg" alt="Three per-character transform effects — wave, grow, and circular arc text" loading="lazy">
 </mini-workspace></p>
@@ -9380,7 +9379,7 @@ title.apply { text(30, 205)\`Per-Character Transforms\` }
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 900, 310) }
+layer('bg').apply { rect(0, 0, 900, 310); }
 
 // --- Palette ---
 
@@ -9420,7 +9419,7 @@ for (g in glyphs) {
 
 // Union all projected glyphs into a single path
 let combined = projected[0];
-for (i in 1..6) {  // remaining 6 of 7 glyphs
+for (i in 1..6) {
   combined = combined.union(projected[i]);
 }
 
@@ -9448,20 +9447,22 @@ let label_y = 200;
 let g_stage1 = GroupLayer('stage1') \${ translate-x: 0; translate-y: 0; };
 
 let s1_x = 30;
+let glyph_names = ["g-0", "g-1", "g-2", "g-3", "g-4", "g-5", "g-6"];
 let gi = 0;
 for (g in glyphs) {
-  let gl = PathLayer(\`g-\${gi}\`) \${
+  let gn = glyph_names[gi];
+  let gl = PathLayer(gn) \${
     stroke: palette[gi];
     stroke-width: 1.5;
     fill: palette_fill[gi];
   };
-  gl.apply { g.drawTo(calc(s1_x + positions[gi]), calc(geo_y + baseline_y)) }
+  layer(gn).apply { g.drawTo(calc(s1_x + positions[gi]), calc(geo_y + baseline_y)); }
   g_stage1.append(gl);
   gi = calc(gi + 1);
 }
 
 let s1_label = TextLayer('s1-label') \${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
-s1_label.apply {
+layer('s1-label').apply {
   text(s1_x, label_y)\`7 glyph PathBlocks\`
   text(s1_x, calc(label_y + 12))\`laid out by advanceWidth\`
 }
@@ -9475,10 +9476,10 @@ g_stage1.append(s1_label);
 let g_stage2 = GroupLayer('stage2') \${ translate-x: 320; translate-y: 0; };
 
 let union_layer = PathLayer('union-result') \${ fill: c_blue; stroke: none; };
-union_layer.apply { combined.drawTo(30, calc(geo_y + baseline_y)) }
+layer('union-result').apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
 
 let s2_label = TextLayer('s2-label') \${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
-s2_label.apply { text(30, label_y)\`single united path\` }
+layer('s2-label').apply { text(30, label_y)\`single united path\` }
 
 g_stage2.append(union_layer, s2_label);
 
@@ -9489,10 +9490,10 @@ g_stage2.append(union_layer, s2_label);
 let g_stage3 = GroupLayer('stage3') \${ translate-x: 610; translate-y: 0; };
 
 let cutout_layer = PathLayer('cutout-result') \${ fill: c_green; stroke: none; };
-cutout_layer.apply { cutout.drawTo(30, calc(geo_y + baseline_y)) }
+layer('cutout-result').apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
 
 let s3_label = TextLayer('s3-label') \${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
-s3_label.apply { text(30, label_y)\`text punched from plate\` }
+layer('s3-label').apply { text(30, label_y)\`text punched from plate\` }
 
 g_stage3.append(cutout_layer, s3_label);
 
@@ -9505,28 +9506,28 @@ let arrow_y = calc(geo_y + baseline_y - 20);
 // Arrow 1: Stage 1 → Stage 2 (x=240..320, centered at x=280)
 let a1_x = 252;
 let arrow1 = PathLayer('arrow1') \${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
-arrow1.apply { M a1_x arrow_y h 50  M calc(a1_x + 46) calc(arrow_y - 4) l 8 4 l -8 4 z }
+layer('arrow1').apply { M a1_x arrow_y h 50  M calc(a1_x + 46) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
 let arrow1_label = TextLayer('arrow1-label') \${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
-arrow1_label.apply { text(280, calc(arrow_y + 16))\`.union()\` }
+layer('arrow1-label').apply { text(280, calc(arrow_y + 16))\`.union()\` }
 
 // Arrow 2: Stage 2 → Stage 3 (x=520..610, centered at x=565)
 let a2_x = 532;
 let arrow2 = PathLayer('arrow2') \${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
-arrow2.apply { M a2_x arrow_y h 60  M calc(a2_x + 56) calc(arrow_y - 4) l 8 4 l -8 4 z }
+layer('arrow2').apply { M a2_x arrow_y h 60  M calc(a2_x + 56) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
 let arrow2_label = TextLayer('arrow2-label') \${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
-arrow2_label.apply { text(565, calc(arrow_y + 16))\`.difference()\` }
+layer('arrow2-label').apply { text(565, calc(arrow_y + 16))\`.difference()\` }
 
 // ═══════════════════════════════════════
 // Title and subtitle
 // ═══════════════════════════════════════
 
 let title = TextLayer('title') \${ font-family: system-ui, sans-serif; font-size: 14; fill: c_text; text-anchor: start; };
-title.apply { text(30, 28)\`Text Cutout with Boolean Operations\` }
+layer('title').apply { text(30, 28)\`Text Cutout with Boolean Operations\` }
 
 let subtitle = TextLayer('subtitle') \${ font-family: system-ui, sans-serif; font-size: 9; fill: c_muted; text-anchor: start; };
-subtitle.apply { text(30, 43)\`7 glyph paths → .union() chain → .difference() from rectangle\` }
+layer('subtitle').apply { text(30, 43)\`7 glyph paths → .union() chain → .difference() from rectangle\` }
 
 // ═══════════════════════════════════════
 // Code snippet (bottom, fitted to content)
@@ -9535,16 +9536,16 @@ subtitle.apply { text(30, 43)\`7 glyph paths → .union() chain → .difference(
 let code_group = GroupLayer('code-block') \${ translate-x: 235; translate-y: 255; };
 
 let code_bg = PathLayer('code-bg') \${ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
-code_bg.apply { roundRect(0, 0, 430, 42, 4) }
+layer('code-bg').apply { roundRect(0, 0, 430, 42, 4); }
 
 let code = TextLayer('code') \${ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
-code.apply {
+layer('code').apply {
   text(10, 16)\`let combined = projected[0];  for ... combined.union(projected[i]);\`
   text(10, 30)\`let cutout = plate.difference(combined);\`
 }
 
 let kw = TextLayer('kw') \${ font-family: monospace; font-size: 8; fill: Color('#c084fc'); text-anchor: start; };
-kw.apply {
+layer('kw').apply {
   text(10, 16)\`let\`
   text(10, 30)\`let\`
 }
@@ -9573,7 +9574,7 @@ code_group.append(code_bg, code, kw);
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 340) }
+layer('bg').apply { rect(0, 0, 600, 340); }
 
 // ─── Left: fromGlyph() — paths AND metrics from the same font ──
 
@@ -9591,7 +9592,7 @@ let path_layer = PathLayer('glyph-paths') \${
 // Draw glyphs using advanceWidth — inherently precise
 let cursor = 0;
 let glyph_bboxes = [];
-path_layer.apply {
+layer('glyph-paths').apply {
   for (g in glyphs) {
     let proj = g.drawTo(cursor, 60);
     glyph_bboxes.push(proj.boundingBox());
@@ -9613,10 +9614,10 @@ let total_bbox = PathLayer('total-bbox') \${
 let first_bb = glyph_bboxes[0];
 let last_bb = glyph_bboxes[calc(glyph_bboxes.length - 1)];
 let combined_w = calc(last_bb.x + last_bb.width - first_bb.x);
-let combined_h = calc(first_bb.height);
+let combined_h = first_bb.height;
 
-total_bbox.apply {
-  rect(first_bb.x, first_bb.y, combined_w, combined_h)
+layer('total-bbox').apply {
+  rect(first_bb.x, first_bb.y, combined_w, combined_h);
 }
 
 // Per-glyph advance width markers
@@ -9627,7 +9628,7 @@ let tick_layer = PathLayer('ticks') \${
   fill: none;
 };
 let tick_cursor = 0;
-tick_layer.apply {
+layer('ticks').apply {
   for (g in glyphs) {
     M tick_cursor calc(first_bb.y - 2) v calc(combined_h + 4)
     let tick_cursor = calc(tick_cursor + g.advanceWidth);
@@ -9641,7 +9642,7 @@ let left_label = TextLayer('left-label') \${
   fill: Color('#22c55e');
   text-anchor: start;
 };
-left_label.apply {
+layer('left-label').apply {
   text(0, 100)\`advanceWidth layout = \${round(total_w * 10) / 10}px total\`
   text(0, 112)\`paths + metrics from same font file\`
 }
@@ -9658,7 +9659,7 @@ let text_layer = TextLayer('svg-text') \${
   font-size: 24;
   fill: Color('#94a3b8');
 };
-text_layer.apply {
+layer('svg-text').apply {
   text(0, 60)\`LAYOUT\`
 }
 
@@ -9672,8 +9673,8 @@ let text_bbox = PathLayer('text-bbox') \${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-text_bbox.apply {
-  rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height)
+layer('text-bbox').apply {
+  rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height);
 }
 
 let right_label = TextLayer('right-label') \${
@@ -9682,7 +9683,7 @@ let right_label = TextLayer('right-label') \${
   fill: Color('#f59e0b');
   text-anchor: start;
 };
-right_label.apply {
+layer('right-label').apply {
   text(0, 100)\`estimation table = \${round(text_bb.width * 10) / 10}px\`
   text(0, 112)\`browser picks its own monospace font\`
 }
@@ -9694,7 +9695,7 @@ let note = TextLayer('note') \${
   fill: Color('#64748b');
   text-anchor: start;
 };
-note.apply {
+layer('note').apply {
   text(0, 132)\`bbox may not match — different font\`
   text(0, 144)\`than what the browser renders\`
 }
@@ -9709,7 +9710,7 @@ let left_title = TextLayer('l-title') \${
   fill: Color('#22c55e');
   text-anchor: start;
 };
-left_title.apply { text(30, 42)\`PathBlock.fromGlyph() — exact\` }
+layer('l-title').apply { text(30, 42)\`PathBlock.fromGlyph() — exact\` }
 
 let right_title = TextLayer('r-title') \${
   font-family: system-ui, sans-serif;
@@ -9717,7 +9718,7 @@ let right_title = TextLayer('r-title') \${
   fill: Color('#f59e0b');
   text-anchor: start;
 };
-right_title.apply { text(310, 42)\`SVG &lt;text&gt; — estimated\` }
+layer('r-title').apply { text(310, 42)\`SVG &lt;text&gt; — estimated\` }
 
 // ─── Divider ─────────────────────────────────────────────────────
 
@@ -9726,7 +9727,7 @@ let divider = PathLayer('divider') \${
   stroke-width: 1;
   fill: none;
 };
-divider.apply { M 295 40 v 170 }
+layer('divider').apply { M 295 40 v 170 }
 
 // ─── Title ───────────────────────────────────────────────────────
 
@@ -9736,7 +9737,7 @@ let title = TextLayer('title') \${
   fill: Color('#e2e8f0');
   text-anchor: start;
 };
-title.apply { text(30, 25)\`Why @font Matters: Paths vs Text\` }
+layer('title').apply { text(30, 25)\`Why @font Matters: Paths vs Text\` }
 
 // ─── Bottom annotation ──────────────────────────────────────────
 
@@ -9746,7 +9747,7 @@ let anno = TextLayer('anno') \${
   fill: Color('#94a3b8');
   text-anchor: start;
 };
-anno.apply {
+layer('anno').apply {
   text(30, 270)\`fromGlyph() renders text AS paths — the loaded font is\`
   text(30, 282)\`both the renderer and the measurer. No mismatch possible.\`
   text(30, 300)\`SVG &lt;text&gt; relies on the browser's font — estimation tables\`
@@ -9761,7 +9762,7 @@ let insight = TextLayer('insight') \${
   fill: Color('#3b82f6');
   text-anchor: start;
 };
-insight.apply {
+layer('insight').apply {
   text(30, 332)\`Paths = single source of truth for geometry AND metrics\`
 }
 </code>
@@ -9834,7 +9835,7 @@ let arrow = @{
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 380) }
+bg.apply { rect(0, 0, 600, 380); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -9864,7 +9865,7 @@ let shape = PathLayer('shape') \${
 // V0(220,190) V1(280,190) V2(280,170) V3(310,200)
 // V4(280,230) V5(280,210) V6(220,210)
 shape.apply {
-  arrow.drawTo(220, 190)
+  arrow.drawTo(220, 190);
 }
 
 // --- Bounding box overlay ---
@@ -9877,7 +9878,7 @@ let bbox = PathLayer('bbox') \${
 };
 bbox.apply {
   // BBox: x=220, y=170, w=90, h=60
-  rect(220, 170, 90, 60)
+  rect(220, 170, 90, 60);
 }
 
 // --- Vertex dots ---
@@ -9888,13 +9889,13 @@ let vdots = PathLayer('vdots') \${
   stroke-width: 1.5;
 };
 vdots.apply {
-  circle(220, 190, 3.5)
-  circle(280, 190, 3.5)
-  circle(280, 170, 3.5)
-  circle(310, 200, 3.5)
-  circle(280, 230, 3.5)
-  circle(280, 210, 3.5)
-  circle(220, 210, 3.5)
+  circle(220, 190, 3.5);
+  circle(280, 190, 3.5);
+  circle(280, 170, 3.5);
+  circle(310, 200, 3.5);
+  circle(280, 230, 3.5);
+  circle(280, 210, 3.5);
+  circle(220, 210, 3.5);
 }
 
 // --- Origin crosshair ---
@@ -10073,11 +10074,11 @@ let leg_v = PathLayer('leg-v') \${ fill: Color('#ef4444'); stroke: none; };
 let leg_o = PathLayer('leg-o') \${ fill: Color('#22c55e'); stroke: none; };
 let leg_d = PathLayer('leg-d') \${ fill: Color('#818cf8'); stroke: none; };
 
-leg_s.apply { rect(30, 335, 8, 8) }
-leg_b.apply { rect(30, 349, 8, 8) }
-leg_v.apply { rect(30, 363, 8, 8) }
-leg_o.apply { rect(120, 335, 8, 8) }
-leg_d.apply { rect(120, 349, 8, 8) }
+leg_s.apply { rect(30, 335, 8, 8); }
+leg_b.apply { rect(30, 349, 8, 8); }
+leg_v.apply { rect(30, 363, 8, 8); }
+leg_o.apply { rect(120, 335, 8, 8); }
+leg_d.apply { rect(120, 349, 8, 8); }
 
 leg.apply {
   text(42, 342)\`Shape\`
@@ -10142,7 +10143,7 @@ manual.apply {
 // drawTo approach: single call
 drawto.apply {
   for (i in 0..3) {
-    diamond.drawTo(calc(60 + i * 50), 140)
+    diamond.drawTo(calc(60 + i * 50), 140);
   }
 }
 </code>
@@ -10181,7 +10182,7 @@ let gem = @{
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Radial leaf pattern (center) ---
 
@@ -10203,7 +10204,7 @@ leaves.apply {
     let angle = calc(i * 0.7854);
     let cx = calc(200 + cos(angle) * 60);
     let cy = calc(200 + sin(angle) * 60);
-    leaf.drawTo(calc(cx - 15), cy)
+    leaf.drawTo(calc(cx - 15), cy);
   }
 }
 
@@ -10213,7 +10214,7 @@ leaves2.apply {
     let angle = calc(i * 0.5236 + 0.2618);
     let cx = calc(200 + cos(angle) * 120);
     let cy = calc(200 + sin(angle) * 120);
-    leaf.drawTo(calc(cx - 15), cy)
+    leaf.drawTo(calc(cx - 15), cy);
   }
 }
 
@@ -10229,7 +10230,7 @@ gems.apply {
     let angle = calc(i * 0.7854 + 0.3927);
     let gx = calc(200 + cos(angle) * 90 - 5);
     let gy = calc(200 + sin(angle) * 90);
-    gem.drawTo(gx, gy)
+    gem.drawTo(gx, gy);
   }
 }
 
@@ -10240,7 +10241,7 @@ let center = PathLayer('center') \${
   stroke: none;
 };
 center.apply {
-  circle(200, 200, 4)
+  circle(200, 200, 4);
 }
 
 // --- Construction circles ---
@@ -10252,9 +10253,9 @@ let guides = PathLayer('guides') \${
   fill: none;
 };
 guides.apply {
-  circle(200, 200, 60)
-  circle(200, 200, 90)
-  circle(200, 200, 120)
+  circle(200, 200, 60);
+  circle(200, 200, 90);
+  circle(200, 200, 120);
 }
 
 // --- Annotations ---
@@ -10366,10 +10367,10 @@ for (j in 0..8) {
 
 // Reuse the arrow at different positions
 arrows.apply {
-  arrow.drawTo(80, 90)
-  arrow.drawTo(200, 130)
-  arrow.drawTo(160, 210)
-  arrow.drawTo(280, 170)
+  arrow.drawTo(80, 90);
+  arrow.drawTo(200, 130);
+  arrow.drawTo(160, 210);
+  arrow.drawTo(280, 170);
 }
 </code>
   <img src="/pathogen/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
@@ -10403,7 +10404,7 @@ arrows.apply {
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 260) }
+bg.apply { rect(0, 0, 600, 260); }
 
 // --- Grid cells ---
 
@@ -10413,11 +10414,11 @@ let cells = PathLayer('cells') \${
   stroke-width: 1;
 };
 cells.apply {
-  roundRect(15, 50, 100, 100, 6)
-  roundRect(130, 50, 100, 100, 6)
-  roundRect(245, 50, 100, 100, 6)
-  roundRect(360, 50, 100, 100, 6)
-  roundRect(475, 50, 100, 100, 6)
+  roundRect(15, 50, 100, 100, 6);
+  roundRect(130, 50, 100, 100, 6);
+  roundRect(245, 50, 100, 100, 6);
+  roundRect(360, 50, 100, 100, 6);
+  roundRect(475, 50, 100, 100, 6);
 }
 
 // --- Shapes ---
@@ -10427,35 +10428,35 @@ let s1 = PathLayer('s-circle') \${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-s1.apply { circle(65, 100, 30) }
+s1.apply { circle(65, 100, 30); }
 
 let s2 = PathLayer('s-rect') \${
   fill: Color('#22c55e18');
   stroke: Color('#22c55e');
   stroke-width: 1.5;
 };
-s2.apply { rect(150, 72, 60, 40) }
+s2.apply { rect(150, 72, 60, 40); }
 
 let s3 = PathLayer('s-star') \${
   fill: Color('#f59e0b18');
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
 };
-s3.apply { star(295, 100, 32, 14, 5) }
+s3.apply { star(295, 100, 32, 14, 5); }
 
 let s4 = PathLayer('s-polygon') \${
   fill: Color('#ef444418');
   stroke: Color('#ef4444');
   stroke-width: 1.5;
 };
-s4.apply { polygon(410, 100, 30, 6) }
+s4.apply { polygon(410, 100, 30, 6); }
 
 let s5 = PathLayer('s-roundrect') \${
   fill: Color('#8b5cf618');
   stroke: Color('#8b5cf6');
   stroke-width: 1.5;
 };
-s5.apply { roundRect(498, 75, 55, 40, 8) }
+s5.apply { roundRect(498, 75, 55, 40, 8); }
 
 // --- Shape names ---
 
@@ -10593,7 +10594,7 @@ let curve = @{
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 560, 360) }
+bg.apply { rect(0, 0, 560, 360); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -10619,7 +10620,7 @@ let path = PathLayer('path') \${
   fill: none;
 };
 path.apply {
-  curve.drawTo(80, 240)
+  curve.drawTo(80, 240);
 }
 
 // --- Get real sampling data at t=0.4 ---
@@ -10637,7 +10638,7 @@ let sample_dot = PathLayer('sample-dot') \${
   stroke-width: 2;
 };
 sample_dot.apply {
-  circle(pt.x, pt.y, 5)
+  circle(pt.x, pt.y, 5);
 }
 
 // --- Tangent line ---
@@ -10702,8 +10703,8 @@ let endpoints = PathLayer('endpoints') \${
   stroke-width: 1.5;
 };
 endpoints.apply {
-  circle(80, 240, 3.5)
-  circle(300, 240, 3.5)
+  circle(80, 240, 3.5);
+  circle(300, 240, 3.5);
 }
 
 // --- Leader lines ---
@@ -10792,10 +10793,10 @@ let leg_t = PathLayer('leg-tan') \${ fill: Color('#22c55e'); stroke: none; };
 let leg_n = PathLayer('leg-norm') \${ fill: Color('#f59e0b'); stroke: none; };
 let leg_p = PathLayer('leg-pt') \${ fill: Color('#ef4444'); stroke: none; };
 
-leg_c.apply { rect(370, 310, 8, 8) }
-leg_t.apply { rect(370, 324, 8, 8) }
-leg_n.apply { rect(460, 310, 8, 8) }
-leg_p.apply { rect(460, 324, 8, 8) }
+leg_c.apply { rect(370, 310, 8, 8); }
+leg_t.apply { rect(370, 324, 8, 8); }
+leg_n.apply { rect(460, 310, 8, 8); }
+leg_p.apply { rect(460, 324, 8, 8); }
 
 leg.apply {
   text(382, 317)\`Curve path\`
@@ -10871,7 +10872,7 @@ let proj = curve.project(50, 150);
 
 // Draw the curve
 path.apply {
-  curve.drawTo(50, 150)
+  curve.drawTo(50, 150);
 }
 
 // Sample 8 points along the curve
@@ -10941,7 +10942,7 @@ let curve = @{
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 520, 300) }
+bg.apply { rect(0, 0, 520, 300); }
 
 // --- The curve ---
 
@@ -10951,7 +10952,7 @@ let path = PathLayer('path') \${
   fill: none;
 };
 path.apply {
-  curve.drawTo(60, 150)
+  curve.drawTo(60, 150);
 }
 
 // --- Partition points (n=8) using real data ---
@@ -10966,7 +10967,7 @@ let dots = PathLayer('dots') \${
 };
 dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 4)
+    circle(p.point.x, p.point.y, 4);
   }
 }
 
@@ -11063,7 +11064,7 @@ let road = @{
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 540, 320) }
+bg.apply { rect(0, 0, 540, 320); }
 
 // --- Layers ---
 
@@ -11092,7 +11093,7 @@ let pts = proj.partition(n);
 
 // Draw the road
 roadLayer.apply {
-  road.drawTo(50, 180)
+  road.drawTo(50, 180);
 }
 
 // Place fence posts evenly along the road
@@ -11129,7 +11130,7 @@ let base_dots = PathLayer('base-dots') \${
 };
 base_dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 2)
+    circle(p.point.x, p.point.y, 2);
   }
 }
 
@@ -11994,7 +11995,7 @@ let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 560, 400) }
+bg.apply { rect(0, 0, 560, 400); }
 
 // ============================================================
 // Group 1: Title
@@ -12029,8 +12030,8 @@ let toA = rad(35);
 let guides = PathLayer('guides') \${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
 layer('diagram').append(guides);
 guides.apply {
-  circle(cx, cy, innerR)
-  circle(cx, cy, outerR)
+  circle(cx, cy, innerR);
+  circle(cx, cy, outerR);
 }
 
 // Sharp corners (ghost)
@@ -12075,7 +12076,7 @@ let labelsEnd = TextLayer('labels-end') \${
 layer('diagram').append(arcs, leaders, dots, labelsMid, labelsStart, labelsEnd);
 
 // --- Center dot + label ---
-dots.apply { circle(cx, cy, 2.5) }
+dots.apply { circle(cx, cy, 2.5); }
 labelsEnd.apply {
   text(calc(cx - 5), calc(cy - 4))\`center\`
 }
@@ -12084,7 +12085,7 @@ labelsEnd.apply {
 let innerDotAngle = calc((fromA + toA) / 2 - 0.15);  // slightly off-center on inner arc
 let innerDotX = polarX(cx, innerDotAngle, innerR);
 let innerDotY = polarY(cy, innerDotAngle, innerR);
-dots.apply { circle(innerDotX, innerDotY, 2) }
+dots.apply { circle(innerDotX, innerDotY, 2); }
 
 // Label above the inner concentric circle
 let innerLabelX = calc(innerDotX - 12);
@@ -12101,7 +12102,7 @@ labelsEnd.apply {
 let outerLabelAngle = calc((fromA + toA) / 2);
 let outerDotX = polarX(cx, outerLabelAngle, outerR);
 let outerDotY = polarY(cy, outerLabelAngle, outerR);
-dots.apply { circle(outerDotX, outerDotY, 2) }
+dots.apply { circle(outerDotX, outerDotY, 2); }
 labelsStart.apply {
   text(calc(outerDotX + 6), calc(outerDotY + 3))\`outerR\`
 }
@@ -12117,7 +12118,7 @@ arcs.apply {
 // fromAngle label — short dashed leader to label above-left
 let fromTipX = polarX(cx, fromA, arcR);
 let fromTipY = polarY(cy, fromA, arcR);
-dots.apply { circle(fromTipX, fromTipY, 1.5) }
+dots.apply { circle(fromTipX, fromTipY, 1.5); }
 leaders.apply {
   M fromTipX fromTipY
   L calc(fromTipX - 16) calc(fromTipY - 10)
@@ -12134,7 +12135,7 @@ arcs.apply {
 // toAngle label — short dashed leader to label below-left
 let toTipX = polarX(cx, toA, arcR);
 let toTipY = polarY(cy, toA, arcR);
-dots.apply { circle(toTipX, toTipY, 1.5) }
+dots.apply { circle(toTipX, toTipY, 1.5); }
 leaders.apply {
   M toTipX toTipY
   L calc(toTipX - 12) calc(toTipY + 12)
@@ -12288,7 +12289,7 @@ let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 520, 400) }
+bg.apply { rect(0, 0, 520, 400); }
 
 // ============================================================
 // Group 1: Title
@@ -12367,7 +12368,7 @@ layer('diagram').append(leaders, dots, pctLabels);
 let allTipX = polarX(cx, sliceMid, allOuterR);
 let allTipY = polarY(cy, sliceMid, allOuterR);
 let allLabelR = calc(allOuterR + 14);
-dots.apply { circle(allTipX, allTipY, 1.5) }
+dots.apply { circle(allTipX, allTipY, 1.5); }
 leaders.apply {
   M allTipX allTipY
   L polarX(cx, sliceMid, allLabelR) polarY(cy, sliceMid, allLabelR)
@@ -12383,7 +12384,7 @@ pctLabels.apply {
 let topTipX = polarX(cx, sliceMid, topOuterR);
 let topTipY = polarY(cy, sliceMid, topOuterR);
 let topLabelR = calc(topOuterR + 14);
-dots.apply { circle(topTipX, topTipY, 1.5) }
+dots.apply { circle(topTipX, topTipY, 1.5); }
 leaders.apply {
   M topTipX topTipY
   L polarX(cx, calc(sliceMid + 0.15), topLabelR) polarY(cy, calc(sliceMid + 0.15), topLabelR)
@@ -12421,8 +12422,8 @@ let legLabels = TextLayer('leg') \${
   text-anchor: start;
 };
 layer('info').append(swAll, swTop, legLabels);
-swAll.apply { roundRect(0, 14, 10, 10, 2) }
-swTop.apply { roundRect(0, 30, 10, 10, 2) }
+swAll.apply { roundRect(0, 14, 10, 10, 2); }
+swTop.apply { roundRect(0, 30, 10, 10, 2); }
 legLabels.apply {
   text(16, 23)\`All BGG games\`
   text(16, 39)\`Top 100 games\`
@@ -12504,7 +12505,7 @@ let textColor = Color('#2f2f2f');
 let gridColor = Color('#d4c9b8');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 600, 600) }
+bg.apply { rect(0, 0, 600, 600); }
 
 // === Chart parameters ===
 let cx = 300;
@@ -12535,13 +12536,13 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings ===
 let grid = PathLayer('grid') \${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 
 // Center circle
 let center = PathLayer('center') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
-center.apply { circle(cx, cy, innerR) }
+center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
 let barsAll = PathLayer('bars-all') \${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
@@ -12577,8 +12578,8 @@ let legLabels = TextLayer('legend') \${
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-swAll.apply { roundRect(230, 572, 10, 10, 2) }
-swTop.apply { roundRect(340, 572, 10, 10, 2) }
+swAll.apply { roundRect(230, 572, 10, 10, 2); }
+swTop.apply { roundRect(340, 572, 10, 10, 2); }
 legLabels.apply {
   text(244, 582)\`All BGG games\`
   text(354, 582)\`Top 100 games\`
@@ -12638,7 +12639,7 @@ let gridColor = Color('#d4c9b8');
 let pctColor = Color('#6b7280');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 700, 700) }
+bg.apply { rect(0, 0, 700, 700); }
 
 // === Chart parameters ===
 let cx = 350;
@@ -12669,11 +12670,11 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings + center ===
 let grid = PathLayer('grid') \${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 let center = PathLayer('center') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
-center.apply { circle(cx, cy, innerR) }
+center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
 let barsAll = PathLayer('bars-all') \${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
@@ -12730,7 +12731,7 @@ for ([d, i] in data) {
   } &lt;&lt; \${ font-size: 11; };
 
   catLabels.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 }
 
@@ -12743,8 +12744,8 @@ let legLabels = TextLayer('legend') \${
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-swAll.apply { roundRect(270, 672, 10, 10, 2) }
-swTop.apply { roundRect(380, 672, 10, 10, 2) }
+swAll.apply { roundRect(270, 672, 10, 10, 2); }
+swTop.apply { roundRect(380, 672, 10, 10, 2); }
 legLabels.apply {
   text(284, 682)\`All BGG games\`
   text(394, 682)\`Top 100 games\`
@@ -12785,7 +12786,7 @@ let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 900, 700) }
+bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
 let cornerR = 4;
@@ -12854,10 +12855,10 @@ for ([oR, ri] in outerRs) {
     }
 
     // 2. XOR between sharp and rounded
-    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
-    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0) }
+    xorLayer.apply { diff.drawTo(0, 0); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -12867,8 +12868,8 @@ for ([oR, ri] in outerRs) {
 
     // 4. Guide circles (on top)
     guides.apply {
-      circle(cx, cy, innerR)
-      circle(cx, cy, oR)
+      circle(cx, cy, innerR);
+      circle(cx, cy, oR);
     }
 
     // Effective corner radii info
@@ -12915,7 +12916,7 @@ let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 900, 700) }
+bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
 let cornerR = 16;
@@ -12984,10 +12985,10 @@ for ([oR, ri] in outerRs) {
     }
 
     // 2. XOR between sharp and rounded
-    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
-    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0) }
+    xorLayer.apply { diff.drawTo(0, 0); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -12997,8 +12998,8 @@ for ([oR, ri] in outerRs) {
 
     // 4. Guide circles (on top)
     guides.apply {
-      circle(cx, cy, innerR)
-      circle(cx, cy, oR)
+      circle(cx, cy, innerR);
+      circle(cx, cy, oR);
     }
 
     // Effective corner radii info
@@ -13051,7 +13052,7 @@ let annotColor = Color('#6b7280');
 let subtleColor = Color('#9ca3af');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 1000, 750) }
+bg.apply { rect(0, 0, 1000, 750); }
 
 // === Chart parameters ===
 // Center in the middle of the canvas; Fantasy's long bar extends left,
@@ -13113,14 +13114,14 @@ define GroupLayer('chart') \${}
 // Solid center circle
 let centerCircle = PathLayer('center-circle') \${ fill: none; stroke: gridColor; stroke-width: 0.8; };
 layer('chart').append(centerCircle);
-centerCircle.apply { circle(cx, cy, innerR) }
+centerCircle.apply { circle(cx, cy, innerR); }
 
 // Dashed concentric grid rings at 5% and 10%
 let grid = PathLayer('grid') \${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
 layer('chart').append(grid);
 grid.apply {
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal))
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal))
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal));
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal));
 }
 
 let gridLabels = TextLayer('grid-labels') \${
@@ -13212,7 +13213,7 @@ for ([d, i] in data) {
   } &lt;&lt; \${ font-size: 9; };
 
   catLabel.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 
   // Badge (if applicable)
@@ -13228,20 +13229,20 @@ for ([d, i] in data) {
       let bc = PathLayer(\`badge-circ-\${i}\`) \${ fill: textColor; stroke: none; };
       let bs = PathLayer(\`badge-star-\${i}\`) \${ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
-      bc.apply { circle(bx, by, 4.5) }
-      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+      bc.apply { circle(bx, by, 4.5); }
+      bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Wargame") {
       let bc = PathLayer(\`badge-circ-\${i}\`) \${ fill: allBarColor; stroke: none; };
       let bs = PathLayer(\`badge-star-\${i}\`) \${ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
-      bc.apply { circle(bx, by, 4.5) }
-      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+      bc.apply { circle(bx, by, 4.5); }
+      bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric") {
       let bs = PathLayer(\`badge-star-\${i}\`) \${ fill: textColor; stroke: none; };
       catGroup.append(bs);
-      bs.apply { star(bx, by, 4, 1.6, 5) }
+      bs.apply { star(bx, by, 4, 1.6, 5); }
     }
   }
 }
@@ -13301,10 +13302,10 @@ let subtitleBg2 = PathLayer('subtitle-bg2') \${ fill: topBarColor; stroke: none;
 layer('chrome').append(subtitleBg, subtitleBg2);
 
 subtitleBg.apply {
-  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2)
+  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2);
 }
 subtitleBg2.apply {
-  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2)
+  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2);
 }
 
 // Render as a single text element with tspans for color changes.
@@ -13368,7 +13369,7 @@ legRedGuides.apply {
 }
 let legRedCenter = PathLayer('leg-red-ctr') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legRedCenter);
-legRedCenter.apply { circle(legOX, legOY, legIR) }
+legRedCenter.apply { circle(legOX, legOY, legIR); }
 
 // Dark wedge fan — same radii, lightened 8%
 let legDX = 130;
@@ -13393,7 +13394,7 @@ legDarkGuides.apply {
 }
 let legDarkCenter = PathLayer('leg-dark-ctr') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legDarkCenter);
-legDarkCenter.apply { circle(legDarkX, legOY, legIR) }
+legDarkCenter.apply { circle(legDarkX, legOY, legIR); }
 
 // 5%/10% labels
 let legGuideLabels = TextLayer('leg-guide-labels') \${
@@ -13514,11 +13515,11 @@ for ([s, si] in summData) {
 
   // Bar extends LEFT from dot
   summBars.apply {
-    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5)
+    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5);
   }
 
   // Open circle on the arc — shifted up 0.75 to center on bar
-  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR) }
+  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR); }
 
   // Label to the RIGHT of dot
   summLabels.apply {
@@ -13538,8 +13539,8 @@ let a1y = polarY(cy, a1Angle, annotR);
 let badge1Circle = PathLayer('badge1-circle') \${ fill: textColor; stroke: none; };
 let badge1Star = PathLayer('badge1-star') \${ fill: bgColor; stroke: none; };
 layer('chrome').append(badge1Circle, badge1Star);
-badge1Circle.apply { circle(a1x, a1y, 6.5) }
-badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5) }
+badge1Circle.apply { circle(a1x, a1y, 6.5); }
+badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5); }
 
 let badge1Text = TextLayer('badge1-text') \${
   font-size: 9;
@@ -13564,8 +13565,8 @@ let a2y = polarY(cy, a2Angle, annotR);
 let badge2Circle = PathLayer('badge2-circle') \${ fill: allBarColor; stroke: none; };
 let badge2Star = PathLayer('badge2-star') \${ fill: bgColor; stroke: none; };
 layer('chrome').append(badge2Circle, badge2Star);
-badge2Circle.apply { circle(a2x, a2y, 6.5) }
-badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5) }
+badge2Circle.apply { circle(a2x, a2y, 6.5); }
+badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5); }
 
 let badge2Text = TextLayer('badge2-text') \${
   font-size: 9;
@@ -13587,7 +13588,7 @@ let a3y = polarY(cy, a3Angle, annotR);
 
 let badge3Star = PathLayer('badge3-star') \${ fill: textColor; stroke: none; };
 layer('chrome').append(badge3Star);
-badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5) }
+badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5); }
 
 let badge3Text = TextLayer('badge3-text') \${
   font-size: 9;
@@ -13649,7 +13650,7 @@ let textColor = Color('#2f2f2f');
 let subtleColor = Color('#9ca3af');
 
 let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 450, 280) }
+bg.apply { rect(0, 0, 450, 280); }
 
 // === Data ===
 let top5 = [
@@ -13706,7 +13707,7 @@ for ([item, idx] in top5) {
   let y = calc(chartY + idx * barSpacing);
   let bw = calc(barMaxW * item.pct / maxVal);
 
-  bars.apply { roundRect(chartX, y, bw, barH, 3) }
+  bars.apply { roundRect(chartX, y, bw, barH, 3); }
 
   rankLabels.apply {
     text(45, calc(y + 15))\`#\${calc(idx + 1)}\`
@@ -14002,7 +14003,7 @@ img.<span class="hljs-property">src</span> = url;
 // ─── Background ─────────────────────────────────────────────────────
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 340) }
+bg.apply { rect(0, 0, 600, 340); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -14041,7 +14042,7 @@ let bb1_layer = PathLayer('bb1') \${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
 let cross1 = PathLayer('cross1') \${
@@ -14076,7 +14077,7 @@ let bb2_layer = PathLayer('bb2') \${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
 let cross2 = PathLayer('cross2') \${
@@ -14204,8 +14205,8 @@ let leg = TextLayer('legend') \${
 let leg_o = PathLayer('leg-o') \${ fill: Color('#22c55e'); stroke: none; };
 let leg_b = PathLayer('leg-b') \${ fill: Color('#f59e0b'); stroke: none; };
 
-leg_o.apply { rect(0, 0, 8, 8) }
-leg_b.apply { rect(0, 14, 8, 8) }
+leg_o.apply { rect(0, 0, 8, 8); }
+leg_b.apply { rect(0, 14, 8, 8); }
 
 leg.apply {
   text(12, 7)\`Origin\`
@@ -14266,7 +14267,7 @@ legend_group.append(leg_o, leg_b, leg);
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 300) }
+bg.apply { rect(0, 0, 600, 300); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -14307,7 +14308,7 @@ let styled1 = info &lt;&lt; mono_sm;
 let bb1 = styled1.boundingBox();
 
 let v1_bbox = PathLayer('v1-bbox') \${ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height) }
+v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let v1_label = TextLayer('v1-label') \${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v1_label.apply { text(0, -10)\`mono 10px\` }
@@ -14333,7 +14334,7 @@ let styled2 = info &lt;&lt; mono_lg;
 let bb2 = styled2.boundingBox();
 
 let v2_bbox = PathLayer('v2-bbox') \${ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height) }
+v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let v2_label = TextLayer('v2-label') \${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v2_label.apply { text(0, -10)\`mono 14px\` }
@@ -14359,7 +14360,7 @@ let styled3 = info &lt;&lt; sans;
 let bb3 = styled3.boundingBox();
 
 let v3_bbox = PathLayer('v3-bbox') \${ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height) }
+v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let v3_label = TextLayer('v3-label') \${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v3_label.apply { text(0, -10)\`sans-serif 12px\` }
@@ -14474,7 +14475,7 @@ dims.apply {
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 360) }
+bg.apply { rect(0, 0, 600, 360); }
 
 let grid = PathLayer('grid') \${
   stroke: Color('#1e293b');
@@ -14505,7 +14506,7 @@ let t1_layer = TextLayer('t1') \${ font-family: monospace; font-size: 10; fill: 
 t1_layer.apply { t1.drawTo(0, 0); }
 
 let bb1_layer = PathLayer('bb1') \${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height) }
+bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let wy1 = calc(bb1.y - dim_above);
 let wd1 = PathLayer('wd1') \${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -14540,7 +14541,7 @@ let t2_layer = TextLayer('t2') \${ font-family: monospace; font-size: 16; fill: 
 t2_layer.apply { t2.drawTo(0, 0); }
 
 let bb2_layer = PathLayer('bb2') \${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height) }
+bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let wy2 = calc(bb2.y - dim_above);
 let wd2 = PathLayer('wd2') \${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -14573,7 +14574,7 @@ let t3_layer = TextLayer('t3') \${ font-family: monospace; font-size: 24; fill: 
 t3_layer.apply { t3.drawTo(0, 0); }
 
 let bb3_layer = PathLayer('bb3') \${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height) }
+bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let wy3 = calc(bb3.y - dim_above);
 let wd3 = PathLayer('wd3') \${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -14649,7 +14650,7 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 500, 500) }
+bg.apply { rect(0, 0, 500, 500); }
 
 // --- Title (top-level) ---
 
@@ -14686,14 +14687,14 @@ let hex = PathLayer('hex') \${
   stroke: Color('#3b82f6');
   stroke-width: 2;
 };
-hex.apply { polygon(0, 0, 80, 6) }
+hex.apply { polygon(0, 0, 80, 6); }
 
 // Center marker
 let center_dot = PathLayer('center-dot') \${
   fill: Color('#22c55e');
   stroke: none;
 };
-center_dot.apply { circle(0, 0, 3) }
+center_dot.apply { circle(0, 0, 3); }
 
 // Guide circle
 let guide = PathLayer('guide') \${
@@ -14702,7 +14703,7 @@ let guide = PathLayer('guide') \${
   stroke-dasharray: "3 4";
   fill: none;
 };
-guide.apply { circle(0, 0, 140) }
+guide.apply { circle(0, 0, 140); }
 
 // Radial lines from hex edge to guide circle
 let radials = PathLayer('radials') \${
@@ -14732,7 +14733,7 @@ dots.apply {
     let angle = calc(i * 0.7854 - 1.5708);
     let dx = calc(cos(angle) * 140);
     let dy = calc(sin(angle) * 140);
-    circle(dx, dy, 3)
+    circle(dx, dy, 3);
   }
 }
 
@@ -14771,13 +14772,13 @@ layer('labels').apply {
 
     // Verify label doesn't overlap central hexagon
     if (proj.intersects(hex_bb)) {
-      log(\`WARN: label "\${names[i]}" intersects central hexagon\`)
+      log(\`WARN: label "\${names[i]}" intersects central hexagon\`);
     }
 
     // Verify label doesn't overlap any previously placed label
     for (prev in placed_labels) {
       if (proj.intersects(prev)) {
-        log(\`WARN: label "\${names[i]}" intersects a previously placed label\`)
+        log(\`WARN: label "\${names[i]}" intersects a previously placed label\`);
       }
     }
 
@@ -14880,7 +14881,7 @@ code_group.append(code, kw);
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
@@ -14949,7 +14950,7 @@ let l_dots = PathLayer('l-dots') \${
   stroke-width: 1.5;
 };
 l_dots.apply {
-  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+  for (pt in points) { circle(pt.x, pt.y, dot_r); }
 }
 
 // Labels — all placed to the right (naive)
@@ -14998,8 +14999,8 @@ l_collision_boxes.apply {
         if (a.intersects(b)) {
           let abb = a.boundingBox();
           let bbb = b.boundingBox();
-          rect(abb.x, abb.y, abb.width, abb.height)
-          rect(bbb.x, bbb.y, bbb.width, bbb.height)
+          rect(abb.x, abb.y, abb.width, abb.height);
+          rect(bbb.x, bbb.y, bbb.width, bbb.height);
         }
       }
       cj = calc(cj + 1);
@@ -15041,7 +15042,7 @@ let r_dots = PathLayer('r-dots') \${
   stroke-width: 1.5;
 };
 r_dots.apply {
-  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+  for (pt in points) { circle(pt.x, pt.y, dot_r); }
 }
 
 // Labels — smart placement using polarProject with collision avoidance
@@ -15112,7 +15113,7 @@ let r_ok_rects = PathLayer('r-ok') \${
 };
 r_ok_rects.apply {
   for (sbb in smart_bboxes) {
-    rect(sbb.x, sbb.y, sbb.width, sbb.height)
+    rect(sbb.x, sbb.y, sbb.width, sbb.height);
   }
 }
 
@@ -15203,9 +15204,9 @@ let leg_red = PathLayer('leg-red') \${ fill: Color('#ef4444'); stroke: none; };
 let leg_green = PathLayer('leg-green') \${ fill: Color('#22c55e'); stroke: none; };
 let leg_blue = PathLayer('leg-blue') \${ fill: Color('#3b82f6'); stroke: none; };
 
-leg_red.apply { rect(20, 370, 6, 6) }
-leg_green.apply { rect(20, 380, 6, 6) }
-leg_blue.apply { rect(110, 370, 6, 6) }
+leg_red.apply { rect(20, 370, 6, 6); }
+leg_green.apply { rect(20, 380, 6, 6); }
+leg_blue.apply { rect(110, 370, 6, 6); }
 
 leg.apply {
   text(30, 375)\`Collision detected\`
@@ -15240,7 +15241,7 @@ left_label.<span class="hljs-title function_">polarProject</span>(<span class="h
 // --- Background ---
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
@@ -15272,8 +15273,8 @@ let guides = PathLayer('guides') \${
   fill: none;
 };
 guides.apply {
-  circle(150, 210, 75)
-  circle(450, 210, 75)
+  circle(150, 210, 75);
+  circle(450, 210, 75);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -15305,7 +15306,7 @@ let hex_left = PathLayer('hex-l') \${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-hex_left.apply { polygon(150, 210, 55, 6) }
+hex_left.apply { polygon(150, 210, 55, 6); }
 
 // Manual labels — hardcoded positions with magic numbers
 let manual_labels = TextLayer('manual') \${
@@ -15399,7 +15400,7 @@ let hex_right = PathLayer('hex-r') \${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-hex_right.apply { polygon(450, 210, 55, 6) }
+hex_right.apply { polygon(450, 210, 55, 6); }
 
 // Polar-projected labels
 let styles = \${ font-family: monospace; font-size: 10; };
@@ -15422,10 +15423,10 @@ let bottom_proj = bottom_label.polarProject(450, 210, calc(0.5 * 3.1415926535897
 let left_proj = left_label.polarProject(450, 210, calc(3.14159265358979), 75, BBoxAnchor.Right);
 
 polar_labels.apply {
-  top_proj.draw()
-  right_proj.draw()
-  bottom_proj.draw()
-  left_proj.draw()
+  top_proj.draw();
+  right_proj.draw();
+  bottom_proj.draw();
+  left_proj.draw();
 }
 
 // Green annotations showing BBoxAnchor names

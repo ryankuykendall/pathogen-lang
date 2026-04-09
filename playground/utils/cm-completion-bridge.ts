@@ -41,9 +41,10 @@ export function sharedCompletionSource(context: CompletionContext): CompletionRe
     return null;
   }
 
-  // Find the word being typed
+  // Find the word being typed — reject zero-length matches so that
+  // punctuation keystrokes (e.g. ';') don't trigger the completion popup.
   const word = context.matchBefore(/[\w.]*/);
-  if (!word && !context.explicit) return null;
+  if (!word || (word.from === word.to && !context.explicit)) return null;
 
   const source = context.state.doc.toString();
   const doc = new StringTextDocument(source);

@@ -124,7 +124,7 @@
   --warning-border: rgba(224, 168, 64, 0.3);
 
   --error-color: #ef4444;
-  --error-bg: rgba(239, 68, 68, 0.4);
+  --error-bg: rgba(239, 68, 68, 0.6);
   --error-border: rgba(239, 68, 68, 0.5);
   --error-text: #fcd5d5;
 
@@ -185,7 +185,7 @@
     --warning-border: rgba(224, 168, 64, 0.3);
 
     --error-color: #ef4444;
-    --error-bg: rgba(239, 68, 68, 0.4);
+    --error-bg: rgba(239, 68, 68, 0.6);
     --error-border: rgba(239, 68, 68, 0.5);
     --error-text: #fcd5d5;
 
