@@ -11,10 +11,14 @@ import { openPreview } from './preview';
 let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext): void {
-  // Path to the language server module
-  const serverModule = context.asAbsolutePath(
+  // Path to the language server module — check bundled location first, then dev
+  const bundledServer = context.asAbsolutePath(
+    path.join('server', 'out', 'server.js'),
+  );
+  const devServer = context.asAbsolutePath(
     path.join('..', 'pathogen-language-server', 'out', 'server.js'),
   );
+  const serverModule = require('fs').existsSync(bundledServer) ? bundledServer : devServer;
 
   // Server runs in a separate Node process via stdio
   const serverOptions: ServerOptions = {

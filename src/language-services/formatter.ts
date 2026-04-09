@@ -336,7 +336,7 @@ function formatTrailingBlock(
 
 // --- Gradient stop alignment ---
 
-function alignGradientStops(bodyText: string, innerIndent: string): string {
+function alignGradientStops(bodyText: string, _innerIndent: string): string {
   const lines = bodyText.split('\n');
   // Check if all non-empty lines match the stop pattern
   const stopPattern = /^(\s*\S+\.stop\()([^,]+)(,\s*.+);$/;

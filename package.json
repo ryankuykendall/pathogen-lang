@@ -41,6 +41,8 @@
     "cli": "tsx src/cli.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",
+    "build:vscode": "tsx scripts/build-vscode-extension.ts",
+    "build:vscode:install": "tsx scripts/build-vscode-extension.ts --install",
     "compile:bbwp": "tsx scripts/compile-bbwp.ts",
     "compile:samples": "tsx scripts/compile-samples.ts",
     "check-links": "tsx scripts/check-links.ts",
