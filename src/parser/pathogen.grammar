@@ -110,8 +110,8 @@ textBodyItem {
 }
 
 TspanStatement {
-  kw<"tspan"> "(" expression ("," expression)* ")" TemplateLiteral |
-  kw<"tspan"> "(" ")" TemplateLiteral
+  kw<"tspan"> "(" expression ("," expression)* ")" TemplateLiteral ";"? |
+  kw<"tspan"> "(" ")" TemplateLiteral ";"?
 }
 
 TextForLoop {

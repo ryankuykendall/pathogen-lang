@@ -1235,6 +1235,20 @@ L 10 20 // end point`;
       expect(ast.body).toHaveLength(1);
       expect(ast.body[0].type).toBe('TextStatement');
     });
+
+    it('accepts optional trailing semicolon on tspan', () => {
+      const ast = parse('text(0, 32) {\n  tspan(0, 0, 0, kwStyle)`M`;\n  tspan(0, 0, 0, plainStyle)` cx cy`;\n}');
+      const body = (ast.body[0] as any).body;
+      expect(body).toHaveLength(2);
+      expect(body[0].type).toBe('TspanStatement');
+      expect(body[1].type).toBe('TspanStatement');
+    });
+
+    it('parses tspan without trailing semicolon', () => {
+      const ast = parse('text(0, 32) {\n  tspan(0, 0)`M`\n  tspan(0, 0)` cx`\n}');
+      const body = (ast.body[0] as any).body;
+      expect(body).toHaveLength(2);
+    });
   });
 
   describe('color literals', () => {
