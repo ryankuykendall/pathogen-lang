@@ -1,0 +1,153 @@
+// viewBox="0 0 560 320"
+
+@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+
+let bgColor = Color('#f8f9fa');
+let boxBg = Color('#ffffff');
+let centerBg = Color('#1e293b');
+let centerText = Color('#ffffff');
+let consumerBg = Color('#f1f5f9');
+let borderColor = Color('#cbd5e1');
+let arrowColor = Color('#64748b');
+let labelColor = Color('#334155');
+let sublabelColor = Color('#64748b');
+let accentVscode = Color('#0e639c');
+let accentPlayground = Color('#10b981');
+let accentCli = Color('#f59e0b');
+
+// Background
+let bg = PathLayer('bg') ${
+  fill: bgColor;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 560, 320);
+}
+
+// Central box — Language Services
+let centerBox = PathLayer('center-box') ${
+  fill: centerBg;
+  stroke: none;
+};
+centerBox.apply {
+  roundRect(140, 30, 280, 120, 8);
+}
+
+let centerLabels = TextLayer('center-labels') ${
+  font-family: Inconsolata, monospace;
+  fill: centerText;
+  text-anchor: middle;
+};
+centerLabels.apply {
+  text(280, 58)`Language Services`;
+  text(280, 78)`src/language-services/`;
+}
+
+let funcLabels = TextLayer('func-labels') ${
+  font-family: Inconsolata, monospace;
+  font-size: 10;
+  fill: Color('#94a3b8');
+  text-anchor: middle;
+};
+funcLabels.apply {
+  text(208, 98)`getCompletions()`;
+  text(208, 112)`getDiagnostics()`;
+  text(352, 98)`getHoverInfo()`;
+  text(352, 112)`formatDocument()`;
+  text(280, 128)`... 12 more`;
+}
+
+// Arrows
+let arrows = PathLayer('arrows') ${
+  fill: none;
+  stroke: arrowColor;
+  stroke-width: 2;
+};
+arrows.apply {
+  // Left arrow (to VS Code)
+  M 200 150
+  L 108 210
+  // Center arrow (to Playground)
+  M 280 150
+  L 280 210
+  // Right arrow (to CLI)
+  M 360 150
+  L 452 210
+}
+
+// Arrowheads
+let arrowheads = PathLayer('arrowheads') ${
+  fill: arrowColor;
+  stroke: none;
+};
+arrowheads.apply {
+  // Left
+  M 103 205
+  L 113 215
+  L 103 215
+  Z
+  // Center
+  M 275 210
+  L 285 210
+  L 280 218
+  Z
+  // Right
+  M 447 205
+  L 457 215
+  L 457 205
+  Z
+}
+
+// Consumer boxes (narrower with gaps between them)
+let vscodeBorder = PathLayer('vscode-border') ${
+  fill: consumerBg;
+  stroke: accentVscode;
+  stroke-width: 2;
+};
+vscodeBorder.apply {
+  roundRect(30, 220, 155, 70, 6);
+}
+
+let playgroundBorder = PathLayer('playground-border') ${
+  fill: consumerBg;
+  stroke: accentPlayground;
+  stroke-width: 2;
+};
+playgroundBorder.apply {
+  roundRect(202, 220, 155, 70, 6);
+}
+
+let cliBorder = PathLayer('cli-border') ${
+  fill: consumerBg;
+  stroke: accentCli;
+  stroke-width: 2;
+};
+cliBorder.apply {
+  roundRect(374, 220, 155, 70, 6);
+}
+
+// Consumer labels
+let consumerLabels = TextLayer('consumer-labels') ${
+  font-family: Inconsolata, monospace;
+  font-size: 13;
+  fill: labelColor;
+  text-anchor: middle;
+  font-weight: bold;
+};
+consumerLabels.apply {
+  text(108, 252)`VS Code`;
+  text(280, 252)`Playground`;
+  text(452, 252)`CLI`;
+}
+
+let consumerSubs = TextLayer('consumer-subs') ${
+  font-family: Inconsolata, monospace;
+  font-size: 10;
+  fill: sublabelColor;
+  text-anchor: middle;
+};
+consumerSubs.apply {
+  text(108, 270)`(LSP)`;
+  text(280, 270)`(browser)`;
+  text(452, 270)`(batch)`;
+}
