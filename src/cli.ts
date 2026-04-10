@@ -3,8 +3,8 @@ import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype } from '.';
-import { renderConicToWedges } from './conic-renderer';
+import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype, generateSvg } from '.';
+import type { SvgGeneratorOptions } from './svg-generator';
 
 import type { CompileResult, CompileOptions, FontRegistry, LogEntry } from '.';
 
@@ -63,15 +63,21 @@ Examples:
 `);
 }
 
-function escapeXml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function generateSvgFromCli(result: CompileResult, options: CliOptions): string {
+  return generateSvg(result, {
+    viewBox: options.viewBox,
+    width: options.width,
+    height: options.height,
+    stroke: options.stroke,
+    fill: options.fill,
+    strokeWidth: options.strokeWidth,
+    includeMetadata: options.includeMetadata,
+  } as SvgGeneratorOptions);
 }
 
-function radToDeg(rad: number): number {
-  return (rad * 180) / Math.PI;
-}
-
-function generateSvg(result: CompileResult, options: CliOptions): string {
+// The original generateSvg implementation has been extracted to src/svg-generator.ts.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string {
   const viewBox = options.viewBox || '0 0 200 200';
   const width = options.width || '200';
   const height = options.height || '200';
@@ -768,7 +774,7 @@ async function main() {
           });
         return;
       }
-      const svg = generateSvg(result, options);
+      const svg = generateSvgFromCli(result, options);
       writeFileSync(options.svgOutput, svg);
       console.log(`SVG written to: ${options.svgOutput}`);
       console.log(`Path data: ${defaultPath}`);

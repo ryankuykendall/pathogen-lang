@@ -112,6 +112,16 @@ for (const dep of cjsExternalDeps) {
 
 console.log(`  Bundled server to ${path.relative(ROOT, BUNDLED_SERVER_DIR)}`);
 
+// Bundle compiler IIFE for the preview webview
+const COMPILER_DIR = path.join(EXT_DIR, 'compiler');
+if (fs.existsSync(COMPILER_DIR)) fs.rmSync(COMPILER_DIR, { recursive: true });
+fs.mkdirSync(COMPILER_DIR, { recursive: true });
+fs.copyFileSync(
+  path.join(ROOT, 'dist', 'index.global.js'),
+  path.join(COMPILER_DIR, 'index.global.js'),
+);
+console.log('  Bundled compiler for preview webview');
+
 // Copy extension's runtime dependency (vscode-languageclient + transitive deps)
 // into server/node_modules which vsce --no-dependencies includes (it skips
 // the extension's own node_modules/ but includes server/ as a regular directory)

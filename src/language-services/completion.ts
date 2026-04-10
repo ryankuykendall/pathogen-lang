@@ -211,7 +211,9 @@ function getMethodReturnType(method: string): string | null {
     midpoint: 'Point', lerp: 'Point', rotate: 'Point',
 
     // PolarVector methods returning PolarVector
-    turn: 'PolarVector', mirror: 'PolarVector',
+    turn: 'PolarVector',
+    // Note: 'mirror' maps to PathBlock (defined above) — PolarVector.mirror() also exists
+    // but PathBlock is more common, so we keep that mapping
 
     // Cycler
     pick: 'any',

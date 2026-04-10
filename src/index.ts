@@ -6,6 +6,8 @@ import type { CompileResult } from './evaluator';
 export { parse, parseWithComments, parseLezer, lezerParser } from './parser';
 export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated, BUILTIN_ENUMS } from './evaluator';
 export { stdlib } from './stdlib';
+export { generateSvg } from './svg-generator';
+export type { SvgGeneratorOptions } from './svg-generator';
 export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
 
 export type {

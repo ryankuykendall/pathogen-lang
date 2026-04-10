@@ -42,6 +42,22 @@
         "path": "./snippets/pathogen.code-snippets"
       }
     ],
+    "commands": [
+      {
+        "command": "pathogen.openPreview",
+        "title": "Pathogen: Open Preview to the Side",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == pathogen",
+          "command": "pathogen.openPreview",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Pathogen",
       "properties": {}
