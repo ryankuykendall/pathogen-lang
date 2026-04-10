@@ -28,6 +28,7 @@ import {
   TOKEN_MODIFIERS,
   formatDocument,
   getCodeActions,
+  getRefactorActions,
   getInlayHints,
   InlayHintKind,
   SymbolKind,
@@ -86,7 +87,9 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
         firstTriggerCharacter: '}',
         moreTriggerCharacter: ['\n'],
       },
-      codeActionProvider: true,
+      codeActionProvider: {
+        codeActionKinds: ['quickfix', 'refactor.extract', 'refactor.inline'],
+      },
       inlayHintProvider: true,
     },
   };
@@ -334,36 +337,50 @@ connection.onDocumentOnTypeFormatting((params) => {
   return [];
 });
 
-// Code actions
+// Code actions (quick fixes + refactoring)
 connection.onCodeAction((params) => {
   const textDocument = documents.get(params.textDocument.uri);
   if (!textDocument) return [];
 
   const doc = new StringTextDocument(textDocument.getText());
-  // Map LSP diagnostics back to our format
+  const uri = params.textDocument.uri;
+
+  function toLSPAction(action: { title: string; kind: string; diagnostics: unknown[]; edit: { changes: Array<{ range: any; newText: string }> } }) {
+    return {
+      title: action.title,
+      kind: action.kind,
+      diagnostics: action.diagnostics.length > 0 ? params.context.diagnostics : undefined,
+      edit: {
+        changes: {
+          [uri]: action.edit.changes.map((c) => ({
+            range: {
+              start: { line: c.range.start.line, character: c.range.start.character },
+              end: { line: c.range.end.line, character: c.range.end.character },
+            },
+            newText: c.newText,
+          })),
+        },
+      },
+    };
+  }
+
+  const result: ReturnType<typeof toLSPAction>[] = [];
+
+  // Quick fixes for diagnostics
   const diagnostics = (params.context.diagnostics || []).map((d) => ({
     range: d.range,
     severity: d.severity as number ?? 1,
     message: d.message,
     source: d.source ?? 'pathogen',
   }));
-  const actions = getCodeActions(doc, params.range, diagnostics);
-  return actions.map((action) => ({
-    title: action.title,
-    kind: 'quickfix' as const,
-    diagnostics: params.context.diagnostics,
-    edit: {
-      changes: {
-        [params.textDocument.uri]: action.edit.changes.map((c) => ({
-          range: {
-            start: { line: c.range.start.line, character: c.range.start.character },
-            end: { line: c.range.end.line, character: c.range.end.character },
-          },
-          newText: c.newText,
-        })),
-      },
-    },
-  }));
+  const quickFixes = getCodeActions(doc, params.range, diagnostics);
+  result.push(...quickFixes.map(toLSPAction));
+
+  // Refactoring actions for the selection
+  const refactors = getRefactorActions(doc, params.range);
+  result.push(...refactors.map(toLSPAction));
+
+  return result;
 });
 
 // Inlay hints

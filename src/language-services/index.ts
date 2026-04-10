@@ -27,7 +27,7 @@ export { getSemanticTokens, encodeSemanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS }
 export type { SemanticToken } from './semantic-tokens';
 export { formatDocument } from './formatter';
 export type { FormatEdit, FormatOptions } from './formatter';
-export { getCodeActions } from './code-actions';
+export { getCodeActions, getRefactorActions } from './code-actions';
 export type { CodeAction } from './code-actions';
 export { getInlayHints, InlayHintKind } from './inlay-hints';
 export type { InlayHint } from './inlay-hints';
