@@ -175,6 +175,44 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
 
 /** Type member completion sets keyed by Pathogen type name */
 export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
+  'ColorInstance': {
+    properties: [
+      { label: 'css', kind: 'property', detail: 'CSS color string', boost: 8 },
+      { label: 'hex', kind: 'property', detail: 'Hex color value', boost: 8 },
+      { label: 'oklch', kind: 'property', detail: 'OKLCH representation', boost: 8 },
+      { label: 'hsl', kind: 'property', detail: 'HSL representation', boost: 8 },
+      { label: 'rgb', kind: 'property', detail: 'RGB representation', boost: 8 },
+      { label: 'lightness', kind: 'property', detail: 'OKLCH lightness (0-1)', boost: 8 },
+      { label: 'chroma', kind: 'property', detail: 'OKLCH chroma', boost: 8 },
+      { label: 'hue', kind: 'property', detail: 'OKLCH hue (degrees)', boost: 8 },
+      { label: 'a', kind: 'property', detail: 'Alpha channel (0-1)', boost: 8 },
+    ],
+    methods: [
+      { label: 'lighten', kind: 'function', detail: 'lighten(amount) — Lighten color', boost: 8 },
+      { label: 'darken', kind: 'function', detail: 'darken(amount) — Darken color', boost: 8 },
+      { label: 'saturate', kind: 'function', detail: 'saturate(factor) — Increase saturation', boost: 8 },
+      { label: 'desaturate', kind: 'function', detail: 'desaturate(factor) — Decrease saturation', boost: 8 },
+      { label: 'alpha', kind: 'function', detail: 'alpha(value) — Set alpha channel', boost: 8 },
+      { label: 'hueShift', kind: 'function', detail: 'hueShift(degrees) — Rotate hue', boost: 8 },
+      { label: 'complement', kind: 'function', detail: 'complement() — Complementary color', boost: 8 },
+      { label: 'mix', kind: 'function', detail: 'mix(other, t) — Mix with another color', boost: 8 },
+      { label: 'analogous', kind: 'function', detail: 'analogous(angle?) — Analogous color harmony (3 colors)', boost: 8 },
+      { label: 'triadic', kind: 'function', detail: 'triadic() — Triadic color harmony (3 colors)', boost: 8 },
+      { label: 'tetradic', kind: 'function', detail: 'tetradic() — Tetradic color harmony (4 colors)', boost: 8 },
+      { label: 'splitComplementary', kind: 'function', detail: 'splitComplementary(angle?) — Split complementary harmony (3 colors)', boost: 8 },
+    ],
+  },
+  'BoundingBox': {
+    properties: [
+      { label: 'x', kind: 'property', detail: 'X position', boost: 8 },
+      { label: 'y', kind: 'property', detail: 'Y position', boost: 8 },
+      { label: 'width', kind: 'property', detail: 'Width', boost: 8 },
+      { label: 'height', kind: 'property', detail: 'Height', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
   'Point': {
     properties: [
       { label: 'x', kind: 'property', detail: 'X coordinate', boost: 8 },

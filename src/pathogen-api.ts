@@ -288,6 +288,64 @@ export declare namespace Color {
   function lightDark(light: ColorValue, dark: ColorValue): ColorValue;
 }
 
+/** @type ColorInstance */
+export interface PathogenColorInstance {
+  /** CSS color string */
+  readonly css: string;
+  /** Hex color value */
+  readonly hex: string;
+  /** OKLCH representation */
+  readonly oklch: string;
+  /** HSL representation */
+  readonly hsl: string;
+  /** RGB representation */
+  readonly rgb: string;
+  /** OKLCH lightness (0-1) */
+  readonly lightness: number;
+  /** OKLCH chroma */
+  readonly chroma: number;
+  /** OKLCH hue (degrees) */
+  readonly hue: number;
+  /** Alpha channel (0-1) */
+  readonly a: number;
+  /** lighten(amount) — Lighten color */
+  lighten(amount: number): PathogenColorInstance;
+  /** darken(amount) — Darken color */
+  darken(amount: number): PathogenColorInstance;
+  /** saturate(factor) — Increase saturation */
+  saturate(factor: number): PathogenColorInstance;
+  /** desaturate(factor) — Decrease saturation */
+  desaturate(factor: number): PathogenColorInstance;
+  /** alpha(value) — Set alpha channel */
+  alpha(value: number): PathogenColorInstance;
+  /** hueShift(degrees) — Rotate hue */
+  hueShift(degrees: number): PathogenColorInstance;
+  /** complement() — Complementary color */
+  complement(): PathogenColorInstance;
+  /** mix(other, t) — Mix with another color */
+  mix(other: PathogenColorInstance, t: number): PathogenColorInstance;
+  /** analogous(angle?) — Analogous color harmony (3 colors) */
+  analogous(angle?: number): PathogenColorInstance[];
+  /** triadic() — Triadic color harmony (3 colors) */
+  triadic(): PathogenColorInstance[];
+  /** tetradic() — Tetradic color harmony (4 colors) */
+  tetradic(): PathogenColorInstance[];
+  /** splitComplementary(angle?) — Split complementary harmony (3 colors) */
+  splitComplementary(angle?: number): PathogenColorInstance[];
+}
+
+/** @type BoundingBox */
+export interface PathogenBoundingBox {
+  /** X position */
+  readonly x: number;
+  /** Y position */
+  readonly y: number;
+  /** Width */
+  readonly width: number;
+  /** Height */
+  readonly height: number;
+}
+
 // =============================================================================
 // Built-in Variables
 // =============================================================================

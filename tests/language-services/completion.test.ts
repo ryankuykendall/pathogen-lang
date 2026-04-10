@@ -341,6 +341,83 @@ describe('getCompletions', () => {
     });
   });
 
+  describe('Color instance completions', () => {
+    it('offers Color methods after Color() constructor', () => {
+      const items = completeAtEnd("let c = Color('#ff0000');\nc.");
+      const names = labels(items);
+      expect(names).toContain('lighten');
+      expect(names).toContain('darken');
+      expect(names).toContain('alpha');
+      expect(names).toContain('hueShift');
+      expect(names).toContain('css');
+      expect(names).toContain('hex');
+    });
+
+    it('offers Color methods for hex literal variables', () => {
+      const items = completeAtEnd('let c = #ff0000;\nc.');
+      const names = labels(items);
+      expect(names).toContain('lighten');
+      expect(names).toContain('complement');
+    });
+
+    it('offers Color methods after chained method', () => {
+      const items = completeAtEnd("let c = Color('#f00');\nc.lighten(0.2).");
+      const names = labels(items);
+      expect(names).toContain('darken');
+      expect(names).toContain('alpha');
+      expect(names).toContain('css');
+    });
+  });
+
+  describe('method return type completions', () => {
+    it('offers BoundingBox members after .boundingBox()', () => {
+      const items = completeAtEnd("let s = @{ h 60 v 60 };\ns.boundingBox().");
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('width');
+      expect(names).toContain('height');
+    });
+
+    it('infers BoundingBox from variable assignment', () => {
+      const items = completeAtEnd("let s = @{ h 60 };\nlet bb = s.boundingBox();\nbb.");
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('width');
+    });
+
+    it('offers Point members after .get()', () => {
+      const items = completeAtEnd("let s = @{ h 60 v 60 };\ns.get(0.5).");
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+    });
+  });
+
+  describe('layer() and stdlib return type inference', () => {
+    it('offers PathLayer members for layer() result', () => {
+      const items = completeAtEnd("let ref = layer('main');\nref.");
+      const names = labels(items);
+      expect(names).toContain('apply');
+      expect(names).toContain('ctx');
+      expect(names).toContain('name');
+    });
+
+    it('offers apply in PathLayer completions', () => {
+      const items = completeAtEnd("let bg = PathLayer('bg');\nbg.");
+      const names = labels(items);
+      expect(names).toContain('apply');
+    });
+
+    it('infers PathBlock from circle() result', () => {
+      const items = completeAtEnd('let circ = circle(50, 50, 25);\ncirc.');
+      const names = labels(items);
+      expect(names).toContain('boundingBox');
+      expect(names).toContain('drawTo');
+      expect(names).toContain('length');
+    });
+  });
+
   describe('completion item structure', () => {
     it('includes detail for stdlib functions', () => {
       const items = completeAtEnd('circ');
