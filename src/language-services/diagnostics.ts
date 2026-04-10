@@ -51,7 +51,28 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
     ast = parse(source);
   } catch (err) {
     // parse() found an error that Lezer didn't (edge case — Lezer is more lenient)
-    const message = (err as Error).message;
+    let message = (err as Error).message;
+
+    // Improve message for incomplete member access: if the error is right after a '.',
+    // the user is typing a property/method name — give a helpful message
+    const locMatch = message.match(/at line (\d+), column (\d+)/);
+    if (locMatch && message.includes("Missing ';'")) {
+      const errLine = parseInt(locMatch[1], 10);
+      const errCol = parseInt(locMatch[2], 10);
+      const lines = source.split('\n');
+      if (errLine >= 1 && errLine <= lines.length) {
+        const lineText = lines[errLine - 1];
+        // Check if the character before the error position is a dot
+        const charBefore = lineText[errCol - 2]; // errCol is 1-based, so -2 to get char before
+        if (charBefore === '.') {
+          const beforeDot = lineText.slice(0, errCol - 2).trim();
+          const varMatch = beforeDot.match(/(\w+)$/);
+          const varName = varMatch ? varMatch[1] : 'expression';
+          message = `Parse error at line ${errLine}, column ${errCol}: Expected property or method name after '${varName}.'`;
+        }
+      }
+    }
+
     const diag = parseParserError(message, document);
     if (diag) {
       diagnostics.push(diag);
@@ -151,6 +172,17 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
   const prevName = prev?.name ?? '';
   const nextName = next?.name ?? '';
   const errText = source.slice(errorNode.from, Math.min(errorNode.to, errorNode.from + 30)).trim();
+
+  // ── Incomplete member access (bg.) ──
+  // When the previous sibling is '.', the user is typing a member name
+  if (prevName === '.') {
+    // Find what's before the dot
+    const dotPos = prev.from;
+    const beforeDot = source.slice(Math.max(0, dotPos - 40), dotPos).trim();
+    const varMatch = beforeDot.match(/(\w+)$/);
+    const varName = varMatch ? varMatch[1] : 'expression';
+    return `Expected property or method name after '${varName}.'`;
+  }
 
   // ── Missing semicolon patterns ──
   // LetDeclaration: previous is a value expression, no ';' follows

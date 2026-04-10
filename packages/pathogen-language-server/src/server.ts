@@ -280,9 +280,24 @@ connection.languages.inlayHint.on((params) => {
   }));
 });
 
-// Re-validate when a document changes
+// Re-validate when a document changes (debounced to avoid flashing errors while typing)
+const validationTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 documents.onDidChangeContent((change) => {
-  validateTextDocument(change.document);
+  const uri = change.document.uri;
+  const existing = validationTimers.get(uri);
+  if (existing) clearTimeout(existing);
+
+  // Check if the user is mid-expression (e.g., just typed a dot for member access)
+  const source = change.document.getText();
+  const trimmed = source.trimEnd();
+  const isMidExpression = trimmed.endsWith('.') || trimmed.endsWith('(') || trimmed.endsWith(',');
+  const delay = isMidExpression ? 500 : 200;
+
+  validationTimers.set(uri, setTimeout(() => {
+    validationTimers.delete(uri);
+    validateTextDocument(change.document);
+  }, delay));
 });
 
 // Clear diagnostics when a document is closed
