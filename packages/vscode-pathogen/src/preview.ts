@@ -19,7 +19,6 @@ export function openPreview(context: vscode.ExtensionContext): void {
     return;
   }
 
-  // Resolve the compiler bundle URI for the webview
   const compilerUri = getCompilerUri(context);
   if (!compilerUri) {
     vscode.window.showErrorMessage('Pathogen: Could not find compiler bundle.');
@@ -47,7 +46,6 @@ export function openPreview(context: vscode.ExtensionContext): void {
     if (updateTimeout) clearTimeout(updateTimeout);
   }, null, context.subscriptions);
 
-  // Send initial source once webview is ready
   currentPanel.webview.onDidReceiveMessage((msg) => {
     if (msg.type === 'ready') {
       const ed = vscode.window.activeTextEditor;
@@ -57,7 +55,6 @@ export function openPreview(context: vscode.ExtensionContext): void {
     }
   }, null, context.subscriptions);
 
-  // Watch for text changes with debounce
   const changeDisposable = vscode.workspace.onDidChangeTextDocument((e) => {
     if (e.document.languageId === 'pathogen' && currentPanel) {
       if (updateTimeout) clearTimeout(updateTimeout);
@@ -66,7 +63,6 @@ export function openPreview(context: vscode.ExtensionContext): void {
   });
   context.subscriptions.push(changeDisposable);
 
-  // Watch for active editor changes
   const editorDisposable = vscode.window.onDidChangeActiveTextEditor((ed) => {
     if (ed && ed.document.languageId === 'pathogen' && currentPanel) {
       sendSource(ed.document);
@@ -85,10 +81,8 @@ function sendSource(document: vscode.TextDocument): void {
 
 function getCompilerUri(context: vscode.ExtensionContext): vscode.Uri | null {
   const fs = require('fs');
-  // Check bundled location first (installed from .vsix)
   const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', 'index.global.js');
   if (fs.existsSync(bundled.fsPath)) return bundled;
-  // Dev mode: check dist/ relative to workspace root
   const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', 'index.global.js');
   if (fs.existsSync(dev.fsPath)) return dev;
   return null;
@@ -105,56 +99,322 @@ function getWebviewContent(compilerUri: string): string {
     body {
       background: var(--vscode-editor-background, #1e1e1e);
       color: var(--vscode-editor-foreground, #d4d4d4);
-      font-family: var(--vscode-font-family, monospace);
+      font-family: var(--vscode-font-family, system-ui, sans-serif);
       display: flex;
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
     }
+
+    /* Toolbar */
     .toolbar {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 12px;
+      padding: 4px 8px;
       background: var(--vscode-titleBar-activeBackground, #333);
       border-bottom: 1px solid var(--vscode-panel-border, #444);
       font-size: 11px;
-      color: var(--vscode-descriptionForeground, #999);
       flex-shrink: 0;
     }
-    .toolbar .status { flex: 1; }
-    .toolbar .info { opacity: 0.7; }
+    .toolbar .status { flex: 1; opacity: 0.7; }
+    .toolbar .info { opacity: 0.5; }
+    .toolbar button {
+      background: transparent;
+      border: 1px solid var(--vscode-button-border, #555);
+      color: var(--vscode-button-foreground, #ccc);
+      padding: 2px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+    }
+    .toolbar button:hover {
+      background: var(--vscode-button-hoverBackground, #444);
+    }
+    .toolbar button.active {
+      background: var(--vscode-button-background, #0e639c);
+      color: var(--vscode-button-foreground, #fff);
+      border-color: var(--vscode-button-background, #0e639c);
+    }
+
+    /* Main layout */
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Preview canvas */
     .preview-container {
       flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .preview-container.can-pan { cursor: grab; }
+    .preview-container.panning { cursor: grabbing; }
+
+    #preview {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: auto;
-      padding: 16px;
+      background: rgba(0,0,0,0.5);
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
     }
-    .preview-container svg {
-      max-width: 100%;
-      max-height: 100%;
-      background: white;
+    .scroll-hint.visible { opacity: 1; }
+    .scroll-hint span {
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 12px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 6px;
+    }
+
+    /* Navigator minimap */
+    .navigator {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 100px;
+      height: 100px;
+      background: var(--vscode-editor-background, #1e1e1e);
+      border: 1px solid var(--vscode-panel-border, #444);
       border-radius: 4px;
+      overflow: hidden;
+      z-index: 10;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
+    .navigator svg { width: 100%; height: 100%; }
+    #navigator-viewport {
+      fill: rgba(14, 99, 156, 0.15);
+      stroke: var(--vscode-focusBorder, #0e639c);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      cursor: move;
+    }
+
+    /* Zoom controls */
+    .zoom-controls {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--vscode-editor-background, #1e1e1e);
+      border: 1px solid var(--vscode-panel-border, #444);
+      padding: 4px 6px;
+      border-radius: 4px;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .zoom-controls button {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      border: 1px solid var(--vscode-panel-border, #444);
+      border-radius: 3px;
+      color: var(--vscode-foreground, #ccc);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .zoom-controls button:hover {
+      background: var(--vscode-list-hoverBackground, #2a2d2e);
+      border-color: var(--vscode-focusBorder, #0e639c);
+    }
+    .zoom-controls input {
+      width: 44px;
+      padding: 2px 4px;
+      text-align: center;
+      background: var(--vscode-input-background, #3c3c3c);
+      color: var(--vscode-input-foreground, #ccc);
+      border: 1px solid var(--vscode-input-border, #555);
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: var(--vscode-editor-font-family, monospace);
+    }
+    .zoom-controls input:focus {
+      outline: none;
+      border-color: var(--vscode-focusBorder, #0e639c);
+    }
+
+    /* Side panel (layers, vars, palette) */
+    .side-panel {
+      width: 220px;
+      border-left: 1px solid var(--vscode-panel-border, #444);
+      overflow-y: auto;
+      font-size: 11px;
+      display: none;
+      flex-shrink: 0;
+    }
+    .side-panel.visible { display: block; }
+
+    .panel-section {
+      border-bottom: 1px solid var(--vscode-panel-border, #444);
+    }
+    .panel-header {
+      padding: 6px 8px;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--vscode-descriptionForeground, #888);
+      background: var(--vscode-sideBarSectionHeader-background, #2a2a2a);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-header .badge {
+      padding: 1px 5px;
+      border-radius: 8px;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+      font-size: 9px;
+    }
+
+    /* Layer rows */
+    .layer-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      cursor: default;
+    }
+    .layer-row:hover {
+      background: var(--vscode-list-hoverBackground, #2a2d2e);
+    }
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid var(--vscode-panel-border, #555);
+    }
+    .layer-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .type-badge {
+      font-size: 9px;
+      padding: 0 4px;
+      border-radius: 3px;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+      flex-shrink: 0;
+    }
+    .eye-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      color: var(--vscode-foreground, #ccc);
+      opacity: 0.5;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      border-radius: 3px;
+    }
+    .eye-btn:hover { opacity: 1; background: var(--vscode-list-hoverBackground, #2a2d2e); }
+    .eye-btn.hidden { opacity: 0.3; color: var(--vscode-disabledForeground, #666); }
+
+    /* CSS Variable rows */
+    .var-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+    }
+    .var-row:hover {
+      background: var(--vscode-list-hoverBackground, #2a2d2e);
+    }
+    .var-name {
+      flex: 1;
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .var-color {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 1px solid var(--vscode-panel-border, #555);
+      border-radius: 3px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .var-reset {
+      background: none;
+      border: none;
+      color: var(--vscode-descriptionForeground, #888);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0 2px;
+      display: none;
+    }
+    .var-reset.active { display: inline; }
+    .var-reset:hover { color: var(--vscode-errorForeground, #f48771); }
+
+    /* Color palette */
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+    }
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      border: 1px solid var(--vscode-panel-border, #555);
+    }
+    .color-value {
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: 10px;
+      opacity: 0.7;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Error display */
     .error {
       color: var(--vscode-errorForeground, #f48771);
       padding: 16px;
-      font-size: 13px;
+      font-size: 12px;
       white-space: pre-wrap;
       word-break: break-word;
-      max-width: 600px;
+      max-width: 500px;
     }
     .error-title {
       font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 14px;
+      margin-bottom: 6px;
     }
-    .loading {
+    .empty-msg {
+      padding: 8px;
       opacity: 0.5;
       font-style: italic;
+      text-align: center;
     }
   </style>
 </head>
@@ -162,79 +422,568 @@ function getWebviewContent(compilerUri: string): string {
   <div class="toolbar">
     <span class="status" id="status">Loading compiler...</span>
     <span class="info" id="info"></span>
+    <button id="recompile-btn" title="Recompile (new random values)">&#x21bb;</button>
+    <button id="reset-btn" title="Reset zoom/pan and CSS overrides">Reset</button>
+    <button id="toggle-panel" title="Toggle layers/colors panel">Inspector</button>
   </div>
-  <div class="preview-container" id="preview">
-    <div class="loading">Loading...</div>
+
+  <div class="main">
+    <div class="preview-container" id="preview-container">
+      <svg id="preview" xmlns="http://www.w3.org/2000/svg">
+        <rect id="preview-bg" width="100%" height="100%" fill="white"></rect>
+        <g id="preview-content"></g>
+      </svg>
+
+      <div class="scroll-hint" id="scroll-hint"><span></span></div>
+
+      <div class="navigator" id="navigator">
+        <svg id="navigator-svg" xmlns="http://www.w3.org/2000/svg">
+          <rect id="navigator-bg" width="100%" height="100%" fill="white"></rect>
+          <g id="navigator-paths"></g>
+          <rect id="navigator-viewport"></rect>
+        </svg>
+      </div>
+
+      <div class="zoom-controls">
+        <button id="zoom-out" title="Zoom out">\u2212</button>
+        <button id="zoom-fit" title="Fit">Fit</button>
+        <button id="zoom-in" title="Zoom in">+</button>
+        <input type="text" id="zoom-level" value="100%" title="Zoom level">
+      </div>
+    </div>
+
+    <div class="side-panel" id="side-panel">
+      <div class="panel-section" id="layers-section">
+        <div class="panel-header">Layers <span class="badge" id="layers-badge">0</span></div>
+        <div id="layers-list"></div>
+      </div>
+      <div class="panel-section" id="cssvar-section">
+        <div class="panel-header">CSS Variables <span class="badge" id="cssvar-badge">0</span></div>
+        <div id="cssvar-list"></div>
+      </div>
+      <div class="panel-section" id="palette-section">
+        <div class="panel-header">Colors <span class="badge" id="palette-badge">0</span></div>
+        <div id="palette-list"></div>
+      </div>
+    </div>
   </div>
+
   <script src="${compilerUri}"></script>
   <script>
-    (function() {
-      const vscode = acquireVsCodeApi();
-      const preview = document.getElementById('preview');
-      const status = document.getElementById('status');
-      const info = document.getElementById('info');
+  (function() {
+    const vscode = acquireVsCodeApi();
+    const preview = document.getElementById('preview');
+    const previewContent = document.getElementById('preview-content');
+    const previewBg = document.getElementById('preview-bg');
+    const container = document.getElementById('preview-container');
+    const scrollHint = document.getElementById('scroll-hint');
+    const status = document.getElementById('status');
+    const info = document.getElementById('info');
+    const navigatorSvg = document.getElementById('navigator-svg');
+    const navigatorPaths = document.getElementById('navigator-paths');
+    const navigatorViewport = document.getElementById('navigator-viewport');
+    const zoomLevelInput = document.getElementById('zoom-level');
+    const sidePanel = document.getElementById('side-panel');
 
-      // Check compiler loaded
-      if (typeof SvgPathExtended === 'undefined') {
-        preview.innerHTML = '<div class="error"><div class="error-title">Compiler not loaded</div>The Pathogen compiler bundle could not be loaded.</div>';
-        return;
+    if (typeof SvgPathExtended === 'undefined') {
+      container.innerHTML = '<div class="error"><div class="error-title">Compiler not loaded</div></div>';
+      return;
+    }
+
+    status.textContent = 'Ready';
+
+    // --- State ---
+    let canvasW = 200, canvasH = 200;
+    let zoomLevel = 1, panX = 0, panY = 0;
+    let isPanning = false, panStartX = 0, panStartY = 0;
+    let isNavDragging = false, navDragStartX = 0, navDragStartY = 0, navDragPanX = 0, navDragPanY = 0;
+    let scrollHintTimer = null;
+    let lastResult = null;
+    let layerVisibility = {};
+    let cssVarOverrides = {};
+    const MIN_ZOOM = 0.25, MAX_ZOOM = 10, ZOOM_STEP = 1.5;
+
+    // SVG icons for layer visibility
+    const eyeOpenSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const eyeClosedSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+    // --- Zoom/Pan ---
+    function updateViewBox() {
+      const vw = canvasW / zoomLevel;
+      const vh = canvasH / zoomLevel;
+      if (zoomLevel < 0.5) {
+        panX = (canvasW - vw) / 2;
+        panY = (canvasH - vh) / 2;
+      } else {
+        const margin = 1 / 3;
+        const minPanX = -vw * margin;
+        const maxPanX = canvasW - vw * (1 - margin);
+        const minPanY = -vh * margin;
+        const maxPanY = canvasH - vh * (1 - margin);
+        panX = Math.max(minPanX, Math.min(panX, maxPanX));
+        panY = Math.max(minPanY, Math.min(panY, maxPanY));
       }
+      preview.setAttribute('viewBox', panX + ' ' + panY + ' ' + vw + ' ' + vh);
+      zoomLevelInput.value = Math.round(zoomLevel * 100) + '%';
+      updateNavigatorViewport();
+      container.classList.toggle('can-pan', zoomLevel >= 0.5);
+    }
 
-      status.textContent = 'Ready';
+    function adjustPanForZoom(oldZ, newZ) {
+      const oldVW = canvasW / oldZ, oldVH = canvasH / oldZ;
+      const newVW = canvasW / newZ, newVH = canvasH / newZ;
+      panX = panX + (oldVW - newVW) / 2;
+      panY = panY + (oldVH - newVH) / 2;
+    }
 
-      // Parse viewBox from source comments
-      function parseViewBox(source) {
-        const match = source.match(/\\/\\/\\s*viewBox\\s*=\\s*"([^"]+)"/);
-        return match ? match[1] : '0 0 200 200';
+    function zoomIn() {
+      const old = zoomLevel;
+      zoomLevel = Math.min(MAX_ZOOM, old * ZOOM_STEP);
+      adjustPanForZoom(old, zoomLevel);
+      updateViewBox();
+    }
+    function zoomOut() {
+      const old = zoomLevel;
+      zoomLevel = Math.max(MIN_ZOOM, old / ZOOM_STEP);
+      adjustPanForZoom(old, zoomLevel);
+      updateViewBox();
+    }
+    function zoomFit() {
+      zoomLevel = 1; panX = 0; panY = 0;
+      updateViewBox();
+    }
+
+    document.getElementById('zoom-in').addEventListener('click', zoomIn);
+    document.getElementById('zoom-out').addEventListener('click', zoomOut);
+    document.getElementById('zoom-fit').addEventListener('click', zoomFit);
+
+    zoomLevelInput.addEventListener('change', () => {
+      const v = parseInt(zoomLevelInput.value, 10);
+      if (v >= 25 && v <= 1000) {
+        const newZ = v / 100;
+        adjustPanForZoom(zoomLevel, newZ);
+        zoomLevel = newZ;
+        updateViewBox();
       }
+    });
 
-      function parseSize(viewBox) {
-        const parts = viewBox.split(/\\s+/).map(Number);
-        return {
-          width: String(parts[2] || 200),
-          height: String(parts[3] || 200),
-        };
+    // --- Mouse pan ---
+    container.addEventListener('mousedown', (e) => {
+      if (zoomLevel < 0.5 || e.button !== 0) return;
+      isPanning = true;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      container.classList.add('panning');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (isPanning) {
+        const ctm = preview.getScreenCTM();
+        if (ctm) {
+          panX += (panStartX - e.clientX) / ctm.a;
+          panY += (panStartY - e.clientY) / ctm.d;
+          panStartX = e.clientX;
+          panStartY = e.clientY;
+          updateViewBox();
+        }
       }
+      if (isNavDragging) {
+        const pt = navigatorSvg.createSVGPoint();
+        pt.x = e.clientX; pt.y = e.clientY;
+        const ctm = navigatorSvg.getScreenCTM();
+        if (ctm) {
+          const svgPt = pt.matrixTransform(ctm.inverse());
+          panX = navDragPanX + (svgPt.x - navDragStartX);
+          panY = navDragPanY + (svgPt.y - navDragStartY);
+          updateViewBox();
+        }
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      isPanning = false;
+      isNavDragging = false;
+      container.classList.remove('panning');
+    });
 
-      function compileAndRender(source) {
-        const start = performance.now();
-        try {
-          const viewBox = parseViewBox(source);
-          const size = parseSize(viewBox);
-          const result = SvgPathExtended.compile(source);
-          const svg = SvgPathExtended.generateSvg(result, {
-            viewBox,
-            width: size.width,
-            height: size.height,
+    // --- Wheel zoom ---
+    container.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const old = zoomLevel;
+        const delta = -e.deltaY * 0.002;
+        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, old * (1 + delta)));
+        adjustPanForZoom(old, zoomLevel);
+        updateViewBox();
+      } else {
+        scrollHint.querySelector('span').textContent =
+          navigator.platform.includes('Mac') ? '\\u2318 + scroll to zoom' : 'Ctrl + scroll to zoom';
+        scrollHint.classList.add('visible');
+        clearTimeout(scrollHintTimer);
+        scrollHintTimer = setTimeout(() => scrollHint.classList.remove('visible'), 800);
+      }
+    }, { passive: false });
+
+    // --- Navigator ---
+    function updateNavigatorViewport() {
+      const vw = canvasW / zoomLevel, vh = canvasH / zoomLevel;
+      navigatorViewport.setAttribute('x', panX);
+      navigatorViewport.setAttribute('y', panY);
+      navigatorViewport.setAttribute('width', vw);
+      navigatorViewport.setAttribute('height', vh);
+    }
+    function updateNavigatorContent() {
+      navigatorPaths.innerHTML = '';
+      for (const child of previewContent.children) {
+        navigatorPaths.appendChild(child.cloneNode(true));
+      }
+      const pad = canvasW * 0.05;
+      navigatorSvg.setAttribute('viewBox', (-pad) + ' ' + (-pad) + ' ' + (canvasW + pad * 2) + ' ' + (canvasH + pad * 2));
+      navigatorViewport.setAttribute('fill', 'rgba(14, 99, 156, 0.15)');
+      navigatorViewport.setAttribute('stroke', 'var(--vscode-focusBorder, #0e639c)');
+      navigatorViewport.setAttribute('stroke-width', '1');
+      navigatorViewport.setAttribute('vector-effect', 'non-scaling-stroke');
+      updateNavigatorViewport();
+    }
+
+    navigatorSvg.addEventListener('mousedown', (e) => {
+      const pt = navigatorSvg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const ctm = navigatorSvg.getScreenCTM();
+      if (!ctm) return;
+      const svgPt = pt.matrixTransform(ctm.inverse());
+      const vw = canvasW / zoomLevel, vh = canvasH / zoomLevel;
+      // Check if click is inside viewport
+      if (svgPt.x >= panX && svgPt.x <= panX + vw && svgPt.y >= panY && svgPt.y <= panY + vh) {
+        isNavDragging = true;
+        navDragStartX = svgPt.x; navDragStartY = svgPt.y;
+        navDragPanX = panX; navDragPanY = panY;
+      } else {
+        panX = svgPt.x - vw / 2;
+        panY = svgPt.y - vh / 2;
+        updateViewBox();
+      }
+      e.preventDefault();
+    });
+
+    // --- Toolbar buttons ---
+    document.getElementById('toggle-panel').addEventListener('click', () => {
+      sidePanel.classList.toggle('visible');
+      document.getElementById('toggle-panel').classList.toggle('active', sidePanel.classList.contains('visible'));
+    });
+
+    document.getElementById('recompile-btn').addEventListener('click', () => {
+      if (lastSource) compileAndRender(lastSource);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      zoomLevel = 1; panX = 0; panY = 0;
+      cssVarOverrides = {};
+      layerVisibility = {};
+      updateViewBox();
+      if (lastSource) compileAndRender(lastSource);
+    });
+
+    // --- Compile and render ---
+    function parseViewBox(source) {
+      const m = source.match(/\\/\\/\\s*viewBox\\s*=\\s*"([^"]+)"/);
+      return m ? m[1] : '0 0 200 200';
+    }
+
+    function compileAndRender(source) {
+      const start = performance.now();
+      try {
+        // Apply CSS variable overrides to source
+        let modifiedSource = source;
+        for (const [varName, value] of Object.entries(cssVarOverrides)) {
+          // Replace CSSVar('--name', fallback) with the override value
+          const pattern = new RegExp("CSSVar\\\\('" + varName.replace(/[-/\\\\^$*+?.()|[\\\\]{}]/g, '\\\\$&') + "'[^)]*\\\\)", 'g');
+          modifiedSource = modifiedSource.replace(pattern, "Color('" + value + "')");
+        }
+
+        const vb = parseViewBox(source);
+        const parts = vb.split(/\\s+/).map(Number);
+        canvasW = parts[2] || 200;
+        canvasH = parts[3] || 200;
+
+        const result = SvgPathExtended.compile(modifiedSource);
+        lastResult = result;
+
+        // Generate SVG and inject
+        const svgStr = SvgPathExtended.generateSvg(result, {
+          viewBox: vb,
+          width: String(canvasW),
+          height: String(canvasH),
+        });
+
+        // Parse SVG and inject into preview
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(svgStr, 'image/svg+xml');
+        const svgRoot = svgDoc.documentElement;
+
+        // Clear and inject content
+        previewContent.innerHTML = '';
+        // Remove existing injected defs/styles
+        preview.querySelectorAll('.injected-defs, .injected-style').forEach(el => el.remove());
+
+        // Import defs
+        const defs = svgRoot.querySelector('defs');
+        if (defs) {
+          const imported = document.importNode(defs, true);
+          imported.classList.add('injected-defs');
+          preview.insertBefore(imported, previewBg);
+        }
+
+        // Import style
+        const style = svgRoot.querySelector('style');
+        if (style) {
+          const imported = document.importNode(style, true);
+          imported.classList.add('injected-style');
+          preview.insertBefore(imported, previewBg);
+        }
+
+        // Import visual elements (everything except defs, style, script)
+        for (const child of svgRoot.children) {
+          if (child.tagName === 'defs' || child.tagName === 'style' || child.tagName === 'script') continue;
+          previewContent.appendChild(document.importNode(child, true));
+        }
+
+        // Apply layer visibility
+        applyLayerVisibility();
+
+        // Update canvas dimensions
+        preview.setAttribute('viewBox', panX + ' ' + panY + ' ' + (canvasW / zoomLevel) + ' ' + (canvasH / zoomLevel));
+        previewBg.setAttribute('x', '0');
+        previewBg.setAttribute('y', '0');
+        previewBg.setAttribute('width', canvasW);
+        previewBg.setAttribute('height', canvasH);
+
+        updateNavigatorContent();
+        updateSidePanel(result, source);
+
+        const ms = (performance.now() - start).toFixed(0);
+        status.textContent = 'Compiled';
+        info.textContent = result.layers.length + ' layer' + (result.layers.length !== 1 ? 's' : '') + ' \\u00b7 ' + ms + 'ms';
+      } catch (e) {
+        status.textContent = 'Error';
+        info.textContent = '';
+        previewContent.innerHTML = '';
+        // Show error as foreign object in SVG
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error';
+        errDiv.innerHTML = '<div class="error-title">Compilation Error</div>' + escapeHtml(e.message || String(e));
+        container.querySelector('.error')?.remove();
+        const existingErr = document.querySelector('.preview-container > .error');
+        if (existingErr) existingErr.remove();
+        // Place error after the SVG
+        const errEl = document.createElement('div');
+        errEl.className = 'error';
+        errEl.style.position = 'absolute';
+        errEl.style.top = '16px';
+        errEl.style.left = '16px';
+        errEl.style.right = '16px';
+        errEl.style.zIndex = '30';
+        errEl.innerHTML = '<div class="error-title">Compilation Error</div>' + escapeHtml(e.message || String(e));
+        container.appendChild(errEl);
+      }
+    }
+
+    // --- Layer visibility ---
+    function applyLayerVisibility() {
+      for (const [name, visible] of Object.entries(layerVisibility)) {
+        const el = previewContent.querySelector('#' + CSS.escape(name));
+        if (el) el.style.display = visible ? '' : 'none';
+      }
+    }
+
+    // --- Side panel ---
+    function updateSidePanel(result, source) {
+      // Layers
+      const layersList = document.getElementById('layers-list');
+      layersList.innerHTML = '';
+      let layerCount = 0;
+      function addLayerRow(layer, depth) {
+        layerCount++;
+        const name = layer.name || '(default)';
+        const row = document.createElement('div');
+        row.className = 'layer-row';
+        if (depth > 0) row.style.paddingLeft = (8 + depth * 12) + 'px';
+
+        const dot = document.createElement('span');
+        dot.className = 'color-dot';
+        const color = layer.styles?.stroke || layer.styles?.fill || '#ccc';
+        if (color !== 'none') dot.style.background = color;
+        row.appendChild(dot);
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'layer-name';
+        nameEl.textContent = name;
+        nameEl.title = name;
+        row.appendChild(nameEl);
+
+        const badge = document.createElement('span');
+        badge.className = 'type-badge';
+        badge.textContent = layer.type;
+        row.appendChild(badge);
+
+        const eye = document.createElement('button');
+        eye.className = 'eye-btn';
+        const isVisible = layerVisibility[name] !== false;
+        eye.innerHTML = isVisible ? eyeOpenSvg : eyeClosedSvg;
+        eye.classList.toggle('hidden', !isVisible);
+        eye.title = isVisible ? 'Hide layer' : 'Show layer';
+        eye.addEventListener('click', () => {
+          layerVisibility[name] = layerVisibility[name] === false ? true : false;
+          applyLayerVisibility();
+          updateNavigatorContent();
+          const nowVisible = layerVisibility[name] !== false;
+          eye.innerHTML = nowVisible ? eyeOpenSvg : eyeClosedSvg;
+          eye.classList.toggle('hidden', !nowVisible);
+          eye.title = nowVisible ? 'Hide layer' : 'Show layer';
+        });
+        row.appendChild(eye);
+
+        layersList.appendChild(row);
+
+        if (layer.type === 'group' && layer.children) {
+          for (const child of layer.children) addLayerRow(child, depth + 1);
+        }
+      }
+      for (const layer of result.layers) addLayerRow(layer, 0);
+      document.getElementById('layers-badge').textContent = layerCount;
+
+      // CSS Variables
+      const cssvarList = document.getElementById('cssvar-list');
+      cssvarList.innerHTML = '';
+      const varPattern = /var\\(\\s*(--[\\w-]+)\\s*(?:,\\s*(.+?))?\\s*\\)/g;
+      const vars = new Map();
+      for (const layer of result.layers) {
+        for (const [, value] of Object.entries(layer.styles || {})) {
+          let m;
+          while ((m = varPattern.exec(String(value))) !== null) {
+            if (!vars.has(m[1])) vars.set(m[1], m[2] || '');
+          }
+        }
+      }
+      if (result.cssProperties) {
+        for (const prop of result.cssProperties) {
+          if (!vars.has(prop.name)) vars.set(prop.name, prop.initialValue || '');
+        }
+      }
+      document.getElementById('cssvar-badge').textContent = vars.size;
+
+      if (vars.size === 0) {
+        cssvarList.innerHTML = '<div class="empty-msg">No CSS variables</div>';
+      } else {
+        for (const [varName, fallback] of vars) {
+          const row = document.createElement('div');
+          row.className = 'var-row';
+
+          const nameEl = document.createElement('span');
+          nameEl.className = 'var-name';
+          nameEl.textContent = varName;
+          nameEl.title = 'Default: ' + (fallback || 'none');
+          row.appendChild(nameEl);
+
+          const colorInput = document.createElement('input');
+          colorInput.type = 'color';
+          colorInput.className = 'var-color';
+          const currentVal = cssVarOverrides[varName] || fallback;
+          colorInput.value = toHex(currentVal) || '#000000';
+          colorInput.addEventListener('input', () => {
+            cssVarOverrides[varName] = colorInput.value;
+            resetBtn.classList.add('active');
+            compileAndRender(lastSource);
           });
+          row.appendChild(colorInput);
 
-          preview.innerHTML = svg;
-          const elapsed = (performance.now() - start).toFixed(0);
-          status.textContent = 'Compiled';
-          info.textContent = result.layers.length + ' layer' + (result.layers.length !== 1 ? 's' : '') + ' · ' + elapsed + 'ms';
-        } catch (e) {
-          const msg = e.message || String(e);
-          preview.innerHTML = '<div class="error"><div class="error-title">Compilation Error</div>' + escapeHtml(msg) + '</div>';
-          status.textContent = 'Error';
-          info.textContent = '';
+          const resetBtn = document.createElement('button');
+          resetBtn.className = 'var-reset' + (cssVarOverrides[varName] ? ' active' : '');
+          resetBtn.textContent = '\\u00d7';
+          resetBtn.title = 'Reset to default';
+          resetBtn.addEventListener('click', () => {
+            delete cssVarOverrides[varName];
+            resetBtn.classList.remove('active');
+            compileAndRender(lastSource);
+          });
+          row.appendChild(resetBtn);
+
+          cssvarList.appendChild(row);
         }
       }
 
-      function escapeHtml(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      }
-
-      // Listen for source updates from extension
-      window.addEventListener('message', (event) => {
-        const msg = event.data;
-        if (msg.type === 'update' && msg.source) {
-          compileAndRender(msg.source);
+      // Palette
+      const paletteList = document.getElementById('palette-list');
+      paletteList.innerHTML = '';
+      const allColors = new Set();
+      const colorProps = ['stroke', 'fill', 'color', 'stop-color'];
+      const skipValues = new Set(['none', 'inherit', 'transparent', 'currentColor']);
+      for (const layer of result.layers) {
+        for (const prop of colorProps) {
+          const val = layer.styles?.[prop];
+          if (val && !skipValues.has(val) && !val.startsWith('url(')) {
+            allColors.add(val);
+          }
         }
-      });
+      }
+      document.getElementById('palette-badge').textContent = allColors.size;
 
-      // Signal ready
-      vscode.postMessage({ type: 'ready' });
-    })();
+      if (allColors.size === 0) {
+        paletteList.innerHTML = '<div class="empty-msg">No colors</div>';
+      } else {
+        for (const color of allColors) {
+          const row = document.createElement('div');
+          row.className = 'color-row';
+
+          const swatch = document.createElement('span');
+          swatch.className = 'swatch';
+          swatch.style.background = color;
+          row.appendChild(swatch);
+
+          const val = document.createElement('span');
+          val.className = 'color-value';
+          val.textContent = color;
+          val.title = color;
+          row.appendChild(val);
+
+          paletteList.appendChild(row);
+        }
+      }
+    }
+
+    function toHex(color) {
+      if (!color) return null;
+      if (/^#[0-9a-fA-F]{6}$/.test(color)) return color;
+      if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+        return '#' + color[1]+color[1] + color[2]+color[2] + color[3]+color[3];
+      }
+      // Try canvas conversion
+      try {
+        const ctx = document.createElement('canvas').getContext('2d');
+        ctx.fillStyle = color;
+        const result = ctx.fillStyle;
+        if (result.startsWith('#')) return result;
+      } catch {}
+      return null;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // --- Message handling ---
+    let lastSource = '';
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type === 'update' && msg.source) {
+        lastSource = msg.source;
+        // Remove previous error overlay
+        container.querySelector('.error')?.remove();
+        compileAndRender(msg.source);
+      }
+    });
+
+    vscode.postMessage({ type: 'ready' });
+  })();
   </script>
 </body>
 </html>`;
