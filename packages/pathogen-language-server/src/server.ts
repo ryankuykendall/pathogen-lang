@@ -29,6 +29,7 @@ import {
   formatDocument,
   getCodeActions,
   getRefactorActions,
+  getCodeLenses,
   getInlayHints,
   InlayHintKind,
   SymbolKind,
@@ -91,6 +92,9 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
         codeActionKinds: ['quickfix', 'refactor.extract', 'refactor.inline'],
       },
       inlayHintProvider: true,
+      codeLensProvider: {
+        resolveProvider: false,
+      },
     },
   };
 });
@@ -396,6 +400,25 @@ connection.languages.inlayHint.on((params) => {
     kind: hint.kind === InlayHintKind.Parameter ? 1 : 2, // LSP InlayHintKind
     paddingLeft: hint.paddingLeft,
     paddingRight: hint.paddingRight,
+  }));
+});
+
+// Code lens — reference counts above declarations
+connection.onCodeLens((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const lenses = getCodeLenses(doc);
+  return lenses.map((lens) => ({
+    range: {
+      start: { line: lens.range.start.line, character: lens.range.start.character },
+      end: { line: lens.range.end.line, character: lens.range.end.character },
+    },
+    command: {
+      title: lens.command.title,
+      command: '', // Client-side command not supported in basic LSP; title-only lens
+    },
   }));
 });
 

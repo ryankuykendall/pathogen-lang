@@ -290,10 +290,38 @@ function addTypeHint(
 function inferExprType(expr: Expression): string | null {
   switch (expr.type) {
     case 'FunctionCall':
+      // Constructors
       if (expr.name === 'Point') return 'Point';
       if (expr.name === 'PolarVector') return 'PolarVector';
       if (expr.name === 'Cycler') return 'Cycler';
       if (expr.name === 'CSSVar') return 'CSSVar';
+      if (expr.name === 'Color') return 'Color';
+      if (expr.name === 'Mask') return 'Mask';
+      if (expr.name === 'ClipPath') return 'ClipPath';
+      if (expr.name === 'Pattern') return 'Pattern';
+      if (expr.name === 'SVGDocumentFragment') return 'SVGFragment';
+      // Gradient constructors
+      if (expr.name === 'LinearGradient') return 'LinearGradient';
+      if (expr.name === 'RadialGradient') return 'RadialGradient';
+      if (expr.name === 'ConicGradient') return 'ConicGradient';
+      if (expr.name === 'MeshGradient') return 'MeshGradient';
+      if (expr.name === 'FreeformGradient') return 'FreeformGradient';
+      if (expr.name === 'TopoGradient') return 'TopoGradient';
+      // Stdlib path functions return path segments (not useful as type hint)
+      return null;
+    case 'MethodCallExpression':
+      // Common method return types
+      if (expr.method === 'boundingBox' || expr.method === 'paddedBoundingBox') return 'BBox';
+      if (expr.method === 'get' || expr.method === 'anchor') return 'Point';
+      if (expr.method === 'slice' || expr.method === 'map' || expr.method === 'mapSlice') return 'Array';
+      if (expr.method === 'pick') return inferExprType(expr.object) === 'Cycler' ? null : null;
+      if (expr.method === 'offset' || expr.method === 'reverse' || expr.method === 'subPath' ||
+          expr.method === 'chamfer' || expr.method === 'fillet' || expr.method === 'union' ||
+          expr.method === 'difference' || expr.method === 'intersection' || expr.method === 'xor') return 'PathBlock';
+      if (expr.method === 'lighten' || expr.method === 'darken' || expr.method === 'alpha' ||
+          expr.method === 'hueShift' || expr.method === 'complement' || expr.method === 'mix' ||
+          expr.method === 'saturate' || expr.method === 'desaturate') return 'Color';
+      if (expr.method === 'toPathBlock') return 'PathBlock';
       return null;
     case 'ArrayLiteral':
       return 'Array';
@@ -305,8 +333,13 @@ function inferExprType(expr: Expression): string | null {
       return 'TextBlock';
     case 'ColorLiteral':
       return 'Color';
+    case 'StyleBlockLiteral':
+      return 'StyleBlock';
     case 'LayerConstructorExpression':
       return expr.layerType;
+    case 'BinaryExpression':
+      if (expr.operator === '<<') return inferExprType(expr.left); // merge preserves left type
+      return null;
     default:
       return null;
   }

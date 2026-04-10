@@ -29,5 +29,7 @@ export { formatDocument } from './formatter';
 export type { FormatEdit, FormatOptions } from './formatter';
 export { getCodeActions, getRefactorActions } from './code-actions';
 export type { CodeAction } from './code-actions';
+export { getCodeLenses } from './code-lens';
+export type { CodeLens } from './code-lens';
 export { getInlayHints, InlayHintKind } from './inlay-hints';
 export type { InlayHint } from './inlay-hints';
