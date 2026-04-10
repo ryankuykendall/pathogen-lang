@@ -854,16 +854,20 @@ function getWebviewContent(compilerUri: string): string {
       // CSS Variables
       const cssvarList = document.getElementById('cssvar-list');
       cssvarList.innerHTML = '';
-      const varPattern = /var\\(\\s*(--[\\w-]+)\\s*(?:,\\s*(.+?))?\\s*\\)/g;
+      // Scan the ORIGINAL source for CSSVar() calls — not the compiled result,
+      // because overridden variables get replaced before compilation and would disappear
       const vars = new Map();
-      for (const layer of result.layers) {
-        for (const [, value] of Object.entries(layer.styles || {})) {
-          let m;
-          while ((m = varPattern.exec(String(value))) !== null) {
-            if (!vars.has(m[1])) vars.set(m[1], m[2] || '');
-          }
+      const cssVarSourcePattern = /CSSVar\\(\\s*'(--[\\w-]+)'\\s*(?:,\\s*([^)]+))?\\s*\\)/g;
+      let srcMatch;
+      while ((srcMatch = cssVarSourcePattern.exec(source)) !== null) {
+        if (!vars.has(srcMatch[1])) {
+          // Clean up fallback: remove quotes, Color() wrapper, # prefix handling
+          let fallback = (srcMatch[2] || '').trim().replace(/^['"]|['"]$/g, '');
+          if (fallback.startsWith('Color(')) fallback = fallback.replace(/^Color\\(['"]?|['"]?\\)$/g, '');
+          vars.set(srcMatch[1], fallback);
         }
       }
+      // Also include @property declarations from compiled result
       if (result.cssProperties) {
         for (const prop of result.cssProperties) {
           if (!vars.has(prop.name)) vars.set(prop.name, prop.initialValue || '');
