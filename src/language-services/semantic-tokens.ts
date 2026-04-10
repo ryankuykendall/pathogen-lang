@@ -1,5 +1,10 @@
 import { stdlib } from '../stdlib';
 import { analyzeScopes } from './scope-analysis';
+import {
+  ENUM_MEMBER_MAP,
+  STDLIB_COMPLETIONS,
+  TYPE_MEMBERS,
+} from './completion-data.generated';
 
 import type { TextDocument } from './document';
 
@@ -38,8 +43,23 @@ export interface SemanticToken {
 }
 
 const STDLIB_NAMES = new Set(Object.keys(stdlib));
-const LAYER_TYPES = new Set(['PathLayer', 'TextLayer', 'GroupLayer']);
+
+// Derive constructor/type names from generated completion data (not hardcoded)
+// TYPE_MEMBERS keys that start with uppercase are constructable types
+const CONSTRUCTOR_TYPES = new Set(
+  Object.keys(TYPE_MEMBERS).filter((k) => /^[A-Z]/.test(k)),
+);
+// Add gradient/mask/pattern constructors that appear in STDLIB_COMPLETIONS
+// but don't have TYPE_MEMBERS entries (they construct resources, not value types)
+for (const entry of STDLIB_COMPLETIONS) {
+  if (/^[A-Z]/.test(entry.label)) CONSTRUCTOR_TYPES.add(entry.label);
+}
+
+// Derive enum names from generated enum member map
+const ENUM_NAMES = new Set(Object.keys(ENUM_MEMBER_MAP));
+
 const NAMESPACES = new Set(['ctx', 'Object', 'Color', 'PathBlock']);
+const PATH_COMMANDS = new Set('M m L l H h V v C c S s Q q T t A a Z z'.split(' '));
 /**
  * Get semantic tokens for enhanced syntax highlighting.
  * Returns tokens sorted by position (line, then character).
@@ -100,9 +120,11 @@ export function getSemanticTokens(document: TextDocument): SemanticToken[] {
           break;
       }
     } else if (ref.isBuiltin) {
-      // Classify builtins
-      if (LAYER_TYPES.has(ref.name)) {
+      // Classify builtins by category
+      if (CONSTRUCTOR_TYPES.has(ref.name)) {
         addTokenForName(source, ref.name, ref.range.start.line, typeIndex('type'), 0, tokens);
+      } else if (ENUM_NAMES.has(ref.name)) {
+        addTokenForName(source, ref.name, ref.range.start.line, typeIndex('type'), modBit('readonly'), tokens);
       } else if (NAMESPACES.has(ref.name)) {
         addTokenForName(source, ref.name, ref.range.start.line, typeIndex('namespace'), 0, tokens);
       } else if (STDLIB_NAMES.has(ref.name)) {
@@ -110,6 +132,13 @@ export function getSemanticTokens(document: TextDocument): SemanticToken[] {
       }
     }
   }
+
+  // Classify SVG path commands (M, L, C, Z, etc.) — scan source directly
+  // since these are not tracked by scope analysis
+  classifyPathCommands(source, tokens);
+
+  // Classify enum member access (e.g., Direction.CW, Easing.Linear)
+  classifyEnumMembers(source, tokens);
 
   // Sort by position
   tokens.sort((a, b) => a.line !== b.line ? a.line - b.line : a.character - b.character);
@@ -181,6 +210,59 @@ function addTokenForName(
       modifiers,
     });
     break; // Take the first match on the line
+  }
+}
+
+/**
+ * Classify SVG path commands (M, L, C, Z, etc.) as keyword tokens.
+ * Path commands are single letters at statement position, followed by
+ * space/number/identifier or end of line.
+ */
+function classifyPathCommands(source: string, tokens: SemanticToken[]): void {
+  const lines = source.split('\n');
+  for (let line = 0; line < lines.length; line++) {
+    const lineText = lines[line];
+    // Match path commands at start of line (after optional whitespace)
+    const match = lineText.match(/^(\s*)([MLHVCSQTAZmlhvcsqtaz])(?=\s|$|[0-9.(\-+])/);
+    if (match) {
+      const char = match[1].length;
+      const cmd = match[2];
+      if (PATH_COMMANDS.has(cmd)) {
+        tokens.push({
+          line,
+          character: char,
+          length: 1,
+          type: typeIndex('keyword'),
+          modifiers: 0,
+        });
+      }
+    }
+  }
+}
+
+/**
+ * Classify enum member access patterns (e.g., Direction.CW, Easing.Linear).
+ * The enum name is already classified as 'type'; this adds the member as 'enumMember'.
+ */
+function classifyEnumMembers(source: string, tokens: SemanticToken[]): void {
+  const lines = source.split('\n');
+  for (let line = 0; line < lines.length; line++) {
+    const lineText = lines[line];
+    // Match EnumName.MemberName patterns
+    const re = /\b([A-Z]\w+)\.([A-Z]\w+)\b/g;
+    let m;
+    while ((m = re.exec(lineText)) !== null) {
+      if (ENUM_NAMES.has(m[1]) || CONSTRUCTOR_TYPES.has(m[1])) {
+        // The dot-accessed member
+        tokens.push({
+          line,
+          character: m.index + m[1].length + 1, // after "EnumName."
+          length: m[2].length,
+          type: typeIndex('enumMember'),
+          modifiers: modBit('readonly'),
+        });
+      }
+    }
   }
 }
 
