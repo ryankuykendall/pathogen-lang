@@ -52,7 +52,10 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
   const raw = formatStatements(ast.body, 0, indent, source);
 
   // Strip trailing whitespace on every line
-  const formatted = raw.split('\n').map((line) => line.trimEnd()).join('\n');
+  const stripped = raw.split('\n').map((line) => line.trimEnd()).join('\n');
+  // Preserve final newline if the source had one
+  const sourceEndsWithNewline = source.endsWith('\n');
+  const formatted = sourceEndsWithNewline && !stripped.endsWith('\n') ? stripped + '\n' : stripped;
 
   // If already formatted, return no edits
   if (formatted === source) return [];
