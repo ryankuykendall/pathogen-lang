@@ -143,12 +143,13 @@ declare module 'svg-path-extended' {
 
   export interface CodeAction {
     title: string;
-    kind: 'quickfix';
+    kind: 'quickfix' | 'refactor.extract' | 'refactor.inline';
     diagnostics: Diagnostic[];
     edit: { changes: TextEdit[] };
   }
 
   export function getCodeActions(document: TextDocument, range: Range, diagnostics: Diagnostic[]): CodeAction[];
+  export function getRefactorActions(document: TextDocument, range: Range): CodeAction[];
 
   export enum InlayHintKind {
     Parameter = 1,
@@ -164,4 +165,15 @@ declare module 'svg-path-extended' {
   }
 
   export function getInlayHints(document: TextDocument, range: Range): InlayHint[];
+
+  export interface CodeLens {
+    range: Range;
+    command: {
+      title: string;
+      command: string;
+      arguments?: unknown[];
+    };
+  }
+
+  export function getCodeLenses(document: TextDocument): CodeLens[];
 }
