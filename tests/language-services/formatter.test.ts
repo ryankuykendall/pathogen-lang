@@ -9,9 +9,11 @@ function format(source: string, indent?: string): string {
 }
 
 describe('formatDocument', () => {
-  it('returns empty edits for unparseable source', () => {
-    const edits = formatDocument(new StringTextDocument('let x = '));
-    expect(edits).toHaveLength(0);
+  it('formats source with minor errors via Lezer fallback', () => {
+    // Lezer error recovery allows formatting even with missing semicolons
+    const edits = formatDocument(new StringTextDocument('let x = 10\nlet y = 20'));
+    expect(edits.length).toBeGreaterThan(0);
+    expect(edits[0].newText).toContain('let x = 10;');
   });
 
   // --- Section 1: Indentation ---

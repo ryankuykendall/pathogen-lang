@@ -1,4 +1,4 @@
-import { parse } from '../parser';
+import { parse, parseLezer } from '../parser';
 
 import type { TextDocument } from './document';
 import type { Range } from './types';
@@ -38,7 +38,15 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
   try {
     ast = parse(source);
   } catch {
-    return []; // Can't format unparseable source
+    // parse() is strict — it rejects code with missing semicolons.
+    // Fall back to Lezer's error-recovery parse so the formatter can still
+    // work on code that has minor issues (like missing semicolons).
+    try {
+      const lezerResult = parseLezer(source);
+      ast = lezerResult.ast;
+    } catch {
+      return []; // Can't format at all
+    }
   }
 
   const raw = formatStatements(ast.body, 0, indent, source);
