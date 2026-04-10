@@ -167,11 +167,11 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
     }
     case 'PathCommand': {
       const formatted = formatPathCommand(stmt, depth, indent, source);
-      // Method calls wrapped as PathCommand (no command letter) need semicolons
-      // e.g., layer('name').append(child) or obj.method()
+      // Function calls and method calls wrapped as PathCommand (no command letter)
+      // need semicolons — the parser requires them inside .apply blocks and at
+      // statement level. Only actual SVG path commands (M, L, C, Z, etc.) skip them.
       const needsSemicolon = !stmt.command && stmt.args.length > 0 &&
-        (stmt.args[0].type === 'MethodCallExpression' ||
-         (stmt.args[0].type === 'FunctionCall' && stmt.args[0].name === 'log'));
+        (stmt.args[0].type === 'FunctionCall' || stmt.args[0].type === 'MethodCallExpression');
       return `${prefix}${formatted}${needsSemicolon ? ';' : ''}`;
     }
     case 'ReturnStatement':

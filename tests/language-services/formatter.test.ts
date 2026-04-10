@@ -282,21 +282,16 @@ describe('formatDocument', () => {
 
   // --- Section 11: Function calls ---
   describe('function calls', () => {
-    it('keeps simple call on one line (path context)', () => {
-      // Standalone function calls in path context are PathCommands (no semicolon)
+    it('adds semicolon to standalone function call', () => {
+      // Standalone function calls in PathCommand context get semicolons
+      // because the parser requires them at statement level
       const result = format('circle(100, 100, 50)');
-      expect(result).toBe('circle(100, 100, 50)');
+      expect(result).toBe('circle(100, 100, 50);');
     });
 
-    it('keeps 4 args with simple values on one line', () => {
+    it('adds semicolon to rect call', () => {
       const result = format('rect(0, 0, 100, 50)');
-      expect(result).toBe('rect(0, 0, 100, 50)');
-    });
-
-    it('keeps 4 simple args on one line even as path arg', () => {
-      // Path context function calls are PathCommand — no wrapping logic applies
-      const result = format('rect(0, 0, 100, 50)');
-      expect(result).toBe('rect(0, 0, 100, 50)');
+      expect(result).toBe('rect(0, 0, 100, 50);');
     });
 
     it('wraps 5+ args one per line', () => {
