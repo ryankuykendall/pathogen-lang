@@ -67,6 +67,11 @@ connection.onInitialize((_params: InitializeParams): InitializeResult => {
         },
       },
       documentFormattingProvider: true,
+      documentRangeFormattingProvider: true,
+      documentOnTypeFormattingProvider: {
+        firstTriggerCharacter: '}',
+        moreTriggerCharacter: ['\n'],
+      },
       codeActionProvider: true,
       inlayHintProvider: true,
     },
@@ -230,6 +235,89 @@ connection.onDocumentFormatting((params) => {
     },
     newText: edit.newText,
   }));
+});
+
+// Range formatting — format the entire document and return only edits within the range
+connection.onDocumentRangeFormatting((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const doc = new StringTextDocument(textDocument.getText());
+  const edits = formatDocument(doc);
+
+  // Filter to only return the edit if it overlaps the requested range
+  // Since formatDocument returns a single whole-document edit, we extract
+  // just the lines within the range
+  if (edits.length === 0) return [];
+
+  const formatted = edits[0].newText;
+  const formattedLines = formatted.split('\n');
+  const startLine = params.range.start.line;
+  const endLine = params.range.end.line;
+
+  // Extract the formatted lines within the requested range
+  const rangeLines = formattedLines.slice(startLine, endLine + 1);
+
+  return [{
+    range: params.range,
+    newText: rangeLines.join('\n'),
+  }];
+});
+
+// On-type formatting — auto-indent after newlines following {
+connection.onDocumentOnTypeFormatting((params) => {
+  const textDocument = documents.get(params.textDocument.uri);
+  if (!textDocument) return [];
+
+  const line = params.position.line;
+  const text = textDocument.getText();
+  const lines = text.split('\n');
+
+  // After typing '}', re-indent the closing brace
+  if (params.ch === '}' && line < lines.length) {
+    const currentLine = lines[line];
+    const prevLine = line > 0 ? lines[line - 1] : '';
+    // Count indentation of the opening line (find matching { by looking at previous lines)
+    let indent = 0;
+    for (let i = line - 1; i >= 0; i--) {
+      if (lines[i].trimEnd().endsWith('{')) {
+        indent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
+        break;
+      }
+    }
+    const expected = ' '.repeat(indent) + '}';
+    if (currentLine.trim() === '}' && currentLine !== expected) {
+      return [{
+        range: {
+          start: { line, character: 0 },
+          end: { line, character: currentLine.length },
+        },
+        newText: expected,
+      }];
+    }
+  }
+
+  // After typing newline after {, auto-indent
+  if (params.ch === '\n' && line > 0) {
+    const prevLine = lines[line - 1];
+    if (prevLine.trimEnd().endsWith('{')) {
+      const prevIndent = prevLine.match(/^(\s*)/)?.[1].length ?? 0;
+      const newIndent = ' '.repeat(prevIndent + 2);
+      const currentLine = lines[line] || '';
+      // Only add indent if current line is empty or has less indent
+      if (currentLine.trim() === '' || currentLine.match(/^(\s*)/)?.[1].length === 0) {
+        return [{
+          range: {
+            start: { line, character: 0 },
+            end: { line, character: currentLine.length },
+          },
+          newText: newIndent,
+        }];
+      }
+    }
+  }
+
+  return [];
 });
 
 // Code actions

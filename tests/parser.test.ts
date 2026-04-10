@@ -95,13 +95,19 @@ describe('Parser', () => {
   describe('comments', () => {
     it('parses code with line comments', () => {
       const ast = parse('// This is a comment\nM 10 20');
-      expect(ast.body).toHaveLength(1);
-      expect(ast.body[0]).toMatchObject({ type: 'PathCommand', command: 'M' });
+      // Comments are preserved in the AST body
+      expect(ast.body).toHaveLength(2);
+      expect(ast.body[0]).toMatchObject({ type: 'Comment', text: '// This is a comment' });
+      expect(ast.body[1]).toMatchObject({ type: 'PathCommand', command: 'M' });
     });
 
     it('parses code with inline comments', () => {
       const ast = parse('M 10 20 // move to 10,20\nL 30 40');
-      expect(ast.body).toHaveLength(2);
+      // PathCommand, Comment, PathCommand
+      expect(ast.body).toHaveLength(3);
+      expect(ast.body[0].type).toBe('PathCommand');
+      expect(ast.body[1].type).toBe('Comment');
+      expect(ast.body[2].type).toBe('PathCommand');
     });
 
     it('parses code with multiple comments', () => {
@@ -111,7 +117,11 @@ describe('Parser', () => {
         // Another comment
         M x 0
       `);
-      expect(ast.body).toHaveLength(2);
+      // Comments + statements: comment, let, comment, comment, pathcmd
+      const types = ast.body.map(s => s.type);
+      expect(types).toContain('Comment');
+      expect(types).toContain('LetDeclaration');
+      expect(types).toContain('PathCommand');
     });
   });
 
@@ -554,7 +564,8 @@ L 10 20`;
 M 0 0
 L 10 20 // end point`;
       const result = parseWithComments(input);
-      expect(result.program.body).toHaveLength(2);
+      // Comments are now in the AST body AND in the separate comments array
+      expect(result.program.body.filter(s => s.type !== 'Comment')).toHaveLength(2);
       expect(result.comments).toHaveLength(2);
       expect(result.comments[0].text).toBe('// Draw a line');
       expect(result.comments[1].text).toBe('// end point');

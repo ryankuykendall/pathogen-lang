@@ -437,14 +437,26 @@ describe('formatDocument', () => {
 
   // --- Section 20: Comments ---
   describe('comments', () => {
-    it('preserves comments when in AST', () => {
-      // Note: the Lezer parser strips comments from block bodies in the AST builder,
-      // so top-level comments may not survive round-tripping. This is a known limitation.
-      // Test with a context where comments ARE preserved:
+    it('preserves top-level comments', () => {
       const result = format('// header\nlet x = 10;');
-      // If the parser includes top-level comments, they should be preserved
-      // This test documents behavior rather than requiring it
-      expect(typeof result).toBe('string');
+      expect(result).toContain('// header');
+      expect(result).toContain('let x = 10;');
+    });
+
+    it('preserves comments inside function bodies', () => {
+      const result = format('fn f() {\n// inside\nM 0 0\n}');
+      expect(result).toContain('  // inside');
+      expect(result).toContain('  M 0 0');
+    });
+
+    it('preserves comments inside for loops', () => {
+      const result = format('for (i in 0..5) {\n// loop comment\nM i 0\n}');
+      expect(result).toContain('  // loop comment');
+    });
+
+    it('preserves inline comments between statements', () => {
+      const result = format('let x = 10;\n// separator\nlet y = 20;');
+      expect(result).toContain('// separator');
     });
   });
 

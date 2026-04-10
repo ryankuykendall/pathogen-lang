@@ -128,10 +128,13 @@ export function buildAST(tree: Tree, source: string): Program {
   if (!cursor.firstChild()) return { type: 'Program', body };
 
   do {
-    // Skip comments in the main AST (Parsimmon's parse() also strips them)
-    if (cursor.name === 'Comment' || cursor.name === 'LineComment') continue;
+    // Preserve comments in the AST so the formatter can round-trip them
+    if (cursor.name === 'Comment' || cursor.name === 'LineComment') {
+      body.push(buildComment(cursor, source));
+      continue;
+    }
     const stmt = buildStatement(cursor, source);
-    if (stmt && stmt.type !== 'Comment') body.push(stmt);
+    if (stmt) body.push(stmt);
   } while (cursor.nextSibling());
 
   // Post-process: merge FontDirective + bare Number (Lezer splits them)
@@ -1791,10 +1794,14 @@ function buildBlock(cursor: TreeCursor, source: string): Statement[] {
   const stmts: Statement[] = [];
   cursor.firstChild();
   do {
-    if (cursor.name !== '{' && cursor.name !== '}' && cursor.name !== 'Comment' && cursor.name !== 'LineComment') {
-      const stmt = buildStatement(cursor, source);
-      if (stmt && stmt.type !== 'Comment') stmts.push(stmt);
+    if (cursor.name === '{' || cursor.name === '}') continue;
+    // Preserve comments in block bodies so the formatter can round-trip them
+    if (cursor.name === 'Comment' || cursor.name === 'LineComment') {
+      stmts.push(buildComment(cursor, source));
+      continue;
     }
+    const stmt = buildStatement(cursor, source);
+    if (stmt) stmts.push(stmt);
   } while (cursor.nextSibling());
   cursor.parent();
   return stmts;
