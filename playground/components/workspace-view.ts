@@ -694,10 +694,23 @@ export class WorkspaceView extends HTMLElement {
 
   debouncedUpdate(): void {
     if (this._debounceTimer) clearTimeout(this._debounceTimer);
+
+    // Use a longer debounce when the user is actively typing member access (.)
+    // so completion popups have time to appear before error panel covers them
+    const code = this.editorPane?.code || '';
+    const cursorAtDot = code.trimEnd().endsWith('.');
+    const delay = cursorAtDot ? 600 : 150;
+
+    // Hide error panel immediately when user is typing — stale errors are confusing
+    if (cursorAtDot) {
+      this.errorPanel.hide();
+      this.editorPane.clearError();
+    }
+
     this._debounceTimer = setTimeout(() => {
       this.updatePreview();
       this.updateAnnotatedOutput();
-    }, 150);
+    }, delay);
   }
 
   async updatePreview(): Promise<void> {

@@ -231,3 +231,8 @@ app-header:not(:defined) {
   display: block;
   height: 56px;
 }
+
+/* CodeMirror completion tooltip must render above the error panel (z-index: 10) */
+.cm-tooltip-autocomplete {
+  z-index: 100 !important;
+}

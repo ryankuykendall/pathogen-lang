@@ -123,6 +123,12 @@ const clientDeps = [
   'vscode-languageserver-protocol',
   'vscode-languageserver-types',
   'vscode-jsonrpc',
+  // Transitive dependencies of vscode-languageclient
+  'semver',
+  'minimatch',
+  'brace-expansion',
+  'balanced-match',
+  'concat-map',
 ];
 for (const dep of clientDeps) {
   const src = path.join(rootNodeModules, dep);

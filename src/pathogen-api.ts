@@ -480,6 +480,8 @@ export interface PathogenTextLayer {
   readonly name: string;
   /** Style block */
   readonly styles: Value;
+  /** apply { } — Send text commands to this layer */
+  apply(): void;
 }
 
 /** @type PathLayer */
@@ -490,6 +492,8 @@ export interface PathogenPathLayer {
   readonly styles: Value;
   /** Path context (position, heading, transform) */
   readonly ctx: PathContext;
+  /** apply { } — Send path commands to this layer */
+  apply(): void;
 }
 
 /** @type GroupLayer */
@@ -500,6 +504,8 @@ export interface PathogenGroupLayer {
   readonly styles: Value;
   /** Path context (position, heading, transform) */
   readonly ctx: PathContext;
+  /** apply { } — Send commands to this layer */
+  apply(): void;
   /** append(layer) — Add child layer */
   append(layer: PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer): void;
 }

@@ -2,18 +2,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as nodeModule from 'module';
 import * as vscode from 'vscode';
-import { openPreview } from './preview';
 
 let client: any;
 
 export function activate(context: vscode.ExtensionContext): void {
-  // Register preview command first (doesn't depend on language server)
-  const previewCommand = vscode.commands.registerCommand(
-    'pathogen.openPreview',
-    () => openPreview(context),
-  );
-  context.subscriptions.push(previewCommand);
-
   // Resolve vscode-languageclient from bundled server/node_modules
   // when installed from .vsix (vsce --no-dependencies strips the ext's own node_modules)
   let lc: any;
