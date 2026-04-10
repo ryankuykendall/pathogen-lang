@@ -8,6 +8,13 @@ export interface FontBinaryEntry {
   buffer: ArrayBuffer;
 }
 
+// CSS generic font families — not fetchable from Google Fonts
+const GENERIC_FONT_FAMILIES = new Set([
+  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
+  'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
+  'emoji', 'math', 'fangsong',
+]);
+
 // Cache: "family:weight" → ArrayBuffer
 const fontBinaryCache: Map<string, ArrayBuffer> = new Map();
 
@@ -23,8 +30,8 @@ export async function fetchFontBinary(
   family: string,
   weight: number = 400,
 ): Promise<ArrayBuffer | null> {
-  // Skip system fonts
-  if (['sans-serif', 'serif', 'monospace', 'cursive'].includes(family)) {
+  // Skip CSS generic font families — these are not real fonts on Google Fonts
+  if (GENERIC_FONT_FAMILIES.has(family)) {
     return null;
   }
 
@@ -137,7 +144,7 @@ export function extractFontReferences(source: string): { family: string; weight?
     const raw = match[1].trim();
     // Extract first family name
     const first = raw.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
-    if (first && !['sans-serif', 'serif', 'monospace', 'cursive'].includes(first)) {
+    if (first && !GENERIC_FONT_FAMILIES.has(first)) {
       const key = `${first}:400`;
       if (!refs.has(key)) {
         refs.set(key, { family: first });
