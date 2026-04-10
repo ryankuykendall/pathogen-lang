@@ -157,8 +157,15 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       }
       return result;
     }
-    case 'PathCommand':
-      return `${prefix}${formatPathCommand(stmt, depth, indent, source)}`;
+    case 'PathCommand': {
+      const formatted = formatPathCommand(stmt, depth, indent, source);
+      // Method calls wrapped as PathCommand (no command letter) need semicolons
+      // e.g., layer('name').append(child) or obj.method()
+      const needsSemicolon = !stmt.command && stmt.args.length > 0 &&
+        (stmt.args[0].type === 'MethodCallExpression' ||
+         (stmt.args[0].type === 'FunctionCall' && stmt.args[0].name === 'log'));
+      return `${prefix}${formatted}${needsSemicolon ? ';' : ''}`;
+    }
     case 'ReturnStatement':
       return `${prefix}return ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'ExpressionStatement':
