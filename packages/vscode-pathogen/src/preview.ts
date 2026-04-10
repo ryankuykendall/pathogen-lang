@@ -19,6 +19,11 @@ export function openPreview(context: vscode.ExtensionContext): void {
     return;
   }
 
+  // Capture the editor BEFORE creating the panel — opening the panel
+  // changes the active editor focus, so activeTextEditor may be undefined
+  // by the time the webview sends its 'ready' message
+  const initialEditor = editor;
+
   const compilerUri = getCompilerUri(context);
   if (!compilerUri) {
     vscode.window.showErrorMessage('Pathogen: Could not find compiler bundle.');
@@ -28,7 +33,7 @@ export function openPreview(context: vscode.ExtensionContext): void {
   currentPanel = vscode.window.createWebviewPanel(
     'pathogenPreview',
     'Pathogen Preview',
-    vscode.ViewColumn.Beside,
+    { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
     {
       enableScripts: true,
       localResourceRoots: [
@@ -48,10 +53,8 @@ export function openPreview(context: vscode.ExtensionContext): void {
 
   currentPanel.webview.onDidReceiveMessage((msg) => {
     if (msg.type === 'ready') {
-      const ed = vscode.window.activeTextEditor;
-      if (ed && ed.document.languageId === 'pathogen') {
-        sendSource(ed.document);
-      }
+      // Use the captured editor from before the panel opened
+      sendSource(initialEditor.document);
     }
   }, null, context.subscriptions);
 
