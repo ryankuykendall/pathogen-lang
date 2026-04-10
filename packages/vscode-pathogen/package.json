@@ -58,6 +58,35 @@
         }
       ]
     },
+    "taskDefinitions": [
+      {
+        "type": "pathogen",
+        "required": ["file"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The .pathogen file to compile"
+          },
+          "outputSvg": {
+            "type": "string",
+            "description": "Output SVG file path"
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "pathogen",
+        "owner": "pathogen",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(?:Error: )?Parse error at line (\\d+), column (\\d+): (.+)$",
+          "line": 1,
+          "column": 2,
+          "message": 3
+        }
+      }
+    ],
     "configuration": {
       "title": "Pathogen",
       "properties": {}

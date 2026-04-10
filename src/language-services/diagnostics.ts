@@ -175,7 +175,7 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
 
   // ── Incomplete member access (bg.) ──
   // When the previous sibling is '.', the user is typing a member name
-  if (prevName === '.') {
+  if (prevName === '.' && prev) {
     // Find what's before the dot
     const dotPos = prev.from;
     const beforeDot = source.slice(Math.max(0, dotPos - 40), dotPos).trim();

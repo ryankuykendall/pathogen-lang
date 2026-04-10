@@ -1,4 +1,26 @@
 {
+  "ViewBox Header": {
+    "prefix": "viewbox",
+    "body": "// viewBox=\"0 0 ${1:400} ${2:400}\"",
+    "description": "viewBox comment — defines SVG canvas dimensions for preview"
+  },
+  "New File Template": {
+    "prefix": "newfile",
+    "body": [
+      "// viewBox=\"0 0 ${1:400} ${2:400}\"",
+      "",
+      "let bg = PathLayer('bg') ${",
+      "  fill: ${3:#ffffff};",
+      "  stroke: none;",
+      "};",
+      "bg.apply {",
+      "  rect(0, 0, ${1:400}, ${2:400});",
+      "}",
+      "",
+      "$0"
+    ],
+    "description": "new file template — viewBox, background layer, and canvas"
+  },
   "For Loop": {
     "prefix": "for",
     "body": [

@@ -42,7 +42,21 @@ const connection = createConnection(ProposedFeatures.all);
 // Document manager — full sync (sends entire document content on each change)
 const documents = new TextDocuments(TextDocument);
 
-connection.onInitialize((_params: InitializeParams): InitializeResult => {
+// Workspace context — captured during initialization
+let workspaceRoot: string | null = null;
+
+connection.onInitialize((params: InitializeParams): InitializeResult => {
+  // Capture workspace root for font path resolution and file-relative operations
+  if (params.rootUri) {
+    try {
+      workspaceRoot = new URL(params.rootUri).pathname;
+    } catch {
+      workspaceRoot = params.rootUri;
+    }
+  } else if (params.rootPath) {
+    workspaceRoot = params.rootPath;
+  }
+
   return {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
