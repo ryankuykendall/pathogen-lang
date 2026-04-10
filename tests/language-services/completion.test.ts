@@ -418,6 +418,53 @@ describe('getCompletions', () => {
     });
   });
 
+  describe('type flow analysis', () => {
+    it('propagates type through variable assignment', () => {
+      const items = completeAtEnd('let shape = @{ h 60 v 60 };\nlet copy = shape;\ncopy.');
+      const names = labels(items);
+      expect(names).toContain('boundingBox');
+      expect(names).toContain('drawTo');
+    });
+
+    it('infers Point type for map block param over Point array', () => {
+      const items = completeAtEnd('let pts = [Point(0, 0)];\nlet r = pts.map() {|pt|\n  pt.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('translate');
+    });
+
+    it('infers object props for map block param over object array', () => {
+      const items = completeAtEnd('let data = [{ x: 60, y: 160, name: "a" }];\nlet r = data.map() {|item|\n  item.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('name');
+    });
+
+    it('infers object props for destructured for-each loop var', () => {
+      const items = completeAtEnd('let data = [{ x: 60, y: 160, name: "a" }];\nfor ([d, i] in data) {\n  d.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('name');
+    });
+
+    it('infers Point type for simple for-each loop var', () => {
+      const items = completeAtEnd('let pts = [Point(0, 0)];\nfor (pt in pts) {\n  pt.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+    });
+
+    it('infers object properties from direct object literal', () => {
+      const items = completeAtEnd('let cfg = { title: "test", innerR: 50 };\ncfg.');
+      const names = labels(items);
+      expect(names).toContain('title');
+      expect(names).toContain('innerR');
+    });
+  });
+
   describe('completion item structure', () => {
     it('includes detail for stdlib functions', () => {
       const items = completeAtEnd('circ');

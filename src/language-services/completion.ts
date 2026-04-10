@@ -145,6 +145,19 @@ function getMembersForObject(name: string, source: string): MemberCompletionSet 
   const type = inferType(name, source);
   if (type && type in TYPE_MEMBERS) return TYPE_MEMBERS[type];
 
+  // Block parameter inference: name is a param in .map {|name| ...} or .reduce {|acc, name| ...}
+  const blockParamType = inferBlockParamType(name, source);
+  if (blockParamType && blockParamType in TYPE_MEMBERS) return TYPE_MEMBERS[blockParamType];
+
+  // Loop variable inference: for (name in array) or for ([name, i] in array)
+  const loopVarType = inferLoopVarType(name, source);
+  if (loopVarType && loopVarType in TYPE_MEMBERS) return TYPE_MEMBERS[loopVarType];
+
+  // Object literal properties: if we can find { name: ..., x: ..., y: ... } patterns
+  // for the variable, offer those properties as completions
+  const objProps = inferObjectProperties(name, source);
+  if (objProps) return objProps;
+
   return null;
 }
 
@@ -283,7 +296,151 @@ function inferType(name: string, source: string): string | null {
     return 'PathBlock';
   }
 
+  // Assignment from another variable: let x = y; — propagate y's type to x
+  const assignMatch = new RegExp(`let\\s+${esc}\\s*=\\s*([a-zA-Z_]\\w*)\\s*;`).exec(source);
+  if (assignMatch) {
+    const sourceVar = assignMatch[1];
+    // Avoid infinite recursion by not re-inferring the same name
+    if (sourceVar !== name) {
+      return inferType(sourceVar, source);
+    }
+  }
+
   return null;
+}
+
+/**
+ * Infer type for a block parameter (e.g., item in arr.map {|item| ...}).
+ * Looks for the array variable the .map/.reduce is called on, then infers
+ * the element type of that array.
+ */
+function inferBlockParamType(paramName: string, source: string): string | null {
+  const esc = escapeRegex(paramName);
+
+  // Match: arrayVar.map() {|paramName| or arrayVar.map() {|paramName, index|
+  const mapMatch = new RegExp(`(\\w+)\\.map\\s*\\(\\)\\s*\\{\\s*\\|\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\|`).exec(source);
+  if (mapMatch) {
+    return inferArrayElementType(mapMatch[1], source);
+  }
+
+  // Match: arrayVar.reduce(init) {|acc, paramName| — param is 2nd arg (the element)
+  const reduceItemMatch = new RegExp(`(\\w+)\\.reduce\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*\\w+\\s*,\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\|`).exec(source);
+  if (reduceItemMatch) {
+    return inferArrayElementType(reduceItemMatch[1], source);
+  }
+
+  return null;
+}
+
+/**
+ * Infer type for a loop variable (e.g., d in for ([d, i] in data) or item in for (item in arr)).
+ */
+function inferLoopVarType(varName: string, source: string): string | null {
+  const esc = escapeRegex(varName);
+
+  // Match: for ([varName, ...] in arrayVar) — destructured iteration
+  const destructuredMatch = new RegExp(`for\\s*\\(\\s*\\[\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\]\\s+in\\s+(\\w+)\\s*\\)`).exec(source);
+  if (destructuredMatch) {
+    return inferArrayElementType(destructuredMatch[1], source);
+  }
+
+  // Match: for (varName in arrayVar) — simple iteration
+  const simpleMatch = new RegExp(`for\\s*\\(\\s*${esc}\\s+in\\s+(\\w+)\\s*\\)`).exec(source);
+  if (simpleMatch) {
+    return inferArrayElementType(simpleMatch[1], source);
+  }
+
+  return null;
+}
+
+/**
+ * Infer the element type of an array variable by looking at its initialization.
+ * e.g., let arr = [Point(0,0), Point(1,1)] → element type is 'Point'
+ *       let arr = [{ x: 0, y: 0 }] → element type might be an inline object
+ */
+function inferArrayElementType(arrayName: string, source: string): string | null {
+  const esc = escapeRegex(arrayName);
+
+  // Look for array initializer: let arrayName = [ ... ]
+  const arrMatch = new RegExp(`let\\s+${esc}\\s*=\\s*\\[\\s*([^\\]]{1,200})`).exec(source);
+  if (!arrMatch) return null;
+
+  const firstContent = arrMatch[1].trim();
+
+  // Check first element type
+  if (/^Point\s*\(/.test(firstContent)) return 'Point';
+  if (/^PolarVector\s*\(/.test(firstContent)) return 'PolarVector';
+  if (/^Color\s*\(/.test(firstContent) || /^#[0-9a-fA-F]/.test(firstContent)) return 'ColorInstance';
+  if (/^@\s*\{/.test(firstContent)) return 'PathBlock';
+  if (/^PathLayer\s*\(/.test(firstContent)) return 'PathLayer';
+  if (/^TextLayer\s*\(/.test(firstContent)) return 'TextLayer';
+  if (/^GroupLayer\s*\(/.test(firstContent)) return 'GroupLayer';
+
+  // Array of objects: let arr = [{ x: 0, y: 0 }, ...] — return a marker type
+  if (/^\{/.test(firstContent)) return '_ObjectLiteral';
+
+  return null;
+}
+
+/**
+ * Infer object properties when a variable holds an object literal or comes from
+ * an array of objects. Returns ad-hoc member completions based on property names.
+ */
+function inferObjectProperties(name: string, source: string): MemberCompletionSet | null {
+  const esc = escapeRegex(name);
+
+  // Direct object literal: let name = { x: ..., y: ..., ... };
+  const objMatch = new RegExp(`let\\s+${esc}\\s*=\\s*\\{\\s*([^}]{1,500})\\}`).exec(source);
+  if (objMatch) {
+    return extractObjectProps(objMatch[1]);
+  }
+
+  // Check if this is a loop/block param iterating over an array of objects
+  // We already checked inferBlockParamType/inferLoopVarType — if those returned '_ObjectLiteral',
+  // we need to find the actual array and extract props from the first element
+  const blockParamType = inferBlockParamType(name, source);
+  if (blockParamType === '_ObjectLiteral') {
+    // Find the array variable
+    const mapMatch = new RegExp(`(\\w+)\\.map\\s*\\(\\)\\s*\\{\\s*\\|\\s*${esc}`).exec(source);
+    const loopMatch = new RegExp(`for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`).exec(source);
+    const arrName = mapMatch?.[1] ?? loopMatch?.[1];
+    if (arrName) {
+      const arrEsc = escapeRegex(arrName);
+      const arrInit = new RegExp(`let\\s+${arrEsc}\\s*=\\s*\\[\\s*\\{\\s*([^}]{1,500})\\}`).exec(source);
+      if (arrInit) return extractObjectProps(arrInit[1]);
+    }
+  }
+
+  const loopVarType = inferLoopVarType(name, source);
+  if (loopVarType === '_ObjectLiteral') {
+    const loopMatch = new RegExp(`for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`).exec(source);
+    const arrName = loopMatch?.[1];
+    if (arrName) {
+      const arrEsc = escapeRegex(arrName);
+      const arrInit = new RegExp(`let\\s+${arrEsc}\\s*=\\s*\\[\\s*\\{\\s*([^}]{1,500})\\}`).exec(source);
+      if (arrInit) return extractObjectProps(arrInit[1]);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extract property names from an object literal body string like "x: 10, y: 20, name: 'foo'"
+ */
+function extractObjectProps(body: string): MemberCompletionSet | null {
+  const propPattern = /(\w+)\s*:/g;
+  const props: CompletionEntry[] = [];
+  const seen = new Set<string>();
+  let m;
+  while ((m = propPattern.exec(body)) !== null) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      props.push({ label: m[1], kind: 'property', detail: `property: ${m[1]}`, boost: 10 });
+    }
+  }
+  if (props.length === 0) return null;
+  return { properties: props, methods: [] };
 }
 
 function escapeRegex(s: string): string {
