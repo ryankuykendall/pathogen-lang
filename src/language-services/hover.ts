@@ -31,7 +31,8 @@ const KEYWORD_HOVER: Record<string, string> = {
 
 // --- SVG path command hover ---
 
-const PATH_COMMAND_HOVER: Record<string, string> = {
+/** SVG path command hover descriptions. Keys are the single-letter commands. */
+export const PATH_COMMAND_HOVER: Record<string, string> = {
   M: '**M** x y — Move to (absolute)',
   m: '**m** dx dy — Move to (relative)',
   L: '**L** x y — Line to (absolute)',
@@ -53,6 +54,9 @@ const PATH_COMMAND_HOVER: Record<string, string> = {
   Z: '**Z** — Close path',
   z: '**z** — Close path',
 };
+
+/** Set of all single-letter SVG path commands, derived from PATH_COMMAND_HOVER. */
+export const PATH_COMMAND_SET = new Set(Object.keys(PATH_COMMAND_HOVER));
 
 // Build stdlib hover map from completion data
 const STDLIB_HOVER = new Map<string, string>();

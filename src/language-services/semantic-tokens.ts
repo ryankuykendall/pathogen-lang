@@ -4,7 +4,9 @@ import {
   ENUM_MEMBER_MAP,
   STDLIB_COMPLETIONS,
   TYPE_MEMBERS,
+  NAMESPACE_MEMBERS,
 } from './completion-data.generated';
+import { PATH_COMMAND_SET } from './hover';
 
 import type { TextDocument } from './document';
 
@@ -58,8 +60,10 @@ for (const entry of STDLIB_COMPLETIONS) {
 // Derive enum names from generated enum member map
 const ENUM_NAMES = new Set(Object.keys(ENUM_MEMBER_MAP));
 
-const NAMESPACES = new Set(['ctx', 'Object', 'Color', 'PathBlock']);
-const PATH_COMMANDS = new Set('M m L l H h V v C c S s Q q T t A a Z z'.split(' '));
+// Derive namespaces from generated completion data
+const NAMESPACES = new Set(Object.keys(NAMESPACE_MEMBERS));
+// Add 'ctx' which is a special built-in namespace not in NAMESPACE_MEMBERS
+NAMESPACES.add('ctx');
 /**
  * Get semantic tokens for enhanced syntax highlighting.
  * Returns tokens sorted by position (line, then character).
@@ -227,7 +231,7 @@ function classifyPathCommands(source: string, tokens: SemanticToken[]): void {
     if (match) {
       const char = match[1].length;
       const cmd = match[2];
-      if (PATH_COMMANDS.has(cmd)) {
+      if (PATH_COMMAND_SET.has(cmd)) {
         tokens.push({
           line,
           character: char,
