@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-04-10
+
+### Added
+
+#### Core
+- Spread operator (`...`) and destructuring (array `[a, b, ...rest]`, object `{ x, y: alias, ...rest }`) in let declarations and for-each loops.
+- Object merge (`<<`) operator for ObjectValue types.
+- Multi-param trailing blocks for `.reduce()` and `.mapSlice()`.
+- `squareGrid()`, `triangleGrid()`, and `hexagonGrid()` stdlib functions for grid-based pattern generation.
+- `generateSvg()` exported from library — shared SVG document assembly used by CLI and VS Code preview.
+
+#### Parser
+- **Lezer migration complete** — Lezer is now the sole parser (Parsimmon fully removed). 213-line grammar replaces 1,558 lines of Parsimmon code.
+- Mandatory semicolons on expression statements (function calls, assignments, let, return); block statements (for, if, fn, apply) do not require them.
+- Optional trailing semicolons on text and tspan statements.
+- Comments preserved in AST (top-level and block bodies) for formatter round-tripping.
+- Fix: object literal property values now correctly parse function calls, method chains, and member access (previously dropped to NullLiteral).
+
+#### Language Services
+- **Completion engine rewrite** — generated from TypeScript API declarations via ts-morph instead of hand-maintained static data.
+  - All 12 enums with 42 members now have completions.
+  - 79 stdlib/constructor completions with accurate signatures.
+  - 14 type member sets (93→118 total members) including Color instance (21 members), BoundingBox, and all layer types with `apply` method.
+  - Type inference: Color constructors, hex literals, `layer()`, stdlib path functions, method return types (boundingBox→BBox, get→Point, lighten→Color), assignment propagation, map/loop callback parameters, object literal properties.
+- **Formatter** — AST-based code formatter implementing the Pathogen style guide.
+  - Always multi-line: arrays, objects, style blocks, enums, path blocks, text blocks, apply blocks.
+  - Trailing commas on collections. One item per line.
+  - Function call/def wrapping (5+ args, 4+ with complex args). Method chain wrapping (3+ steps).
+  - Trailing block formatting with gradient stop column alignment.
+  - Comment preservation through round-trips.
+  - Range formatting and on-type formatting (auto-indent after `{`).
+  - Lezer fallback for formatting code with missing semicolons.
+  - Preserves trailing newline at end of file.
+  - Semicolons on function calls and method calls in PathCommand context.
+- **Diagnostics** — contextual Lezer error messages with 20+ specific patterns. Server-side debouncing (200ms default, 500ms mid-expression). Better message for incomplete member access (`bg.` → "Expected property or method name after 'bg.'"). Map/reduce callback errors include iteration index.
+- **Semantic highlighting** — constructor types, enum names/members, SVG path commands classified via semantic tokens. All classification sets derived from generated data (no hardcoded lists).
+- **Code actions** — extract variable, extract function, inline variable refactoring. Missing semicolon and typo suggestion quick fixes.
+- **Code lens** — reference counts above variable, function, and enum declarations.
+- **Inlay hints** — expanded type inference for Color, gradients, Mask, ClipPath, method returns, StyleBlockLiteral, merge operator.
+
+#### VS Code Extension
+- **Language server activation** — the extension now activates and runs all 16 language server features from installed .vsix packages.
+- **Live preview panel** — compiles Pathogen source to SVG in real-time via bundled IIFE compiler.
+  - Pan/zoom with navigator minimap.
+  - Layer inspector with visibility toggles, color swatches, type badges.
+  - CSS variable color pickers with live recompilation.
+  - Color palette showing all colors across layers.
+  - Recompile button (re-roll random values) and reset button.
+  - ViewBox detection from source comments.
+- **TextMate grammar** — constructor keyword highlighting (LinearGradient, Color, Point, etc.), trailing block pipe-param syntax (`{|g| ...}`).
+- **Snippets** — 29 total (up from 18): gradients, Color, textblock, styleblock, Point, CSSVar, viewBox, new file template.
+- **Build pipeline** — `npm run build:vscode:install` builds and installs the complete .vsix with all dependencies bundled.
+- **Workspace integration** — captures workspace root, task definitions, problem matcher for CLI errors.
+
+#### Playground
+- Inspector panel with stacked layers, palette, and CSS variable panels.
+- Completion UX fix — error panel no longer covers completion popups (z-index override + longer debounce during member access).
+- Error panel badge showing error count.
+
+#### Documentation
+- Formatter style guide and 25-question formatting questionnaire.
+- 10-phase VS Code developer experience roadmap.
+- Deduplication audit proposal for language-services layer.
+- Cross-system feature lifecycle documentation.
+- Quality standard added to project CLAUDE.md.
+- Grid functions blog post with interactive demos.
+- Chained Bézier splines and heading/turn blog posts.
+- Radial bar chart blog post.
+- VS Code developer experience blog post with hero screenshot and architecture diagram.
+
+### Fixed
+
+#### Core
+- Object literal property values dropping function calls — `{ y: randomRange(calc(...), calc(...)) }` was parsed as NullLiteral. Fixed by using `buildExpressionWithPostfix()` for property values.
+- Map/reduce error messages now include iteration index and callback line number.
+- Boolean XOR diagonal artifacts with arc-heavy paths.
+
+#### VS Code Extension
+- Preview panel white screen on initial open — captured editor reference before panel creation, use `preserveFocus: true`.
+- CSS variable panel losing variables after color override — scan original source instead of compiled result.
+- Missing transitive dependencies (semver, minimatch, brace-expansion, balanced-match, concat-map) added to build script.
+- Removed non-functional preview command (re-added with working implementation).
+- Language server type shim updated for all new exports.
+
+#### Playground
+- Uncommitted playground changes from prior sessions pushed to production.
+
+### Changed
+
+#### Development
+- Lezer is sole parser — Parsimmon fully removed.
+- Completion data generated from TypeScript API declarations instead of hand-maintained.
+- Semantic token classification derived from generated data (TYPE_MEMBERS, ENUM_MEMBER_MAP, NAMESPACE_MEMBERS, PATH_COMMAND_HOVER) instead of hardcoded sets.
+- VS Code extension CLAUDE.md updated with readiness status and development lifecycle.
+- Quality standard: no placeholders in shipped code, end-to-end verification mandatory, be honest about readiness.
+
 ## [Unreleased] - 2026-03-21
 
 ### Added
