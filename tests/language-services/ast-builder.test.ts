@@ -173,6 +173,46 @@ describe('Lezer AST Builder', () => {
     });
   });
 
+  describe('object literal property values', () => {
+    it('parses function call as object property value', () => {
+      const ast = lezerParse('let x = { y: randomRange(0, 10) };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ObjectLiteral');
+      const prop = decl.value.properties[0];
+      expect(prop.key).toBe('y');
+      expect(prop.value.type).toBe('FunctionCall');
+      expect(prop.value.name).toBe('randomRange');
+      expect(prop.value.args).toHaveLength(2);
+    });
+
+    it('parses function call with calc args as object property value', () => {
+      const ast = lezerParse('let x = { y: randomRange(calc(a * 0.8), calc(a * 1.2)) };');
+      const decl = ast.body[0] as any;
+      const prop = decl.value.properties[0];
+      expect(prop.value.type).toBe('FunctionCall');
+      expect(prop.value.name).toBe('randomRange');
+      expect(prop.value.args).toHaveLength(2);
+      expect(prop.value.args[0].type).toBe('CalcExpression');
+      expect(prop.value.args[1].type).toBe('CalcExpression');
+    });
+
+    it('parses method call as object property value', () => {
+      const ast = lezerParse('let x = { c: base.lighten(20) };');
+      const decl = ast.body[0] as any;
+      const prop = decl.value.properties[0];
+      expect(prop.value.type).toBe('MethodCallExpression');
+      expect(prop.value.method).toBe('lighten');
+    });
+
+    it('parses member access as object property value', () => {
+      const ast = lezerParse('let x = { w: bb.width };');
+      const decl = ast.body[0] as any;
+      const prop = decl.value.properties[0];
+      expect(prop.value.type).toBe('MemberExpression');
+      expect(prop.value.property).toBe('width');
+    });
+  });
+
   describe('member access', () => {
     it('parses member expression', () => {
       const ast = lezerParse('ctx.position.x;');

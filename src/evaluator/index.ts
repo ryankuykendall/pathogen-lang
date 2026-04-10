@@ -3946,6 +3946,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       if (!expr.block) throw mError('map() requires a trailing block: array.map {|item| return ...; }');
       const result: Value[] = [];
       const mapParams = expr.block.params;
+      const mapLine = getLine(expr);
       for (let i = 0; i < obj.elements.length; i++) {
         const blockScope = createScope(scope);
         setVariable(blockScope, mapParams[0], obj.elements[i]);
@@ -3960,7 +3961,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           if (e instanceof ReturnSignal) {
             result.push(e.value);
           } else {
-            throw e;
+            // Wrap error with map iteration context
+            const msg = e instanceof Error ? e.message : String(e);
+            throw new Error(formatError(
+              `Error in .map() callback at index ${i}: ${msg}`,
+              mapLine,
+            ));
           }
         }
       }
@@ -3971,6 +3977,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       if (!expr.block) throw mError('reduce() requires a trailing block: array.reduce(init) {|acc, item| return acc; }');
       let accumulator: Value = evaluateExpression(expr.args[0], scope);
       const reduceParams = expr.block.params;
+      const reduceLine = getLine(expr);
       for (let i = 0; i < obj.elements.length; i++) {
         const blockScope = createScope(scope);
         setVariable(blockScope, reduceParams[0], accumulator);
@@ -3986,7 +3993,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           if (e instanceof ReturnSignal) {
             accumulator = e.value;
           } else {
-            throw e;
+            const msg = e instanceof Error ? e.message : String(e);
+            throw new Error(formatError(
+              `Error in .reduce() callback at index ${i}: ${msg}`,
+              reduceLine,
+            ));
           }
         }
       }

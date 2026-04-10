@@ -1347,6 +1347,31 @@ describe('Evaluator', () => {
       it('with args throws', () => {
         expect(() => compile('let arr = [1]; let b = arr.map(1) {|x| return x; };')).toThrow(/does not take arguments/);
       });
+
+      it('wraps errors with map iteration context', () => {
+        // When an error occurs inside a map callback, the error message
+        // should include the iteration index and mention .map()
+        expect(() => compile(`
+          let arr = [{ x: 1 }, { x: 2 }];
+          let result = arr.map() {|item|
+            let y = item.missing_prop.nested;
+            return y;
+          };
+        `)).toThrow(/\.map\(\) callback at index 0/);
+      });
+
+      it('evaluates function calls as object property values', () => {
+        // Regression: randomRange(calc(...), calc(...)) as object property
+        // was parsed as NullLiteral instead of FunctionCall
+        expect(compilePath(`
+          let arr = [{ y: 5 }];
+          let mapped = arr.map() {|item|
+            let props = { y: calc(item.y * 2) };
+            return props;
+          };
+          M mapped[0].y 0
+        `)).toBe('M 10 0');
+      });
     });
 
     describe('slice', () => {

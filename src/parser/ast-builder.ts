@@ -1650,12 +1650,17 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
       cursor.firstChild();
       let key = '';
       let value: Expression = { type: 'NullLiteral' };
+      // First pass: find the key (first Identifier or String before ':')
       do {
-        if (cursor.name === 'Identifier' || cursor.name === 'String') {
-          if (!key) key = cursor.name === 'String' ? parseStringContent(text(cursor, source)) : text(cursor, source);
-          else value = buildExpression(cursor, source);
-        } else if (cursor.name !== ':') {
-          value = buildExpression(cursor, source);
+        if ((cursor.name === 'Identifier' || cursor.name === 'String') && !key) {
+          key = cursor.name === 'String' ? parseStringContent(text(cursor, source)) : text(cursor, source);
+        } else if (cursor.name === ':') {
+          // After ':', the rest is the value expression — use buildExpressionWithPostfix
+          // to correctly handle Identifier + ArgList (function calls), member chains, etc.
+          if (cursor.nextSibling()) {
+            value = buildExpressionWithPostfix(cursor, source);
+          }
+          break;
         }
       } while (cursor.nextSibling());
       cursor.parent();
