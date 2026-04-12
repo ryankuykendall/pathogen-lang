@@ -112,7 +112,7 @@ Provides: diagnostics, document symbols, scope analysis, completion, hover, go-t
 
 ### Evaluator (4-file split)
 
-- **`index.ts`** — Main evaluator. Walks AST, maintains scope chain, evaluates expressions, produces SVG path strings. Supports multi-layer output (path layers + text layers), `log()` function, and user-defined functions. Has safeguards: max 10,000 loop iterations, rejects Infinity/NaN in loop bounds.
+- **`index.ts`** — Main evaluator. Walks AST, maintains scope chain, evaluates expressions, produces SVG path strings. Supports multi-layer output (path layers + text layers), `log()` function, and user-defined functions. Has safeguards: max 32,000 loop iterations, rejects Infinity/NaN in loop bounds.
 - **`annotated.ts`** — Parallel evaluator that produces annotated output preserving comments, showing loop iterations, and annotating function calls. Used by `compileAnnotated()`.
 - **`context.ts`** — Path context tracking. Maintains current pen position, subpath start point, and optional command history. Powers `ctx.position`, `ctx.start`, and context-aware stdlib functions.
 - **`format.ts`** / **`formatter.ts`** — Number formatting (toFixed) and annotated output formatting.

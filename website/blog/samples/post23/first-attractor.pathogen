@@ -1,0 +1,28 @@
+// viewBox="0 0 400 340"
+// First Clifford Attractor — 100 iterations, circle() dots
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 80;
+let cx = 200;
+let cy = 170;
+
+let x = 0.1;
+let y = 0.1;
+
+define default PathLayer('attractor') ${
+  stroke: none;
+  fill: oklch(0.45 0.18 260);
+  opacity: 0.7;
+}
+
+for (i in 0..99) {
+  let nx = calc(sin(a * y) + c * cos(a * x));
+  let ny = calc(sin(b * x) + d * cos(b * y));
+  circle(calc(cx + nx * scale), calc(cy + ny * scale), 3);
+  x = nx;
+  y = ny;
+}

@@ -573,7 +573,7 @@ describe('Evaluator', () => {
     });
 
     it('throws error for excessive iterations', () => {
-      expect(() => compilePath('for (i in 0..20000) { M i 0 }')).toThrow('max');
+      expect(() => compilePath('for (i in 0..40000) { M i 0 }')).toThrow('max');
     });
 
     it('allows reasonable iteration count', () => {

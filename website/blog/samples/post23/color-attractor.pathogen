@@ -1,0 +1,43 @@
+// viewBox="0 0 600 480"
+// Color-mapped Clifford Attractor — 10,000 points across 5 temporal layers
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 100;
+let cx = 300;
+let cy = 240;
+
+let x = 0.1;
+let y = 0.1;
+
+// Shared styles + 5-color palette from deep blue to warm orange
+let baseStyles = ${
+  stroke-width: 1;
+  stroke-linecap: round;
+  fill: none;
+};
+let colors = Color.palette(Color('#1e40af'), Color('#f97316'), 5);
+let layers = colors.map {|c, i|
+  return PathLayer(`color-${i}`) ${ stroke: c; } << baseStyles;
+};
+
+// Each chunk renders 2,000 iterations in a different color.
+// Early iterations (blue) explore the attractor's outline;
+// later iterations (orange) fill in the dense interior.
+for ([colorLayer, chunk] in layers) {
+  for (i in 0..1999) {
+    let nx = calc(sin(a * y) + c * cos(a * x));
+    let ny = calc(sin(b * x) + d * cos(b * y));
+    x = nx;
+    y = ny;
+    colorLayer.apply {
+      M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
+    }
+  }
+}
+
+let g = GroupLayer('all') ${};
+g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);

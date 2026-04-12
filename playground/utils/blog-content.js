@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "clifford-attractor",
+    "title": "Strange Attractors: Clifford Attractor Art with Pathogen",
+    "date": "2026-04-14",
+    "description": "Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits."
+  },
+  {
     "slug": "vscode-developer-experience",
     "title": "Building a VS Code Extension for the Pathogen Language",
     "date": "2026-04-10",
@@ -1003,6 +1009,487 @@ layer('note').apply {
 <p>Unlike <code>quadSpline</code> (which emits <code>q</code> commands), <code>clippedQuadSpline</code> emits <code>c</code> (cubic) commands because splitting the shared CP into two independent CPs requires cubic Béziers. This is transparent to the user — the output is still a valid SVG path.</p>
 <p><strong>When to choose clippedQuadSpline:</strong> When you want the convenience of implicit angles (like <code>quadSpline</code>) but need to control how much the curve bulges at each segment. It&#39;s particularly useful for decorative borders, data visualization curves, and any shape where uniform curvature matters more than maximum expressiveness.</p>
 <p>All three spline functions emit relative commands, so they compose naturally with <a href="/pathogen/blog/pathblock-introduction">path blocks</a> and <a href="/pathogen/docs#path-blocks-transforms">transforms</a>. They also pair well with <a href="/pathogen/blog/heading-turn"><code>heading()</code> and <code>turn()</code></a> for establishing tangent context before tangent-dependent functions. Try editing any of the examples above in the <a href="/pathogen/">Pathogen playground</a> — adjust angles, handle lengths, and time values to see how the curves respond.</p>
+`,
+  'clifford-attractor': `<blockquote>
+<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/docs#syntax-for-loops">for loops</a>, <a href="/pathogen/docs#syntax-functions">user-defined functions</a>, <a href="/pathogen/docs#layers-defining-layers">layers</a>, and <a href="/pathogen/docs#color-colorpalettecolor-n">Color.palette</a>. If you&#39;re new to Pathogen, start with the <a href="/pathogen/docs#getting-started-getting-started">getting started guide</a>.</p>
+</blockquote>
+<p>Every previous blog post on this site has built geometry by design — placing shapes, computing curves, arranging data. This post is different. We&#39;re going to write a tight loop, iterate a pair of equations ten thousand times, and watch structure emerge from arithmetic. The result is a <strong>Clifford attractor</strong>: a strange attractor discovered by <a href="https://en.wikipedia.org/wiki/Clifford_A._Pickover">Clifford Pickover</a> and documented beautifully by <a href="https://paulbourke.net/fractals/clifford/">Paul Bourke</a>.</p>
+<p>Strange attractors are the visual fingerprints of chaotic dynamical systems. You feed a point through a set of equations, and the output becomes the input for the next iteration. The trajectory never repeats, never diverges, but settles into a bounded region of space — tracing intricate, self-similar patterns along the way.</p>
+<p>Pathogen turns out to be a surprisingly capable tool for this kind of work. If you&#39;ve built attractors in Processing or p5.js, you&#39;ll recognize the core loop — the Pathogen-specific parts are the layer system and SVG output. Its trig functions, variable mutation in loops, and multi-layer system handle the core algorithm cleanly. But the exercise also reveals friction — places where the language&#39;s design, optimized for geometry construction, bumps against the needs of iterative generative art. We&#39;ll build the attractor first, then talk honestly about what could be better.</p>
+<h2>The Math</h2>
+<p>The Clifford attractor is defined by two equations:</p>
+<pre><code class="hljs">xₙ₊₁ = sin(a · yₙ) + c · cos(a · xₙ)
+yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)
+</code></pre><p>Four parameters — <code>a</code>, <code>b</code>, <code>c</code>, <code>d</code> — control the shape. Starting from a seed point <code>(x₀, y₀)</code>, each iteration produces a new point. The trajectory doesn&#39;t converge to a fixed point or diverge to infinity — it&#39;s trapped in a bounded region, orbiting forever without repeating. That region is the attractor.</p>
+<p><mini-workspace caption="Iteration trajectory — each point maps to the next through the Clifford equations">
+  <code>// viewBox="0 0 560 260"
+// Iteration concept diagram — shows how points map through the Clifford equations
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 42;
+let cx = 280;
+let cy = 110;
+
+// Compute first 8 points to show the trajectory
+let x0 = 0.1;
+let y0 = 0.1;
+let x1 = calc(sin(a * y0) + c * cos(a * x0));
+let y1 = calc(sin(b * x0) + d * cos(b * y0));
+let x2 = calc(sin(a * y1) + c * cos(a * x1));
+let y2 = calc(sin(b * x1) + d * cos(b * y1));
+let x3 = calc(sin(a * y2) + c * cos(a * x2));
+let y3 = calc(sin(b * x2) + d * cos(b * y2));
+let x4 = calc(sin(a * y3) + c * cos(a * x3));
+let y4 = calc(sin(b * x3) + d * cos(b * y3));
+let x5 = calc(sin(a * y4) + c * cos(a * x4));
+let y5 = calc(sin(b * x4) + d * cos(b * y4));
+let x6 = calc(sin(a * y5) + c * cos(a * x5));
+let y6 = calc(sin(b * x5) + d * cos(b * y5));
+let x7 = calc(sin(a * y6) + c * cos(a * x6));
+let y7 = calc(sin(b * x6) + d * cos(b * y6));
+
+// Light background for text readability in dark mode
+let bg = PathLayer('bg') \${
+  fill: #f8f7f4;
+  stroke: none;
+};
+bg.apply { roundRect(0, 0, 560, 260, 6); }
+
+// Trajectory lines
+let trail = PathLayer('trail') \${
+  stroke: oklch(0.70 0.10 260);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+
+trail.apply {
+  M calc(cx + x0 * scale) calc(cy + y0 * scale)
+  L calc(cx + x1 * scale) calc(cy + y1 * scale)
+  L calc(cx + x2 * scale) calc(cy + y2 * scale)
+  L calc(cx + x3 * scale) calc(cy + y3 * scale)
+  L calc(cx + x4 * scale) calc(cy + y4 * scale)
+  L calc(cx + x5 * scale) calc(cy + y5 * scale)
+  L calc(cx + x6 * scale) calc(cy + y6 * scale)
+  L calc(cx + x7 * scale) calc(cy + y7 * scale)
+}
+
+// Points — larger for early, smaller for later
+let dots = PathLayer('dots') \${
+  stroke: none;
+  fill: oklch(0.45 0.20 260);
+};
+
+dots.apply {
+  circle(calc(cx + x0 * scale), calc(cy + y0 * scale), 5);
+  circle(calc(cx + x1 * scale), calc(cy + y1 * scale), 4.5);
+  circle(calc(cx + x2 * scale), calc(cy + y2 * scale), 4);
+  circle(calc(cx + x3 * scale), calc(cy + y3 * scale), 3.5);
+  circle(calc(cx + x4 * scale), calc(cy + y4 * scale), 3);
+  circle(calc(cx + x5 * scale), calc(cy + y5 * scale), 2.5);
+  circle(calc(cx + x6 * scale), calc(cy + y6 * scale), 2);
+  circle(calc(cx + x7 * scale), calc(cy + y7 * scale), 1.5);
+}
+
+// Labels
+let labels = TextLayer('labels') \${
+  font-size: 10;
+  fill: #444;
+  font-family: system-ui, sans-serif;
+};
+
+labels.apply {
+  text(calc(cx + x0 * scale + 12), calc(cy + y0 * scale - 4))\`(x₀, y₀)\`
+  text(calc(cx + x1 * scale - 52), calc(cy + y1 * scale + 4))\`(x₁, y₁)\`
+  text(calc(cx + x2 * scale + 12), calc(cy + y2 * scale + 16))\`(x₂, y₂)\`
+  text(calc(cx + x3 * scale + 12), calc(cy + y3 * scale - 8))\`(x₃, y₃)\`
+  text(calc(cx + x7 * scale + 8), calc(cy + y7 * scale + 12))\`(x₇, y₇)\`
+}
+
+// Formula text
+let formula = TextLayer('formula') \${
+  font-size: 13;
+  fill: #333;
+  font-family: ui-monospace, monospace;
+  text-anchor: start;
+};
+
+formula.apply {
+  text(30, 228)\`xₙ₊₁ = sin(a · yₙ) + c · cos(a · xₙ)\`
+  text(30, 246)\`yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)\`
+}
+
+let g = GroupLayer('concept') \${};
+g.append(bg, trail, dots, labels, formula);
+</code>
+  <img src="/pathogen/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
+</mini-workspace></p>
+<p>The diagram above shows the first 8 iterations from seed point <code>(0.1, 0.1)</code> with parameters <code>a = -1.4, b = 1.6, c = 1.0, d = 0.7</code>. The points jump unpredictably — that&#39;s the chaos — but they stay bounded roughly within <code>[-3, 3]</code> on both axes. Draw enough points and the attractor&#39;s structure emerges.</p>
+<h2>First Implementation: A Sparse Point Cloud</h2>
+<p>Let&#39;s start with just 100 iterations. The core pattern is a <code>for</code> loop that computes each new point from the previous one:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = -<span class="hljs-number">1.4</span>;
+<span class="hljs-keyword">let</span> b = <span class="hljs-number">1.6</span>;
+<span class="hljs-keyword">let</span> c = <span class="hljs-number">1.0</span>;
+<span class="hljs-keyword">let</span> d = <span class="hljs-number">0.7</span>;
+
+<span class="hljs-keyword">let</span> scale = <span class="hljs-number">80</span>;
+<span class="hljs-keyword">let</span> cx = <span class="hljs-number">200</span>;
+<span class="hljs-keyword">let</span> cy = <span class="hljs-number">170</span>;
+
+<span class="hljs-keyword">let</span> x = <span class="hljs-number">0.1</span>;
+<span class="hljs-keyword">let</span> y = <span class="hljs-number">0.1</span>;
+
+<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.99</span>) {
+  <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
+  <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
+  <span class="hljs-title function_">circle</span>(<span class="hljs-title function_">calc</span>(cx + nx * scale), <span class="hljs-title function_">calc</span>(cy + ny * scale), <span class="hljs-number">3</span>);
+  x = nx;
+  y = ny;
+}
+</code></pre><p>A few things to notice:</p>
+<p><strong>Temporary variables are essential.</strong> Both <code>nx</code> and <code>ny</code> depend on the <em>current</em> <code>x</code> and <code>y</code>. If you updated <code>x</code> before computing <code>ny</code>, you&#39;d be mixing old and new values — a classic pitfall in iterative algorithms. The pattern <code>let nx = ...; let ny = ...; x = nx; y = ny;</code> keeps both computations reading from the same state.</p>
+<p><strong>Coordinate mapping.</strong> The attractor lives in a small mathematical space (roughly <code>[-3, 3]</code>). To render in SVG, we scale and offset to the canvas center. This <code>calc(cx + value * scale)</code> pattern is the same coordinate transform you&#39;d write in any graphics system.</p>
+<p><strong><code>circle()</code> for visibility.</strong> At 100 points, individual dots need to be large enough to see. We use radius <code>3</code> here — we&#39;ll optimize this later.</p>
+<p><mini-workspace code-open caption="100 iterations — the attractor's skeleton is just barely visible">
+  <code>// viewBox="0 0 400 340"
+// First Clifford Attractor — 100 iterations, circle() dots
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 80;
+let cx = 200;
+let cy = 170;
+
+let x = 0.1;
+let y = 0.1;
+
+define default PathLayer('attractor') \${
+  stroke: none;
+  fill: oklch(0.45 0.18 260);
+  opacity: 0.7;
+}
+
+for (i in 0..99) {
+  let nx = calc(sin(a * y) + c * cos(a * x));
+  let ny = calc(sin(b * x) + d * cos(b * y));
+  circle(calc(cx + nx * scale), calc(cy + ny * scale), 3);
+  x = nx;
+  y = ny;
+}
+</code>
+  <img src="/pathogen/blog/samples/post23/first-attractor.svg" alt="100 iterations — the attractor's skeleton is just barely visible" loading="lazy">
+</mini-workspace></p>
+<p>With only 100 points, you can see individual dots scattered across the canvas. Some clustering is visible — the attractor&#39;s structure is already hinting at itself — but the image is sparse. We need more iterations.</p>
+<h2>Scaling Up: 10,000 Points</h2>
+<p>Pathogen&#39;s <code>for</code> loop supports up to 32,000 iterations per loop (a safety limit to prevent runaway programs). For our first full render, 10,000 points is plenty to reveal the attractor&#39;s structure.</p>
+<p>But first, an optimization. Each <code>circle()</code> call generates two SVG arc commands — for 10,000 circles, that&#39;s 30,000 path commands and roughly 800KB of SVG data. Instead, we can render each point as a zero-length line segment: <code>M x y l 0 0</code>. With <code>stroke-linecap: round</code> set on the layer, SVG renders this as a circular dot. Two commands per point instead of three, cutting the SVG output nearly in half.</p>
+<pre><code class="hljs language-pathogen">define <span class="hljs-keyword">default</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;attractor&#x27;</span>) \${
+  <span class="hljs-attr">stroke</span>: <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.55</span> <span class="hljs-number">0.18</span> <span class="hljs-number">260</span>);
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.0</span>;
+  stroke-<span class="hljs-attr">linecap</span>: round;
+  <span class="hljs-attr">fill</span>: none;
+}
+
+<span class="hljs-comment">// Seed point — iteration 0</span>
+M <span class="hljs-title function_">calc</span>(cx + x * scale) <span class="hljs-title function_">calc</span>(cy + y * scale)
+
+<span class="hljs-comment">// Iterations 1–9,999</span>
+<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span><span class="hljs-number">.9999</span>) {
+  <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
+  <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
+  x = nx;
+  y = ny;
+  M <span class="hljs-title function_">calc</span>(cx + nx * scale) <span class="hljs-title function_">calc</span>(cy + ny * scale) l <span class="hljs-number">0</span> <span class="hljs-number">0</span>
+}
+</code></pre><p>The initial <code>M</code> command plots the seed point before the loop, so the loop starts at <code>1</code> rather than <code>0</code> — together they produce exactly 10,000 points (the per-loop iteration limit). The <code>M x y l 0 0</code> idiom is a well-known SVG trick for point rendering, but it&#39;s admittedly non-obvious. A dedicated <code>dot(x, y)</code> function would communicate intent more clearly — we&#39;ll return to this idea later.</p>
+<p><mini-workspace code-open caption="10,000 iterations — the full Clifford attractor emerges">
+  <code>// viewBox="0 0 600 480"
+// Full Clifford Attractor — 10,000 points, efficient line rendering
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 100;
+let cx = 300;
+let cy = 240;
+
+let x = 0.1;
+let y = 0.1;
+
+define default PathLayer('attractor') \${
+  stroke: oklch(0.55 0.18 260);
+  stroke-width: 1.0;
+  stroke-linecap: round;
+  fill: none;
+}
+
+// Initial move
+M calc(cx + x * scale) calc(cy + y * scale)
+
+for (i in 1..9999) {
+  let nx = calc(sin(a * y) + c * cos(a * x));
+  let ny = calc(sin(b * x) + d * cos(b * y));
+  x = nx;
+  y = ny;
+  // Each point is a zero-length line segment rendered as a dot
+  M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
+}
+</code>
+  <img src="/pathogen/blog/samples/post23/full-attractor.svg" alt="10,000 iterations — the full Clifford attractor emerges" loading="lazy">
+</mini-workspace></p>
+<p>At 10,000 points, the attractor&#39;s character is unmistakable. The classic parameter set <code>(a = -1.4, b = 1.6, c = 1.0, d = 0.7)</code> produces a figure that resembles overlapping leaf forms, with dense filaments tracing the trajectories that the system visits most often.</p>
+<h2>Color Mapping with Layers</h2>
+<p>A single-color attractor is striking, but color can reveal the attractor&#39;s temporal structure — how the trajectory evolves over time. In many attractor renderers, each point&#39;s color is determined by its iteration index or by the local density of visits. Pathogen&#39;s layer system gives us a clean way to approximate this.</p>
+<p>The idea: split 10,000 iterations into 5 chunks of 2,000 each. Each chunk renders to a different layer with a different color from a palette. Early iterations (exploring the attractor&#39;s outline) get one color; later iterations (filling in the dense interior) get another.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> baseStyles = \${
+  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
+  stroke-<span class="hljs-attr">linecap</span>: round;
+  <span class="hljs-attr">fill</span>: none;
+};
+<span class="hljs-keyword">let</span> colors = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e40af&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f97316&#x27;</span>), <span class="hljs-number">5</span>);
+<span class="hljs-keyword">let</span> layers = colors.<span class="hljs-property">map</span> {|c, i|
+  <span class="hljs-keyword">return</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`color-<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">stroke</span>: c; } &lt;&lt; baseStyles;
+};
+</code></pre><p><code>Color.palette()</code> generates 5 evenly interpolated colors between blue and orange. <code>.map</code> iterates over them, creating a <code>PathLayer</code> for each — the <code>&lt;&lt;</code> operator merges the per-layer stroke color with the shared base styles. No repetition, and the layer count is driven by the palette size.</p>
+<p>The nested loop handles iteration and color dispatch:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> ([colorLayer, chunk] <span class="hljs-keyword">in</span> layers) {
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.1999</span>) {
+    <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
+    <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
+    x = nx;
+    y = ny;
+    colorLayer.<span class="hljs-property">apply</span> {
+      M <span class="hljs-title function_">calc</span>(cx + nx * scale) <span class="hljs-title function_">calc</span>(cy + ny * scale) l <span class="hljs-number">0</span> <span class="hljs-number">0</span>
+    }
+  }
+}
+</code></pre><p>The outer loop destructures each layer and its index. The inner loop draws 2,000 points. Since <code>x</code> and <code>y</code> are declared in the outer scope, they persist across chunks — the attractor&#39;s trajectory is continuous even though the color changes.</p>
+<p><mini-workspace code-open caption="Temporal color mapping — blue (early iterations) to orange (late iterations)">
+  <code>// viewBox="0 0 600 480"
+// Color-mapped Clifford Attractor — 10,000 points across 5 temporal layers
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 100;
+let cx = 300;
+let cy = 240;
+
+let x = 0.1;
+let y = 0.1;
+
+// Shared styles + 5-color palette from deep blue to warm orange
+let baseStyles = \${
+  stroke-width: 1;
+  stroke-linecap: round;
+  fill: none;
+};
+let colors = Color.palette(Color('#1e40af'), Color('#f97316'), 5);
+let layers = colors.map {|c, i|
+  return PathLayer(\`color-\${i}\`) \${ stroke: c; } &lt;&lt; baseStyles;
+};
+
+// Each chunk renders 2,000 iterations in a different color.
+// Early iterations (blue) explore the attractor's outline;
+// later iterations (orange) fill in the dense interior.
+for ([colorLayer, chunk] in layers) {
+  for (i in 0..1999) {
+    let nx = calc(sin(a * y) + c * cos(a * x));
+    let ny = calc(sin(b * x) + d * cos(b * y));
+    x = nx;
+    y = ny;
+    colorLayer.apply {
+      M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
+    }
+  }
+}
+
+let g = GroupLayer('all') \${};
+g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
+</code>
+  <img src="/pathogen/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
+</mini-workspace></p>
+<p>The color reveals something the monochrome version hides: the attractor doesn&#39;t fill uniformly. Early iterations (blue) trace the broad outline. Later iterations (orange) concentrate in the densest filaments, reinforcing the paths the system visits repeatedly. This temporal layering is a rough proxy for the density-based histogram rendering that professional attractor tools use.</p>
+<h2>Parameter Exploration</h2>
+<p>The four parameters are the soul of the attractor. Small changes produce dramatically different forms. Here are three parameter sets that show the range:</p>
+<p><mini-workspace caption="Three parameter sets — each producing a distinct attractor form">
+  <code>// viewBox="0 0 900 370"
+// Parameter Gallery — three Clifford attractors with different parameters
+
+// Reusable attractor function
+fn cliffordStep(x, y, a, b, c, d) {
+  return {
+    x: calc(sin(a * y) + c * cos(a * x)),
+    y: calc(sin(b * x) + d * cos(b * y))
+  };
+}
+
+fn drawAttractor(target, ox, oy, a, b, c, d) {
+  let x = 0.1;
+  let y = 0.1;
+  let scale = 50;
+  target.apply {
+    for (i in 0..4999) {
+      let next = cliffordStep(x, y, a, b, c, d);
+      x = next.x;
+      y = next.y;
+      M calc(ox + x * scale) calc(oy + y * scale) l 0 0
+    }
+  }
+}
+
+// --- Set 1: Classic ---
+let p1 = PathLayer('set1') \${
+  stroke: oklch(0.50 0.20 260);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  fill: none;
+};
+
+// --- Set 2: Swirl ---
+let p2 = PathLayer('set2') \${
+  stroke: oklch(0.50 0.20 330);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  fill: none;
+};
+
+// --- Set 3: Organic ---
+let p3 = PathLayer('set3') \${
+  stroke: oklch(0.50 0.20 150);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  fill: none;
+};
+
+drawAttractor(p1, 150, 175, -1.4, 1.6, 1.0, 0.7);
+drawAttractor(p2, 450, 175, 1.6, -0.6, -1.2, 1.6);
+drawAttractor(p3, 750, 175, 1.7, 1.7, 0.6, 1.2);
+
+// Labels
+let names = TextLayer('names') \${
+  font-size: 14;
+  fill: oklch(0.75 0.05 260);
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: middle;
+};
+
+names.apply {
+  text(150, 332)\`Classic\`
+  text(450, 332)\`Swirl\`
+  text(750, 332)\`Organic\`
+}
+
+let params = TextLayer('params') \${
+  font-size: 11;
+  fill: oklch(0.55 0.03 260);
+  font-family: ui-monospace, monospace;
+  text-anchor: middle;
+};
+
+params.apply {
+  text(150, 348)\`a=-1.4  b=1.6  c=1.0  d=0.7\`
+  text(450, 348)\`a=1.6  b=-0.6  c=-1.2  d=1.6\`
+  text(750, 348)\`a=1.7  b=1.7  c=0.6  d=1.2\`
+}
+
+let g = GroupLayer('gallery') \${};
+g.append(p1, p2, p3, names, params);
+</code>
+  <img src="/pathogen/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
+</mini-workspace></p>
+<p>The <strong>Classic</strong> set produces overlapping leaf forms with clearly defined filaments. The <strong>Swirl</strong> set creates an angular, dispersed figure with sharper trajectories. The <strong>Organic</strong> set forms a denser, moon-like structure where the trajectories pack tightly together. All three emerge from the same two equations — only the four parameters differ.</p>
+<p>The implementation extracts the Clifford step into a reusable function:</p>
+<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">cliffordStep</span>(<span class="hljs-params">x, y, a, b, c, d</span>) {
+  <span class="hljs-keyword">return</span> {
+    <span class="hljs-attr">x</span>: <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x)),
+    <span class="hljs-attr">y</span>: <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y))
+  };
+}
+</code></pre><p>The function returns an object with <code>x</code> and <code>y</code> properties, which the caller destructures. This pattern — packaging both return values in an object — avoids the temporary-variable dance when the computation is factored out of the loop.</p>
+<h2>Interactive Colors</h2>
+<p>Since the attractor parameters control the <em>geometry</em> and must be baked in at compile time, we can&#39;t make them reactive via CSS variables. But we <em>can</em> make the color palette reactive. The sample below uses <code>CSSVar</code> for the early and late colors — try changing them in the playground&#39;s CSS variable panel to see the palette update in real time:</p>
+<p><mini-workspace code-open caption="Reactive color palette — change --early-color and --late-color to restyle the attractor">
+  <code>// viewBox="0 0 600 480"
+// Interactive Clifford Attractor — CSS variable colors
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 100;
+let cx = 300;
+let cy = 240;
+
+let x = 0.1;
+let y = 0.1;
+
+// Reactive colors — change in the playground's CSS variable panel
+let earlyColor = Color(CSSVar('--early-color', '#1e40af'));
+let lateColor = Color(CSSVar('--late-color', '#f97316'));
+
+let baseStyles = \${
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  fill: none;
+};
+let colors = Color.palette(earlyColor, lateColor, 5);
+let layers = colors.map {|c, i|
+  return PathLayer(\`color-\${i}\`) \${ stroke: c; } &lt;&lt; baseStyles;
+};
+
+for ([colorLayer, chunk] in layers) {
+  for (i in 0..1999) {
+    let nx = calc(sin(a * y) + c * cos(a * x));
+    let ny = calc(sin(b * x) + d * cos(b * y));
+    x = nx;
+    y = ny;
+    colorLayer.apply {
+      M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
+    }
+  }
+}
+
+let g = GroupLayer('all') \${};
+g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
+</code>
+  <img src="/pathogen/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">
+</mini-workspace></p>
+<p>This works because <code>Color.palette()</code> generates CSS color functions that reference the underlying variables. The geometry stays fixed, but the visual character transforms instantly.</p>
+<h2>Where the Language Could Grow</h2>
+<p>Building this attractor was a satisfying exercise, but it also exposed genuine friction. These aren&#39;t bugs — they&#39;re places where Pathogen&#39;s design, shaped by geometry construction, meets the different demands of iterative generative art.</p>
+<h3>A <code>dot()</code> function</h3>
+<p>The <code>M x y l 0 0</code> idiom for rendering individual points works, but it&#39;s an SVG implementation detail leaking into the language. A <code>dot(x, y)</code> function (optionally <code>dot(x, y, radius)</code>) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to <a href="/pathogen/docs#stdlib-standard-library-reference">stdlib</a> — analogous to how <code>circle()</code> wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.</p>
+<h3>Higher iteration limits</h3>
+<p>The 32,000-iteration cap per loop is sufficient for most attractor visualizations, but generative art routinely wants 50,000 or 100,000 iterations for high-resolution output. A configurable compiler option like <code>--max-iterations=100000</code> would let users opt in to higher limits when they know what they&#39;re doing.</p>
+<p>The nested-loop workaround (outer loop over chunks, inner loop over iteration batches) does get you past the per-loop limit today — <code>x</code>/<code>y</code> persist across the outer scope. But a single loop with a higher cap would be cleaner.</p>
+<h3>Per-point color</h3>
+<p>All segments within a layer share one stroke color. The <code>.map</code> + <code>&lt;&lt;</code> pattern we used above eliminates the boilerplate of declaring layers individually, but the color mapping is still discrete — 5 bands, not a continuous gradient. True per-point coloring would require SVG <code>&lt;circle&gt;</code> elements (each independently styleable) rather than a single <code>&lt;path&gt;</code>. That&#39;s a fundamental constraint of the SVG model, not just Pathogen. A <code>scatter()</code> function that emits individual elements from a list of <code>{x, y, color}</code> objects would trade path efficiency for per-element styling. Even without that, the multi-layer approach produces compelling results.</p>
+<h2>What We Built</h2>
+<p>Starting from two lines of math, we built:</p>
+<ol>
+<li>A <strong>100-point sparse point cloud</strong> showing the basic algorithm and the temporary-variable pattern</li>
+<li>A <strong>10,000-point full render</strong> using the <code>M x y l 0 0</code> optimization for efficient SVG output</li>
+<li>A <strong>5-layer color-mapped visualization</strong> that reveals temporal structure through nested loops and array-dispatched layers</li>
+<li>A <strong>parameter gallery</strong> comparing three distinct attractor forms via a reusable <code>cliffordStep()</code> function</li>
+<li>An <strong>interactive variant</strong> with reactive CSS variable colors</li>
+</ol>
+<p>The Clifford attractor is a small window into a vast space. Pathogen handles the core workflow — iterate, map coordinates, render — cleanly. The friction points we identified aren&#39;t blockers; they&#39;re signposts for where the language wants to grow as generative art becomes a larger part of its story.</p>
+<h2>Try It Yourself</h2>
+<p>Paste any of the samples above into the <a href="/pathogen/">playground</a> and start changing parameters. Try <code>a = 1.5, b = -1.8, c = 1.6, d = 0.9</code> for a dense spiral, or <code>a = -1.7, b = 1.3, c = -0.1, d = -1.2</code> for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.</p>
 `,
   'cloudflare-pages-spa-routing-struggle': `<h1>The CloudFlare Pages SPA Routing Odyssey: A Developer&#39;s Journey Through Documentation Gaps</h1>
 <h2>The Problem</h2>
@@ -12002,14 +12489,20 @@ let paramColor = Color('#8b5cf6');
 
 let foo = \`stuff \${calc(1 + 1)}\`;
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 560, 400); }
-log(bg);
+let bg = PathLayer('bg') \${
+  fill: bgColor;
+};
+bg.apply {
+  rect(0, 0, 560, 400);
+}
 
 // ============================================================
 // Group 1: Title
 // ============================================================
-define GroupLayer('title-group') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('title-group') \${
+  translate-x: 0;
+  translate-y: 0;
+}
 
 let title = TextLayer('title') \${
   font-size: 13;
@@ -12026,7 +12519,10 @@ title.apply {
 // ============================================================
 // Group 2: Wedge diagram with annotations
 // ============================================================
-define GroupLayer('diagram') \${ translate-x: 30; translate-y: 50; }
+define GroupLayer('diagram') \${
+  translate-x: 30;
+  translate-y: 50;
+}
 
 let cx = 130;
 let cy = 155;
@@ -12036,7 +12532,12 @@ let fromA = rad(-50);
 let toA = rad(35);
 
 // Reference circles (dashed)
-let guides = PathLayer('guides') \${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+let guides = PathLayer('guides') \${
+  fill: none;
+  stroke: guideColor;
+  stroke-width: 0.6;
+  stroke-dasharray: 4 3;
+};
 layer('diagram').append(guides);
 guides.apply {
   circle(cx, cy, innerR);
@@ -12044,26 +12545,57 @@ guides.apply {
 }
 
 // Sharp corners (ghost)
-let sharpLayer = PathLayer('sharp') \${ fill: barColor; stroke: none; opacity: 0.2; };
+let sharpLayer = PathLayer('sharp') \${
+  fill: barColor;
+  stroke: none;
+  opacity: 0.2;
+};
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 0);
+  radialWedge(innerR,
+      outerR,
+      fromA,
+      toA,
+      0);
 }
 
 // Rounded corners
-let roundLayer = PathLayer('rounded') \${ fill: barColor; stroke: none; };
+let roundLayer = PathLayer('rounded') \${
+  fill: barColor;
+  stroke: none;
+};
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 6);
+  radialWedge(innerR,
+      outerR,
+      fromA,
+      toA,
+      6);
 }
 
 // --- Annotation layers ---
-let dots = PathLayer('dots') \${ fill: annotColor; stroke: none; };
-let leaders = PathLayer('leaders') \${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
-let arcs = PathLayer('arcs') \${ fill: none; stroke: annotColor; stroke-width: 0.8; };
-let ticks = PathLayer('ticks') \${ fill: none; stroke: annotColor; stroke-width: 0.7; };
+let dots = PathLayer('dots') \${
+  fill: annotColor;
+  stroke: none;
+};
+let leaders = PathLayer('leaders') \${
+  fill: none;
+  stroke: leaderColor;
+  stroke-width: 0.5;
+  stroke-dasharray: 2 2;
+};
+let arcs = PathLayer('arcs') \${
+  fill: none;
+  stroke: annotColor;
+  stroke-width: 0.8;
+};
+let ticks = PathLayer('ticks') \${
+  fill: none;
+  stroke: annotColor;
+  stroke-width: 0.7;
+};
 let labelsMid = TextLayer('labels-mid') \${
   font-size: 9;
   fill: textColor;
@@ -12082,19 +12614,29 @@ let labelsEnd = TextLayer('labels-end') \${
   font-family: system-ui, sans-serif;
   text-anchor: end;
 };
-layer('diagram').append(arcs, leaders, dots, labelsMid, labelsStart, labelsEnd);
+layer('diagram').append(arcs,
+    leaders,
+    dots,
+    labelsMid,
+    labelsStart,
+    labelsEnd);
 
 // --- Center dot + label ---
-dots.apply { circle(cx, cy, 2.5); }
+dots.apply {
+  circle(cx, cy, 2.5);
+}
 labelsEnd.apply {
-  text(calc(cx - 5), calc(cy - 4))\`center\`
+  text(calc(cx - 5), calc(cy - 4))\`center\`;
 }
 
 // --- innerR: dot on inner radius of wedge, dashed leader to label above ---
-let innerDotAngle = calc((fromA + toA) / 2 - 0.15);  // slightly off-center on inner arc
+let innerDotAngle = calc(fromA + toA / 2 - 0.15);
+// slightly off-center on inner arc
 let innerDotX = polarX(cx, innerDotAngle, innerR);
 let innerDotY = polarY(cy, innerDotAngle, innerR);
-dots.apply { circle(innerDotX, innerDotY, 2); }
+dots.apply {
+  circle(innerDotX, innerDotY, 2);
+}
 
 // Label above the inner concentric circle
 let innerLabelX = calc(innerDotX - 12);
@@ -12104,16 +12646,18 @@ leaders.apply {
   L innerLabelX innerLabelY
 }
 labelsEnd.apply {
-  text(calc(innerLabelX + 14), calc(innerLabelY - 2))\`innerR\`
+  text(calc(innerLabelX + 14), calc(innerLabelY - 2))\`innerR\`;
 }
 
 // --- outerR label: dot on outer circle at the wedge midpoint, label just outside ---
-let outerLabelAngle = calc((fromA + toA) / 2);
+let outerLabelAngle = calc(fromA + toA / 2);
 let outerDotX = polarX(cx, outerLabelAngle, outerR);
 let outerDotY = polarY(cy, outerLabelAngle, outerR);
-dots.apply { circle(outerDotX, outerDotY, 2); }
+dots.apply {
+  circle(outerDotX, outerDotY, 2);
+}
 labelsStart.apply {
-  text(calc(outerDotX + 6), calc(outerDotY + 3))\`outerR\`
+  text(calc(outerDotX + 6), calc(outerDotY + 3))\`outerR\`;
 }
 
 // --- fromAngle / toAngle arcs INSIDE the wedge ---
@@ -12127,13 +12671,15 @@ arcs.apply {
 // fromAngle label — short dashed leader to label above-left
 let fromTipX = polarX(cx, fromA, arcR);
 let fromTipY = polarY(cy, fromA, arcR);
-dots.apply { circle(fromTipX, fromTipY, 1.5); }
+dots.apply {
+  circle(fromTipX, fromTipY, 1.5);
+}
 leaders.apply {
   M fromTipX fromTipY
   L calc(fromTipX - 16) calc(fromTipY - 10)
 }
 labelsEnd.apply {
-  text(calc(fromTipX - 18), calc(fromTipY - 8))\`fromAngle\`
+  text(calc(fromTipX - 18), calc(fromTipY - 8))\`fromAngle\`;
 }
 
 // toAngle arc (from 0° reference to toA)
@@ -12144,22 +12690,30 @@ arcs.apply {
 // toAngle label — short dashed leader to label below-left
 let toTipX = polarX(cx, toA, arcR);
 let toTipY = polarY(cy, toA, arcR);
-dots.apply { circle(toTipX, toTipY, 1.5); }
+dots.apply {
+  circle(toTipX, toTipY, 1.5);
+}
 leaders.apply {
   M toTipX toTipY
   L calc(toTipX - 12) calc(toTipY + 12)
 }
 labelsEnd.apply {
-  text(calc(toTipX - 14), calc(toTipY + 14))\`toAngle\`
+  text(calc(toTipX - 14), calc(toTipY + 14))\`toAngle\`;
 }
 
 // 0° reference tick
-guides.apply { M cx cy L calc(cx + arcR + 3) cy }
+guides.apply {
+  M cx cy
+  L calc(cx + arcR + 3) cy
+}
 
 // ============================================================
 // Group 3: Stdlib function call (code)
 // ============================================================
-define GroupLayer('code-group') \${ translate-x: 350; translate-y: 50; }
+define GroupLayer('code-group') \${
+  translate-x: 350;
+  translate-y: 50;
+}
 
 let headerLabel = TextLayer('header') \${
   font-size: 10;
@@ -12169,7 +12723,9 @@ let headerLabel = TextLayer('header') \${
   text-anchor: start;
 };
 layer('code-group').append(headerLabel);
-headerLabel.apply { text(0, 10)\`stdlib function call:\` }
+headerLabel.apply {
+  text(0, 10)\`stdlib function call:\`;
+}
 
 let codeLayer = TextLayer('code') \${
   font-size: 9.5;
@@ -12179,41 +12735,50 @@ let codeLayer = TextLayer('code') \${
 };
 layer('code-group').append(codeLayer);
 
-let kwStyle = \${ fill: kwColor; };
-let paramStyle = \${ fill: paramColor; };
-let plainStyle = \${ fill: annotColor; };
+let kwStyle = \${
+  fill: kwColor;
+};
+let paramStyle = \${
+  fill: paramColor;
+};
+let plainStyle = \${
+  fill: annotColor;
+};
 
 codeLayer.apply {
   text(0, 32) {
-    tspan(0, 0, 0, kwStyle)\`M\`
-    tspan(0, 0, 0, plainStyle)\` cx cy\`
+    tspan(0, 0, 0, kwStyle)\`M\`;
+    tspan(0, 0, 0, plainStyle)\` cx cy\`;
   }
   text(0, 48) {
-    tspan(0, 0, 0, kwStyle)\`radialWedge\`
-    tspan(0, 0, 0, plainStyle)\`(\`
+    tspan(0, 0, 0, kwStyle)\`radialWedge\`;
+    tspan(0, 0, 0, plainStyle)\`(\`;
   }
   text(14, 64) {
-    tspan(0, 0, 0, paramStyle)\`innerR\`
-    tspan(0, 0, 0, plainStyle)\`, \`
-    tspan(0, 0, 0, paramStyle)\`outerR\`
-    tspan(0, 0, 0, plainStyle)\`,\`
+    tspan(0, 0, 0, paramStyle)\`innerR\`;
+    tspan(0, 0, 0, plainStyle)\`, \`;
+    tspan(0, 0, 0, paramStyle)\`outerR\`;
+    tspan(0, 0, 0, plainStyle)\`,\`;
   }
   text(14, 80) {
-    tspan(0, 0, 0, paramStyle)\`fromAngle\`
-    tspan(0, 0, 0, plainStyle)\`, \`
-    tspan(0, 0, 0, paramStyle)\`toAngle\`
-    tspan(0, 0, 0, plainStyle)\`,\`
+    tspan(0, 0, 0, paramStyle)\`fromAngle\`;
+    tspan(0, 0, 0, plainStyle)\`, \`;
+    tspan(0, 0, 0, paramStyle)\`toAngle\`;
+    tspan(0, 0, 0, plainStyle)\`,\`;
   }
   text(14, 96) {
-    tspan(0, 0, 0, paramStyle)\`cornerR\`
+    tspan(0, 0, 0, paramStyle)\`cornerR\`;
   }
-  text(0, 112)\`)\`
+  text(0, 112)\`)\`;
 }
 
 // ============================================================
 // Group 4: Graceful degradation + corner callout
 // ============================================================
-define GroupLayer('notes-group') \${ translate-x: 350; translate-y: 195; }
+define GroupLayer('notes-group') \${
+  translate-x: 350;
+  translate-y: 195;
+}
 
 let notesHeader = TextLayer('notes-header') \${
   font-size: 10;
@@ -12223,7 +12788,9 @@ let notesHeader = TextLayer('notes-header') \${
   text-anchor: start;
 };
 layer('notes-group').append(notesHeader);
-notesHeader.apply { text(0, 10)\`Graceful degradation:\` }
+notesHeader.apply {
+  text(0, 10)\`Graceful degradation:\`;
+}
 
 let notesCode = TextLayer('notes-code') \${
   font-size: 9.5;
@@ -12233,10 +12800,10 @@ let notesCode = TextLayer('notes-code') \${
 };
 layer('notes-group').append(notesCode);
 notesCode.apply {
-  text(0, 30)\`// cornerR auto-reduces\`
-  text(0, 46)\`// when ends are too narrow\`
-  text(0, 62)\`// All relative commands\`
-  text(0, 78)\`// No M — composable in @{}\`
+  text(0, 30)\`// cornerR auto-reduces\`;
+  text(0, 46)\`// when ends are too narrow\`;
+  text(0, 62)\`// All relative commands\`;
+  text(0, 78)\`// No M — composable in @{}\`;
 }
 
 let accentLabels = TextLayer('accent') \${
@@ -12247,8 +12814,8 @@ let accentLabels = TextLayer('accent') \${
 };
 layer('notes-group').append(accentLabels);
 accentLabels.apply {
-  text(0, 110)\`cornerR = 6 rounds all corners\`
-  text(0, 124)\`cornerR = 0 sharp edges (ghost)\`
+  text(0, 110)\`cornerR = 6 rounds all corners\`;
+  text(0, 124)\`cornerR = 0 sharp edges (ghost)\`;
 }
 </code>
   <img src="/pathogen/blog/samples/post16/annular-sector.svg" alt="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" loading="lazy">

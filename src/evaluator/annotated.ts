@@ -17,6 +17,10 @@ import {
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { sanitizeSVGFragment } from './svg-sanitize';
+
+/** Maximum iterations allowed per for-loop to prevent runaway programs. */
+const MAX_ITERATIONS = 32000;
+
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { partitionPath, samplePathAtFraction } from './sampling';
@@ -3553,7 +3557,6 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         throw new Error('for loop range must be finite');
       }
 
-      const MAX_ITERATIONS = 10000;
       const ascending = start <= end;
       const iterations = ascending ? end - start + 1 : start - end + 1;
       if (iterations > MAX_ITERATIONS) {
@@ -3879,7 +3882,6 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         throw new Error('for loop range must be finite');
       }
 
-      const MAX_ITERATIONS = 10000;
       const ascending = start <= end;
       const totalIterations = ascending ? end - start + 1 : start - end + 1;
       if (totalIterations > MAX_ITERATIONS) {

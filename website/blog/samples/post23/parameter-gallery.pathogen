@@ -1,0 +1,83 @@
+// viewBox="0 0 900 370"
+// Parameter Gallery — three Clifford attractors with different parameters
+
+// Reusable attractor function
+fn cliffordStep(x, y, a, b, c, d) {
+  return {
+    x: calc(sin(a * y) + c * cos(a * x)),
+    y: calc(sin(b * x) + d * cos(b * y))
+  };
+}
+
+fn drawAttractor(target, ox, oy, a, b, c, d) {
+  let x = 0.1;
+  let y = 0.1;
+  let scale = 50;
+  target.apply {
+    for (i in 0..4999) {
+      let next = cliffordStep(x, y, a, b, c, d);
+      x = next.x;
+      y = next.y;
+      M calc(ox + x * scale) calc(oy + y * scale) l 0 0
+    }
+  }
+}
+
+// --- Set 1: Classic ---
+let p1 = PathLayer('set1') ${
+  stroke: oklch(0.50 0.20 260);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  fill: none;
+};
+
+// --- Set 2: Swirl ---
+let p2 = PathLayer('set2') ${
+  stroke: oklch(0.50 0.20 330);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  fill: none;
+};
+
+// --- Set 3: Organic ---
+let p3 = PathLayer('set3') ${
+  stroke: oklch(0.50 0.20 150);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  fill: none;
+};
+
+drawAttractor(p1, 150, 175, -1.4, 1.6, 1.0, 0.7);
+drawAttractor(p2, 450, 175, 1.6, -0.6, -1.2, 1.6);
+drawAttractor(p3, 750, 175, 1.7, 1.7, 0.6, 1.2);
+
+// Labels
+let names = TextLayer('names') ${
+  font-size: 14;
+  fill: oklch(0.75 0.05 260);
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-anchor: middle;
+};
+
+names.apply {
+  text(150, 332)`Classic`
+  text(450, 332)`Swirl`
+  text(750, 332)`Organic`
+}
+
+let params = TextLayer('params') ${
+  font-size: 11;
+  fill: oklch(0.55 0.03 260);
+  font-family: ui-monospace, monospace;
+  text-anchor: middle;
+};
+
+params.apply {
+  text(150, 348)`a=-1.4  b=1.6  c=1.0  d=0.7`
+  text(450, 348)`a=1.6  b=-0.6  c=-1.2  d=1.6`
+  text(750, 348)`a=1.7  b=1.7  c=0.6  d=1.2`
+}
+
+let g = GroupLayer('gallery') ${};
+g.append(p1, p2, p3, names, params);

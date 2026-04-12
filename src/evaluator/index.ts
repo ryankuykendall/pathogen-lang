@@ -11,6 +11,9 @@ import {
 } from './context';
 import { formatNum, resetNumberFormat, setNumberFormat } from './format';
 import { sanitizeSVGFragment } from './svg-sanitize';
+
+/** Maximum iterations allowed per for-loop to prevent runaway programs. */
+const MAX_ITERATIONS = 32000;
 import {
   cssSourceExpr,
   darken,
@@ -5964,7 +5967,6 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
         throw new Error('for loop range must be finite (got Infinity or NaN)');
       }
 
-      const MAX_ITERATIONS = 10000;
       const ascending = start <= end;
       const iterations = ascending ? end - start + 1 : start - end + 1;
       if (iterations > MAX_ITERATIONS) {
@@ -6130,7 +6132,6 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         throw new Error(formatError('for loop range must be finite (got Infinity or NaN)', getLine(stmt)));
       }
 
-      const MAX_ITERATIONS = 10000;
       const ascending = start <= end;
       // Inclusive ranges: both start and end are included
       const iterations = ascending ? end - start + 1 : start - end + 1;

@@ -1,0 +1,103 @@
+// viewBox="0 0 560 260"
+// Iteration concept diagram — shows how points map through the Clifford equations
+
+let a = -1.4;
+let b = 1.6;
+let c = 1.0;
+let d = 0.7;
+
+let scale = 42;
+let cx = 280;
+let cy = 110;
+
+// Compute first 8 points to show the trajectory
+let x0 = 0.1;
+let y0 = 0.1;
+let x1 = calc(sin(a * y0) + c * cos(a * x0));
+let y1 = calc(sin(b * x0) + d * cos(b * y0));
+let x2 = calc(sin(a * y1) + c * cos(a * x1));
+let y2 = calc(sin(b * x1) + d * cos(b * y1));
+let x3 = calc(sin(a * y2) + c * cos(a * x2));
+let y3 = calc(sin(b * x2) + d * cos(b * y2));
+let x4 = calc(sin(a * y3) + c * cos(a * x3));
+let y4 = calc(sin(b * x3) + d * cos(b * y3));
+let x5 = calc(sin(a * y4) + c * cos(a * x4));
+let y5 = calc(sin(b * x4) + d * cos(b * y4));
+let x6 = calc(sin(a * y5) + c * cos(a * x5));
+let y6 = calc(sin(b * x5) + d * cos(b * y5));
+let x7 = calc(sin(a * y6) + c * cos(a * x6));
+let y7 = calc(sin(b * x6) + d * cos(b * y6));
+
+// Light background for text readability in dark mode
+let bg = PathLayer('bg') ${
+  fill: #f8f7f4;
+  stroke: none;
+};
+bg.apply { roundRect(0, 0, 560, 260, 6); }
+
+// Trajectory lines
+let trail = PathLayer('trail') ${
+  stroke: oklch(0.70 0.10 260);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+
+trail.apply {
+  M calc(cx + x0 * scale) calc(cy + y0 * scale)
+  L calc(cx + x1 * scale) calc(cy + y1 * scale)
+  L calc(cx + x2 * scale) calc(cy + y2 * scale)
+  L calc(cx + x3 * scale) calc(cy + y3 * scale)
+  L calc(cx + x4 * scale) calc(cy + y4 * scale)
+  L calc(cx + x5 * scale) calc(cy + y5 * scale)
+  L calc(cx + x6 * scale) calc(cy + y6 * scale)
+  L calc(cx + x7 * scale) calc(cy + y7 * scale)
+}
+
+// Points — larger for early, smaller for later
+let dots = PathLayer('dots') ${
+  stroke: none;
+  fill: oklch(0.45 0.20 260);
+};
+
+dots.apply {
+  circle(calc(cx + x0 * scale), calc(cy + y0 * scale), 5);
+  circle(calc(cx + x1 * scale), calc(cy + y1 * scale), 4.5);
+  circle(calc(cx + x2 * scale), calc(cy + y2 * scale), 4);
+  circle(calc(cx + x3 * scale), calc(cy + y3 * scale), 3.5);
+  circle(calc(cx + x4 * scale), calc(cy + y4 * scale), 3);
+  circle(calc(cx + x5 * scale), calc(cy + y5 * scale), 2.5);
+  circle(calc(cx + x6 * scale), calc(cy + y6 * scale), 2);
+  circle(calc(cx + x7 * scale), calc(cy + y7 * scale), 1.5);
+}
+
+// Labels
+let labels = TextLayer('labels') ${
+  font-size: 10;
+  fill: #444;
+  font-family: system-ui, sans-serif;
+};
+
+labels.apply {
+  text(calc(cx + x0 * scale + 12), calc(cy + y0 * scale - 4))`(x₀, y₀)`
+  text(calc(cx + x1 * scale - 52), calc(cy + y1 * scale + 4))`(x₁, y₁)`
+  text(calc(cx + x2 * scale + 12), calc(cy + y2 * scale + 16))`(x₂, y₂)`
+  text(calc(cx + x3 * scale + 12), calc(cy + y3 * scale - 8))`(x₃, y₃)`
+  text(calc(cx + x7 * scale + 8), calc(cy + y7 * scale + 12))`(x₇, y₇)`
+}
+
+// Formula text
+let formula = TextLayer('formula') ${
+  font-size: 13;
+  fill: #333;
+  font-family: ui-monospace, monospace;
+  text-anchor: start;
+};
+
+formula.apply {
+  text(30, 228)`xₙ₊₁ = sin(a · yₙ) + c · cos(a · xₙ)`
+  text(30, 246)`yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)`
+}
+
+let g = GroupLayer('concept') ${};
+g.append(bg, trail, dots, labels, formula);

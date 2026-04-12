@@ -136,7 +136,7 @@ function wrapMiniWorkspaceHtml(
     timestamp: string;
   },
 ): string {
-  const codeData = Buffer.from(encodeURIComponent(source)).toString('base64');
+  const escapedSource = source.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const displayTime = meta.timestamp.replace(/-(\d{2}:\d{2}:\d{2})$/, ' $1');
   return `<!DOCTYPE html>
 <html lang="en">
@@ -168,7 +168,8 @@ function wrapMiniWorkspaceHtml(
   </div>
   <div class="workspace-container">
     <!-- prettier-ignore -->
-    <mini-workspace code-data="${codeData}" code-open>
+    <mini-workspace code-open>
+      <code>${escapedSource}</code>
 ${svgContent}
     </mini-workspace>
   </div>
