@@ -339,6 +339,57 @@ describe('getCompletions', () => {
       expect(names).not.toContain('stroke');
       expect(names).not.toContain('fill');
     });
+
+
+    it('offers user color variables in style value position (user bug 2026-04-11)', () => {
+      // In a style block value position (after `:`), the engine should
+      // return user-defined variables — not more style property names.
+      // Uses the `let layer = PathLayer(...) ${...};` form which is known
+      // to parse strictly, so analyzeScopes() can see the let declarations
+      // above the style block.
+      const source =
+        "let bgColor = Color('#ff6b6b');\n" +       // line 0
+        "let textColor = Color('#2f2f2f');\n" +     // line 1
+        "let bg = PathLayer('bg') \${\n" +          // line 2
+        '  fill: bgColor;\n' +                      // line 3
+        '  stroke: bgColor;\n' +                    // line 4
+        '};';                                       // line 5
+      // Cursor at line 3, character 8 — right after `  fill: ` (before
+      // the `bgColor` that the user is typing).
+      const items = complete(source, 3, 8);
+      const names = labels(items);
+      expect(names).toContain('bgColor');
+      expect(names).toContain('textColor');
+      // Also surface CSS value keywords
+      expect(names).toContain('none');
+      expect(names).toContain('transparent');
+      expect(names).toContain('currentColor');
+      // And NOT the property-name set (we're past the colon)
+      expect(names).not.toContain('fill');
+      expect(names).not.toContain('stroke-width');
+    });
+
+    it('still offers property names before the first colon on a new line', () => {
+      // After a `;` (end of the previous entry), we're back in property
+      // name position and should see CSS property completions again.
+      // Full parseable source; cursor between `fill: bgColor;` and the
+      // next line's content.
+      const source =
+        "let bgColor = Color('#ff6b6b');\n" + // line 0
+        "let bg = PathLayer('bg') \${\n" +    // line 1
+        '  fill: bgColor;\n' +                // line 2
+        '  stroke: bgColor;\n' +              // line 3
+        '};';                                 // line 4
+      // Cursor at line 3, character 2 — right after `  ` (indent) and
+      // before `stroke`. We're in property-name position.
+      const items = complete(source, 3, 2);
+      const names = labels(items);
+      expect(names).toContain('stroke');
+      expect(names).toContain('fill');
+      expect(names).toContain('opacity');
+      // User vars are a value-position concept
+      expect(names).not.toContain('bgColor');
+    });
   });
 
   describe('Color instance completions', () => {
@@ -407,6 +458,52 @@ describe('getCompletions', () => {
       const items = completeAtEnd("let bg = PathLayer('bg');\nbg.");
       const names = labels(items);
       expect(names).toContain('apply');
+    });
+
+    it('offers PathLayer members after style block and apply block (user bug 2026-04-10)', () => {
+      // Exact user scenario that was reported as broken: declaration with a
+      // style block, an apply block on the next line, then dot-access on a
+      // new line. The scope/type inference must survive the intervening
+      // incomplete statement at the bottom of the buffer.
+      const source =
+        "let bg = PathLayer('bg') ${ fill: '#f00'; stroke: none; };\n" +
+        'bg.apply {\n' +
+        '  rect(0, 0, 600, 600);\n' +
+        '}\n' +
+        'bg.';
+      const items = completeAtEnd(source);
+      const names = labels(items);
+      expect(names).toContain('apply');
+      expect(names).toContain('ctx');
+      expect(names).toContain('name');
+      expect(names).toContain('styles');
+    });
+
+    it('offers PathLayer members with MULTILINE style block (user bug 2026-04-11)', () => {
+      // User-reported: the real-world scenario has the style block spanning
+      // multiple lines. Verify inferType's regex still matches across
+      // newlines between `PathLayer(` and the dot access.
+      const source =
+        "let bg = PathLayer('bg') \${\n" +
+        "  fill: '#ff6b6b';\n" +
+        '  stroke: none;\n' +
+        '};\n' +
+        'bg.apply {\n' +
+        '  rect(0, 0, 600, 600);\n' +
+        '}\n' +
+        '\n' +
+        'bg.';
+      const items = completeAtEnd(source);
+      const names = labels(items);
+      expect(names).toContain('apply');
+      expect(names).toContain('ctx');
+      expect(names).toContain('name');
+      expect(names).toContain('styles');
+      // Regression guard: the popup must NOT contain top-level keywords,
+      // which would indicate the member-access path wasn't taken.
+      expect(names).not.toContain('let');
+      expect(names).not.toContain('for');
+      expect(names).not.toContain('fn');
     });
 
     it('infers PathBlock from circle() result', () => {

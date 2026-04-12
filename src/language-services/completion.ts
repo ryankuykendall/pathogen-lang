@@ -32,9 +32,21 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   const offset = document.offsetAt(position);
   const textBefore = source.slice(0, offset);
 
-  // Check if we're inside a style block ${ ... }
+  // Check if we're inside a style block ${ ... }. Style blocks have two
+  // completion contexts:
+  //   1. Property-name position (before `:`)  → offer CSS property names
+  //   2. Value position (after `:`, before `;` or `}`)  → offer user-defined
+  //      variables (color, number, string), stdlib functions, and common
+  //      CSS value keywords
+  // For the value position, we fall through to the general completion
+  // logic below so the user gets scope-aware variable completions
+  // (e.g. `Color` variables in scope), then append style value keywords.
   if (isInsideStyleBlock(textBefore)) {
-    return STYLE_PROPERTY_COMPLETIONS.map(toCompletionItem);
+    if (isStylePropertyNameContext(textBefore)) {
+      return STYLE_PROPERTY_COMPLETIONS.map(toCompletionItem);
+    }
+    // Value context: fall through to collect user variables + stdlib +
+    // keywords via the normal path, then append style-value keywords below.
   }
 
   // Check for method call on expression: expr.method(...).
@@ -85,15 +97,28 @@ export function getCompletions(document: TextDocument, position: Position): Comp
 
   // Collect all completions
   const items: CompletionItem[] = [];
+  const insideStyleValue = isInsideStyleBlock(textBefore) && !isStylePropertyNameContext(textBefore);
 
-  // Keywords, stdlib, and enums
-  items.push(...KEYWORD_COMPLETIONS.map(toCompletionItem));
-  items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
-  items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
+  if (insideStyleValue) {
+    // Inside a style value position — rank user variables highest, add CSS
+    // value keywords, and skip noisy top-level keywords (let/for/fn/etc.)
+    // that are never valid inside a value expression.
+    items.push(...STYLE_VALUE_KEYWORDS.map(toCompletionItem));
+    items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
+    items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
+  } else {
+    // Normal completion context — keywords, stdlib, enums.
+    items.push(...KEYWORD_COMPLETIONS.map(toCompletionItem));
+    items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
+    items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
+  }
 
-  // Scope-aware user definitions
+  // Scope-aware user definitions. When inside a style value position we
+  // boost user variables so they rank above stdlib items — the user is
+  // almost always trying to reference a defined color/number variable.
   const scopeInfo = analyzeScopes(document);
   const seen = new Set<string>();
+  const userDeclBoost = insideStyleValue ? 90 : 20;
 
   for (const decl of scopeInfo.declarations) {
     if (seen.has(decl.name)) continue;
@@ -106,13 +131,27 @@ export function getCompletions(document: TextDocument, position: Position): Comp
         label: decl.name,
         kind: decl.kind === 'function' ? 'function' : 'variable',
         detail: decl.kind === 'function' ? `fn ${decl.name}(...)` : `${decl.kind}: ${decl.name}`,
-        sortText: sortKey(20, decl.name), // User definitions rank high
+        sortText: sortKey(userDeclBoost, decl.name),
       });
     }
   }
 
   return filterByPrefix(items, prefix);
 }
+
+/**
+ * CSS value keywords valid inside a style block value position. Includes
+ * the universal keywords (`none`, `transparent`, etc.) that apply to most
+ * properties as well as `currentColor` for color-valued properties.
+ */
+const STYLE_VALUE_KEYWORDS: CompletionEntry[] = [
+  { label: 'none', kind: 'constant', detail: 'CSS keyword — no value', boost: 10 },
+  { label: 'transparent', kind: 'constant', detail: 'CSS keyword — fully transparent color', boost: 10 },
+  { label: 'currentColor', kind: 'constant', detail: 'CSS keyword — inherit color property', boost: 10 },
+  { label: 'inherit', kind: 'constant', detail: 'CSS keyword — inherit from parent', boost: 10 },
+  { label: 'initial', kind: 'constant', detail: 'CSS keyword — initial value', boost: 9 },
+  { label: 'unset', kind: 'constant', detail: 'CSS keyword — unset value', boost: 9 },
+];
 
 // --- Helpers ---
 
@@ -127,6 +166,26 @@ function isInsideStyleBlock(textBefore: string): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Given that we're inside a style block, determine whether the cursor is
+ * in a property-name position (before `:`) vs a value position (after `:`,
+ * before `;` or the closing `}`). Walks backward from the cursor to the
+ * nearest statement boundary (`;`, `${`, or end of current style entry).
+ * If a `:` is encountered first, we're in a value position; otherwise a
+ * property-name position.
+ */
+function isStylePropertyNameContext(textBefore: string): boolean {
+  for (let i = textBefore.length - 1; i >= 0; i--) {
+    const ch = textBefore[i];
+    // Entry terminators and style-block opener both reset to property context.
+    if (ch === ';' || ch === '}') return true;
+    if (ch === '{' && i > 0 && textBefore[i - 1] === '$') return true;
+    // A colon before any terminator means we're in the value position.
+    if (ch === ':') return false;
+  }
+  return true;
 }
 
 function getMembersForObject(name: string, source: string): MemberCompletionSet | null {

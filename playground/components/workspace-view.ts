@@ -38,6 +38,7 @@ export class WorkspaceView extends HTMLElement {
   private _handleExportFile: (() => void) | null = null;
   private _handleCopyCode: (() => void) | null = null;
   private _handleCopySvg: (() => void) | null = null;
+  private _handleFormatDocument: (() => void) | null = null;
   private _handleToggleAnnotated: (() => void) | null = null;
   private _handleToggleConsole: (() => void) | null = null;
   private _handleToggleInspector: (() => void) | null = null;
@@ -452,6 +453,15 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('export-file', this._handleExportFile);
 
+    this._handleFormatDocument = (): void => {
+      if (store.get('currentView') !== 'workspace') return;
+      const pane = this.editorPane as unknown as { formatDocument?: () => void };
+      if (pane && typeof pane.formatDocument === 'function') {
+        pane.formatDocument();
+      }
+    };
+    document.addEventListener('format-document', this._handleFormatDocument);
+
     this._handleCopyCode = (): void => {
       if (store.get('currentView') === 'workspace') {
         this.copyCode();
@@ -655,6 +665,7 @@ export class WorkspaceView extends HTMLElement {
 
   cleanupEventListeners(): void {
     if (this._handleExportFile) document.removeEventListener('export-file', this._handleExportFile);
+    if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
     if (this._handleCopyCode) document.removeEventListener('copy-code', this._handleCopyCode);
     if (this._handleCopySvg) document.removeEventListener('copy-svg', this._handleCopySvg);
     if (this._handleToggleAnnotated) document.removeEventListener('toggle-annotated', this._handleToggleAnnotated);
@@ -695,14 +706,20 @@ export class WorkspaceView extends HTMLElement {
   debouncedUpdate(): void {
     if (this._debounceTimer) clearTimeout(this._debounceTimer);
 
-    // Use a longer debounce when the user is actively typing member access (.)
-    // so completion popups have time to appear before error panel covers them
+    // Use a longer debounce when the user is actively typing inside an
+    // incomplete expression (member access, function call, style block open)
+    // so completion/signature-help popups have time to appear before the
+    // error panel covers them. Trigger set matches the LSP server's
+    // mid-expression predicate in packages/pathogen-language-server/src/server.ts.
     const code = this.editorPane?.code || '';
-    const cursorAtDot = code.trimEnd().endsWith('.');
-    const delay = cursorAtDot ? 600 : 150;
+    const trimmed = code.trimEnd();
+    const lastChar = trimmed.slice(-1);
+    const cursorMidExpression = lastChar === '.' || lastChar === '(' || lastChar === ',' || lastChar === '{';
+    const delay = cursorMidExpression ? 600 : 150;
 
-    // Hide error panel immediately when user is typing — stale errors are confusing
-    if (cursorAtDot) {
+    // Hide error panel immediately when user is mid-expression — stale errors
+    // are confusing and would cover the completion / signature-help popup.
+    if (cursorMidExpression) {
       this.errorPanel.hide();
       this.editorPane.clearError();
     }

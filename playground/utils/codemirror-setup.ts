@@ -789,39 +789,27 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
           validFor: /^\w*$/,
         };
       }
+
+      // If we reach here, the cursor is in a member-access context (`X.`)
+      // that none of the above special-case branches recognized. Return
+      // null so the shared language-services completion engine (which
+      // handles PathLayer, Point, PathBlock, Cycler, etc. via type
+      // inference) is the authoritative source for this completion.
+      // Without this return, execution would fall through to the regular
+      // word completion below and emit top-level keywords/stdlib items,
+      // drowning out the correct member completions (user bug 2026-04-11).
+      return null;
     }
   }
 
-  // Check if we're inside a ${ } style block for style property completions
-  const styleWord = context.matchBefore(/[\w-]*/);
-  if (styleWord && (styleWord.from < styleWord.to || context.explicit)) {
-    const textBefore = context.state.doc.sliceString(0, styleWord.from);
-    // Find the last '${'  and check if there's no matching '}' after it
-    const lastStyleOpen = textBefore.lastIndexOf('${');
-    if (lastStyleOpen !== -1) {
-      const afterOpen = textBefore.slice(lastStyleOpen + 2);
-      const hasClose = afterOpen.includes('}');
-      if (!hasClose) {
-        // We're inside a ${ } style block — offer style property completions
-        let boost = 100;
-        return {
-          from: styleWord.from,
-          options: stylePropertyCompletions.map((prop) => ({
-            label: prop.label,
-            type: 'property',
-            info: prop.info,
-            boost: boost--,
-            apply: (view: any, completion: any, from: number, to: number) => {
-              view.dispatch({
-                changes: { from, to, insert: `${prop.label}: ` },
-                selection: { anchor: from + prop.label.length + 2 },
-              });
-            },
-          })),
-          validFor: /^[\w-]*$/,
-        };
-      }
-    }
+  // Style block completion is now handled entirely by the shared
+  // language-services engine (see getCompletions in
+  // src/language-services/completion.ts). It correctly distinguishes
+  // property-name position (before `:`) from value position (after `:`),
+  // which the legacy handler here did not. Returning null for any
+  // `${ ... }` context defers to the shared engine.
+  if (isInsideLegacyStyleBlock(context)) {
+    return null;
   }
 
   // Regular word completion
@@ -991,4 +979,25 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
     options,
     validFor: /^\w*$/,
   };
+}
+
+/**
+ * Detect whether the cursor is inside a `${ ... }` style block. The check
+ * walks backward from the cursor looking for the nearest unmatched `${`
+ * before any closing `}`. When this returns true, svgPathCompletions should
+ * return null so the shared language-services engine owns completions for
+ * both property-name and value positions.
+ */
+function isInsideLegacyStyleBlock(context: CompletionContext): boolean {
+  const textBefore = context.state.doc.sliceString(0, context.pos);
+  let depth = 0;
+  for (let i = textBefore.length - 1; i >= 0; i--) {
+    const ch = textBefore[i];
+    if (ch === '}') depth++;
+    if (ch === '{' && i > 0 && textBefore[i - 1] === '$') {
+      if (depth === 0) return true;
+      depth--;
+    }
+  }
+  return false;
 }

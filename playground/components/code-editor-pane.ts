@@ -1,12 +1,16 @@
 // Code editor pane with CodeMirror
 
 import { store } from '../state/store.js';
+import {
+  buildLanguageExtensions,
+  runFormatDocument,
+  runFindReferences,
+  runRename,
+  type ErrorHighlightHandle,
+} from '../utils/cm-language-services.js';
 import { colorPickerExtension } from '../utils/cm-color-picker.js';
-import { errorHighlightExtension } from '../utils/cm-error-highlight.js';
 import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
 import { svgPathCompletions } from '../utils/codemirror-setup.js';
-import { sharedCompletionSource } from '../utils/cm-completion-bridge.js';
-import { hoverTooltipExtension } from '../utils/cm-hover-tooltip.js';
 import { pathogenLanguage } from '../utils/pathogen-language.js';
 import { themeManager } from '../utils/theme.js';
 import styles from './code-editor-pane.css';
@@ -17,6 +21,13 @@ interface CmStateModule {
   EditorState: {
     create(config: unknown): unknown;
     readOnly: { of(value: boolean): unknown };
+  };
+  StateField: {
+    define<T>(spec: {
+      create(state: unknown): T;
+      update(value: T, transaction: unknown): T;
+      provide?(field: unknown): unknown;
+    }): unknown;
   };
 }
 
@@ -36,17 +47,42 @@ interface CmViewModule {
   highlightActiveLine(): unknown;
   keymap: { of(bindings: unknown[]): unknown };
   hoverTooltip(source: unknown, options?: unknown): unknown;
+  showTooltip: {
+    computeN(deps: unknown[], read: (state: unknown) => readonly unknown[]): unknown;
+  };
+}
+
+interface CmEditorState {
+  doc: {
+    length: number;
+    toString(): string;
+    lines: number;
+    line(n: number): { from: number };
+    sliceString(from: number, to?: number): string;
+  };
+  selection: { main: { head: number } };
+  field<T>(field: unknown): T;
 }
 
 interface CmEditorView {
-  state: { doc: { length: number; toString(): string; lines: number; line(n: number): { from: number } } };
+  state: CmEditorState;
   dispatch(tr: unknown): void;
   focus(): void;
   destroy(): void;
 }
 
+interface CmTransaction {
+  isUserEvent(type: string): boolean;
+  state: CmEditorState;
+  docChanged: boolean;
+  selection?: unknown;
+}
+
 interface CmViewUpdate {
   docChanged: boolean;
+  view: CmEditorView;
+  state: CmEditorState;
+  transactions: CmTransaction[];
 }
 
 interface CmCommandsModule {
@@ -66,6 +102,7 @@ interface CmLanguageModule {
 interface CmAutocompleteModule {
   autocompletion(config: unknown): unknown;
   completionKeymap: unknown[];
+  startCompletion(view: unknown): boolean;
 }
 
 interface CmOneDarkModule {
@@ -82,20 +119,13 @@ interface CmModules {
   oneDark: CmOneDarkModule;
 }
 
-interface ErrorHighlightResult {
-  extension: unknown[];
-  setError(editorView: unknown, position: { line: number; column: number }): void;
-  setErrors(editorView: unknown, positions: Array<{ line: number; column: number }>): void;
-  clearError(editorView: unknown): void;
-}
-
 export class CodeEditorPane extends HTMLElement {
   private _editor: CmEditorView | null;
   private _cmModules: CmModules | null;
   private _initialCode: string;
   private _themeCompartment: { of(ext: unknown): unknown; reconfigure(ext: unknown): unknown } | null;
   private _highlightCompartment: unknown;
-  private _errorHighlight: ErrorHighlightResult | null;
+  private _errorHighlight: ErrorHighlightHandle | null;
   private _pendingError: { line: number; column: number } | null;
   private _themeUnsubscribe: (() => void) | null;
 
@@ -193,8 +223,24 @@ export class CodeEditorPane extends HTMLElement {
     // Create compartments for dynamic theme swapping
     this._themeCompartment = new state.Compartment();
 
-    // Error highlighting extension — cast to satisfy cm-error-highlight's own CmStateModule/CmViewModule interfaces
-    this._errorHighlight = errorHighlightExtension(state as never, view as never) as ErrorHighlightResult;
+    // Build language-services extensions (completion, hover, diagnostics,
+    // signature help, completion trigger detector). This is the single entry
+    // point for every language feature wired into the Playground — see
+    // playground/utils/cm-language-services.ts. The parity test at
+    // tests/cross-channel-parity.test.ts ensures that every required feature
+    // from src/language-services/feature-catalog.ts is wired there.
+    //
+    // Cast through `never`: the CM6 module shapes declared in this file and
+    // in cm-language-services.ts describe overlapping-but-not-identical
+    // slices of the same runtime objects, and TypeScript's structural
+    // matching can't see that the underlying objects are the same. The
+    // wiring module does its own internal type checking against its
+    // interfaces.
+    const languageExtensions = buildLanguageExtensions(
+      { state, view, autocomplete } as never,
+      svgPathCompletions,
+    );
+    this._errorHighlight = languageExtensions.errorHighlight;
 
     const updateExtension = view.EditorView.updateListener.of((update: CmViewUpdate) => {
       if (update.docChanged) {
@@ -229,21 +275,30 @@ export class CodeEditorPane extends HTMLElement {
           ...commands.historyKeymap,
           ...autocomplete.completionKeymap,
           commands.indentWithTab,
+          // Ctrl/Cmd+Shift+F — format the current document using the shared
+          // language-services formatter. See runFormatDocument in
+          // playground/utils/cm-language-services.ts.
+          {
+            key: 'Mod-Shift-f',
+            run: (view: unknown) => runFormatDocument(view),
+          },
+          // F2 — rename the symbol at the cursor using prepareRename/getRenameEdits.
+          {
+            key: 'F2',
+            run: (view: unknown) => runRename(view),
+          },
+          // Shift+F12 — find all references to the symbol at the cursor and
+          // select them as a multi-cursor. Escape collapses back.
+          {
+            key: 'Shift-F12',
+            run: (view: unknown) => runFindReferences(view),
+          },
         ]),
-        autocomplete.autocompletion({
-          override: [
-            // Shared language-services completion engine (primary)
-            sharedCompletionSource,
-            // Legacy ad-hoc completions (fallback for features not yet in shared engine)
-            svgPathCompletions,
-          ],
-        }),
+        ...languageExtensions.extensions,
         updateExtension,
         view.EditorView.lineWrapping,
         ...colorPickerExtension(view),
         ...textLayerEditorExtension(view),
-        ...this._errorHighlight.extension,
-        ...hoverTooltipExtension(view),
       ],
     });
 
@@ -277,6 +332,12 @@ export class CodeEditorPane extends HTMLElement {
     this._editor.dispatch({
       effects: this._themeCompartment.reconfigure(this._getThemeExtensions()),
     });
+  }
+
+  /** Format the current document via the shared language-services formatter. */
+  formatDocument(): void {
+    if (!this._editor) return;
+    runFormatDocument(this._editor);
   }
 
   highlightError(line: number, column: number): void {

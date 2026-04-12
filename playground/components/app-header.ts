@@ -133,6 +133,10 @@ class AppHeader extends HTMLElement {
     }
 
     switch (action) {
+      case 'format-document':
+        this.dispatchEvent(new CustomEvent('format-document', { bubbles: true, composed: true }));
+        break;
+
       case 'copy-url':
         await copyURL(store);
         this.showFeedback('URL copied!');
@@ -252,6 +256,13 @@ class AppHeader extends HTMLElement {
                 </svg>
               </button>
               <div class="menu-dropdown ${this._menuOpen ? 'open' : ''}">
+                <button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">
+                  <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M2 3a.5.5 0 01.5-.5h11a.5.5 0 010 1h-11A.5.5 0 012 3zm2 3a.5.5 0 01.5-.5h9a.5.5 0 010 1h-9A.5.5 0 014 6zm-2 3a.5.5 0 01.5-.5h11a.5.5 0 010 1h-11A.5.5 0 012 9zm2 3a.5.5 0 01.5-.5h9a.5.5 0 010 1h-9a.5.5 0 01-.5-.5z"/>
+                  </svg>
+                  Format Document
+                </button>
+                <div class="menu-divider"></div>
                 <button data-action="copy-url">
                   <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
                     <path d="M4.5 3A1.5 1.5 0 003 4.5v7A1.5 1.5 0 004.5 13h7a1.5 1.5 0 001.5-1.5v-1a.5.5 0 011 0v1a2.5 2.5 0 01-2.5 2.5h-7A2.5 2.5 0 012 11.5v-7A2.5 2.5 0 014.5 2h1a.5.5 0 010 1h-1z"/>
@@ -345,6 +356,13 @@ class AppHeader extends HTMLElement {
             </svg>
           </button>
           <div class="menu-dropdown">
+            <button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">
+              <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 3a.5.5 0 01.5-.5h11a.5.5 0 010 1h-11A.5.5 0 012 3zm2 3a.5.5 0 01.5-.5h9a.5.5 0 010 1h-9A.5.5 0 014 6zm-2 3a.5.5 0 01.5-.5h11a.5.5 0 010 1h-11A.5.5 0 012 9zm2 3a.5.5 0 01.5-.5h9a.5.5 0 010 1h-9a.5.5 0 01-.5-.5z"/>
+              </svg>
+              Format Document
+            </button>
+            <div class="menu-divider"></div>
             <button data-action="copy-url">
               <svg class="menu-icon" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M4.5 3A1.5 1.5 0 003 4.5v7A1.5 1.5 0 004.5 13h7a1.5 1.5 0 001.5-1.5v-1a.5.5 0 011 0v1a2.5 2.5 0 01-2.5 2.5h-7A2.5 2.5 0 012 11.5v-7A2.5 2.5 0 014.5 2h1a.5.5 0 010 1h-1z"/>

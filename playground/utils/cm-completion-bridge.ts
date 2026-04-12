@@ -41,8 +41,10 @@ export function sharedCompletionSource(context: CompletionContext): CompletionRe
     return null;
   }
 
-  // Find the word being typed — reject zero-length matches so that
-  // punctuation keystrokes (e.g. ';') don't trigger the completion popup.
+  // Find the word being typed. `[\w.]*` captures both plain identifiers
+  // (`cir`) and member-access prefixes (`bg.app`). We reject zero-length
+  // non-explicit matches so that punctuation keystrokes (e.g. `;`) don't
+  // trigger the completion popup for no reason.
   const word = context.matchBefore(/[\w.]*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;
 
@@ -57,7 +59,14 @@ export function sharedCompletionSource(context: CompletionContext): CompletionRe
   const items = getCompletions(doc, { line, character });
   if (items.length === 0) return null;
 
-  const from = word ? word.from : context.pos;
+  // The `from` position controls which span of text CodeMirror's filter
+  // matches option labels against. If the word the user is typing includes
+  // a `.` (member access), the completion replaces only the text AFTER the
+  // last dot — that's the member prefix — not the whole `object.prefix`.
+  // Without this, CM6 would try to fuzzy-match option labels like `apply`
+  // against `bg.` and filter them all out, leaving the popup empty.
+  const lastDot = word.text.lastIndexOf('.');
+  const from = lastDot >= 0 ? word.from + lastDot + 1 : word.from;
 
   return {
     from,
@@ -66,18 +75,45 @@ export function sharedCompletionSource(context: CompletionContext): CompletionRe
       type: mapCompletionKind(item.kind),
       detail: item.detail,
       boost: parseBoost(item.sortText),
-      // For snippets, provide apply function that inserts the snippet text
-      // (CodeMirror doesn't natively support VS Code snippet syntax, so we
-      // strip the placeholders for now and just insert the text)
+      // For snippets, provide an apply function that inserts the template
+      // text with the cursor placed at the `$0` marker (final cursor
+      // position in VS Code snippet syntax). Named placeholders like
+      // `${1:name}` are replaced with their default text; bare markers
+      // like `$1` are removed.
       ...(item.isSnippet && item.insertText ? {
         apply: (view: any, _completion: any, from: number, to: number) => {
-          // Convert VS Code snippet syntax to plain text
-          const plainText = item.insertText!
-            .replace(/\$\{?\d+:?([^}]*)\}?/g, '$1') // ${1:name} -> name, $0 -> ''
+          const template = item.insertText!;
+          // Locate the $0 cursor marker BEFORE stripping placeholders.
+          const cursorMarkerIdx = template.indexOf('$0');
+          // Strip placeholders: ${1:name} → name, $0/$1/etc. → ''
+          const stripped = template
+            .replace(/\$\{\d+:([^}]*)\}/g, '$1')
             .replace(/\$\d+/g, '');
+          // Compute cursor position: if $0 exists, count how many
+          // characters precede it after stripping everything before it.
+          let cursorPos: number;
+          if (cursorMarkerIdx >= 0) {
+            const beforeMarker = template.slice(0, cursorMarkerIdx)
+              .replace(/\$\{\d+:([^}]*)\}/g, '$1')
+              .replace(/\$\d+/g, '');
+            cursorPos = from + beforeMarker.length;
+          } else {
+            cursorPos = from + stripped.length;
+          }
+          // Detect the current line's indentation so the inserted block
+          // matches the surrounding code.
+          const doc = view.state.doc.toString();
+          const lineStart = doc.lastIndexOf('\n', from - 1) + 1;
+          const lineText = doc.slice(lineStart, from);
+          const baseIndent = lineText.match(/^(\s*)/)?.[1] ?? '';
+          // Re-indent non-first lines of the snippet.
+          const indented = stripped.replace(/\n/g, '\n' + baseIndent);
+          // Adjust cursor for any indent added before the cursor line.
+          const newlinesBefore = stripped.slice(0, cursorPos - from).split('\n').length - 1;
+          const adjustedCursor = cursorPos + newlinesBefore * baseIndent.length;
           view.dispatch({
-            changes: { from, to, insert: plainText },
-            selection: { anchor: from + plainText.length },
+            changes: { from, to, insert: indented },
+            selection: { anchor: adjustedCursor },
           });
         },
       } : {}),

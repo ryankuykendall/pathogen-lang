@@ -85,3 +85,97 @@
   background: none;
   padding: 0;
 }
+
+/* Signature help tooltip — shown while cursor is inside function call args */
+.cm-signature-help {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 500px;
+  padding: 6px 10px;
+}
+
+.cm-signature-help .cm-signature-label {
+  white-space: pre-wrap;
+}
+
+.cm-signature-help .cm-signature-label strong {
+  color: var(--accent-color, #3b82f6);
+  font-weight: 700;
+}
+
+.cm-signature-help .cm-signature-doc {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+  font-size: 11px;
+  font-family: var(--font-sans, sans-serif);
+}
+
+/* Completion icons — override CodeMirror 6's default glyphs (including the
+   key emoji 🔑 for keywords) with cleaner symbols that align with VS Code's
+   iconography. Classes/types/properties get a cube-like box glyph; functions
+   get the standard ƒ; keywords get a readable "K" badge. Colors are
+   per-category so the dropdown reads at a glance. */
+.cm-tooltip-autocomplete .cm-completionIcon {
+  width: 1.1em;
+  display: inline-block;
+  text-align: center;
+  padding-right: 4px;
+  opacity: 1;
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon::after {
+  font-family: var(--font-mono, monospace) !important;
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-keyword::after {
+  content: '\25A1' !important;                 /* □ — square, VS Code keyword */
+  color: var(--completion-keyword, #c678dd);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-class::after,
+.cm-tooltip-autocomplete .cm-completionIcon-type::after {
+  content: '\25A3' !important;                 /* ▣ — cube/box for class/type */
+  color: var(--completion-class, #e5c07b);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-interface::after {
+  content: '\25C7' !important;                 /* ◇ — diamond for interface */
+  color: var(--completion-interface, #e5c07b);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-function::after,
+.cm-tooltip-autocomplete .cm-completionIcon-method::after {
+  content: '\0192' !important;                 /* ƒ — italic f for function */
+  color: var(--completion-function, #61afef);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-variable::after {
+  content: '\25C6' !important;                 /* ◆ — filled diamond */
+  color: var(--completion-variable, #98c379);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-property::after {
+  content: '\25A0' !important;                 /* ■ — filled square, "member" cube */
+  color: var(--completion-property, #56b6c2);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-constant::after {
+  content: '\25CF' !important;                 /* ● — filled circle */
+  color: var(--completion-constant, #d19a66);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-enum::after {
+  content: 'E' !important;
+  color: var(--completion-enum, #c678dd);
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-namespace::after {
+  content: '\007B\007D' !important;            /* {} for namespace */
+  color: var(--completion-namespace, #e06c75);
+  font-size: 0.85em;
+}

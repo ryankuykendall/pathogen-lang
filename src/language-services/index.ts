@@ -33,3 +33,7 @@ export { getCodeLenses } from './code-lens';
 export type { CodeLens } from './code-lens';
 export { getInlayHints, InlayHintKind } from './inlay-hints';
 export type { InlayHint } from './inlay-hints';
+
+// Feature catalog — single source of truth for cross-channel parity
+export { LANGUAGE_FEATURES, HELPERS_NOT_FEATURES } from './feature-catalog';
+export type { LanguageFeature } from './feature-catalog';
