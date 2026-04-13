@@ -1467,6 +1467,35 @@ describe('Multi-Layer Support', () => {
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(10px)');
     });
+
+    it('resolves color expression in PathLayer constructor style block', () => {
+      const result = compile(`
+        let routeLayer = PathLayer('route-layer') \${
+          stroke: (rgba(0, 0, 200, 1).lighten(20%));
+          stroke-width: 16;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        };
+        layer('route-layer').apply { M 0 0 L 10 10 }
+      `);
+      const layer = result.layers.find((l) => l.name === 'route-layer')!;
+      expect(layer.styles.stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(layer.styles.stroke).not.toContain('.lighten');
+      expect(layer.styles['stroke-width']).toBe('16');
+      expect(layer.styles['stroke-linecap']).toBe('round');
+    });
+
+    it('parens and no-parens color expressions produce same result', () => {
+      const withoutParens = compile(`
+        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).lighten(20%); }
+        layer('a').apply { M 0 0 }
+      `);
+      const withParens = compile(`
+        define PathLayer('b') \${ stroke: (rgba(0, 0, 200, 1).lighten(20%)); }
+        layer('b').apply { M 0 0 }
+      `);
+      expect(withParens.layers[0].styles.stroke).toBe(withoutParens.layers[0].styles.stroke);
+    });
   });
 
   describe('dynamic layer constructors', () => {

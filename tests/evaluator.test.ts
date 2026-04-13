@@ -2319,6 +2319,22 @@ describe('Evaluator', () => {
       expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
     });
 
+    it('parenthesized CSSColorLiteral with method evaluates correctly', () => {
+      const result = compile('let c = (rgba(0, 0, 200, 1).lighten(20%)); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
+      expect(result.logs[0].parts[0].value).not.toBe('#0000c8');
+    });
+
+    it('parenthesized function call evaluates correctly', () => {
+      const result = compile('let v = (sin(0)); log(v);');
+      expect(result.logs[0].parts[0].value).toBe('0');
+    });
+
+    it('parenthesized member access evaluates correctly', () => {
+      const result = compile('let obj = {a: 42}; let v = (obj.a); log(v);');
+      expect(result.logs[0].parts[0].value).toBe('42');
+    });
+
     it('CSS color function shadows user-defined function of same name', () => {
       // rgb() is always a color literal, even if user defines fn rgb()
       const result = compile('let c = rgb(255, 0, 0); log(c.hex);');

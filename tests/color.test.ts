@@ -466,6 +466,108 @@ describe('Color type', () => {
       const mainLayer = result.layers.find((l) => l.name === 'main');
       expect(mainLayer?.styles?.stroke).toBe('rgba(255, 0, 0, 0.5)');
     });
+
+    it('resolves rgba().lighten() directly in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).lighten(0.2); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(stroke).not.toContain('.lighten');
+    });
+
+    it('resolves parenthesized rgba().lighten(%) in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: (rgba(0, 0, 200, 1).lighten(20%)); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(stroke).not.toContain('rgba');
+      expect(stroke).not.toContain('.lighten');
+    });
+
+    it('resolves hsl().darken() in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: hsl(200, 100%, 50%).darken(0.1); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(stroke).not.toContain('hsl');
+    });
+
+    it('resolves oklch().hueShift() in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: oklch(0.6 0.15 200).hueShift(30); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(stroke).not.toContain('oklch');
+    });
+
+    it('resolves oklab().alpha() in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: oklab(0.5 0.1 -0.1).alpha(0.8); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^rgba\(/);
+      expect(stroke).not.toContain('oklab');
+    });
+
+    it('resolves hwb().lighten() in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: hwb(200 10% 20%).lighten(0.1); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(stroke).not.toContain('hwb');
+    });
+
+    it('resolves lab().darken() in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: lab(50 20 -30).darken(0.1); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^#[0-9a-f]{6}$/);
+      expect(stroke).not.toContain('lab');
+    });
+
+    it('resolves lch().alpha() in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: lch(50 30 200).alpha(0.7); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^rgba\(/);
+      expect(stroke).not.toContain('lch');
+    });
+
+    it('resolves rgba().alpha() with sub-1 alpha in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).alpha(0.5); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^rgba\(/);
+      expect(stroke).not.toContain('.alpha');
+    });
+
+    it('resolves chained methods in style block', () => {
+      const result = compile(`
+        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).lighten(50%).alpha(0.6); }
+        layer('a').apply { M 0 0 L 100 100 }
+      `);
+      const stroke = result.layers[0].styles.stroke;
+      expect(stroke).toMatch(/^rgba\(/);
+      expect(stroke).not.toContain('.lighten');
+      expect(stroke).not.toContain('.alpha');
+    });
   });
 
   // ── Template literals / log display ────────────────────────────────────

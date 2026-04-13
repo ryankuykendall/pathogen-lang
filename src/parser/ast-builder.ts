@@ -1781,7 +1781,11 @@ function buildParenExpression(cursor: TreeCursor, source: string): Expression {
   let expr: Expression = { type: 'NullLiteral' };
   do {
     if (cursor.name !== '(' && cursor.name !== ')') {
-      expr = buildExpression(cursor, source);
+      // Use buildExpressionWithPostfix so that postfix tokens (`.`, ArgList, `[`)
+      // flattened as siblings inside the ParenExpression are properly consumed
+      // as part of the expression chain rather than overwriting it.
+      expr = buildExpressionWithPostfix(cursor, source);
+      break; // postfix siblings already consumed
     }
   } while (cursor.nextSibling());
   cursor.parent();

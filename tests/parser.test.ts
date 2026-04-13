@@ -1409,6 +1409,52 @@ L 10 20 // end point`;
         raw: 'rgb(255, 0, 0)',
       });
     });
+
+    it('parses parenthesized CSSColorLiteral with method', () => {
+      const ast = parse('let c = (rgba(0, 0, 200, 1).lighten(0.2));');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('MethodCallExpression');
+      expect(decl.value.method).toBe('lighten');
+      expect(decl.value.object).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'rgba(0, 0, 200, 1)',
+      });
+    });
+
+    it('parses parenthesized CSSColorLiteral with chained methods', () => {
+      const ast = parse('let c = (rgba(0, 0, 200, 1).lighten(0.5).alpha(0.6));');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('MethodCallExpression');
+      expect(decl.value.method).toBe('alpha');
+      expect(decl.value.object.type).toBe('MethodCallExpression');
+      expect(decl.value.object.method).toBe('lighten');
+      expect(decl.value.object.object).toMatchObject({
+        type: 'ColorLiteral',
+        raw: 'rgba(0, 0, 200, 1)',
+      });
+    });
+
+    it('parses parenthesized function call', () => {
+      const ast = parse('let v = (sin(0));');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('FunctionCall');
+      expect(decl.value.name).toBe('sin');
+    });
+
+    it('parses parenthesized member access', () => {
+      const ast = parse('let v = (obj.prop);');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('MemberExpression');
+      expect(decl.value.property).toBe('prop');
+      expect(decl.value.object).toMatchObject({ type: 'Identifier', name: 'obj' });
+    });
+
+    it('parses parenthesized index access', () => {
+      const ast = parse('let v = (arr[0]);');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('IndexExpression');
+      expect(decl.value.object).toMatchObject({ type: 'Identifier', name: 'arr' });
+    });
   });
 
   describe('percent suffix', () => {
