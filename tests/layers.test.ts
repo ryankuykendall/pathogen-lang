@@ -1421,6 +1421,52 @@ describe('Multi-Layer Support', () => {
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px black)');
     });
+
+    it('resolves ColorLiteral inside drop-shadow', () => {
+      const result = compile(`
+        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px #ff0000); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px #ff0000)');
+    });
+
+    it('resolves Color variable inside drop-shadow', () => {
+      const result = compile(`
+        let c = oklch(0.63 0.26 29);
+        define PathLayer('a') \${ filter: drop-shadow(4px 4px 8px c); }
+        layer('a').apply { M 0 0 }
+      `);
+      const filter = result.layers.find((l) => l.name === 'a')!.styles.filter;
+      expect(filter).toMatch(/^drop-shadow\(4px 4px 8px #[0-9a-f]{6}\)$/);
+    });
+
+    it('resolves CSSVar inside drop-shadow', () => {
+      const result = compile(`
+        let v = CSSVar('--shadow-color', #000);
+        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px v); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
+        'drop-shadow(2px 2px 4px var(--shadow-color, #000000))',
+      );
+    });
+
+    it('preserves CSS color names in drop-shadow without resolving', () => {
+      const result = compile(`
+        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px blue); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px blue)');
+    });
+
+    it('resolves Color in clip-path CSS function args', () => {
+      // Not a typical use case, but verifies generality
+      const result = compile(`
+        define PathLayer('a') \${ filter: blur(10px); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(10px)');
+    });
   });
 
   describe('dynamic layer constructors', () => {

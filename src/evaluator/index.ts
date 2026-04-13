@@ -857,20 +857,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
-          if (evaluated.lightDark) {
-            resolvedValue = `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
-          } else if (evaluated.cssExpr) {
-            resolvedValue = evaluated.cssExpr;
-          } else if (evaluated.cssVar) {
-            // CSSVar-backed Color: output var() reference with the computed color as fallback
-            resolvedValue = `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
-          } else {
-            resolvedValue = oklchToCSS(evaluated.oklch);
-          }
+          resolvedValue = colorValueToCSS(evaluated);
         } else if (isCSSVarValue(evaluated)) {
-          resolvedValue = evaluated.fallback
-            ? `var(${evaluated.varName}, ${evaluated.fallback})`
-            : `var(${evaluated.varName})`;
+          resolvedValue = cssVarValueToCSS(evaluated);
         } else if (isGradientValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
         } else if (isPatternValue(evaluated)) {
@@ -881,6 +870,14 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
     }
+    // If the whole-value expression parse didn't resolve, try resolving
+    // expressions embedded inside CSS function arguments (e.g., color args in drop-shadow)
+    if (resolvedValue === prop.value) {
+      const cssResolved = tryResolveCSSFunctionArgs(prop.value, scope);
+      if (cssResolved !== null) {
+        resolvedValue = cssResolved;
+      }
+    }
     // Auto-wrap URL-reference properties with url(#...) — skip CSS function values (contain parentheses)
     if (URL_REF_PROPERTIES.has(prop.name) && typeof resolvedValue === 'string' && !/^url\(/i.test(resolvedValue) && !resolvedValue.includes('(')) {
       resolvedValue = `url(#${resolvedValue})`;
@@ -888,6 +885,95 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     properties[prop.name] = resolvedValue;
   }
   return { type: 'StyleBlockValue', properties };
+}
+
+/**
+ * Convert a ColorValue to its CSS string representation.
+ */
+function colorValueToCSS(color: ColorValue): string {
+  if (color.lightDark) {
+    return `light-dark(${color.lightDark.lightCSS}, ${color.lightDark.darkCSS})`;
+  } else if (color.cssExpr) {
+    return color.cssExpr;
+  } else if (color.cssVar) {
+    return `var(${color.cssVar.varName}, ${oklchToCSS(color.oklch)})`;
+  }
+  return oklchToCSS(color.oklch);
+}
+
+/**
+ * Convert a CSSVarValue to its CSS string representation.
+ */
+function cssVarValueToCSS(v: CSSVarValue): string {
+  return v.fallback ? `var(${v.varName}, ${v.fallback})` : `var(${v.varName})`;
+}
+
+/**
+ * Split a string by whitespace while respecting nested parentheses.
+ * e.g., "16px 16px 20px rgba(0,0,0,0.5)" → ["16px", "16px", "20px", "rgba(0,0,0,0.5)"]
+ */
+function splitCSSArgs(input: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  let depth = 0;
+  for (const ch of input) {
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    if (/\s/.test(ch) && depth === 0) {
+      if (current) tokens.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  if (current) tokens.push(current);
+  return tokens;
+}
+
+/**
+ * Try to resolve Pathogen expressions embedded within CSS function arguments.
+ * Only substitutes tokens that evaluate to ColorValue or CSSVarValue —
+ * CSS values like "16px" or "blue" are left untouched.
+ */
+function tryResolveCSSFunctionArgs(raw: string, scope: Scope): string | null {
+  const match = raw.match(/^([\w-]+)\((.+)\)$/s);
+  if (!match) return null;
+
+  const funcName = match[1];
+  const tokens = splitCSSArgs(match[2]);
+
+  let anyResolved = false;
+  const resolved = tokens.map((token) => {
+    try {
+      const parseResult = expressionParser.parse(token);
+      if (!parseResult.status || !parseResult.value) return token;
+
+      // Preserve raw hex color literals
+      if (parseResult.value.type === 'ColorLiteral') {
+        anyResolved = true;
+        return parseResult.value.raw;
+      }
+
+      const evaluated = evaluateExpression(parseResult.value, scope);
+
+      if (isColorValue(evaluated)) {
+        anyResolved = true;
+        return colorValueToCSS(evaluated);
+      }
+      if (isCSSVarValue(evaluated)) {
+        anyResolved = true;
+        return cssVarValueToCSS(evaluated);
+      }
+
+      // Don't substitute other types — they're CSS values
+      return token;
+    } catch {
+      return token;
+    }
+  });
+
+  if (!anyResolved) return null;
+  return `${funcName}(${resolved.join(' ')})`;
 }
 
 function evaluateExpression(expr: Expression, scope: Scope): Value {
