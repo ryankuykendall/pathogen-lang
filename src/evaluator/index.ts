@@ -881,8 +881,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
     }
-    // Auto-wrap URL-reference properties with url(#...)
-    if (URL_REF_PROPERTIES.has(prop.name) && typeof resolvedValue === 'string' && !/^url\(/i.test(resolvedValue)) {
+    // Auto-wrap URL-reference properties with url(#...) — skip CSS function values (contain parentheses)
+    if (URL_REF_PROPERTIES.has(prop.name) && typeof resolvedValue === 'string' && !/^url\(/i.test(resolvedValue) && !resolvedValue.includes('(')) {
       resolvedValue = `url(#${resolvedValue})`;
     }
     properties[prop.name] = resolvedValue;

@@ -1389,6 +1389,38 @@ describe('Multi-Layer Support', () => {
       expect(result.layers.find((l) => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
       expect(result.layers.find((l) => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');
     });
+
+    it('does not auto-wrap CSS function values in filter', () => {
+      const result = compile(`
+        define PathLayer('a') \${ filter: blur(10px); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(10px)');
+    });
+
+    it('does not auto-wrap CSS function values in clip-path', () => {
+      const result = compile(`
+        define PathLayer('a') \${ clip-path: circle(50%); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles['clip-path']).toBe('circle(50%)');
+    });
+
+    it('does not auto-wrap chained CSS filter functions', () => {
+      const result = compile(`
+        define PathLayer('a') \${ filter: blur(5px) brightness(1.2); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(5px) brightness(1.2)');
+    });
+
+    it('does not auto-wrap drop-shadow CSS function', () => {
+      const result = compile(`
+        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px black); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px black)');
+    });
   });
 
   describe('dynamic layer constructors', () => {
