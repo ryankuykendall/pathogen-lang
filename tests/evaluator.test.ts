@@ -941,6 +941,55 @@ describe('Evaluator', () => {
     it('reassigns with modulus operator', () => {
       expect(compilePath('let x = 5; if (1) { x = calc(x % 3); } M x 0')).toBe('M 2 0');
     });
+
+    it('reassigns variable after path command on next line', () => {
+      const result = compile(`
+        let pos = { "x": 0, "y": 0 };
+        let myLayer = PathLayer('test') \${};
+        myLayer.apply {
+          m 10 20
+          pos = { "x": 10, "y": 20 };
+          l pos.x pos.y
+        }
+      `);
+      expect(result.layers[0].data).toBe('m 10 20 l 10 20');
+    });
+
+    it('reassigns variable inside if/else in apply block after path command', () => {
+      const result = compile(`
+        let pos = { "x": 0, "y": 0 };
+        let myLayer = PathLayer('test') \${};
+        myLayer.apply {
+          if (1) {
+            m 100 200
+            pos = { "x": 100, "y": 200 };
+          }
+          l pos.x pos.y
+        }
+      `);
+      expect(result.layers[0].data).toBe('m 100 200 l 100 200');
+    });
+
+    it('tracks position across loop iterations with assignment after path command', () => {
+      const result = compile(`
+        let myLayer = PathLayer('test') \${};
+        let lastX = 0;
+        let lastY = 0;
+        let points = [{ "x": 10, "y": 20 }, { "x": 30, "y": 40 }];
+        for ([pt, i] in points) {
+          myLayer.apply {
+            if (i == 0) {
+              m pt.x pt.y
+            } else {
+              l calc(pt.x - lastX) calc(pt.y - lastY)
+            }
+            lastX = pt.x;
+            lastY = pt.y;
+          }
+        }
+      `);
+      expect(result.layers[0].data).toBe('m 10 20 l 20 20');
+    });
   });
 
   describe('template literals', () => {

@@ -66,7 +66,10 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       if (isAlpha(input.next)) {
         const word = peekWord(input);
         if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
-          // Rewind to before the newline
+          break;
+        }
+        // Check if this identifier is followed by '=' (but not '==') — assignment statement
+        if (isAssignmentTarget(input, word.length)) {
           break;
         }
       }
@@ -220,4 +223,56 @@ function peekWord(input: { next: number; peek(offset: number): number }): string
     ch = input.peek(offset);
   }
   return String.fromCharCode(...chars);
+}
+
+/**
+ * Check if an identifier at the current position is an assignment target:
+ * peek past the word and any member access chains (`.prop`, `[index]`),
+ * then check for `=` not followed by `=` (assignment, not equality).
+ */
+function isAssignmentTarget(input: { next: number; peek(offset: number): number }, wordLen: number): boolean {
+  let offset = wordLen;
+  let ch = input.peek(offset);
+
+  // Skip past member access chains: .prop, [expr]
+  while (true) {
+    // Skip whitespace
+    while (ch === 32 || ch === 9) { // space, tab
+      offset++;
+      ch = input.peek(offset);
+    }
+    if (ch === 46) { // '.'
+      offset++;
+      ch = input.peek(offset);
+      // Skip the property name
+      while (ch !== -1 && (isAlpha(ch) || isDigit(ch) || ch === 95)) {
+        offset++;
+        ch = input.peek(offset);
+      }
+      continue;
+    }
+    if (ch === 91) { // '['
+      // Skip until matching ']'
+      let bracketDepth = 1;
+      offset++;
+      ch = input.peek(offset);
+      while (ch !== -1 && bracketDepth > 0) {
+        if (ch === 91) bracketDepth++;
+        if (ch === 93) bracketDepth--;
+        offset++;
+        ch = input.peek(offset);
+      }
+      continue;
+    }
+    break;
+  }
+
+  // Skip whitespace before '='
+  while (ch === 32 || ch === 9) {
+    offset++;
+    ch = input.peek(offset);
+  }
+
+  // Check for '=' not followed by '=' (assignment, not equality '==')
+  return ch === 61 && input.peek(offset + 1) !== 61; // '=' but not '=='
 }

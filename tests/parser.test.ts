@@ -717,6 +717,48 @@ L 10 20 // end point`;
       const block = ast.body[0] as any;
       expect(block.layerName).toMatchObject({ type: 'Identifier', name: 'name' });
     });
+
+    it('parses assignment after path command on next line', () => {
+      const ast = parse("layer('main').apply {\n  l 10 20\n  pos = Point(10, 20);\n}");
+      const block = ast.body[0] as any;
+      expect(block.type).toBe('LayerApplyBlock');
+      expect(block.body).toHaveLength(2);
+      expect(block.body[0]).toMatchObject({ type: 'PathCommand', command: 'l' });
+      expect(block.body[1]).toMatchObject({ type: 'AssignmentStatement', name: 'pos' });
+    });
+
+    it('parses member assignment after path command on next line', () => {
+      const ast = parse("layer('main').apply {\n  m x y\n  obj.prop = 42;\n}");
+      const block = ast.body[0] as any;
+      expect(block.body).toHaveLength(2);
+      expect(block.body[0]).toMatchObject({ type: 'PathCommand', command: 'm' });
+      expect(block.body[1]).toMatchObject({ type: 'MemberAssignmentStatement' });
+    });
+
+    it('parses assignment inside if/else within apply block', () => {
+      const ast = parse(`layer('main').apply {
+  if (index == 0) {
+    m x y
+  } else {
+    l dx dy
+    pos = next;
+  }
+}`);
+      const block = ast.body[0] as any;
+      expect(block.type).toBe('LayerApplyBlock');
+      const ifStmt = block.body[0];
+      expect(ifStmt.type).toBe('IfStatement');
+      const alternate = ifStmt.alternate;
+      expect(alternate).toHaveLength(2);
+      expect(alternate[0]).toMatchObject({ type: 'PathCommand', command: 'l' });
+      expect(alternate[1]).toMatchObject({ type: 'AssignmentStatement', name: 'pos' });
+    });
+
+    it('does not confuse equality check with assignment after path command', () => {
+      const ast = parse("layer('main').apply {\n  if (x == 0) { M 0 0 }\n}");
+      const block = ast.body[0] as any;
+      expect(block.body[0]).toMatchObject({ type: 'IfStatement' });
+    });
   });
 
   describe('member access on function calls', () => {
