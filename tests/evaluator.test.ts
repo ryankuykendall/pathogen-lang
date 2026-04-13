@@ -150,6 +150,14 @@ describe('Evaluator', () => {
         expect(compilePath('let d = calc(10 / 2); M d 0')).toBe('M 5 0');
       });
 
+      it('evaluates division directly in path args', () => {
+        expect(compilePath('M calc(10 / 2) 0')).toBe('M 5 0');
+      });
+
+      it('evaluates division with function call in path args', () => {
+        expect(compilePath('l calc(4 / pow(2, 1)) 0')).toBe('l 2 0');
+      });
+
       it('evaluates modulo', () => {
         expect(compilePath('M calc(10 % 3) 0')).toBe('M 1 0');
       });

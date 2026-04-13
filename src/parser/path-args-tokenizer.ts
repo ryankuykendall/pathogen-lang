@@ -72,8 +72,9 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       }
       if (input.next === 125) break; // '}'
       if (input.next === 47) { // '/' — might be comment
-        // Check for '//'
-        break; // Conservative: stop at '/'
+        if (input.peek(1) === 47) break; // '//' comment → stop
+        if (depth === 0) break; // Single '/' at top level after newline → stop
+        // Inside parens (depth > 0), continue — could be division
       }
       continue;
     }
@@ -81,9 +82,12 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
     // Closing brace, semicolon → end of args
     if (ch === 125 || ch === 59) break; // '}' or ';'
 
-    // Comment '//' → stop
+    // Comment '//' → stop (single '/' handled as operator below)
     if (ch === 47) { // '/'
-      break;
+      if (input.peek(1) === 47) break; // '//' comment
+      // Single '/' at depth 0 isn't a valid path arg operator — stop
+      if (depth === 0) break;
+      // Inside parens (depth > 0), fall through to operator handling
     }
 
     // Opening paren/bracket
