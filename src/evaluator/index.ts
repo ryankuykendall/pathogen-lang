@@ -581,18 +581,22 @@ function countSubPaths(commands: PathBlockCommand[]): number {
 }
 
 /**
- * Normalize a raw path-context history entry into a PathBlockCommand invariant:
+ * Normalize a raw path-context history entry to the PathBlockCommand invariant:
  * command is lowercase, and positional args are relative to the command's start point.
  *
- * The context history preserves the original command character (so 'Q' stays 'Q'), and
- * stores args exactly as the user wrote them. If the source was uppercase (absolute), the
- * stored args are absolute coordinates. PathBlockValue invariants require relative args
- * (to match the lowercase command), so we convert here.
+ * The context history preserves the original command character (so 'Q' stays 'Q') and
+ * stores args exactly as the source wrote them. For uppercase (absolute) originals, the
+ * args are absolute coordinates and must be converted to relative before the lowercased
+ * command is stored on the PathBlockValue.
  *
- * This matters for C, S, Q: they carry control-point args that commandsToRelativeD()
- * emits verbatim. M/L/H/V/T use only end.x/end.y computed from start/end in the emitter,
- * so their args aren't read there, but we still normalize for consistency. A's first 5
- * args (rx, ry, rotation, large-arc, sweep) are non-positional and pass through unchanged.
+ * After the stdlib-to-relative refactor, shape helpers (circle, rect, roundRect, polygon,
+ * star, line, quadratic, cubic) emit absolute `M` + relative body, so this helper is a
+ * no-op for their body commands. It still runs meaningfully for:
+ *   - The initial absolute `M` those shapes emit (M → m: no arg read by the emitter, but
+ *     we normalize for interface consistency).
+ *   - Continuation helpers that stay uppercase: arc (A), moveTo (M), lineTo (L),
+ *     closePath (Z) — for these, commandsToRelativeD reads only non-positional args or
+ *     end/start deltas, but consistency of the interface still matters.
  */
 function normalizeToRelativeArgs(
   command: string,

@@ -460,78 +460,80 @@ describe('Evaluator', () => {
 
   describe('stdlib path functions', () => {
     it('evaluates circle', () => {
+      // Circle centered at (50, 50) with r=25 → start at (25, 50), two semicircle arcs
       const result = compilePath('circle(50, 50, 25);');
-      expect(result).toContain('M 25 50');
-      expect(result).toContain('A 25 25');
+      expect(result).toBe('M 25 50 a 25 25 0 1 1 50 0 a 25 25 0 1 1 -50 0');
     });
 
     it('evaluates arc', () => {
+      // arc() is a continuation command — keeps uppercase A since it has no start-position knowledge
       const result = compilePath('arc(10, 10, 0, 1, 1, 50, 50);');
       expect(result).toBe('A 10 10 0 1 1 50 50');
     });
 
     it('evaluates rect', () => {
       const result = compilePath('rect(0, 0, 100, 50);');
-      expect(result).toBe('M 0 0 L 100 0 L 100 50 L 0 50 Z');
+      expect(result).toBe('M 0 0 l 100 0 l 0 50 l -100 0 z');
     });
 
     it('evaluates roundRect', () => {
       const result = compilePath('roundRect(10, 10, 80, 60, 10);');
-      // roundRect(x=10, y=10, w=80, h=60, r=min(10,40,30)=10)
+      // roundRect(x=10, y=10, w=80, h=60, r=min(10,40,30)=10); bodyW=60, bodyH=40
       expect(result).toBe(
-        'M 20 10 L 80 10 Q 90 10 90 20 L 90 60 Q 90 70 80 70 L 20 70 Q 10 70 10 60 L 10 20 Q 10 10 20 10 Z',
+        'M 20 10 l 60 0 q 10 0 10 10 l 0 40 q 0 10 -10 10 l -60 0 q -10 0 -10 -10 l 0 -40 q 0 -10 10 -10 z',
       );
     });
 
     it('evaluates roundRect with large radius (clamped)', () => {
-      // radius is clamped to min(50, 40/2=20, 20/2=10) = 10
+      // radius is clamped to min(50, 40/2=20, 20/2=10) = 10; bodyW=20, bodyH=0
       const result = compilePath('roundRect(0, 0, 40, 20, 50);');
       expect(result).toBe(
-        'M 10 0 L 30 0 Q 40 0 40 10 L 40 10 Q 40 20 30 20 L 10 20 Q 0 20 0 10 L 0 10 Q 0 0 10 0 Z',
+        'M 10 0 l 20 0 q 10 0 10 10 l 0 0 q 0 10 -10 10 l -20 0 q -10 0 -10 -10 l 0 0 q 0 -10 10 -10 z',
       );
     });
 
     it('evaluates polygon', () => {
       // polygon(cx=50, cy=50, r=25, sides=4) — square rotated 45°
+      // vertices: (50, 25), (75, 50), (50, 75), (25, 50)
       const result = compilePath('polygon(50, 50, 25, 4);');
-      expect(result).toBe('M 50 25 L 75 50 L 50 75 L 25 50 Z');
+      expect(result).toBe('M 50 25 l 25 25 l -25 25 l -25 -25 z');
     });
 
     it('evaluates polygon with different side counts', () => {
-      // Triangle: M + 2 L's + Z
+      // Triangle: M + 2 l's + z
       const triangle = compilePath('polygon(50, 50, 25, 3);');
-      expect(triangle.match(/L/g)?.length).toBe(2);
-      expect(triangle).toMatch(/^M .+ L .+ L .+ Z$/);
+      expect(triangle.match(/\bl\b/g)?.length).toBe(2);
+      expect(triangle).toMatch(/^M .+ l .+ l .+ z$/);
 
-      // Hexagon: M + 5 L's + Z
+      // Hexagon: M + 5 l's + z
       const hexagon = compilePath('polygon(50, 50, 25, 6);');
-      expect(hexagon.match(/L/g)?.length).toBe(5);
-      expect(hexagon).toMatch(/^M .+ Z$/);
+      expect(hexagon.match(/\bl\b/g)?.length).toBe(5);
+      expect(hexagon).toMatch(/^M .+ z$/);
     });
 
     it('evaluates star', () => {
       // star(cx=50, cy=50, outerR=30, innerR=15, points=5)
-      // 10 vertices: 5 outer + 5 inner alternating → M + 9 L's + Z
+      // 10 vertices: 5 outer + 5 inner alternating → M + 9 l's + z
       const result = compilePath('star(50, 50, 30, 15, 5);');
-      expect(result.match(/L/g)?.length).toBe(9);
+      expect(result.match(/\bl\b/g)?.length).toBe(9);
       // First vertex at top: cx=50, cy=50-30=20
-      expect(result).toMatch(/^M 50 20 L/);
-      expect(result).toMatch(/Z$/);
+      expect(result).toMatch(/^M 50 20 l/);
+      expect(result).toMatch(/z$/);
     });
 
     it('evaluates line', () => {
       const result = compilePath('line(10, 20, 30, 40);');
-      expect(result).toBe('M 10 20 L 30 40');
+      expect(result).toBe('M 10 20 l 20 20');
     });
 
     it('evaluates quadratic', () => {
       const result = compilePath('quadratic(0, 0, 50, 100, 100, 0);');
-      expect(result).toBe('M 0 0 Q 50 100 100 0');
+      expect(result).toBe('M 0 0 q 50 100 100 0');
     });
 
     it('evaluates cubic', () => {
       const result = compilePath('cubic(0, 0, 25, 100, 75, 100, 100, 0);');
-      expect(result).toBe('M 0 0 C 25 100 75 100 100 0');
+      expect(result).toBe('M 0 0 c 25 100 75 100 100 0');
     });
 
     it('evaluates moveTo', () => {

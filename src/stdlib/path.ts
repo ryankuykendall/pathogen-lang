@@ -45,15 +45,18 @@ function getNumOpt(obj: unknown, key: string, fallback: number): number {
 }
 
 export const pathFunctions = {
-  // Circle: draws a full circle using two arcs
+  // Circle: draws a full circle using two arcs.
+  // Absolute M positions the start, relative arcs trace the shape.
   circle: (cx: number, cy: number, r: number): PathSegment =>
     segment(
       `M ${formatNum(cx - r)} ${formatNum(cy)} ` +
-        `A ${formatNum(r)} ${formatNum(r)} 0 1 1 ${formatNum(cx + r)} ${formatNum(cy)} ` +
-        `A ${formatNum(r)} ${formatNum(r)} 0 1 1 ${formatNum(cx - r)} ${formatNum(cy)}`,
+        `a ${formatNum(r)} ${formatNum(r)} 0 1 1 ${formatNum(2 * r)} 0 ` +
+        `a ${formatNum(r)} ${formatNum(r)} 0 1 1 ${formatNum(-2 * r)} 0`,
     ),
 
-  // Arc: draws an arc from current point
+  // Arc: draws an arc from current point — no M, absolute target.
+  // Kept absolute since the function has no knowledge of the current cursor.
+  // When used inside a PathBlock, the normalizer converts end args to relative.
   arc: (rx: number, ry: number, rotation: number, largeArc: number, sweep: number, x: number, y: number): PathSegment =>
     segment(
       `A ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${largeArc} ${sweep} ${formatNum(x)} ${formatNum(y)}`,
@@ -63,39 +66,49 @@ export const pathFunctions = {
   rect: (x: number, y: number, width: number, height: number): PathSegment =>
     segment(
       `M ${formatNum(x)} ${formatNum(y)} ` +
-        `L ${formatNum(x + width)} ${formatNum(y)} ` +
-        `L ${formatNum(x + width)} ${formatNum(y + height)} ` +
-        `L ${formatNum(x)} ${formatNum(y + height)} ` +
-        `Z`,
+        `l ${formatNum(width)} 0 ` +
+        `l 0 ${formatNum(height)} ` +
+        `l ${formatNum(-width)} 0 ` +
+        `z`,
     ),
 
   // Rounded rectangle
   roundRect: (x: number, y: number, width: number, height: number, radius: number): PathSegment => {
     const r = Math.min(radius, width / 2, height / 2);
+    const bodyW = width - 2 * r;
+    const bodyH = height - 2 * r;
     return segment(
       `M ${formatNum(x + r)} ${formatNum(y)} ` +
-        `L ${formatNum(x + width - r)} ${formatNum(y)} ` +
-        `Q ${formatNum(x + width)} ${formatNum(y)} ${formatNum(x + width)} ${formatNum(y + r)} ` +
-        `L ${formatNum(x + width)} ${formatNum(y + height - r)} ` +
-        `Q ${formatNum(x + width)} ${formatNum(y + height)} ${formatNum(x + width - r)} ${formatNum(y + height)} ` +
-        `L ${formatNum(x + r)} ${formatNum(y + height)} ` +
-        `Q ${formatNum(x)} ${formatNum(y + height)} ${formatNum(x)} ${formatNum(y + height - r)} ` +
-        `L ${formatNum(x)} ${formatNum(y + r)} ` +
-        `Q ${formatNum(x)} ${formatNum(y)} ${formatNum(x + r)} ${formatNum(y)} ` +
-        `Z`,
+        `l ${formatNum(bodyW)} 0 ` +
+        `q ${formatNum(r)} 0 ${formatNum(r)} ${formatNum(r)} ` +
+        `l 0 ${formatNum(bodyH)} ` +
+        `q 0 ${formatNum(r)} ${formatNum(-r)} ${formatNum(r)} ` +
+        `l ${formatNum(-bodyW)} 0 ` +
+        `q ${formatNum(-r)} 0 ${formatNum(-r)} ${formatNum(-r)} ` +
+        `l 0 ${formatNum(-bodyH)} ` +
+        `q 0 ${formatNum(-r)} ${formatNum(r)} ${formatNum(-r)} ` +
+        `z`,
     );
   },
 
   // Regular polygon
   polygon: (cx: number, cy: number, radius: number, sides: number): PathSegment => {
     const points: string[] = [];
+    let prevX = 0;
+    let prevY = 0;
     for (let i = 0; i < sides; i++) {
       const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
       const x = cx + radius * Math.cos(angle);
       const y = cy + radius * Math.sin(angle);
-      points.push(i === 0 ? `M ${formatNum(x)} ${formatNum(y)}` : `L ${formatNum(x)} ${formatNum(y)}`);
+      if (i === 0) {
+        points.push(`M ${formatNum(x)} ${formatNum(y)}`);
+      } else {
+        points.push(`l ${formatNum(x - prevX)} ${formatNum(y - prevY)}`);
+      }
+      prevX = x;
+      prevY = y;
     }
-    points.push('Z');
+    points.push('z');
     return segment(points.join(' '));
   },
 
@@ -103,26 +116,35 @@ export const pathFunctions = {
   star: (cx: number, cy: number, outerRadius: number, innerRadius: number, points: number): PathSegment => {
     const segments: string[] = [];
     const totalPoints = points * 2;
+    let prevX = 0;
+    let prevY = 0;
 
     for (let i = 0; i < totalPoints; i++) {
       const angle = (i / totalPoints) * Math.PI * 2 - Math.PI / 2;
       const radius = i % 2 === 0 ? outerRadius : innerRadius;
       const x = cx + radius * Math.cos(angle);
       const y = cy + radius * Math.sin(angle);
-      segments.push(i === 0 ? `M ${formatNum(x)} ${formatNum(y)}` : `L ${formatNum(x)} ${formatNum(y)}`);
+      if (i === 0) {
+        segments.push(`M ${formatNum(x)} ${formatNum(y)}`);
+      } else {
+        segments.push(`l ${formatNum(x - prevX)} ${formatNum(y - prevY)}`);
+      }
+      prevX = x;
+      prevY = y;
     }
-    segments.push('Z');
+    segments.push('z');
     return segment(segments.join(' '));
   },
 
   // Line segment
   line: (x1: number, y1: number, x2: number, y2: number): PathSegment =>
-    segment(`M ${formatNum(x1)} ${formatNum(y1)} L ${formatNum(x2)} ${formatNum(y2)}`),
+    segment(`M ${formatNum(x1)} ${formatNum(y1)} l ${formatNum(x2 - x1)} ${formatNum(y2 - y1)}`),
 
   // Quadratic bezier curve
   quadratic: (x1: number, y1: number, cx: number, cy: number, x2: number, y2: number): PathSegment =>
     segment(
-      `M ${formatNum(x1)} ${formatNum(y1)} Q ${formatNum(cx)} ${formatNum(cy)} ${formatNum(x2)} ${formatNum(y2)}`,
+      `M ${formatNum(x1)} ${formatNum(y1)} ` +
+        `q ${formatNum(cx - x1)} ${formatNum(cy - y1)} ${formatNum(x2 - x1)} ${formatNum(y2 - y1)}`,
     ),
 
   // Cubic bezier curve
@@ -137,7 +159,8 @@ export const pathFunctions = {
     y2: number,
   ): PathSegment =>
     segment(
-      `M ${formatNum(x1)} ${formatNum(y1)} C ${formatNum(c1x)} ${formatNum(c1y)} ${formatNum(c2x)} ${formatNum(c2y)} ${formatNum(x2)} ${formatNum(y2)}`,
+      `M ${formatNum(x1)} ${formatNum(y1)} ` +
+        `c ${formatNum(c1x - x1)} ${formatNum(c1y - y1)} ${formatNum(c2x - x1)} ${formatNum(c2y - y1)} ${formatNum(x2 - x1)} ${formatNum(y2 - y1)}`,
     ),
 
   // Move to (returns path segment)
