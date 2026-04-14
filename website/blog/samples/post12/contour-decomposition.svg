@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 400" width="660" height="400">
-  <path d="M 0 0 L 660 0 L 660 400 L 0 400 Z" fill="#0f172a" stroke="none"/>
+  <path d="M 0 0 l 660 0 l 0 400 l -660 0 z" fill="#0f172a" stroke="none"/>
   <g transform="translate(30, 0)">
     <path d="Contour Decomposition" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start"/>
     <text x="0" y="30" >Contour Decomposition</text>
@@ -42,18 +42,18 @@
   <g transform="translate(360, 0)">
     <path d="Contour Color Key" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start"/>
     <text x="0" y="30" >Contour Color Key</text>
-    <path d="M 0 44 L 8 44 L 8 52 L 0 52 Z" fill="colors[0]" stroke="none"/>
-    <path d="M 0 58 L 8 58 L 8 66 L 0 66 Z" fill="colors[1]" stroke="none"/>
-    <path d="M 0 72 L 8 72 L 8 80 L 0 80 Z" fill="colors[2]" stroke="none"/>
-    <path d="M 0 86 L 8 86 L 8 94 L 0 94 Z" fill="colors[3]" stroke="none"/>
-    <path d="M 0 100 L 8 100 L 8 108 L 0 108 Z" fill="colors[4]" stroke="none"/>
-    <path d="M 0 114 L 8 114 L 8 122 L 0 122 Z" fill="colors[5]" stroke="none"/>
-    <path d="M 0 128 L 8 128 L 8 136 L 0 136 Z" fill="colors[6]" stroke="none"/>
-    <path d="M 0 142 L 8 142 L 8 150 L 0 150 Z" fill="colors[7]" stroke="none"/>
-    <path d="M 0 156 L 8 156 L 8 164 L 0 164 Z" fill="colors[8]" stroke="none"/>
-    <path d="M 0 170 L 8 170 L 8 178 L 0 178 Z" fill="colors[9]" stroke="none"/>
-    <path d="M 0 184 L 8 184 L 8 192 L 0 192 Z" fill="colors[10]" stroke="none"/>
-    <path d="M 0 198 L 8 198 L 8 206 L 0 206 Z" fill="colors[11]" stroke="none"/>
+    <path d="M 0 44 l 8 0 l 0 8 l -8 0 z" fill="colors[0]" stroke="none"/>
+    <path d="M 0 58 l 8 0 l 0 8 l -8 0 z" fill="colors[1]" stroke="none"/>
+    <path d="M 0 72 l 8 0 l 0 8 l -8 0 z" fill="colors[2]" stroke="none"/>
+    <path d="M 0 86 l 8 0 l 0 8 l -8 0 z" fill="colors[3]" stroke="none"/>
+    <path d="M 0 100 l 8 0 l 0 8 l -8 0 z" fill="colors[4]" stroke="none"/>
+    <path d="M 0 114 l 8 0 l 0 8 l -8 0 z" fill="colors[5]" stroke="none"/>
+    <path d="M 0 128 l 8 0 l 0 8 l -8 0 z" fill="colors[6]" stroke="none"/>
+    <path d="M 0 142 l 8 0 l 0 8 l -8 0 z" fill="colors[7]" stroke="none"/>
+    <path d="M 0 156 l 8 0 l 0 8 l -8 0 z" fill="colors[8]" stroke="none"/>
+    <path d="M 0 170 l 8 0 l 0 8 l -8 0 z" fill="colors[9]" stroke="none"/>
+    <path d="M 0 184 l 8 0 l 0 8 l -8 0 z" fill="colors[10]" stroke="none"/>
+    <path d="M 0 198 l 8 0 l 0 8 l -8 0 z" fill="colors[11]" stroke="none"/>
     <path d="B outer B hole 1 B hole 2 i body i dot n body g body g tail o outer o hole ! body ! dot" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start"/>
     <text x="14" y="51" >B outer</text>
     <text x="14" y="65" >B hole 1</text>
