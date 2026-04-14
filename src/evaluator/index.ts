@@ -581,6 +581,61 @@ function countSubPaths(commands: PathBlockCommand[]): number {
 }
 
 /**
+ * Normalize a raw path-context history entry into a PathBlockCommand invariant:
+ * command is lowercase, and positional args are relative to the command's start point.
+ *
+ * The context history preserves the original command character (so 'Q' stays 'Q'), and
+ * stores args exactly as the user wrote them. If the source was uppercase (absolute), the
+ * stored args are absolute coordinates. PathBlockValue invariants require relative args
+ * (to match the lowercase command), so we convert here.
+ *
+ * This matters for C, S, Q: they carry control-point args that commandsToRelativeD()
+ * emits verbatim. M/L/H/V/T use only end.x/end.y computed from start/end in the emitter,
+ * so their args aren't read there, but we still normalize for consistency. A's first 5
+ * args (rx, ry, rotation, large-arc, sweep) are non-positional and pass through unchanged.
+ */
+function normalizeToRelativeArgs(
+  command: string,
+  args: number[],
+  start: { x: number; y: number },
+): number[] {
+  // Already lowercase: args are already relative
+  if (command === command.toLowerCase()) return [...args];
+  const sx = start.x;
+  const sy = start.y;
+  const c = command.toUpperCase();
+  switch (c) {
+    case 'M':
+    case 'L':
+    case 'T':
+      return [args[0] - sx, args[1] - sy];
+    case 'H':
+      return [args[0] - sx];
+    case 'V':
+      return [args[0] - sy];
+    case 'C':
+      return [
+        args[0] - sx, args[1] - sy,
+        args[2] - sx, args[3] - sy,
+        args[4] - sx, args[5] - sy,
+      ];
+    case 'S':
+    case 'Q':
+      return [
+        args[0] - sx, args[1] - sy,
+        args[2] - sx, args[3] - sy,
+      ];
+    case 'A':
+      // rx, ry, rotation, large-arc, sweep are non-positional; only end (args[5], args[6]) is positional
+      return [args[0], args[1], args[2], args[3], args[4], args[5] - sx, args[6] - sy];
+    case 'Z':
+      return [];
+    default:
+      return [...args];
+  }
+}
+
+/**
  * Build a PathBlockValue from transform result commands, normalizing to (0,0) origin.
  */
 function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
@@ -1376,7 +1431,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   // Build the PathBlockValue from accumulated commands
   const commands: PathBlockCommand[] = blockContext.commands.map((entry) => ({
     command: entry.command.toLowerCase(),
-    args: [...entry.args],
+    args: normalizeToRelativeArgs(entry.command, entry.args, entry.start),
     start: { x: entry.start.x, y: entry.start.y },
     end: { x: entry.end.x, y: entry.end.y },
   }));

@@ -2069,6 +2069,57 @@ describe('Path Blocks', () => {
       expect(result).toMatch(/\bl\b/); // relative lines for sides
     });
 
+    it('roundRect() emits correct quadratic control points (relative, not absolute)', () => {
+      // Regression: stdlib roundRect emits uppercase Q commands; path-block
+      // construction must convert args from absolute to relative.
+      // Expected shape drawn from cursor (50, 100) with rect (0, 0, 100, 50, 8):
+      //   start: M 50 100 m 8 0  (to (58, 100) = (8, 0) local)
+      //   top edge: l 84 0       (to (92, 0))
+      //   top-right corner: q 8 0 8 8  (CP (+8,0), end (+8,+8) = (100, 8))
+      //   right edge: l 0 34     (to (100, 42))
+      //   bottom-right corner: q 0 8 -8 8  (CP (+0,+8), end (-8,+8) = (92, 50))
+      //   bottom edge: l -84 0   (to (8, 50))
+      //   bottom-left corner: q -8 0 -8 -8  (CP (-8,0), end (-8,-8) = (0, 42))
+      //   left edge: l 0 -34     (to (0, 8))
+      //   top-left corner: q 0 -8 8 -8  (CP (0,-8), end (+8,-8) = (8, 0))
+      //   z
+      const result = compilePath(`
+        let p = @{ roundRect(0, 0, 100, 50, 8); };
+        M 50 100
+        p.draw()
+      `);
+      expect(result).toBe(
+        'M 50 100 m 8 0 l 84 0 q 8 0 8 8 l 0 34 q 0 8 -8 8 l -84 0 q -8 0 -8 -8 l 0 -34 q 0 -8 8 -8 z',
+      );
+    });
+
+    it('cubic() emits correct control points (relative, not absolute)', () => {
+      // cubic(0, 0, 10, -20, 40, -20, 50, 0) → M 0 0 C 10 -20 40 -20 50 0
+      // Drawn from cursor (100, 100): m 0 0 (redundant), then relative c
+      //   start: (0, 0) local → (100, 100) abs
+      //   CP1: (10, -20) local, relative from start: (+10, -20)
+      //   CP2: (40, -20) local, relative from start: (+40, -20)
+      //   end: (50, 0) local, relative from start: (+50, 0)
+      const result = compilePath(`
+        let p = @{ cubic(0, 0, 10, -20, 40, -20, 50, 0); };
+        M 100 100
+        p.draw()
+      `);
+      // Should produce: `m 0 0 c 10 -20 40 -20 50 0`
+      expect(result).toContain('c 10 -20 40 -20 50 0');
+    });
+
+    it('quadratic() emits correct control point (relative, not absolute)', () => {
+      // quadratic(0, 0, 25, -30, 50, 0) → M 0 0 Q 25 -30 50 0
+      // From cursor (100, 100): CP (25, -30) relative, end (50, 0) relative
+      const result = compilePath(`
+        let p = @{ quadratic(0, 0, 25, -30, 50, 0); };
+        M 100 100
+        p.draw()
+      `);
+      expect(result).toContain('q 25 -30 50 0');
+    });
+
     it('polygon() emits relative commands via .draw()', () => {
       const result = compilePath(`
         let p = @{ polygon(50, 50, 20, 6); };
