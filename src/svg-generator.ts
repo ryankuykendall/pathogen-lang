@@ -183,6 +183,31 @@ export function generateSvg(result: CompileResult, options: SvgGeneratorOptions 
       defsContent.push(`  <pattern ${attrParts.join(' ')}>\n${children}\n  </pattern>`);
     }
   }
+  if (result.markers) {
+    for (const marker of result.markers) {
+      const attrParts = [
+        `id="${escapeXml(marker.id)}"`,
+        `viewBox="${escapeXml(marker.viewBox)}"`,
+        `markerWidth="${marker.markerWidth}"`,
+        `markerHeight="${marker.markerHeight}"`,
+        `refX="${escapeXml(marker.refX)}"`,
+        `refY="${escapeXml(marker.refY)}"`,
+      ];
+      if (marker.markerUnits) attrParts.push(`markerUnits="${escapeXml(marker.markerUnits)}"`);
+      if (marker.orient) attrParts.push(`orient="${escapeXml(marker.orient)}"`);
+      if (marker.preserveAspectRatio)
+        attrParts.push(`preserveAspectRatio="${escapeXml(marker.preserveAspectRatio)}"`);
+      const children = marker.elements
+        .map((el) => {
+          const styleStr = Object.entries(el.styles)
+            .map(([k, v]) => `${k}="${escapeXml(String(v))}"`)
+            .join(' ');
+          return `    <path d="${escapeXml(el.pathData)}"${styleStr ? ` ${styleStr}` : ''}/>`;
+        })
+        .join('\n');
+      defsContent.push(`  <marker ${attrParts.join(' ')}>\n${children}\n  </marker>`);
+    }
+  }
   const defsSection = defsContent.length > 0 ? `\n<defs>\n${defsContent.join('\n')}\n</defs>\n` : '';
 
   // Build @property style block

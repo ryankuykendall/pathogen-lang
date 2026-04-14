@@ -21,6 +21,7 @@ const BUILTIN_ENUMS = new Set([
   'Easing', 'Interpolation', 'SpreadMethod', 'GradientUnits', 'Direction',
   'ConicSpread', 'InnerFill', 'TopoMethod', 'BBoxAnchor', 'GridPatternType',
   'HexagonOrientation', 'VerticalAnchor',
+  'MarkerUnits', 'MarkerOrient', 'MarkerRefX', 'MarkerRefY', 'MarkerPreserveAspectRatio',
 ]);
 
 const STDLIB_NAMES = new Set(Object.keys(stdlib));

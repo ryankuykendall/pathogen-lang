@@ -299,6 +299,7 @@ function inferExprType(expr: Expression): string | null {
       if (expr.name === 'Mask') return 'Mask';
       if (expr.name === 'ClipPath') return 'ClipPath';
       if (expr.name === 'Pattern') return 'Pattern';
+      if (expr.name === 'Marker') return 'Marker';
       if (expr.name === 'SVGDocumentFragment') return 'SVGFragment';
       // Gradient constructors
       if (expr.name === 'LinearGradient') return 'LinearGradient';

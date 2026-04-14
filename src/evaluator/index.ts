@@ -84,6 +84,8 @@ import type {
   LayerStyle,
   LogEntry,
   LogPart,
+  MarkerOutput,
+  MarkerValue,
   MaskOutput,
   MaskValue,
   MeshPointValue,
@@ -159,6 +161,8 @@ export type {
   LayerStyle,
   LogEntry,
   LogPart,
+  MarkerOutput,
+  MarkerValue,
   MaskOutput,
   MaskPathEntry,
   MaskValue,
@@ -193,7 +197,7 @@ export type {
 } from './types';
 
 /** CSS properties that reference defs elements via url(#id) */
-const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker-start', 'marker-mid', 'marker-end']);
+const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
 
 export function isArrayValue(value: Value): value is ArrayValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ArrayValue';
@@ -225,6 +229,10 @@ export function isClipPathValue(value: Value): value is ClipPathValue {
 
 export function isPatternValue(value: Value): value is PatternValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PatternValue';
+}
+
+export function isMarkerValue(value: Value): value is MarkerValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MarkerValue';
 }
 
 export function isMeshPointValue(value: Value): value is MeshPointValue {
@@ -296,6 +304,31 @@ export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   GridPatternType: { Shape: 'shape', Dot: 'dot', Intersection: 'intersection', Partial: 'partial' },
   HexagonOrientation: { Edge: 'edge', Vertex: 'vertex' },
   VerticalAnchor: { Descender: 'descender', Baseline: 'baseline', Midline: 'midline', CapHeight: 'cap-height' },
+  MarkerUnits: { StrokeWidth: 'strokeWidth', UserSpaceOnUse: 'userSpaceOnUse' },
+  MarkerOrient: { Auto: 'auto', AutoStartReverse: 'auto-start-reverse' },
+  MarkerRefX: { Left: 'left', Center: 'center', Right: 'right' },
+  MarkerRefY: { Top: 'top', Center: 'center', Bottom: 'bottom' },
+  MarkerPreserveAspectRatio: {
+    None: 'none',
+    XMinYMinMeet: 'xMinYMin meet',
+    XMinYMinSlice: 'xMinYMin slice',
+    XMidYMinMeet: 'xMidYMin meet',
+    XMidYMinSlice: 'xMidYMin slice',
+    XMaxYMinMeet: 'xMaxYMin meet',
+    XMaxYMinSlice: 'xMaxYMin slice',
+    XMinYMidMeet: 'xMinYMid meet',
+    XMinYMidSlice: 'xMinYMid slice',
+    XMidYMidMeet: 'xMidYMid meet',
+    XMidYMidSlice: 'xMidYMid slice',
+    XMaxYMidMeet: 'xMaxYMid meet',
+    XMaxYMidSlice: 'xMaxYMid slice',
+    XMinYMaxMeet: 'xMinYMax meet',
+    XMinYMaxSlice: 'xMinYMax slice',
+    XMidYMaxMeet: 'xMidYMax meet',
+    XMidYMaxSlice: 'xMidYMax slice',
+    XMaxYMaxMeet: 'xMaxYMax meet',
+    XMaxYMaxSlice: 'xMaxYMax slice',
+  },
 };
 
 /**
@@ -864,6 +897,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           resolvedValue = `url(#${evaluated.id})`;
         } else if (isPatternValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+        } else if (isMarkerValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
         }
         // For other types, keep raw string
       }
@@ -1308,6 +1343,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     clipPaths: scope.evalState?.clipPaths ?? new Map(),
     gradients: scope.evalState?.gradients ?? new Map(),
     patterns: scope.evalState?.patterns ?? new Map(),
+    markers: scope.evalState?.markers ?? new Map(),
     cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insidePathBlock: true,
   };
@@ -1398,6 +1434,7 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
     clipPaths: scope.evalState?.clipPaths ?? new Map(),
     gradients: scope.evalState?.gradients ?? new Map(),
     patterns: scope.evalState?.patterns ?? new Map(),
+    markers: scope.evalState?.markers ?? new Map(),
     cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insideTextBlock: true,
   };
@@ -3442,6 +3479,36 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // MarkerValue methods
+  if (isMarkerValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length < 1 || expr.args.length > 2)
+          throw mError('Marker.append() expects 1-2 arguments (path, styles?)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = projectCommands(pathArg.commands, 0, 0);
+        } else {
+          throw mError('Marker.append() first argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commandsToAbsoluteD(commands);
+        let styles: Record<string, string> = {};
+        if (expr.args.length === 2) {
+          const styleArg = evaluateExpression(expr.args[1], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Marker.append() second argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        obj.paths.push({ d, styles });
+        return 0;
+      }
+      default:
+        throw mError(`Unknown Marker method: ${expr.method}`);
+    }
+  }
+
   // GradientValue methods
   if (isGradientValue(obj)) {
     switch (expr.method) {
@@ -3468,10 +3535,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           scope.evalState.masks.has(newId) ||
           scope.evalState.clipPaths.has(newId) ||
           scope.evalState.gradients.has(newId) ||
-          scope.evalState.patterns.has(newId)
+          scope.evalState.patterns.has(newId) ||
+          scope.evalState.markers.has(newId)
         ) {
           throw new Error(
-            `Duplicate defs ID '${newId}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`,
+            `Duplicate defs ID '${newId}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`,
           );
         }
         const child: GradientValue = {
@@ -4169,6 +4237,9 @@ function formatValueForDisplay(val: Value): string {
   if (isPatternValue(val)) {
     return `Pattern(${val.id}, ${val.paths.length} elements)`;
   }
+  if (isMarkerValue(val)) {
+    return `Marker(${val.id}, ${val.paths.length} elements)`;
+  }
   if (isGradientValue(val)) {
     if (val.gradientType === 'mesh') {
       return `MeshGradient(${val.id}, ${val.meshCols}×${val.meshRows})`;
@@ -4422,6 +4493,32 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return obj.patternContentUnits ?? null;
       default:
         throw new Error(`Property '${expr.property}' does not exist on Pattern`);
+    }
+  }
+
+  // Handle MarkerValue property access
+  if (isMarkerValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'viewBox':
+        return obj.viewBox;
+      case 'markerWidth':
+        return obj.markerWidth;
+      case 'markerHeight':
+        return obj.markerHeight;
+      case 'refX':
+        return typeof obj.refX === 'number' ? obj.refX : obj.refX;
+      case 'refY':
+        return typeof obj.refY === 'number' ? obj.refY : obj.refY;
+      case 'markerUnits':
+        return obj.markerUnits;
+      case 'orient':
+        return typeof obj.orient === 'number' ? obj.orient : obj.orient;
+      case 'preserveAspectRatio':
+        return obj.preserveAspectRatio;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on Marker`);
     }
   }
 
@@ -4687,6 +4784,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
           stringValue = formatValueForDisplay(value);
         } else if (isPatternValue(value)) {
           stringValue = formatValueForDisplay(value);
+        } else if (isMarkerValue(value)) {
+          stringValue = formatValueForDisplay(value);
         } else if (isGradientValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isColorValue(value)) {
@@ -4821,9 +4920,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
     scope.evalState.masks.set(id, mask);
@@ -4842,9 +4942,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
     scope.evalState.clipPaths.set(id, clipPath);
@@ -4879,9 +4980,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -4942,9 +5044,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -4991,9 +5094,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const pattern: PatternValue = {
       type: 'PatternValue',
@@ -5014,6 +5118,62 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       }
     }
     return pattern;
+  }
+
+  // Handle Marker() constructor
+  if (call.name === 'Marker') {
+    if (call.args.length !== 3) {
+      throw new Error(
+        formatError(
+          `Marker() expects 3 arguments (id, markerWidth, markerHeight), got ${call.args.length}`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('Marker() requires evaluation context');
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(formatError('Marker() first argument must be a string', getLine(call), getCol(call)));
+    const markerWidth = evaluateExpression(call.args[1], scope);
+    const markerHeight = evaluateExpression(call.args[2], scope);
+    if (typeof markerWidth !== 'number' || typeof markerHeight !== 'number') {
+      throw new Error(
+        formatError('Marker() markerWidth and markerHeight arguments must be numbers', getLine(call), getCol(call)),
+      );
+    }
+    if (
+      scope.evalState.masks.has(id) ||
+      scope.evalState.clipPaths.has(id) ||
+      scope.evalState.gradients.has(id) ||
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
+    ) {
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+    }
+    const marker: MarkerValue = {
+      type: 'MarkerValue',
+      id,
+      viewBox: `0 0 ${markerWidth} ${markerHeight}`,
+      markerWidth,
+      markerHeight,
+      refX: markerWidth / 2,
+      refY: markerHeight / 2,
+      markerUnits: 'strokeWidth',
+      orient: 'auto',
+      preserveAspectRatio: 'xMidYMid meet',
+      paths: [],
+    };
+    scope.evalState.markers.set(id, marker);
+    // Execute trailing block if present
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], marker);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return marker;
   }
 
   // Handle ConicGradient() constructor
@@ -5040,9 +5200,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -5107,9 +5268,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     // Build grid: rows × cols MeshPointValue objects, evenly spaced
     const meshGrid: MeshPointValue[][] = [];
@@ -5176,9 +5338,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -5227,9 +5390,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id)
+      scope.evalState.patterns.has(id) ||
+      scope.evalState.markers.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, or Pattern with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -6561,6 +6725,75 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             throw new Error(formatError(`Cannot assign to Pattern property '${stmt.property}'`, getLine(stmt)));
         }
       }
+      if (isMarkerValue(obj)) {
+        const validateEnum = (enumName: string, val: string): string => {
+          const enumObj = BUILTIN_ENUMS[enumName];
+          const validValues = Object.values(enumObj);
+          if (!validValues.includes(val)) {
+            throw new Error(
+              formatError(
+                `Invalid value '${val}' for Marker.${stmt.property}. Valid values: ${validValues.join(', ')}`,
+                getLine(stmt),
+              ),
+            );
+          }
+          return val;
+        };
+        switch (stmt.property) {
+          case 'viewBox': {
+            if (typeof value !== 'string')
+              throw new Error(formatError(`Marker.viewBox must be a string`, getLine(stmt)));
+            obj.viewBox = value;
+            return;
+          }
+          case 'refX': {
+            if (typeof value === 'number') {
+              obj.refX = value;
+            } else if (typeof value === 'string') {
+              obj.refX = validateEnum('MarkerRefX', value);
+            } else {
+              throw new Error(formatError(`Marker.refX must be a number or MarkerRefX enum value`, getLine(stmt)));
+            }
+            return;
+          }
+          case 'refY': {
+            if (typeof value === 'number') {
+              obj.refY = value;
+            } else if (typeof value === 'string') {
+              obj.refY = validateEnum('MarkerRefY', value);
+            } else {
+              throw new Error(formatError(`Marker.refY must be a number or MarkerRefY enum value`, getLine(stmt)));
+            }
+            return;
+          }
+          case 'orient': {
+            if (typeof value === 'number') {
+              obj.orient = value;
+            } else if (typeof value === 'string') {
+              obj.orient = validateEnum('MarkerOrient', value);
+            } else {
+              throw new Error(formatError(`Marker.orient must be a number or MarkerOrient enum value`, getLine(stmt)));
+            }
+            return;
+          }
+          case 'markerUnits': {
+            if (typeof value !== 'string')
+              throw new Error(formatError(`Marker.markerUnits must be a MarkerUnits enum value`, getLine(stmt)));
+            obj.markerUnits = validateEnum('MarkerUnits', value);
+            return;
+          }
+          case 'preserveAspectRatio': {
+            if (typeof value !== 'string')
+              throw new Error(
+                formatError(`Marker.preserveAspectRatio must be a MarkerPreserveAspectRatio enum value`, getLine(stmt)),
+              );
+            obj.preserveAspectRatio = validateEnum('MarkerPreserveAspectRatio', value);
+            return;
+          }
+          default:
+            throw new Error(formatError(`Cannot assign to Marker property '${stmt.property}'`, getLine(stmt)));
+        }
+      }
       if (isMeshPointValue(obj)) {
         switch (stmt.property) {
           case 'color': {
@@ -7202,6 +7435,36 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     });
   }
 
+  // Build markers output
+  const markers: MarkerOutput[] = [];
+  for (const [, marker] of evalState.markers) {
+    // Convert refX/refY to output string: keyword stays as-is, number is stringified
+    const refX = typeof marker.refX === 'number' ? formatNum(marker.refX) : marker.refX;
+    const refY = typeof marker.refY === 'number' ? formatNum(marker.refY) : marker.refY;
+    // orient: numeric values are radians → convert to degrees string; enum values stay as-is
+    let orientOut: string;
+    if (typeof marker.orient === 'number') {
+      orientOut = formatNum((marker.orient * 180) / Math.PI);
+    } else {
+      orientOut = marker.orient;
+    }
+    const output: MarkerOutput = {
+      id: marker.id,
+      viewBox: marker.viewBox,
+      markerWidth: marker.markerWidth,
+      markerHeight: marker.markerHeight,
+      refX,
+      refY,
+      elements: marker.paths.map((p) => ({ pathData: p.d, styles: { ...p.styles } })),
+    };
+    // Omit attrs that match SVG defaults
+    if (marker.markerUnits !== 'strokeWidth') output.markerUnits = marker.markerUnits;
+    // orient default in SVG is "0", but we default to "auto" (more useful); always emit
+    output.orient = orientOut;
+    if (marker.preserveAspectRatio !== 'xMidYMid meet') output.preserveAspectRatio = marker.preserveAspectRatio;
+    markers.push(output);
+  }
+
   // Build cssProperties output
   const cssProperties: CSSPropertyDeclaration[] = Array.from(evalState.cssProperties.values());
 
@@ -7211,6 +7474,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     clipPaths,
     gradients,
     patterns,
+    markers,
     cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
@@ -7236,6 +7500,7 @@ export function evaluate(program: Program, options?: { toFixed?: number; fonts?:
       clipPaths: new Map(),
       gradients: new Map(),
       patterns: new Map(),
+      markers: new Map(),
       cssProperties: new Map(),
       fontRegistry: options?.fonts,
     };
@@ -7311,6 +7576,7 @@ export function evaluateWithContext(
       clipPaths: new Map(),
       gradients: new Map(),
       patterns: new Map(),
+      markers: new Map(),
       cssProperties: new Map(),
     };
 

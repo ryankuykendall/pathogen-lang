@@ -44,6 +44,7 @@ export type Value =
   | MaskValue
   | ClipPathValue
   | PatternValue
+  | MarkerValue
   | GradientValue
   | MeshPointValue
   | ColorValue
@@ -149,6 +150,27 @@ export interface PatternValue {
   patternUnits?: string;
   patternTransform?: string;
   patternContentUnits?: string;
+}
+
+/**
+ * Represents a <marker> definition with appended path elements.
+ *
+ * Attribute string values are validated against BUILTIN_ENUMS at assignment
+ * time. Numeric refX/refY/orient values are stored as numbers; orient numbers
+ * are interpreted as radians internally and converted to degrees on output.
+ */
+export interface MarkerValue {
+  type: 'MarkerValue';
+  id: string;
+  viewBox: string;
+  markerWidth: number;
+  markerHeight: number;
+  refX: number | string; // number or MarkerRefX enum value ('left' | 'center' | 'right')
+  refY: number | string; // number or MarkerRefY enum value ('top' | 'center' | 'bottom')
+  markerUnits: string; // MarkerUnits enum value ('strokeWidth' | 'userSpaceOnUse')
+  orient: number | string; // number (radians) or MarkerOrient enum value ('auto' | 'auto-start-reverse')
+  preserveAspectRatio: string; // MarkerPreserveAspectRatio enum value
+  paths: MaskPathEntry[]; // reuse {d, styles} type
 }
 
 /**
@@ -526,6 +548,19 @@ export interface PatternOutput {
   patternContentUnits?: string;
 }
 
+export interface MarkerOutput {
+  id: string;
+  viewBox: string;
+  markerWidth: number;
+  markerHeight: number;
+  refX: string; // stringified number or keyword
+  refY: string;
+  markerUnits?: string; // omitted when value matches SVG default
+  orient?: string; // stringified degrees or keyword; omitted when matches SVG default
+  preserveAspectRatio?: string; // omitted when matches SVG default
+  elements: { pathData: string; styles: Record<string, string> }[];
+}
+
 export interface GradientOutput {
   id: string;
   type: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform' | 'topo';
@@ -573,6 +608,7 @@ export interface CompileResult {
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
   patterns: PatternOutput[];
+  markers: MarkerOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
@@ -632,6 +668,7 @@ export interface EvaluationState {
   clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID
   gradients: Map<string, GradientValue>; // Gradient definitions by ID
   patterns: Map<string, PatternValue>; // Pattern definitions by ID
+  markers: Map<string, MarkerValue>; // Marker definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
   fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
 }

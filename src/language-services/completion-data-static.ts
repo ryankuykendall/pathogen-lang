@@ -59,6 +59,10 @@ export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = [
   { label: 'rotate', kind: 'property', detail: 'Convenience: rotation angle', boost: 6 },
   { label: 'scale-x', kind: 'property', detail: 'Convenience: scale X', boost: 6 },
   { label: 'scale-y', kind: 'property', detail: 'Convenience: scale Y', boost: 6 },
+  { label: 'marker', kind: 'property', detail: 'Marker for all positions (shorthand)', boost: 8 },
+  { label: 'marker-start', kind: 'property', detail: 'Marker at path start', boost: 6 },
+  { label: 'marker-mid', kind: 'property', detail: 'Marker at path vertices', boost: 6 },
+  { label: 'marker-end', kind: 'property', detail: 'Marker at path end', boost: 6 },
 ];
 
 // --- Member access completions (now generated — see completion-data.generated.ts) ---

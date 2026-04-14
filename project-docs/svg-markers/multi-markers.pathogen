@@ -1,0 +1,60 @@
+// viewBox: 0 0 400 300
+// width: 800
+// height: 600
+// Multi-marker polyline: different markers at start, mid, and end.
+// Uses context-fill so the dot markers pick up the line's stroke color.
+
+// Arrow head for end of line
+let arrow = @{
+  m 0 0 l 10 5 l -10 5 z
+};
+
+// Dot for vertices / start
+let dot = @{
+  circle(5, 5, 4);
+};
+
+// Open circle for start (shows where the line begins)
+let ring = @{
+  circle(5, 5, 4);
+};
+
+let arrowMarker = Marker('arrow', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; });
+};
+
+let dotMarker = Marker('dot', 10, 10) {|m|
+  m.append(dot, ${ fill: context-stroke; });
+};
+
+let ringMarker = Marker('ring', 10, 10) {|m|
+  m.append(ring, ${ fill: Color('#fff'); stroke: context-stroke; stroke-width: 1.5; });
+};
+
+define PathLayer('path1') ${
+  stroke: Color('#2a9d8f');
+  stroke-width: 3;
+  fill: none;
+  marker-start: ringMarker;
+  marker-mid: dotMarker;
+  marker-end: arrowMarker;
+}
+
+define PathLayer('path2') ${
+  stroke: Color('#e76f51');
+  stroke-width: 3;
+  fill: none;
+  marker-start: ringMarker;
+  marker-mid: dotMarker;
+  marker-end: arrowMarker;
+}
+
+// Zig-zag that exercises start, mid vertices, and end
+layer('path1').apply {
+  M 40 80 L 120 40 L 200 120 L 280 40 L 360 80
+}
+
+// Smooth curve also gets the full treatment
+layer('path2').apply {
+  M 40 240 C 120 160 280 320 360 240
+}

@@ -25,6 +25,11 @@ export const ENUM_METADATA: Record<string, { detail: string; boost: number }> = 
   GridPatternType: { detail: 'Grid cell rendering mode', boost: 10 },
   HexagonOrientation: { detail: 'Hexagon grid orientation', boost: 8 },
   VerticalAnchor: { detail: 'Text vertical alignment anchor', boost: 8 },
+  MarkerUnits: { detail: 'Marker coordinate system', boost: 6 },
+  MarkerOrient: { detail: 'Marker orientation mode', boost: 8 },
+  MarkerRefX: { detail: 'Marker refX keyword position', boost: 6 },
+  MarkerRefY: { detail: 'Marker refY keyword position', boost: 6 },
+  MarkerPreserveAspectRatio: { detail: 'Marker viewBox alignment + meet/slice', boost: 4 },
 };
 
 // Re-export for generation script

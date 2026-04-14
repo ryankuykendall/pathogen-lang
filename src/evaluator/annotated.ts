@@ -119,6 +119,31 @@ const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
   InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
   TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
+  MarkerUnits: { StrokeWidth: 'strokeWidth', UserSpaceOnUse: 'userSpaceOnUse' },
+  MarkerOrient: { Auto: 'auto', AutoStartReverse: 'auto-start-reverse' },
+  MarkerRefX: { Left: 'left', Center: 'center', Right: 'right' },
+  MarkerRefY: { Top: 'top', Center: 'center', Bottom: 'bottom' },
+  MarkerPreserveAspectRatio: {
+    None: 'none',
+    XMinYMinMeet: 'xMinYMin meet',
+    XMinYMinSlice: 'xMinYMin slice',
+    XMidYMinMeet: 'xMidYMin meet',
+    XMidYMinSlice: 'xMidYMin slice',
+    XMaxYMinMeet: 'xMaxYMin meet',
+    XMaxYMinSlice: 'xMaxYMin slice',
+    XMinYMidMeet: 'xMinYMid meet',
+    XMinYMidSlice: 'xMinYMid slice',
+    XMidYMidMeet: 'xMidYMid meet',
+    XMidYMidSlice: 'xMidYMid slice',
+    XMaxYMidMeet: 'xMaxYMid meet',
+    XMaxYMidSlice: 'xMaxYMid slice',
+    XMinYMaxMeet: 'xMinYMax meet',
+    XMinYMaxSlice: 'xMinYMax slice',
+    XMidYMaxMeet: 'xMidYMax meet',
+    XMidYMaxSlice: 'xMidYMax slice',
+    XMaxYMaxMeet: 'xMaxYMax meet',
+    XMaxYMaxSlice: 'xMaxYMax slice',
+  },
 };
 
 // Value types (same as main evaluator)
@@ -142,6 +167,7 @@ export type Value =
   | SVGFragmentValue
   | GradientValue
   | PatternValue
+  | MarkerValue
   | ColorValue
   | ColorNamespace
   | CSSVarValue
@@ -196,6 +222,24 @@ export interface PatternValue {
 
 function isPatternValue(value: Value): value is PatternValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PatternValue';
+}
+
+export interface MarkerValue {
+  type: 'MarkerValue';
+  id: string;
+  viewBox: string;
+  markerWidth: number;
+  markerHeight: number;
+  refX: number | string;
+  refY: number | string;
+  markerUnits: string;
+  orient: number | string;
+  preserveAspectRatio: string;
+  paths: { d: string; styles: Record<string, string> }[];
+}
+
+function isMarkerValue(value: Value): value is MarkerValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MarkerValue';
 }
 
 export interface ColorValue {
@@ -957,6 +1001,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (isGradientValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
         } else if (isPatternValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
+        } else if (isMarkerValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
         }
       }
@@ -1863,6 +1909,41 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       default:
         throw mError(`Unknown Pattern method: ${expr.method}`);
+    }
+  }
+
+  // MarkerValue methods
+  if (isMarkerValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length < 1 || expr.args.length > 2)
+          throw mError('Marker.append() expects 1-2 arguments (path, styles?)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = pathArg.commands.map((cmd) => ({
+            command: cmd.command,
+            args: [...cmd.args],
+            start: { x: cmd.start.x, y: cmd.start.y },
+            end: { x: cmd.end.x, y: cmd.end.y },
+          }));
+        } else {
+          throw mError('Marker.append() first argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commands.map((c) => commandToPathString(c)).join(' ');
+        let styles: Record<string, string> = {};
+        if (expr.args.length === 2) {
+          const styleArg = evaluateExpression(expr.args[1], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Marker.append() second argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        obj.paths.push({ d, styles });
+        return 0;
+      }
+      default:
+        throw mError(`Unknown Marker method: ${expr.method}`);
     }
   }
 
@@ -2924,6 +3005,32 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle MarkerValue property access
+  if (isMarkerValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'viewBox':
+        return obj.viewBox;
+      case 'markerWidth':
+        return obj.markerWidth;
+      case 'markerHeight':
+        return obj.markerHeight;
+      case 'refX':
+        return obj.refX;
+      case 'refY':
+        return obj.refY;
+      case 'markerUnits':
+        return obj.markerUnits;
+      case 'orient':
+        return obj.orient;
+      case 'preserveAspectRatio':
+        return obj.preserveAspectRatio;
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on Marker`, line));
+    }
+  }
+
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
@@ -3294,6 +3401,54 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       }
     }
     return pattern;
+  }
+
+  // Handle Marker() constructor
+  if (call.name === 'Marker') {
+    if (call.args.length !== 3) {
+      throw new Error(
+        formatError(
+          `Marker() expects 3 arguments (id, markerWidth, markerHeight), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(formatError('Marker() first argument must be a string', call.loc?.line, call.loc?.column));
+    const markerWidth = evaluateExpression(call.args[1], scope);
+    const markerHeight = evaluateExpression(call.args[2], scope);
+    if (typeof markerWidth !== 'number' || typeof markerHeight !== 'number') {
+      throw new Error(
+        formatError(
+          'Marker() markerWidth and markerHeight arguments must be numbers',
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
+    }
+    const marker: MarkerValue = {
+      type: 'MarkerValue',
+      id,
+      viewBox: `0 0 ${markerWidth} ${markerHeight}`,
+      markerWidth,
+      markerHeight,
+      refX: markerWidth / 2,
+      refY: markerHeight / 2,
+      markerUnits: 'strokeWidth',
+      orient: 'auto',
+      preserveAspectRatio: 'xMidYMid meet',
+      paths: [],
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], marker);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return marker;
   }
 
   // Handle SVGDocumentFragment() — evaluate args and call sanitizer
@@ -3757,6 +3912,29 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
               obj.patternContentUnits = value;
               break;
           }
+        }
+      }
+      // Handle Marker property assignment
+      if (isMarkerValue(obj)) {
+        switch (stmt.property) {
+          case 'viewBox':
+            if (typeof value === 'string') obj.viewBox = value;
+            break;
+          case 'refX':
+            if (typeof value === 'number' || typeof value === 'string') obj.refX = value;
+            break;
+          case 'refY':
+            if (typeof value === 'number' || typeof value === 'string') obj.refY = value;
+            break;
+          case 'orient':
+            if (typeof value === 'number' || typeof value === 'string') obj.orient = value;
+            break;
+          case 'markerUnits':
+            if (typeof value === 'string') obj.markerUnits = value;
+            break;
+          case 'preserveAspectRatio':
+            if (typeof value === 'string') obj.preserveAspectRatio = value;
+            break;
         }
       }
       // Handle Gradient property assignment (including conic fields)

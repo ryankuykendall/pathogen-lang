@@ -1,0 +1,68 @@
+// viewBox: 0 0 400 400
+// width: 800
+// height: 800
+// Demonstrates the four orient modes: auto, auto-start-reverse,
+// fixed-angle (numeric radians), and default (0 degrees).
+
+let arrow = @{
+  m 0 0 l 10 5 l -10 5 z
+};
+
+// Marker 1: orient = auto (default) — rotates to match path direction
+let autoMarker = Marker('auto', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; });
+};
+
+// Marker 2: orient = auto-start-reverse — flips the start marker
+// so arrows on both ends point outward
+let reverseMarker = Marker('reverse', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; });
+};
+reverseMarker.orient = MarkerOrient.AutoStartReverse;
+
+// Marker 3: orient = 45 degrees (PI/4 radians)
+let fixedMarker = Marker('fixed', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; });
+};
+fixedMarker.orient = PI() / 4;
+
+// Marker 4: orient = 0 (set explicitly to demonstrate — always points right)
+let zeroMarker = Marker('zero', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; });
+};
+zeroMarker.orient = 0;
+
+define PathLayer('autoLine') ${
+  stroke: Color('#2a9d8f');
+  stroke-width: 3;
+  fill: none;
+  marker-start: autoMarker;
+  marker-end: autoMarker;
+}
+define PathLayer('reverseLine') ${
+  stroke: Color('#e76f51');
+  stroke-width: 3;
+  fill: none;
+  marker-start: reverseMarker;
+  marker-end: reverseMarker;
+}
+define PathLayer('fixedLine') ${
+  stroke: Color('#264653');
+  stroke-width: 3;
+  fill: none;
+  marker-start: fixedMarker;
+  marker-end: fixedMarker;
+}
+define PathLayer('zeroLine') ${
+  stroke: Color('#6a4c93');
+  stroke-width: 3;
+  fill: none;
+  marker-start: zeroMarker;
+  marker-end: zeroMarker;
+}
+
+// Diagonal lines to make orient differences obvious
+layer('autoLine').apply    { M 40 60  L 360 100 }
+layer('reverseLine').apply { M 40 160 L 360 200 }
+layer('fixedLine').apply   { M 40 260 L 360 300 }
+layer('zeroLine').apply    { M 40 360 L 360 380 }

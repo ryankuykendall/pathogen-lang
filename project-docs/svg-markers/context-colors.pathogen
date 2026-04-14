@@ -1,0 +1,54 @@
+// viewBox: 0 0 400 400
+// width: 800
+// height: 800
+// Demonstrates context-stroke and context-fill — markers inherit colors
+// from the path they are attached to. One marker definition, five different
+// colored arrows, each inheriting the stroke color of its line.
+
+let arrow = @{
+  m 0 0 l 10 5 l -10 5 z
+};
+
+// Single marker reused across all lines — fill is context-stroke,
+// so each line's marker renders in that line's stroke color
+let arrowMarker = Marker('context-arrow', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; stroke: none; });
+};
+
+// Five lines in different colors — each arrow picks up the line's color
+define PathLayer('red') ${
+  stroke: Color('#e63946');
+  stroke-width: 3;
+  fill: none;
+  marker-end: arrowMarker;
+}
+define PathLayer('orange') ${
+  stroke: Color('#f77f00');
+  stroke-width: 3;
+  fill: none;
+  marker-end: arrowMarker;
+}
+define PathLayer('yellow') ${
+  stroke: Color('#fcbf49');
+  stroke-width: 3;
+  fill: none;
+  marker-end: arrowMarker;
+}
+define PathLayer('green') ${
+  stroke: Color('#2a9d8f');
+  stroke-width: 3;
+  fill: none;
+  marker-end: arrowMarker;
+}
+define PathLayer('blue') ${
+  stroke: Color('#264653');
+  stroke-width: 3;
+  fill: none;
+  marker-end: arrowMarker;
+}
+
+layer('red').apply    { M 40 60  L 360 60 }
+layer('orange').apply { M 40 130 L 360 130 }
+layer('yellow').apply { M 40 200 L 360 200 }
+layer('green').apply  { M 40 270 L 360 270 }
+layer('blue').apply   { M 40 340 L 360 340 }

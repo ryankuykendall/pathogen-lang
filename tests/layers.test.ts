@@ -1373,18 +1373,21 @@ describe('Multi-Layer Support', () => {
       expect(result.logs[1].parts[0].value).toBe('ClipPath(disp2, 0 paths)');
     });
 
-    it('auto-wrapping applies to filter, marker-start, marker-mid, marker-end', () => {
+    it('auto-wrapping applies to filter, marker, marker-start, marker-mid, marker-end', () => {
       const result = compile(`
         define PathLayer('f') \${ filter: blur-filter; }
+        define PathLayer('mk') \${ marker: arrowhead; }
         define PathLayer('ms') \${ marker-start: arrow; }
         define PathLayer('mm') \${ marker-mid: dot; }
         define PathLayer('me') \${ marker-end: arrowhead; }
         layer('f').apply { M 0 0 }
+        layer('mk').apply { M 0 0 }
         layer('ms').apply { M 0 0 }
         layer('mm').apply { M 0 0 }
         layer('me').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'f')!.styles.filter).toBe('url(#blur-filter)');
+      expect(result.layers.find((l) => l.name === 'mk')!.styles['marker']).toBe('url(#arrowhead)');
       expect(result.layers.find((l) => l.name === 'ms')!.styles['marker-start']).toBe('url(#arrow)');
       expect(result.layers.find((l) => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
       expect(result.layers.find((l) => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');

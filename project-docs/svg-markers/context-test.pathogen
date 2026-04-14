@@ -1,0 +1,18 @@
+// Test: context-stroke / context-fill
+// Expected: marker inherits line's stroke/fill
+let arrow = @{
+  m 0 0 l 10 5 l -10 5 z
+};
+
+let m = Marker('arrow', 10, 10) {|mk|
+  mk.append(arrow, ${ fill: context-stroke; stroke: none; });
+};
+
+define PathLayer('line') ${
+  stroke: Color('#e63946');
+  stroke-width: 3;
+  fill: none;
+  marker-end: m;
+}
+
+layer('line').apply { M 20 100 L 180 100 }
