@@ -616,7 +616,7 @@ function buildEnumDefinition(cursor: TreeCursor, source: string): EnumDefinition
       do {
         if (cursor.name === 'VariableName') memberName = text(cursor, source);
         else if (cursor.name !== '=' && isExpressionNode(cursor.name)) {
-          memberValue = buildExpression(cursor, source);
+          memberValue = buildExpressionWithPostfix(cursor, source);
         }
       } while (cursor.nextSibling());
       cursor.parent();
@@ -1104,7 +1104,7 @@ function buildTextForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
       if (vars.length >= 2) indexVariable = vars[1];
     } else if (cursor.name === 'in') foundIn = true;
     else if (foundIn && isExpressionNode(cursor.name) && cursor.name !== ')') {
-      iterable = buildExpression(cursor, source);
+      iterable = buildExpressionWithPostfix(cursor, source);
     } else if (cursor.name === '{') {
       while (cursor.nextSibling() && cursor.name !== '}') {
         if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
@@ -1633,12 +1633,18 @@ function buildArrayLiteral(cursor: TreeCursor, source: string): ArrayLiteral {
       cursor.firstChild();
       let arg: Expression = { type: 'NullLiteral' };
       do {
-        if (cursor.name !== '...') arg = buildExpression(cursor, source);
+        // buildExpressionWithPostfix folds postfix operators (index, member,
+        // call) into the argument so e.g. `...ramp[0]` parses as a spread
+        // of an IndexExpression rather than leaking the `[0]` as siblings.
+        if (cursor.name !== '...') arg = buildExpressionWithPostfix(cursor, source);
       } while (cursor.nextSibling());
       cursor.parent();
       elements.push({ type: 'SpreadElement', argument: arg });
     } else if (cursor.name !== '[' && cursor.name !== ']' && cursor.name !== ',') {
-      elements.push(buildExpression(cursor, source));
+      // Use the postfix-aware builder so array elements like `ramp[2]`,
+      // `obj.prop`, or `f(x)` fold their postfix operators into a single
+      // element instead of leaking trailing tokens as extra siblings (issue #1).
+      elements.push(buildExpressionWithPostfix(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1672,7 +1678,8 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
       cursor.firstChild();
       let arg: Expression = { type: 'NullLiteral' };
       do {
-        if (cursor.name !== '...') arg = buildExpression(cursor, source);
+        // Postfix-aware builder (same reason as buildArrayLiteral — issue #1).
+        if (cursor.name !== '...') arg = buildExpressionWithPostfix(cursor, source);
       } while (cursor.nextSibling());
       cursor.parent();
       properties.push({ type: 'SpreadElement', argument: arg });

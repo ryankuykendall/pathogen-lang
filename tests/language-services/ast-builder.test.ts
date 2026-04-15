@@ -151,6 +151,88 @@ describe('Lezer AST Builder', () => {
     });
   });
 
+  // Regression suite for issue #1 — array literals (and parallel callsites)
+  // must fold postfix operators (index, member, call, chains) into their
+  // elements instead of leaking them out as extra sibling elements.
+  describe('array literals with postfix-expression elements (issue #1)', () => {
+    it('parses array literal with index-expression elements', () => {
+      const ast = lezerParse('let arr = [ramp[2], ramp[0], ramp[1]];');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ArrayLiteral');
+      expect(decl.value.elements).toHaveLength(3);
+      const [e0, e1, e2] = decl.value.elements;
+      expect(e0.type).toBe('IndexExpression');
+      expect(e0.object.type).toBe('Identifier');
+      expect(e0.object.name).toBe('ramp');
+      expect(e0.index.type).toBe('NumberLiteral');
+      expect(e0.index.value).toBe(2);
+      expect(e1.type).toBe('IndexExpression');
+      expect(e1.index.value).toBe(0);
+      expect(e2.type).toBe('IndexExpression');
+      expect(e2.index.value).toBe(1);
+    });
+
+    it('parses array literal with member-access elements', () => {
+      const ast = lezerParse('let arr = [obj.a, obj.b, obj.c];');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ArrayLiteral');
+      expect(decl.value.elements).toHaveLength(3);
+      const [e0, e1, e2] = decl.value.elements;
+      expect(e0.type).toBe('MemberExpression');
+      expect(e0.object.name).toBe('obj');
+      expect(e0.property).toBe('a');
+      expect(e1.type).toBe('MemberExpression');
+      expect(e1.property).toBe('b');
+      expect(e2.type).toBe('MemberExpression');
+      expect(e2.property).toBe('c');
+    });
+
+    it('parses array literal with function-call elements', () => {
+      const ast = lezerParse('let arr = [f(1), f(2), f(3)];');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ArrayLiteral');
+      expect(decl.value.elements).toHaveLength(3);
+      const [e0, e1, e2] = decl.value.elements;
+      expect(e0.type).toBe('FunctionCall');
+      expect(e0.name).toBe('f');
+      expect(e0.args).toHaveLength(1);
+      expect(e0.args[0].value).toBe(1);
+      expect(e1.type).toBe('FunctionCall');
+      expect(e1.args[0].value).toBe(2);
+      expect(e2.type).toBe('FunctionCall');
+      expect(e2.args[0].value).toBe(3);
+    });
+
+    it('parses array literal with chained postfix (index then member)', () => {
+      const ast = lezerParse('let arr = [ramp[0].foo, ramp[1].bar];');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ArrayLiteral');
+      expect(decl.value.elements).toHaveLength(2);
+      const [e0, e1] = decl.value.elements;
+      expect(e0.type).toBe('MemberExpression');
+      expect(e0.property).toBe('foo');
+      expect(e0.object.type).toBe('IndexExpression');
+      expect(e0.object.object.name).toBe('ramp');
+      expect(e0.object.index.value).toBe(0);
+      expect(e1.type).toBe('MemberExpression');
+      expect(e1.property).toBe('bar');
+      expect(e1.object.type).toBe('IndexExpression');
+      expect(e1.object.index.value).toBe(1);
+    });
+
+    it('parses spread element over an index-expression', () => {
+      const ast = lezerParse('let arr = [...ramp[0]];');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ArrayLiteral');
+      expect(decl.value.elements).toHaveLength(1);
+      const [e0] = decl.value.elements;
+      expect(e0.type).toBe('SpreadElement');
+      expect(e0.argument.type).toBe('IndexExpression');
+      expect(e0.argument.object.name).toBe('ramp');
+      expect(e0.argument.index.value).toBe(0);
+    });
+  });
+
   describe('enum', () => {
     it('parses enum definition', () => {
       const ast = lezerParse('enum Dir { UP, DOWN }');
