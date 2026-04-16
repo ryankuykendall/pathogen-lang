@@ -322,14 +322,6 @@ Meaning > Detail
 
 ---
 
-If you'd like, I can also provide a **third companion piece** that is extremely useful for teams:
+# Companion: Example Design System
 
-**“A diagram style guide”** — a reusable system defining:
-
-* shapes
-* arrow styles
-* colors
-* annotation rules
-* layout patterns
-
-This is what many engineering organizations use to keep diagrams consistent across documentation.
+For the project-specific diagram style guide — tokens, typography, colors, annotation rules, and layout patterns — see [example-design-system.md](./example-design-system.md). It codifies the visual language for every Pathogen example surface (blog samples, schematics, docs illustrations) and splits tokens into a **core** tier (MUST, for every example) and an **extended** tier (MAY, for hero illustrations).

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harmonies &amp; Palettes — Three Direction Mockups</title>
+<style>
+  @property --harmony-color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #e63946;
+  }
+  @property --bg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #d0d7f0;
+  }
+
+  :root {
+    --bg: #d0d7f0;
+    --harmony-color: #e63946;
+    --fg-auto:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0);
+    --fg-muted: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --fg-hair:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.22);
+    --fg-faint: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.10);
+
+    --font: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+    /* Derived harmony colors */
+    --a-minus30:  oklch(from var(--harmony-color) l c calc(h - 30));
+    --a-base:     var(--harmony-color);
+    --a-plus30:   oklch(from var(--harmony-color) l c calc(h + 30));
+
+    --t-base:     var(--harmony-color);
+    --t-plus120:  oklch(from var(--harmony-color) l c calc(h + 120));
+    --t-minus120: oklch(from var(--harmony-color) l c calc(h - 120));
+
+    --te-base:     var(--harmony-color);
+    --te-plus90:   oklch(from var(--harmony-color) l c calc(h + 90));
+    --te-plus180:  oklch(from var(--harmony-color) l c calc(h + 180));
+    --te-plus270:  oklch(from var(--harmony-color) l c calc(h + 270));
+
+    --sc-base:     var(--harmony-color);
+    --sc-plus150:  oklch(from var(--harmony-color) l c calc(h + 150));
+    --sc-plus210:  oklch(from var(--harmony-color) l c calc(h + 210));
+
+    --l-15:  oklch(from var(--harmony-color) 0.15 c h);
+    --l-35:  oklch(from var(--harmony-color) 0.35 c h);
+    --l-55:  oklch(from var(--harmony-color) 0.55 c h);
+    --l-75:  oklch(from var(--harmony-color) 0.75 c h);
+    --l-95:  oklch(from var(--harmony-color) 0.95 c h);
+
+    --i-0:   var(--harmony-color);
+    --i-25:  color-mix(in oklch, var(--harmony-color), #457b9d 25%);
+    --i-50:  color-mix(in oklch, var(--harmony-color), #457b9d 50%);
+    --i-75:  color-mix(in oklch, var(--harmony-color), #457b9d 75%);
+    --i-100: #457b9d;
+  }
+
+  body {
+    margin: 0; padding: 48px 24px;
+    background: #1a1c22;
+    font-family: var(--font);
+    display: flex; flex-direction: column;
+    gap: 56px; align-items: center;
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .toolbar input {
+    width: 32px; height: 32px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: none; padding: 0; border-radius: 6px; cursor: pointer;
+  }
+
+  .stage { background: var(--bg); box-shadow: 0 8px 60px rgba(0,0,0,0.3); position: relative; }
+  .stage::after {
+    position: absolute; top: 100%; margin-top: 12px; left: 0;
+    color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* =====================================================================
+     DIRECTION 1 — MATRIX  520×540
+     4 harmony rows + divider + 2 palette rows. Shared column geometry.
+     ===================================================================== */
+  .d-matrix {
+    width: 520px; height: 540px;
+    padding: 15px; box-sizing: border-box;
+    position: relative;
+  }
+  .d-matrix::after { content: "01 — HARMONIES-MATRIX"; }
+
+  .d-matrix .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .d-matrix .subtitle {
+    font-size: 10px; font-style: italic;
+    color: var(--fg-muted); margin-top: 6px;
+  }
+
+  .d-matrix .grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 100px repeat(5, 1fr);
+    grid-template-rows: repeat(6, 68px);
+    row-gap: 0;
+    column-gap: 8px;
+  }
+  .d-matrix .row-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: var(--fg-auto); text-transform: uppercase;
+    align-self: center;
+    padding-left: 4px;
+  }
+  .d-matrix .cell {
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 4px;
+    padding: 12px 0;
+  }
+  .d-matrix .swatch {
+    height: 30px; border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-matrix .sub {
+    font-size: 6px; letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .d-matrix .empty { visibility: hidden; }
+  .d-matrix .divider {
+    grid-column: 1 / -1;
+    border-top: 0.5px solid var(--fg-hair);
+    margin: 0 0;
+  }
+
+  /* Harmony row positions (using row-start) */
+  .d-matrix .r1 { grid-row: 1; }
+  .d-matrix .r2 { grid-row: 2; }
+  .d-matrix .r3 { grid-row: 3; }
+  .d-matrix .r4 { grid-row: 4; }
+  .d-matrix .r5 { grid-row: 5; }
+  .d-matrix .r6 { grid-row: 6; }
+
+  /* =====================================================================
+     DIRECTION 2 — WHEEL  520×560
+     Central 12-sector hue wheel. Harmony chords overlaid. Two palette
+     strips stacked below.
+     ===================================================================== */
+  .d-wheel {
+    width: 520px; height: 560px;
+    padding: 15px; box-sizing: border-box;
+    position: relative;
+  }
+  .d-wheel::after { content: "02 — HARMONIES-WHEEL"; }
+
+  .d-wheel .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .d-wheel .wheel {
+    position: absolute;
+    top: 55px; left: 50%;
+    width: 300px; height: 300px;
+    margin-left: -150px;
+    border-radius: 50%;
+    background: conic-gradient(from 270deg,
+      oklch(0.70 0.16 0),     oklch(0.70 0.16 30),
+      oklch(0.70 0.16 60),    oklch(0.70 0.16 90),
+      oklch(0.70 0.16 120),   oklch(0.70 0.16 150),
+      oklch(0.70 0.16 180),   oklch(0.70 0.16 210),
+      oklch(0.70 0.16 240),   oklch(0.70 0.16 270),
+      oklch(0.70 0.16 300),   oklch(0.70 0.16 330),
+      oklch(0.70 0.16 360)
+    );
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-wheel .wheel::before {
+    content: ""; position: absolute;
+    inset: 100px; border-radius: 50%;
+    background: var(--bg);
+    border: 0.5px solid var(--fg-hair);
+  }
+
+  .d-wheel .hub-labels {
+    position: absolute;
+    top: 195px; left: 0; right: 0;
+    text-align: center;
+    font-size: 14px; font-weight: 700; letter-spacing: 4px;
+    color: var(--fg-auto);
+  }
+  .d-wheel .hub-labels .hub-sub {
+    display: block;
+    font-size: 8px; font-weight: 400; letter-spacing: 0.8px;
+    color: var(--fg-muted);
+    margin-top: 4px;
+  }
+
+  .d-wheel .chord-key {
+    position: absolute; top: 55px; left: 15px;
+    font-size: 8px; letter-spacing: 1.4px;
+    color: var(--fg-muted); line-height: 1.8;
+    font-weight: 700; text-transform: uppercase;
+  }
+  .d-wheel .chord-key .sw {
+    display: inline-block; width: 14px; height: 2px;
+    vertical-align: middle; margin-right: 6px;
+  }
+
+  .d-wheel .chord-svg {
+    position: absolute;
+    top: 55px; left: 50%; margin-left: -150px;
+    width: 300px; height: 300px;
+    pointer-events: none;
+  }
+
+  .d-wheel .strip-label {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .d-wheel .strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    height: 40px;
+  }
+  .d-wheel .strip .sw-chip {
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-wheel .strip-below {
+    position: absolute;
+    left: 15px; right: 15px;
+  }
+  .d-wheel .s1 { top: 380px; }
+  .d-wheel .s2 { top: 460px; }
+
+  /* =====================================================================
+     DIRECTION 3 — BLUEPRINT  520×520
+     Dashed grid overlay. 6 engineering-drawing panels in a 2×3 grid,
+     each with harmony title, swatch row, angular dimension callouts.
+     ===================================================================== */
+  .d-blueprint {
+    width: 520px; height: 520px;
+    padding: 15px; box-sizing: border-box;
+    position: relative;
+    background-image:
+      repeating-linear-gradient(
+        0deg, transparent 0 19.5px,
+        oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.06) 19.5px 20px
+      ),
+      repeating-linear-gradient(
+        90deg, transparent 0 19.5px,
+        oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.06) 19.5px 20px
+      );
+  }
+  .d-blueprint::after { content: "03 — HARMONIES-BLUEPRINT"; }
+
+  .d-blueprint .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .d-blueprint .sheet-title {
+    position: absolute; top: 15px; right: 15px;
+    font-size: 8px; letter-spacing: 1.4px;
+    color: var(--fg-muted); text-transform: uppercase;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  .d-blueprint .panels {
+    margin-top: 38px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 135px);
+    gap: 12px;
+  }
+  .d-blueprint .panel {
+    position: relative;
+    border: 0.5px solid var(--fg-hair);
+    padding: 10px;
+    box-sizing: border-box;
+    background: oklch(from var(--bg) calc(l - 0.015) c h);
+  }
+  .d-blueprint .panel-code {
+    position: absolute; top: 6px; right: 8px;
+    font-size: 6px; letter-spacing: 0.8px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    text-transform: uppercase;
+  }
+  .d-blueprint .panel-name {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: var(--fg-auto); text-transform: uppercase;
+  }
+  .d-blueprint .panel-delta {
+    margin-top: 3px;
+    font-size: 6px; letter-spacing: 0.8px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .d-blueprint .panel-swatches {
+    margin-top: 14px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    height: 44px;
+  }
+  .d-blueprint .panel-chip {
+    flex: 1;
+    height: 34px;
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-blueprint .panel-chip.base {
+    border-color: var(--fg-auto);
+    border-width: 1px;
+    height: 40px;
+  }
+  .d-blueprint .dim-row {
+    position: absolute; bottom: 8px; left: 10px; right: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 6px; letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label for="harm">Base color</label>
+  <input id="harm" type="color" value="#e63946"
+    oninput="document.documentElement.style.setProperty('--harmony-color', this.value)">
+  <label for="bgpick" style="margin-left:20px">Background</label>
+  <input id="bgpick" type="color" value="#d0d7f0"
+    oninput="document.documentElement.style.setProperty('--bg', this.value)">
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 — MATRIX
+     ============================================================ -->
+<div class="stage d-matrix">
+  <div class="eyebrow">OKLCH  /  02 — HARMONIES &amp; PALETTES</div>
+  <div class="subtitle">A single base color → four harmonies and two palettes.</div>
+  <div class="grid">
+    <!-- Row 1 — Analogous -->
+    <div class="row-label r1">ANALOGOUS</div>
+    <div class="cell r1"><div class="swatch" style="background:var(--a-minus30)"></div><div class="sub">h − 30°</div></div>
+    <div class="cell r1"><div class="swatch" style="background:var(--a-base)"></div><div class="sub">base</div></div>
+    <div class="cell r1"><div class="swatch" style="background:var(--a-plus30)"></div><div class="sub">h + 30°</div></div>
+    <div class="cell r1 empty"></div>
+    <div class="cell r1 empty"></div>
+
+    <!-- Row 2 — Triadic -->
+    <div class="row-label r2">TRIADIC</div>
+    <div class="cell r2"><div class="swatch" style="background:var(--t-base)"></div><div class="sub">base</div></div>
+    <div class="cell r2"><div class="swatch" style="background:var(--t-plus120)"></div><div class="sub">h + 120°</div></div>
+    <div class="cell r2"><div class="swatch" style="background:var(--t-minus120)"></div><div class="sub">h − 120°</div></div>
+    <div class="cell r2 empty"></div>
+    <div class="cell r2 empty"></div>
+
+    <!-- Row 3 — Tetradic -->
+    <div class="row-label r3">TETRADIC</div>
+    <div class="cell r3"><div class="swatch" style="background:var(--te-base)"></div><div class="sub">base</div></div>
+    <div class="cell r3"><div class="swatch" style="background:var(--te-plus90)"></div><div class="sub">h + 90°</div></div>
+    <div class="cell r3"><div class="swatch" style="background:var(--te-plus180)"></div><div class="sub">h + 180°</div></div>
+    <div class="cell r3"><div class="swatch" style="background:var(--te-plus270)"></div><div class="sub">h + 270°</div></div>
+    <div class="cell r3 empty"></div>
+
+    <!-- Row 4 — Split-Complementary -->
+    <div class="row-label r4">SPLIT-COMP</div>
+    <div class="cell r4"><div class="swatch" style="background:var(--sc-base)"></div><div class="sub">base</div></div>
+    <div class="cell r4"><div class="swatch" style="background:var(--sc-plus150)"></div><div class="sub">h + 150°</div></div>
+    <div class="cell r4"><div class="swatch" style="background:var(--sc-plus210)"></div><div class="sub">h + 210°</div></div>
+    <div class="cell r4 empty"></div>
+    <div class="cell r4 empty"></div>
+
+    <!-- Row 5 — Lightness -->
+    <div class="row-label r5">LIGHTNESS</div>
+    <div class="cell r5"><div class="swatch" style="background:var(--l-15)"></div><div class="sub">l 0.15</div></div>
+    <div class="cell r5"><div class="swatch" style="background:var(--l-35)"></div><div class="sub">l 0.35</div></div>
+    <div class="cell r5"><div class="swatch" style="background:var(--l-55)"></div><div class="sub">l 0.55</div></div>
+    <div class="cell r5"><div class="swatch" style="background:var(--l-75)"></div><div class="sub">l 0.75</div></div>
+    <div class="cell r5"><div class="swatch" style="background:var(--l-95)"></div><div class="sub">l 0.95</div></div>
+
+    <!-- Row 6 — Interpolate -->
+    <div class="row-label r6">INTERPOLATE</div>
+    <div class="cell r6"><div class="swatch" style="background:var(--i-0)"></div><div class="sub">0%</div></div>
+    <div class="cell r6"><div class="swatch" style="background:var(--i-25)"></div><div class="sub">25%</div></div>
+    <div class="cell r6"><div class="swatch" style="background:var(--i-50)"></div><div class="sub">50%</div></div>
+    <div class="cell r6"><div class="swatch" style="background:var(--i-75)"></div><div class="sub">75%</div></div>
+    <div class="cell r6"><div class="swatch" style="background:var(--i-100)"></div><div class="sub">100%</div></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 2 — WHEEL
+     ============================================================ -->
+<div class="stage d-wheel">
+  <div class="eyebrow">OKLCH  /  02 — HARMONIES &amp; PALETTES</div>
+
+  <div class="chord-key">
+    <div><span class="sw" style="background:var(--fg-auto)"></span>ANALOGOUS</div>
+    <div><span class="sw" style="background:var(--fg-auto)"></span>TRIADIC</div>
+    <div><span class="sw" style="background:var(--fg-auto)"></span>TETRADIC</div>
+    <div><span class="sw" style="background:var(--fg-auto)"></span>SPLIT-COMP</div>
+  </div>
+
+  <div class="wheel"></div>
+  <div class="hub-labels">
+    OKLCH
+    <span class="hub-sub">HARMONY</span>
+  </div>
+
+  <!-- Chord overlay — simplified with SVG absolutely positioned -->
+  <svg class="chord-svg" viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke-linecap="round">
+      <!-- Analogous: small arc, tight 60° at top -->
+      <path d="M 0 -110 L -55 -95 M 0 -110 L 55 -95"
+            stroke="var(--fg-auto)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/>
+      <!-- Triadic: equilateral triangle rotated so base at top -->
+      <path d="M 0 -110 L 95 55 L -95 55 Z"
+            stroke="var(--fg-auto)" stroke-width="0.7" opacity="0.4"/>
+      <!-- Tetradic: square aligned to base -->
+      <path d="M 0 -110 L 110 0 L 0 110 L -110 0 Z"
+            stroke="var(--fg-auto)" stroke-width="0.7" opacity="0.3" stroke-dasharray="2 3"/>
+      <!-- Split-comp: Y-shape from base to +150, +210 -->
+      <path d="M 0 -110 L 55 95 M 0 -110 L -55 95"
+            stroke="var(--fg-auto)" stroke-width="1.2" opacity="0.5" stroke-dasharray="1 2"/>
+      <!-- Base marker (filled dot at 12 o'clock) -->
+      <circle cx="0" cy="-110" r="3.5" fill="var(--harmony-color)" stroke="var(--fg-auto)" stroke-width="0.8"/>
+    </g>
+  </svg>
+
+  <div class="strip-below s1">
+    <div class="strip-label">LIGHTNESS  /  0.15 → 0.95</div>
+    <div class="strip">
+      <div class="sw-chip" style="background:var(--l-15)"></div>
+      <div class="sw-chip" style="background:var(--l-35)"></div>
+      <div class="sw-chip" style="background:var(--l-55)"></div>
+      <div class="sw-chip" style="background:var(--l-75)"></div>
+      <div class="sw-chip" style="background:var(--l-95)"></div>
+    </div>
+  </div>
+
+  <div class="strip-below s2">
+    <div class="strip-label">INTERPOLATE  /  base → #457b9d</div>
+    <div class="strip">
+      <div class="sw-chip" style="background:var(--i-0)"></div>
+      <div class="sw-chip" style="background:var(--i-25)"></div>
+      <div class="sw-chip" style="background:var(--i-50)"></div>
+      <div class="sw-chip" style="background:var(--i-75)"></div>
+      <div class="sw-chip" style="background:var(--i-100)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 3 — BLUEPRINT
+     ============================================================ -->
+<div class="stage d-blueprint">
+  <div class="eyebrow">OKLCH  /  02 — HARMONIES &amp; PALETTES</div>
+  <div class="sheet-title">SHEET 03 / 06<br>HARMONY SPEC</div>
+
+  <div class="panels">
+    <!-- Panel 1: Analogous -->
+    <div class="panel">
+      <div class="panel-code">H-01</div>
+      <div class="panel-name">ANALOGOUS</div>
+      <div class="panel-delta">3 colors · Δh = ±30°</div>
+      <div class="panel-swatches">
+        <div class="panel-chip" style="background:var(--a-minus30)"></div>
+        <div class="panel-chip base" style="background:var(--a-base)"></div>
+        <div class="panel-chip" style="background:var(--a-plus30)"></div>
+      </div>
+      <div class="dim-row"><span>−30°</span><span>BASE</span><span>+30°</span></div>
+    </div>
+
+    <!-- Panel 2: Triadic -->
+    <div class="panel">
+      <div class="panel-code">H-02</div>
+      <div class="panel-name">TRIADIC</div>
+      <div class="panel-delta">3 colors · Δh = ±120°</div>
+      <div class="panel-swatches">
+        <div class="panel-chip base" style="background:var(--t-base)"></div>
+        <div class="panel-chip" style="background:var(--t-plus120)"></div>
+        <div class="panel-chip" style="background:var(--t-minus120)"></div>
+      </div>
+      <div class="dim-row"><span>BASE</span><span>+120°</span><span>−120°</span></div>
+    </div>
+
+    <!-- Panel 3: Tetradic -->
+    <div class="panel">
+      <div class="panel-code">H-03</div>
+      <div class="panel-name">TETRADIC</div>
+      <div class="panel-delta">4 colors · Δh = 90° steps</div>
+      <div class="panel-swatches">
+        <div class="panel-chip base" style="background:var(--te-base)"></div>
+        <div class="panel-chip" style="background:var(--te-plus90)"></div>
+        <div class="panel-chip" style="background:var(--te-plus180)"></div>
+        <div class="panel-chip" style="background:var(--te-plus270)"></div>
+      </div>
+      <div class="dim-row"><span>BASE</span><span>+90°</span><span>+180°</span><span>+270°</span></div>
+    </div>
+
+    <!-- Panel 4: SplitComp -->
+    <div class="panel">
+      <div class="panel-code">H-04</div>
+      <div class="panel-name">SPLIT-COMP</div>
+      <div class="panel-delta">3 colors · base + ±30° from complement</div>
+      <div class="panel-swatches">
+        <div class="panel-chip base" style="background:var(--sc-base)"></div>
+        <div class="panel-chip" style="background:var(--sc-plus150)"></div>
+        <div class="panel-chip" style="background:var(--sc-plus210)"></div>
+      </div>
+      <div class="dim-row"><span>BASE</span><span>+150°</span><span>+210°</span></div>
+    </div>
+
+    <!-- Panel 5: Lightness ramp -->
+    <div class="panel">
+      <div class="panel-code">P-01</div>
+      <div class="panel-name">LIGHTNESS</div>
+      <div class="panel-delta">5 stops · L = 0.15, 0.35, 0.55, 0.75, 0.95</div>
+      <div class="panel-swatches">
+        <div class="panel-chip" style="background:var(--l-15)"></div>
+        <div class="panel-chip" style="background:var(--l-35)"></div>
+        <div class="panel-chip" style="background:var(--l-55)"></div>
+        <div class="panel-chip" style="background:var(--l-75)"></div>
+        <div class="panel-chip" style="background:var(--l-95)"></div>
+      </div>
+      <div class="dim-row"><span>0.15</span><span>0.35</span><span>0.55</span><span>0.75</span><span>0.95</span></div>
+    </div>
+
+    <!-- Panel 6: Interpolate -->
+    <div class="panel">
+      <div class="panel-code">P-02</div>
+      <div class="panel-name">INTERPOLATE</div>
+      <div class="panel-delta">5 stops · base → #457b9d</div>
+      <div class="panel-swatches">
+        <div class="panel-chip" style="background:var(--i-0)"></div>
+        <div class="panel-chip" style="background:var(--i-25)"></div>
+        <div class="panel-chip" style="background:var(--i-50)"></div>
+        <div class="panel-chip" style="background:var(--i-75)"></div>
+        <div class="panel-chip" style="background:var(--i-100)"></div>
+      </div>
+      <div class="dim-row"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

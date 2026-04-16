@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color Methods — Three Direction Mockups</title>
+<style>
+  @property --demo-color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #e63946;
+  }
+  @property --bg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #d0d7f0;
+  }
+
+  :root {
+    --bg: #d0d7f0;
+    --demo-color: #e63946;
+    --fg-auto:   oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0);
+    --fg-muted:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --fg-hair:   oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.22);
+    --fg-faint:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.10);
+
+    --font: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+    /* Derived method colors (8) */
+    --m-base:       var(--demo-color);
+    --m-lighten:    oklch(from var(--demo-color) calc(l + 0.18) c h);
+    --m-darken:     oklch(from var(--demo-color) calc(l - 0.18) c h);
+    --m-saturate:   oklch(from var(--demo-color) l calc(c * 1.5) h);
+    --m-desaturate: oklch(from var(--demo-color) l calc(c * 0.4) h);
+    --m-hue:        oklch(from var(--demo-color) l c calc(h + 90));
+    --m-complement: oklch(from var(--demo-color) l c calc(h + 180));
+    --m-alpha:      oklch(from var(--demo-color) l c h / 0.5);
+  }
+
+  body {
+    margin: 0;
+    padding: 48px 24px;
+    background: #1a1c22;
+    font-family: var(--font);
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .toolbar input {
+    width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.2);
+    background: none; padding: 0; border-radius: 6px; cursor: pointer;
+  }
+
+  .stage { background: var(--bg); box-shadow: 0 8px 60px rgba(0,0,0,0.3); position: relative; }
+  .stage::after {
+    position: absolute; top: 100%; margin-top: 12px; left: 0;
+    color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* =====================================================================
+     DIRECTION 1 — GRID  520×280
+     4×2 grid. Minimal. Editorial eyebrow top-left. Swatch chips with
+     hairline border. Method eyebrow above, oklch value below.
+     ===================================================================== */
+  .d-grid {
+    width: 520px; height: 280px;
+    position: relative;
+    padding: 15px;
+    box-sizing: border-box;
+  }
+  .d-grid::after { content: "01 — METHODS-GRID"; }
+
+  .d-grid .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .d-grid .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px;
+    height: 210px;
+  }
+  .d-grid .card {
+    display: grid;
+    grid-template-rows: 10px 1fr 10px;
+    gap: 4px;
+  }
+  .d-grid .card-name {
+    font-size: 8px; font-weight: 700; letter-spacing: 2px;
+    color: var(--fg-auto); text-transform: uppercase;
+  }
+  .d-grid .swatch {
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-grid .card-value {
+    font-size: 6px; letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  /* =====================================================================
+     DIRECTION 2 — RADIAL  520×400
+     Central hub with base color, 8 slim 30° radial sectors arranged
+     around it with 15° gaps between, dashed L=0.55 reference ring,
+     labeled rays extending out beyond frame to method names.
+     ===================================================================== */
+  .d-radial {
+    width: 520px; height: 400px;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .d-radial::after { content: "02 — METHODS-RADIAL"; }
+
+  .d-radial .eyebrow {
+    position: absolute; top: 18px; left: 18px;
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  /* Outer frame circle */
+  .d-radial .frame {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 300px; height: 300px;
+    margin: -150px 0 0 -150px;
+    border-radius: 50%;
+    border: 0.5px solid var(--fg-hair);
+  }
+  /* Dashed reference ring at L=0.55 */
+  .d-radial .ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 248px; height: 248px;
+    margin: -124px 0 0 -124px;
+    border-radius: 50%;
+    border: 1px dashed var(--fg-auto);
+  }
+  /* Hub cover */
+  .d-radial .hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 80px; height: 80px;
+    margin: -40px 0 0 -40px;
+    border-radius: 50%;
+    background: var(--demo-color);
+    border: 0.5px solid var(--fg-hair);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .d-radial .hub-title {
+    font-size: 14px; font-weight: 700; letter-spacing: 4px;
+    color: oklch(from var(--demo-color) calc((0.5 - l) * 1000) 0 0);
+  }
+  .d-radial .hub-sub {
+    font-size: 7px; letter-spacing: 0.8px;
+    color: oklch(from var(--demo-color) calc((0.5 - l) * 1000) 0 0 / 0.6);
+    margin-top: 3px;
+  }
+
+  /* Sectors (8) — use conic-gradient for the wedges, positioned absolutely */
+  .d-radial .wedges {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 280px; height: 280px;
+    margin: -140px 0 0 -140px;
+    border-radius: 50%;
+  }
+  .d-radial .wedge {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 140px; height: 50px;
+    margin-top: -25px;
+    transform-origin: 0 50%;
+    display: flex;
+    flex-direction: row;
+  }
+  .d-radial .wedge-body {
+    position: absolute;
+    left: 45px;
+    top: 0;
+    width: 90px;
+    height: 100%;
+    border-radius: 5.5px;
+  }
+  .d-radial .wedge-label {
+    position: absolute;
+    left: 150px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px; font-weight: 700; letter-spacing: 2px;
+    color: var(--fg-auto);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .d-radial .wedge[data-theta="0"]   { transform: rotate(-90deg); }
+  .d-radial .wedge[data-theta="45"]  { transform: rotate(-45deg); }
+  .d-radial .wedge[data-theta="90"]  { transform: rotate(0deg); }
+  .d-radial .wedge[data-theta="135"] { transform: rotate(45deg); }
+  .d-radial .wedge[data-theta="180"] { transform: rotate(90deg); }
+  .d-radial .wedge[data-theta="225"] { transform: rotate(135deg); }
+  .d-radial .wedge[data-theta="270"] { transform: rotate(180deg); }
+  .d-radial .wedge[data-theta="315"] { transform: rotate(-135deg); }
+  /* Counter-rotate labels that end up upside-down (for readability) */
+  .d-radial .wedge[data-theta="135"] .wedge-label,
+  .d-radial .wedge[data-theta="180"] .wedge-label,
+  .d-radial .wedge[data-theta="225"] .wedge-label {
+    transform: translateY(-50%) rotate(180deg);
+    transform-origin: center;
+    left: auto;
+    right: 150px;
+    text-align: right;
+  }
+
+  /* =====================================================================
+     DIRECTION 3 — STACK  520×320
+     Editorial vertical column. Eyebrow + thin display title + italic
+     subtitle, then 8 rows each with pill swatch | method name | oklch
+     value. Hairline dividers between rows.
+     ===================================================================== */
+  .d-stack {
+    width: 520px; height: 320px;
+    padding: 15px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .d-stack::after { content: "03 — METHODS-STACK"; }
+
+  .d-stack .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .d-stack .title {
+    font-size: 38px; font-weight: 200; letter-spacing: -1px;
+    color: var(--fg-auto);
+    line-height: 1;
+    margin: 4px 0 0 0;
+  }
+  .d-stack .subtitle {
+    font-size: 10px; font-style: italic;
+    color: var(--fg-muted);
+    margin-top: 4px;
+  }
+
+  .d-stack .rows {
+    margin-top: 14px;
+    display: grid;
+    gap: 0;
+  }
+  .d-stack .row {
+    height: 20px;
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    border-bottom: 0.5px solid var(--fg-hair);
+  }
+  .d-stack .row:last-child { border-bottom: none; }
+  .d-stack .row-swatch {
+    width: 16px; height: 12px;
+    border-radius: 3px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-stack .row-name {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: var(--fg-auto);
+    text-transform: uppercase;
+  }
+  .d-stack .row-value {
+    font-size: 8px; letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label for="base">Base color</label>
+  <input id="base" type="color" value="#e63946"
+    oninput="document.documentElement.style.setProperty('--demo-color', this.value)">
+  <label for="bgpick" style="margin-left:20px">Background</label>
+  <input id="bgpick" type="color" value="#d0d7f0"
+    oninput="document.documentElement.style.setProperty('--bg', this.value)">
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 — GRID
+     ============================================================ -->
+<div class="stage d-grid">
+  <div class="eyebrow">OKLCH &nbsp;/&nbsp; 01 — MANIPULATION</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-name">BASE</div>
+      <div class="swatch" style="background:var(--m-base)"></div>
+      <div class="card-value">l c h</div>
+    </div>
+    <div class="card">
+      <div class="card-name">LIGHTEN</div>
+      <div class="swatch" style="background:var(--m-lighten)"></div>
+      <div class="card-value">l + 0.18</div>
+    </div>
+    <div class="card">
+      <div class="card-name">DARKEN</div>
+      <div class="swatch" style="background:var(--m-darken)"></div>
+      <div class="card-value">l − 0.18</div>
+    </div>
+    <div class="card">
+      <div class="card-name">SATURATE</div>
+      <div class="swatch" style="background:var(--m-saturate)"></div>
+      <div class="card-value">c × 1.5</div>
+    </div>
+    <div class="card">
+      <div class="card-name">DESATURATE</div>
+      <div class="swatch" style="background:var(--m-desaturate)"></div>
+      <div class="card-value">c × 0.4</div>
+    </div>
+    <div class="card">
+      <div class="card-name">HUE +90°</div>
+      <div class="swatch" style="background:var(--m-hue)"></div>
+      <div class="card-value">h + 90</div>
+    </div>
+    <div class="card">
+      <div class="card-name">COMPLEMENT</div>
+      <div class="swatch" style="background:var(--m-complement)"></div>
+      <div class="card-value">h + 180</div>
+    </div>
+    <div class="card">
+      <div class="card-name">ALPHA 0.5</div>
+      <div class="swatch" style="background:var(--m-alpha)"></div>
+      <div class="card-value">/ 0.5</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 2 — RADIAL
+     ============================================================ -->
+<div class="stage d-radial">
+  <div class="eyebrow">OKLCH &nbsp;/&nbsp; 01 — MANIPULATION</div>
+  <div class="frame"></div>
+  <div class="ring"></div>
+  <div class="wedges">
+    <div class="wedge" data-theta="0">
+      <div class="wedge-body" style="background:var(--m-base)"></div>
+      <div class="wedge-label">BASE</div>
+    </div>
+    <div class="wedge" data-theta="45">
+      <div class="wedge-body" style="background:var(--m-lighten)"></div>
+      <div class="wedge-label">LIGHTEN</div>
+    </div>
+    <div class="wedge" data-theta="90">
+      <div class="wedge-body" style="background:var(--m-saturate)"></div>
+      <div class="wedge-label">SATURATE</div>
+    </div>
+    <div class="wedge" data-theta="135">
+      <div class="wedge-body" style="background:var(--m-hue)"></div>
+      <div class="wedge-label">HUE +90°</div>
+    </div>
+    <div class="wedge" data-theta="180">
+      <div class="wedge-body" style="background:var(--m-complement)"></div>
+      <div class="wedge-label">COMPLEMENT</div>
+    </div>
+    <div class="wedge" data-theta="225">
+      <div class="wedge-body" style="background:var(--m-desaturate)"></div>
+      <div class="wedge-label">DESATURATE</div>
+    </div>
+    <div class="wedge" data-theta="270">
+      <div class="wedge-body" style="background:var(--m-darken)"></div>
+      <div class="wedge-label">DARKEN</div>
+    </div>
+    <div class="wedge" data-theta="315">
+      <div class="wedge-body" style="background:var(--m-alpha)"></div>
+      <div class="wedge-label">ALPHA 0.5</div>
+    </div>
+  </div>
+  <div class="hub">
+    <div class="hub-title">OKLCH</div>
+    <div class="hub-sub">MANIPULATION</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 3 — STACK
+     ============================================================ -->
+<div class="stage d-stack">
+  <div class="eyebrow">OKLCH &nbsp;/&nbsp; 01 — MANIPULATION</div>
+  <h1 class="title">Color Methods</h1>
+  <div class="subtitle">Eight derivations of a single base, in perceptual space.</div>
+  <div class="rows">
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-base)"></div>
+      <div class="row-name">BASE</div>
+      <div class="row-value">oklch(l c h)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-lighten)"></div>
+      <div class="row-name">LIGHTEN</div>
+      <div class="row-value">oklch(l + 0.18, c, h)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-darken)"></div>
+      <div class="row-name">DARKEN</div>
+      <div class="row-value">oklch(l − 0.18, c, h)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-saturate)"></div>
+      <div class="row-name">SATURATE</div>
+      <div class="row-value">oklch(l, c × 1.5, h)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-desaturate)"></div>
+      <div class="row-name">DESATURATE</div>
+      <div class="row-value">oklch(l, c × 0.4, h)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-hue)"></div>
+      <div class="row-name">HUE +90°</div>
+      <div class="row-value">oklch(l, c, h + 90)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-complement)"></div>
+      <div class="row-name">COMPLEMENT</div>
+      <div class="row-value">oklch(l, c, h + 180)</div>
+    </div>
+    <div class="row">
+      <div class="row-swatch" style="background:var(--m-alpha)"></div>
+      <div class="row-name">ALPHA 0.5</div>
+      <div class="row-value">oklch(l, c, h / 0.5)</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

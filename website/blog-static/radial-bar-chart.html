@@ -290,7 +290,7 @@ code.hljs {
       </header>
       <div class="blog-content">
         <blockquote>
-<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>, <a href="/pathogen/blog/textblock-introduction">TextBlocks</a>, <a href="/pathogen/docs#layers-defining-layers">GroupLayers</a>, and <a href="/pathogen/docs#syntax">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
+<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>, <a href="/pathogen/blog/textblock-introduction">TextBlocks</a>, <a href="/pathogen/docs#layers-defining-layers">GroupLayers</a>, and <a href="/pathogen/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
 </blockquote>
 <p>Radial bar charts arrange categorical data around a central point, encoding values as the length of wedge-shaped bars radiating outward. They&#39;re visually distinctive — the circular layout invites comparison across categories in a way that a standard bar chart can&#39;t — but geometrically demanding. Each bar is an annular sector whose inner and outer arcs, radial edges, and rounded corners all require precise coordinate math.</p>
 <p>This post walks through building a radial bar chart in Pathogen, inspired by <a href="https://observablehq.com/@gitnoise">Patrick Wojda&#39;s</a> BoardGameGeek category visualization on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>. His chart compares how often categories appear across all games versus the top 100 ranked titles — a compelling use of radial layout to reveal patterns in community-assigned board game categories. Along the way, we&#39;ll introduce several new language features that emerged from the needs of this project: a native <code>radialWedge()</code> function, <code>TextBlock.radialProject()</code> for rotated label placement, and the <code>VerticalAnchor</code> enum for font-metric-aware text alignment.</p>
@@ -312,13 +312,22 @@ let leaderColor = Color('#b0a898');
 let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 560, 400) }
+let foo = `stuff ${calc(1 + 1)}`;
+
+let bg = PathLayer('bg') ${
+  fill: bgColor;
+};
+bg.apply {
+  rect(0, 0, 560, 400);
+}
 
 // ============================================================
 // Group 1: Title
 // ============================================================
-define GroupLayer('title-group') ${ translate-x: 0; translate-y: 0; }
+define GroupLayer('title-group') ${
+  translate-x: 0;
+  translate-y: 0;
+}
 
 let title = TextLayer('title') ${
   font-size: 13;
@@ -329,13 +338,16 @@ let title = TextLayer('title') ${
 };
 layer('title-group').append(title);
 title.apply {
-  text(28, 26)`radialWedge(innerR, outerR, fromAngle, toAngle, cornerR)`
+  text(28, 26)`radialWedge(innerR, outerR, fromAngle, toAngle, cornerR)`;
 }
 
 // ============================================================
 // Group 2: Wedge diagram with annotations
 // ============================================================
-define GroupLayer('diagram') ${ translate-x: 30; translate-y: 50; }
+define GroupLayer('diagram') ${
+  translate-x: 30;
+  translate-y: 50;
+}
 
 let cx = 130;
 let cy = 155;
@@ -345,34 +357,70 @@ let fromA = rad(-50);
 let toA = rad(35);
 
 // Reference circles (dashed)
-let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+let guides = PathLayer('guides') ${
+  fill: none;
+  stroke: guideColor;
+  stroke-width: 0.6;
+  stroke-dasharray: 4 3;
+};
 layer('diagram').append(guides);
 guides.apply {
-  circle(cx, cy, innerR)
-  circle(cx, cy, outerR)
+  circle(cx, cy, innerR);
+  circle(cx, cy, outerR);
 }
 
 // Sharp corners (ghost)
-let sharpLayer = PathLayer('sharp') ${ fill: barColor; stroke: none; opacity: 0.2; };
+let sharpLayer = PathLayer('sharp') ${
+  fill: barColor;
+  stroke: none;
+  opacity: 0.2;
+};
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 0)
+  radialWedge(innerR,
+      outerR,
+      fromA,
+      toA,
+      0);
 }
 
 // Rounded corners
-let roundLayer = PathLayer('rounded') ${ fill: barColor; stroke: none; };
+let roundLayer = PathLayer('rounded') ${
+  fill: barColor;
+  stroke: none;
+};
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 6)
+  radialWedge(innerR,
+      outerR,
+      fromA,
+      toA,
+      6);
 }
 
 // --- Annotation layers ---
-let dots = PathLayer('dots') ${ fill: annotColor; stroke: none; };
-let leaders = PathLayer('leaders') ${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
-let arcs = PathLayer('arcs') ${ fill: none; stroke: annotColor; stroke-width: 0.8; };
-let ticks = PathLayer('ticks') ${ fill: none; stroke: annotColor; stroke-width: 0.7; };
+let dots = PathLayer('dots') ${
+  fill: annotColor;
+  stroke: none;
+};
+let leaders = PathLayer('leaders') ${
+  fill: none;
+  stroke: leaderColor;
+  stroke-width: 0.5;
+  stroke-dasharray: 2 2;
+};
+let arcs = PathLayer('arcs') ${
+  fill: none;
+  stroke: annotColor;
+  stroke-width: 0.8;
+};
+let ticks = PathLayer('ticks') ${
+  fill: none;
+  stroke: annotColor;
+  stroke-width: 0.7;
+};
 let labelsMid = TextLayer('labels-mid') ${
   font-size: 9;
   fill: textColor;
@@ -391,19 +439,29 @@ let labelsEnd = TextLayer('labels-end') ${
   font-family: system-ui, sans-serif;
   text-anchor: end;
 };
-layer('diagram').append(arcs, leaders, dots, labelsMid, labelsStart, labelsEnd);
+layer('diagram').append(arcs,
+    leaders,
+    dots,
+    labelsMid,
+    labelsStart,
+    labelsEnd);
 
 // --- Center dot + label ---
-dots.apply { circle(cx, cy, 2.5) }
+dots.apply {
+  circle(cx, cy, 2.5);
+}
 labelsEnd.apply {
-  text(calc(cx - 5), calc(cy - 4))`center`
+  text(calc(cx - 5), calc(cy - 4))`center`;
 }
 
 // --- innerR: dot on inner radius of wedge, dashed leader to label above ---
-let innerDotAngle = calc((fromA + toA) / 2 - 0.15);  // slightly off-center on inner arc
+let innerDotAngle = calc(fromA + toA / 2 - 0.15);
+// slightly off-center on inner arc
 let innerDotX = polarX(cx, innerDotAngle, innerR);
 let innerDotY = polarY(cy, innerDotAngle, innerR);
-dots.apply { circle(innerDotX, innerDotY, 2) }
+dots.apply {
+  circle(innerDotX, innerDotY, 2);
+}
 
 // Label above the inner concentric circle
 let innerLabelX = calc(innerDotX - 12);
@@ -413,16 +471,18 @@ leaders.apply {
   L innerLabelX innerLabelY
 }
 labelsEnd.apply {
-  text(calc(innerLabelX + 14), calc(innerLabelY - 2))`innerR`
+  text(calc(innerLabelX + 14), calc(innerLabelY - 2))`innerR`;
 }
 
 // --- outerR label: dot on outer circle at the wedge midpoint, label just outside ---
-let outerLabelAngle = calc((fromA + toA) / 2);
+let outerLabelAngle = calc(fromA + toA / 2);
 let outerDotX = polarX(cx, outerLabelAngle, outerR);
 let outerDotY = polarY(cy, outerLabelAngle, outerR);
-dots.apply { circle(outerDotX, outerDotY, 2) }
+dots.apply {
+  circle(outerDotX, outerDotY, 2);
+}
 labelsStart.apply {
-  text(calc(outerDotX + 6), calc(outerDotY + 3))`outerR`
+  text(calc(outerDotX + 6), calc(outerDotY + 3))`outerR`;
 }
 
 // --- fromAngle / toAngle arcs INSIDE the wedge ---
@@ -436,13 +496,15 @@ arcs.apply {
 // fromAngle label — short dashed leader to label above-left
 let fromTipX = polarX(cx, fromA, arcR);
 let fromTipY = polarY(cy, fromA, arcR);
-dots.apply { circle(fromTipX, fromTipY, 1.5) }
+dots.apply {
+  circle(fromTipX, fromTipY, 1.5);
+}
 leaders.apply {
   M fromTipX fromTipY
   L calc(fromTipX - 16) calc(fromTipY - 10)
 }
 labelsEnd.apply {
-  text(calc(fromTipX - 18), calc(fromTipY - 8))`fromAngle`
+  text(calc(fromTipX - 18), calc(fromTipY - 8))`fromAngle`;
 }
 
 // toAngle arc (from 0° reference to toA)
@@ -453,22 +515,30 @@ arcs.apply {
 // toAngle label — short dashed leader to label below-left
 let toTipX = polarX(cx, toA, arcR);
 let toTipY = polarY(cy, toA, arcR);
-dots.apply { circle(toTipX, toTipY, 1.5) }
+dots.apply {
+  circle(toTipX, toTipY, 1.5);
+}
 leaders.apply {
   M toTipX toTipY
   L calc(toTipX - 12) calc(toTipY + 12)
 }
 labelsEnd.apply {
-  text(calc(toTipX - 14), calc(toTipY + 14))`toAngle`
+  text(calc(toTipX - 14), calc(toTipY + 14))`toAngle`;
 }
 
 // 0° reference tick
-guides.apply { M cx cy L calc(cx + arcR + 3) cy }
+guides.apply {
+  M cx cy
+  L calc(cx + arcR + 3) cy
+}
 
 // ============================================================
 // Group 3: Stdlib function call (code)
 // ============================================================
-define GroupLayer('code-group') ${ translate-x: 350; translate-y: 50; }
+define GroupLayer('code-group') ${
+  translate-x: 350;
+  translate-y: 50;
+}
 
 let headerLabel = TextLayer('header') ${
   font-size: 10;
@@ -478,7 +548,9 @@ let headerLabel = TextLayer('header') ${
   text-anchor: start;
 };
 layer('code-group').append(headerLabel);
-headerLabel.apply { text(0, 10)`stdlib function call:` }
+headerLabel.apply {
+  text(0, 10)`stdlib function call:`;
+}
 
 let codeLayer = TextLayer('code') ${
   font-size: 9.5;
@@ -488,41 +560,50 @@ let codeLayer = TextLayer('code') ${
 };
 layer('code-group').append(codeLayer);
 
-let kwStyle = ${ fill: kwColor; };
-let paramStyle = ${ fill: paramColor; };
-let plainStyle = ${ fill: annotColor; };
+let kwStyle = ${
+  fill: kwColor;
+};
+let paramStyle = ${
+  fill: paramColor;
+};
+let plainStyle = ${
+  fill: annotColor;
+};
 
 codeLayer.apply {
   text(0, 32) {
-    tspan(0, 0, 0, kwStyle)`M`
-    tspan(0, 0, 0, plainStyle)` cx cy`
+    tspan(0, 0, 0, kwStyle)`M`;
+    tspan(0, 0, 0, plainStyle)` cx cy`;
   }
   text(0, 48) {
-    tspan(0, 0, 0, kwStyle)`radialWedge`
-    tspan(0, 0, 0, plainStyle)`(`
+    tspan(0, 0, 0, kwStyle)`radialWedge`;
+    tspan(0, 0, 0, plainStyle)`(`;
   }
   text(14, 64) {
-    tspan(0, 0, 0, paramStyle)`innerR`
-    tspan(0, 0, 0, plainStyle)`, `
-    tspan(0, 0, 0, paramStyle)`outerR`
-    tspan(0, 0, 0, plainStyle)`,`
+    tspan(0, 0, 0, paramStyle)`innerR`;
+    tspan(0, 0, 0, plainStyle)`, `;
+    tspan(0, 0, 0, paramStyle)`outerR`;
+    tspan(0, 0, 0, plainStyle)`,`;
   }
   text(14, 80) {
-    tspan(0, 0, 0, paramStyle)`fromAngle`
-    tspan(0, 0, 0, plainStyle)`, `
-    tspan(0, 0, 0, paramStyle)`toAngle`
-    tspan(0, 0, 0, plainStyle)`,`
+    tspan(0, 0, 0, paramStyle)`fromAngle`;
+    tspan(0, 0, 0, plainStyle)`, `;
+    tspan(0, 0, 0, paramStyle)`toAngle`;
+    tspan(0, 0, 0, plainStyle)`,`;
   }
   text(14, 96) {
-    tspan(0, 0, 0, paramStyle)`cornerR`
+    tspan(0, 0, 0, paramStyle)`cornerR`;
   }
-  text(0, 112)`)`
+  text(0, 112)`)`;
 }
 
 // ============================================================
 // Group 4: Graceful degradation + corner callout
 // ============================================================
-define GroupLayer('notes-group') ${ translate-x: 350; translate-y: 195; }
+define GroupLayer('notes-group') ${
+  translate-x: 350;
+  translate-y: 195;
+}
 
 let notesHeader = TextLayer('notes-header') ${
   font-size: 10;
@@ -532,7 +613,9 @@ let notesHeader = TextLayer('notes-header') ${
   text-anchor: start;
 };
 layer('notes-group').append(notesHeader);
-notesHeader.apply { text(0, 10)`Graceful degradation:` }
+notesHeader.apply {
+  text(0, 10)`Graceful degradation:`;
+}
 
 let notesCode = TextLayer('notes-code') ${
   font-size: 9.5;
@@ -542,10 +625,10 @@ let notesCode = TextLayer('notes-code') ${
 };
 layer('notes-group').append(notesCode);
 notesCode.apply {
-  text(0, 30)`// cornerR auto-reduces`
-  text(0, 46)`// when ends are too narrow`
-  text(0, 62)`// All relative commands`
-  text(0, 78)`// No M — composable in @{}`
+  text(0, 30)`// cornerR auto-reduces`;
+  text(0, 46)`// when ends are too narrow`;
+  text(0, 62)`// All relative commands`;
+  text(0, 78)`// No M — composable in @{}`;
 }
 
 let accentLabels = TextLayer('accent') ${
@@ -556,8 +639,8 @@ let accentLabels = TextLayer('accent') ${
 };
 layer('notes-group').append(accentLabels);
 accentLabels.apply {
-  text(0, 110)`cornerR = 6 rounds all corners`
-  text(0, 124)`cornerR = 0 sharp edges (ghost)`
+  text(0, 110)`cornerR = 6 rounds all corners`;
+  text(0, 124)`cornerR = 0 sharp edges (ghost)`;
 }
 </code>
   <img src="/pathogen/blog/samples/post16/annular-sector.svg" alt="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" loading="lazy">
@@ -607,7 +690,7 @@ let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 520, 400) }
+bg.apply { rect(0, 0, 520, 400); }
 
 // ============================================================
 // Group 1: Title
@@ -686,7 +769,7 @@ layer('diagram').append(leaders, dots, pctLabels);
 let allTipX = polarX(cx, sliceMid, allOuterR);
 let allTipY = polarY(cy, sliceMid, allOuterR);
 let allLabelR = calc(allOuterR + 14);
-dots.apply { circle(allTipX, allTipY, 1.5) }
+dots.apply { circle(allTipX, allTipY, 1.5); }
 leaders.apply {
   M allTipX allTipY
   L polarX(cx, sliceMid, allLabelR) polarY(cy, sliceMid, allLabelR)
@@ -702,7 +785,7 @@ pctLabels.apply {
 let topTipX = polarX(cx, sliceMid, topOuterR);
 let topTipY = polarY(cy, sliceMid, topOuterR);
 let topLabelR = calc(topOuterR + 14);
-dots.apply { circle(topTipX, topTipY, 1.5) }
+dots.apply { circle(topTipX, topTipY, 1.5); }
 leaders.apply {
   M topTipX topTipY
   L polarX(cx, calc(sliceMid + 0.15), topLabelR) polarY(cy, calc(sliceMid + 0.15), topLabelR)
@@ -740,8 +823,8 @@ let legLabels = TextLayer('leg') ${
   text-anchor: start;
 };
 layer('info').append(swAll, swTop, legLabels);
-swAll.apply { roundRect(0, 14, 10, 10, 2) }
-swTop.apply { roundRect(0, 30, 10, 10, 2) }
+swAll.apply { roundRect(0, 14, 10, 10, 2); }
+swTop.apply { roundRect(0, 30, 10, 10, 2); }
 legLabels.apply {
   text(16, 23)`All BGG games`
   text(16, 39)`Top 100 games`
@@ -823,7 +906,7 @@ let textColor = Color('#2f2f2f');
 let gridColor = Color('#d4c9b8');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 600, 600) }
+bg.apply { rect(0, 0, 600, 600); }
 
 // === Chart parameters ===
 let cx = 300;
@@ -854,13 +937,13 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings ===
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 
 // Center circle
 let center = PathLayer('center') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
-center.apply { circle(cx, cy, innerR) }
+center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
 let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
@@ -896,8 +979,8 @@ let legLabels = TextLayer('legend') ${
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-swAll.apply { roundRect(230, 572, 10, 10, 2) }
-swTop.apply { roundRect(340, 572, 10, 10, 2) }
+swAll.apply { roundRect(230, 572, 10, 10, 2); }
+swTop.apply { roundRect(340, 572, 10, 10, 2); }
 legLabels.apply {
   text(244, 582)`All BGG games`
   text(354, 582)`Top 100 games`
@@ -957,7 +1040,7 @@ let gridColor = Color('#d4c9b8');
 let pctColor = Color('#6b7280');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 700, 700) }
+bg.apply { rect(0, 0, 700, 700); }
 
 // === Chart parameters ===
 let cx = 350;
@@ -988,11 +1071,11 @@ let barSweep = calc(sliceAngle + overlap);
 // === Grid rings + center ===
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal))
-  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal))
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
+  circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 let center = PathLayer('center') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
-center.apply { circle(cx, cy, innerR) }
+center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
 let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
@@ -1049,7 +1132,7 @@ for ([d, i] in data) {
   } &lt;&lt; ${ font-size: 11; };
 
   catLabels.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 }
 
@@ -1062,8 +1145,8 @@ let legLabels = TextLayer('legend') ${
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-swAll.apply { roundRect(270, 672, 10, 10, 2) }
-swTop.apply { roundRect(380, 672, 10, 10, 2) }
+swAll.apply { roundRect(270, 672, 10, 10, 2); }
+swTop.apply { roundRect(380, 672, 10, 10, 2); }
 legLabels.apply {
   text(284, 682)`All BGG games`
   text(394, 682)`Top 100 games`
@@ -1104,7 +1187,7 @@ let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 900, 700) }
+bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
 let cornerR = 4;
@@ -1173,10 +1256,10 @@ for ([oR, ri] in outerRs) {
     }
 
     // 2. XOR between sharp and rounded
-    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
-    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0) }
+    xorLayer.apply { diff.drawTo(0, 0); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -1186,8 +1269,8 @@ for ([oR, ri] in outerRs) {
 
     // 4. Guide circles (on top)
     guides.apply {
-      circle(cx, cy, innerR)
-      circle(cx, cy, oR)
+      circle(cx, cy, innerR);
+      circle(cx, cy, oR);
     }
 
     // Effective corner radii info
@@ -1234,7 +1317,7 @@ let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 900, 700) }
+bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
 let cornerR = 16;
@@ -1303,10 +1386,10 @@ for ([oR, ri] in outerRs) {
     }
 
     // 2. XOR between sharp and rounded
-    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0) };
-    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR) };
+    let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
+    let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0) }
+    xorLayer.apply { diff.drawTo(0, 0); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -1316,8 +1399,8 @@ for ([oR, ri] in outerRs) {
 
     // 4. Guide circles (on top)
     guides.apply {
-      circle(cx, cy, innerR)
-      circle(cx, cy, oR)
+      circle(cx, cy, innerR);
+      circle(cx, cy, oR);
     }
 
     // Effective corner radii info
@@ -1352,7 +1435,7 @@ g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, titl
 </code>
   <img src="/pathogen/blog/samples/post16/wedge-diag-16.svg" alt="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs" loading="lazy">
 </mini-workspace></p>
-<p>The dark red regions show the <a href="/pathogen/docs#path-block-boolean-operations">XOR</a> between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The <code>cornerR = 16</code> matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, <code>radialWedge()</code> analytically computes the largest corner radius that fits each end independently.</p>
+<p>The dark red regions show the <a href="/pathogen/docs#path-blocks-boolean-operations">XOR</a> between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The <code>cornerR = 16</code> matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, <code>radialWedge()</code> analytically computes the largest corner radius that fits each end independently.</p>
 <p>This matrix-based testing approach — rendering a grid of parameter combinations with geometric overlays — proved invaluable for identifying edge cases during development. The XOR diff layer made it immediately visible when a corner fillet was misaligned or a sweep flag was inverted, issues that would have been nearly impossible to catch by inspecting individual examples.</p>
 <h2>The Complete Chart</h2>
 <p>Bringing everything together: 26 BoardGameGeek categories, overlaid red and dark bars, rotated labels with inline colored percentages via tspan styling, annotation badges, a wedge legend, and a summary bar chart — all driven by a single data array:</p>
@@ -1370,7 +1453,7 @@ let annotColor = Color('#6b7280');
 let subtleColor = Color('#9ca3af');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 1000, 750) }
+bg.apply { rect(0, 0, 1000, 750); }
 
 // === Chart parameters ===
 // Center in the middle of the canvas; Fantasy's long bar extends left,
@@ -1432,14 +1515,14 @@ define GroupLayer('chart') ${}
 // Solid center circle
 let centerCircle = PathLayer('center-circle') ${ fill: none; stroke: gridColor; stroke-width: 0.8; };
 layer('chart').append(centerCircle);
-centerCircle.apply { circle(cx, cy, innerR) }
+centerCircle.apply { circle(cx, cy, innerR); }
 
 // Dashed concentric grid rings at 5% and 10%
 let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
 layer('chart').append(grid);
 grid.apply {
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal))
-  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal))
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal));
+  circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal));
 }
 
 let gridLabels = TextLayer('grid-labels') ${
@@ -1531,7 +1614,7 @@ for ([d, i] in data) {
   } &lt;&lt; ${ font-size: 9; };
 
   catLabel.apply {
-    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw()
+    labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
   }
 
   // Badge (if applicable)
@@ -1547,20 +1630,20 @@ for ([d, i] in data) {
       let bc = PathLayer(`badge-circ-${i}`) ${ fill: textColor; stroke: none; };
       let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
-      bc.apply { circle(bx, by, 4.5) }
-      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+      bc.apply { circle(bx, by, 4.5); }
+      bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Wargame") {
       let bc = PathLayer(`badge-circ-${i}`) ${ fill: allBarColor; stroke: none; };
       let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
-      bc.apply { circle(bx, by, 4.5) }
-      bs.apply { star(bx, by, 3.5, 1.4, 5) }
+      bc.apply { circle(bx, by, 4.5); }
+      bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric") {
       let bs = PathLayer(`badge-star-${i}`) ${ fill: textColor; stroke: none; };
       catGroup.append(bs);
-      bs.apply { star(bx, by, 4, 1.6, 5) }
+      bs.apply { star(bx, by, 4, 1.6, 5); }
     }
   }
 }
@@ -1620,10 +1703,10 @@ let subtitleBg2 = PathLayer('subtitle-bg2') ${ fill: topBarColor; stroke: none; 
 layer('chrome').append(subtitleBg, subtitleBg2);
 
 subtitleBg.apply {
-  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2)
+  roundRect(calc(browserStart + frac1 * browserW - subPad + 4), calc(subY - 11), calc((fracHi1 * browserW + subPad * 2) * 0.92), 15, 2);
 }
 subtitleBg2.apply {
-  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2)
+  roundRect(calc(browserStart + frac2 * browserW - subPad - 6), calc(subY - 11), calc((fracHi2 * browserW + subPad * 2) * 0.90), 15, 2);
 }
 
 // Render as a single text element with tspans for color changes.
@@ -1687,7 +1770,7 @@ legRedGuides.apply {
 }
 let legRedCenter = PathLayer('leg-red-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legRedCenter);
-legRedCenter.apply { circle(legOX, legOY, legIR) }
+legRedCenter.apply { circle(legOX, legOY, legIR); }
 
 // Dark wedge fan — same radii, lightened 8%
 let legDX = 130;
@@ -1712,7 +1795,7 @@ legDarkGuides.apply {
 }
 let legDarkCenter = PathLayer('leg-dark-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legDarkCenter);
-legDarkCenter.apply { circle(legDarkX, legOY, legIR) }
+legDarkCenter.apply { circle(legDarkX, legOY, legIR); }
 
 // 5%/10% labels
 let legGuideLabels = TextLayer('leg-guide-labels') ${
@@ -1833,11 +1916,11 @@ for ([s, si] in summData) {
 
   // Bar extends LEFT from dot
   summBars.apply {
-    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5)
+    roundRect(calc(dotX - bw), calc(dotY - summDotR), bw, summBarH, 5);
   }
 
   // Open circle on the arc — shifted up 0.75 to center on bar
-  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR) }
+  summDots.apply { circle(dotX, calc(dotY - 0.75), summDotR); }
 
   // Label to the RIGHT of dot
   summLabels.apply {
@@ -1857,8 +1940,8 @@ let a1y = polarY(cy, a1Angle, annotR);
 let badge1Circle = PathLayer('badge1-circle') ${ fill: textColor; stroke: none; };
 let badge1Star = PathLayer('badge1-star') ${ fill: bgColor; stroke: none; };
 layer('chrome').append(badge1Circle, badge1Star);
-badge1Circle.apply { circle(a1x, a1y, 6.5) }
-badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5) }
+badge1Circle.apply { circle(a1x, a1y, 6.5); }
+badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5); }
 
 let badge1Text = TextLayer('badge1-text') ${
   font-size: 9;
@@ -1883,8 +1966,8 @@ let a2y = polarY(cy, a2Angle, annotR);
 let badge2Circle = PathLayer('badge2-circle') ${ fill: allBarColor; stroke: none; };
 let badge2Star = PathLayer('badge2-star') ${ fill: bgColor; stroke: none; };
 layer('chrome').append(badge2Circle, badge2Star);
-badge2Circle.apply { circle(a2x, a2y, 6.5) }
-badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5) }
+badge2Circle.apply { circle(a2x, a2y, 6.5); }
+badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5); }
 
 let badge2Text = TextLayer('badge2-text') ${
   font-size: 9;
@@ -1906,7 +1989,7 @@ let a3y = polarY(cy, a3Angle, annotR);
 
 let badge3Star = PathLayer('badge3-star') ${ fill: textColor; stroke: none; };
 layer('chrome').append(badge3Star);
-badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5) }
+badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5); }
 
 let badge3Text = TextLayer('badge3-text') ${
   font-size: 9;
@@ -1968,7 +2051,7 @@ let textColor = Color('#2f2f2f');
 let subtleColor = Color('#9ca3af');
 
 let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
-bg.apply { rect(0, 0, 450, 280) }
+bg.apply { rect(0, 0, 450, 280); }
 
 // === Data ===
 let top5 = [
@@ -2025,7 +2108,7 @@ for ([item, idx] in top5) {
   let y = calc(chartY + idx * barSpacing);
   let bw = calc(barMaxW * item.pct / maxVal);
 
-  bars.apply { roundRect(chartX, y, bw, barH, 3) }
+  bars.apply { roundRect(chartX, y, bw, barH, 3); }
 
   rankLabels.apply {
     text(45, calc(y + 15))`#${calc(idx + 1)}`

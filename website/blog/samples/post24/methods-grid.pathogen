@@ -1,0 +1,93 @@
+// viewBox="0 0 520 280"
+// Color Methods — Direction 1: Grid
+// A 4×2 grid of method cards. Each card carries a method-name label, a
+// rectangular swatch with a hairline border, and a small formula string.
+// Minimal, editorial, scan-first.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let base     = Color(CSSVar('--demo-color', #e63946));
+
+let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
+let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+
+let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+// ─── Derived method fills (CSS relative color, no Pathogen parse) ────
+let m_base       = 'var(--demo-color, #e63946)';
+let m_lighten    = 'oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)';
+let m_darken     = 'oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)';
+let m_saturate   = 'oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)';
+let m_desaturate = 'oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)';
+let m_hue        = 'oklch(from var(--demo-color, #e63946) l c calc(h + 90))';
+let m_complement = 'oklch(from var(--demo-color, #e63946) l c calc(h + 180))';
+let m_alpha      = 'oklch(from var(--demo-color, #e63946) l c h / 0.5)';
+
+// ─── Group layers ───────────────────────────────────────────
+define GroupLayer('diagram') ${}
+define GroupLayer('cards') ${}
+
+// ─── Background ─────────────────────────────────────────────
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+bg.apply { rect(0, 0, 520, 280); }
+
+// ─── Eyebrow (top-left) ─────────────────────────────────────
+let eyebrow = TextLayer('eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+eyebrow.apply { text(15, 26)`OKLCH  /  01 — MANIPULATION` }
+layer('diagram').append(layer('bg'), layer('eyebrow'));
+
+// ─── Grid geometry ──────────────────────────────────────────
+// Canvas: 520×280, margins 15px.
+// 4 cols × 2 rows, 12px gap between cells. Row top at y=48.
+// Col width = (520 − 30 margin − 36 gap) / 4 = 113.5 → 113
+// Row height = (280 − 48 − 15 bottom − 12 gap) / 2 = 102.5 → 102
+
+let col_w = 113;
+let gap   = 12;
+let row_h = 102;
+let y0    = 48;
+
+// ─── Method data ────────────────────────────────────────────
+let methods = [
+  ['BASE',       m_base,       'l c h'],
+  ['LIGHTEN',    m_lighten,    'l + 0.18'],
+  ['DARKEN',     m_darken,     'l − 0.18'],
+  ['SATURATE',   m_saturate,   'c × 1.5'],
+  ['DESATURATE', m_desaturate, 'c × 0.4'],
+  ['HUE +90°',   m_hue,        'h + 90'],
+  ['COMPLEMENT', m_complement, 'h + 180'],
+  ['ALPHA 0.5',  m_alpha,      '/ 0.5'],
+];
+
+// ─── Card styles ────────────────────────────────────────────
+let card_name = TextLayer('card-name') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 2; fill: fg_auto; text-anchor: start;
+};
+let card_value = TextLayer('card-value') ${
+  font-family: font; font-size: 6;
+  letter-spacing: 0.5; fill: fg_muted; text-anchor: start;
+};
+
+// ─── Cards ──────────────────────────────────────────────────
+for ([m, i] in methods) {
+  let col_i = calc(i % 4);
+  let row_i = calc((i - col_i) / 4);
+  let x_l   = calc(15 + col_i * (col_w + gap));
+  let y_t   = calc(y0 + row_i * (row_h + gap));
+
+  let swatch_name = `swatch-${i}`;
+  let sw = PathLayer(swatch_name) ${ fill: m[1]; stroke: fg_hair; stroke-width: 0.5; };
+  sw.apply { roundRect(x_l, calc(y_t + 16), col_w, 64, 5.5); }
+  layer('cards').append(layer(swatch_name));
+
+  card_name.apply  { text(x_l, calc(y_t + 10))`${m[0]}` }
+  card_value.apply { text(x_l, calc(y_t + row_h - 4))`${m[2]}` }
+}
+
+layer('cards').append(layer('card-name'), layer('card-value'));
+layer('diagram').append(layer('cards'));

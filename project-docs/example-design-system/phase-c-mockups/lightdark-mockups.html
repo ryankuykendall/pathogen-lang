@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Light/Dark — Three Direction Mockups</title>
+<style>
+  @property --bg         { syntax: "<color>"; inherits: true; initial-value: #d0d7f0; }
+  @property --bg-light   { syntax: "<color>"; inherits: true; initial-value: #d0d7f0; }
+  @property --bg-dark    { syntax: "<color>"; inherits: true; initial-value: #12131a; }
+  @property --base-color { syntax: "<color>"; inherits: true; initial-value: #e63946; }
+
+  :root {
+    --bg: #d0d7f0;
+    --bg-light: #d0d7f0;
+    --bg-dark: #12131a;
+    --base-color: #e63946;
+
+    --fg-auto:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0);
+    --fg-muted: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --fg-hair:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.22);
+    --fg-faint: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.10);
+
+    /* Per-panel auto-contrast inks */
+    --ink-on-light: oklch(from var(--bg-light) calc((0.5 - l) * 1000) 0 0);
+    --ink-on-light-m: oklch(from var(--bg-light) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --ink-on-light-h: oklch(from var(--bg-light) calc((0.5 - l) * 1000) 0 0 / 0.22);
+
+    --ink-on-dark: oklch(from var(--bg-dark) calc((0.5 - l) * 1000) 0 0);
+    --ink-on-dark-m: oklch(from var(--bg-dark) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --ink-on-dark-h: oklch(from var(--bg-dark) calc((0.5 - l) * 1000) 0 0 / 0.22);
+
+    --font: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+    /* Seven method derivations from --base-color */
+    --m-base:       var(--base-color);
+    --m-lighten:    oklch(from var(--base-color) calc(l + 0.18) c h);
+    --m-darken:     oklch(from var(--base-color) calc(l - 0.18) c h);
+    --m-saturate:   oklch(from var(--base-color) l calc(c * 1.5) h);
+    --m-desaturate: oklch(from var(--base-color) l calc(c * 0.4) h);
+    --m-hue:        oklch(from var(--base-color) l c calc(h + 90));
+    --m-complement: oklch(from var(--base-color) l c calc(h + 180));
+  }
+
+  body {
+    margin: 0; padding: 48px 24px;
+    background: #1a1c22;
+    font-family: var(--font);
+    display: flex; flex-direction: column;
+    gap: 56px; align-items: center;
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
+  .toolbar input {
+    width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: none; padding: 0; border-radius: 6px; cursor: pointer;
+  }
+
+  .stage { background: var(--bg); box-shadow: 0 8px 60px rgba(0,0,0,0.3); position: relative; }
+  .stage::after {
+    position: absolute; top: 100%; margin-top: 12px; left: 0;
+    color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* =====================================================================
+     DIRECTION 1 — SPLIT  520×340
+     Two halves split by hairline seam: left on --bg-light, right on
+     --bg-dark. Same 7 method chips stacked in each, labels flip
+     dark/light per panel via local fg_auto.
+     ===================================================================== */
+  .d-split {
+    width: 520px; height: 340px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .d-split::after { content: "01 — LIGHTDARK-SPLIT"; }
+
+  .d-split .panel {
+    position: relative;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+  .d-split .panel-light { background: var(--bg-light); color: var(--ink-on-light); }
+  .d-split .panel-dark  { background: var(--bg-dark);  color: var(--ink-on-dark);  }
+
+  .d-split .seam {
+    position: absolute;
+    top: 15px; bottom: 15px; left: 50%;
+    width: 0.5px;
+    background: var(--ink-on-light);
+    opacity: 0.22;
+    transform: translateX(-0.25px);
+  }
+
+  .d-split .pane-title {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: inherit;
+    margin-bottom: 12px;
+  }
+
+  .d-split .chips {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .d-split .chip-row {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .d-split .chip {
+    width: 28px;
+    height: 100%;
+    border-radius: 5.5px;
+  }
+  .panel-light .chip { border: 0.5px solid var(--ink-on-light-h); }
+  .panel-dark  .chip { border: 0.5px solid var(--ink-on-dark-h); }
+
+  .d-split .chip-name {
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: inherit;
+  }
+  .d-split .chip-formula {
+    font-size: 6px; letter-spacing: 0.5px;
+    color: inherit; opacity: 0.6;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  .d-split .footer {
+    margin-top: 10px;
+    font-size: 7px;
+    letter-spacing: 0.8px;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    text-transform: uppercase;
+    color: inherit; opacity: 0.6;
+  }
+
+  /* =====================================================================
+     DIRECTION 2 — RAMP  520×400
+     Horizontal bg-lightness ramp (9 steps) at the top. 7 method rows
+     below showing each derivation across every bg step. Dashed L=0.5
+     vertical line marks the light/dark crossover.
+     ===================================================================== */
+  .d-ramp {
+    width: 520px; height: 400px;
+    padding: 15px; box-sizing: border-box;
+    position: relative;
+  }
+  .d-ramp::after { content: "02 — LIGHTDARK-RAMP"; }
+
+  .d-ramp .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .d-ramp .ramp-strip {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 80px repeat(9, 1fr);
+    height: 22px;
+    gap: 1px;
+  }
+  .d-ramp .ramp-label {
+    font-size: 7px; font-weight: 700;
+    letter-spacing: 1.4px;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    align-self: center;
+    text-align: right;
+    padding-right: 10px;
+  }
+  .d-ramp .ramp-cell {
+    border-radius: 2px;
+  }
+  .d-ramp .ramp-sub {
+    margin-top: 2px;
+    display: grid;
+    grid-template-columns: 80px repeat(9, 1fr);
+    gap: 1px;
+  }
+  .d-ramp .ramp-sub-label {
+    text-align: center;
+    font-size: 6px; letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    grid-column: auto;
+  }
+  .d-ramp .ramp-sub-label:first-child {
+    text-align: right;
+    padding-right: 10px;
+    grid-column: 1;
+  }
+
+  .d-ramp .matrix-wrap {
+    margin-top: 14px;
+    position: relative;
+  }
+
+  .d-ramp .row {
+    display: grid;
+    grid-template-columns: 80px repeat(9, 1fr);
+    gap: 1px;
+    margin-bottom: 6px;
+    height: 26px;
+  }
+  .d-ramp .row-label {
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--fg-auto);
+    align-self: center;
+    text-align: right;
+    padding-right: 10px;
+  }
+  .d-ramp .cell {
+    display: flex;
+    align-items: center; justify-content: center;
+  }
+  .d-ramp .cell-chip {
+    width: 80%;
+    height: 80%;
+    border-radius: 3.5px;
+  }
+
+  /* Dashed L=0.5 crossover line — 9 cells between L=0.85 and L=0.12,
+     roughly centered. Approx column 5 boundary. */
+  .d-ramp .crossover {
+    position: absolute;
+    top: -6px; bottom: -6px;
+    left: calc(80px + 1px + ((100% - 80px - 1px) / 9 * 4) + ((100% - 80px - 1px) / 9 / 2));
+    width: 0;
+    border-left: 1px dashed var(--fg-auto);
+    opacity: 0.8;
+  }
+  .d-ramp .crossover::after {
+    content: "L = 0.5";
+    position: absolute;
+    top: -14px;
+    left: 3px;
+    font-size: 6px; font-weight: 700;
+    letter-spacing: 1.4px;
+    color: var(--fg-muted);
+    white-space: nowrap;
+  }
+
+  /* =====================================================================
+     DIRECTION 3 — MATRIX  520×480
+     2×7 matrix. Row 1 = light panel with 7 chips. Row 2 = dark panel
+     with 7 chips. Column headers label each method. Eyebrow + title
+     masthead up top.
+     ===================================================================== */
+  .d-matrix {
+    width: 520px; height: 480px;
+    padding: 15px; box-sizing: border-box;
+    position: relative;
+  }
+  .d-matrix::after { content: "03 — LIGHTDARK-MATRIX"; }
+
+  .d-matrix .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .d-matrix .title {
+    font-size: 38px; font-weight: 200; letter-spacing: -1px;
+    color: var(--fg-auto); line-height: 1;
+    margin: 6px 0 0 0;
+  }
+  .d-matrix .subtitle {
+    font-size: 10px; font-style: italic;
+    color: var(--fg-muted);
+    margin-top: 4px;
+  }
+
+  .d-matrix .col-headers {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .d-matrix .col-header {
+    font-size: 6px; font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    text-align: center;
+    writing-mode: horizontal-tb;
+    line-height: 1.1;
+  }
+
+  .d-matrix .m-panel {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    gap: 4px;
+    padding: 12px 0;
+    border-radius: 5.5px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .d-matrix .m-panel-light {
+    background: var(--bg-light);
+    height: 160px;
+    color: var(--ink-on-light);
+  }
+  .d-matrix .m-panel-dark {
+    background: var(--bg-dark);
+    height: 160px;
+    color: var(--ink-on-dark);
+  }
+
+  .d-matrix .panel-label {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-align: center;
+    padding-left: 6px;
+  }
+
+  .d-matrix .m-chip {
+    height: calc(100% - 24px);
+    border-radius: 5.5px;
+  }
+  .m-panel-light .m-chip { border: 0.5px solid var(--ink-on-light-h); }
+  .m-panel-dark .m-chip  { border: 0.5px solid var(--ink-on-dark-h); }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label><span>--bg-light</span><input type="color" value="#d0d7f0"
+    oninput="document.documentElement.style.setProperty('--bg-light', this.value)"></label>
+  <label><span>--bg-dark</span><input type="color" value="#12131a"
+    oninput="document.documentElement.style.setProperty('--bg-dark', this.value)"></label>
+  <label><span>--base-color</span><input type="color" value="#e63946"
+    oninput="document.documentElement.style.setProperty('--base-color', this.value)"></label>
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 — SPLIT
+     ============================================================ -->
+<div class="stage d-split">
+  <div class="panel panel-light">
+    <div class="pane-title">LIGHT</div>
+    <div class="chips">
+      <div class="chip-row"><div class="chip" style="background:var(--m-base)"></div><div class="chip-name">BASE</div><div class="chip-formula">l c h</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-lighten)"></div><div class="chip-name">LIGHTEN</div><div class="chip-formula">l + 0.18</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-darken)"></div><div class="chip-name">DARKEN</div><div class="chip-formula">l − 0.18</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-saturate)"></div><div class="chip-name">SATURATE</div><div class="chip-formula">c × 1.5</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-desaturate)"></div><div class="chip-name">DESAT.</div><div class="chip-formula">c × 0.4</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-hue)"></div><div class="chip-name">HUE +90°</div><div class="chip-formula">h + 90</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-complement)"></div><div class="chip-name">COMP.</div><div class="chip-formula">h + 180</div></div>
+    </div>
+    <div class="footer">--bg-light : L ≈ 0.85</div>
+  </div>
+  <div class="seam"></div>
+  <div class="panel panel-dark">
+    <div class="pane-title">DARK</div>
+    <div class="chips">
+      <div class="chip-row"><div class="chip" style="background:var(--m-base)"></div><div class="chip-name">BASE</div><div class="chip-formula">l c h</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-lighten)"></div><div class="chip-name">LIGHTEN</div><div class="chip-formula">l + 0.18</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-darken)"></div><div class="chip-name">DARKEN</div><div class="chip-formula">l − 0.18</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-saturate)"></div><div class="chip-name">SATURATE</div><div class="chip-formula">c × 1.5</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-desaturate)"></div><div class="chip-name">DESAT.</div><div class="chip-formula">c × 0.4</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-hue)"></div><div class="chip-name">HUE +90°</div><div class="chip-formula">h + 90</div></div>
+      <div class="chip-row"><div class="chip" style="background:var(--m-complement)"></div><div class="chip-name">COMP.</div><div class="chip-formula">h + 180</div></div>
+    </div>
+    <div class="footer">--bg-dark : L ≈ 0.12</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 2 — RAMP
+     ============================================================ -->
+<div class="stage d-ramp">
+  <div class="eyebrow">OKLCH  /  04 — LIGHTNESS CROSSOVER</div>
+
+  <div class="ramp-strip">
+    <div class="ramp-label">BG ↓</div>
+    <div class="ramp-cell" style="background:oklch(0.85 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.75 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.65 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.55 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.45 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.35 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.25 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.15 0 0)"></div>
+    <div class="ramp-cell" style="background:oklch(0.08 0 0)"></div>
+  </div>
+
+  <div class="ramp-sub">
+    <div class="ramp-sub-label">L =</div>
+    <div class="ramp-sub-label">.85</div>
+    <div class="ramp-sub-label">.75</div>
+    <div class="ramp-sub-label">.65</div>
+    <div class="ramp-sub-label">.55</div>
+    <div class="ramp-sub-label">.45</div>
+    <div class="ramp-sub-label">.35</div>
+    <div class="ramp-sub-label">.25</div>
+    <div class="ramp-sub-label">.15</div>
+    <div class="ramp-sub-label">.08</div>
+  </div>
+
+  <div class="matrix-wrap">
+    <div class="row">
+      <div class="row-label">BASE</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-base)"></div></div>
+    </div>
+    <div class="row">
+      <div class="row-label">LIGHTEN</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-lighten)"></div></div>
+    </div>
+    <div class="row">
+      <div class="row-label">DARKEN</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-darken)"></div></div>
+    </div>
+    <div class="row">
+      <div class="row-label">SATURATE</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-saturate)"></div></div>
+    </div>
+    <div class="row">
+      <div class="row-label">DESAT.</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-desaturate)"></div></div>
+    </div>
+    <div class="row">
+      <div class="row-label">HUE +90°</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-hue)"></div></div>
+    </div>
+    <div class="row">
+      <div class="row-label">COMP.</div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+      <div class="cell"><div class="cell-chip" style="background:var(--m-complement)"></div></div>
+    </div>
+    <!-- Note: bg cells in each row of the matrix would live BEHIND the chips.
+         For this mockup, the rendering on varying bg is shown symbolically —
+         chips are the same color in every column, but the strip above shows
+         the actual bg progression. The dashed crossover marks where fg_auto
+         inverts. -->
+    <div class="crossover"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 3 — MATRIX
+     ============================================================ -->
+<div class="stage d-matrix">
+  <div class="eyebrow">OKLCH  /  04 — LIGHT · DARK</div>
+  <h1 class="title">Color.lightDark()</h1>
+  <div class="subtitle">Seven derivations, two backgrounds, one source.</div>
+
+  <div class="col-headers">
+    <div></div>
+    <div class="col-header">BASE</div>
+    <div class="col-header">LIGHT<br>+L</div>
+    <div class="col-header">DARK<br>−L</div>
+    <div class="col-header">SAT.<br>+C</div>
+    <div class="col-header">DESAT.<br>−C</div>
+    <div class="col-header">HUE<br>+90°</div>
+    <div class="col-header">COMP.<br>+180°</div>
+  </div>
+
+  <div class="m-panel m-panel-light">
+    <div class="panel-label">LIGHT</div>
+    <div class="m-chip" style="background:var(--m-base)"></div>
+    <div class="m-chip" style="background:var(--m-lighten)"></div>
+    <div class="m-chip" style="background:var(--m-darken)"></div>
+    <div class="m-chip" style="background:var(--m-saturate)"></div>
+    <div class="m-chip" style="background:var(--m-desaturate)"></div>
+    <div class="m-chip" style="background:var(--m-hue)"></div>
+    <div class="m-chip" style="background:var(--m-complement)"></div>
+  </div>
+
+  <div class="m-panel m-panel-dark">
+    <div class="panel-label">DARK</div>
+    <div class="m-chip" style="background:var(--m-base)"></div>
+    <div class="m-chip" style="background:var(--m-lighten)"></div>
+    <div class="m-chip" style="background:var(--m-darken)"></div>
+    <div class="m-chip" style="background:var(--m-saturate)"></div>
+    <div class="m-chip" style="background:var(--m-desaturate)"></div>
+    <div class="m-chip" style="background:var(--m-hue)"></div>
+    <div class="m-chip" style="background:var(--m-complement)"></div>
+  </div>
+</div>
+
+</body>
+</html>

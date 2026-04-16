@@ -103,3 +103,10 @@ Every annotation label in a schematic must have a clear, unambiguous association
 
 - Before publishing, review all diagrams and schematics against the checklist and anti-patterns list.
 - See: [schematic-and-diagram-checklist-plus-antipatterns.md](./schematic-and-diagram-checklist-plus-antipatterns.md)
+
+---
+
+## 12. Design System
+
+- For the token-level design system (colors, typography, spacing, labeling patterns) that governs every example, see [example-design-system.md](./example-design-system.md).
+- That doc defines core tokens (MUST) and extended tokens (MAY), the canvas-width convention, and the hex-literal `CSSVar` default rule required for mini-workspace picker auto-detection.

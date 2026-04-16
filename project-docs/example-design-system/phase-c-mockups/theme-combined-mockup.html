@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Theme — System + Stage Combined</title>
+<style>
+  @property --bg        { syntax: "<color>"; inherits: true; initial-value: #d0d7f0; }
+  @property --primary   { syntax: "<color>"; inherits: true; initial-value: #e63946; }
+  @property --secondary { syntax: "<color>"; inherits: true; initial-value: #457b9d; }
+  @property --accent    { syntax: "<color>"; inherits: true; initial-value: #2a9d8f; }
+
+  :root {
+    --bg: #d0d7f0;
+    --primary: #e63946;
+    --secondary: #457b9d;
+    --accent: #2a9d8f;
+
+    --fg-auto:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0);
+    --fg-muted: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --fg-hair:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.22);
+    --fg-faint: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.10);
+
+    --font: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+    --primary-lighter: oklch(from var(--primary) calc(l + 0.15) c h);
+    --primary-darker:  oklch(from var(--primary) calc(l - 0.15) c h);
+    --secondary-muted: oklch(from var(--secondary) l calc(c * 0.5) h);
+    --accent-shifted:  oklch(from var(--accent) l c calc(h + 60));
+
+    --primary-ink:   oklch(from var(--primary)   calc((0.5 - l) * 1000) 0 0);
+    --secondary-ink: oklch(from var(--secondary) calc((0.5 - l) * 1000) 0 0);
+    --accent-ink:    oklch(from var(--accent)    calc((0.5 - l) * 1000) 0 0);
+  }
+
+  body {
+    margin: 0; padding: 48px 24px;
+    background: #1a1c22;
+    font-family: var(--font);
+    display: flex; flex-direction: column;
+    gap: 32px; align-items: center;
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
+  .toolbar input {
+    width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: none; padding: 0; border-radius: 6px; cursor: pointer;
+  }
+
+  .stage {
+    background: var(--bg);
+    box-shadow: 0 8px 60px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  .stage::after {
+    position: absolute; top: 100%; margin-top: 12px; left: 0;
+    color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* =====================================================================
+     COMBINED — 520 × 640
+     Top: SYSTEM (living illustration with geometric relationships)
+     Divider: the canvas itself — bg fills both regions, hairline seam.
+     Bottom: STAGE (triptych + masthead).
+     ===================================================================== */
+  .d-combined {
+    width: 520px; height: 640px;
+    position: relative;
+    padding: 15px 15px 0 15px;
+    box-sizing: border-box;
+  }
+  .d-combined::after { content: "COMBINED — THEME SYSTEM + STAGE"; }
+
+  /* ── Top: SYSTEM  (y 0..280) ───────────────────────────── */
+  .sys-eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .sys-illustration {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 280px;
+    pointer-events: none;
+  }
+
+  .sys-legend {
+    position: absolute;
+    top: 205px; right: 15px;
+    background: var(--bg);
+    border: 0.5px solid var(--fg-hair);
+    border-radius: 5.5px;
+    padding: 8px 10px;
+    font-size: 7px; letter-spacing: 0.5px;
+    color: var(--fg-auto);
+    line-height: 1.5;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    z-index: 5;
+  }
+  .sys-legend .sw {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 2px; vertical-align: -1px;
+    margin-right: 6px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .sys-legend .name { display: inline-block; width: 58px; font-weight: 700; letter-spacing: 0.8px; }
+
+  /* ── Seam: hairline divider between sections (at y ≈ 290) ── */
+  .seam {
+    position: absolute;
+    top: 290px; left: 15px; right: 15px;
+    height: 0.5px;
+    background: var(--fg-hair);
+  }
+  .seam::before {
+    content: "SYSTEM";
+    position: absolute;
+    top: -14px; left: 0;
+    font-size: 7px; font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--fg-muted);
+  }
+  .seam::after {
+    content: "STAGE";
+    position: absolute;
+    top: 4px; right: 0;
+    font-size: 7px; font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--fg-muted);
+  }
+
+  /* ── Bottom: STAGE (y 310..640) ───────────────────────── */
+  .stage-eyebrow {
+    position: absolute;
+    top: 308px; left: 15px;
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+    padding-top: 8px; /* leave breathing room below seam */
+  }
+
+  .stage-backdrop {
+    position: absolute;
+    top: 342px; left: 15px; right: 15px;
+    height: 200px;
+    background: var(--fg-faint);
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+
+  .stage-actors {
+    position: absolute;
+    top: 358px; left: 30px; right: 30px;
+    height: 168px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    z-index: 2;
+  }
+
+  .actor {
+    border-radius: 5.5px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  .actor .role {
+    font-size: 6px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; opacity: 0.7;
+  }
+  .actor .var-name {
+    font-size: 13px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .actor .var-desc {
+    font-size: 7px; letter-spacing: 0.5px;
+    margin-top: 3px; opacity: 0.6;
+  }
+  .actor-1 { background: var(--primary);   color: var(--primary-ink); }
+  .actor-2 { background: var(--secondary); color: var(--secondary-ink); }
+  .actor-3 { background: var(--accent);    color: var(--accent-ink); }
+
+  .spotlight {
+    position: absolute;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+  }
+  .spotlight-1 {
+    top: 322px; left: 90px;
+    background: radial-gradient(circle, var(--primary-lighter) 0%, transparent 65%);
+  }
+  .spotlight-2 {
+    top: 360px; right: 80px;
+    background: radial-gradient(circle, var(--accent-shifted) 0%, transparent 65%);
+  }
+
+  .stage-masthead {
+    position: absolute;
+    left: 15px; bottom: 15px;
+  }
+  .stage-masthead .m-eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .stage-masthead .m-title {
+    font-size: 38px; font-weight: 200; letter-spacing: -1px;
+    color: var(--fg-auto);
+    line-height: 1;
+    margin: 4px 0 0 0;
+  }
+
+  .stage-credits {
+    position: absolute;
+    right: 15px; bottom: 15px;
+    text-align: right;
+    font-size: 6px; letter-spacing: 1.4px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    text-transform: uppercase;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label><span>--bg</span><input type="color" value="#d0d7f0"
+    oninput="document.documentElement.style.setProperty('--bg', this.value)"></label>
+  <label><span>--primary</span><input type="color" value="#e63946"
+    oninput="document.documentElement.style.setProperty('--primary', this.value)"></label>
+  <label><span>--secondary</span><input type="color" value="#457b9d"
+    oninput="document.documentElement.style.setProperty('--secondary', this.value)"></label>
+  <label><span>--accent</span><input type="color" value="#2a9d8f"
+    oninput="document.documentElement.style.setProperty('--accent', this.value)"></label>
+</div>
+
+<div class="stage d-combined">
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOP: SYSTEM — the theme as living geometry
+       ═══════════════════════════════════════════════════════ -->
+  <div class="sys-eyebrow" style="position:relative; z-index:4;">OKLCH  /  03 — THEME SYSTEM</div>
+
+  <svg class="sys-illustration" viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg">
+    <!-- Accent-colored linking arcs (central connective tissue) -->
+    <g fill="none" stroke="var(--accent)"
+       stroke-width="1.2" stroke-linecap="round" opacity="0.85">
+      <path d="M 100 160 Q 180 70 260 110"/>
+      <path d="M 420 160 Q 340 70 260 110"/>
+      <path d="M 100 160 Q 180 250 260 210"/>
+      <path d="M 420 160 Q 340 250 260 210"/>
+    </g>
+
+    <!-- Dashed fg_auto L=0.55 reference ring -->
+    <circle cx="260" cy="160" r="95" fill="none"
+            stroke="var(--fg-auto)" stroke-width="1"
+            stroke-dasharray="3 4" opacity="0.9"/>
+
+    <!-- 8 accent tick marks radiating across the ring (45° increments) -->
+    <!-- 4 cardinals skipped because orbit circles sit there; use 4 diagonals -->
+    <g stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round">
+      <line x1="327.1" y1="92.9"  x2="335.6" y2="84.4"/>  <!-- NE -->
+      <line x1="327.1" y1="227.1" x2="335.6" y2="235.6"/> <!-- SE -->
+      <line x1="192.9" y1="227.1" x2="184.4" y2="235.6"/> <!-- SW -->
+      <line x1="192.9" y1="92.9"  x2="184.4" y2="84.4"/>  <!-- NW -->
+    </g>
+
+    <!-- Inner accent disc behind the star (raw --accent, faint) -->
+    <circle cx="260" cy="160" r="38" fill="var(--accent)" opacity="0.28"/>
+
+    <!-- 4 orbiting circles (desaturated secondary) on reference ring -->
+    <g fill="oklch(from var(--secondary) l calc(c * 0.5) h)"
+       stroke="var(--fg-hair)" stroke-width="0.5">
+      <circle cx="260" cy="65"  r="11"/>
+      <circle cx="355" cy="160" r="11"/>
+      <circle cx="260" cy="255" r="11"/>
+      <circle cx="165" cy="160" r="11"/>
+    </g>
+
+    <!-- 7-point star (lightened primary) at center -->
+    <g transform="translate(260,160)">
+      <polygon points="
+        0,-50  10,-16  44,-16  17,6  27,40  0,20  -27,40  -17,6  -44,-16  -10,-16
+      " fill="oklch(from var(--primary) calc(l + 0.15) c h)"
+        stroke="var(--primary)" stroke-width="1" opacity="0.95"/>
+    </g>
+
+    <!-- 3 corner diamonds (hue-shifted accent — shows the derivation) -->
+    <g fill="oklch(from var(--accent) l c calc(h + 60))"
+       stroke="var(--fg-hair)" stroke-width="0.5">
+      <path d="M 45 65  L 60 50  L 75 65  L 60 80 Z"/>
+      <path d="M 445 65 L 460 50 L 475 65 L 460 80 Z"/>
+      <path d="M 45 255 L 60 240 L 75 255 L 60 270 Z"/>
+    </g>
+  </svg>
+
+  <div class="sys-legend">
+    <div><span class="sw" style="background:var(--bg)"></span><span class="name">--bg</span>backdrop</div>
+    <div><span class="sw" style="background:var(--primary)"></span><span class="name">--primary</span>star</div>
+    <div><span class="sw" style="background:var(--secondary)"></span><span class="name">--secondary</span>orbit</div>
+    <div><span class="sw" style="background:var(--accent)"></span><span class="name">--accent</span>arcs · halo · ticks</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SEAM: hairline divider with SYSTEM / STAGE marker
+       ═══════════════════════════════════════════════════════ -->
+  <div class="seam"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       BOTTOM: STAGE — the theme as presentational triptych
+       ═══════════════════════════════════════════════════════ -->
+  <div class="stage-eyebrow">OKLCH  /  03 — THEME IN USE</div>
+
+  <div class="stage-backdrop"></div>
+
+  <div class="stage-actors">
+    <div class="actor actor-1">
+      <div><div class="role">01 / PRIMARY</div></div>
+      <div>
+        <div class="var-name">--primary</div>
+        <div class="var-desc">dominant · action · focus</div>
+      </div>
+    </div>
+    <div class="actor actor-2">
+      <div><div class="role">02 / SECONDARY</div></div>
+      <div>
+        <div class="var-name">--secondary</div>
+        <div class="var-desc">supporting · balance</div>
+      </div>
+    </div>
+    <div class="actor actor-3">
+      <div><div class="role">03 / ACCENT</div></div>
+      <div>
+        <div class="var-name">--accent</div>
+        <div class="var-desc">highlight · punctuate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spotlight spotlight-1"></div>
+  <div class="spotlight spotlight-2"></div>
+
+  <div class="stage-masthead">
+    <div class="m-eyebrow">THEME  /  03 — REACTIVE</div>
+    <div class="m-title">Color Theme</div>
+  </div>
+
+  <div class="stage-credits">
+    4 CSS VARS<br>
+    5 DERIVED<br>
+    ∞ THEMES
+  </div>
+</div>
+
+</body>
+</html>

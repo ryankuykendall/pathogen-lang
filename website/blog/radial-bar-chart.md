@@ -5,7 +5,7 @@ date: 2026-03-29
 description: "Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization."
 ---
 
-> **Prerequisites:** This post uses [PathBlocks](/pathogen/blog/pathblock-introduction), [TextBlocks](/pathogen/blog/textblock-introduction), [GroupLayers](/pathogen/docs#layers-defining-layers), and [for-loop destructuring](/pathogen/docs#syntax). If you're new to Pathogen, start with those introductions.
+> **Prerequisites:** This post uses [PathBlocks](/pathogen/blog/pathblock-introduction), [TextBlocks](/pathogen/blog/textblock-introduction), [GroupLayers](/pathogen/docs#layers-defining-layers), and [for-loop destructuring](/pathogen/docs#syntax-destructuring). If you're new to Pathogen, start with those introductions.
 
 Radial bar charts arrange categorical data around a central point, encoding values as the length of wedge-shaped bars radiating outward. They're visually distinctive — the circular layout invites comparison across categories in a way that a standard bar chart can't — but geometrically demanding. Each bar is an annular sector whose inner and outer arcs, radial edges, and rounded corners all require precise coordinate math.
 
@@ -121,7 +121,7 @@ Building `radialWedge()` required multiple iterations to get the corner geometry
 
 <mini-workspace src="samples/post16/wedge-diag-16.pathogen" caption="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs"></mini-workspace>
 
-The dark red regions show the [XOR](/pathogen/docs#path-block-boolean-operations) between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The `cornerR = 16` matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, `radialWedge()` analytically computes the largest corner radius that fits each end independently.
+The dark red regions show the [XOR](/pathogen/docs#path-blocks-boolean-operations) between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The `cornerR = 16` matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, `radialWedge()` analytically computes the largest corner radius that fits each end independently.
 
 This matrix-based testing approach — rendering a grid of parameter combinations with geometric overlays — proved invaluable for identifying edge cases during development. The XOR diff layer made it immediately visible when a corner fillet was misaligned or a sweep flag was inverted, issues that would have been nearly impossible to catch by inspecting individual examples.
 

@@ -74,6 +74,7 @@ Blog authoring pipeline and playbook → see [`website/blog/CLAUDE.md`](blog/CLA
 Standards that apply across blog posts, documentation, and tutorials:
 
 - [Code Example Guidelines](guidelines/code-example-guidelines.md) — Standards for all embedded code examples
+- [Example Design System](guidelines/example-design-system.md) — Token-level design system (colors, typography, spacing, annotation patterns) for every example surface
 - [Schematic and Diagram Checklist](guidelines/schematic-and-diagram-checklist-plus-antipatterns.md) — Review checklist and anti-patterns for diagrams
 - [Agentic Review Process](guidelines/agentic-review.md) — Multi-persona review process for published content
 - [Text Collision Debugging](guidelines/text-collision-debugging.md) — Rules for diagnosing and preventing text-vs-element collisions in diagrams

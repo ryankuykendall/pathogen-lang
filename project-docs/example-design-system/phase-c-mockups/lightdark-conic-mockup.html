@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Light/Dark — Conic (bold direction)</title>
+<style>
+  @property --bg-light   { syntax: "<color>"; inherits: true; initial-value: #d0d7f0; }
+  @property --bg-dark    { syntax: "<color>"; inherits: true; initial-value: #12131a; }
+  @property --base-color { syntax: "<color>"; inherits: true; initial-value: #e63946; }
+
+  :root {
+    --bg-light: #d0d7f0;
+    --bg-dark: #12131a;
+    --base-color: #e63946;
+
+    --ink-on-light:   oklch(from var(--bg-light) calc((0.5 - l) * 1000) 0 0);
+    --ink-on-light-m: oklch(from var(--bg-light) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --ink-on-light-h: oklch(from var(--bg-light) calc((0.5 - l) * 1000) 0 0 / 0.22);
+
+    --ink-on-dark:    oklch(from var(--bg-dark)  calc((0.5 - l) * 1000) 0 0);
+    --ink-on-dark-m:  oklch(from var(--bg-dark)  calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --ink-on-dark-h:  oklch(from var(--bg-dark)  calc((0.5 - l) * 1000) 0 0 / 0.22);
+
+    --font: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+    --m-base:       var(--base-color);
+    --m-lighten:    oklch(from var(--base-color) calc(l + 0.18) c h);
+    --m-darken:     oklch(from var(--base-color) calc(l - 0.18) c h);
+    --m-saturate:   oklch(from var(--base-color) l calc(c * 1.5) h);
+    --m-desaturate: oklch(from var(--base-color) l calc(c * 0.4) h);
+    --m-hue:        oklch(from var(--base-color) l c calc(h + 90));
+    --m-complement: oklch(from var(--base-color) l c calc(h + 180));
+  }
+
+  body {
+    margin: 0; padding: 48px 24px;
+    background: #1a1c22;
+    font-family: var(--font);
+    display: flex; flex-direction: column;
+    gap: 40px; align-items: center;
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
+  .toolbar input {
+    width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: none; padding: 0; border-radius: 6px; cursor: pointer;
+  }
+
+  .stage {
+    box-shadow: 0 8px 60px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .stage::after {
+    position: absolute; top: 100%; margin-top: 12px; left: 0;
+    color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* =====================================================================
+     DIRECTION — CONIC  520×520
+     Canvas bg is a conic gradient centered at (260, 260) with two 60°
+     transition zones (east and west axes). Seven concentric radialWedge
+     chip rings sit on the east side — each ring spans 120° (CSS 30°..150°)
+     so it crosses from solid light zone through the transition into
+     solid dark zone. Same chip, two bgs, visibly rendered together.
+
+     Display "Light" and "Dark" sit at opposite extremes. A dashed HORIZON
+     line marks the midline where the transition is at 50/50 mix.
+     ===================================================================== */
+  .d-conic {
+    width: 520px; height: 520px;
+    position: relative;
+    background: conic-gradient(from 0deg,
+      var(--bg-light)  0deg,
+      var(--bg-light) 60deg,
+      var(--bg-dark) 120deg,
+      var(--bg-dark) 240deg,
+      var(--bg-light) 300deg,
+      var(--bg-light) 360deg
+    );
+  }
+  .d-conic::after { content: "BOLD — LIGHTDARK-CONIC"; }
+
+  .d-conic .eyebrow {
+    position: absolute; top: 15px; left: 15px;
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--ink-on-light-m);
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  .d-conic .display-light {
+    position: absolute;
+    top: 34px; left: 14px;
+    font-size: 72px; font-weight: 200;
+    letter-spacing: -3px;
+    line-height: 1;
+    color: var(--ink-on-light);
+    z-index: 4;
+  }
+
+  .d-conic .display-dark {
+    position: absolute;
+    bottom: 34px; right: 14px;
+    font-size: 72px; font-weight: 200;
+    letter-spacing: -3px;
+    line-height: 1;
+    color: var(--ink-on-dark);
+    z-index: 4;
+    text-align: right;
+  }
+
+  .d-conic .horizon {
+    position: absolute;
+    top: 259px; left: 15px; right: 15px;
+    height: 0;
+    border-top: 1px dashed var(--ink-on-light-m);
+    z-index: 3;
+  }
+  .d-conic .horizon-label {
+    position: absolute;
+    top: 250px; right: 106px;
+    font-size: 7px; font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--ink-on-light-m);
+    text-transform: uppercase;
+    z-index: 4;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  .d-conic svg.rings {
+    position: absolute;
+    top: 0; left: 0;
+    width: 520px; height: 520px;
+    z-index: 3;
+  }
+
+  .d-conic .labels {
+    position: absolute;
+    top: 0; left: 0;
+    width: 520px; height: 520px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .d-conic .method-label {
+    position: absolute;
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-on-light);
+    white-space: nowrap;
+  }
+  .d-conic .formula-label {
+    position: absolute;
+    font-size: 7px;
+    letter-spacing: 0.5px;
+    color: var(--ink-on-dark-m);
+    white-space: nowrap;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  .d-conic .hub-note {
+    position: absolute;
+    top: 254px; left: 0; right: 0;
+    text-align: center;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--ink-on-light-m);
+    text-transform: uppercase;
+    z-index: 4;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  .d-conic .hub-sub {
+    position: absolute;
+    top: 270px; left: 0; right: 0;
+    text-align: center;
+    font-size: 6px;
+    letter-spacing: 1.4px;
+    color: var(--ink-on-light-m);
+    opacity: 0.7;
+    z-index: 4;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  .d-conic .credit {
+    position: absolute;
+    left: 15px; bottom: 15px;
+    font-size: 7px; font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--ink-on-dark-m);
+    text-transform: uppercase;
+    z-index: 5;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+
+  .d-conic .axis-labels {
+    position: absolute;
+    top: 0; left: 0;
+    width: 520px; height: 520px;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .d-conic .zone-label {
+    position: absolute;
+    font-size: 6px; font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .d-conic .zone-light {
+    top: 22px; right: 15px;
+    color: var(--ink-on-light-m);
+    text-align: right;
+  }
+  .d-conic .zone-dark {
+    bottom: 22px; left: 15px;
+    color: var(--ink-on-dark-m);
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label><span>--bg-light</span><input type="color" value="#d0d7f0"
+    oninput="document.documentElement.style.setProperty('--bg-light', this.value)"></label>
+  <label><span>--bg-dark</span><input type="color" value="#12131a"
+    oninput="document.documentElement.style.setProperty('--bg-dark', this.value)"></label>
+  <label><span>--base-color</span><input type="color" value="#e63946"
+    oninput="document.documentElement.style.setProperty('--base-color', this.value)"></label>
+</div>
+
+<div class="stage d-conic">
+  <div class="eyebrow">OKLCH  /  04 — LIGHT ↔ DARK · CONIC</div>
+
+  <div class="zone-label zone-light">Top arc  /  solid --bg-light</div>
+  <div class="zone-label zone-dark">Bottom arc  /  solid --bg-dark</div>
+
+  <div class="display-light">Light</div>
+  <div class="display-dark">Dark</div>
+
+  <div class="horizon"></div>
+  <div class="horizon-label">· HORIZON ·</div>
+
+  <!-- Hub label — sits centered where rings converge -->
+  <div class="hub-note">OKLCH</div>
+  <div class="hub-sub">LIGHTDARK()</div>
+
+  <!-- Concentric radialWedge chip rings —
+       all 7 chips share angular span CSS 30°..150° (SVG −π/3..π/3),
+       so each crosses 30° light · 60° transition · 30° dark. -->
+  <svg class="rings" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Hub circle clip for the center label area -->
+    </defs>
+
+    <!-- Chip 1: BASE, inner 42 / outer 58 -->
+    <path d="M 281 223.63 A 42 42 0 0 1 281 296.37 L 289 310.23 A 58 58 0 0 0 289 209.77 Z"
+          fill="var(--m-base)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Chip 2: LIGHTEN, inner 60 / outer 76 -->
+    <path d="M 290 208.04 A 60 60 0 0 1 290 311.96 L 298 325.82 A 76 76 0 0 0 298 194.18 Z"
+          fill="var(--m-lighten)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Chip 3: DARKEN, inner 78 / outer 94 -->
+    <path d="M 299 192.45 A 78 78 0 0 1 299 327.55 L 307 341.4 A 94 94 0 0 0 307 178.60 Z"
+          fill="var(--m-darken)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Chip 4: SATURATE, inner 96 / outer 112 -->
+    <path d="M 308 176.86 A 96 96 0 0 1 308 343.14 L 316 356.99 A 112 112 0 0 0 316 163.01 Z"
+          fill="var(--m-saturate)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Chip 5: DESATURATE, inner 114 / outer 130 -->
+    <path d="M 317 161.27 A 114 114 0 0 1 317 358.73 L 325 372.58 A 130 130 0 0 0 325 147.42 Z"
+          fill="var(--m-desaturate)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Chip 6: HUE +90°, inner 132 / outer 148 -->
+    <path d="M 326 145.69 A 132 132 0 0 1 326 374.31 L 334 388.17 A 148 148 0 0 0 334 131.83 Z"
+          fill="var(--m-hue)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Chip 7: COMPLEMENT, inner 150 / outer 166 -->
+    <path d="M 335 130.10 A 150 150 0 0 1 335 389.90 L 343 403.76 A 166 166 0 0 0 343 116.24 Z"
+          fill="var(--m-complement)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+
+    <!-- Outer frame ring (subtle) -->
+    <circle cx="260" cy="260" r="172" fill="none" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+    <!-- Inner frame ring -->
+    <circle cx="260" cy="260" r="38" fill="var(--bg-light)" stroke="var(--ink-on-light-h)" stroke-width="0.5"/>
+  </svg>
+
+  <!-- Method labels — each at its chip's upper-outer corner,
+       in the solid light zone (all read with ink-on-light). -->
+  <div class="labels">
+    <div class="method-label" style="top: 204px; left: 298px;">BASE</div>
+    <div class="method-label" style="top: 188px; left: 307px;">LIGHTEN</div>
+    <div class="method-label" style="top: 172px; left: 316px;">DARKEN</div>
+    <div class="method-label" style="top: 157px; left: 325px;">SATURATE</div>
+    <div class="method-label" style="top: 141px; left: 334px;">DESAT.</div>
+    <div class="method-label" style="top: 126px; left: 343px;">HUE +90°</div>
+    <div class="method-label" style="top: 110px; left: 352px;">COMPLEMENT</div>
+
+    <!-- Formula labels — at each chip's lower-outer corner,
+         in the solid dark zone (all read with ink-on-dark-m). -->
+    <div class="formula-label" style="top: 315px; left: 298px;">l c h</div>
+    <div class="formula-label" style="top: 331px; left: 307px;">l + 0.18</div>
+    <div class="formula-label" style="top: 347px; left: 316px;">l − 0.18</div>
+    <div class="formula-label" style="top: 362px; left: 325px;">c × 1.5</div>
+    <div class="formula-label" style="top: 378px; left: 334px;">c × 0.4</div>
+    <div class="formula-label" style="top: 394px; left: 343px;">h + 90°</div>
+    <div class="formula-label" style="top: 409px; left: 352px;">h + 180°</div>
+  </div>
+
+  <div class="credit">ONE CHIP · TWO BGS · ONE SOURCE</div>
+</div>
+
+</body>
+</html>

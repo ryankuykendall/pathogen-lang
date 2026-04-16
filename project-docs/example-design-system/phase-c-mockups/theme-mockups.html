@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Theme Demo — Three Direction Mockups</title>
+<style>
+  @property --bg {
+    syntax: "<color>"; inherits: true; initial-value: #d0d7f0;
+  }
+  @property --primary {
+    syntax: "<color>"; inherits: true; initial-value: #e63946;
+  }
+  @property --secondary {
+    syntax: "<color>"; inherits: true; initial-value: #457b9d;
+  }
+  @property --accent {
+    syntax: "<color>"; inherits: true; initial-value: #2a9d8f;
+  }
+
+  :root {
+    --bg: #d0d7f0;
+    --primary: #e63946;
+    --secondary: #457b9d;
+    --accent: #2a9d8f;
+
+    --fg-auto:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0);
+    --fg-muted: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.60);
+    --fg-hair:  oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.22);
+    --fg-faint: oklch(from var(--bg) calc((0.5 - l) * 1000) 0 0 / 0.10);
+
+    --font: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+    /* Derived */
+    --primary-lighter:  oklch(from var(--primary) calc(l + 0.15) c h);
+    --primary-darker:   oklch(from var(--primary) calc(l - 0.15) c h);
+    --secondary-muted:  oklch(from var(--secondary) l calc(c * 0.5) h);
+    --accent-shifted:   oklch(from var(--accent) l c calc(h + 60));
+    --primary-accent:   color-mix(in oklch, var(--primary), var(--accent) 50%);
+
+    /* Auto-contrast inks for each theme color */
+    --primary-ink:   oklch(from var(--primary)   calc((0.5 - l) * 1000) 0 0);
+    --secondary-ink: oklch(from var(--secondary) calc((0.5 - l) * 1000) 0 0);
+    --accent-ink:    oklch(from var(--accent)    calc((0.5 - l) * 1000) 0 0);
+  }
+
+  body {
+    margin: 0; padding: 48px 24px;
+    background: #1a1c22;
+    font-family: var(--font);
+    display: flex; flex-direction: column;
+    gap: 56px; align-items: center;
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
+  .toolbar input {
+    width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: none; padding: 0; border-radius: 6px; cursor: pointer;
+  }
+
+  .stage { background: var(--bg); box-shadow: 0 8px 60px rgba(0,0,0,0.3); position: relative; }
+  .stage::after {
+    position: absolute; top: 100%; margin-top: 12px; left: 0;
+    color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  /* =====================================================================
+     DIRECTION 1 — LIVING  520×280
+     Central 7-point star (lightened primary), orbiting circles
+     (desaturated secondary), corner diamonds (hue-shifted accent),
+     thin primary-darkened arcs, dashed fg_auto reference ring.
+     Legend bottom-right names each CSS variable.
+     ===================================================================== */
+  .d-living {
+    width: 520px; height: 280px;
+    position: relative;
+    padding: 15px; box-sizing: border-box;
+  }
+  .d-living::after { content: "01 — THEME-LIVING"; }
+
+  .d-living .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .d-living .illustration {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+
+  .d-living .legend {
+    position: absolute;
+    bottom: 15px; right: 15px;
+    background: var(--bg);
+    border: 0.5px solid var(--fg-hair);
+    border-radius: 5.5px;
+    padding: 8px 10px;
+    font-size: 7px; letter-spacing: 0.5px;
+    color: var(--fg-auto);
+    line-height: 1.5;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .d-living .legend .sw {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 2px; vertical-align: -1px;
+    margin-right: 6px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-living .legend .name { display: inline-block; width: 58px; font-weight: 700; letter-spacing: 0.8px; }
+
+  /* =====================================================================
+     DIRECTION 2 — DASHBOARD  520×360
+     Three panels: BACKGROUND (auto-contrast Aa), PALETTE (3 bars),
+     DERIVED (5 chips). Core tokens, clean typographic rhythm.
+     ===================================================================== */
+  .d-dashboard {
+    width: 520px; height: 360px;
+    padding: 15px; box-sizing: border-box;
+    position: relative;
+  }
+  .d-dashboard::after { content: "02 — THEME-DASHBOARD"; }
+
+  .d-dashboard .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .d-dashboard .panels {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    height: 292px;
+  }
+
+  .d-dashboard .panel {
+    position: relative;
+    border: 0.5px solid var(--fg-hair);
+    border-radius: 5.5px;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .d-dashboard .panel-eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .d-dashboard .panel-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .d-dashboard .bg-swatch {
+    flex: 1;
+    background: var(--bg);
+    border: 0.5px solid var(--fg-hair);
+    border-radius: 5.5px;
+    display: flex;
+    align-items: center; justify-content: center;
+    font-size: 38px; font-weight: 200;
+    letter-spacing: -1px;
+    color: var(--fg-auto);
+  }
+
+  .d-dashboard .bg-caption {
+    font-size: 7px; letter-spacing: 0.8px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .d-dashboard .bar {
+    flex: 1;
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .d-dashboard .bar-name {
+    font-size: 8px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .d-dashboard .bar-value {
+    font-size: 6px; letter-spacing: 0.5px;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    margin-top: 2px;
+    opacity: 0.7;
+  }
+  .d-dashboard .bar-1 { background: var(--primary);   color: var(--primary-ink); }
+  .d-dashboard .bar-2 { background: var(--secondary); color: var(--secondary-ink); }
+  .d-dashboard .bar-3 { background: var(--accent);    color: var(--accent-ink); }
+
+  .d-dashboard .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+  .d-dashboard .chip-sw {
+    width: 34px; height: 100%;
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+  .d-dashboard .chip-label {
+    flex: 1;
+    font-size: 7px; letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    line-height: 1.35;
+  }
+  .d-dashboard .chip-name {
+    color: var(--fg-auto); font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: block;
+    font-size: 6px;
+    margin-bottom: 2px;
+  }
+
+  /* =====================================================================
+     DIRECTION 3 — STAGE  520×420
+     Hero triptych composition. Three actors (primary/secondary/accent
+     as large rounded rects) against a bg backdrop. Spotlight glows
+     from derived colors cast over them. Masthead below.
+     ===================================================================== */
+  .d-stage {
+    width: 520px; height: 420px;
+    position: relative;
+    padding: 15px; box-sizing: border-box;
+  }
+  .d-stage::after { content: "03 — THEME-STAGE"; }
+
+  .d-stage .eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  .d-stage .backdrop {
+    position: absolute;
+    top: 45px; left: 15px; right: 15px;
+    height: 220px;
+    background: var(--fg-faint);
+    border-radius: 5.5px;
+    border: 0.5px solid var(--fg-hair);
+  }
+
+  .d-stage .stage-actors {
+    position: absolute;
+    top: 60px; left: 30px; right: 30px;
+    height: 190px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    z-index: 2;
+  }
+
+  .d-stage .actor {
+    border-radius: 5.5px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  .d-stage .actor .role {
+    font-size: 6px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .d-stage .actor .var-name {
+    font-size: 14px; font-weight: 700; letter-spacing: 4px;
+    text-transform: uppercase;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .d-stage .actor .var-desc {
+    font-size: 7px; letter-spacing: 0.5px;
+    margin-top: 3px;
+    opacity: 0.6;
+  }
+  .d-stage .actor-1 { background: var(--primary);   color: var(--primary-ink); }
+  .d-stage .actor-2 { background: var(--secondary); color: var(--secondary-ink); }
+  .d-stage .actor-3 { background: var(--accent);    color: var(--accent-ink); }
+
+  .d-stage .spotlight {
+    position: absolute;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+  }
+  .d-stage .spotlight-1 {
+    top: 40px; left: 90px;
+    background: radial-gradient(circle, var(--primary-lighter) 0%, transparent 65%);
+  }
+  .d-stage .spotlight-2 {
+    top: 80px; right: 80px;
+    background: radial-gradient(circle, var(--accent-shifted) 0%, transparent 65%);
+  }
+
+  .d-stage .masthead {
+    position: absolute;
+    left: 15px; bottom: 15px;
+  }
+  .d-stage .masthead-eyebrow {
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .d-stage .masthead-title {
+    font-size: 38px; font-weight: 200; letter-spacing: -1px;
+    color: var(--fg-auto);
+    line-height: 1;
+    margin: 4px 0 0 0;
+  }
+
+  .d-stage .credits {
+    position: absolute;
+    right: 15px; bottom: 15px;
+    text-align: right;
+    font-size: 6px; letter-spacing: 1.4px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    text-transform: uppercase;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label><span>--bg</span><input type="color" value="#d0d7f0"
+    oninput="document.documentElement.style.setProperty('--bg', this.value)"></label>
+  <label><span>--primary</span><input type="color" value="#e63946"
+    oninput="document.documentElement.style.setProperty('--primary', this.value)"></label>
+  <label><span>--secondary</span><input type="color" value="#457b9d"
+    oninput="document.documentElement.style.setProperty('--secondary', this.value)"></label>
+  <label><span>--accent</span><input type="color" value="#2a9d8f"
+    oninput="document.documentElement.style.setProperty('--accent', this.value)"></label>
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 — LIVING
+     ============================================================ -->
+<div class="stage d-living">
+  <div class="eyebrow">OKLCH  /  03 — THEME SYSTEM</div>
+
+  <svg class="illustration" viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg">
+    <!-- Thin darkened-primary linking arcs (drawn first, behind everything) -->
+    <g fill="none" stroke="oklch(from var(--primary) calc(l - 0.15) c h)" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.7">
+      <path d="M 100 140 Q 180 50 260 90"/>
+      <path d="M 420 140 Q 340 50 260 90"/>
+      <path d="M 100 140 Q 180 230 260 190"/>
+      <path d="M 420 140 Q 340 230 260 190"/>
+    </g>
+
+    <!-- Dashed fg_auto L=0.55 reference ring -->
+    <circle cx="260" cy="140" r="95" fill="none"
+            stroke="var(--fg-auto)" stroke-width="1" stroke-dasharray="3 4" opacity="0.9"/>
+
+    <!-- 4 orbiting circles (desaturated secondary) on the reference ring -->
+    <g fill="oklch(from var(--secondary) l calc(c * 0.5) h)" stroke="var(--fg-hair)" stroke-width="0.5">
+      <circle cx="260" cy="45"  r="11"/>
+      <circle cx="355" cy="140" r="11"/>
+      <circle cx="260" cy="235" r="11"/>
+      <circle cx="165" cy="140" r="11"/>
+    </g>
+
+    <!-- 7-point star (lightened primary) at center -->
+    <g transform="translate(260,140)">
+      <polygon points="
+        0,-50  10,-16  44,-16  17,6  27,40  0,20  -27,40  -17,6  -44,-16  -10,-16
+      " fill="oklch(from var(--primary) calc(l + 0.15) c h)"
+        stroke="var(--primary)" stroke-width="1" opacity="0.95"/>
+    </g>
+
+    <!-- 3 corner diamonds (hue-shifted accent) -->
+    <g fill="oklch(from var(--accent) l c calc(h + 60))" stroke="var(--fg-hair)" stroke-width="0.5">
+      <path d="M 45 45 L 60 30 L 75 45 L 60 60 Z"/>
+      <path d="M 445 45 L 460 30 L 475 45 L 460 60 Z"/>
+      <path d="M 45 235 L 60 220 L 75 235 L 60 250 Z"/>
+    </g>
+  </svg>
+
+  <div class="legend">
+    <div><span class="sw" style="background:var(--bg)"></span><span class="name">--bg</span> backdrop</div>
+    <div><span class="sw" style="background:var(--primary)"></span><span class="name">--primary</span> star</div>
+    <div><span class="sw" style="background:var(--secondary)"></span><span class="name">--secondary</span> orbit</div>
+    <div><span class="sw" style="background:var(--accent)"></span><span class="name">--accent</span> corner</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 2 — DASHBOARD
+     ============================================================ -->
+<div class="stage d-dashboard">
+  <div class="eyebrow">OKLCH  /  03 — THEME DASHBOARD</div>
+
+  <div class="panels">
+    <!-- Panel 1: BACKGROUND -->
+    <div class="panel">
+      <div class="panel-eyebrow">BACKGROUND</div>
+      <div class="panel-body">
+        <div class="bg-swatch">Aa</div>
+        <div class="bg-caption">fg_auto · auto-contrasts on --bg</div>
+      </div>
+    </div>
+
+    <!-- Panel 2: PALETTE -->
+    <div class="panel">
+      <div class="panel-eyebrow">PALETTE</div>
+      <div class="panel-body">
+        <div class="bar bar-1">
+          <div class="bar-name">--primary</div>
+          <div class="bar-value">hue · chroma · L</div>
+        </div>
+        <div class="bar bar-2">
+          <div class="bar-name">--secondary</div>
+          <div class="bar-value">hue · chroma · L</div>
+        </div>
+        <div class="bar bar-3">
+          <div class="bar-name">--accent</div>
+          <div class="bar-value">hue · chroma · L</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 3: DERIVED -->
+    <div class="panel">
+      <div class="panel-eyebrow">DERIVED</div>
+      <div class="panel-body">
+        <div class="chip">
+          <div class="chip-sw" style="background:var(--primary-lighter)"></div>
+          <div class="chip-label"><span class="chip-name">primary +L</span>calc(l + 0.15)</div>
+        </div>
+        <div class="chip">
+          <div class="chip-sw" style="background:var(--primary-darker)"></div>
+          <div class="chip-label"><span class="chip-name">primary −L</span>calc(l − 0.15)</div>
+        </div>
+        <div class="chip">
+          <div class="chip-sw" style="background:var(--secondary-muted)"></div>
+          <div class="chip-label"><span class="chip-name">secondary −C</span>calc(c × 0.5)</div>
+        </div>
+        <div class="chip">
+          <div class="chip-sw" style="background:var(--accent-shifted)"></div>
+          <div class="chip-label"><span class="chip-name">accent +h</span>calc(h + 60°)</div>
+        </div>
+        <div class="chip">
+          <div class="chip-sw" style="background:var(--primary-accent)"></div>
+          <div class="chip-label"><span class="chip-name">p ⊕ a</span>color-mix 50%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 3 — STAGE
+     ============================================================ -->
+<div class="stage d-stage">
+  <div class="eyebrow">OKLCH  /  03 — THEME</div>
+
+  <div class="backdrop"></div>
+
+  <div class="stage-actors">
+    <div class="actor actor-1">
+      <div>
+        <div class="role">01 / PRIMARY</div>
+      </div>
+      <div>
+        <div class="var-name">--primary</div>
+        <div class="var-desc">dominant · action · focus</div>
+      </div>
+    </div>
+    <div class="actor actor-2">
+      <div>
+        <div class="role">02 / SECONDARY</div>
+      </div>
+      <div>
+        <div class="var-name">--secondary</div>
+        <div class="var-desc">supporting · balance</div>
+      </div>
+    </div>
+    <div class="actor actor-3">
+      <div>
+        <div class="role">03 / ACCENT</div>
+      </div>
+      <div>
+        <div class="var-name">--accent</div>
+        <div class="var-desc">highlight · punctuate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spotlight spotlight-1"></div>
+  <div class="spotlight spotlight-2"></div>
+
+  <div class="masthead">
+    <div class="masthead-eyebrow">THEME  /  03 — REACTIVE</div>
+    <div class="masthead-title">Color Theme</div>
+  </div>
+
+  <div class="credits">
+    4 CSS VARS<br>
+    5 DERIVED<br>
+    ∞ THEMES
+  </div>
+</div>
+
+</body>
+</html>

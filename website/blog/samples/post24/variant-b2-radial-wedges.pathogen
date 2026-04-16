@@ -1,0 +1,361 @@
+// viewBox="0 0 960 720"
+// Variant B2 — "HUE CONSERVATORY · ANNULAR"
+// A stronger dialect of Variant B. Instead of dotted constellations, each
+// anchor now claims a full 60° pie-slice of the annulus, and every ramp
+// stop becomes an annular wedge via the stdlib radialWedge() helper. Two
+// dashed reference rings still snap through the figure at L = 0.55 and
+// L = 0.75. The effect is closer to a stained-glass rosette than a
+// planetarium chart — color owns the whole plane.
+
+// ─────────────────────────────────────────────────────────────────
+// Reactive colors + auto-contrasting ink
+// ─────────────────────────────────────────────────────────────────
+
+let bg_color = Color(CSSVar('--bg', #0b0e1a));
+
+let fg_auto  = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0)';
+let fg_muted = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let fg_hair  = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let fg_faint = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+
+let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
+let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
+let green  = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
+let teal   = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
+let blue   = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
+let purple = Color(CSSVar('--anchor-6', oklch(0.55 0.16 320)));
+
+let anchors = [red, amber, green, teal, blue, purple];
+let anchor_names = ['RED', 'AMBER', 'GREEN', 'TEAL', 'BLUE', 'PURPLE'];
+let anchor_hues  = ['27°', '80°', '140°', '200°', '260°', '320°'];
+
+let ramp_red    = Color.palette(red, 9);
+let ramp_amber  = Color.palette(amber, 9);
+let ramp_green  = Color.palette(green, 9);
+let ramp_teal   = Color.palette(teal, 9);
+let ramp_blue   = Color.palette(blue, 9);
+let ramp_purple = Color.palette(purple, 9);
+let ramps = [ramp_red, ramp_amber, ramp_green, ramp_teal, ramp_blue, ramp_purple];
+
+// ─────────────────────────────────────────────────────────────────
+// Root & groups
+// ─────────────────────────────────────────────────────────────────
+
+define GroupLayer('diagram') ${}
+define GroupLayer('celestial') ${}
+define GroupLayer('masthead') ${}
+define GroupLayer('legend') ${}
+define GroupLayer('test-bench') ${}
+
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+bg.apply { rect(0, 0, 960, 720); }
+layer('diagram').append(layer('bg'));
+
+// ─────────────────────────────────────────────────────────────────
+// Orbit geometry — 9 concentric radial bands fill r=92..292
+// ─────────────────────────────────────────────────────────────────
+
+let cx = 480;
+let cy = 360;
+let r_hub = 82;        // hub outer boundary
+let r_inner = 92;      // first wedge inner radius (tiny gap above hub)
+let r_outer = 292;     // outermost wedge radius
+let band_h = 22;       // (292 - 92) / 9 = 22.22, use 22 with 2px tail at outer
+// Stop j wedge: r = r_inner + j*band_h  to  r_inner + (j+1)*band_h
+
+// Angular geometry: 6 anchors, 60° each. Reserve a 4° gap between anchors
+// (2° half-gap on each side). Anchor i centered at -π/2 + i*π/3.
+let sector_half_span = 0.4887;   // (π/3 - rad(4)) / 2 ≈ 28°
+let corner_r = 1.2;              // tiny corner fillet on wedges
+
+// ─────────────────────────────────────────────────────────────────
+// Annular wedges: 6 anchors × 9 stops = 54 wedges
+// ─────────────────────────────────────────────────────────────────
+
+for ([r, ai] in ramps) {
+  let theta = calc(-1.5708 + ai * 1.0472);
+  let from_a = calc(theta - sector_half_span);
+  let to_a   = calc(theta + sector_half_span);
+  for (j in 0..8) {
+    let inner = calc(r_inner + j * band_h);
+    let outer = calc(r_inner + (j + 1) * band_h);
+    let c = r[j];
+    let w_name = `w_${ai}_${j}`;
+    let w = PathLayer(w_name) ${ fill: c; stroke: none; };
+    w.apply {
+      M cx cy
+      radialWedge(inner, outer, from_a, to_a, corner_r);
+    }
+    layer('celestial').append(layer(w_name));
+  }
+}
+
+// Thin outer rim circle for definition
+let outer_frame = PathLayer('outer-frame') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
+outer_frame.apply { circle(cx, cy, calc(r_outer + 3)); }
+
+// Hub cover — drawn ON TOP of wedges to bite out the center
+let hub_cover = PathLayer('hub-cover') ${ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
+hub_cover.apply { circle(cx, cy, r_hub); }
+
+layer('celestial').append(layer('outer-frame'), layer('hub-cover'));
+
+// ─────────────────────────────────────────────────────────────────
+// Dashed reference rings at the center radius of ramp[4] and ramp[6]
+// ramp[4] wedge spans r=180..202, center ≈ 191
+// ramp[6] wedge spans r=224..246, center ≈ 235
+// ─────────────────────────────────────────────────────────────────
+
+let ring_055 = PathLayer('ring-055') ${ fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4; };
+ring_055.apply { circle(cx, cy, 191); }
+
+let ring_075 = PathLayer('ring-075') ${ fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4; };
+ring_075.apply { circle(cx, cy, 235); }
+
+layer('celestial').append(layer('ring-055'), layer('ring-075'));
+
+// ─────────────────────────────────────────────────────────────────
+// Ring annotations — small label chips sitting on the dashed rings
+// ─────────────────────────────────────────────────────────────────
+
+let ring_ann_bg = PathLayer('ring-ann-bg') ${ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
+let ring_label = TextLayer('ring-label') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  letter-spacing: 1.4;
+  fill: fg_auto;
+  text-anchor: middle;
+};
+
+// Place L 0.55 label in the angular gap between anchors (e.g., between anchor 0/red and anchor 1/amber)
+let theta_ann_1 = -1.0472;   // -60° — gap between red (north) and amber (NE)
+let ann1_x = calc(cx + 191 * cos(theta_ann_1));
+let ann1_y = calc(cy + 191 * sin(theta_ann_1));
+ring_ann_bg.apply { rect(calc(ann1_x - 28), calc(ann1_y - 8), 56, 16); }
+ring_label.apply { text(ann1_x, calc(ann1_y + 3))`L  0.55` }
+
+let theta_ann_2 = 2.0944;    // 120° — gap between blue (SW) and purple (NW)
+let ann2_x = calc(cx + 235 * cos(theta_ann_2));
+let ann2_y = calc(cy + 235 * sin(theta_ann_2));
+ring_ann_bg.apply { rect(calc(ann2_x - 28), calc(ann2_y - 8), 56, 16); }
+ring_label.apply { text(ann2_x, calc(ann2_y + 3))`L  0.75` }
+
+layer('celestial').append(layer('ring-ann-bg'), layer('ring-label'));
+layer('diagram').append(layer('celestial'));
+
+// ─────────────────────────────────────────────────────────────────
+// Anchor name labels — beyond the outer frame
+// ─────────────────────────────────────────────────────────────────
+
+let anchor_name_layer = TextLayer('anchor-name') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 10;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_auto;
+  text-anchor: middle;
+};
+let anchor_hue_layer = TextLayer('anchor-hue') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_muted;
+  text-anchor: middle;
+};
+
+for ([name, ai] in anchor_names) {
+  let theta = calc(-1.5708 + ai * 1.0472);
+  let label_r = 315;
+  let lx = calc(cx + label_r * cos(theta));
+  let ly = calc(cy + label_r * sin(theta));
+  anchor_name_layer.apply { text(lx, ly)`${name}` }
+  anchor_hue_layer.apply { text(lx, calc(ly + 12))`${anchor_hues[ai]}` }
+}
+
+layer('celestial').append(layer('anchor-name'), layer('anchor-hue'));
+
+// ─────────────────────────────────────────────────────────────────
+// Central hub — title + small key
+// ─────────────────────────────────────────────────────────────────
+
+let hub_title = TextLayer('hub-title') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 14;
+  font-weight: 700;
+  letter-spacing: 4;
+  fill: fg_auto;
+  text-anchor: middle;
+};
+hub_title.apply { text(cx, calc(cy - 6))`OKLCH` }
+
+let hub_sub = TextLayer('hub-sub') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  letter-spacing: 0.8;
+  fill: fg_muted;
+  text-anchor: middle;
+};
+hub_sub.apply { text(cx, calc(cy + 10))`HUE ROSETTE` }
+
+let hub_label_055 = TextLayer('hub-055') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 6;
+  letter-spacing: 0.8;
+  fill: fg_muted;
+  text-anchor: middle;
+};
+hub_label_055.apply { text(cx, calc(cy + 24))`L 0.55  /  L 0.75` }
+
+layer('masthead').append(layer('hub-title'), layer('hub-sub'), layer('hub-055'));
+
+// ─────────────────────────────────────────────────────────────────
+// Title block top-left
+// ─────────────────────────────────────────────────────────────────
+
+let eyebrow = TextLayer('eyebrow') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+eyebrow.apply { text(34, 42)`CHART № 02-A  /  ANNULAR EDITION` }
+
+let masthead_title = TextLayer('masthead-title') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 38;
+  font-weight: 200;
+  letter-spacing: -1;
+  fill: fg_auto;
+  text-anchor: start;
+};
+masthead_title.apply { text(34, 82)`Hue Rosette` }
+
+let masthead_sub = TextLayer('masthead-sub') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 10;
+  font-style: italic;
+  fill: fg_muted;
+  text-anchor: start;
+};
+masthead_sub.apply { text(34, 102)`Six anchor sectors, each quartered by 9 annular wedges via radialWedge().` }
+
+layer('masthead').append(layer('eyebrow'), layer('masthead-title'), layer('masthead-sub'));
+layer('diagram').append(layer('masthead'));
+
+// ─────────────────────────────────────────────────────────────────
+// Key (top-right) — dashed-ring explanation + stop gradient row
+// ─────────────────────────────────────────────────────────────────
+
+let key_x = 740;
+let key_y = 40;
+
+let key_title = TextLayer('key-title') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_muted;
+  text-anchor: start;
+};
+key_title.apply { text(key_x, key_y)`KEY` }
+
+let key_line_1 = TextLayer('key-line-1') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 9;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let key_line_2 = TextLayer('key-line-2') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 9;
+  fill: fg_auto;
+  text-anchor: start;
+};
+key_line_1.apply { text(key_x, calc(key_y + 18))`— — — L-threshold ring` }
+key_line_2.apply { text(key_x, calc(key_y + 33))`°    hue angle, degrees` }
+
+// Radial gradient legend: 9 small annular slivers from inner→outer using red ramp
+let legend_bar_x = key_x;
+let legend_bar_y = calc(key_y + 54);
+let legend_label = TextLayer('legend-label') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 9;
+  fill: fg_auto;
+  text-anchor: start;
+};
+legend_label.apply { text(legend_bar_x, legend_bar_y)`stop j :  inner → outer` }
+
+let legend_ramp = PathLayer('legend-ramp') ${ fill: fg_muted; stroke: none; };
+for (j in 0..8) {
+  let lx = calc(legend_bar_x + 10 + j * 14);
+  let dot_r = calc(3 + j * 0.4);
+  legend_ramp.apply { circle(lx, calc(legend_bar_y + 16), dot_r); }
+}
+
+layer('legend').append(layer('key-title'), layer('key-line-1'), layer('key-line-2'), layer('legend-label'), layer('legend-ramp'));
+layer('diagram').append(layer('legend'));
+
+// ─────────────────────────────────────────────────────────────────
+// WCAG test bench — bottom band, three compact cards
+// ─────────────────────────────────────────────────────────────────
+
+let bench_y = 670;
+let bench_label = TextLayer('bench-label') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 2.5;
+  fill: fg_muted;
+  text-anchor: start;
+};
+bench_label.apply { text(34, calc(bench_y + 8))`CONTRAST BENCH  /  STATED AS TARGETS` }
+
+// Pre-bind palette picks (evaluator bug — see issue #1)
+let bp1 = ramp_green[2];
+let bp2 = ramp_blue[0];
+let bp3 = ramp_purple[1];
+let bp4 = ramp_blue[7];
+let bp5 = ramp_purple[7];
+
+let card_start_x = 300;
+let card_w = 200;
+let card_gap = 12;
+let card_a_fills = [bp1, bp2, bp3];
+let card_b_fills = [#ffffff, bp4, bp5];
+let card_labels = ['GREEN[2] · WHITE', 'BLUE[0] · BLUE[7]', 'PURPLE[1] · PURPLE[7]'];
+let card_targets = ['AA large', 'AAA large', 'AAA large'];
+
+let card_name_layer = TextLayer('card-name') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 1;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let card_target_layer = TextLayer('card-target') ${
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 7;
+  font-style: italic;
+  fill: fg_muted;
+  text-anchor: start;
+};
+
+for ([a, ki] in card_a_fills) {
+  let px = calc(card_start_x + ki * (card_w + card_gap));
+  let kn_a = `ba_${ki}`;
+  let kn_b = `bb_${ki}`;
+  let swatch_a = PathLayer(kn_a) ${ fill: a; stroke: none; };
+  swatch_a.apply { rect(px, calc(bench_y + 2), 22, 22); }
+  let swatch_b = PathLayer(kn_b) ${ fill: card_b_fills[ki]; stroke: fg_hair; stroke-width: 0.5; };
+  swatch_b.apply { rect(calc(px + 24), calc(bench_y + 2), 22, 22); }
+  let tx = calc(px + 52);
+  card_name_layer.apply { text(tx, calc(bench_y + 12))`${card_labels[ki]}` }
+  card_target_layer.apply { text(tx, calc(bench_y + 22))`target · ${card_targets[ki]}` }
+  layer('test-bench').append(layer(kn_a), layer(kn_b));
+}
+
+layer('test-bench').append(layer('bench-label'), layer('card-name'), layer('card-target'));
+layer('diagram').append(layer('test-bench'));

@@ -1,0 +1,178 @@
+// viewBox="0 0 520 520"
+// Harmonies & Palettes — Direction 3: Blueprint
+// Engineering-drawing treatment. Subtle fg_faint grid across the
+// canvas; 6 spec panels arranged in a 2×3 grid; each panel names
+// its harmony, lists its angular deltas, renders a swatch row
+// with the base emphasized, and carries dimension callouts at
+// the bottom. Extended-tier signature (blueprint DNA).
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let base     = Color(CSSVar('--harmony-color', #e63946));
+
+let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
+let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let fg_faint = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+
+let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+// ─── Derived harmony fills ───────────────────────────────────
+let c_base     = 'var(--harmony-color, #e63946)';
+let c_ana_m30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 30))';
+let c_ana_p30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 30))';
+let c_tri_p120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 120))';
+let c_tri_m120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 120))';
+let c_tet_p90  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 90))';
+let c_tet_p180 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 180))';
+let c_tet_p270 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 270))';
+let c_sc_p150  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 150))';
+let c_sc_p210  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 210))';
+let c_l_15  = 'oklch(from var(--harmony-color, #e63946) 0.15 c h)';
+let c_l_35  = 'oklch(from var(--harmony-color, #e63946) 0.35 c h)';
+let c_l_55  = 'oklch(from var(--harmony-color, #e63946) 0.55 c h)';
+let c_l_75  = 'oklch(from var(--harmony-color, #e63946) 0.75 c h)';
+let c_l_95  = 'oklch(from var(--harmony-color, #e63946) 0.95 c h)';
+let c_i_0   = 'var(--harmony-color, #e63946)';
+let c_i_25  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)';
+let c_i_50  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)';
+let c_i_75  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)';
+let c_i_100 = '#457b9d';
+
+// ─── Group layers ───────────────────────────────────────────
+define GroupLayer('diagram') ${}
+define GroupLayer('grid') ${}
+define GroupLayer('panels') ${}
+
+// ─── Background ─────────────────────────────────────────────
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+bg.apply { rect(0, 0, 520, 520); }
+
+// ─── Grid overlay (20×20 dashed fg_faint) ──────────────────
+let grid_v = PathLayer('grid-v') ${ fill: none; stroke: fg_faint; stroke-width: 0.5; stroke-dasharray: 1 3; };
+let grid_h = PathLayer('grid-h') ${ fill: none; stroke: fg_faint; stroke-width: 0.5; stroke-dasharray: 1 3; };
+
+for (i in 1..25) {
+  let x = calc(i * 20);
+  grid_v.apply { line(x, 0, x, 520); }
+}
+for (i in 1..25) {
+  let y = calc(i * 20);
+  grid_h.apply { line(0, y, 520, y); }
+}
+layer('grid').append(layer('grid-v'), layer('grid-h'));
+
+// ─── Masthead ───────────────────────────────────────────────
+let eyebrow = TextLayer('eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+eyebrow.apply { text(15, 26)`OKLCH  /  02 — HARMONIES & PALETTES` }
+
+let sheet_a = TextLayer('sheet-a') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 1.4; fill: fg_muted; text-anchor: end;
+};
+sheet_a.apply { text(505, 26)`SHEET 03 / 06` }
+
+let sheet_b = TextLayer('sheet-b') ${
+  font-family: font; font-size: 8;
+  letter-spacing: 1.4; fill: fg_muted; text-anchor: end;
+};
+sheet_b.apply { text(505, 38)`HARMONY SPEC` }
+
+layer('diagram').append(layer('bg'), layer('grid'));
+layer('diagram').append(layer('eyebrow'), layer('sheet-a'), layer('sheet-b'));
+
+// ─── Panel geometry ────────────────────────────────────────
+let panel_w = 239;
+let panel_h = 142;
+let gap = 12;
+let grid_x0 = 15;
+let grid_y0 = 55;
+
+let col_x = [grid_x0, calc(grid_x0 + panel_w + gap)];
+let row_y = [grid_y0, calc(grid_y0 + panel_h + gap), calc(grid_y0 + 2 * (panel_h + gap))];
+
+// ─── Panel text styles ─────────────────────────────────────
+let panel_code_layer = TextLayer('panel-code') ${
+  font-family: font; font-size: 6;
+  letter-spacing: 0.8; fill: fg_muted; text-anchor: end;
+};
+let panel_name_layer = TextLayer('panel-name') ${
+  font-family: font; font-size: 10; font-weight: 700;
+  letter-spacing: 2; fill: fg_auto; text-anchor: start;
+};
+let panel_delta_layer = TextLayer('panel-delta') ${
+  font-family: font; font-size: 6;
+  letter-spacing: 0.8; fill: fg_muted; text-anchor: start;
+};
+let panel_dim_layer = TextLayer('panel-dim') ${
+  font-family: font; font-size: 6;
+  letter-spacing: 0.5; fill: fg_muted; text-anchor: middle;
+};
+
+// ─── Panel data ────────────────────────────────────────────
+// [code, name, delta, count, swatches [[fill, dim], ...]]
+let panels_data = [
+  ['H-01', 'ANALOGOUS',  '3 colors  ·  Δh = ±30°', 3,
+   [[c_ana_m30, '−30°'], [c_base, 'BASE'], [c_ana_p30, '+30°']]],
+  ['H-02', 'TRIADIC',    '3 colors  ·  Δh = ±120°', 3,
+   [[c_base, 'BASE'], [c_tri_p120, '+120°'], [c_tri_m120, '−120°']]],
+  ['H-03', 'TETRADIC',   '4 colors  ·  Δh = 90° steps', 4,
+   [[c_base, 'BASE'], [c_tet_p90, '+90°'], [c_tet_p180, '+180°'], [c_tet_p270, '+270°']]],
+  ['H-04', 'SPLIT-COMP', '3 colors  ·  BASE + ±30° from complement', 3,
+   [[c_base, 'BASE'], [c_sc_p150, '+150°'], [c_sc_p210, '+210°']]],
+  ['P-01', 'LIGHTNESS',  '5 stops  ·  L = 0.15, 0.35, 0.55, 0.75, 0.95', 5,
+   [[c_l_15, '0.15'], [c_l_35, '0.35'], [c_l_55, '0.55'], [c_l_75, '0.75'], [c_l_95, '0.95']]],
+  ['P-02', 'INTERPOLATE','5 stops  ·  BASE → #457b9d', 5,
+   [[c_i_0, '0%'], [c_i_25, '25%'], [c_i_50, '50%'], [c_i_75, '75%'], [c_i_100, '100%']]],
+];
+
+// ─── Render panels ─────────────────────────────────────────
+for ([p, pi] in panels_data) {
+  let col_i = calc(pi % 2);
+  let row_i = calc((pi - col_i) / 2);
+  let x_l = col_x[col_i];
+  let y_t = row_y[row_i];
+
+  // Panel frame
+  let frame = PathLayer(`p-${pi}-frame`) ${
+    fill: 'oklch(from var(--bg, #d0d7f0) calc(l - 0.015) c h)';
+    stroke: fg_hair; stroke-width: 0.5;
+  };
+  frame.apply { rect(x_l, y_t, panel_w, panel_h); }
+  layer('panels').append(layer(`p-${pi}-frame`));
+
+  // Header: code (right), name (left), delta (below name)
+  panel_code_layer.apply  { text(calc(x_l + panel_w - 8), calc(y_t + 14))`${p[0]}` }
+  panel_name_layer.apply  { text(calc(x_l + 10), calc(y_t + 20))`${p[1]}` }
+  panel_delta_layer.apply { text(calc(x_l + 10), calc(y_t + 32))`${p[2]}` }
+
+  // Swatch row — horizontal, filling remaining width
+  let n = p[3];
+  let swatches = p[4];
+  let inner_w = calc(panel_w - 20);
+  let chip_gap = 4;
+  let chip_w = calc((inner_w - (n - 1) * chip_gap) / n);
+  let chip_y = calc(y_t + 50);
+  let chip_h = 48;
+
+  for ([sw_data, si] in swatches) {
+    let chip_x = calc(x_l + 10 + si * (chip_w + chip_gap));
+    let dim_str = sw_data[1];
+    let sw = PathLayer(`p-${pi}-sw-${si}`) ${
+      fill: sw_data[0]; stroke: fg_hair; stroke-width: 0.5;
+    };
+    sw.apply { roundRect(chip_x, chip_y, chip_w, chip_h, 5.5); }
+    layer('panels').append(layer(`p-${pi}-sw-${si}`));
+
+    panel_dim_layer.apply { text(calc(chip_x + chip_w / 2), calc(chip_y + chip_h + 14))`${dim_str}` }
+  }
+}
+
+layer('panels').append(
+  layer('panel-code'), layer('panel-name'),
+  layer('panel-delta'), layer('panel-dim')
+);
+layer('diagram').append(layer('panels'));

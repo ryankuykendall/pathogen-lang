@@ -322,39 +322,142 @@ code.hljs {
 <span class="hljs-keyword">let</span> semi    = base.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.5</span>);       <span class="hljs-comment">// set transparency</span>
 <span class="hljs-keyword">let</span> blended = base.<span class="hljs-title function_">mix</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>), <span class="hljs-number">0.5</span>); <span class="hljs-comment">// interpolate</span>
 </code></pre><p>All of this operates in OKLCH, so a <code>.lighten(0.18)</code> on a deeply saturated red doesn&#39;t accidentally desaturate it — it shifts only lightness while preserving chroma and hue. Try it: pick a color below and watch each method derive its swatch.</p>
-<reactive-svg vars="--demo-color:#e63946" caption="Pick a color to see 8 manipulation methods applied in real time.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 210" width="350" height="210">
-  <style>
-    @property --demo-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <text x="55" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">base</text>
-  <text x="119" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">lighten</text>
-  <text x="183" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">darken</text>
-  <text x="247" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">saturate</text>
-  <text x="311" y="106" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">desaturate</text>
-  <text x="55" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">hueShift</text>
-  <text x="119" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">complement</text>
-  <text x="183" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">alpha(0.5)</text>
-  <text x="247" y="196" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="middle">mix</text>
-  <path d="M 38 40 L 72 40 Q 80 40 80 48 L 80 82 Q 80 90 72 90 L 38 90 Q 30 90 30 82 L 30 48 Q 30 40 38 40 Z" fill="var(--demo-color, #e63946)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 102 40 L 136 40 Q 144 40 144 48 L 144 82 Q 144 90 136 90 L 102 90 Q 94 90 94 82 L 94 48 Q 94 40 102 40 Z" fill="oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 166 40 L 200 40 Q 208 40 208 48 L 208 82 Q 208 90 200 90 L 166 90 Q 158 90 158 82 L 158 48 Q 158 40 166 40 Z" fill="oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 230 40 L 264 40 Q 272 40 272 48 L 272 82 Q 272 90 264 90 L 230 90 Q 222 90 222 82 L 222 48 Q 222 40 230 40 Z" fill="oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 294 40 L 328 40 Q 336 40 336 48 L 336 82 Q 336 90 328 90 L 294 90 Q 286 90 286 82 L 286 48 Q 286 40 294 40 Z" fill="oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 38 130 L 72 130 Q 80 130 80 138 L 80 172 Q 80 180 72 180 L 38 180 Q 30 180 30 172 L 30 138 Q 30 130 38 130 Z" fill="oklch(from var(--demo-color, #e63946) l c calc(h + 90))" stroke="#ddd" stroke-width="1"/>
-  <path d="M 102 130 L 136 130 Q 144 130 144 138 L 144 172 Q 144 180 136 180 L 102 180 Q 94 180 94 172 L 94 138 Q 94 130 102 130 Z" fill="oklch(from var(--demo-color, #e63946) l c calc(h + 180))" stroke="#ddd" stroke-width="1"/>
-  <path d="M 166 130 L 200 130 Q 208 130 208 138 L 208 172 Q 208 180 200 180 L 166 180 Q 158 180 158 172 L 158 138 Q 158 130 166 130 Z" fill="oklch(from var(--demo-color, #e63946) l c h / 0.5)" stroke="#ddd" stroke-width="1"/>
-  <path d="M 230 130 L 264 130 Q 272 130 272 138 L 272 172 Q 272 180 264 180 L 230 180 Q 222 180 222 172 L 222 138 Q 222 130 230 130 Z" fill="color-mix(in oklch, var(--demo-color, #e63946), #457b9d 50%)" stroke="#ddd" stroke-width="1"/>
-</svg>
-</reactive-svg>
+<p><mini-workspace code-open caption="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice.">
+  <code>// viewBox="0 0 520 400"
+// Color Methods — Direction 2: Radial Wheel
+// Eight slim 30° sectors arranged around a central base-color hub.
+// Each sector fills with one OKLCH method derivation; labels sit
+// outside the outer frame. Dashed fg_auto reference ring at mid-wedge.
+// Extended-tier signature (variant-b3 lozenge DNA).
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-color-methods"><em>view full source</em></a></p>
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let base     = Color(CSSVar('--demo-color', #e63946));
 
+let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
+let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+
+// Auto-contrasting ink against the base color (for hub text)
+let hub_ink       = 'oklch(from var(--demo-color, #e63946) calc((0.5 - l) * 1000) 0 0)';
+let hub_ink_muted = 'oklch(from var(--demo-color, #e63946) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+
+let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+// ─── Derived method fills ────────────────────────────────────
+let m_base       = 'var(--demo-color, #e63946)';
+let m_lighten    = 'oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)';
+let m_darken     = 'oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)';
+let m_saturate   = 'oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)';
+let m_desaturate = 'oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)';
+let m_hue        = 'oklch(from var(--demo-color, #e63946) l c calc(h + 90))';
+let m_complement = 'oklch(from var(--demo-color, #e63946) l c calc(h + 180))';
+let m_alpha      = 'oklch(from var(--demo-color, #e63946) l c h / 0.5)';
+
+// ─── Group layers ───────────────────────────────────────────
+define GroupLayer('diagram') ${}
+define GroupLayer('wheel') ${}
+define GroupLayer('hub-group') ${}
+define GroupLayer('labels') ${}
+
+// ─── Background ─────────────────────────────────────────────
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+bg.apply { rect(0, 0, 520, 400); }
+
+// ─── Eyebrow (top-left) ─────────────────────────────────────
+let eyebrow = TextLayer('eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+eyebrow.apply { text(15, 24)`OKLCH  /  01 — MANIPULATION` }
+layer('diagram').append(layer('bg'), layer('eyebrow'));
+
+// ─── Wheel geometry ─────────────────────────────────────────
+let cx = 260;
+let cy = 210;
+let r_hub   = 40;       // hub radius
+let r_inner = 52;       // inner wedge radius (12px gap from hub)
+let r_outer = 128;      // outer wedge radius
+let r_frame = 140;      // outer frame circle
+let r_ring  = 90;       // dashed reference ring radius
+let r_label = 165;      // label ring radius
+
+let sector_half_span = 0.2618;  // π/12 = 15°
+let corner_r         = 5.5;
+
+// ─── Wedges: 8 methods around the clock ─────────────────────
+let methods = [
+  ['BASE',       m_base],
+  ['LIGHTEN',    m_lighten],
+  ['SATURATE',   m_saturate],
+  ['HUE +90°',   m_hue],
+  ['COMPLEMENT', m_complement],
+  ['DESATURATE', m_desaturate],
+  ['DARKEN',     m_darken],
+  ['ALPHA 0.5',  m_alpha],
+];
+
+for ([m, i] in methods) {
+  // Angle convention: 0 = north, step +π/4 clockwise
+  let theta = calc(-1.5708 + i * 0.7854);
+  let from_a = calc(theta - sector_half_span);
+  let to_a   = calc(theta + sector_half_span);
+
+  let w = PathLayer(`w-${i}`) ${ fill: m[1]; stroke: none; };
+  w.apply {
+    M cx cy
+    radialWedge(r_inner, r_outer, from_a, to_a, corner_r);
+  }
+  layer('wheel').append(layer(`w-${i}`));
+}
+
+// ─── Outer frame ────────────────────────────────────────────
+let frame = PathLayer('frame') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
+frame.apply { circle(cx, cy, r_frame); }
+
+// ─── Dashed reference ring at mid-wedge radius ──────────────
+let ring = PathLayer('ring') ${
+  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4;
+};
+ring.apply { circle(cx, cy, r_ring); }
+
+// ─── Hub (drawn OVER wedges) ────────────────────────────────
+let hub = PathLayer('hub') ${ fill: base; stroke: fg_hair; stroke-width: 0.5; };
+hub.apply { circle(cx, cy, r_hub); }
+
+let hub_title = TextLayer('hub-title') ${
+  font-family: font; font-size: 14; font-weight: 700;
+  letter-spacing: 4; fill: hub_ink; text-anchor: middle;
+};
+hub_title.apply { text(cx, calc(cy - 2))`OKLCH` }
+
+let hub_sub = TextLayer('hub-sub') ${
+  font-family: font; font-size: 8;
+  letter-spacing: 0.8; fill: hub_ink_muted; text-anchor: middle;
+};
+hub_sub.apply { text(cx, calc(cy + 12))`MANIPULATION` }
+
+layer('wheel').append(layer('frame'), layer('ring'));
+layer('hub-group').append(layer('hub'), layer('hub-title'), layer('hub-sub'));
+
+// ─── Labels beyond the frame ────────────────────────────────
+let label = TextLayer('label') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 2; fill: fg_auto; text-anchor: middle;
+};
+
+for ([m, i] in methods) {
+  let theta = calc(-1.5708 + i * 0.7854);
+  let lx = calc(cx + r_label * cos(theta));
+  let ly = calc(cy + r_label * sin(theta) + 3);
+  label.apply { text(lx, ly)`${m[0]}` }
+}
+
+layer('labels').append(layer('label'));
+layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
+</code>
+  <img src="/pathogen/blog/samples/post24/methods-radial.svg" alt="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice." loading="lazy">
+</mini-workspace></p>
 <p>What makes this reactive? The SVG above was compiled <em>once</em>. There is no JavaScript updating colors. The fill values use CSS relative color syntax:</p>
 <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)&quot;</span>
 </code></pre><p>The browser resolves <code>var(--demo-color)</code>, extracts its OKLCH components, applies <code>calc(l + 0.18)</code>, and renders. When the color picker updates <code>--demo-color</code>, the browser recalculates everything automatically.</p>
@@ -376,53 +479,279 @@ code.hljs {
 <pre><code class="hljs language-js"><span class="hljs-keyword">let</span> ramp  = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, <span class="hljs-number">5</span>);          <span class="hljs-comment">// 5-step lightness ramp</span>
 <span class="hljs-keyword">let</span> blend = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);  <span class="hljs-comment">// 5-step interpolation</span>
 </code></pre><p>The lightness ramp spreads evenly from dark (L=0.15) to light (L=0.95). The interpolation variant uses <code>color-mix()</code> when backed by CSS variables, so the browser handles the blending at render time.</p>
-<reactive-svg vars="--harmony-color:#e63946" caption="Pick a base color to generate harmonies and palettes.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 450" width="460" height="450">
-  <style>
-    @property --harmony-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <text x="20" y="74" font-family="system-ui, sans-serif" font-size="11" fill="#777">analogous</text>
-  <text x="20" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#777">triadic</text>
-  <text x="20" y="190" font-family="system-ui, sans-serif" font-size="11" fill="#777">tetradic</text>
-  <text x="20" y="248" font-family="system-ui, sans-serif" font-size="11" fill="#777">splitComp</text>
-  <text x="20" y="354" font-family="system-ui, sans-serif" font-size="11" fill="#777">lightness</text>
-  <text x="20" y="412" font-family="system-ui, sans-serif" font-size="11" fill="#777">interpolate</text>
-  <text x="20" y="28" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Harmonies</text>
-  <text x="20" y="306" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#555">Palettes</text>
-  <path d="M 146 50 L 174 50 Q 180 50 180 56 L 180 84 Q 180 90 174 90 L 146 90 Q 140 90 140 84 L 140 56 Q 140 50 146 50 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + -30))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 50 L 226 50 Q 232 50 232 56 L 232 84 Q 232 90 226 90 L 198 90 Q 192 90 192 84 L 192 56 Q 192 50 198 50 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 50 L 278 50 Q 284 50 284 56 L 284 84 Q 284 90 278 90 L 250 90 Q 244 90 244 84 L 244 56 Q 244 50 250 50 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 30))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 108 L 174 108 Q 180 108 180 114 L 180 142 Q 180 148 174 148 L 146 148 Q 140 148 140 142 L 140 114 Q 140 108 146 108 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 108 L 226 108 Q 232 108 232 114 L 232 142 Q 232 148 226 148 L 198 148 Q 192 148 192 142 L 192 114 Q 192 108 198 108 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 120))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 108 L 278 108 Q 284 108 284 114 L 284 142 Q 284 148 278 148 L 250 148 Q 244 148 244 142 L 244 114 Q 244 108 250 108 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 240))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 166 L 174 166 Q 180 166 180 172 L 180 200 Q 180 206 174 206 L 146 206 Q 140 206 140 200 L 140 172 Q 140 166 146 166 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 166 L 226 166 Q 232 166 232 172 L 232 200 Q 232 206 226 206 L 198 206 Q 192 206 192 200 L 192 172 Q 192 166 198 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 90))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 166 L 278 166 Q 284 166 284 172 L 284 200 Q 284 206 278 206 L 250 206 Q 244 206 244 200 L 244 172 Q 244 166 250 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 180))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 302 166 L 330 166 Q 336 166 336 172 L 336 200 Q 336 206 330 206 L 302 206 Q 296 206 296 200 L 296 172 Q 296 166 302 166 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 270))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 224 L 174 224 Q 180 224 180 230 L 180 258 Q 180 264 174 264 L 146 264 Q 140 264 140 258 L 140 230 Q 140 224 146 224 Z" fill="var(--harmony-color, #e63946)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 224 L 226 224 Q 232 224 232 230 L 232 258 Q 232 264 226 264 L 198 264 Q 192 264 192 258 L 192 230 Q 192 224 198 224 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 150))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 224 L 278 224 Q 284 224 284 230 L 284 258 Q 284 264 278 264 L 250 264 Q 244 264 244 258 L 244 230 Q 244 224 250 224 Z" fill="oklch(from var(--harmony-color, #e63946) l c calc(h + 210))" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 20 282 L 440 282" fill="none" stroke="#e0e0e0" stroke-width="1"/>
-  <path d="M 146 330 L 174 330 Q 180 330 180 336 L 180 364 Q 180 370 174 370 L 146 370 Q 140 370 140 364 L 140 336 Q 140 330 146 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.15 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 330 L 226 330 Q 232 330 232 336 L 232 364 Q 232 370 226 370 L 198 370 Q 192 370 192 364 L 192 336 Q 192 330 198 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.35 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 330 L 278 330 Q 284 330 284 336 L 284 364 Q 284 370 278 370 L 250 370 Q 244 370 244 364 L 244 336 Q 244 330 250 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.55 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 302 330 L 330 330 Q 336 330 336 336 L 336 364 Q 336 370 330 370 L 302 370 Q 296 370 296 364 L 296 336 Q 296 330 302 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.75 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 354 330 L 382 330 Q 388 330 388 336 L 388 364 Q 388 370 382 370 L 354 370 Q 348 370 348 364 L 348 336 Q 348 330 354 330 Z" fill="oklch(from var(--harmony-color, #e63946) 0.95 c h)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 146 388 L 174 388 Q 180 388 180 394 L 180 422 Q 180 428 174 428 L 146 428 Q 140 428 140 422 L 140 394 Q 140 388 146 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 0%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 198 388 L 226 388 Q 232 388 232 394 L 232 422 Q 232 428 226 428 L 198 428 Q 192 428 192 422 L 192 394 Q 192 388 198 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 250 388 L 278 388 Q 284 388 284 394 L 284 422 Q 284 428 278 428 L 250 428 Q 244 428 244 422 L 244 394 Q 244 388 250 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 302 388 L 330 388 Q 336 388 336 394 L 336 422 Q 336 428 330 428 L 302 428 Q 296 428 296 422 L 296 394 Q 296 388 302 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 354 388 L 382 388 Q 388 388 388 394 L 388 422 Q 388 428 382 428 L 354 428 Q 348 428 348 422 L 348 394 Q 348 388 354 388 Z" fill="color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 100%)" stroke="#ddd" stroke-width="0.5"/>
-</svg>
-</reactive-svg>
+<p><mini-workspace code-open caption="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex.">
+  <code>// viewBox="0 0 520 560"
+// Harmonies &amp; Palettes — Direction 2: Hue Wheel
+// A 12-sector static hue wheel with harmony-chord overlays (analogous
+// arc, triadic triangle, tetradic square, split-comp Y). Harmony
+// vertices carry live-derived base chips. Two palette strips below.
+// Extended-tier signature.
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-harmonies"><em>view full source</em></a></p>
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let base     = Color(CSSVar('--harmony-color', #e63946));
 
+let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
+let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+
+let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+// ─── Derived harmony fills ───────────────────────────────────
+let c_base     = 'var(--harmony-color, #e63946)';
+let c_ana_m30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 30))';
+let c_ana_p30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 30))';
+let c_tri_p120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 120))';
+let c_tri_m120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 120))';
+let c_tet_p90  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 90))';
+let c_tet_p180 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 180))';
+let c_tet_p270 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 270))';
+let c_sc_p150  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 150))';
+let c_sc_p210  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 210))';
+
+let c_l_15  = 'oklch(from var(--harmony-color, #e63946) 0.15 c h)';
+let c_l_35  = 'oklch(from var(--harmony-color, #e63946) 0.35 c h)';
+let c_l_55  = 'oklch(from var(--harmony-color, #e63946) 0.55 c h)';
+let c_l_75  = 'oklch(from var(--harmony-color, #e63946) 0.75 c h)';
+let c_l_95  = 'oklch(from var(--harmony-color, #e63946) 0.95 c h)';
+
+let c_i_0   = 'var(--harmony-color, #e63946)';
+let c_i_25  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)';
+let c_i_50  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)';
+let c_i_75  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)';
+let c_i_100 = '#457b9d';
+
+// ─── Group layers ───────────────────────────────────────────
+define GroupLayer('diagram') ${}
+define GroupLayer('wheel') ${}
+define GroupLayer('chords') ${}
+define GroupLayer('strips') ${}
+
+// ─── Background ─────────────────────────────────────────────
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+bg.apply { rect(0, 0, 520, 560); }
+
+// ─── Masthead ───────────────────────────────────────────────
+let eyebrow = TextLayer('eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+eyebrow.apply { text(15, 26)`OKLCH  /  02 — HARMONIES &amp; PALETTES` }
+
+layer('diagram').append(layer('bg'), layer('eyebrow'));
+
+// ─── Wheel geometry ─────────────────────────────────────────
+let cx = 260;
+let cy = 200;
+let r_inner = 55;
+let r_outer = 135;
+let r_frame = 145;
+let r_vertex = 115;   // chord-overlay dot radius
+let r_hub   = 50;
+
+// ─── 12 hue sectors ─────────────────────────────────────────
+// 12 sectors of 30° each. Each sector fills with a static reference
+// hue. Sector 0 at north, advancing clockwise. We enumerate 12
+// explicit let bindings so each fill is a literal color string.
+let seg_span = 0.5236;  // π/6
+
+let w0  = PathLayer('w-0')  ${ fill: 'oklch(0.70 0.16 0)';   stroke: fg_hair; stroke-width: 0.5; };
+let w1  = PathLayer('w-1')  ${ fill: 'oklch(0.70 0.16 30)';  stroke: fg_hair; stroke-width: 0.5; };
+let w2  = PathLayer('w-2')  ${ fill: 'oklch(0.70 0.16 60)';  stroke: fg_hair; stroke-width: 0.5; };
+let w3  = PathLayer('w-3')  ${ fill: 'oklch(0.70 0.16 90)';  stroke: fg_hair; stroke-width: 0.5; };
+let w4  = PathLayer('w-4')  ${ fill: 'oklch(0.70 0.16 120)'; stroke: fg_hair; stroke-width: 0.5; };
+let w5  = PathLayer('w-5')  ${ fill: 'oklch(0.70 0.16 150)'; stroke: fg_hair; stroke-width: 0.5; };
+let w6  = PathLayer('w-6')  ${ fill: 'oklch(0.70 0.16 180)'; stroke: fg_hair; stroke-width: 0.5; };
+let w7  = PathLayer('w-7')  ${ fill: 'oklch(0.70 0.16 210)'; stroke: fg_hair; stroke-width: 0.5; };
+let w8  = PathLayer('w-8')  ${ fill: 'oklch(0.70 0.16 240)'; stroke: fg_hair; stroke-width: 0.5; };
+let w9  = PathLayer('w-9')  ${ fill: 'oklch(0.70 0.16 270)'; stroke: fg_hair; stroke-width: 0.5; };
+let w10 = PathLayer('w-10') ${ fill: 'oklch(0.70 0.16 300)'; stroke: fg_hair; stroke-width: 0.5; };
+let w11 = PathLayer('w-11') ${ fill: 'oklch(0.70 0.16 330)'; stroke: fg_hair; stroke-width: 0.5; };
+
+let wedge_layers = [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11];
+
+for (i in 0..11) {
+  let from_a = calc(-1.5708 + i * seg_span - seg_span / 2);
+  let to_a   = calc(-1.5708 + i * seg_span + seg_span / 2);
+  let w_name = `w-${i}`;
+  layer(w_name).apply {
+    M cx cy
+    radialWedge(r_inner, r_outer, from_a, to_a, 0);
+  }
+  layer('wheel').append(layer(w_name));
+}
+
+// ─── Frame + hub ─────────────────────────────────────────────
+let frame = PathLayer('frame') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
+frame.apply { circle(cx, cy, r_frame); }
+
+let hub = PathLayer('hub') ${ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
+hub.apply { circle(cx, cy, r_hub); }
+
+let hub_title = TextLayer('hub-title') ${
+  font-family: font; font-size: 14; font-weight: 700;
+  letter-spacing: 4; fill: fg_auto; text-anchor: middle;
+};
+hub_title.apply { text(cx, calc(cy - 2))`OKLCH` }
+
+let hub_sub = TextLayer('hub-sub') ${
+  font-family: font; font-size: 8;
+  letter-spacing: 0.8; fill: fg_muted; text-anchor: middle;
+};
+hub_sub.apply { text(cx, calc(cy + 12))`HARMONY` }
+
+layer('wheel').append(layer('frame'), layer('hub'), layer('hub-title'), layer('hub-sub'));
+
+// ─── Chord overlays (assuming base at north, 12 o'clock) ────
+// Each overlay is drawn as path edges between vertex points on
+// a circle of radius r_vertex. Then a small base-derived chip
+// sits on each vertex.
+
+// Analogous: chord = short line from −30° to +30°
+let ana_chord = PathLayer('ana-chord') ${
+  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 2;
+};
+ana_chord.apply {
+  M calc(cx + r_vertex * cos(-2.0944))  calc(cy + r_vertex * sin(-2.0944))
+  L calc(cx + r_vertex * cos(-1.0472))  calc(cy + r_vertex * sin(-1.0472))
+}
+
+// Triadic: equilateral triangle, base at north
+let tri_chord = PathLayer('tri-chord') ${
+  fill: none; stroke: fg_auto; stroke-width: 0.7; stroke-dasharray: 5 3;
+};
+tri_chord.apply {
+  M cx calc(cy - r_vertex)
+  L calc(cx + r_vertex * cos(0.5236))  calc(cy + r_vertex * sin(0.5236))
+  L calc(cx + r_vertex * cos(2.6180))  calc(cy + r_vertex * sin(2.6180))
+  Z
+}
+
+// Tetradic: square, base at north
+let tet_chord = PathLayer('tet-chord') ${
+  fill: none; stroke: fg_auto; stroke-width: 0.7; stroke-dasharray: 2 2;
+};
+tet_chord.apply {
+  M cx calc(cy - r_vertex)
+  L calc(cx + r_vertex)  cy
+  L cx calc(cy + r_vertex)
+  L calc(cx - r_vertex)  cy
+  Z
+}
+
+// Split-comp: Y from base to +150° and +210° (= −150°)
+let sc_chord = PathLayer('sc-chord') ${
+  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 1 2;
+};
+sc_chord.apply {
+  M cx calc(cy - r_vertex)
+  L calc(cx + r_vertex * cos(1.0472))  calc(cy + r_vertex * sin(1.0472))
+  M cx calc(cy - r_vertex)
+  L calc(cx + r_vertex * cos(2.0944))  calc(cy + r_vertex * sin(2.0944))
+}
+
+layer('chords').append(layer('ana-chord'), layer('tri-chord'), layer('tet-chord'), layer('sc-chord'));
+
+// ─── Vertex markers (base-derived live chips at harmony positions) ──
+// Union of all distinct vertex positions from all 4 overlays.
+// Angles: -π/2 (base, used by all), -2π/3 (ana-m30), -π/3 (ana-p30),
+//         π/6 (tri+120), -7π/6≡5π/6 (tri-120),
+//         0 (tet+90), π/2 (tet+180), π (tet+270),
+//         π/3 (sc+150), 2π/3 (sc+210)
+
+let vertex_base  = PathLayer('v-base')   ${ fill: c_base;      stroke: fg_auto; stroke-width: 1; };
+let vertex_am30  = PathLayer('v-ana-m30')${ fill: c_ana_m30;   stroke: fg_hair; stroke-width: 0.5; };
+let vertex_ap30  = PathLayer('v-ana-p30')${ fill: c_ana_p30;   stroke: fg_hair; stroke-width: 0.5; };
+let vertex_tp120 = PathLayer('v-tri-p120')${ fill: c_tri_p120; stroke: fg_hair; stroke-width: 0.5; };
+let vertex_tm120 = PathLayer('v-tri-m120')${ fill: c_tri_m120; stroke: fg_hair; stroke-width: 0.5; };
+let vertex_tep90 = PathLayer('v-tet-p90')${ fill: c_tet_p90;   stroke: fg_hair; stroke-width: 0.5; };
+let vertex_tep180= PathLayer('v-tet-p180')${ fill: c_tet_p180; stroke: fg_hair; stroke-width: 0.5; };
+let vertex_tep270= PathLayer('v-tet-p270')${ fill: c_tet_p270; stroke: fg_hair; stroke-width: 0.5; };
+let vertex_scp150= PathLayer('v-sc-p150')${ fill: c_sc_p150;   stroke: fg_hair; stroke-width: 0.5; };
+let vertex_scp210= PathLayer('v-sc-p210')${ fill: c_sc_p210;   stroke: fg_hair; stroke-width: 0.5; };
+
+// Base marker — slightly larger dot (r=5) at north
+vertex_base.apply  { circle(cx, calc(cy - r_vertex), 5); }
+vertex_am30.apply  { circle(calc(cx + r_vertex * cos(-2.0944)), calc(cy + r_vertex * sin(-2.0944)), 3.5); }
+vertex_ap30.apply  { circle(calc(cx + r_vertex * cos(-1.0472)), calc(cy + r_vertex * sin(-1.0472)), 3.5); }
+vertex_tp120.apply { circle(calc(cx + r_vertex * cos(0.5236)),  calc(cy + r_vertex * sin(0.5236)),  3.5); }
+vertex_tm120.apply { circle(calc(cx + r_vertex * cos(2.6180)),  calc(cy + r_vertex * sin(2.6180)),  3.5); }
+vertex_tep90.apply { circle(calc(cx + r_vertex), cy, 3.5); }
+vertex_tep180.apply{ circle(cx, calc(cy + r_vertex), 3.5); }
+vertex_tep270.apply{ circle(calc(cx - r_vertex), cy, 3.5); }
+vertex_scp150.apply{ circle(calc(cx + r_vertex * cos(1.0472)),  calc(cy + r_vertex * sin(1.0472)),  3.5); }
+vertex_scp210.apply{ circle(calc(cx + r_vertex * cos(2.0944)),  calc(cy + r_vertex * sin(2.0944)),  3.5); }
+
+layer('chords').append(
+  layer('v-base'), layer('v-ana-m30'), layer('v-ana-p30'),
+  layer('v-tri-p120'), layer('v-tri-m120'),
+  layer('v-tet-p90'), layer('v-tet-p180'), layer('v-tet-p270'),
+  layer('v-sc-p150'), layer('v-sc-p210')
+);
+
+// ─── Palette strips below the wheel ─────────────────────────
+// Strip 1: lightness ramp at y=365..415
+// Strip 2: interpolate at y=445..495
+// 5 chips per strip, full-width.
+
+let strip_label_layer = TextLayer('strip-label') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+
+let chip_w = 94;
+let chip_gap = 4;
+let chip_x0 = 15;
+
+// Strip 1: Lightness
+strip_label_layer.apply { text(chip_x0, 365)`LIGHTNESS  /  L 0.15 → 0.95` }
+let l_colors = [c_l_15, c_l_35, c_l_55, c_l_75, c_l_95];
+for ([col, i] in l_colors) {
+  let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
+  let sw = PathLayer(`l-${i}`) ${ fill: col; stroke: fg_hair; stroke-width: 0.5; };
+  sw.apply { roundRect(cx_i, 375, chip_w, 42, 5.5); }
+  layer('strips').append(layer(`l-${i}`));
+}
+
+// Strip 2: Interpolate
+strip_label_layer.apply { text(chip_x0, 445)`INTERPOLATE  /  BASE → #457b9d` }
+let i_colors = [c_i_0, c_i_25, c_i_50, c_i_75, c_i_100];
+for ([col, i] in i_colors) {
+  let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
+  let sw = PathLayer(`i-${i}`) ${ fill: col; stroke: fg_hair; stroke-width: 0.5; };
+  sw.apply { roundRect(cx_i, 455, chip_w, 42, 5.5); }
+  layer('strips').append(layer(`i-${i}`));
+}
+
+// Strip sub labels — small value markers at bottom of each strip
+let strip_sub_layer = TextLayer('strip-sub') ${
+  font-family: font; font-size: 6;
+  letter-spacing: 0.5; fill: fg_muted; text-anchor: middle;
+};
+let l_subs = ['0.15', '0.35', '0.55', '0.75', '0.95'];
+for ([s, i] in l_subs) {
+  let cx_i = calc(chip_x0 + i * (chip_w + chip_gap) + chip_w / 2);
+  strip_sub_layer.apply { text(cx_i, 428)`${s}` }
+}
+let i_subs = ['0%', '25%', '50%', '75%', '100%'];
+for ([s, i] in i_subs) {
+  let cx_i = calc(chip_x0 + i * (chip_w + chip_gap) + chip_w / 2);
+  strip_sub_layer.apply { text(cx_i, 508)`${s}` }
+}
+
+// ─── Chord legend (bottom) ──────────────────────────────────
+let legend_y = 535;
+let legend = TextLayer('legend') ${
+  font-family: font; font-size: 6; font-weight: 700;
+  letter-spacing: 1.4; fill: fg_muted; text-anchor: start;
+};
+legend.apply { text(15, legend_y)`CHORDS:  ANA  TRI  TET  SPLIT-COMP  —  VERTICES SHOW LIVE BASE HUES` }
+
+layer('strips').append(layer('strip-label'), layer('strip-sub'), layer('legend'));
+layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
+</code>
+  <img src="/pathogen/blog/samples/post24/harmonies-wheel.svg" alt="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex." loading="lazy">
+</mini-workspace></p>
 <p>Notice the palette rows. The lightness ramp uses CSS relative color syntax to override the <code>l</code> component at fixed steps:</p>
 <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--harmony-color) 0.35 c h)&quot;</span>
 </code></pre><p>The interpolation row uses <code>color-mix()</code>:</p>
@@ -450,43 +779,302 @@ code.hljs {
 <span class="hljs-keyword">let</span> primaryDark   = primary.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
 <span class="hljs-keyword">let</span> secondaryMuted = secondary.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-keyword">let</span> accentShift   = accent.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
-</code></pre><reactive-svg vars="--bg:#f5f5f5;--primary:#e63946;--secondary:#457b9d;--accent:#2a9d8f" caption="Four color pickers control an entire illustration. Derived colors update automatically.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 260" width="500" height="260">
-  <style>
-    @property --bg {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #f5f5f5;
-    }
-    @property --primary {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-    @property --secondary {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #457b9d;
-    }
-    @property --accent {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #2a9d8f;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <path d="M 0 0 L 500 0 L 500 260 L 0 260 Z" fill="var(--bg, #f5f5f5)" stroke="none" stroke-width="2"/>
-  <path d="M 250 75 L 266.45798706418924 107.34752415750147 L 302.3081083962334 113.00406530937789 L 276.6295824562643 138.65247584249852 L 282.328188876086 174.4959346906221 L 250 158 L 217.67181112391398 174.4959346906221 L 223.3704175437357 138.65247584249852 L 197.69189160376655 113.00406530937789 L 233.54201293581076 107.34752415750148 Z" fill="oklch(from var(--primary, #e63946) calc(l + 0.2) c h)" stroke="var(--primary, #e63946)" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M 336 130 A 14 14 0 1 1 364 130 A 14 14 0 1 1 336 130 M 236 200 A 14 14 0 1 1 264 200 A 14 14 0 1 1 236 200 M 136 130 A 14 14 0 1 1 164 130 A 14 14 0 1 1 136 130 M 235.99999999999997 60 A 14 14 0 1 1 264 60 A 14 14 0 1 1 235.99999999999997 60 M 336 129.99999999999997 A 14 14 0 1 1 364 129.99999999999997 A 14 14 0 1 1 336 129.99999999999997" fill="oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)" stroke="var(--secondary, #457b9d)" stroke-width="1.5"/>
-  <path d="M 40 22 L 58 40 L 40 58 L 22 40 Z M 460 22 L 478 40 L 460 58 L 442 40 Z M 40 202 L 58 220 L 40 238 L 22 220 Z M 460 202 L 478 220 L 460 238 L 442 220 Z" fill="oklch(from var(--accent, #2a9d8f) l c calc(h + 60))" stroke="var(--accent, #2a9d8f)" stroke-width="1"/>
-  <path d="M 70 130 A 40 40 0 0 1 110 130 M 390 130 A 40 40 0 0 1 430 130" fill="none" stroke="oklch(from var(--primary, #e63946) calc(l - 0.15) c h)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M 208 130 A 42 42 0 1 1 292 130 A 42 42 0 1 1 208 130" fill="none" stroke="var(--accent, #2a9d8f)" stroke-width="1" stroke-dasharray="4 3"/>
-</svg>
-</reactive-svg>
+</code></pre><p><mini-workspace code-open caption="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych.">
+  <code>// viewBox="0 0 520 640"
+// Theme Demo — Combined: SYSTEM + STAGE
+// Top half is the "theme system" — geometric composition showing how
+// four CSS vars (bg, primary, secondary, accent) and five derived
+// expressions relate spatially. Bottom half is the "theme stage" —
+// presentational triptych of the three named colors as first-class
+// design elements, with masthead below.
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-theme"><em>view full source</em></a></p>
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color  = Color(CSSVar('--bg',        #d0d7f0));
+let primary   = Color(CSSVar('--primary',   #e63946));
+let secondary = Color(CSSVar('--secondary', #457b9d));
+let accent    = Color(CSSVar('--accent',    #2a9d8f));
 
-<p>This SVG has a central star (primary), orbiting circles (secondary), corner diamonds (accent), and a background — all themeable from four CSS variables. The star fill uses <code>oklch(from var(--primary) calc(l + 0.2) c h)</code> for a lighter shade, the corner diamond fills use <code>oklch(from var(--accent) l c calc(h + 60))</code> for a hue-shifted variation. One source file, infinite themes.</p>
+let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
+let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let fg_faint = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+
+// Auto-contrasting ink against each theme color (for text on actor cards)
+let primary_ink   = 'oklch(from var(--primary,   #e63946) calc((0.5 - l) * 1000) 0 0)';
+let primary_ink_m = 'oklch(from var(--primary,   #e63946) calc((0.5 - l) * 1000) 0 0 / 0.70)';
+let secondary_ink   = 'oklch(from var(--secondary, #457b9d) calc((0.5 - l) * 1000) 0 0)';
+let secondary_ink_m = 'oklch(from var(--secondary, #457b9d) calc((0.5 - l) * 1000) 0 0 / 0.70)';
+let accent_ink    = 'oklch(from var(--accent,    #2a9d8f) calc((0.5 - l) * 1000) 0 0)';
+let accent_ink_m  = 'oklch(from var(--accent,    #2a9d8f) calc((0.5 - l) * 1000) 0 0 / 0.70)';
+
+// Derived theme colors (shown in the system half + bottom spotlights)
+let primary_lighter  = 'oklch(from var(--primary,   #e63946) calc(l + 0.15) c h)';
+let primary_darker   = 'oklch(from var(--primary,   #e63946) calc(l - 0.15) c h)';
+let secondary_muted  = 'oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)';
+let accent_shifted   = 'oklch(from var(--accent,    #2a9d8f) l c calc(h + 60))';
+let accent_raw       = 'var(--accent, #2a9d8f)';
+let primary_raw      = 'var(--primary, #e63946)';
+
+let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+// ─── Group layers ───────────────────────────────────────────
+define GroupLayer('diagram') ${}
+define GroupLayer('sys') ${}
+define GroupLayer('seam') ${}
+define GroupLayer('stage') ${}
+
+// ─── Background ─────────────────────────────────────────────
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+bg.apply { rect(0, 0, 520, 640); }
+
+// ═══════════════════════════════════════════════════════════
+// TOP HALF — THEME SYSTEM (y 0..290)
+// ═══════════════════════════════════════════════════════════
+
+let sys_eyebrow = TextLayer('sys-eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+sys_eyebrow.apply { text(15, 26)`OKLCH  /  03 — THEME SYSTEM` }
+
+// ─── Accent linking arcs (central connective tissue) ──────
+// Four Q curves from mid-sides to star tips. Raw --accent, 1.2 stroke.
+let sys_arcs = PathLayer('sys-arcs') ${
+  fill: none; stroke: accent_raw; stroke-width: 1.2; stroke-linecap: round;
+};
+sys_arcs.apply {
+  M 100 160  Q 180 70  260 110
+  M 420 160  Q 340 70  260 110
+  M 100 160  Q 180 250 260 210
+  M 420 160  Q 340 250 260 210
+}
+
+// ─── Dashed fg_auto L=0.55 reference ring ─────────────────
+let sys_ring = PathLayer('sys-ring') ${
+  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4;
+};
+sys_ring.apply { circle(260, 160, 95); }
+
+// ─── Accent halo disc behind the star ─────────────────────
+let sys_halo = PathLayer('sys-halo') ${
+  fill: accent_raw; stroke: none; opacity: 0.28;
+};
+sys_halo.apply { circle(260, 160, 38); }
+
+// ─── Accent tick marks at ring diagonals ──────────────────
+// 4 short strokes pointing outward at ±45° from ring center.
+// Inner point on ring (r=95), outer point on r=107.
+let sys_ticks = PathLayer('sys-ticks') ${
+  fill: none; stroke: accent_raw; stroke-width: 1.5; stroke-linecap: round;
+};
+sys_ticks.apply {
+  M 327.2 92.9   L 335.7 84.4
+  M 327.2 227.1  L 335.7 235.6
+  M 192.8 227.1  L 184.3 235.6
+  M 192.8 92.9   L 184.3 84.4
+}
+
+// ─── 4 orbiting circles (desaturated secondary) on reference ring ──
+let sys_orbit = PathLayer('sys-orbit') ${
+  fill: secondary_muted; stroke: fg_hair; stroke-width: 0.5;
+};
+sys_orbit.apply {
+  circle(260, 65, 11);
+  circle(355, 160, 11);
+  circle(260, 255, 11);
+  circle(165, 160, 11);
+}
+
+// ─── Central 5-point star (lightened primary) ──────────────
+let sys_star = PathLayer('sys-star') ${
+  fill: primary_lighter; stroke: primary; stroke-width: 1; opacity: 0.95;
+};
+sys_star.apply { star(260, 160, 5, 50, 19); }
+
+// ─── 3 corner diamonds (hue-shifted accent) ─────────────────
+// Top-left, top-right, bottom-left. Bottom-right hosts the legend.
+let sys_diamonds = PathLayer('sys-diamonds') ${
+  fill: accent_shifted; stroke: fg_hair; stroke-width: 0.5;
+};
+sys_diamonds.apply {
+  M 45 65   L 60 50  L 75 65   L 60 80  Z
+  M 445 65  L 460 50 L 475 65  L 460 80 Z
+  M 45 255  L 60 240 L 75 255  L 60 270 Z
+}
+
+// ─── Legend card (bottom-right of top half) ────────────────
+let legend_x = 365;
+let legend_y = 213;
+let legend_w = 140;
+let legend_h = 62;
+
+let legend_bg = PathLayer('legend-bg') ${
+  fill: bg_color; stroke: fg_hair; stroke-width: 0.5;
+};
+legend_bg.apply { roundRect(legend_x, legend_y, legend_w, legend_h, 5.5); }
+
+let legend_sw_layer = PathLayer('legend-sw') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
+let legend_name_layer = TextLayer('legend-name') ${
+  font-family: font; font-size: 7; font-weight: 700;
+  letter-spacing: 0.8; fill: fg_auto; text-anchor: start;
+};
+let legend_role_layer = TextLayer('legend-role') ${
+  font-family: font; font-size: 7;
+  letter-spacing: 0.5; fill: fg_muted; text-anchor: start;
+};
+
+// Legend rows
+let legend_items = [
+  [bg_color,  '--bg',        'backdrop'],
+  [primary,   '--primary',   'star'],
+  [secondary, '--secondary', 'orbit'],
+  [accent,    '--accent',    'arcs / halo / ticks'],
+];
+
+for ([item, i] in legend_items) {
+  let row_y = calc(legend_y + 10 + i * 12);
+  let sw_name = `legend-sw-${i}`;
+  let sw = PathLayer(sw_name) ${
+    fill: item[0]; stroke: fg_hair; stroke-width: 0.5;
+  };
+  sw.apply { roundRect(calc(legend_x + 8), calc(row_y - 4), 7, 7, 1.5); }
+  legend_name_layer.apply { text(calc(legend_x + 20), calc(row_y + 1.5))`${item[1]}` }
+  legend_role_layer.apply { text(calc(legend_x + 74), calc(row_y + 1.5))`${item[2]}` }
+}
+
+layer('sys').append(
+  layer('sys-eyebrow'),
+  layer('sys-arcs'), layer('sys-ring'), layer('sys-halo'), layer('sys-ticks'),
+  layer('sys-orbit'), layer('sys-star'), layer('sys-diamonds'),
+  layer('legend-bg'),
+  layer('legend-sw-0'), layer('legend-sw-1'), layer('legend-sw-2'), layer('legend-sw-3'),
+  layer('legend-name'), layer('legend-role')
+);
+
+// ═══════════════════════════════════════════════════════════
+// SEAM — hairline divider + "SYSTEM" / "STAGE" chapter labels
+// ═══════════════════════════════════════════════════════════
+
+let seam_line = PathLayer('seam-line') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
+seam_line.apply { line(15, 290, 505, 290); }
+
+let seam_top_label = TextLayer('seam-top-label') ${
+  font-family: font; font-size: 7; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+seam_top_label.apply { text(15, 283)`SYSTEM` }
+
+let seam_bot_label = TextLayer('seam-bot-label') ${
+  font-family: font; font-size: 7; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: end;
+};
+seam_bot_label.apply { text(505, 302)`STAGE` }
+
+layer('seam').append(layer('seam-line'), layer('seam-top-label'), layer('seam-bot-label'));
+
+// ═══════════════════════════════════════════════════════════
+// BOTTOM HALF — THEME STAGE (y 310..640)
+// ═══════════════════════════════════════════════════════════
+
+let stage_eyebrow = TextLayer('stage-eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+stage_eyebrow.apply { text(15, 328)`OKLCH  /  03 — THEME IN USE` }
+
+// ─── Backdrop plate ───────────────────────────────────────
+let stage_backdrop = PathLayer('stage-backdrop') ${
+  fill: fg_faint; stroke: fg_hair; stroke-width: 0.5;
+};
+stage_backdrop.apply { roundRect(15, 350, 490, 200, 5.5); }
+
+// ─── Three actor cards ────────────────────────────────────
+// Width 145, gap 12. Left 30, right 30. Cards at x = 30, 187, 344. y = 366..534 (168 tall).
+
+let actors = [
+  ['01 / PRIMARY',   '--primary',   'dominant · action · focus',   primary,   primary_ink,   primary_ink_m,   30],
+  ['02 / SECONDARY', '--secondary', 'supporting · balance',        secondary, secondary_ink, secondary_ink_m, 187],
+  ['03 / ACCENT',    '--accent',    'highlight · punctuate',       accent,    accent_ink,    accent_ink_m,    344],
+];
+
+for ([a, i] in actors) {
+  let ax = a[6];
+  let actor_name = `actor-${i}`;
+  let actor = PathLayer(actor_name) ${ fill: a[3]; stroke: none; };
+  actor.apply { roundRect(ax, 366, 145, 168, 5.5); }
+
+  let role_layer = TextLayer(`actor-role-${i}`) ${
+    font-family: font; font-size: 6; font-weight: 700;
+    letter-spacing: 2; fill: a[5]; text-anchor: start;
+  };
+  role_layer.apply { text(calc(ax + 12), 386)`${a[0]}` }
+
+  let varname_layer = TextLayer(`actor-name-${i}`) ${
+    font-family: font; font-size: 14; font-weight: 700;
+    letter-spacing: 3; fill: a[4]; text-anchor: start;
+  };
+  varname_layer.apply { text(calc(ax + 12), 500)`${a[1]}` }
+
+  let desc_layer = TextLayer(`actor-desc-${i}`) ${
+    font-family: font; font-size: 7;
+    letter-spacing: 0.5; fill: a[5]; text-anchor: start;
+  };
+  desc_layer.apply { text(calc(ax + 12), 516)`${a[2]}` }
+}
+
+// ─── Spotlight halos (simplified — translucent filled discs) ───
+// Real CSS radial-gradient doesn't translate to SVG fills; use
+// low-opacity discs as approximation of the spotlight effect.
+let spotlight_1 = PathLayer('spotlight-1') ${
+  fill: primary_lighter; stroke: none; opacity: 0.18;
+};
+spotlight_1.apply { circle(160, 392, 70); }
+
+let spotlight_2 = PathLayer('spotlight-2') ${
+  fill: accent_shifted; stroke: none; opacity: 0.18;
+};
+spotlight_2.apply { circle(370, 430, 70); }
+
+// ─── Bottom-left masthead ────────────────────────────────
+let masthead_eyebrow = TextLayer('masthead-eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+};
+masthead_eyebrow.apply { text(15, 574)`THEME  /  03 — REACTIVE` }
+
+let masthead_title = TextLayer('masthead-title') ${
+  font-family: font; font-size: 38; font-weight: 200;
+  letter-spacing: -1; fill: fg_auto; text-anchor: start;
+};
+masthead_title.apply { text(15, 612)`Color Theme` }
+
+// ─── Bottom-right credits ────────────────────────────────
+let credits = TextLayer('credits') ${
+  font-family: font; font-size: 6; font-weight: 700;
+  letter-spacing: 1.4; fill: fg_muted; text-anchor: end;
+};
+credits.apply {
+  text(505, 594)`4  CSS  VARS`;
+  text(505, 608)`5  DERIVED`;
+  text(505, 622)`∞  THEMES`;
+}
+
+layer('stage').append(
+  layer('stage-eyebrow'),
+  layer('stage-backdrop'),
+  layer('spotlight-1'), layer('spotlight-2'),
+  layer('actor-0'), layer('actor-role-0'), layer('actor-name-0'), layer('actor-desc-0'),
+  layer('actor-1'), layer('actor-role-1'), layer('actor-name-1'), layer('actor-desc-1'),
+  layer('actor-2'), layer('actor-role-2'), layer('actor-name-2'), layer('actor-desc-2'),
+  layer('masthead-eyebrow'), layer('masthead-title'),
+  layer('credits')
+);
+
+layer('diagram').append(layer('bg'), layer('sys'), layer('seam'), layer('stage'));
+</code>
+  <img src="/pathogen/blog/samples/post24/theme-combined.svg" alt="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych." loading="lazy">
+</mini-workspace></p>
+<p>This composition has two halves. The top half is a geometric system — a central star (primary), orbiting circles (secondary), corner diamonds plus linking arcs and a halo (accent), all sitting on a dashed reference ring. The bottom half is the same theme as a presentational triptych: primary, secondary, and accent as first-class design elements. The star fill uses <code>oklch(from var(--primary) calc(l + 0.15) c h)</code> for a lighter shade, the corner diamonds use <code>oklch(from var(--accent) l c calc(h + 60))</code> for a hue-shifted variation, and each triptych card carries auto-contrasting ink against its own fill. One source file, infinite themes.</p>
 <h2>@property: Enabling Transitions</h2>
 <p>When using CSSVar-backed colors, the compiler automatically generates CSS <code>@property</code> declarations:</p>
 <pre><code class="hljs language-css">@property --base-color {
@@ -513,532 +1101,221 @@ code.hljs {
 <span class="hljs-comment">// Output: light-dark(var(--fg-light, #333), var(--fg-dark, #eee))</span>
 </code></pre><p>This gives you theme-aware SVGs that respond to both system preferences and runtime CSS variable overrides — two axes of customization from a single compiled file.</p>
 <h2>The Full Picture</h2>
-<p>Everything comes together in a comprehensive swatch showcase. Three CSSVar-backed colors generate an entire dual-panel visualization: methods, harmonies, palettes, and theme-aware colors, rendered side by side for light and dark contexts.</p>
-<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> base       = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
-<span class="hljs-keyword">let</span> accent     = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent-color&#x27;</span>, <span class="hljs-string">&#x27;#457b9d&#x27;</span>));
-<span class="hljs-keyword">let</span> darkAccent = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--dark-accent&#x27;</span>, <span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+<p>Everything comes together in a single composition that tests the whole system against two backgrounds at once. A <code>ConicGradient</code> carries the light→dark backdrop across the canvas; seven <code>radialWedge</code> chips span both plateaus, so every OKLCH manipulation method reads against both bg states in one view.</p>
+<pre><code class="hljs language-js"><span class="hljs-keyword">let</span> bg_light = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-light&#x27;</span>, <span class="hljs-string">&#x27;#d0d7f0&#x27;</span>));
+<span class="hljs-keyword">let</span> bg_dark  = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg-dark&#x27;</span>,  <span class="hljs-string">&#x27;#12131a&#x27;</span>));
+<span class="hljs-keyword">let</span> base     = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
 
-<span class="hljs-comment">// Light panel: derive from base</span>
-<span class="hljs-keyword">let</span> lighter = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> darker  = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> triad   = base.<span class="hljs-title function_">triadic</span>();
-<span class="hljs-keyword">let</span> ramp    = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);
+<span class="hljs-comment">// Backdrop: light plateau (0–40%), 15% transition, dark plateau (55–100%)</span>
+<span class="hljs-keyword">let</span> ld = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;ld-bg&#x27;</span>, cx, cy) {|g|
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    bg_light);
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>,  bg_light);
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.55</span>, bg_dark);
+  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    bg_dark);
+};
+ld.<span class="hljs-property">from</span> = -50deg; ld.<span class="hljs-property">to</span> = 50deg;
+ld.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 
-<span class="hljs-comment">// Dark panel: derive from darkAccent</span>
-<span class="hljs-keyword">let</span> dkTriad = darkAccent.<span class="hljs-title function_">triadic</span>();
-<span class="hljs-keyword">let</span> dkRamp  = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(darkAccent, base, <span class="hljs-number">5</span>);
+<span class="hljs-comment">// Seven derivations, each a radialWedge spanning both plateaus</span>
+<span class="hljs-keyword">let</span> methods = [
+  base, base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.18</span>), base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.18</span>),
+  base.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.5</span>), base.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.4</span>),
+  base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>), base.<span class="hljs-title function_">complement</span>(),
+];
+</code></pre><p><mini-workspace code-open caption="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once.">
+  <code>// viewBox="0 0 520 520"
+// Light/Dark — Conic (off-canvas center, fanned chips)
+// Gradient origin sits at x = −260 (−50% of canvas width). The conic
+// gradient runs from −90° (north of center = bg_light) to +90°
+// (south of center = bg_dark) through the east axis. Seven narrow
+// radialWedge chips with deeply rounded corners fan across the canvas.
 
-<span class="hljs-comment">// Theme-aware colors</span>
-<span class="hljs-keyword">let</span> themeFg     = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#333&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eee&#x27;</span>));
-<span class="hljs-keyword">let</span> themeAccent = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(accent, darkAccent);
-</code></pre><reactive-svg vars="--base-color:#e63946;--accent-color:#457b9d;--dark-accent:#f4a261" caption="Three colors drive a dual-panel showcase: methods, harmonies, palettes, and light-dark adaptive colors.">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 570 340" width="570" height="340">
-  <style>
-    @property --base-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #e63946;
-    }
-    @property --accent-color {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #457b9d;
-    }
-    @property --dark-accent {
-      syntax: "<color>";
-      inherits: true;
-      initial-value: #f4a261;
-    }
-  </style>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <path d="M 0 0 L 280 0 Q 280 0 280 0 L 280 340 Q 280 340 280 340 L 0 340 Q 0 340 0 340 L 0 0 Q 0 0 0 0 Z" fill="#f5f5f5" stroke="none" stroke-width="2"/>
-  <path d="M 290 0 L 570 0 Q 570 0 570 0 L 570 340 Q 570 340 570 340 L 290 340 Q 290 340 290 340 L 290 0 Q 290 0 290 0 Z" fill="#222266" stroke="none" stroke-width="2"/>
-  <text x="8" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Methods</text>
-  <text x="8" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Triadic</text>
-  <text x="8" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">Palette</text>
-  <text x="8" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#555">lightDark()</text>
-  <text x="26" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">base</text>
-  <text x="55" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">light</text>
-  <text x="84" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">dark</text>
-  <text x="113" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">vivid</text>
-  <text x="142" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">muted</text>
-  <text x="171" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">shift</text>
-  <text x="200" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">compl</text>
-  <text x="26" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">fg</text>
-  <text x="55" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#888" text-anchor="middle">accent</text>
-  <text x="298" y="18" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Methods</text>
-  <text x="298" y="86" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Triadic</text>
-  <text x="298" y="146" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">Palette</text>
-  <text x="298" y="210" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#aab">lightDark()</text>
-  <text x="316" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">base</text>
-  <text x="345" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">light</text>
-  <text x="374" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">dark</text>
-  <text x="403" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">vivid</text>
-  <text x="432" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">muted</text>
-  <text x="461" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">shift</text>
-  <text x="490" y="56" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">compl</text>
-  <text x="316" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">fg</text>
-  <text x="345" y="248" font-family="system-ui, sans-serif" font-size="7" fill="#889" text-anchor="middle">accent</text>
-  <path d="M 17 24 L 35 24 Q 38 24 38 27 L 38 43 Q 38 46 35 46 L 17 46 Q 14 46 14 43 L 14 27 Q 14 24 17 24 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 24 L 64 24 Q 67 24 67 27 L 67 43 Q 67 46 64 46 L 46 46 Q 43 46 43 43 L 43 27 Q 43 24 46 24 Z" fill="oklch(from var(--base-color, #e63946) calc(l + 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 75 24 L 93 24 Q 96 24 96 27 L 96 43 Q 96 46 93 46 L 75 46 Q 72 46 72 43 L 72 27 Q 72 24 75 24 Z" fill="oklch(from var(--base-color, #e63946) calc(l - 0.15) c h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 104 24 L 122 24 Q 125 24 125 27 L 125 43 Q 125 46 122 46 L 104 46 Q 101 46 101 43 L 101 27 Q 101 24 104 24 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 1.4) h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 133 24 L 151 24 Q 154 24 154 27 L 154 43 Q 154 46 151 46 L 133 46 Q 130 46 130 43 L 130 27 Q 130 24 133 24 Z" fill="oklch(from var(--base-color, #e63946) l calc(c * 0.5) h)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 162 24 L 180 24 Q 183 24 183 27 L 183 43 Q 183 46 180 46 L 162 46 Q 159 46 159 43 L 159 27 Q 159 24 162 24 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 60))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 191 24 L 209 24 Q 212 24 212 27 L 212 43 Q 212 46 209 46 L 191 46 Q 188 46 188 43 L 188 27 Q 188 24 191 24 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 180))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 8 70 L 272 70 M 8 130 L 272 130 M 8 194 L 272 194" fill="none" stroke="#ddd" stroke-width="0.5"/>
-  <path d="M 17 92 L 35 92 Q 38 92 38 95 L 38 111 Q 38 114 35 114 L 17 114 Q 14 114 14 111 L 14 95 Q 14 92 17 92 Z" fill="var(--base-color, #e63946)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 92 L 64 92 Q 67 92 67 95 L 67 111 Q 67 114 64 114 L 46 114 Q 43 114 43 111 L 43 95 Q 43 92 46 92 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 120))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 75 92 L 93 92 Q 96 92 96 95 L 96 111 Q 96 114 93 114 L 75 114 Q 72 114 72 111 L 72 95 Q 72 92 75 92 Z" fill="oklch(from var(--base-color, #e63946) l c calc(h + 240))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 17 152 L 35 152 Q 38 152 38 155 L 38 171 Q 38 174 35 174 L 17 174 Q 14 174 14 171 L 14 155 Q 14 152 17 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 0%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 152 L 64 152 Q 67 152 67 155 L 67 171 Q 67 174 64 174 L 46 174 Q 43 174 43 171 L 43 155 Q 43 152 46 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 25%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 75 152 L 93 152 Q 96 152 96 155 L 96 171 Q 96 174 93 174 L 75 174 Q 72 174 72 171 L 72 155 Q 72 152 75 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 50%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 104 152 L 122 152 Q 125 152 125 155 L 125 171 Q 125 174 122 174 L 104 174 Q 101 174 101 171 L 101 155 Q 101 152 104 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 75%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 133 152 L 151 152 Q 154 152 154 155 L 154 171 Q 154 174 151 174 L 133 174 Q 130 174 130 171 L 130 155 Q 130 152 133 152 Z" fill="color-mix(in oklch, var(--base-color, #e63946), var(--accent-color, #457b9d) 100%)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 17 216 L 35 216 Q 38 216 38 219 L 38 235 Q 38 238 35 238 L 17 238 Q 14 238 14 235 L 14 219 Q 14 216 17 216 Z" fill="light-dark(#333333, #eeeeee)" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 46 216 L 64 216 Q 67 216 67 219 L 67 235 Q 67 238 64 238 L 46 238 Q 43 238 43 235 L 43 219 Q 43 216 46 216 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#ccc" stroke-width="0.5"/>
-  <path d="M 307 24 L 325 24 Q 328 24 328 27 L 328 43 Q 328 46 325 46 L 307 46 Q 304 46 304 43 L 304 27 Q 304 24 307 24 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 336 24 L 354 24 Q 357 24 357 27 L 357 43 Q 357 46 354 46 L 336 46 Q 333 46 333 43 L 333 27 Q 333 24 336 24 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l + 0.15) c h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 365 24 L 383 24 Q 386 24 386 27 L 386 43 Q 386 46 383 46 L 365 46 Q 362 46 362 43 L 362 27 Q 362 24 365 24 Z" fill="oklch(from var(--dark-accent, #f4a261) calc(l - 0.15) c h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 394 24 L 412 24 Q 415 24 415 27 L 415 43 Q 415 46 412 46 L 394 46 Q 391 46 391 43 L 391 27 Q 391 24 394 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 1.4) h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 423 24 L 441 24 Q 444 24 444 27 L 444 43 Q 444 46 441 46 L 423 46 Q 420 46 420 43 L 420 27 Q 420 24 423 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l calc(c * 0.5) h)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 452 24 L 470 24 Q 473 24 473 27 L 473 43 Q 473 46 470 46 L 452 46 Q 449 46 449 43 L 449 27 Q 449 24 452 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 60))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 481 24 L 499 24 Q 502 24 502 27 L 502 43 Q 502 46 499 46 L 481 46 Q 478 46 478 43 L 478 27 Q 478 24 481 24 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 180))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 298 70 L 562 70 M 298 130 L 562 130 M 298 194 L 562 194" fill="none" stroke="#445" stroke-width="0.5"/>
-  <path d="M 307 92 L 325 92 Q 328 92 328 95 L 328 111 Q 328 114 325 114 L 307 114 Q 304 114 304 111 L 304 95 Q 304 92 307 92 Z" fill="var(--dark-accent, #f4a261)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 336 92 L 354 92 Q 357 92 357 95 L 357 111 Q 357 114 354 114 L 336 114 Q 333 114 333 111 L 333 95 Q 333 92 336 92 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 120))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 365 92 L 383 92 Q 386 92 386 95 L 386 111 Q 386 114 383 114 L 365 114 Q 362 114 362 111 L 362 95 Q 362 92 365 92 Z" fill="oklch(from var(--dark-accent, #f4a261) l c calc(h + 240))" stroke="#444" stroke-width="0.5"/>
-  <path d="M 307 152 L 325 152 Q 328 152 328 155 L 328 171 Q 328 174 325 174 L 307 174 Q 304 174 304 171 L 304 155 Q 304 152 307 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 0%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 336 152 L 354 152 Q 357 152 357 155 L 357 171 Q 357 174 354 174 L 336 174 Q 333 174 333 171 L 333 155 Q 333 152 336 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 25%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 365 152 L 383 152 Q 386 152 386 155 L 386 171 Q 386 174 383 174 L 365 174 Q 362 174 362 171 L 362 155 Q 362 152 365 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 50%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 394 152 L 412 152 Q 415 152 415 155 L 415 171 Q 415 174 412 174 L 394 174 Q 391 174 391 171 L 391 155 Q 391 152 394 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 75%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 423 152 L 441 152 Q 444 152 444 155 L 444 171 Q 444 174 441 174 L 423 174 Q 420 174 420 171 L 420 155 Q 420 152 423 152 Z" fill="color-mix(in oklch, var(--dark-accent, #f4a261), var(--base-color, #e63946) 100%)" stroke="#444" stroke-width="0.5"/>
-  <path d="M 307 216 L 325 216 Q 328 216 328 219 L 328 235 Q 328 238 325 238 L 307 238 Q 304 238 304 235 L 304 219 Q 304 216 307 216 Z" fill="light-dark(#333333, #eeeeee)" stroke="#555" stroke-width="0.5"/>
-  <path d="M 336 216 L 354 216 Q 357 216 357 219 L 357 235 Q 357 238 354 238 L 336 238 Q 333 238 333 235 L 333 219 Q 333 216 336 216 Z" fill="light-dark(var(--accent-color, #457b9d), var(--dark-accent, #f4a261))" stroke="#555" stroke-width="0.5"/>
-  <text x="140" y="330" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#bbb" text-anchor="middle">LIGHT</text>
-  <text x="430" y="330" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#557" text-anchor="middle">DARK</text>
-</svg>
-</reactive-svg>
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_light   = Color(CSSVar('--bg-light',   #d0d7f0));
+let bg_dark    = Color(CSSVar('--bg-dark',    #12131a));
+let base_color = Color(CSSVar('--base-color', #e63946));
 
-<p style="text-align:right;margin-top:-0.5rem;font-size:0.8125rem"><a href="#src-swatches"><em>view full source</em></a></p>
+let ink_on_light   = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
+let ink_on_light_m = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let ink_on_light_h = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
 
-<p>The light panel derives from <code>--base-color</code>, the dark panel from <code>--dark-accent</code>. The palette rows use <code>color-mix()</code> to interpolate between the panel&#39;s base and the other panel&#39;s color. The <code>lightDark()</code> row shows theme-aware colors that automatically switch based on system color scheme preference.</p>
-<p>Three CSS variables. Two panels. Seven method variants, three harmony colors, five palette steps, and two theme-adaptive colors per panel. All compiled from a single Pathogen source file, all reactive at runtime.</p>
+let ink_on_dark    = 'oklch(from var(--bg-dark, #12131a) calc((0.5 - l) * 1000) 0 0)';
+let ink_on_dark_m  = 'oklch(from var(--bg-dark, #12131a) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+
+let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+// ─── Seven method fills ──────────────────────────────────────
+let m_base       = 'var(--base-color, #e63946)';
+let m_lighten    = 'oklch(from var(--base-color, #e63946) calc(l + 0.18) c h)';
+let m_darken     = 'oklch(from var(--base-color, #e63946) calc(l - 0.18) c h)';
+let m_saturate   = 'oklch(from var(--base-color, #e63946) l calc(c * 1.5) h)';
+let m_desaturate = 'oklch(from var(--base-color, #e63946) l calc(c * 0.4) h)';
+let m_hue        = 'oklch(from var(--base-color, #e63946) l c calc(h + 90))';
+let m_complement = 'oklch(from var(--base-color, #e63946) l c calc(h + 180))';
+
+// Auto-contrasting ink against each method color
+let ink_base       = 'oklch(from var(--base-color, #e63946) calc((0.5 - l) * 1000) 0 0)';
+let ink_lighten    = 'oklch(from oklch(from var(--base-color, #e63946) calc(l + 0.18) c h) calc((0.5 - l) * 1000) 0 0)';
+let ink_darken     = 'oklch(from oklch(from var(--base-color, #e63946) calc(l - 0.18) c h) calc((0.5 - l) * 1000) 0 0)';
+let ink_saturate   = 'oklch(from oklch(from var(--base-color, #e63946) l calc(c * 1.5) h) calc((0.5 - l) * 1000) 0 0)';
+let ink_desaturate = 'oklch(from oklch(from var(--base-color, #e63946) l calc(c * 0.4) h) calc((0.5 - l) * 1000) 0 0)';
+let ink_hue        = 'oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 90)) calc((0.5 - l) * 1000) 0 0)';
+let ink_complement = 'oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 180)) calc((0.5 - l) * 1000) 0 0)';
+
+// ─── Group layers ───────────────────────────────────────────
+define GroupLayer('diagram') ${}
+define GroupLayer('chips') ${}
+define GroupLayer('labels') ${}
+
+// ─── Gradient origin (off canvas, 50% left of left edge) ──
+let cx = -260;
+let cy = 260;
+
+// ─── Conic gradient: bg_light at top (north of cx,cy) to bg_dark at bottom ──
+let ld_grad = ConicGradient('light-to-dark-bg', cx, cy) {|g|
+  g.stop(0,    bg_light);
+  g.stop(0.4,  bg_light);
+  g.stop(0.55, bg_dark);
+  g.stop(1,    bg_dark);
+};
+ld_grad.from = -50deg;
+ld_grad.to = 50deg;
+ld_grad.innerRadius = 30;
+ld_grad.innerFill = 'transparent';
+ld_grad.spread = 'transparent';
+ld_grad.interpolation = 'oklch';
+
+// ─── Canvas fill ───────────────────────────────────────────
+let bg = PathLayer('bg') ${ fill: ld_grad; stroke: none; };
+bg.apply { rect(0, 0, 520, 520); }
+
+// ─── Horizon line (at y = cy = 260, the gradient midpoint axis) ──
+let horizon_line = PathLayer('horizon-line') ${
+  fill: none; stroke: ink_on_light_m; stroke-width: 0.5; stroke-dasharray: 3 4;
+};
+horizon_line.apply { line(0, 260, 520, 260); }
+
+// ─── Chip parameters ──────────────────────────────────────
+let chip_span = .08pi;
+let corner_r  = 20;
+
+let chip_data = [
+  ['chip-1', m_base,       280, 335],
+  ['chip-2', m_lighten,    350, 405],
+  ['chip-3', m_darken,     420, 475],
+  ['chip-4', m_saturate,   490, 545],
+  ['chip-5', m_desaturate, 560, 615],
+  ['chip-6', m_hue,        630, 685],
+  ['chip-7', m_complement, 700, 755],
+];
+
+for ([c, i] in chip_data) {
+  let cname = c[0];
+  let cfill = c[1];
+  let cin   = c[2];
+  let cout  = c[3];
+  let chip_layer = PathLayer(cname) ${ fill: cfill; stroke: none; };
+  chip_layer.apply {
+    M cx cy
+    radialWedge(cin, cout, -chip_span, chip_span, corner_r);
+  }
+  layer('chips').append(layer(cname));
+}
+
+// ─── Method labels along the horizon ──────────────────────
+// Each label's fill is the auto-contrast ink against its chip's color,
+// placed at the chip's midradius on east of center. No pill bg —
+// text alone sits over the chip color.
+
+let pill_data = [
+  [ink_base,       'BASE',       47.5 ],
+  [ink_lighten,    'LIGHTEN',    117.5],
+  [ink_darken,     'DARKEN',     187.5],
+  [ink_saturate,   'SATURATE',   257.5],
+  [ink_desaturate, 'DESAT.',     327.5],
+  [ink_hue,        'HUE +90°',   397.5],
+  [ink_complement, 'COMP.',      467.5],
+];
+
+for ([p, i] in pill_data) {
+  let pink  = p[0];
+  let ptext = p[1];
+  let pcx   = p[2];
+  let txt_name = `pt-${i}`;
+  let txt = TextLayer(txt_name) ${
+    font-family: font; font-size: 9; font-weight: 700;
+    letter-spacing: 2; fill: pink; text-anchor: middle;
+  };
+  txt.apply { text(pcx, 264)`${ptext}` }
+  layer('labels').append(layer(txt_name));
+}
+
+// ─── Masthead typography ─────────────────────────────────────
+let eyebrow = TextLayer('eyebrow') ${
+  font-family: font; font-size: 8; font-weight: 700;
+  letter-spacing: 3; fill: ink_on_light_m; text-anchor: start;
+};
+eyebrow.apply { text(15, 26)`OKLCH  /  04 — LIGHT ↔ DARK  ·  CONIC` }
+
+// "Light" display — top-left, reads against light end of gradient
+let display_light = TextLayer('display-light') ${
+  font-family: font; font-size: 56; font-weight: 200;
+  letter-spacing: -2; fill: ink_on_light; text-anchor: start;
+};
+display_light.apply { text(15, 82)`Light` }
+
+// "Dark" display — bottom-right, reads against dark end of gradient
+let display_dark = TextLayer('display-dark') ${
+  font-family: font; font-size: 56; font-weight: 200;
+  letter-spacing: -2; fill: ink_on_dark; text-anchor: end;
+};
+display_dark.apply { text(505, 500)`Dark` }
+
+// Horizon label — right side at horizon line
+let horizon_lbl = TextLayer('horizon-lbl') ${
+  font-family: font; font-size: 7; font-weight: 700;
+  letter-spacing: 3; fill: ink_on_light_m; text-anchor: end;
+};
+horizon_lbl.apply { text(505, 254)`· HORIZON ·` }
+
+// Zone labels — subtle corner markers
+let zone_light = TextLayer('zone-light') ${
+  font-family: font; font-size: 6; font-weight: 700;
+  letter-spacing: 2; fill: ink_on_light_m; text-anchor: end;
+};
+zone_light.apply { text(505, 30)`TOP · −90° · --bg-light` }
+
+let zone_dark = TextLayer('zone-dark') ${
+  font-family: font; font-size: 6; font-weight: 700;
+  letter-spacing: 2; fill: ink_on_dark_m; text-anchor: start;
+};
+zone_dark.apply { text(15, 510)`BOTTOM · +90° · --bg-dark` }
+
+// Credit
+let credit = TextLayer('credit') ${
+  font-family: font; font-size: 7; font-weight: 700;
+  letter-spacing: 2; fill: ink_on_dark_m; text-anchor: start;
+};
+credit.apply { text(15, 492)`ONE CHIP · FULL GRADIENT · ONE SOURCE` }
+
+layer('labels').append(
+  layer('eyebrow'),
+  layer('display-light'), layer('display-dark'),
+  layer('horizon-lbl'), layer('zone-light'), layer('zone-dark'),
+  layer('credit')
+);
+
+layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), layer('labels'));
+</code>
+  <img src="/pathogen/blog/samples/post24/lightdark-conic.svg" alt="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once." loading="lazy">
+</mini-workspace></p>
+<p>The gradient places each chip in a different angular slice of the bg. Chips near the top sit on the light plateau, chips near the bottom on the dark plateau, and every chip crosses the transition band at its middle — a single-color wedge visibly rendered against the full spectrum. Move the <code>--base-color</code> picker and every chip recomputes; move a bg picker and the whole gradient re-interpolates.</p>
+<p>Three CSS variables. One gradient. Seven method derivations, each visible against the full light/dark spectrum. Compiled once, reactive forever.</p>
 <h2>What This Means</h2>
 <p>The traditional workflow for themeable SVG is painful: generate variants, swap files, or embed JavaScript to manipulate the DOM. Pathogen&#39;s approach eliminates all of that. You write color logic at a high level — harmonies, palettes, lightness ramps — and the compiler translates it into CSS that browsers already know how to execute.</p>
 <p>The result is SVG illustration that participates in the web platform&#39;s theming infrastructure. Set CSS custom properties from your design system. Let <code>prefers-color-scheme</code> drive light and dark variants. Animate color transitions with CSS. No runtime JavaScript needed, no asset pipeline for variants.</p>
 <p>SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to express what it was designed for.</p>
-<hr>
-<h2>View All Sources</h2>
-<p>The Pathogen source files that produce the interactive demos above. Each is compiled once to a static SVG containing CSS <code>var()</code> references — the color pickers simply set CSS custom properties on the container.</p>
-<h3 id="src-color-methods">Color Methods Demo</h3>
 
-<p>Produces the <a href="#color-manipulation">manipulation swatches</a> — one CSSVar-backed color, eight derived swatches.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Color Methods Demo — base color → 8 derived swatches</span>
-<span class="hljs-comment">// CSSVar-backed for reactive color picker updates</span>
-
-<span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--demo-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
-
-<span class="hljs-keyword">let</span> lighter   = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.18</span>);
-<span class="hljs-keyword">let</span> darker    = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.18</span>);
-<span class="hljs-keyword">let</span> vivid     = base.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.5</span>);
-<span class="hljs-keyword">let</span> muted     = base.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.4</span>);
-<span class="hljs-keyword">let</span> shifted   = base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>);
-<span class="hljs-keyword">let</span> comp      = base.<span class="hljs-title function_">complement</span>();
-<span class="hljs-keyword">let</span> semi      = base.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-keyword">let</span> mixed     = base.<span class="hljs-title function_">mix</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>), <span class="hljs-number">0.5</span>);
-
-<span class="hljs-comment">// Layout</span>
-<span class="hljs-keyword">let</span> sw = <span class="hljs-number">50</span>;
-<span class="hljs-keyword">let</span> sh = <span class="hljs-number">50</span>;
-<span class="hljs-keyword">let</span> sr = <span class="hljs-number">8</span>;
-<span class="hljs-keyword">let</span> gap = <span class="hljs-number">14</span>;
-<span class="hljs-keyword">let</span> startX = <span class="hljs-number">30</span>;
-<span class="hljs-keyword">let</span> row1Y = <span class="hljs-number">40</span>;
-<span class="hljs-keyword">let</span> row2Y = <span class="hljs-number">130</span>;
-
-<span class="hljs-comment">// Row 1: base + lighten, darken, saturate, desaturate</span>
-<span class="hljs-keyword">let</span> row1 = [base, lighter, darker, vivid, muted];
-<span class="hljs-keyword">let</span> row1names = [<span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;lighten&#x27;</span>, <span class="hljs-string">&#x27;darken&#x27;</span>, <span class="hljs-string">&#x27;saturate&#x27;</span>, <span class="hljs-string">&#x27;desaturate&#x27;</span>];
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
-}
-
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> row1) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + gap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`r1_<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`r1_<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, row1Y, sw, sh, sr) }
-}
-
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> row1names) {
-    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(startX + i * (sw + gap) + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(row1Y + sh + <span class="hljs-number">16</span>))<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span>
-  }
-}
-
-<span class="hljs-comment">// Row 2: hueShift, complement, alpha, mix</span>
-<span class="hljs-keyword">let</span> row2 = [shifted, comp, semi, mixed];
-<span class="hljs-keyword">let</span> row2names = [<span class="hljs-string">&#x27;hueShift&#x27;</span>, <span class="hljs-string">&#x27;complement&#x27;</span>, <span class="hljs-string">&#x27;alpha(0.5)&#x27;</span>, <span class="hljs-string">&#x27;mix&#x27;</span>];
-
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> row2) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + gap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`r2_<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`r2_<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, row2Y, sw, sh, sr) }
-}
-
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> row2names) {
-    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(startX + i * (sw + gap) + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(row2Y + sh + <span class="hljs-number">16</span>))<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span>
-  }
-}
-</code></pre><h3 id="src-harmonies">Harmonies and Palettes Demo</h3>
-
-<p>Produces the <a href="#harmonies-and-palettes">harmony and palette rows</a> — four harmony types plus lightness ramp and color interpolation.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Harmonies Demo — base color → harmony rows + palette rows</span>
-<span class="hljs-comment">// CSSVar-backed for reactive color picker updates</span>
-
-<span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--harmony-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
-
-<span class="hljs-comment">// Harmonies</span>
-<span class="hljs-keyword">let</span> analog = base.<span class="hljs-title function_">analogous</span>();
-<span class="hljs-keyword">let</span> triad  = base.<span class="hljs-title function_">triadic</span>();
-<span class="hljs-keyword">let</span> tetrad = base.<span class="hljs-title function_">tetradic</span>();
-<span class="hljs-keyword">let</span> split  = base.<span class="hljs-title function_">splitComplementary</span>();
-
-<span class="hljs-comment">// Palettes</span>
-<span class="hljs-keyword">let</span> ramp   = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, <span class="hljs-number">5</span>);
-<span class="hljs-keyword">let</span> interp = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>), <span class="hljs-number">5</span>);
-
-<span class="hljs-comment">// Layout</span>
-<span class="hljs-keyword">let</span> sw = <span class="hljs-number">40</span>;
-<span class="hljs-keyword">let</span> sh = <span class="hljs-number">40</span>;
-<span class="hljs-keyword">let</span> sr = <span class="hljs-number">6</span>;
-<span class="hljs-keyword">let</span> gap = <span class="hljs-number">12</span>;
-<span class="hljs-keyword">let</span> startX = <span class="hljs-number">140</span>;
-<span class="hljs-keyword">let</span> labelX = <span class="hljs-number">20</span>;
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">777</span>;
-}
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;section&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">13</span>;
-  font-<span class="hljs-attr">weight</span>: bold;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">555</span>;
-}
-
-<span class="hljs-comment">// Section: Harmonies</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-number">28</span>)<span class="hljs-string">`Harmonies`</span> }
-
-<span class="hljs-keyword">let</span> rows = [analog, triad, tetrad, split];
-<span class="hljs-keyword">let</span> rowNames = [<span class="hljs-string">&#x27;analogous&#x27;</span>, <span class="hljs-string">&#x27;triadic&#x27;</span>, <span class="hljs-string">&#x27;tetradic&#x27;</span>, <span class="hljs-string">&#x27;splitComp&#x27;</span>];
-<span class="hljs-keyword">let</span> rowYs = [<span class="hljs-number">50</span>, <span class="hljs-number">108</span>, <span class="hljs-number">166</span>, <span class="hljs-number">224</span>];
-
-<span class="hljs-keyword">for</span> ([harmony, ri] <span class="hljs-keyword">in</span> rows) {
-  <span class="hljs-keyword">let</span> y = rowYs[ri];
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-title function_">calc</span>(y + sw / <span class="hljs-number">2</span> + <span class="hljs-number">4</span>))<span class="hljs-string">`<span class="hljs-subst">${rowNames[ri]}</span>`</span> }
-  <span class="hljs-keyword">for</span> ([color, ci] <span class="hljs-keyword">in</span> harmony) {
-    <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + ci * (sw + gap));
-    define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`h<span class="hljs-subst">${ri}</span>_<span class="hljs-subst">${ci}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-    <span class="hljs-title function_">layer</span>(<span class="hljs-string">`h<span class="hljs-subst">${ri}</span>_<span class="hljs-subst">${ci}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, y, sw, sh, sr) }
-  }
-}
-
-<span class="hljs-comment">// Divider</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;div1&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: #e0e0e0; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; <span class="hljs-attr">fill</span>: none; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;div1&#x27;</span>).<span class="hljs-property">apply</span> { M labelX <span class="hljs-number">282</span> L <span class="hljs-number">440</span> <span class="hljs-number">282</span> }
-
-<span class="hljs-comment">// Section: Palettes</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-number">306</span>)<span class="hljs-string">`Palettes`</span> }
-
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-title function_">calc</span>(<span class="hljs-number">330</span> + sw / <span class="hljs-number">2</span> + <span class="hljs-number">4</span>))<span class="hljs-string">`lightness`</span> }
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> ramp) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + gap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`ramp_<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`ramp_<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">330</span>, sw, sh, sr) }
-}
-
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(labelX, <span class="hljs-title function_">calc</span>(<span class="hljs-number">388</span> + sw / <span class="hljs-number">2</span> + <span class="hljs-number">4</span>))<span class="hljs-string">`interpolate`</span> }
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> interp) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + gap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`interp_<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`interp_<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">388</span>, sw, sh, sr) }
-}
-</code></pre><h3 id="src-theme">Theme Demo</h3>
-
-<p>Produces the <a href="#cssvar-the-reactive-layer">themeable geometric illustration</a> — four CSSVar-backed colors drive a star, orbiting circles, corner diamonds, and decorative arcs.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Theme Demo — geometric composition with CSSVar theming</span>
-<span class="hljs-comment">// Multiple CSS variables drive the entire illustration</span>
-
-<span class="hljs-keyword">let</span> bg      = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--bg&#x27;</span>, <span class="hljs-string">&#x27;#f5f5f5&#x27;</span>));
-<span class="hljs-keyword">let</span> primary = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--primary&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
-<span class="hljs-keyword">let</span> secondary = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--secondary&#x27;</span>, <span class="hljs-string">&#x27;#457b9d&#x27;</span>));
-<span class="hljs-keyword">let</span> accent  = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent&#x27;</span>, <span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-
-<span class="hljs-comment">// Derived reactive colors</span>
-<span class="hljs-keyword">let</span> primaryLight  = primary.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.2</span>);
-<span class="hljs-keyword">let</span> primaryDark   = primary.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> secondaryMuted = secondary.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-keyword">let</span> accentShift   = accent.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
-
-<span class="hljs-comment">// Background</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: bg; <span class="hljs-attr">stroke</span>: none; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">500</span>, <span class="hljs-number">260</span>) }
-
-<span class="hljs-comment">// Central star — primary color</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;star&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: primary; <span class="hljs-attr">fill</span>: primaryLight; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>; stroke-<span class="hljs-attr">linejoin</span>: round; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;star&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">star</span>(<span class="hljs-number">250</span>, <span class="hljs-number">130</span>, <span class="hljs-number">55</span>, <span class="hljs-number">28</span>, <span class="hljs-number">5</span>) }
-
-<span class="hljs-comment">// Orbiting circles — secondary color</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;orbits&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: secondary; <span class="hljs-attr">fill</span>: secondaryMuted; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;orbits&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.4</span>) {
-    <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i / <span class="hljs-number">4</span> * <span class="hljs-title function_">TAU</span>());
-    <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(<span class="hljs-number">250</span> + <span class="hljs-title function_">cos</span>(angle) * <span class="hljs-number">100</span>);
-    <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(<span class="hljs-number">130</span> + <span class="hljs-title function_">sin</span>(angle) * <span class="hljs-number">70</span>);
-    <span class="hljs-title function_">circle</span>(cx, cy, <span class="hljs-number">14</span>)
-  }
-}
-
-<span class="hljs-comment">// Corner diamonds — accent color</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;diamonds&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: accent; <span class="hljs-attr">fill</span>: accentShift; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;diamonds&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">polygon</span>(<span class="hljs-number">40</span>, <span class="hljs-number">40</span>, <span class="hljs-number">18</span>, <span class="hljs-number">4</span>)
-  <span class="hljs-title function_">polygon</span>(<span class="hljs-number">460</span>, <span class="hljs-number">40</span>, <span class="hljs-number">18</span>, <span class="hljs-number">4</span>)
-  <span class="hljs-title function_">polygon</span>(<span class="hljs-number">40</span>, <span class="hljs-number">220</span>, <span class="hljs-number">18</span>, <span class="hljs-number">4</span>)
-  <span class="hljs-title function_">polygon</span>(<span class="hljs-number">460</span>, <span class="hljs-number">220</span>, <span class="hljs-number">18</span>, <span class="hljs-number">4</span>)
-}
-
-<span class="hljs-comment">// Decorative arcs — dark primary</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;arcs&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: primaryDark; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">2</span>; stroke-<span class="hljs-attr">linecap</span>: round; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;arcs&#x27;</span>).<span class="hljs-property">apply</span> {
-  M <span class="hljs-number">70</span> <span class="hljs-number">130</span>
-  A <span class="hljs-number">40</span> <span class="hljs-number">40</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">110</span> <span class="hljs-number">130</span>
-  M <span class="hljs-number">390</span> <span class="hljs-number">130</span>
-  A <span class="hljs-number">40</span> <span class="hljs-number">40</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">430</span> <span class="hljs-number">130</span>
-}
-
-<span class="hljs-comment">// Inner ring — accent</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;ring&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: accent; <span class="hljs-attr">fill</span>: none; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>; stroke-<span class="hljs-attr">dasharray</span>: <span class="hljs-number">4</span> <span class="hljs-number">3</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;ring&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">circle</span>(<span class="hljs-number">250</span>, <span class="hljs-number">130</span>, <span class="hljs-number">42</span>) }
-</code></pre><h3 id="src-swatches">Dual-Panel Swatch Showcase</h3>
-
-<p>Produces the <a href="#the-full-picture">full picture</a> — light and dark panels side by side, featuring methods, harmonies, palettes, and <code>Color.lightDark()</code> theme-aware colors.</p>
-<pre><code class="hljs language-js"><span class="hljs-comment">// Swatches Demo — simplified version of the full swatch showcase</span>
-<span class="hljs-comment">// Light panel on left, dark panel on right</span>
-<span class="hljs-comment">// CSSVar-backed for reactive color picker updates</span>
-
-<span class="hljs-keyword">let</span> base   = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, <span class="hljs-string">&#x27;#e63946&#x27;</span>));
-<span class="hljs-keyword">let</span> accent = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--accent-color&#x27;</span>, <span class="hljs-string">&#x27;#457b9d&#x27;</span>));
-<span class="hljs-keyword">let</span> darkAccent = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--dark-accent&#x27;</span>, <span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-
-<span class="hljs-comment">// Derived colors (light panel)</span>
-<span class="hljs-keyword">let</span> lighter = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> darker  = base.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> vivid   = base.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.4</span>);
-<span class="hljs-keyword">let</span> muted   = base.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-keyword">let</span> shifted = base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
-<span class="hljs-keyword">let</span> comp    = base.<span class="hljs-title function_">complement</span>();
-
-<span class="hljs-comment">// Harmonies</span>
-<span class="hljs-keyword">let</span> triad  = base.<span class="hljs-title function_">triadic</span>();
-<span class="hljs-keyword">let</span> ramp   = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);
-
-<span class="hljs-comment">// Dark panel derived</span>
-<span class="hljs-keyword">let</span> dkLighter = darkAccent.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> dkDarker  = darkAccent.<span class="hljs-title function_">darken</span>(<span class="hljs-number">0.15</span>);
-<span class="hljs-keyword">let</span> dkVivid   = darkAccent.<span class="hljs-title function_">saturate</span>(<span class="hljs-number">1.4</span>);
-<span class="hljs-keyword">let</span> dkMuted   = darkAccent.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-keyword">let</span> dkShifted = darkAccent.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
-<span class="hljs-keyword">let</span> dkComp    = darkAccent.<span class="hljs-title function_">complement</span>();
-<span class="hljs-keyword">let</span> dkTriad   = darkAccent.<span class="hljs-title function_">triadic</span>();
-<span class="hljs-keyword">let</span> dkRamp    = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(darkAccent, base, <span class="hljs-number">5</span>);
-
-<span class="hljs-comment">// Theme-aware colors</span>
-<span class="hljs-keyword">let</span> themeFg     = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#333&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eee&#x27;</span>));
-<span class="hljs-keyword">let</span> themeAccent = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">lightDark</span>(accent, darkAccent);
-
-<span class="hljs-comment">// Layout</span>
-<span class="hljs-keyword">let</span> panelW = <span class="hljs-number">280</span>;
-<span class="hljs-keyword">let</span> gapX = <span class="hljs-number">10</span>;
-<span class="hljs-keyword">let</span> darkX = <span class="hljs-title function_">calc</span>(panelW + gapX);
-<span class="hljs-keyword">let</span> sw = <span class="hljs-number">24</span>;
-<span class="hljs-keyword">let</span> sh = <span class="hljs-number">22</span>;
-<span class="hljs-keyword">let</span> sr = <span class="hljs-number">3</span>;
-<span class="hljs-keyword">let</span> colGap = <span class="hljs-number">5</span>;
-<span class="hljs-keyword">let</span> startX = <span class="hljs-number">14</span>;
-
-<span class="hljs-comment">// Light panel background</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;light-bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #f5f5f5; <span class="hljs-attr">stroke</span>: none; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;light-bg&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, panelW, <span class="hljs-number">340</span>, <span class="hljs-number">0</span>) }
-
-<span class="hljs-comment">// Dark panel background</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dark-bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #<span class="hljs-number">222266</span>; <span class="hljs-attr">stroke</span>: none; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dark-bg&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(darkX, <span class="hljs-number">0</span>, panelW, <span class="hljs-number">340</span>, <span class="hljs-number">0</span>) }
-
-<span class="hljs-comment">// Shared text styles</span>
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;section&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  font-<span class="hljs-attr">weight</span>: bold;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">555</span>;
-}
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">888</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
-}
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;dk-section&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  font-<span class="hljs-attr">weight</span>: bold;
-  <span class="hljs-attr">fill</span>: #aab;
-}
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;dk-labels&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">7</span>;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">889</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
-}
-
-<span class="hljs-comment">// ── LIGHT PANEL ──────────────────────────────────</span>
-
-<span class="hljs-comment">// Methods row</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">8</span>, <span class="hljs-number">18</span>)<span class="hljs-string">`Methods`</span> }
-
-<span class="hljs-keyword">let</span> ltRow = [base, lighter, darker, vivid, muted, shifted, comp];
-<span class="hljs-keyword">let</span> ltNames = [<span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;light&#x27;</span>, <span class="hljs-string">&#x27;dark&#x27;</span>, <span class="hljs-string">&#x27;vivid&#x27;</span>, <span class="hljs-string">&#x27;muted&#x27;</span>, <span class="hljs-string">&#x27;shift&#x27;</span>, <span class="hljs-string">&#x27;compl&#x27;</span>];
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> ltRow) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + colGap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`lt_m<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`lt_m<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">24</span>, sw, sh, sr) }
-}
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> ltNames) {
-    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(startX + i * (sw + colGap) + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">24</span> + sh + <span class="hljs-number">10</span>))<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span>
-  }
-}
-
-<span class="hljs-comment">// Divider</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lt-div&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: #ddd; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lt-div&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">8</span> <span class="hljs-number">70</span> L <span class="hljs-title function_">calc</span>(panelW - <span class="hljs-number">8</span>) <span class="hljs-number">70</span> }
-
-<span class="hljs-comment">// Harmony row</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">8</span>, <span class="hljs-number">86</span>)<span class="hljs-string">`Triadic`</span> }
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> triad) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + colGap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`lt_h<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`lt_h<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">92</span>, sw, sh, sr) }
-}
-
-<span class="hljs-comment">// Palette row</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lt-div&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">8</span> <span class="hljs-number">130</span> L <span class="hljs-title function_">calc</span>(panelW - <span class="hljs-number">8</span>) <span class="hljs-number">130</span> }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">8</span>, <span class="hljs-number">146</span>)<span class="hljs-string">`Palette`</span> }
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> ramp) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(startX + i * (sw + colGap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`lt_p<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`lt_p<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">152</span>, sw, sh, sr) }
-}
-
-<span class="hljs-comment">// Theme-aware colors</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lt-div&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-number">8</span> <span class="hljs-number">194</span> L <span class="hljs-title function_">calc</span>(panelW - <span class="hljs-number">8</span>) <span class="hljs-number">194</span> }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-number">8</span>, <span class="hljs-number">210</span>)<span class="hljs-string">`lightDark()`</span> }
-
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lt-ld-fg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: themeFg; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lt-ld-fg&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(startX, <span class="hljs-number">216</span>, sw, sh, sr) }
-
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;lt-ld-accent&#x27;</span>) ${ <span class="hljs-attr">fill</span>: themeAccent; <span class="hljs-attr">stroke</span>: #ccc; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;lt-ld-accent&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(startX + sw + colGap), <span class="hljs-number">216</span>, sw, sh, sr) }
-
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(startX + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">216</span> + sh + <span class="hljs-number">10</span>))<span class="hljs-string">`fg`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(startX + sw + colGap + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">216</span> + sh + <span class="hljs-number">10</span>))<span class="hljs-string">`accent`</span>
-}
-
-<span class="hljs-comment">// ── DARK PANEL ──────────────────────────────────</span>
-
-<span class="hljs-comment">// Methods row</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>), <span class="hljs-number">18</span>)<span class="hljs-string">`Methods`</span> }
-
-<span class="hljs-keyword">let</span> dkRow = [darkAccent, dkLighter, dkDarker, dkVivid, dkMuted, dkShifted, dkComp];
-<span class="hljs-keyword">let</span> dkNames = [<span class="hljs-string">&#x27;base&#x27;</span>, <span class="hljs-string">&#x27;light&#x27;</span>, <span class="hljs-string">&#x27;dark&#x27;</span>, <span class="hljs-string">&#x27;vivid&#x27;</span>, <span class="hljs-string">&#x27;muted&#x27;</span>, <span class="hljs-string">&#x27;shift&#x27;</span>, <span class="hljs-string">&#x27;compl&#x27;</span>];
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> dkRow) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(darkX + startX + i * (sw + colGap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`dk_m<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">444</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`dk_m<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">24</span>, sw, sh, sr) }
-}
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> ([name, i] <span class="hljs-keyword">in</span> dkNames) {
-    <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + startX + i * (sw + colGap) + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">24</span> + sh + <span class="hljs-number">10</span>))<span class="hljs-string">`<span class="hljs-subst">${name}</span>`</span>
-  }
-}
-
-<span class="hljs-comment">// Divider</span>
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dk-div&#x27;</span>) ${ <span class="hljs-attr">stroke</span>: #<span class="hljs-number">445</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; <span class="hljs-attr">fill</span>: none; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-div&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>) <span class="hljs-number">70</span> L <span class="hljs-title function_">calc</span>(darkX + panelW - <span class="hljs-number">8</span>) <span class="hljs-number">70</span> }
-
-<span class="hljs-comment">// Harmony row</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>), <span class="hljs-number">86</span>)<span class="hljs-string">`Triadic`</span> }
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> dkTriad) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(darkX + startX + i * (sw + colGap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`dk_h<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">444</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`dk_h<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">92</span>, sw, sh, sr) }
-}
-
-<span class="hljs-comment">// Palette row</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-div&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>) <span class="hljs-number">130</span> L <span class="hljs-title function_">calc</span>(darkX + panelW - <span class="hljs-number">8</span>) <span class="hljs-number">130</span> }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>), <span class="hljs-number">146</span>)<span class="hljs-string">`Palette`</span> }
-<span class="hljs-keyword">for</span> ([color, i] <span class="hljs-keyword">in</span> dkRamp) {
-  <span class="hljs-keyword">let</span> x = <span class="hljs-title function_">calc</span>(darkX + startX + i * (sw + colGap));
-  define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`dk_p<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">fill</span>: color; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">444</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-  <span class="hljs-title function_">layer</span>(<span class="hljs-string">`dk_p<span class="hljs-subst">${i}</span>`</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(x, <span class="hljs-number">152</span>, sw, sh, sr) }
-}
-
-<span class="hljs-comment">// Theme-aware colors</span>
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-div&#x27;</span>).<span class="hljs-property">apply</span> { M <span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>) <span class="hljs-number">194</span> L <span class="hljs-title function_">calc</span>(darkX + panelW - <span class="hljs-number">8</span>) <span class="hljs-number">194</span> }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-section&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + <span class="hljs-number">8</span>), <span class="hljs-number">210</span>)<span class="hljs-string">`lightDark()`</span> }
-
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dk-ld-fg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: themeFg; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">555</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-ld-fg&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(darkX + startX), <span class="hljs-number">216</span>, sw, sh, sr) }
-
-define <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;dk-ld-accent&#x27;</span>) ${ <span class="hljs-attr">fill</span>: themeAccent; <span class="hljs-attr">stroke</span>: #<span class="hljs-number">555</span>; stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">0.5</span>; }
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-ld-accent&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">roundRect</span>(<span class="hljs-title function_">calc</span>(darkX + startX + sw + colGap), <span class="hljs-number">216</span>, sw, sh, sr) }
-
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;dk-labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + startX + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">216</span> + sh + <span class="hljs-number">10</span>))<span class="hljs-string">`fg`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + startX + sw + colGap + sw / <span class="hljs-number">2</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">216</span> + sh + <span class="hljs-number">10</span>))<span class="hljs-string">`accent`</span>
-}
-
-<span class="hljs-comment">// Panel labels</span>
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;panel-light&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  font-<span class="hljs-attr">weight</span>: bold;
-  <span class="hljs-attr">fill</span>: #bbb;
-  text-<span class="hljs-attr">anchor</span>: middle;
-}
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;panel-light&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(panelW / <span class="hljs-number">2</span>), <span class="hljs-number">330</span>)<span class="hljs-string">`LIGHT`</span> }
-
-define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;panel-dark&#x27;</span>) ${
-  font-<span class="hljs-attr">family</span>: system-ui, sans-serif;
-  font-<span class="hljs-attr">size</span>: <span class="hljs-number">9</span>;
-  font-<span class="hljs-attr">weight</span>: bold;
-  <span class="hljs-attr">fill</span>: #<span class="hljs-number">557</span>;
-  text-<span class="hljs-attr">anchor</span>: middle;
-}
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;panel-dark&#x27;</span>).<span class="hljs-property">apply</span> { <span class="hljs-title function_">text</span>(<span class="hljs-title function_">calc</span>(darkX + panelW / <span class="hljs-number">2</span>), <span class="hljs-number">330</span>)<span class="hljs-string">`DARK`</span> }
-</code></pre>
       </div>
     </article>
   </main>

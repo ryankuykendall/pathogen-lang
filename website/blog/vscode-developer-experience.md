@@ -25,7 +25,7 @@ We organized the work into phases, each delivering a complete, testable improvem
 | **4** | Completion type flow — assignment propagation, map/loop param types, object properties |
 | **5** | Diagnostic quality — server debouncing, better incomplete-expression messages |
 | **6** | Formatting polish — comment preservation, range formatting, on-type formatting |
-| **7** | Semantic highlighting — constructors, enums, [path commands](/pathogen/docs#syntax), enum members |
+| **7** | Semantic highlighting — constructors, enums, [path commands](/pathogen/docs#syntax-path-commands), enum members |
 | **8** | Workspace integration — build tasks, problem matcher, new file templates |
 | **9** | Advanced refactoring — extract variable, extract function, inline variable |
 | **10** | Inlay hints and code lens — expanded type inference, reference counts |
@@ -99,7 +99,7 @@ The preview isn't just a static render — it matches the [playground](/pathogen
 
 - **Pan and zoom**: Click-drag to pan, Cmd+scroll to zoom (0.25x–10x range), with a navigator minimap
 - **Layer inspector**: Toggle [layer](/pathogen/docs#layers-defining-layers) visibility, see color swatches, navigate GroupLayer hierarchy
-- **CSS variable pickers**: Color picker inputs for every [`CSSVar()`](/pathogen/docs#cssvar) in the source — changes recompile instantly
+- **CSS variable pickers**: Color picker inputs for every [`CSSVar()`](/pathogen/docs#css-var-cssvar-type) in the source — changes recompile instantly
 - **Recompile button**: Re-rolls `randomRange()` values without editing source
 - **Reset button**: Restores zoom, pan, layer visibility, and CSS variable overrides
 
