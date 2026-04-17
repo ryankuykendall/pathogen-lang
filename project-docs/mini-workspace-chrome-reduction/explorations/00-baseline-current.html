@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>00 · Baseline (current) — Mini-Workspace Chrome Exploration</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-color: #f6efe6;
+    --bar-all: #cc3333;
+    --bar-top: #1a1a2e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: #f5f7fa;
+    color: #1a1a2e;
+    padding: 48px 24px 96px;
+    min-height: 100vh;
+  }
+  .page { max-width: 820px; margin: 0 auto; }
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 16px; gap: 16px;
+  }
+  .page-header h1 {
+    font: 600 13px/1.2 -apple-system, sans-serif;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: #64748b; margin: 0;
+  }
+  .page-header .subtitle { font-size: 12px; color: #94a3b8; margin: 0 0 4px 0; }
+  .mode-toggle {
+    display: inline-flex; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 999px; padding: 3px; gap: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .mode-toggle button {
+    font: 500 11px -apple-system, sans-serif;
+    color: #64748b; background: transparent; border: 0;
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .mode-toggle button.active { background: #1a1a2e; color: #fff; }
+  .note {
+    font-size: 11px; color: #64748b; margin-top: 16px; line-height: 1.5;
+    padding: 12px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+  }
+  .note code { font: 400 12px 'Inconsolata', monospace; background: #f0f1f2; padding: 1px 5px; border-radius: 3px; }
+
+  /* ----- Baseline mini-workspace (faithful recreation) ----- */
+  .mini-workspace {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .mini-workspace[data-mode="fullscreen"] {
+    position: fixed; inset: 0; z-index: 100; border-radius: 0; border-width: 0;
+    box-shadow: none;
+  }
+  .fullscreen-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10, 12, 16, 0.45); z-index: 99;
+  }
+  .mini-workspace[data-mode="fullscreen"] + .fullscreen-backdrop { display: block; }
+
+  .bar {
+    display: flex; align-items: center; padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0; background: #fff;
+  }
+  .bar-actions { justify-content: space-between; }
+  .btn-code {
+    font: 500 13px -apple-system, sans-serif;
+    background: #4ea26e; color: #fff; border: 0;
+    padding: 9px 14px; border-radius: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-code:hover { background: #3f8a5a; }
+  .btn-playground {
+    font: 500 13px -apple-system, sans-serif;
+    background: #fcdcd9; color: #1a1a2e; border: 1px solid #f1b5b0;
+    padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .bar-vars { justify-content: flex-start; gap: 18px; background: #fff; }
+  .var-chip {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    position: relative;
+  }
+  .var-chip .swatch {
+    display: inline-block; width: 26px; height: 26px; border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.1); background: var(--chip-color);
+  }
+  .var-chip .label { font: 400 12px 'Inconsolata', monospace; color: #374151; }
+  .bar-vars .spacer { flex: 1; }
+  .btn-reset {
+    font: 500 12px -apple-system, sans-serif; background: #fff; color: #64748b;
+    border: 1px solid #e2e8f0; padding: 6px 14px; border-radius: 4px; cursor: pointer;
+  }
+  .btn-reset:hover { background: #f8f9fa; }
+  input[type=color] {
+    opacity: 0; position: absolute; width: 26px; height: 26px;
+    left: 0; top: 0; cursor: pointer; margin: 0; padding: 0; border: 0;
+  }
+
+  .body {
+    display: grid; grid-template-columns: 1fr 1fr; min-height: 420px;
+  }
+  .mini-workspace[data-mode="fullscreen"] .body { min-height: calc(100% - 176px); }
+
+  .code-panel {
+    border-right: 1px solid #e2e8f0; background: #fff;
+    display: flex; flex-direction: column;
+  }
+  .code-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px 8px 18px; border-bottom: 1px solid #e2e8f0;
+    height: 32px; flex-shrink: 0;
+  }
+  .code-header .label {
+    font: 500 10px -apple-system, sans-serif;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #64748b;
+  }
+  .btn-copy {
+    font: 500 11px -apple-system, sans-serif; background: #fff; color: #374151;
+    border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 4px; cursor: pointer;
+  }
+  .code {
+    flex: 1; overflow: auto; padding: 12px 0;
+    font: 400 13px/1.55 'Inconsolata', monospace;
+  }
+  .line { display: flex; padding: 0 14px 0 0; }
+  .line-active { background: #eaf2ff; }
+  .ln {
+    flex-shrink: 0; width: 32px; text-align: right; padding-right: 12px;
+    color: #9ca3af; user-select: none;
+  }
+  .line-content { white-space: pre; }
+  .tok-kw { color: #d28c4f; }
+  .tok-fn { color: #3a6bb3; }
+  .tok-str { color: #4c8754; }
+  .tok-num { color: #8b5cf6; }
+  .tok-com { color: #9ca3af; font-style: italic; }
+  .tok-hex { color: #8b5cf6; }
+  .tok-op { color: #8b5cf6; }
+  .tok-id { color: #1a1a2e; }
+  .tok-attr { color: #be5a38; }
+  .tok-p { color: #6b7280; }
+
+  .preview-panel {
+    position: relative; background: var(--bg-color); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease;
+  }
+  .preview-svg {
+    width: 95%; height: 95%; max-width: 540px; max-height: 540px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .preview-svg svg { width: 100%; height: 100%; }
+
+  .minimap {
+    position: absolute; top: 16px; left: 16px;
+    width: 104px; height: 104px;
+    background: rgba(255,255,255,0.7); border: 1px solid #f1b5b0;
+    border-radius: 4px; padding: 4px; backdrop-filter: blur(4px);
+  }
+  .minimap svg { width: 100%; height: 100%; display: block; }
+  .minimap .viewport { fill: none; stroke: #2e8b57; stroke-width: 14; }
+
+  .fs-toggle {
+    position: absolute; top: 44px; left: 140px;
+    width: 36px; height: 36px;
+    background: #fcdcd9; border: 1px solid #f1b5b0;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .fs-toggle:hover { background: #f9c8c3; }
+
+  .zoom {
+    position: absolute; bottom: 16px; right: 16px;
+    display: flex; background: #fcdcd9; border: 1px solid #f1b5b0;
+    border-radius: 4px; padding: 3px; gap: 2px;
+  }
+  .zoom button {
+    font: 500 13px -apple-system, sans-serif; background: transparent; border: 0;
+    padding: 6px 12px; cursor: pointer; color: #1a1a2e; min-width: 34px;
+  }
+  .zoom .readout {
+    padding: 6px 12px; font: 500 12px 'Inconsolata', monospace;
+    color: #1a1a2e; font-feature-settings: 'tnum';
+  }
+
+  .footer {
+    display: flex; align-items: center; padding: 11px 18px;
+    border-top: 1px solid #e2e8f0; background: #fbf0ee; gap: 24px;
+  }
+  .footer .brand {
+    font: 600 11px 'Inconsolata', monospace;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #9ca3af;
+  }
+  .footer .caption {
+    font: italic 400 13px -apple-system, sans-serif; color: #9ca3af; flex: 1;
+  }
+
+  /* Chrome ruler overlay */
+  .ruler-toggle {
+    position: fixed; right: 16px; bottom: 16px; z-index: 200;
+    font: 500 11px -apple-system, sans-serif;
+    background: #fff; border: 1px solid #e2e8f0;
+    padding: 6px 12px; border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer;
+  }
+  body.rulers .bar, body.rulers .code-header, body.rulers .footer {
+    position: relative; outline: 1px dashed #e74c3c; outline-offset: -1px;
+  }
+  body.rulers .bar::after, body.rulers .code-header::after, body.rulers .footer::after {
+    content: attr(data-h);
+    position: absolute; right: 6px; top: 4px;
+    font: 500 10px 'Inconsolata', monospace;
+    color: #c0392b; background: rgba(255,235,230,0.9);
+    padding: 1px 6px; border-radius: 3px; border: 1px dashed #e74c3c;
+  }
+  body.rulers .minimap, body.rulers .zoom, body.rulers .fs-toggle {
+    outline: 1px dashed #e67e22; outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <p class="subtitle">project-docs / mini-workspace-chrome-reduction</p>
+      <h1>00 · Baseline (current)</h1>
+    </div>
+    <div class="mode-toggle" role="tablist" aria-label="mode">
+      <button class="active" data-mode="embedded">Embedded</button>
+      <button data-mode="fullscreen">Fullscreen</button>
+    </div>
+  </header>
+
+  <section id="workspace" class="mini-workspace" data-mode="embedded">
+    <div class="bar bar-actions" data-h="56px">
+      <button class="btn-code"><span style="font-family:'Inconsolata',monospace;font-weight:600;">&lt;/&gt;</span> Code</button>
+      <button class="btn-playground">Open in Playground <span aria-hidden="true">&#x2197;</span></button>
+    </div>
+
+    <div class="bar bar-vars" data-h="48px">
+      <label class="var-chip" style="--chip-color:#f6efe6">
+        <span class="swatch"></span>
+        <input type="color" value="#f6efe6" data-var="--bg-color">
+        <span class="label">--bg-color</span>
+      </label>
+      <label class="var-chip" style="--chip-color:#cc3333">
+        <span class="swatch"></span>
+        <input type="color" value="#cc3333" data-var="--bar-all">
+        <span class="label">--bar-all</span>
+      </label>
+      <label class="var-chip" style="--chip-color:#1a1a2e">
+        <span class="swatch"></span>
+        <input type="color" value="#1a1a2e" data-var="--bar-top">
+        <span class="label">--bar-top</span>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn-reset">Reset</button>
+    </div>
+
+    <div class="body">
+      <div class="code-panel">
+        <div class="code-header" data-h="32px">
+          <span class="label">Source</span>
+          <button class="btn-copy">Copy</button>
+        </div>
+        <div class="code" id="code"></div>
+      </div>
+      <div class="preview-panel">
+        <div class="preview-svg" id="preview-slot"></div>
+        <div class="minimap" title="Navigator">
+          <svg viewBox="0 0 700 700" aria-hidden="true">
+            <rect width="700" height="700" fill="var(--bg-color,#f6efe6)"/>
+            <circle cx="350" cy="360" r="220" fill="none" stroke="#d4c9b8" stroke-width="3" stroke-dasharray="10 8"/>
+            <circle cx="350" cy="360" r="90" fill="none" stroke="#d4c9b8" stroke-width="3" stroke-dasharray="10 8"/>
+            <path d="M 350 360 L 170 180 A 300 300 0 0 1 530 170 Z" fill="var(--bar-all,#cc3333)" opacity="0.7"/>
+            <rect class="viewport" x="100" y="100" width="500" height="500"/>
+          </svg>
+        </div>
+        <button class="fs-toggle" aria-label="Expand">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 14v6h6M20 10V4h-6M4 20l7-7M20 4l-7 7"/>
+          </svg>
+        </button>
+        <div class="zoom">
+          <button aria-label="Zoom out">&#x2212;</button>
+          <button>Fit</button>
+          <button aria-label="Zoom in">+</button>
+          <span class="readout">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer" data-h="40px">
+      <span class="brand">PATHOGEN</span>
+      <span class="caption">radialProject with VerticalAnchor.Midline &#x2014; one TextLayer, automatic rotation and hemisphere flip</span>
+    </div>
+  </section>
+  <div class="fullscreen-backdrop" onclick="exitFullscreen()"></div>
+
+  <p class="note">
+    <strong>Baseline:</strong> faithful recreation of the current <code>&lt;mini-workspace&gt;</code> chrome.
+    Total layout chrome &asymp; <strong>176px</strong> (56 + 48 + 32 + 40).
+    Toggle <strong>Embedded &harr; Fullscreen</strong> above; in this baseline the minimap is always present (that's the behavior explorations 01&ndash;05 change).
+    Click <em>Show rulers</em> in the bottom-right to annotate each chrome band with its measurement.
+  </p>
+</div>
+
+<button class="ruler-toggle" onclick="document.body.classList.toggle('rulers')">Show rulers</button>
+
+<script src="../sample/chart-svg.js"></script>
+<script>
+  document.getElementById('preview-slot').innerHTML = window.CHART_SVG;
+  window.renderCodeLines(document.getElementById('code'), { activeClass: 'line-active' });
+
+  const ws = document.getElementById('workspace');
+  function setMode(m) {
+    ws.dataset.mode = m;
+    document.querySelectorAll('.mode-toggle button').forEach(x => x.classList.toggle('active', x.dataset.mode === m));
+  }
+  function exitFullscreen() { setMode('embedded'); }
+  document.querySelectorAll('.mode-toggle button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  document.querySelector('.fs-toggle').addEventListener('click', () => setMode(ws.dataset.mode === 'fullscreen' ? 'embedded' : 'fullscreen'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && ws.dataset.mode === 'fullscreen') setMode('embedded'); });
+
+  document.querySelectorAll('input[type=color]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      document.documentElement.style.setProperty(inp.dataset.var, inp.value);
+      inp.closest('.var-chip').style.setProperty('--chip-color', inp.value);
+    });
+  });
+  document.querySelector('.btn-reset').addEventListener('click', () => {
+    Object.entries(window.CHART_DEFAULTS).forEach(([k,v]) => {
+      document.documentElement.style.setProperty(k, v);
+      const inp = document.querySelector(`input[data-var="${k}"]`);
+      if (inp) { inp.value = v; inp.closest('.var-chip').style.setProperty('--chip-color', v); }
+    });
+  });
+
+  document.querySelector('.btn-copy').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const txt = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = txt, 900);
+  });
+</script>
+</body>
+</html>

@@ -520,7 +520,10 @@ export class MiniPreview extends HTMLElement {
           cursor: grabbing;
         }
 
-        /* Navigator */
+        /* Navigator — suppressed in embedded mode, shown only in fullscreen.
+           (The minimap earns its keep when the user is deeply zoomed in,
+           which is a fullscreen-only workflow; it competes with content in
+           the constrained embedded size.) */
         #zoom-navigator {
           position: absolute;
           top: 0.5rem;
@@ -533,6 +536,10 @@ export class MiniPreview extends HTMLElement {
           box-shadow: var(--shadow-md);
           overflow: hidden;
           z-index: 10;
+          display: none;
+        }
+        :host(.fullscreen) #zoom-navigator {
+          display: block;
         }
 
         #navigator-svg {
@@ -545,33 +552,47 @@ export class MiniPreview extends HTMLElement {
           fill: var(--accent-subtle, rgba(16, 185, 129, 0.15));
         }
 
-        /* Zoom controls */
+        /* Zoom controls — glass pill matching the workspace chrome aesthetic */
         #zoom-controls {
           position: absolute;
-          bottom: 0.5rem;
-          left: 50%;
-          transform: translateX(-50%);
+          bottom: 0.75rem;
+          right: 0.75rem;
           display: flex;
           align-items: center;
-          gap: 0.375rem;
-          background: var(--bg-elevated, #ffffff);
-          padding: 0.375rem 0.5rem;
-          border-radius: var(--radius-md, 8px);
+          gap: 2px;
+          padding: 3px;
+          background: color-mix(in srgb, var(--bg-elevated, #ffffff) 82%, transparent);
+          backdrop-filter: blur(16px) saturate(140%);
+          -webkit-backdrop-filter: blur(16px) saturate(140%);
           border: 1px solid var(--border-color, #e2e8f0);
-          box-shadow: var(--shadow-md);
+          border-radius: 999px;
+          box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
           z-index: 10;
+          opacity: 0.6;
+          transition: opacity var(--transition-base, 0.15s ease);
+        }
+
+        #preview-container:hover ~ #zoom-controls,
+        #zoom-controls:hover,
+        :host(.fullscreen) #zoom-controls {
+          opacity: 1;
+        }
+
+        /* Touch devices have no hover — keep controls fully visible. */
+        @media (hover: none) {
+          #zoom-controls { opacity: 1; }
         }
 
         #zoom-controls button {
-          width: 28px;
-          height: 28px;
+          width: 26px;
+          height: 26px;
           padding: 0;
           display: grid;
           place-items: center;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-sm, 4px);
-          background: var(--bg-secondary, #ffffff);
-          color: var(--text-primary, #1a1a2e);
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+          color: var(--text-secondary, #64748b);
           cursor: pointer;
           font-family: inherit;
           font-size: 0.8125rem;
@@ -579,8 +600,7 @@ export class MiniPreview extends HTMLElement {
         }
 
         #zoom-controls button:hover {
-          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-          border-color: var(--accent-color, #10b981);
+          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
           color: var(--accent-color, #10b981);
         }
 
@@ -592,28 +612,33 @@ export class MiniPreview extends HTMLElement {
         }
 
         #zoom-fit {
-          font-size: 0.75rem;
+          font-size: 0.6875rem;
           font-weight: 500;
+          letter-spacing: 0.04em;
+          width: auto !important;
+          padding: 0 10px;
         }
 
         #zoom-level {
-          width: 48px;
-          padding: 0.25rem 0.375rem;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-sm, 4px);
+          width: 46px;
+          padding: 3px 6px;
+          border: 0;
+          border-left: 1px solid var(--border-color, #e2e8f0);
+          border-radius: 0;
           font-size: 0.6875rem;
           font-family: var(--font-mono, 'Inconsolata', monospace);
           font-weight: 500;
+          font-feature-settings: 'tnum';
           text-align: center;
-          background: var(--bg-secondary, #ffffff);
-          color: var(--text-primary, #1a1a2e);
+          background: transparent;
+          color: var(--text-secondary, #64748b);
           transition: all var(--transition-base, 0.15s ease);
+          margin-left: 2px;
         }
 
         #zoom-level:focus {
           outline: none;
-          border-color: var(--accent-color, #10b981);
-          box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.4));
+          color: var(--accent-color, #10b981);
         }
 
         #inspector-open-btn {
@@ -651,6 +676,14 @@ export class MiniPreview extends HTMLElement {
         }
 
         ${fullscreenStyles(100, 0.5)}
+
+        /* The workspace chrome surfaces a fullscreen affordance in its glass
+           bar. In fullscreen the workspace chrome is covered, so the
+           preview's own fullscreen toggle is needed for exit. Hide it in
+           embedded mode to keep the preview pane clean. */
+        :host(:not(.fullscreen)) #fullscreen-toggle {
+          display: none;
+        }
       </style>
 
       <div id="preview-container">
