@@ -1,9 +1,22 @@
 // Mini-Workspace — display-only code+preview blog embed
 // Progressive enhancement: static fallback upgrades to interactive CodeMirror + pannable SVG
+//
+// Chrome design: details/summary-style header (chevron + title) always visible at 28px.
+// Clicking the summary slides an in-flow glass-blur control bar from 0 → 44px height,
+// exposing the code-toggle, per-var color chips, reset, copy, and playground-launch
+// actions. Suppresses the minimap in embedded mode; minimap appears only when
+// mini-preview goes fullscreen.
 
 import { themeManager } from '../../utils/theme.js';
 import './mini-preview.js';
-import '../shared/copy-button.js';
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+}
 
 interface CssVar {
   name: string;
@@ -51,52 +64,54 @@ export class MiniWorkspace extends HTMLElement {
   private _cmLoading: boolean = false;
   private _onThemeChange: (() => void) | null = null;
 
+  // Bar transition handler cleanup
+  private _onBarTransitionEnd: ((e: TransitionEvent) => void) | null = null;
+
+  // Guard against binding the chip-group delegated listener twice when vars
+  // arrive late via async SVG fetch (_wireChipGroup runs both in
+  // setupEventListeners and _injectVarControls).
+  private _chipGroupWired: boolean = false;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
   }
 
   connectedCallback(): void {
-    // Capture light DOM children before replacing
     this._captureChildren();
     this._initCssVars();
     this.render();
     this.setupEventListeners();
 
-    // Initialize preview
     const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement & {
       setSvgContent(svg: string): void;
     };
     if (this._svgContent && preview) {
       preview.setSvgContent(this._svgContent);
     }
+    if (this._cssVars.length > 0 && preview) {
+      for (const v of this._cssVars) preview.style.setProperty(v.name, v.defaultValue);
+    }
 
-    // If code-open attribute is present, open code panel
     if (this.hasAttribute('code-open')) {
       this._loadCodeMirrorIfNeeded();
     }
   }
 
   disconnectedCallback(): void {
-    if (this._themeUnsubscribe) {
-      this._themeUnsubscribe();
-    }
-    if (this._onThemeChange) {
-      document.removeEventListener('theme-change', this._onThemeChange);
-    }
-    if (this._inspectorOpen) {
-      this._closeInspector();
+    if (this._themeUnsubscribe) this._themeUnsubscribe();
+    if (this._onThemeChange) document.removeEventListener('theme-change', this._onThemeChange);
+    if (this._inspectorOpen) this._closeInspector();
+    if (this._onBarTransitionEnd) {
+      const bar = this.shadowRoot?.querySelector('#glass-bar');
+      if (bar) bar.removeEventListener('transitionend', this._onBarTransitionEnd as EventListener);
     }
   }
 
   private _captureChildren(): void {
-    // Extract source from <code> child (with or without <pre> wrapper)
     const codeEl = this.querySelector('code') || this.querySelector('pre code');
-    if (codeEl) {
-      this._sourceCode = codeEl.textContent || '';
-    }
+    if (codeEl) this._sourceCode = codeEl.textContent || '';
 
-    // Extract dimensions from viewBox comment in source (e.g., // viewBox="0 0 400 400")
     if (this._sourceCode) {
       const vbMatch = this._sourceCode.match(/\/\/\s*viewBox\s*=\s*"(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
       if (vbMatch) {
@@ -105,11 +120,9 @@ export class MiniWorkspace extends HTMLElement {
       }
     }
 
-    // Extract SVG content
     const svgChild = this.querySelector('svg');
     if (svgChild) {
       this._svgContent = svgChild.outerHTML;
-      // Extract dimensions from SVG
       const w = svgChild.getAttribute('width');
       const h = svgChild.getAttribute('height');
       if (w) this._width = parseFloat(w);
@@ -117,20 +130,14 @@ export class MiniWorkspace extends HTMLElement {
       this._extractMetadata(svgChild);
     }
 
-    // Handle <img> fallback — fetch the SVG so we can render it in mini-preview
     const imgChild = this.querySelector('img');
     if (imgChild && !this._svgContent) {
       this._imgSrc = imgChild.getAttribute('src') || undefined;
-      if (this._imgSrc) {
-        this._fetchSvg(this._imgSrc);
-      }
+      if (this._imgSrc) this._fetchSvg(this._imgSrc);
     }
 
-    // Handle svg-src attribute
     const svgSrc = this.getAttribute('svg-src');
-    if (svgSrc && !this._svgContent) {
-      this._fetchSvg(svgSrc);
-    }
+    if (svgSrc && !this._svgContent) this._fetchSvg(svgSrc);
   }
 
   private async _fetchSvg(url: string): Promise<void> {
@@ -138,7 +145,6 @@ export class MiniWorkspace extends HTMLElement {
       const resp = await fetch(url);
       if (resp.ok) {
         this._svgContent = await resp.text();
-        // Extract metadata from fetched SVG
         const doc = new DOMParser().parseFromString(this._svgContent, 'image/svg+xml');
         this._extractMetadata(doc.documentElement);
         const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement & {
@@ -146,12 +152,9 @@ export class MiniWorkspace extends HTMLElement {
         };
         if (preview) preview.setSvgContent(this._svgContent);
 
-        // Re-detect CSS vars now that SVG content is available
         if (this._cssVars.length === 0) {
           this._initCssVars();
-          if (this._cssVars.length > 0) {
-            this._injectVarControls();
-          }
+          if (this._cssVars.length > 0) this._injectVarControls();
         }
       }
     } catch (err) {
@@ -160,58 +163,76 @@ export class MiniWorkspace extends HTMLElement {
   }
 
   /**
-   * Inject CSS variable color picker controls after async SVG load.
-   * Called when _initCssVars() detects vars from a late-arriving SVG.
+   * Populate the chip-group inside the glass-bar after an async SVG load
+   * that surfaces late-arriving CSS vars.
    */
   private _injectVarControls(): void {
-    const toolbar = this.shadowRoot!.querySelector('.toolbar');
-    if (!toolbar || this.shadowRoot!.querySelector('.var-controls')) return;
+    const chipGroup = this.shadowRoot!.querySelector('#chip-group') as HTMLElement | null;
+    if (!chipGroup || chipGroup.children.length > 0) return;
 
-    const html = `<div class="var-controls">
-      ${this._cssVars
-        .map(
-          (v) => `
-        <label class="var-control">
-          <input type="color" value="${v.defaultValue}" data-var="${v.name}">
-          <span class="var-label">${v.name}</span>
-        </label>
-      `,
-        )
-        .join('')}
-      <button id="vars-reset" title="Reset colors to defaults">Reset</button>
-    </div>`;
+    chipGroup.innerHTML = this._renderChipGroupInner();
 
-    toolbar.insertAdjacentHTML('afterend', html);
-
-    // Wire up event listeners for the new controls
-    const varControls = this.shadowRoot!.querySelector('.var-controls')!;
     const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
-
-    // Apply initial values
     if (preview) {
-      for (const v of this._cssVars) {
-        preview.style.setProperty(v.name, v.defaultValue);
-      }
+      for (const v of this._cssVars) preview.style.setProperty(v.name, v.defaultValue);
     }
 
-    // Live color picker updates
-    varControls.addEventListener('input', (e: Event) => {
+    this._wireChipGroup();
+  }
+
+  private _renderChipGroupInner(): string {
+    if (this._cssVars.length === 0) return '';
+    const chips = this._cssVars
+      .map((v) => {
+        // Values from `vars=` attribute are caller-controlled; escape before
+        // interpolation to keep quoted attributes and the style declaration
+        // from being broken out of.
+        const name = escapeAttr(v.name);
+        const value = escapeAttr(v.defaultValue);
+        return `
+        <label class="chip" style="--chip-color:${value}" aria-label="${name}">
+          <span class="dot"></span>
+          <input type="color" value="${value}" data-var="${name}">
+          <span class="chip-label">${name}</span>
+        </label>
+      `;
+      })
+      .join('');
+    return `
+      <span class="glass-divider"></span>
+      ${chips}
+      <button class="icon-btn" id="vars-reset" type="button" data-tip="Reset colors">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 12a8 8 0 0 1 14-5l2-2M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5l-2 2M4 20v-4h4"/></svg>
+      </button>
+    `;
+  }
+
+  private _wireChipGroup(): void {
+    if (this._chipGroupWired) return;
+    const chipGroup = this.shadowRoot!.querySelector('#chip-group') as HTMLElement | null;
+    if (!chipGroup) return;
+    this._chipGroupWired = true;
+    const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+
+    chipGroup.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLInputElement;
       if (target.type === 'color') {
         const varName = target.dataset.var;
-        if (preview && varName) {
-          preview.style.setProperty(varName, target.value);
-        }
+        if (preview && varName) preview.style.setProperty(varName, target.value);
+        const chip = target.closest('.chip') as HTMLElement | null;
+        if (chip) chip.style.setProperty('--chip-color', target.value);
       }
     });
 
-    // Reset button
-    const resetBtn = varControls.querySelector('#vars-reset');
+    const resetBtn = chipGroup.querySelector('#vars-reset');
     if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
+      resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         for (const v of this._cssVars) {
-          const input = varControls.querySelector(`input[data-var="${v.name}"]`) as HTMLInputElement | null;
+          const input = chipGroup.querySelector(`input[data-var="${v.name}"]`) as HTMLInputElement | null;
           if (input) input.value = v.defaultValue;
+          const chip = input?.closest('.chip') as HTMLElement | null;
+          if (chip) chip.style.setProperty('--chip-color', v.defaultValue);
           if (preview) preview.style.setProperty(v.name, v.defaultValue);
         }
       });
@@ -221,14 +242,11 @@ export class MiniWorkspace extends HTMLElement {
   // --- CSS Variable Detection ---
 
   private _initCssVars(): void {
-    // Explicit vars attribute takes precedence
     const varsAttr = this.getAttribute('vars');
     if (varsAttr) {
       this._cssVars = this._parseVarsAttribute(varsAttr);
       return;
     }
-
-    // Auto-detect from SVG @property declarations
     if (this._svgContent) {
       this._cssVars = this._detectCssVarsFromSvg(this._svgContent);
     }
@@ -253,7 +271,6 @@ export class MiniWorkspace extends HTMLElement {
     if (!styleMatch) return [];
 
     const vars: CssVar[] = [];
-    // Match @property declarations with syntax: "<color>" and extract name + initial-value
     const propRegex = /@property\s+(--[\w-]+)\s*\{([^}]*)\}/g;
     let match;
     while ((match = propRegex.exec(styleMatch[1])) !== null) {
@@ -287,11 +304,7 @@ export class MiniWorkspace extends HTMLElement {
   private _getThemeExtensions(): unknown[] {
     const { githubTheme } = this._cmModules!;
     const isDark = themeManager.getActiveTheme() === 'dark';
-
-    if (isDark) {
-      return [githubTheme.githubDark];
-    }
-    return [githubTheme.githubLight];
+    return [isDark ? githubTheme.githubDark : githubTheme.githubLight];
   }
 
   private async _createEditor(): Promise<void> {
@@ -321,16 +334,10 @@ export class MiniWorkspace extends HTMLElement {
       parent: container,
     });
 
-    // Hide static fallback
     const fallback = this.shadowRoot!.querySelector('#code-fallback') as HTMLElement | null;
     if (fallback) fallback.style.display = 'none';
 
-    // Listen for theme changes via themeManager (SPA context)
-    this._themeUnsubscribe = themeManager.subscribe(() => {
-      this._updateEditorTheme();
-    });
-
-    // Listen for theme-change event from standalone theme-toggle component
+    this._themeUnsubscribe = themeManager.subscribe(() => this._updateEditorTheme());
     this._onThemeChange = () => this._updateEditorTheme();
     document.addEventListener('theme-change', this._onThemeChange);
   }
@@ -356,7 +363,6 @@ export class MiniWorkspace extends HTMLElement {
   // --- "Open in Playground" ---
 
   private _getImportState(): ImportState {
-    // Extract title from source comment headers (first non-viewBox comment line)
     const commentLines = this._sourceCode
       .split('\n')
       .filter((l) => l.trim().startsWith('//'))
@@ -371,10 +377,9 @@ export class MiniWorkspace extends HTMLElement {
     };
   }
 
-  // Write state to localStorage on click (not render) and navigate.
-  // localStorage is shared across tabs, unlike sessionStorage with target="_blank".
-  private _handlePlaygroundClick(e: MouseEvent): void {
+  private _handlePlaygroundClick(e: Event): void {
     e.preventDefault();
+    e.stopPropagation();
     const state = this._getImportState();
     const key = `mw-import-${Date.now()}`;
     try {
@@ -385,7 +390,7 @@ export class MiniWorkspace extends HTMLElement {
     window.open(`/pathogen/workspace/new?import=${encodeURIComponent(key)}`, '_blank');
   }
 
-  // --- Events ---
+  // --- Inspector ---
 
   private _extractMetadata(svgEl: Element): void {
     const metaScript = svgEl.querySelector('script#pathogen-metadata');
@@ -399,22 +404,24 @@ export class MiniWorkspace extends HTMLElement {
   }
 
   private async _openInspector(): Promise<void> {
-    if (this._inspectorOpen || !this._inspectorMetadata) return;
+    if (this._inspectorOpen) return;
+    // Claim the slot synchronously so a second toggle-inspector fired during
+    // the dynamic import can't race past this guard and create a duplicate panel.
+    this._inspectorOpen = true;
 
-    // Lazy-load inspector panel and its sub-panels
     await import('../inspector-panel.js');
 
     this._inspectorEl = document.createElement('inspector-panel') as HTMLElement & { setData(data: Record<string, unknown>): void };
     this._inspectorEl.classList.add('fullscreen-overlay', 'open');
     this.shadowRoot!.appendChild(this._inspectorEl);
-    this._inspectorEl.setData(this._inspectorMetadata);
+    // Pass metadata if we have it; otherwise hand over empty defaults so the
+    // panel renders its frame without crashing on missing sub-sections.
+    this._inspectorEl.setData(
+      this._inspectorMetadata ?? { layers: [], masks: [], clipPaths: [], gradients: [], cssProperties: [] },
+    );
 
-    // Listen for close button
-    this._inspectorEl.addEventListener('toggle-inspector', () => {
-      this._closeInspector();
-    });
+    this._inspectorEl.addEventListener('toggle-inspector', () => this._closeInspector());
 
-    // Listen for layer visibility changes
     this._inspectorEl.addEventListener('layer-visibility-change', ((e: CustomEvent) => {
       const { name, visible } = e.detail;
       const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
@@ -425,20 +432,15 @@ export class MiniWorkspace extends HTMLElement {
       }
     }) as EventListener);
 
-    // Listen for CSS var overrides
     this._inspectorEl.addEventListener('cssvar-override', ((e: CustomEvent) => {
       const { varName, value } = e.detail;
       const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
       if (preview) {
-        if (value) {
-          preview.style.setProperty(varName, value);
-        } else {
-          preview.style.removeProperty(varName);
-        }
+        if (value) preview.style.setProperty(varName, value);
+        else preview.style.removeProperty(varName);
       }
     }) as EventListener);
 
-    // ESC key: close inspector before fullscreen exits
     this._inspectorKeydownHandler = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && this._inspectorOpen && this._isPreviewFullscreen) {
         e.stopPropagation();
@@ -446,115 +448,135 @@ export class MiniWorkspace extends HTMLElement {
       }
     };
     document.addEventListener('keydown', this._inspectorKeydownHandler, true);
-
-    this._inspectorOpen = true;
   }
 
   private _closeInspector(): void {
     if (!this._inspectorOpen) return;
-
     if (this._inspectorEl) {
       this._inspectorEl.remove();
       this._inspectorEl = null;
     }
-
     if (this._inspectorKeydownHandler) {
       document.removeEventListener('keydown', this._inspectorKeydownHandler, true);
       this._inspectorKeydownHandler = null;
     }
-
     this._inspectorOpen = false;
   }
 
+  // --- Summary (details-style) open/close + events ---
+
+  private _toggleBar(open?: boolean): void {
+    const currentlyOpen = this.classList.contains('bar-open');
+    const next = open === undefined ? !currentlyOpen : open;
+    const summary = this.shadowRoot!.querySelector('#summary') as HTMLElement | null;
+
+    if (next) {
+      this.classList.add('bar-open');
+      summary?.setAttribute('aria-expanded', 'true');
+      // .bar-fully-open toggled in transitionend
+    } else {
+      this.classList.remove('bar-fully-open'); // hide overflow immediately
+      this.classList.remove('bar-open');
+      summary?.setAttribute('aria-expanded', 'false');
+    }
+  }
+
   private setupEventListeners(): void {
-    // Code toggle button
-    const toggleBtn = this.shadowRoot!.querySelector('#code-toggle');
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
+    const summary = this.shadowRoot!.querySelector('#summary');
+    const bar = this.shadowRoot!.querySelector('#glass-bar') as HTMLElement | null;
+
+    // Click the summary row to toggle the glass-bar.
+    if (summary) {
+      summary.addEventListener('click', () => this._toggleBar());
+    }
+
+    // Stop clicks inside the bar from bubbling to the summary and re-collapsing.
+    if (bar) {
+      bar.addEventListener('click', (e) => e.stopPropagation());
+
+      this._onBarTransitionEnd = (e: TransitionEvent): void => {
+        if (e.propertyName !== 'height') return;
+        if (this.classList.contains('bar-open')) this.classList.add('bar-fully-open');
+      };
+      bar.addEventListener('transitionend', this._onBarTransitionEnd as EventListener);
+    }
+
+    // Code toggle (inside glass-bar)
+    const codeToggle = this.shadowRoot!.querySelector('#code-toggle');
+    if (codeToggle) {
+      codeToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (this.hasAttribute('code-open')) {
           this.removeAttribute('code-open');
+          codeToggle.classList.remove('active');
+          codeToggle.setAttribute('aria-pressed', 'false');
         } else {
           this.setAttribute('code-open', '');
+          codeToggle.classList.add('active');
+          codeToggle.setAttribute('aria-pressed', 'true');
           this._loadCodeMirrorIfNeeded();
         }
       });
     }
 
-    // "Open in Playground" — write to localStorage on click, then open new tab
+    // Playground launch
     const playgroundLink = this.shadowRoot!.querySelector('.playground-link');
     if (playgroundLink) {
-      playgroundLink.addEventListener('click', (e: Event) => this._handlePlaygroundClick(e as MouseEvent));
+      playgroundLink.addEventListener('click', (e: Event) => this._handlePlaygroundClick(e));
     }
 
-    // Set copy button text
-    const copyBtn = this.shadowRoot!.querySelector('copy-button') as HTMLElement & { setText(text: string): void };
+    // Copy source to clipboard
+    const copyBtn = this.shadowRoot!.querySelector('#copy-btn') as HTMLElement | null;
     if (copyBtn) {
-      copyBtn.setText(this._sourceCode);
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const originalTip = copyBtn.getAttribute('data-tip') || 'Copy';
+        try {
+          await navigator.clipboard.writeText(this._sourceCode);
+          copyBtn.setAttribute('data-tip', 'Copied');
+        } catch {
+          copyBtn.setAttribute('data-tip', 'Failed');
+        }
+        setTimeout(() => copyBtn.setAttribute('data-tip', originalTip), 1100);
+      });
     }
 
-    // Inspector toggle and fullscreen tracking — listen directly on mini-preview
+    // Fullscreen button — delegates to mini-preview's internal toggle so the
+    // existing attachFullscreenBehavior() wiring still owns the state machine.
+    const fsBtn = this.shadowRoot!.querySelector('#fullscreen-btn');
+    if (fsBtn) {
+      fsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const mp = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+        const previewFsBtn = mp?.shadowRoot?.querySelector('#fullscreen-toggle') as HTMLButtonElement | null;
+        previewFsBtn?.click();
+      });
+    }
+
+    // Inspector toggle + fullscreen tracking — listens on mini-preview.
     const miniPreview = this.shadowRoot!.querySelector('mini-preview');
     if (miniPreview) {
       miniPreview.addEventListener('toggle-inspector', () => {
-        if (this._isPreviewFullscreen) {
-          if (this._inspectorOpen) {
-            this._closeInspector();
-          } else {
-            this._openInspector();
-          }
-        }
+        if (this._inspectorOpen) this._closeInspector();
+        else this._openInspector();
       });
 
       miniPreview.addEventListener('fullscreen-change', ((e: CustomEvent) => {
         this._isPreviewFullscreen = e.detail.fullscreen;
-        if (!e.detail.fullscreen && this._inspectorOpen) {
-          this._closeInspector();
-        }
       }) as EventListener);
     }
 
-    // CSS variable controls
-    const varControls = this.shadowRoot!.querySelector('.var-controls');
-    if (varControls) {
-      const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
-
-      // Apply initial values so SVG inherits them
-      if (preview) {
-        for (const v of this._cssVars) {
-          preview.style.setProperty(v.name, v.defaultValue);
-        }
-      }
-
-      // Live color picker updates
-      varControls.addEventListener('input', (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        if (target.type === 'color') {
-          const varName = target.dataset.var;
-          if (preview && varName) {
-            preview.style.setProperty(varName, target.value);
-          }
-        }
-      });
-
-      // Reset button
-      const resetBtn = this.shadowRoot!.querySelector('#vars-reset');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          for (const v of this._cssVars) {
-            const input = varControls.querySelector(`input[data-var="${v.name}"]`) as HTMLInputElement | null;
-            if (input) input.value = v.defaultValue;
-            if (preview) preview.style.setProperty(v.name, v.defaultValue);
-          }
-        });
-      }
-    }
+    // Chip group (present if vars were detected synchronously)
+    this._wireChipGroup();
   }
 
   private render(): void {
-    const caption = this.getAttribute('caption') || '';
-
-    // Static fallback code for display before CodeMirror loads
-    const escapedCode = this._sourceCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const rawCaption = this.getAttribute('caption');
+    // escapeHtml already handles &<> — caption is rendered as text in <h2>.
+    const caption = rawCaption ? escapeHtml(rawCaption) : 'Code &amp; Preview';
+    const codeOpen = this.hasAttribute('code-open');
+    const escapedCode = escapeHtml(this._sourceCode);
+    const chipGroupInner = this._renderChipGroupInner();
 
     this.shadowRoot!.innerHTML = `
       <style>
@@ -568,155 +590,244 @@ export class MiniWorkspace extends HTMLElement {
           border: 1px solid var(--border-color, #e2e8f0);
           border-radius: var(--radius-lg, 12px);
           overflow: hidden;
-          background: var(--bg-secondary, #ffffff);
+          background: var(--bg-elevated, #ffffff);
+          box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
         }
 
-        /* Toolbar */
-        .toolbar {
+        /* --- Summary (always visible, 28px, click to toggle glass-bar) --- */
+        .mw-summary {
+          all: unset;
+          box-sizing: border-box;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 0.5rem 0.75rem;
-          background: var(--bg-tertiary, #f0f1f2);
+          gap: 6px;
+          height: 28px;
+          padding: 0 14px 0 10px;
           border-bottom: 1px solid var(--border-color, #e2e8f0);
-        }
-
-        .toolbar-left {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .toolbar-right {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .toolbar button {
-          padding: 0.375rem 0.75rem;
-          font-size: 0.75rem;
-          font-family: inherit;
-          font-weight: 500;
-          background: var(--bg-secondary, #ffffff);
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-sm, 4px);
+          background: var(--bg-elevated, #ffffff);
           cursor: pointer;
-          color: var(--text-secondary, #64748b);
-          transition: all var(--transition-base, 0.15s ease);
-          display: flex;
+          flex-shrink: 0;
+          user-select: none;
+          transition: background var(--transition-base, 0.15s ease);
+        }
+        .mw-summary:hover { background: var(--bg-tertiary, #f0f1f2); }
+        .mw-summary:focus { outline: none; }
+        .mw-summary:focus-visible { outline: none; }
+
+        .chevron {
+          width: 14px; height: 14px;
+          display: inline-flex;
           align-items: center;
-          gap: 0.25rem;
+          justify-content: center;
+          color: var(--text-tertiary, #94a3b8);
+          transform: rotate(0deg);
+          transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+                      color var(--transition-base, 0.15s ease);
+          flex-shrink: 0;
+        }
+        .mw-summary:hover .chevron { color: var(--text-secondary, #64748b); }
+        :host(.bar-open) .chevron {
+          transform: rotate(90deg);
+          color: var(--accent-color, #10b981);
+        }
+        .chevron svg { width: 10px; height: 10px; stroke-width: 2.4; }
+
+        .mw-title {
+          margin: 0;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: var(--text-primary, #1a1a2e);
+          letter-spacing: 0.01em;
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
         }
 
-        .toolbar button:hover {
-          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-          border-color: var(--border-strong, #cbd5e1);
+        /* --- Glass bar: in-flow, height-animated 0 → 44px --- */
+        .glass-bar {
+          flex-shrink: 0;
+          position: relative;
+          z-index: 5;
+          height: 0;
+          overflow: hidden;
+          background: color-mix(in srgb, var(--bg-elevated, #ffffff) 82%, transparent);
+          backdrop-filter: blur(20px) saturate(140%);
+          -webkit-backdrop-filter: blur(20px) saturate(140%);
+          border-bottom: 1px solid transparent;
+          transition: height 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+                      border-bottom-color 0.22s ease;
+        }
+        :host(.bar-open) .glass-bar {
+          height: 44px;
+          border-bottom-color: var(--border-color, #e2e8f0);
+        }
+        /* After the height transition completes, overflow opens so dropdown
+           tooltips can escape the bar's bounds. */
+        :host(.bar-fully-open) .glass-bar { overflow: visible; }
+
+        .glass-bar-inner {
+          display: flex;
+          align-items: center;
+          height: 44px;
+          padding: 0 10px;
+          gap: 6px;
+        }
+
+        /* Icon buttons inside the bar */
+        .icon-btn {
+          width: 28px;
+          height: 28px;
+          padding: 0;
+          background: transparent;
+          border: 0;
+          border-radius: var(--radius-sm, 4px);
+          color: var(--text-secondary, #64748b);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-family: inherit;
+          transition: all var(--transition-base, 0.15s ease);
+          position: relative;
+        }
+        .icon-btn:hover {
+          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+          color: var(--accent-color, #10b981);
+        }
+        .icon-btn.active {
+          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+          color: var(--accent-color, #10b981);
+        }
+        .icon-btn svg {
+          width: 14px;
+          height: 14px;
+          stroke-width: 1.8;
+        }
+
+        /* Tooltips on icon buttons */
+        .icon-btn[data-tip]::after {
+          content: attr(data-tip);
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 50%;
+          transform: translateX(-50%) translateY(-4px);
+          font-size: 0.625rem;
+          font-weight: 500;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text-primary, #1a1a2e);
+          background: var(--bg-elevated, #ffffff);
+          border: 1px solid var(--border-color, #e2e8f0);
+          padding: 3px 8px;
+          white-space: nowrap;
+          border-radius: var(--radius-sm, 4px);
+          opacity: 0;
+          pointer-events: none;
+          transition: all var(--transition-base, 0.15s ease);
+          z-index: 10;
+          box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+        }
+        .icon-btn:hover[data-tip]::after {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+        /* Right-aligned variant — avoids clipping when button is at the bar edge */
+        .icon-btn[data-tip-align="right"]::after {
+          left: auto;
+          right: 0;
+          transform: translateX(0) translateY(-4px);
+        }
+        .icon-btn[data-tip-align="right"]:hover::after {
+          transform: translateX(0) translateY(0);
+        }
+        /* Left-aligned variant — same, for the leftmost button */
+        .icon-btn[data-tip-align="left"]::after {
+          left: 0;
+          right: auto;
+          transform: translateX(0) translateY(-4px);
+        }
+        .icon-btn[data-tip-align="left"]:hover::after {
+          transform: translateX(0) translateY(0);
+        }
+
+        .glass-divider {
+          width: 1px;
+          height: 16px;
+          background: var(--border-color, #e2e8f0);
+          margin: 0 4px;
+          flex-shrink: 0;
+        }
+
+        /* Per-CSS-var color chips */
+        .chip-group {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          height: 28px;
+          padding: 0 8px 0 4px;
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+          cursor: pointer;
+          position: relative;
+          transition: background var(--transition-base, 0.15s ease);
+        }
+        .chip:hover {
+          background: var(--bg-tertiary, #f0f1f2);
+        }
+        .chip .dot {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--chip-color, transparent);
+          box-shadow: inset 0 0 0 1px var(--border-color, #e2e8f0),
+                      0 0 0 2px transparent;
+          transition: box-shadow var(--transition-base, 0.15s ease);
+          flex-shrink: 0;
+        }
+        .chip:hover .dot,
+        .chip:focus-within .dot {
+          box-shadow: inset 0 0 0 1px var(--border-color, #e2e8f0),
+                      0 0 0 2px var(--accent-color, #10b981);
+        }
+        .chip .chip-label {
+          font-family: var(--font-mono, 'Inconsolata', monospace);
+          font-size: 0.6875rem;
+          color: var(--text-secondary, #64748b);
+          letter-spacing: 0;
+          white-space: nowrap;
+        }
+        .chip:hover .chip-label {
           color: var(--text-primary, #1a1a2e);
         }
+        .chip input[type="color"] {
+          opacity: 0;
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          padding: 0;
+          margin: 0;
+          border: 0;
+          cursor: pointer;
+        }
 
-        :host([code-open]) #code-toggle {
+        /* Playground button — accent fill, always rightmost */
+        .icon-btn.playground {
+          margin-left: auto;
           background: var(--accent-color, #10b981);
-          border-color: var(--accent-color, #10b981);
           color: var(--accent-text, #ffffff);
         }
-
-        :host([code-open]) #code-toggle:hover {
-          background: var(--accent-hover, #0ea572);
-        }
-
-        /* Dark mode: ensure readable contrast on toolbar buttons */
-        @media (prefers-color-scheme: dark) {
-          .toolbar button {
-            color: var(--text-primary, #e2e8f0);
-          }
-        }
-        :host-context([data-theme="dark"]) .toolbar button {
-          color: var(--text-primary, #e2e8f0);
-        }
-
-        .playground-link {
-          padding: 0.375rem 0.75rem;
-          font-size: 0.75rem;
-          font-family: inherit;
-          font-weight: 500;
-          background: var(--bg-secondary, #ffffff);
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-sm, 4px);
-          cursor: pointer;
-          color: var(--text-secondary, #64748b);
-          text-decoration: none;
-          transition: all var(--transition-base, 0.15s ease);
-        }
-
-        .playground-link:hover {
-          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-          border-color: var(--border-strong, #cbd5e1);
-          color: var(--text-primary, #1a1a2e);
-        }
-
-        /* CSS variable controls */
-        .var-controls {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.5rem 0.75rem;
-          border-bottom: 1px solid var(--border-color, #e2e8f0);
-          background: var(--bg-secondary, #ffffff);
-        }
-
-        .var-control {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          cursor: pointer;
-        }
-
-        .var-label {
-          font-family: var(--font-mono, monospace);
-          font-size: 0.6875rem;
-          color: var(--text-secondary, #64748b);
-        }
-
-        .var-controls input[type="color"] {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 26px;
-          height: 26px;
-          border: 2px solid var(--border-color, #ddd);
-          border-radius: var(--radius-sm, 4px);
-          padding: 0;
-          cursor: pointer;
-          background: none;
-        }
-
-        .var-controls input[type="color"]::-webkit-color-swatch-wrapper {
-          padding: 2px;
-        }
-
-        .var-controls input[type="color"]::-webkit-color-swatch {
-          border: none;
-          border-radius: 2px;
-        }
-
-        #vars-reset {
-          margin-left: auto;
-          padding: 0.25rem 0.5rem;
-          font-size: 0.6875rem;
-          font-family: inherit;
-          font-weight: 500;
-          background: var(--bg-tertiary, #f0f1f2);
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-sm, 4px);
-          cursor: pointer;
-          color: var(--text-secondary, #64748b);
-          transition: all var(--transition-base, 0.15s ease);
-        }
-
-        #vars-reset:hover {
-          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-          color: var(--text-primary, #1a1a2e);
+        .icon-btn.playground:hover {
+          background: var(--accent-hover, #059669);
+          color: var(--accent-text, #ffffff);
         }
 
         /* Content area */
@@ -729,7 +840,6 @@ export class MiniWorkspace extends HTMLElement {
           min-height: 0;
           overflow: hidden;
         }
-
         :host([code-open]) .content-area {
           grid-template-columns: 1fr 1fr;
         }
@@ -744,50 +854,26 @@ export class MiniWorkspace extends HTMLElement {
           position: relative;
         }
 
-        .code-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.375rem 0.5rem;
-          background: var(--bg-tertiary, #f0f1f2);
-          border-bottom: 1px solid var(--border-color, #e2e8f0);
-          font-size: 0.6875rem;
-          color: var(--text-secondary, #64748b);
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.025em;
-        }
-
         #editor-container {
           flex: 1;
           overflow: auto;
         }
-
         #editor-container .cm-editor {
           height: 100%;
           font-size: 13px;
         }
-
-        #editor-container .cm-editor .cm-content {
-          cursor: default;
-        }
-
+        #editor-container .cm-editor .cm-content { cursor: default; }
         #editor-container .cm-editor .cm-scroller {
           font-family: var(--font-mono, 'Inconsolata', monospace);
           font-weight: 500;
         }
+        #editor-container .cm-editor.cm-focused { outline: none; }
 
-        #editor-container .cm-editor.cm-focused {
-          outline: none;
-        }
-
-        /* Static fallback */
         #code-fallback {
           margin: 0;
           flex: 1;
           overflow: auto;
         }
-
         #code-fallback code {
           display: block;
           padding: 0.75rem;
@@ -806,36 +892,9 @@ export class MiniWorkspace extends HTMLElement {
           overflow: visible;
           position: relative;
         }
-
         mini-preview {
           width: 100%;
           height: 100%;
-        }
-
-        /* Footer */
-        .footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.375rem 0.75rem;
-          background: var(--bg-tertiary, #f0f1f2);
-          border-top: 1px solid var(--border-color, #e2e8f0);
-          font-size: 0.6875rem;
-          color: var(--text-tertiary, #94a3b8);
-          min-height: 1.75rem;
-        }
-
-        .footer-brand {
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          font-size: 0.625rem;
-          opacity: 0.8;
-        }
-
-        .footer-caption {
-          font-style: italic;
-          font-size: 0.75rem;
         }
 
         /* Responsive */
@@ -844,7 +903,6 @@ export class MiniWorkspace extends HTMLElement {
             grid-template-columns: 1fr;
             grid-template-rows: 200px 1fr;
           }
-
           .code-panel {
             border-right: none;
             border-bottom: 1px solid var(--border-color, #e2e8f0);
@@ -852,52 +910,42 @@ export class MiniWorkspace extends HTMLElement {
         }
       </style>
 
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button id="code-toggle" title="Toggle code panel">&lt;/&gt; Code</button>
-        </div>
-        <div class="toolbar-right">
-          <a class="playground-link" href="#" rel="noopener">Open in Playground &#x2197;</a>
-        </div>
-      </div>
+      <button class="mw-summary" id="summary" type="button" aria-expanded="false" aria-controls="glass-bar">
+        <span class="chevron" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg>
+        </span>
+        <h2 class="mw-title">${caption}</h2>
+      </button>
 
-      ${
-        this._cssVars.length > 0
-          ? `
-      <div class="var-controls">
-        ${this._cssVars
-          .map(
-            (v) => `
-          <label class="var-control">
-            <input type="color" value="${v.defaultValue}" data-var="${v.name}">
-            <span class="var-label">${v.name}</span>
-          </label>
-        `,
-          )
-          .join('')}
-        <button id="vars-reset" title="Reset colors to defaults">Reset</button>
+      <div class="glass-bar" id="glass-bar">
+        <div class="glass-bar-inner">
+          <button class="icon-btn${codeOpen ? ' active' : ''}" id="code-toggle" type="button" data-tip="Toggle code" data-tip-align="left" aria-pressed="${codeOpen}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3"/></svg>
+          </button>
+
+          <span class="chip-group" id="chip-group">${chipGroupInner}</span>
+
+          <span class="glass-divider"></span>
+          <button class="icon-btn" id="copy-btn" type="button" data-tip="Copy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+          </button>
+          <button class="icon-btn" id="fullscreen-btn" type="button" data-tip="Fullscreen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          </button>
+          <button class="icon-btn playground playground-link" type="button" data-tip="Open in playground workspace" data-tip-align="right" aria-label="Open in playground workspace">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>
+          </button>
+        </div>
       </div>
-      `
-          : ''
-      }
 
       <div class="content-area">
         <div class="code-panel">
-          <div class="code-header">
-            <span>Source</span>
-            <copy-button variant="inline"></copy-button>
-          </div>
           <div id="code-fallback"><code>${escapedCode}</code></div>
           <div id="editor-container"></div>
         </div>
         <div class="preview-panel">
           <mini-preview></mini-preview>
         </div>
-      </div>
-
-      <div class="footer">
-        <span class="footer-brand">Pathogen</span>
-        ${caption ? `<span class="footer-caption">${caption}</span>` : ''}
       </div>
     `;
   }

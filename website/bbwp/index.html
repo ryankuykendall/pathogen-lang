@@ -82,9 +82,111 @@
         color: #a6adc8;
         font-size: 0.75rem;
       }
+      /* Pinned section above the auto-generated BBWP archive */
+      .pinned {
+        margin: 0 0 2rem 0;
+        padding: 1rem 1.25rem 1.25rem;
+        background: #24243a;
+        border: 1px solid #45475a;
+        border-radius: 6px;
+      }
+      .pinned h2 {
+        font-size: 0.95rem;
+        color: #f5c2e7;
+        margin-bottom: 0.15rem;
+      }
+      .pinned .subtitle-sm {
+        font-size: 0.75rem;
+        color: #a6adc8;
+        margin-bottom: 0.85rem;
+      }
+      .pinned ul { list-style: none; }
+      .pinned li {
+        border-bottom: 1px solid #313244;
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        align-items: baseline;
+        gap: 0.6rem;
+        padding: 0.5rem 0.5rem;
+        font-size: 0.85rem;
+      }
+      .pinned li:last-child { border-bottom: none; }
+      .pinned li:hover { background: #313244; border-radius: 4px; }
+      .pinned .num {
+        color: #585b70;
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .pinned .title-link {
+        color: #89b4fa;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .pinned .title-link:hover { text-decoration: underline; }
+      .pinned .chrome-tag {
+        color: #a6dbb4;
+        font-size: 0.72rem;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .pinned .chrome-tag.baseline { color: #f9a8a8; }
+      .pinned .footer-note {
+        margin-top: 0.75rem;
+        font-size: 0.72rem;
+        color: #7f849c;
+      }
+      .pinned .footer-note a { color: #89b4fa; }
     </style>
   </head>
   <body>
+    <section class="pinned">
+      <h2>Mini-Workspace Chrome Reduction — Design Explorations</h2>
+      <p class="subtitle-sm">Static HTML prototypes addressing reviewer feedback. Toggle <em>Embedded / Fullscreen</em> on each page; click <em>Show rulers</em> (bottom-right) to annotate chrome bands.</p>
+      <ul>
+        <li>
+          <span class="num">00</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/00-baseline-current.html">Baseline (current) <span style="color:#7f849c;font-weight:400">— faithful recreation</span></a>
+          <span class="chrome-tag baseline">176px · reference</span>
+        </li>
+        <li>
+          <span class="num">01</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/01-editorial-minimal.html">Editorial Minimal <span style="color:#7f849c;font-weight:400">— Fraunces + moss</span></a>
+          <span class="chrome-tag">~68px · 61% ↓</span>
+        </li>
+        <li>
+          <span class="num">02</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/02-devtools-inline.html">DevTools Inline <span style="color:#7f849c;font-weight:400">— chips live in code, IBM Plex + teal</span></a>
+          <span class="chrome-tag">~32px · 82% ↓</span>
+        </li>
+        <li>
+          <span class="num">03</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/03-ambient-chrome.html">Ambient Chrome <span style="color:#7f849c;font-weight:400">— glass-blur bar, near-black</span></a>
+          <span class="chrome-tag">~28px rest · 84% ↓</span>
+        </li>
+        <li>
+          <span class="num">04</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/04-split-ribbon.html">Split Ribbon <span style="color:#7f849c;font-weight:400">— dual micro-headers, Space Mono</span></a>
+          <span class="chrome-tag">~28px/panel · 68% ↓</span>
+        </li>
+        <li>
+          <span class="num">05</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/05-refined-monochrome.html">Refined Monochrome <span style="color:#7f849c;font-weight:400">— Playfair Display, oxblood</span></a>
+          <span class="chrome-tag">~56px · 68% ↓</span>
+        </li>
+        <li>
+          <span class="num">06</span>
+          <a class="title-link" href="/project-docs/mini-workspace-chrome-reduction/explorations/06-ambient-details.html">Ambient Chrome — Details <span style="color:#7f849c;font-weight:400">— click-to-expand, in-flow slide</span></a>
+          <span class="chrome-tag">~28px rest · 84% ↓</span>
+        </li>
+      </ul>
+      <p class="footer-note">
+        Context: <a href="/project-docs/mini-workspace-chrome-reduction/README.md">README</a> ·
+        <a href="/project-docs/mini-workspace-chrome-reduction/feedback.md">reviewer feedback</a> ·
+        <a href="/project-docs/mini-workspace-chrome-reduction/chrome-inventory.md">chrome inventory</a>
+      </p>
+    </section>
+
     <h1>BBWP Archive</h1>
     <p class="subtitle">Bare-Bones Web Page render artifacts, newest first.</p>
     <!-- BBWP_INDEX_START -->
