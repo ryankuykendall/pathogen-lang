@@ -215,7 +215,13 @@ analyzeScopes(document)            // → ScopeInfo { root, declarations, refere
 
 ## Development Lifecycle
 
-1. **Documentation first** — Update `docs/` before coding (except bug fixes). Start by writing the usage examples the end-user will see — these define the contract. The doc should answer: what does this look like in code, what does it produce, and when would you use it? When adding, removing, or revising features, doc changes must go through [agentic review](../website/guidelines/agentic-review.md).
+1. **User-facing developer documentation first** — Before any code changes (except bug fixes), create or update the published `docs/<feature>.md` page. Concretely:
+   - **Create the file** at `docs/<feature>.md` if it doesn't exist. Start by writing the usage examples the end-user will see — these define the contract. The doc should answer: what does this look like in code, what does it produce, and when would you use it?
+   - **Register it** in `scripts/build-docs.ts` `DOC_FILES` — e.g., `'<feature>.md': '<exportName>'`. An unregistered doc will not be published, and the feature will not appear on the site.
+   - **Verify** by running `npm run build:docs` and then `npm run dev:website` → open `http://localhost:3000/pathogen/docs/<feature>` to confirm the page renders.
+   - When adding, removing, or revising features, doc changes must go through [agentic review](../website/guidelines/agentic-review.md).
+
+   **`project-docs/<feature>/` is not a substitute.** `project-docs/` holds internal primers, plans, and demo `.pathogen` files — it is never published and does not satisfy the docs-first requirement. See `.claude/CLAUDE.md` → [`docs/` vs `project-docs/`](../.claude/CLAUDE.md#docs-vs-project-docs).
 2. **Write failing tests** — First, translate the doc examples from step 1 into happy-path tests that validate the documented experience. Then add edge case and error message tests to protect against surprising behavior. Target specific test files:
    - Syntax → `tests/parser.test.ts`
    - Behavior → `tests/evaluator.test.ts`

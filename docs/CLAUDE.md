@@ -1,6 +1,12 @@
 # Documentation
 
-Public-facing documentation — every `.md` file here is compiled into the site.
+User-facing developer documentation — every `.md` file here is compiled into the published site at `/pathogen/docs`.
+
+## Scope: what belongs here vs `project-docs/`
+
+This directory is **user-facing developer documentation**. Every file here is published to the website and forms the contract the end user sees. If content is **internal** (agent plans, feature primers, roadmaps, demo `.pathogen` files, decision logs, weekly summaries), it belongs in `project-docs/` instead — that directory is never published.
+
+**`project-docs/` is not a substitute for `docs/`.** When adding a new Pathogen language feature, this directory is the **first** place to write — before `src/`, before tests, before any `project-docs/` artifact. See `src/CLAUDE.md` → Development Lifecycle step 1, and `.claude/CLAUDE.md` → [`docs/` vs `project-docs/`](../.claude/CLAUDE.md#docs-vs-project-docs).
 
 ## Overview
 
@@ -8,7 +14,7 @@ Public-facing documentation — every `.md` file here is compiled into the site.
 - Outputs: `playground/utils/docs-content.js` (SPA) + `website/docs-static/index.html` (SEO)
 - Heading IDs auto-generated with section prefix (e.g., `syntax-variables`)
 - Build: `npm run build:docs`
-- Plans, primers, and internal reference docs live in `project-docs/`
+- Plans, primers, and internal reference docs live in `project-docs/` (never published)
 
 ## Publishing
 

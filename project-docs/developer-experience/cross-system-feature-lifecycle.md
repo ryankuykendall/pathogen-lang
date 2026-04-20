@@ -46,6 +46,15 @@ See also [`playground-language-parity.md`](./playground-language-parity.md) for 
 
 **Dependency chain**: Compiler → Language Services → dist/ bundle → { Playground, Language Server → VS Code Extension }
 
+## Mandatory first step: user-facing developer documentation
+
+**Every checklist in this document assumes `docs/<feature>.md` has already been written and registered in `scripts/build-docs.ts` `DOC_FILES` before any code is changed.** If the feature doesn't have a published docs page, stop and write one first. This is not optional and not a later step — it is prerequisite to any of the checklists below.
+
+- "User-facing developer documentation" means the `.md` file in `docs/` that is compiled and published to the website at `/pathogen/docs`.
+- `project-docs/<feature>/` demos, primers, and plans are **internal** — they are never a substitute. See `.claude/CLAUDE.md` → [`docs/` vs `project-docs/`](../../.claude/CLAUDE.md#docs-vs-project-docs).
+- A new `.md` file has no effect until it appears in `scripts/build-docs.ts` `DOC_FILES`. Registration is part of the doc, not a separate step.
+- Verify with `npm run build:docs` and spot-check the rendered page at `http://localhost:3000/pathogen/docs/<feature>` via `npm run dev:website`.
+
 ## Feature Type Checklists
 
 ### Adding a New Language-Services Feature
@@ -121,6 +130,22 @@ See also [`playground-language-parity.md`](./playground-language-parity.md) for 
 7. `tests/language-services/completion.test.ts` — Test member completions appear
 8. `npm run build` to rebuild dist/
 
+### Adding a New Constructor Type
+
+Applies when adding a paint-server- or defs-like constructor that produces a named SVG element and is referenced via `url(#id)` in styles (`Marker()`, `Mask()`, `ClipPath()`, `Pattern()`, `LinearGradient()`, `RadialGradient()`, etc.):
+
+1. **`docs/<feature>.md` (new file) + register in `scripts/build-docs.ts` `DOC_FILES`** — docs first. Include: constructor signature, `.append()` / `.stop()` / equivalent method signatures, default attribute values, mutable properties table (with enum names), usage in styles (`fill`, `stroke`, `marker-start`, etc.), `context-stroke` / `context-fill` if applicable, generated SVG output, errors table.
+2. `src/evaluator/types.ts` — Add `<Feature>Value` interface with all attributes.
+3. `src/evaluator/index.ts` — Implement constructor, methods, property assignment with enum validation. If it resolves to `url(#id)` in styles, register the style-property name(s) in `URL_REF_PROPERTIES`. Register the defs map on `evalState` and include it in the duplicate-ID check.
+4. `src/evaluator/annotated.ts` — Parallel annotated output support.
+5. `src/svg-generator.ts` — Emit the SVG `<defs>` element with correct attributes and child paths.
+6. `src/api-surface.ts` — Register constructor + any new enums in the type registry.
+7. `src/language-services/completion-data-static.ts` — Add constructor and member completions.
+8. `src/language-services/scope-analysis.ts`, `inlay-hints.ts` — Recognize the constructor in scopes / parameter hints as needed.
+9. `tests/<feature>.test.ts` — Behavior, property mutation, error messages.
+10. `npm run build && npm run build:docs` — verify `dist/` rebuilds and the docs page compiles.
+11. (Optional, internal) `project-docs/<feature>/` — demo `.pathogen` files. **Not a substitute for step 1.**
+
 ### Adding New Syntax (Block Type / Construct)
 
 This is the heaviest lift — combines the keyword checklist plus:
@@ -187,5 +212,5 @@ After making cross-system changes:
 - [ ] Hover info shows for new constructs
 - [ ] TextMate grammar highlights new syntax correctly (check `test-fixtures/all-syntax.pathogen` in VS Code)
 - [ ] **Playground verification**: the new feature works in `npm run dev:website` on http://localhost:3000/pathogen — not just in VS Code
-- [ ] Documentation updated and passes `npm run build:docs`
+- [ ] **User-facing documentation shipped**: `docs/<feature>.md` exists, is registered in `scripts/build-docs.ts` `DOC_FILES`, compiles cleanly under `npm run build:docs`, and renders at `http://localhost:3000/pathogen/docs/<feature>` during `npm run dev:website`. `project-docs/<feature>/` demos do not satisfy this check.
 - [ ] CHANGELOG.md updated
