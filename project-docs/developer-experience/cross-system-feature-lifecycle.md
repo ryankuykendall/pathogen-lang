@@ -1,10 +1,27 @@
 # Cross-System Feature Lifecycle
 
-**Date**: 2026-04-07 (updated 2026-04-10: added Playground wire-up rows and the language-services feature lifecycle).
+**Date**: 2026-04-07 (updated 2026-04-10: added Playground wire-up rows and the language-services feature lifecycle; updated 2026-04-20: added Three-Surface Parity principle and the constructor-type playground wire-up steps after the Marker playground-render gap was discovered).
 
 When a language feature is added to Pathogen (keyword, stdlib function, enum, type, syntax construct), multiple systems need coordinating updates. This document is the comprehensive reference for that process.
 
 **Quick-reference versions**: See the cross-cutting section in `.claude/CLAUDE.md` and the per-system CLAUDE.md files for concise checklists.
+
+## Three-Surface Parity Principle
+
+Pathogen exposes **three user-facing surfaces** where every feature must work identically:
+
+1. **CLI** — `src/cli.ts` invoking `src/svg-generator.ts` to produce complete SVG strings
+2. **Playground** — the browser SPA at `/pathogen`, rendering live in `playground/components/svg-preview-pane.ts`
+3. **VS Code** — the extension preview command in `packages/vscode-pathogen/src/preview.ts` (and LSP features via `packages/pathogen-language-server`)
+
+**Shipping a feature means reaching all three surfaces.** "It works in the CLI" is not done. A feature that lands in `src/` but isn't wired through to the playground preview pane or the VS Code preview is a **silent regression** — the user runs the same program twice, gets working output from the CLI and broken output from the browser, and concludes the tool is broken. This is what happened with the Marker feature (commit `87298e0` shipped CLI and tests but not the 5-file playground wiring chain; discovered 2026-04-20).
+
+Drift between surfaces is the primary failure mode. The parity test at [`tests/cross-channel-parity.test.ts`](../../tests/cross-channel-parity.test.ts) covers the language-services channel (completion, hover, etc.); **there is not yet a parity test for the render channel** (defs-producing constructs like Mask/Marker/Gradient). Until that exists, every checklist in this document calls out the three-surface wiring steps explicitly, and the Post-Change Verification Checklist requires a manual three-surface diff.
+
+**Render-channel wiring surface:**
+- **CLI**: `src/svg-generator.ts` — emits `<defs>` children to the output SVG string
+- **Playground**: five-file chain — `playground/types/compiler.d.ts` (add `<Feature>Output` type) → `playground/types/store.d.ts` (add field) → `playground/state/store.ts` (initializer) → `playground/components/workspace-view.ts` (forward `result.<feature>s`) → `playground/components/svg-preview-pane.ts` (add `<Feature>Def` interface and inject into `<defs>`)
+- **VS Code**: `packages/vscode-pathogen/src/preview.ts` (currently a stub — tracked in `packages/vscode-pathogen/CLAUDE.md` Readiness Status)
 
 ## Feature Catalog — Single Source of Truth
 
@@ -22,29 +39,35 @@ See also [`playground-language-parity.md`](./playground-language-parity.md) for 
 ## System Map
 
 ```
-                ┌─────────────┐
-                │   docs/     │  User-facing documentation
-                └──────┬──────┘
-                       │
-    ┌──────────────────┼──────────────────┐
-    │                  │                  │
-┌───┴────┐    ┌────────┴────────┐   ┌────┴───────────────────┐
-│Compiler│    │Language Services│   │VS Code Extension       │
-│src/    │───▶│src/language-    │◀──│packages/vscode-pathogen│
-│parser/ │    │services/        │   │packages/pathogen-      │
-│evaluat.│    │(16 files)       │   │  language-server/      │
-│stdlib/ │    └────────┬────────┘   └────────────────────────┘
-└────────┘             │
-                       │
-              ┌────────┴────────┐
-              │   Playground    │
-              │  playground/    │
-              │ (via dist/      │
-              │  index.global.js│
-              └─────────────────┘
+                             ┌─────────────┐
+                             │   docs/     │  User-facing developer documentation
+                             └──────┬──────┘
+                                    │
+                         (shared engine: compiler + intelligence)
+                    ┌───────────────┴───────────────┐
+             ┌─────┴──────┐                   ┌─────┴──────────┐
+             │  Compiler  │                   │ Language       │
+             │  src/      │──────────────────▶│ Services       │
+             │  parser/   │                   │ src/language-  │
+             │  evaluator/│                   │ services/      │
+             │  stdlib/   │                   │ (16 files)     │
+             └─────┬──────┘                   └────────┬───────┘
+                   │                                   │
+                   ▼                                   ▼
+           ┌───── three user-facing surfaces (must maintain parity) ──────┐
+           │                                                              │
+    ┌──────┴────┐       ┌──────────────────┐        ┌────────────────────┴──┐
+    │ 1. CLI    │       │ 2. Playground    │        │ 3. VS Code Extension  │
+    │ src/cli.ts│       │ playground/      │        │ packages/vscode-      │
+    │ src/svg-  │       │ (svg-preview-    │        │   pathogen/           │
+    │ generator │       │  pane.ts, etc.)  │        │ packages/pathogen-    │
+    │ .ts       │       │                  │        │   language-server/    │
+    └───────────┘       └──────────────────┘        └───────────────────────┘
 ```
 
-**Dependency chain**: Compiler → Language Services → dist/ bundle → { Playground, Language Server → VS Code Extension }
+**Dependency chain**: Compiler → Language Services → `dist/` bundle → { CLI, Playground, VS Code Language Server → VS Code Extension }
+
+**Parity expectation**: a single Pathogen program must produce visually equivalent output in all three surfaces. Drift between surfaces (feature works in CLI but not playground, completions work in VS Code but not playground, etc.) is the primary failure mode this document exists to prevent.
 
 ## Mandatory first step: user-facing developer documentation
 
@@ -132,19 +155,44 @@ See also [`playground-language-parity.md`](./playground-language-parity.md) for 
 
 ### Adding a New Constructor Type
 
-Applies when adding a paint-server- or defs-like constructor that produces a named SVG element and is referenced via `url(#id)` in styles (`Marker()`, `Mask()`, `ClipPath()`, `Pattern()`, `LinearGradient()`, `RadialGradient()`, etc.):
+Applies when adding a paint-server- or defs-like constructor that produces a named SVG element and is referenced via `url(#id)` in styles (`Marker()`, `Mask()`, `ClipPath()`, `Pattern()`, `LinearGradient()`, `RadialGradient()`, etc.).
+
+**This is the checklist most at risk of silent drift between the three user-facing surfaces.** Each of the CLI, playground, and VS Code extension has its own render path; compiling correctly in the shared engine is only step 1 of 3. Follow every step below — especially the five-file playground chain (steps 11–15) and the VS Code preview step (step 16) — or the feature will work in the CLI but produce a blank/missing result in the other two surfaces.
+
+**Shared engine (steps 1–10):**
 
 1. **`docs/<feature>.md` (new file) + register in `scripts/build-docs.ts` `DOC_FILES`** — docs first. Include: constructor signature, `.append()` / `.stop()` / equivalent method signatures, default attribute values, mutable properties table (with enum names), usage in styles (`fill`, `stroke`, `marker-start`, etc.), `context-stroke` / `context-fill` if applicable, generated SVG output, errors table.
 2. `src/evaluator/types.ts` — Add `<Feature>Value` interface with all attributes.
-3. `src/evaluator/index.ts` — Implement constructor, methods, property assignment with enum validation. If it resolves to `url(#id)` in styles, register the style-property name(s) in `URL_REF_PROPERTIES`. Register the defs map on `evalState` and include it in the duplicate-ID check.
+3. `src/evaluator/index.ts` — Implement constructor, methods, property assignment with enum validation. If it resolves to `url(#id)` in styles, register the style-property name(s) in `URL_REF_PROPERTIES`. Register the defs map on `evalState` and include it in the duplicate-ID check. When serializing to `CompileResult`, add the output to the `result.<feature>s` array (e.g. `result.markers`).
 4. `src/evaluator/annotated.ts` — Parallel annotated output support.
-5. `src/svg-generator.ts` — Emit the SVG `<defs>` element with correct attributes and child paths.
-6. `src/api-surface.ts` — Register constructor + any new enums in the type registry.
-7. `src/language-services/completion-data-static.ts` — Add constructor and member completions.
-8. `src/language-services/scope-analysis.ts`, `inlay-hints.ts` — Recognize the constructor in scopes / parameter hints as needed.
-9. `tests/<feature>.test.ts` — Behavior, property mutation, error messages.
+5. `src/api-surface.ts` — Register constructor + any new enums in the type registry.
+6. `src/language-services/completion-data-static.ts` — Add constructor and member completions.
+7. `src/language-services/scope-analysis.ts`, `inlay-hints.ts` — Recognize the constructor in scopes / parameter hints as needed.
+8. `tests/<feature>.test.ts` — Behavior, property mutation, error messages.
+9. Add the new output type to the library's `CompileResult` / `LayerOutput` types so downstream consumers (CLI, playground, VS Code) see it.
 10. `npm run build && npm run build:docs` — verify `dist/` rebuilds and the docs page compiles.
-11. (Optional, internal) `project-docs/<feature>/` — demo `.pathogen` files. **Not a substitute for step 1.**
+
+**Surface 1 — CLI render path (step 11):**
+
+11. `src/svg-generator.ts` — Emit the SVG `<defs>` element with correct attributes and child paths. Follow the existing pattern used for `result.masks`, `result.clipPaths`, `result.gradients`, `result.patterns`. Elide attributes that match SVG defaults (matches the evaluator's elision — see `result.markers` precedent).
+
+**Surface 2 — Playground render path (steps 12–16, the five-file chain):**
+
+12. `playground/types/compiler.d.ts` — Add `<Feature>Output` type; extend `CompileResult` with `<feature>s: <Feature>Output[]`.
+13. `playground/types/store.d.ts` — Add `<feature>s` field to the store state type.
+14. `playground/state/store.ts` — Add `<feature>s: []` initializer to the default state.
+15. `playground/components/workspace-view.ts` — Forward `result.<feature>s || []` from the compile result into the preview pane payload (follow the existing `result.masks || []` precedent).
+16. `playground/components/svg-preview-pane.ts` — Add `<Feature>Def` interface mirroring the compile-result shape; extend `DefsData` with the new field; add a loop in the defs-injection section that creates a `<feature>` element per entry, populates its attributes, appends child `<path>` (or equivalent) elements, and appends the whole thing to `defsEl`. Include the new attribute in the cleanup selector on the line that clears previous-compilation defs.
+
+**Surface 3 — VS Code render path (step 17):**
+
+17. `packages/vscode-pathogen/src/preview.ts` — When the preview is functional (currently stub; see `packages/vscode-pathogen/CLAUDE.md` Readiness Status), ensure it consumes `result.<feature>s` and renders via `src/svg-generator.ts`. If the preview is still a stub, file the TODO in the extension's Readiness Status but do **not** declare the feature shipped until this surface is wired.
+
+**Internal (optional, not a substitute for the above):**
+
+18. `project-docs/<feature>/` — demo `.pathogen` files. **Not a substitute for any of the above.** These are internal artifacts only.
+
+**Before declaring done**, follow the Post-Change Verification Checklist below — specifically the three-surface parity diff.
 
 ### Adding New Syntax (Block Type / Construct)
 
@@ -201,6 +249,10 @@ Several steps in these checklists will become unnecessary once automation is in 
 
 Update these checklists once any of these automations are implemented.
 
+**Snippet sync**: VS Code snippets currently duplicate the snippet bodies from `completion-data.ts` `KEYWORD_COMPLETIONS` entries. These could be generated from the same source.
+
+**Render-channel parity test**: there is currently no automated test that diffs CLI-emitted SVG against the playground's rendered DOM. Adding one would catch silent surface drift (e.g. the Marker feature shipping in CLI but not playground). Until it exists, the three-surface verification below is a manual gate.
+
 ## Post-Change Verification Checklist
 
 After making cross-system changes:
@@ -209,8 +261,18 @@ After making cross-system changes:
 - [ ] **`tests/cross-channel-parity.test.ts` passes** — the feature catalog, Playground wiring, and VS Code server.ts are all in agreement
 - [ ] `npm run build` succeeds
 - [ ] New feature appears in completions (verify in playground or VS Code)
+
+### Three-surface parity (manual, required)
+
+Compile the same minimal Pathogen program exercising the new feature through **all three surfaces** and verify visually equivalent output. Silent drift here is the primary failure mode this project has historically suffered from (Marker shipped CLI-only, discovered weeks later).
+
+- [ ] **CLI**: `npx tsx src/cli.ts <repro>.pathogen --output-svg-file=/tmp/a.svg` — open in a browser; verify feature renders.
+- [ ] **Playground**: `npm run dev:website` → open `http://localhost:3000/pathogen`, paste the same program, verify feature renders in the preview pane. If the preview shows the path but no associated defs element (marker / mask / gradient / pattern), it's a playground wire-up gap — check the five-file chain in `playground/` (see `.claude/CLAUDE.md` → Three Surfaces).
+- [ ] **VS Code**: install the latest `.vsix` (or wait for the preview implementation if it's still stub), open the file, run the preview command, verify feature renders. If the preview command is still a stub, explicitly flag this in the commit message as "VS Code preview pending — tracked in packages/vscode-pathogen/CLAUDE.md Readiness Status."
+- [ ] **Diff**: is the output visually equivalent across all three surfaces? If not, which surface drifts, and what file in that surface's render path needs updating?
 - [ ] Hover info shows for new constructs
 - [ ] TextMate grammar highlights new syntax correctly (check `test-fixtures/all-syntax.pathogen` in VS Code)
 - [ ] **Playground verification**: the new feature works in `npm run dev:website` on http://localhost:3000/pathogen — not just in VS Code
 - [ ] **User-facing documentation shipped**: `docs/<feature>.md` exists, is registered in `scripts/build-docs.ts` `DOC_FILES`, compiles cleanly under `npm run build:docs`, and renders at `http://localhost:3000/pathogen/docs/<feature>` during `npm run dev:website`. `project-docs/<feature>/` demos do not satisfy this check.
+- [ ] **Three-surface parity**: see the Three-surface parity sub-checklist above. A feature passing tests and compiling cleanly in the CLI is **not shipped** until the same program renders equivalently in the playground preview and the VS Code preview.
 - [ ] CHANGELOG.md updated
