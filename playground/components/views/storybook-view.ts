@@ -2,6 +2,7 @@
 // Route: /storybook (hidden, dev only - not shown in nav)
 
 import styles from './storybook-view.css';
+import '../shared/pathogen-color-input.js';
 
 class StorybookView extends HTMLElement {
   constructor() {
@@ -84,12 +85,12 @@ class StorybookView extends HTMLElement {
             </header>
             <div class="demo-area">
               <div class="demo-color-group">
-                <input type="color" class="demo-color" value="#0066cc">
+                <pathogen-color-input class="demo-color" compact value="#0066cc"></pathogen-color-input>
                 <span style="font-family: monospace; font-size: 0.8125rem;">#0066cc</span>
               </div>
             </div>
             <div class="code-area">
-              <pre>&lt;input type="color" value="#0066cc"&gt;
+              <pre>&lt;pathogen-color-input compact value="#0066cc"&gt;&lt;/pathogen-color-input&gt;
 &lt;span&gt;#0066cc&lt;/span&gt;</pre>
             </div>
           </div>

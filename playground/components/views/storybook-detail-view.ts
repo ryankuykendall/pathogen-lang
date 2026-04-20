@@ -23,6 +23,7 @@ import '../shared/error-panel.js';
 import '../shared/copy-button.js';
 import '../shared/log-entry.js';
 import '../shared/control-group.js';
+import '../shared/pathogen-color-input.js';
 import '../svg-preview-pane.js';
 
 import styles from './storybook-detail-view.css';

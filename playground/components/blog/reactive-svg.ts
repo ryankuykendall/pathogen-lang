@@ -3,6 +3,8 @@
 // Changing a picker sets CSS custom properties on the container,
 // and the SVG updates reactively via var() references.
 
+import '../shared/pathogen-color-input.js';
+
 interface CssVar {
   name: string;
   defaultValue: string;
@@ -27,7 +29,7 @@ class ReactiveSvg extends HTMLElement {
         (v) =>
           `<label class="control">
         <span class="var-name">${v.name}</span>
-        <input type="color" value="${v.defaultValue}" data-var="${v.name}">
+        <pathogen-color-input compact value="${v.defaultValue}" data-var="${v.name}"></pathogen-color-input>
       </label>`,
       )
       .join('');
@@ -69,26 +71,7 @@ class ReactiveSvg extends HTMLElement {
           color: var(--text-secondary, #666);
         }
 
-        input[type="color"] {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 28px;
-          height: 28px;
-          border: 2px solid var(--border-color, #ddd);
-          border-radius: 4px;
-          padding: 0;
-          cursor: pointer;
-          background: none;
-        }
-
-        input[type="color"]::-webkit-color-swatch-wrapper {
-          padding: 2px;
-        }
-
-        input[type="color"]::-webkit-color-swatch {
-          border: none;
-          border-radius: 2px;
-        }
+        pathogen-color-input { flex-shrink: 0; }
 
         .svg-container {
           display: flex;
@@ -125,14 +108,12 @@ class ReactiveSvg extends HTMLElement {
     }
 
     // Listen for color picker changes
-    (this.shadowRoot!.querySelector('.controls') as HTMLElement).addEventListener('input', (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      if (target.type === 'color') {
-        const varName = target.dataset.var;
-        if (varName) {
-          container.style.setProperty(varName, target.value);
-        }
-      }
+    (this.shadowRoot!.querySelector('.controls') as HTMLElement).addEventListener('color-change', (e: Event) => {
+      const target = e.target as HTMLElement;
+      const varName = target.dataset.var;
+      if (!varName) return;
+      const value = (e as CustomEvent<{ value: string }>).detail.value;
+      container.style.setProperty(varName, value);
     });
   }
 

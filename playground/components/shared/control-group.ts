@@ -48,13 +48,8 @@ export class ControlGroup extends HTMLElement {
           font-size: 0.875rem;
         }
 
-        ::slotted(input[type="color"]) {
-          width: 36px;
-          height: 30px;
-          padding: 2px;
-          border: 1px solid var(--border-color, #ddd);
-          border-radius: 4px;
-          cursor: pointer;
+        ::slotted(pathogen-color-input) {
+          /* Sizing comes from the native <color-input> trigger chip. */
         }
 
         ::slotted(input[type="checkbox"]) {

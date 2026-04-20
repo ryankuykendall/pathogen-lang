@@ -1,6 +1,8 @@
 // Preferences View - Default SVG styling settings
 // Route: /preferences
 
+import '../shared/pathogen-color-input.js';
+
 import { preferencesApi } from '../../services/api.js';
 import { store } from '../../state/store.js';
 import styles from './preferences-view.css';
@@ -97,10 +99,11 @@ class PreferencesView extends HTMLElement {
     const form = this.shadowRoot!.querySelector('form');
     if (!form) return;
 
-    // Handle form input changes
+    // Handle form input changes (number/checkbox/text)
     form.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLInputElement;
       const { name, value, type, checked } = target;
+      if (!name) return;
       if (type === 'checkbox') {
         this.formValues[name] = checked;
       } else if (type === 'number') {
@@ -108,13 +111,19 @@ class PreferencesView extends HTMLElement {
       } else {
         this.formValues[name] = value;
       }
+    });
 
-      // Update color value display
-      if (type === 'color') {
-        const valueDisplay = target.nextElementSibling;
-        if (valueDisplay?.classList.contains('color-value')) {
-          valueDisplay.textContent = value;
-        }
+    // Handle <pathogen-color-input> color-change events
+    form.addEventListener('color-change', (e: Event) => {
+      const target = e.target as HTMLElement & { name?: string; value?: string };
+      const name = target.getAttribute('name');
+      if (!name) return;
+      const value = (e as CustomEvent<{ value: string }>).detail?.value ?? target.value ?? '';
+      this.formValues[name] = value;
+
+      const valueDisplay = target.nextElementSibling;
+      if (valueDisplay?.classList.contains('color-value')) {
+        valueDisplay.textContent = value;
       }
     });
 
@@ -222,7 +231,7 @@ class PreferencesView extends HTMLElement {
             <div class="form-group">
               <label for="background">Background Color</label>
               <div class="color-input-group">
-                <input type="color" id="background" name="background" value="${prefs.background}">
+                <pathogen-color-input id="background" name="background" compact value="${prefs.background}"></pathogen-color-input>
                 <span class="color-value">${prefs.background}</span>
               </div>
             </div>
@@ -233,7 +242,7 @@ class PreferencesView extends HTMLElement {
             <div class="form-group">
               <label for="gridColor">Grid Color</label>
               <div class="color-input-group">
-                <input type="color" id="gridColor" name="gridColor" value="${prefs.gridColor}">
+                <pathogen-color-input id="gridColor" name="gridColor" compact value="${prefs.gridColor}"></pathogen-color-input>
                 <span class="color-value">${prefs.gridColor}</span>
               </div>
             </div>

@@ -26,6 +26,18 @@
     <!-- svg-path-extended library (must load before app initializes) -->
     <script src="../dist/index.global.js"></script>
 
+    <!-- Resolve bare npm imports to bundled vendor chunks under /vendor -->
+    <script type="importmap">
+      {
+        "imports": {
+          "hdr-color-input": "./vendor/hdr-color-input.js"
+        }
+      }
+    </script>
+
+    <!-- Eagerly register the <color-input> custom element before any component upgrades -->
+    <script type="module" src="./vendor/hdr-color-input.js"></script>
+
     <!-- Load the root shell component (imports all other components) -->
     <script type="module">
       import './components/app-shell.js';

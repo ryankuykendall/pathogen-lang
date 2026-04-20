@@ -113,19 +113,8 @@
 }
 
 .var-color {
-  width: 24px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 3px;
-  cursor: pointer;
-  background: none;
   flex-shrink: 0;
 }
-
-.var-color::-webkit-color-swatch-wrapper { padding: 1px; }
-.var-color::-webkit-color-swatch { border: none; border-radius: 2px; }
-.var-color::-moz-color-swatch { border: none; border-radius: 2px; }
 
 .var-text {
   flex: 1;

@@ -1,7 +1,9 @@
 // Floating CSS variable panel for live override of var() references in SVG preview
 
 import type { CSSPropertyDeclaration, GradientOutput, LayerOutput } from '../types/compiler.js';
+import { detectFormat, formatToColorspace } from '../utils/color.js';
 import styles from './cssvar-panel.css';
+import './shared/pathogen-color-input.js';
 
 // Detect whether a string looks like a CSS color using canvas
 let _colorCtx: CanvasRenderingContext2D | null = null;
@@ -143,13 +145,16 @@ export class CssvarPanel extends HTMLElement {
       const currentValue = this._overrides.get(varName) || '';
 
       if (isColor) {
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
+        const seedValue = currentValue || info.fallback;
+        const colorInput = document.createElement('pathogen-color-input') as HTMLElement & {
+          value: string;
+        };
         colorInput.className = 'var-color';
-        // Convert fallback to hex for input
-        colorInput.value = this._fallbackToHex(currentValue || info.fallback);
-        colorInput.addEventListener('input', () => {
-          const val = colorInput.value;
+        colorInput.setAttribute('compact', '');
+        colorInput.setAttribute('colorspace', formatToColorspace(detectFormat(seedValue)));
+        colorInput.value = seedValue;
+        colorInput.addEventListener('color-change', (e: Event) => {
+          const val = (e as CustomEvent<{ value: string }>).detail.value;
           this._overrides.set(varName, val);
           textInput.value = val;
           this._emitOverride(varName, val);
@@ -188,8 +193,8 @@ export class CssvarPanel extends HTMLElement {
         this._emitOverride(varName, null);
         textInput.value = info.fallback;
         if (isColor) {
-          const colorEl = controls.querySelector('.var-color') as HTMLInputElement | null;
-          if (colorEl) colorEl.value = this._fallbackToHex(info.fallback);
+          const colorEl = controls.querySelector('.var-color') as (HTMLElement & { value: string }) | null;
+          if (colorEl) colorEl.value = info.fallback;
         }
         resetBtn.style.visibility = 'hidden';
         this._updateResetVisibility();
@@ -225,18 +230,6 @@ export class CssvarPanel extends HTMLElement {
     if (resetAll) {
       resetAll.style.display = this._overrides.size > 0 ? '' : 'none';
     }
-  }
-
-  private _fallbackToHex(value: string): string {
-    if (!value) return '#000000';
-    if (/^#[0-9a-fA-F]{6}$/.test(value)) return value;
-    // Use canvas to resolve any CSS color to hex
-    if (!_colorCtx) {
-      _colorCtx = document.createElement('canvas').getContext('2d');
-    }
-    _colorCtx!.fillStyle = '#000000';
-    _colorCtx!.fillStyle = value;
-    return _colorCtx!.fillStyle;
   }
 
   render(): void {

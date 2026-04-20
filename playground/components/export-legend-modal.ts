@@ -4,6 +4,7 @@
 import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
 import styles from './export-legend-modal.css';
+import './shared/pathogen-color-input.js';
 
 // Accent color used for legend border and resize handle (matches app theme)
 const ACCENT = '#10b981';
@@ -643,7 +644,7 @@ class ExportLegendModal extends HTMLElement {
     if (this._workspaceState) {
       (root.querySelector('#export-grid-enabled') as HTMLInputElement).checked =
         this._workspaceState.gridEnabled || false;
-      (root.querySelector('#export-grid-color') as HTMLInputElement).value =
+      (root.querySelector('#export-grid-color') as HTMLElement & { value: string }).value =
         (this._workspaceState.gridColor as string) || '#cccccc';
     }
   }
@@ -920,8 +921,8 @@ class ExportLegendModal extends HTMLElement {
       this._exportOverrides.gridEnabled = (e.target as HTMLInputElement).checked;
       this._scheduleRebuild();
     });
-    (root.querySelector('#export-grid-color') as HTMLInputElement).addEventListener('input', (e: Event) => {
-      this._exportOverrides.gridColor = (e.target as HTMLInputElement).value;
+    root.querySelector('#export-grid-color')!.addEventListener('color-change', (e: Event) => {
+      this._exportOverrides.gridColor = (e as CustomEvent<{ value: string }>).detail.value;
       this._scheduleRebuild();
     });
 
@@ -1125,7 +1126,7 @@ class ExportLegendModal extends HTMLElement {
               </div>
               <div class="advanced-row">
                 <label for="export-grid-color">Grid Color</label>
-                <input type="color" id="export-grid-color">
+                <pathogen-color-input id="export-grid-color" compact no-alpha></pathogen-color-input>
               </div>
             </div>
           </details>

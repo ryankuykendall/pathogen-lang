@@ -8,6 +8,7 @@
 // mini-preview goes fullscreen.
 
 import { themeManager } from '../../utils/theme.js';
+import '../shared/pathogen-color-input.js';
 import './mini-preview.js';
 
 function escapeHtml(s: string): string {
@@ -192,7 +193,7 @@ export class MiniWorkspace extends HTMLElement {
         return `
         <label class="chip" style="--chip-color:${value}" aria-label="${name}">
           <span class="dot"></span>
-          <input type="color" value="${value}" data-var="${name}">
+          <pathogen-color-input compact value="${value}" data-var="${name}"></pathogen-color-input>
           <span class="chip-label">${name}</span>
         </label>
       `;
@@ -214,14 +215,14 @@ export class MiniWorkspace extends HTMLElement {
     this._chipGroupWired = true;
     const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
 
-    chipGroup.addEventListener('input', (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      if (target.type === 'color') {
-        const varName = target.dataset.var;
-        if (preview && varName) preview.style.setProperty(varName, target.value);
-        const chip = target.closest('.chip') as HTMLElement | null;
-        if (chip) chip.style.setProperty('--chip-color', target.value);
-      }
+    chipGroup.addEventListener('color-change', (e: Event) => {
+      const target = e.target as HTMLElement;
+      const varName = target.dataset.var;
+      if (!varName) return;
+      const value = (e as CustomEvent<{ value: string }>).detail.value;
+      if (preview) preview.style.setProperty(varName, value);
+      const chip = target.closest('.chip') as HTMLElement | null;
+      if (chip) chip.style.setProperty('--chip-color', value);
     });
 
     const resetBtn = chipGroup.querySelector('#vars-reset');
@@ -229,7 +230,9 @@ export class MiniWorkspace extends HTMLElement {
       resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         for (const v of this._cssVars) {
-          const input = chipGroup.querySelector(`input[data-var="${v.name}"]`) as HTMLInputElement | null;
+          const input = chipGroup.querySelector(
+            `pathogen-color-input[data-var="${v.name}"]`,
+          ) as (HTMLElement & { value: string }) | null;
           if (input) input.value = v.defaultValue;
           const chip = input?.closest('.chip') as HTMLElement | null;
           if (chip) chip.style.setProperty('--chip-color', v.defaultValue);
@@ -807,7 +810,7 @@ export class MiniWorkspace extends HTMLElement {
         .chip:hover .chip-label {
           color: var(--text-primary, #1a1a2e);
         }
-        .chip input[type="color"] {
+        .chip pathogen-color-input {
           opacity: 0;
           position: absolute;
           inset: 0;

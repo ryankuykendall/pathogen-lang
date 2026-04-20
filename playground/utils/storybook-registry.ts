@@ -928,11 +928,11 @@ layer('hex').apply { circle(60, 100, 40) }`,
       container.innerHTML = `
         <div style="display: flex; gap: 1rem; align-items: center;">
           <div class="demo-color-group">
-            <input type="color" class="demo-color" value="#0066cc">
+            <pathogen-color-input class="demo-color" compact value="#0066cc"></pathogen-color-input>
             <span class="color-value">#0066cc</span>
           </div>
           <div class="demo-color-group">
-            <input type="color" class="demo-color" value="#28a745">
+            <pathogen-color-input class="demo-color" compact value="#28a745"></pathogen-color-input>
             <span class="color-value">#28a745</span>
           </div>
         </div>
@@ -945,10 +945,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
           .demo-color {
             width: 36px;
             height: 30px;
-            padding: 2px;
-            border: 1px solid var(--border-color, #e0e0e0);
             border-radius: 4px;
-            cursor: pointer;
           }
           .color-value {
             font-family: var(--font-mono, monospace);
@@ -958,10 +955,69 @@ layer('hex').apply { circle(60, 100, 40) }`,
       `;
 
       container.querySelectorAll('.demo-color').forEach((input) => {
-        input.addEventListener('input', (e) => {
-          const target = e.target as HTMLInputElement;
-          (target.nextElementSibling as HTMLElement).textContent = target.value;
+        input.addEventListener('color-change', (e) => {
+          const target = e.target as HTMLElement;
+          const value = (e as CustomEvent<{ value: string }>).detail.value;
+          (target.nextElementSibling as HTMLElement).textContent = value;
         });
+      });
+    },
+  },
+  {
+    id: 'pathogen-color-input',
+    name: 'Pathogen Color Input',
+    category: 'Form Controls',
+    description:
+      'Themed wrapper around <color-input> (hdr-color-input). Supports wide-gamut spaces (hex, srgb, hsl, oklch, oklab, display-p3, rec2020, lab, lch, hwb), alpha, and eye-dropper. Emits a composed `color-change` event.',
+    stories: [
+      { name: 'Default (hex)', props: { value: '#3498db' } },
+      { name: 'OKLCH', props: { value: 'oklch(0.7 0.15 180)', colorspace: 'oklch' } },
+      { name: 'No Alpha', props: { value: '#e63946', 'no-alpha': true } },
+      { name: 'Display-P3', props: { value: 'color(display-p3 1 0 0)', colorspace: 'display-p3' } },
+    ],
+    controls: [
+      { name: 'value', type: 'text', label: 'Value', default: '#3498db' },
+      {
+        name: 'colorspace',
+        type: 'select',
+        label: 'Colorspace',
+        default: 'hex',
+      },
+      { name: 'no-alpha', type: 'checkbox', label: 'No alpha', default: false },
+    ],
+    render: (container, props, controls) => {
+      container.innerHTML = `
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <pathogen-color-input
+            value="${props.value ?? '#3498db'}"
+            ${props.colorspace ? `colorspace="${props.colorspace}"` : ''}
+            ${props['no-alpha'] ? 'no-alpha' : ''}
+          ></pathogen-color-input>
+          <pre class="demo-readout"
+               style="margin: 0; padding: 0.5rem 0.75rem; background: var(--bg-secondary, #f5f5f5); border-radius: 4px; font-family: var(--font-mono, monospace); font-size: 0.8125rem;">Listening for color-change…</pre>
+        </div>
+      `;
+
+      const picker = container.querySelector('pathogen-color-input') as HTMLElement & {
+        value: string;
+        colorspace: string;
+        noAlpha: boolean;
+      };
+      const readout = container.querySelector('.demo-readout') as HTMLElement;
+
+      picker.addEventListener('color-change', (e) => {
+        const detail = (e as CustomEvent).detail;
+        readout.textContent = JSON.stringify(detail, null, 2);
+      });
+
+      controls.on('value', (v) => {
+        picker.value = v as string;
+      });
+      controls.on('colorspace', (v) => {
+        picker.colorspace = v as string;
+      });
+      controls.on('no-alpha', (v) => {
+        picker.noAlpha = Boolean(v);
       });
     },
   },
@@ -1072,25 +1128,63 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'With Caption',
         props: { codeOpen: false, caption: 'A simple circle drawn with Pathogen' },
       },
+      {
+        name: 'With CSS Vars',
+        props: {
+          codeOpen: false,
+          withVars: true,
+          caption: 'Click a color chip in the control bar to recolor the SVG — exercises <pathogen-color-input> in the blog embed.',
+        },
+      },
     ],
     controls: [{ name: 'codeOpen', type: 'toggle', label: 'Code Open', default: false }],
     render: (container, props, controls) => {
-      const sampleCode = `let r = 50;
+      const withVars = Boolean(props.withVars);
+
+      const plainCode = `let r = 50;
 let cx = 100;
 let cy = 100;
 
 circle(cx, cy, r)`;
-      const sampleSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+      const plainSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
   <rect width="200" height="200" fill="#ffffff"/>
   <circle cx="100" cy="100" r="50" stroke="#000000" stroke-width="2" fill="none"/>
 </svg>`;
 
+      // CSS-var variant: fill and stroke reference --bg-color, --ring-color,
+      // --dot-color so the color chips in the mini-workspace chrome can
+      // recolor the embedded SVG at runtime.
+      const varsCode = `// Background, ring, and dot colors are CSS-var driven
+let bg = PathLayer('bg') \${ fill: var(--bg-color, #f1faee); stroke: none; };
+bg.apply { rect(0, 0, 200, 200); }
+
+let ring = PathLayer('ring') \${ stroke: var(--ring-color, #e63946); stroke-width: 6; fill: none; };
+ring.apply { circle(100, 100, 60); }
+
+let dot = PathLayer('dot') \${ fill: var(--dot-color, #1d3557); stroke: none; };
+dot.apply { circle(100, 100, 14); }`;
+      const varsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <rect width="200" height="200" fill="var(--bg-color, #f1faee)"/>
+  <circle cx="100" cy="100" r="60" stroke="var(--ring-color, #e63946)" stroke-width="6" fill="none"/>
+  <circle cx="100" cy="100" r="14" fill="var(--dot-color, #1d3557)"/>
+</svg>`;
+
+      const sampleCode = withVars ? varsCode : plainCode;
+      const sampleSvg = withVars ? varsSvg : plainSvg;
+
+      // mini-workspace reads code from a child <pre><code> (or <code>) and
+      // the preview SVG from a child <svg>. Escape `<` in the code so it
+      // doesn't break the inline <pre><code> block.
+      const escapedCode = sampleCode.replace(/[&<]/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;' })[c] as string,
+      );
       const el = document.createElement('mini-workspace');
-      const codeData = btoa(encodeURIComponent(sampleCode));
-      el.setAttribute('code-data', codeData);
+      if (withVars) {
+        el.setAttribute('vars', '--bg-color:#f1faee;--ring-color:#e63946;--dot-color:#1d3557');
+      }
       if (props.codeOpen) el.setAttribute('code-open', '');
       if (props.caption) el.setAttribute('caption', props.caption as string);
-      el.innerHTML = sampleSvg;
+      el.innerHTML = `<pre><code>${escapedCode}</code></pre>${sampleSvg}`;
       el.style.maxWidth = '700px';
 
       container.appendChild(el);

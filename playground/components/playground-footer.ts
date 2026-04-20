@@ -1,6 +1,7 @@
 // Footer component with SVG styling controls
 
 import { store } from '../state/store.js';
+import './shared/pathogen-color-input.js';
 
 export class PlaygroundFooter extends HTMLElement {
   constructor() {
@@ -27,9 +28,9 @@ export class PlaygroundFooter extends HTMLElement {
 
     (root.querySelector('#width') as HTMLInputElement).value = String(state.width);
     (root.querySelector('#height') as HTMLInputElement).value = String(state.height);
-    (root.querySelector('#bg') as HTMLInputElement).value = state.background;
+    (root.querySelector('#bg') as HTMLElement & { value: string }).value = state.background;
     (root.querySelector('#grid-enabled') as HTMLInputElement).checked = state.gridEnabled;
-    (root.querySelector('#grid-color') as HTMLInputElement).value = state.gridColor;
+    (root.querySelector('#grid-color') as HTMLElement & { value: string }).value = state.gridColor;
     (root.querySelector('#grid-size') as HTMLSelectElement).value = String(state.gridSize);
     (root.querySelector('#to-fixed') as HTMLSelectElement).value = state.toFixed != null ? String(state.toFixed) : '';
   }
@@ -49,8 +50,9 @@ export class PlaygroundFooter extends HTMLElement {
     });
 
     // Background
-    root.querySelector('#bg')!.addEventListener('input', (e: Event) => {
-      store.set('background', (e.target as HTMLInputElement).value);
+    root.querySelector('#bg')!.addEventListener('color-change', (e: Event) => {
+      const value = (e as CustomEvent<{ value: string }>).detail.value;
+      store.set('background', value);
       this.dispatchStyleChange();
     });
 
@@ -60,8 +62,9 @@ export class PlaygroundFooter extends HTMLElement {
       this.dispatchStyleChange();
     });
 
-    root.querySelector('#grid-color')!.addEventListener('input', (e: Event) => {
-      store.set('gridColor', (e.target as HTMLInputElement).value);
+    root.querySelector('#grid-color')!.addEventListener('color-change', (e: Event) => {
+      const value = (e as CustomEvent<{ value: string }>).detail.value;
+      store.set('gridColor', value);
       this.dispatchStyleChange();
     });
 
@@ -164,33 +167,10 @@ export class PlaygroundFooter extends HTMLElement {
           border-color: var(--border-strong, #cbd5e1);
         }
 
-        input[type="color"] {
-          width: 32px;
-          height: 32px;
-          padding: 3px;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-md, 8px);
-          background: var(--bg-tertiary, #f0f1f2);
-          cursor: pointer;
-          transition: all var(--transition-base, 0.15s ease);
+        pathogen-color-input {
+          transition: transform var(--transition-base, 0.15s ease);
         }
-
-        input[type="color"]:hover {
-          border-color: var(--border-strong, #cbd5e1);
-          transform: scale(1.05);
-        }
-
-        input[type="color"]:focus {
-          outline: none;
-          border-color: var(--accent-color, #10b981);
-          box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.4));
-        }
-
-        input[type="color"]:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-          transform: none;
-        }
+        pathogen-color-input:hover { transform: scale(1.05); }
 
         input[type="checkbox"] {
           width: 16px;
@@ -288,7 +268,7 @@ export class PlaygroundFooter extends HTMLElement {
 
         <div class="control-group">
           <label for="bg">BG</label>
-          <input type="color" id="bg" value="${state.background}">
+          <pathogen-color-input id="bg" compact value="${state.background}"></pathogen-color-input>
         </div>
 
         <div class="separator"></div>
@@ -296,7 +276,7 @@ export class PlaygroundFooter extends HTMLElement {
         <div class="control-group">
           <label for="grid-enabled">Grid</label>
           <input type="checkbox" id="grid-enabled" ${state.gridEnabled ? 'checked' : ''}>
-          <input type="color" id="grid-color" value="${state.gridColor}">
+          <pathogen-color-input id="grid-color" compact value="${state.gridColor}"></pathogen-color-input>
           <select id="grid-size">
             <option value="10" ${String(state.gridSize) === '10' ? 'selected' : ''}>10px</option>
             <option value="20" ${String(state.gridSize) === '20' ? 'selected' : ''}>20px</option>

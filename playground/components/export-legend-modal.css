@@ -400,14 +400,8 @@
   color: var(--text-secondary, #64748b);
 }
 
-.advanced-row input[type="color"] {
-  width: 32px;
-  height: 28px;
-  padding: 2px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: var(--radius-md, 8px);
-  background: var(--bg-primary, #f8f9fa);
-  cursor: pointer;
+.advanced-row pathogen-color-input {
+  /* Sizing via native trigger; no overrides. */
 }
 
 .advanced-row input[type="checkbox"] {

@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import * as esbuild from 'esbuild';
 
+import { buildVendor } from './build-vendor.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const PLAYGROUND = join(ROOT, 'playground');
@@ -100,6 +102,9 @@ function cssTextPlugin(): esbuild.Plugin {
 
 export async function buildPlayground(options: { watch?: boolean } = {}): Promise<void> {
   const startTime = Date.now();
+
+  // Bundle npm vendor deps (hdr-color-input, etc.) into public/pathogen/vendor/
+  await buildVendor({ watch: options.watch });
 
   // Collect all .ts and .js source files (excluding types/)
   const sourceFiles = await walkDir(PLAYGROUND, new Set(['.ts', '.js']));
