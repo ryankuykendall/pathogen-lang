@@ -79,6 +79,19 @@ export interface PatternOutput {
   patternContentUnits?: string;
 }
 
+export interface MarkerOutput {
+  id: string;
+  viewBox: string;
+  markerWidth: number;
+  markerHeight: number;
+  refX: string; // stringified number or keyword
+  refY: string;
+  markerUnits?: string; // omitted when value matches SVG default
+  orient?: string; // stringified degrees or keyword; omitted when matches SVG default
+  preserveAspectRatio?: string; // omitted when matches SVG default
+  elements: { pathData: string; styles: Record<string, string> }[];
+}
+
 export interface GradientStop {
   offset: number;
   color: string;
@@ -152,6 +165,7 @@ export interface CompileResult {
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
   patterns: PatternOutput[];
+  markers: MarkerOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
@@ -190,5 +204,6 @@ export interface EvaluateWithContextResult {
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
   patterns: PatternOutput[];
+  markers: MarkerOutput[];
   cssProperties: CSSPropertyDeclaration[];
 }

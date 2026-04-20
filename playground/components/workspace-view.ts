@@ -787,6 +787,7 @@ export class WorkspaceView extends HTMLElement {
             clipPaths: result.clipPaths || [],
             gradients: result.gradients || [],
             patterns: result.patterns || [],
+            markers: result.markers || [],
             cssProperties: result.cssProperties || [],
             gpuGradientUrls,
           })
@@ -804,6 +805,7 @@ export class WorkspaceView extends HTMLElement {
       store.set('clipPaths', result.clipPaths || []);
       store.set('gradients', result.gradients || []);
       store.set('patterns', result.patterns || []);
+      store.set('markers', result.markers || []);
       store.set('cssProperties', result.cssProperties || []);
 
       // Clean up stale visibility entries

@@ -4,6 +4,7 @@ import type {
   GradientOutput,
   LayerOutput,
   LogEntry,
+  MarkerOutput,
   MaskOutput,
   PatternOutput,
 } from './compiler';
@@ -59,6 +60,7 @@ export interface StoreState {
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
   patterns: PatternOutput[];
+  markers: MarkerOutput[];
   cssProperties: CSSPropertyDeclaration[];
   layerVisibility: Record<string, boolean>;
   defsVisibility: Record<string, boolean>;

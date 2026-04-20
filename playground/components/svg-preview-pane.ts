@@ -43,6 +43,7 @@ interface DefsData {
   clipPaths?: ClipPathDef[];
   gradients?: GradientDef[];
   patterns?: PatternDef[];
+  markers?: MarkerDef[];
   cssProperties?: CssPropertyDef[];
   gpuGradientUrls?: Map<string, string>;
 }
@@ -83,6 +84,19 @@ interface PatternDef {
   patternUnits?: string;
   patternTransform?: string;
   patternContentUnits?: string;
+  elements: { pathData: string; styles: Record<string, string> }[];
+}
+
+interface MarkerDef {
+  id: string;
+  viewBox: string;
+  markerWidth: number;
+  markerHeight: number;
+  refX: string;
+  refY: string;
+  markerUnits?: string;
+  orient?: string;
+  preserveAspectRatio?: string;
   elements: { pathData: string; styles: Record<string, string> }[];
 }
 
@@ -223,7 +237,7 @@ export class SvgPreviewPane extends HTMLElement {
       const defsEl = this.shadowRoot!.querySelector('#preview defs') as SVGDefsElement | null;
       if (defsEl) {
         for (const old of defsEl.querySelectorAll(
-          '[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def]',
+          '[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def], [data-marker-def]',
         )) {
           old.remove();
         }
@@ -390,6 +404,30 @@ export class SvgPreviewPane extends HTMLElement {
             patEl.appendChild(pathEl);
           }
           defsEl.appendChild(patEl);
+        }
+      }
+
+      // Inject marker defs
+      if (defsData.markers && defsEl) {
+        for (const marker of defsData.markers) {
+          const markerEl = document.createElementNS(SVG_NS_DEFS, 'marker');
+          markerEl.setAttribute('id', marker.id);
+          markerEl.setAttribute('data-marker-def', marker.id);
+          markerEl.setAttribute('viewBox', marker.viewBox);
+          markerEl.setAttribute('markerWidth', String(marker.markerWidth));
+          markerEl.setAttribute('markerHeight', String(marker.markerHeight));
+          markerEl.setAttribute('refX', marker.refX);
+          markerEl.setAttribute('refY', marker.refY);
+          if (marker.markerUnits) markerEl.setAttribute('markerUnits', marker.markerUnits);
+          if (marker.orient) markerEl.setAttribute('orient', marker.orient);
+          if (marker.preserveAspectRatio) markerEl.setAttribute('preserveAspectRatio', marker.preserveAspectRatio);
+          for (const el of marker.elements) {
+            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
+            pathEl.setAttribute('d', el.pathData);
+            for (const [k, v] of Object.entries(el.styles)) pathEl.setAttribute(k, v);
+            markerEl.appendChild(pathEl);
+          }
+          defsEl.appendChild(markerEl);
         }
       }
 
@@ -795,6 +833,15 @@ export class SvgPreviewPane extends HTMLElement {
     // Only process leaf elements (path/text), skip <g> containers
     const leafElements = visibleElements.filter((el) => el.tagName === 'path' || el.tagName === 'text');
 
+    // Compute minimum stroke-width that remains visible at navigator scale.
+    // The navigator is 120×120 CSS px; strokes in SVG-coordinate units get scaled
+    // down by Math.min(120/w, 120/h)*0.9, so sub-pixel dots (e.g. particle/attractor
+    // artwork) vanish.  Setting a floor of 1/scale keeps them at ~1 CSS px.
+    const canvasW = store.get('width') as number;
+    const canvasH = store.get('height') as number;
+    const navScale = Math.min(120 / canvasW, 120 / canvasH) * 0.9;
+    const minNavStroke = 1 / navScale;
+
     if (leafElements.length > 0) {
       for (const el of leafElements) {
         if (el.tagName === 'path') {
@@ -803,7 +850,7 @@ export class SvgPreviewPane extends HTMLElement {
           navPath.setAttribute('stroke', el.getAttribute('stroke') || DEFAULT_STROKE);
           navPath.setAttribute(
             'stroke-width',
-            String(Math.max(parseFloat(el.getAttribute('stroke-width') || '') || DEFAULT_STROKE_WIDTH, 1)),
+            String(Math.max(parseFloat(el.getAttribute('stroke-width') || '') || DEFAULT_STROKE_WIDTH, minNavStroke)),
           );
           navPath.setAttribute('fill', el.getAttribute('fill') || 'none');
           // Accumulate transforms from ancestor <g> elements
@@ -844,7 +891,7 @@ export class SvgPreviewPane extends HTMLElement {
         const navPath = document.createElementNS(SVG_NS, 'path');
         navPath.setAttribute('d', d);
         navPath.setAttribute('stroke', DEFAULT_STROKE);
-        navPath.setAttribute('stroke-width', String(Math.max(DEFAULT_STROKE_WIDTH, 1)));
+        navPath.setAttribute('stroke-width', String(Math.max(DEFAULT_STROKE_WIDTH, minNavStroke)));
         navPath.setAttribute('fill', 'none');
         navGroup.appendChild(navPath);
       }
