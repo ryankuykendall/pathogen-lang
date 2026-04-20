@@ -48,4 +48,5 @@ Git hooks live in `scripts/git-hooks/` as TypeScript files. The `install-git-hoo
 
 | Hook | Purpose |
 |---|---|
+| `git-hooks/pre-commit.ts` | Warn when public-API additions in `src/evaluator/`, `src/stdlib/`, `src/parser/`, or `src/api-surface.ts` are not accompanied by changes in `docs/*.md` or `scripts/build-docs.ts`. Warning only — never blocks. Suppress with `git commit --no-verify`. |
 | `git-hooks/post-commit.ts` | Remind to update CHANGELOG.md |

@@ -27,6 +27,7 @@ program
       process.exit(1);
     }
 
+    installHook(hooksDir, 'pre-commit');
     installHook(hooksDir, 'post-commit');
   });
 program.parse();
