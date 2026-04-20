@@ -90,6 +90,7 @@ const DOC_FILES: Record<string, string> = {
   'color.md': 'color',
   'gradients.md': 'gradients',
   'cssvar.md': 'cssVar',
+  'markers.md': 'markers',
   'masks.md': 'masks',
   'objects.md': 'objects',
   'debug.md': 'debug',
