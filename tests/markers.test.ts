@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile } from '../src';
+import { compile, compileWithContext } from '../src';
 
 describe('Markers', () => {
   describe('Marker() constructor', () => {
@@ -340,6 +340,27 @@ describe('Markers', () => {
       expect(marker.markerHeight).toBe(10);
       expect(marker.orient).toBe('auto');
       expect(marker.elements[0].pathData).toMatch(/^M 0 0/);
+    });
+  });
+
+  describe('compileWithContext parity', () => {
+    // Regression: evaluateWithContext originally forgot to forward markers into
+    // its return object, so the playground (which uses compileWithContext via
+    // the worker) received undefined markers and rendered nothing in <defs>.
+    // compile() and compileWithContext() must expose the same markers array.
+    it('includes markers in result, matching compile()', () => {
+      const source = `
+        let arrow = @{ m 0 0 l 10 5 l -10 5 z };
+        let m = Marker('arrowhead', 10, 10) {|m|
+          m.append(arrow, \${ fill: Color('#333'); });
+        };
+      `;
+      const compileResult = compile(source);
+      const contextResult = compileWithContext(source);
+      expect(contextResult.markers).toBeDefined();
+      expect(contextResult.markers).toHaveLength(1);
+      expect(contextResult.markers[0].id).toBe('arrowhead');
+      expect(contextResult.markers).toEqual(compileResult.markers);
     });
   });
 });

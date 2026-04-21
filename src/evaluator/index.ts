@@ -7595,6 +7595,7 @@ export interface EvaluateWithContextResult {
   clipPaths: ClipPathOutput[];
   gradients: GradientOutput[];
   patterns: PatternOutput[];
+  markers: MarkerOutput[];
   cssProperties: CSSPropertyDeclaration[];
 }
 
@@ -7675,6 +7676,7 @@ export function evaluateWithContext(
       clipPaths: compileResult.clipPaths,
       gradients: compileResult.gradients,
       patterns: compileResult.patterns,
+      markers: compileResult.markers,
       cssProperties: compileResult.cssProperties,
     };
   } finally {
