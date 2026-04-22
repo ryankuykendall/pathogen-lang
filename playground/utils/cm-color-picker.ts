@@ -10,8 +10,10 @@
 export { parseColor, formatColor, colorToHex } from './color.js';
 export type { ParsedColor, ColorFormat } from './color.js';
 
-import { parseColor, formatColor, detectFormat, formatToColorspace } from './color.js';
-import type { ColorFormat } from './color.js';
+import type { Tree } from '@lezer/common';
+
+import { parseColor, formatColor, detectFormat, formatToColorspace, colorspaceToFormat } from './color.js';
+import type { ColorFormat, ColorInputSpace } from './color.js';
 
 /** Options for creating a color chip element. */
 interface ColorChipOptions {
@@ -161,28 +163,68 @@ export function createColorChip({ color, onChange, className, title }: ColorChip
     chip.setAttribute('theme', pageTheme);
   }
 
-  // Preserve source format: capture the `change` event from the component and
-  // reformat the raw value (e.g. "#abcdef") into whatever format the source
-  // was authored in ("oklch(...)", "rgb(...)", etc.) before dispatching
-  // through onChange. Suppress the reformatted value from re-entering the
-  // component itself — we only want it written back to the editor text.
+  // sourceFormat is the output format for this chip, locked to whatever the
+  // user authored in code and only changed when they explicitly pick a new
+  // format from the `select.space` dropdown below. We intentionally ignore
+  // the `colorspace` field on the change event's detail — <color-input>
+  // re-emits it as 'hex' when it clamps a click to in-srgb-gamut, and
+  // following that would silently rewrite oklch code to hex on the first
+  // area-canvas interaction.
   chip.addEventListener('change', (ev: Event) => {
-    const raw = (ev as CustomEvent<{ value: string }>).detail?.value ?? chip.value;
+    const detail = (ev as CustomEvent<{ value: string; colorspace?: string }>).detail;
+    const raw = detail?.value ?? chip.value;
     if (!raw) return;
+
     const np = parseColor(raw);
+    // If parseColor fell back to all-zero-hex on a non-zero-looking input,
+    // pass the raw string through unmodified rather than corrupting the code
+    // with `#000000` / `rgb(0, 0, 0)`. The raw from <color-input> is already
+    // valid CSS; we just can't reformat what we don't understand.
+    const parseFailed = np.format === 'hex' && np.r === 0 && np.g === 0 && np.b === 0 && !/^(#0{3,8}|rgba?\(\s*0\s*,\s*0\s*,\s*0\b|black)/i.test(raw.trim());
+    if (parseFailed) {
+      color = raw;
+      onChange(raw);
+      return;
+    }
+
     const out = sourceFormat === 'named' ? formatColor(np, 'hex') : formatColor(np, sourceFormat);
     color = out;
     onChange(out);
   });
+
+  // Listen for the user's format dropdown changes (inside <color-input>'s
+  // shadow root). Only when the user explicitly picks a new format does
+  // sourceFormat change — component-internal colorspace switches (gamut
+  // clamping etc.) do not.
+  const attachSpaceListener = (): void => {
+    const sel = chip.shadowRoot?.querySelector('select.space') as HTMLSelectElement | null;
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+      const mapped = colorspaceToFormat(sel.value as ColorInputSpace, false);
+      if (mapped) sourceFormat = mapped;
+    });
+  };
+  // The shadow content is populated lazily; try on the next frame if the
+  // select isn't there yet.
+  if (chip.shadowRoot?.querySelector('select.space')) attachSpaceListener();
+  else queueMicrotask(attachSpaceListener);
 
   // Non-CM callers (e.g. cm-textlayer-editor) use updateColor to push a new
   // value without recreating the element.
   chip.updateColor = (c: string): void => {
     color = c;
     const p = parseColor(c);
-    sourceFormat = p.format;
+    // Only sync sourceFormat / colorspace when parseColor actually resolved
+    // the value. If it fell back to the zero-hex default on a non-zero input
+    // (e.g. oklch with %/deg syntax our regex doesn't cover), keep the
+    // existing sourceFormat — otherwise the chip's dropdown flips to 'hex'
+    // and subsequent writes lose the user's original format.
+    const parseFailed = p.format === 'hex' && p.r === 0 && p.g === 0 && p.b === 0 && !/^(#0{3,8}|rgba?\(\s*0\s*,\s*0\s*,\s*0\b|black)/i.test(c.trim());
     chip.setAttribute('value', c);
-    chip.setAttribute('colorspace', formatToColorspace(sourceFormat));
+    if (!parseFailed) {
+      sourceFormat = p.format;
+      chip.setAttribute('colorspace', formatToColorspace(sourceFormat));
+    }
   };
 
   return chip;
@@ -190,140 +232,141 @@ export function createColorChip({ color, onChange, className, title }: ColorChip
 
 // ─── Document Scanning ──────────────────────────────────────────────────────
 
-// Find all ${ } style blocks in the document and extract color declarations
-function findColorRanges(docText: string): ColorRange[] {
+/**
+ * Walk the Lezer syntax tree to find color ranges the chip can safely replace.
+ *
+ * Why AST instead of regex: the previous regex scanner matched color-shaped
+ * substrings anywhere in the document, including inside plain string literals
+ * and comments. Editing those ranges corrupts surrounding code (unbalanced
+ * quotes, broken calls). The grammar already defines `ColorLiteral` and
+ * `CSSColorLiteral` as first-class nodes and knows what's inside a string vs
+ * a comment vs code, so we use it as the source of truth.
+ *
+ * Four sources of chips:
+ *   1. `ColorLiteral` / `CSSColorLiteral` — bare colors in code.
+ *   2. `Color(String)` — the color is inside a string literal argument; we
+ *      accept it because it's a known constructor and place the chip inside
+ *      the quotes so replacements don't break them.
+ *   3. `CSSVar('--name', String)` — same idea for the fallback argument.
+ *   4. `StyleContent` — style-block interior (`${stroke: #f00;}`) is raw text
+ *      in the grammar, so we regex-scan only the text range the AST has
+ *      identified as a style block.
+ */
+export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
   const results: ColorRange[] = [];
-  // Match all ${ ... } style blocks (in define statements, let assignments, etc.)
-  const styleBlockRegex = /\$\{/g;
-  let blockMatch: RegExpExecArray | null;
 
-  while ((blockMatch = styleBlockRegex.exec(docText)) !== null) {
-    const openBrace = blockMatch.index + 1; // position of '{'
+  tree.iterate({
+    enter: (node) => {
+      const name = node.name;
 
-    let depth = 1;
-    let closeBrace = -1;
-    for (let i = openBrace + 1; i < docText.length; i++) {
-      if (docText[i] === '{') depth++;
-      else if (docText[i] === '}') {
-        depth--;
-        if (depth === 0) {
-          closeBrace = i;
-          break;
-        }
+      if (name === 'ColorLiteral' || name === 'CSSColorLiteral') {
+        const text = docText.slice(node.from, node.to);
+        results.push({ from: node.from, to: node.to, color: text });
+        return true;
       }
-    }
-    if (closeBrace === -1) continue;
 
-    const blockContent = docText.slice(openBrace + 1, closeBrace);
-    const blockStart = openBrace + 1;
+      if (name === 'ArgList') {
+        tryAddStringCallArg(node, docText, results);
+        return true;
+      }
 
-    const declRegex = /([\w-]+)\s*:\s*([^;}\n]+)/g;
-    let declMatch: RegExpExecArray | null;
+      if (name === 'StyleContent') {
+        addStyleBlockColors(docText, node.from, node.to, results);
+        return true;
+      }
 
-    while ((declMatch = declRegex.exec(blockContent)) !== null) {
-      const prop = declMatch[1].trim();
-      const value = declMatch[2].trim();
+      return true;
+    },
+  });
 
-      if (!COLOR_PROPERTIES.has(prop)) continue;
-      if (value === 'none' || value === 'inherit' || value === 'currentColor') continue;
-
-      const isColor =
-        /^#[0-9a-fA-F]{3,8}$/.test(value) ||
-        /^rgba?\(/.test(value) ||
-        /^hsla?\(/.test(value) ||
-        /^oklch\(/.test(value) ||
-        /^oklab\(/.test(value) ||
-        detectFormat(value) === 'named';
-
-      if (!isColor) continue;
-
-      const valueStart = blockStart + declMatch.index + declMatch[0].indexOf(value, prop.length + 1);
-      const valueEnd = valueStart + value.length;
-
-      results.push({ from: valueStart, to: valueEnd, color: value });
-    }
-  }
-
-  // Scan for Color('...') and Color("...") constructor calls
-  const colorCallRegex = /Color\(\s*(['"])([^'"]+)\1\s*\)/g;
-  let colorCallMatch: RegExpExecArray | null;
-  while ((colorCallMatch = colorCallRegex.exec(docText)) !== null) {
-    const colorStr = colorCallMatch[2];
-    // Validate it's a recognized color format
-    const parsed = parseColor(colorStr);
-    if (
-      parsed.format === 'hex' &&
-      colorStr !== 'none' &&
-      !colorStr.startsWith('#') &&
-      detectFormat(colorStr) !== 'named'
-    ) {
-      continue; // parseColor returned default — not a real color
-    }
-    // Position chip on just the color string INSIDE quotes (not including quotes)
-    // This ensures the color picker replaces only the color value, preserving quotes
-    const quote = colorCallMatch[1];
-    const quotedStr = quote + colorStr + quote;
-    const argStart = colorCallMatch.index + colorCallMatch[0].indexOf(quotedStr) + 1; // +1 to skip opening quote
-    const argEnd = argStart + colorStr.length;
-    results.push({ from: argStart, to: argEnd, color: colorStr });
-  }
-
-  // Scan for bare hex color literals: #cc0000, #f00, etc. (not inside quotes or style blocks)
-  const bareHexRegex = /(?<!['"$])#[0-9a-fA-F]{3,8}\b/g;
-  let bareHexMatch: RegExpExecArray | null;
-  while ((bareHexMatch = bareHexRegex.exec(docText)) !== null) {
-    const hex = bareHexMatch[0];
-    const hexDigits = hex.slice(1);
-    // Only valid lengths
-    if (hexDigits.length !== 3 && hexDigits.length !== 4 && hexDigits.length !== 6 && hexDigits.length !== 8) continue;
-    const from = bareHexMatch.index;
-    const to = from + hex.length;
-    // Skip if this position is already covered by a style block or Color() match
-    if (results.some((r) => from >= r.from && to <= r.to)) continue;
-    results.push({ from, to, color: hex });
-  }
-
-  // Scan for bare CSS color function literals: rgb(255, 0, 0), hsl(0, 100%, 50%), oklch(0.6 0.15 30), etc.
-  const cssColorFuncRegex = /\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\s*\([^)]*\)/g;
-  let cssColorFuncMatch: RegExpExecArray | null;
-  while ((cssColorFuncMatch = cssColorFuncRegex.exec(docText)) !== null) {
-    const colorStr = cssColorFuncMatch[0];
-    const from = cssColorFuncMatch.index;
-    const to = from + colorStr.length;
-    // Skip if already covered by a style block match or Color() match
-    if (results.some((r) => from >= r.from && to <= r.to)) continue;
-    // Validate it's a parseable color
-    try {
-      parseColor(colorStr);
-      results.push({ from, to, color: colorStr });
-    } catch {
-      // Not a valid color function — skip
-    }
-  }
-
-  // Scan for CSSVar('--name', 'fallback') where fallback is a color
-  const cssVarRegex = /CSSVar\(\s*(['"])([^'"]+)\1\s*,\s*(['"])([^'"]+)\3\s*\)/g;
-  let cssVarMatch: RegExpExecArray | null;
-  while ((cssVarMatch = cssVarRegex.exec(docText)) !== null) {
-    const fallback = cssVarMatch[4];
-    const parsed = parseColor(fallback);
-    if (parsed.format === 'hex' && !fallback.startsWith('#') && detectFormat(fallback) !== 'named') {
-      continue;
-    }
-    const fbQuote = cssVarMatch[3];
-    const fbStr = fbQuote + fallback + fbQuote;
-    const fbStart = cssVarMatch.index + cssVarMatch[0].indexOf(fbStr, cssVarMatch[0].indexOf(','));
-    const fbEnd = fbStart + fbStr.length;
-    results.push({ from: fbStart, to: fbEnd, color: fallback });
-  }
-
+  // Sort by position so downstream ordering is stable.
+  results.sort((a, b) => a.from - b.from);
   return results;
+}
+
+type LezerNodeRef = { name: string; from: number; to: number; node: { prevSibling: LezerNodeRef | null; firstChild: LezerNodeRef | null; nextSibling: LezerNodeRef | null } };
+
+/**
+ * For an ArgList node, check if its previous sibling is an Identifier whose
+ * name is `Color` or `CSSVar`, and extract the relevant string argument's
+ * color content.
+ *
+ * `postfixExpression` in the grammar is inlined, so a function call
+ * `Color('#f00')` appears as sibling nodes `Identifier` + `ArgList` rather
+ * than a wrapping `CallExpression`.
+ */
+function tryAddStringCallArg(argListRef: LezerNodeRef, docText: string, out: ColorRange[]): void {
+  const prev = argListRef.node.prevSibling;
+  if (!prev || prev.name !== 'Identifier') return;
+  const fnName = docText.slice(prev.from, prev.to);
+  if (fnName !== 'Color' && fnName !== 'CSSVar') return;
+
+  const stringArgs: LezerNodeRef[] = [];
+  let child = argListRef.node.firstChild;
+  while (child) {
+    if (child.name === 'String') stringArgs.push(child);
+    child = child.node.nextSibling;
+  }
+  if (stringArgs.length === 0) return;
+
+  const target = fnName === 'Color' ? stringArgs[0] : stringArgs[1];
+  if (!target) return;
+
+  // Strip quotes: grammar's String node includes both delimiters.
+  const from = target.from + 1;
+  const to = target.to - 1;
+  if (to <= from) return;
+  const inner = docText.slice(from, to);
+
+  if (!isColorString(inner)) return;
+  out.push({ from, to, color: inner });
+}
+
+/**
+ * Scan a style-block's raw content range for color-accepting CSS property
+ * declarations. The grammar does not parse style-block internals, but knowing
+ * we're inside `StyleContent` (as opposed to, say, a string literal that
+ * happens to contain `stroke: #fff`) means the regex below is safe.
+ */
+function addStyleBlockColors(docText: string, from: number, to: number, out: ColorRange[]): void {
+  const block = docText.slice(from, to);
+  const declRegex = /([\w-]+)\s*:\s*([^;}\n]+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = declRegex.exec(block)) !== null) {
+    const prop = m[1].trim();
+    const value = m[2].trim();
+    if (!COLOR_PROPERTIES.has(prop)) continue;
+    if (value === 'none' || value === 'inherit' || value === 'currentColor') continue;
+    if (!isColorString(value)) continue;
+    const valueStart = from + m.index + m[0].indexOf(value, prop.length + 1);
+    const valueEnd = valueStart + value.length;
+    out.push({ from: valueStart, to: valueEnd, color: value });
+  }
+}
+
+function isColorString(s: string): boolean {
+  if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return true;
+  // Include `color(...)` (for predefined-colorspace literals emitted by
+  // hdr-color-input when the user picks srgb-linear, display-p3, etc.) so
+  // the safety check in the chip's onChange dispatch treats them as valid
+  // replacement targets.
+  if (/^(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/i.test(s)) return true;
+  if (detectFormat(s) === 'named') return true;
+  return false;
 }
 
 // ─── CodeMirror Extension ───────────────────────────────────────────────────
 
-export function colorPickerExtension(cmViewModule: CMViewModule): any[] {
+/**
+ * CodeMirror `@codemirror/language` module — supplies `syntaxTree(state)` for
+ * the AST-based scan. Typed as `any` for the same reason as CMViewModule:
+ * the package is loaded dynamically via ESM CDN and isn't bundled.
+ */
+type CMLanguageModule = any;
+
+export function colorPickerExtension(cmViewModule: CMViewModule, cmLanguageModule: CMLanguageModule): any[] {
   const { ViewPlugin, Decoration, WidgetType } = cmViewModule;
+  const syntaxTree = cmLanguageModule.syntaxTree as (state: any) => Tree;
 
   class ColorChipWidget extends WidgetType {
     color: string;
@@ -337,10 +380,6 @@ export function colorPickerExtension(cmViewModule: CMViewModule): any[] {
       this.to = to;
     }
 
-    eq(other: ColorChipWidget): boolean {
-      return this.color === other.color;
-    }
-
     toDOM(view: any): HTMLElement {
       // Store from/to in a mutable holder so updateDOM can update them in-place
       // when CodeMirror reuses this DOM across doc edits. Without this, the
@@ -351,10 +390,23 @@ export function colorPickerExtension(cmViewModule: CMViewModule): any[] {
       const chip = createColorChip({
         color: this.color,
         onChange: (newColor: string) => {
+          // Safety: only dispatch if the text at our stored range still looks
+          // like a color literal. hdr-color-input fires rapid change events
+          // during slider drags — if CM hasn't finished applying an earlier
+          // dispatch when the next event arrives, `range` may point at text
+          // that is no longer a color. Dispatching anyway corrupts the code
+          // (replaces PathLayer arguments, breaks quotes, etc.). Drop the
+          // event instead — the next decoration rebuild will make a fresh
+          // widget with a correct range.
+          const { from, to } = range;
+          if (from < 0 || to > view.state.doc.length || from >= to) return;
+          const existing = view.state.doc.sliceString(from, to);
+          if (!isColorString(existing)) return;
+          if (existing === newColor) return;
           view.dispatch({
-            changes: { from: range.from, to: range.to, insert: newColor },
+            changes: { from, to, insert: newColor },
           });
-          range.to = range.from + newColor.length;
+          range.to = from + newColor.length;
         },
       }) as ColorChipElement & { __range?: { from: number; to: number } };
       chip.setAttribute('aria-label', `Color: ${this.color}`);
@@ -364,11 +416,8 @@ export function colorPickerExtension(cmViewModule: CMViewModule): any[] {
     }
 
     /**
-     * Called by CodeMirror when it could reuse the existing DOM for a new
-     * widget instance (same type, different fields). Returning true keeps the
-     * same `<color-input>` element in place — critical because the element's
-     * popover anchor would be severed by a destroy+recreate, stranding the
-     * picker mid-edit.
+     * Returning true retains the existing `<color-input>` element across
+     * decoration rebuilds, keeping the popover (and any in-flight drag) alive.
      */
     updateDOM(dom: HTMLElement, _view: any): boolean {
       const chip = dom as ColorChipElement & { __range?: { from: number; to: number } };
@@ -391,7 +440,8 @@ export function colorPickerExtension(cmViewModule: CMViewModule): any[] {
 
   function buildDecorations(view: any): any {
     const docText = view.state.doc.toString();
-    const colorRanges = findColorRanges(docText);
+    const tree = syntaxTree(view.state);
+    const colorRanges = findColorRanges(tree, docText);
     const widgets: any[] = [];
 
     for (const { from, to, color } of colorRanges) {

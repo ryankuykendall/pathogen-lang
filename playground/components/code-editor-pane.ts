@@ -97,6 +97,7 @@ interface CmLanguageModule {
   defaultHighlightStyle: unknown;
   indentOnInput(): unknown;
   bracketMatching(): unknown;
+  syntaxTree(state: unknown): unknown;
 }
 
 interface CmAutocompleteModule {
@@ -297,7 +298,7 @@ export class CodeEditorPane extends HTMLElement {
         ...languageExtensions.extensions,
         updateExtension,
         view.EditorView.lineWrapping,
-        ...colorPickerExtension(view),
+        ...colorPickerExtension(view, language),
         ...textLayerEditorExtension(view),
       ],
     });

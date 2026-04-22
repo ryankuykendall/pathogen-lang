@@ -348,3 +348,27 @@ export function formatToColorspace(format: ColorFormat): ColorInputSpace {
       return 'hex';
   }
 }
+
+/**
+ * Map the `colorspace` attribute of <color-input> back to our ColorFormat, so
+ * that when the user switches format in the chip's popover we can reformat the
+ * written code in that format. Returns null for colorspaces we don't currently
+ * emit (hwb, lab, lch, display-p3, rec2020, a98-rgb, prophoto, xyz…) so callers
+ * can decide whether to keep the original source format or fall back.
+ */
+export function colorspaceToFormat(space: ColorInputSpace, hasAlpha: boolean = false): ColorFormat | null {
+  switch (space) {
+    case 'hex':
+      return 'hex';
+    case 'srgb':
+      return hasAlpha ? 'rgba' : 'rgb';
+    case 'hsl':
+      return hasAlpha ? 'hsla' : 'hsl';
+    case 'oklch':
+      return 'oklch';
+    case 'oklab':
+      return 'oklab';
+    default:
+      return null;
+  }
+}
