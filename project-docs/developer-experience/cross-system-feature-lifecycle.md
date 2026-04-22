@@ -251,7 +251,7 @@ Update these checklists once any of these automations are implemented.
 
 **Snippet sync**: VS Code snippets currently duplicate the snippet bodies from `completion-data.ts` `KEYWORD_COMPLETIONS` entries. These could be generated from the same source.
 
-**Render-channel parity test**: there is currently no automated test that diffs CLI-emitted SVG against the playground's rendered DOM. Adding one would catch silent surface drift (e.g. the Marker feature shipping in CLI but not playground). Until it exists, the three-surface verification below is a manual gate.
+**Render-channel parity test**: [`tests/render-channel-parity.test.ts`](../../tests/render-channel-parity.test.ts) (added 2026-04-21 by the render-pipeline unification — see [`../render-pipeline-unification/PLAN.md`](../render-pipeline-unification/PLAN.md)) runs every fixture through both render adapters (`toSvgString` and `mountInto`) and structurally diffs the output. If a future change to one adapter diverges from the other — e.g. adds a new defs type to `build-defs.ts` without updating the DOM adapter's unwrapping logic — this test fails. Fixtures live in [`../render-pipeline-unification/snapshots/`](../render-pipeline-unification/snapshots/). The same fixtures pin CLI string output in [`tests/render-snapshots.test.ts`](../../tests/render-snapshots.test.ts).
 
 ## Post-Change Verification Checklist
 

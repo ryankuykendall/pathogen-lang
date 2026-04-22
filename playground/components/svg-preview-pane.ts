@@ -1,7 +1,27 @@
 // SVG Preview pane with zoom/pan controls and navigator
 
+import type {
+  CompileResult,
+  GradientOutput,
+  LayerOutput,
+  MarkerOutput,
+} from '../../src/evaluator/types.js';
+import type { VNode } from '../../src/render/index.js';
 import { store } from '../state/store.js';
+import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
+
+// Runtime access to the render API is via the bundled global (the playground
+// loads `dist/index.global.js` rather than importing `src/` directly). Typed
+// here so the rest of the file can call `render.buildDefs(...)` etc. without
+// per-call globals gymnastics.
+declare const window: Window & {
+  SvgPathExtended: {
+    buildDefs: typeof import('../../src/render/index.js').buildDefs;
+    buildSingleLayer: typeof import('../../src/render/index.js').buildSingleLayer;
+    mountInto: typeof import('../../src/render/index.js').mountInto;
+  };
+};
 
 const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
 
@@ -243,192 +263,42 @@ export class SvgPreviewPane extends HTMLElement {
         }
       }
 
-      // Inject mask defs
-      const SVG_NS_DEFS = 'http://www.w3.org/2000/svg';
-      if (defsData.masks && defsEl) {
-        for (const mask of defsData.masks) {
-          const maskEl = document.createElementNS(SVG_NS_DEFS, 'mask');
-          maskEl.setAttribute('id', mask.id);
-          maskEl.setAttribute('data-mask-def', mask.id);
-          for (const el of mask.elements) {
-            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
-            pathEl.setAttribute('d', el.pathData);
-            for (const [key, value] of Object.entries(el.styles)) {
-              pathEl.setAttribute(key, value);
-            }
-            maskEl.appendChild(pathEl);
-          }
-          defsEl.appendChild(maskEl);
-        }
-      }
+      const svgW = (store.get('width') as number) || 200;
+      const svgH = (store.get('height') as number) || 200;
 
-      // Inject clipPath defs
-      if (defsData.clipPaths && defsEl) {
-        for (const clip of defsData.clipPaths) {
-          const clipEl = document.createElementNS(SVG_NS_DEFS, 'clipPath');
-          clipEl.setAttribute('id', clip.id);
-          clipEl.setAttribute('data-clippath-def', clip.id);
-          for (const el of clip.elements) {
-            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
-            pathEl.setAttribute('d', el.pathData);
-            clipEl.appendChild(pathEl);
-          }
-          defsEl.appendChild(clipEl);
-        }
-      }
-
-      // Inject gradient defs
-      if (defsData.gradients && defsEl) {
-        for (const grad of defsData.gradients) {
-          if (grad.type === 'conic') {
-            // Render conic gradient as <pattern> with rasterized <image>
-            const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
-            patEl.setAttribute('id', grad.id);
-            patEl.setAttribute('data-gradient-def', grad.id);
-            patEl.setAttribute('x', '0');
-            patEl.setAttribute('y', '0');
-            const w = (store.get('width') as number) || 200;
-            const h = (store.get('height') as number) || 200;
-            patEl.setAttribute('width', String(w));
-            patEl.setAttribute('height', String(h));
-            patEl.setAttribute('patternUnits', 'userSpaceOnUse');
-
-            const imgEl = document.createElementNS(SVG_NS_DEFS, 'image');
-            imgEl.setAttribute('width', String(w));
-            imgEl.setAttribute('height', String(h));
-
-            // Use pre-rendered GPU texture if available
-            const preRenderedUrl = defsData.gpuGradientUrls?.get(grad.id);
-            if (preRenderedUrl) {
-              imgEl.setAttribute('href', preRenderedUrl);
-            } else {
-              // Inline Canvas 2D fallback
-              try {
-                const scale = 2;
-                const canvas = document.createElement('canvas');
-                canvas.width = w * scale;
-                canvas.height = h * scale;
-                const ctx2d = canvas.getContext('2d');
-                if (ctx2d) {
-                  const fromAngle = grad.from ?? 0;
-                  const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
-                  const cx = (grad.cx ?? 0) * scale;
-                  const cy = (grad.cy ?? 0) * scale;
-                  const conicGrad = ctx2d.createConicGradient(fromAngle, cx, cy);
-                  const stops = grad.stopsWithOklch || grad.stops;
-                  const totalAngle = toAngle - fromAngle;
-                  const fullRevolution = 2 * Math.PI;
-                  for (const s of stops) {
-                    const scaledOffset = (s.offset * totalAngle) / fullRevolution;
-                    if (scaledOffset >= 0 && scaledOffset <= 1) {
-                      conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), s.color);
-                    }
-                  }
-                  ctx2d.fillStyle = conicGrad;
-                  ctx2d.fillRect(0, 0, w * scale, h * scale);
-                  imgEl.setAttribute('href', canvas.toDataURL('image/png'));
-                }
-              } catch (e) {
-                console.warn('Conic gradient canvas rendering failed:', e);
-              }
-            }
-
-            patEl.appendChild(imgEl);
-            defsEl.appendChild(patEl);
-            continue;
-          }
-          if (grad.type === 'mesh' || grad.type === 'freeform' || grad.type === 'topo') {
-            const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
-            patEl.setAttribute('id', grad.id);
-            patEl.setAttribute('data-gradient-def', grad.id);
-            patEl.setAttribute('x', '0');
-            patEl.setAttribute('y', '0');
-            patEl.setAttribute('width', '1');
-            patEl.setAttribute('height', '1');
-            patEl.setAttribute('patternUnits', 'objectBoundingBox');
-            patEl.setAttribute('patternContentUnits', 'objectBoundingBox');
-
-            const imgEl = document.createElementNS(SVG_NS_DEFS, 'image');
-            imgEl.setAttribute('width', '1');
-            imgEl.setAttribute('height', '1');
-            imgEl.setAttribute('preserveAspectRatio', 'none');
-
-            const preRenderedUrl = defsData.gpuGradientUrls?.get(grad.id);
-            if (preRenderedUrl) {
-              imgEl.setAttribute('href', preRenderedUrl);
-            }
-
-            patEl.appendChild(imgEl);
-            defsEl.appendChild(patEl);
-            continue;
-          }
-          const tagName = grad.type === 'linear' ? 'linearGradient' : 'radialGradient';
-          const gradEl = document.createElementNS(SVG_NS_DEFS, tagName);
-          gradEl.setAttribute('id', grad.id);
-          gradEl.setAttribute('data-gradient-def', grad.id);
-          for (const [key, value] of Object.entries(grad.attrs)) {
-            gradEl.setAttribute(key, value);
-          }
-          if (grad.spreadMethod) gradEl.setAttribute('spreadMethod', grad.spreadMethod);
-          if (grad.gradientUnits) gradEl.setAttribute('gradientUnits', grad.gradientUnits);
-          if (grad.gradientTransform) gradEl.setAttribute('gradientTransform', grad.gradientTransform);
-          if (grad.colorInterpolation) gradEl.setAttribute('color-interpolation', grad.colorInterpolation);
-          if (grad.href) gradEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#${grad.href}`);
-          for (const stop of grad.stops) {
-            const stopEl = document.createElementNS(SVG_NS_DEFS, 'stop');
-            stopEl.setAttribute('offset', String(stop.offset));
-            stopEl.setAttribute('stop-color', stop.color);
-            gradEl.appendChild(stopEl);
-          }
-          defsEl.appendChild(gradEl);
-        }
-      }
-
-      // Inject pattern defs
-      if (defsData.patterns && defsEl) {
-        for (const pat of defsData.patterns) {
-          const patEl = document.createElementNS(SVG_NS_DEFS, 'pattern');
-          patEl.setAttribute('id', pat.id);
-          patEl.setAttribute('data-pattern-def', pat.id);
-          patEl.setAttribute('x', String(pat.x));
-          patEl.setAttribute('y', String(pat.y));
-          patEl.setAttribute('width', String(pat.width));
-          patEl.setAttribute('height', String(pat.height));
-          if (pat.patternUnits) patEl.setAttribute('patternUnits', pat.patternUnits);
-          if (pat.patternTransform) patEl.setAttribute('patternTransform', pat.patternTransform);
-          if (pat.patternContentUnits) patEl.setAttribute('patternContentUnits', pat.patternContentUnits);
-          for (const el of pat.elements) {
-            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
-            pathEl.setAttribute('d', el.pathData);
-            for (const [k, v] of Object.entries(el.styles)) pathEl.setAttribute(k, v);
-            patEl.appendChild(pathEl);
-          }
-          defsEl.appendChild(patEl);
-        }
-      }
-
-      // Inject marker defs
-      if (defsData.markers && defsEl) {
-        for (const marker of defsData.markers) {
-          const markerEl = document.createElementNS(SVG_NS_DEFS, 'marker');
-          markerEl.setAttribute('id', marker.id);
-          markerEl.setAttribute('data-marker-def', marker.id);
-          markerEl.setAttribute('viewBox', marker.viewBox);
-          markerEl.setAttribute('markerWidth', String(marker.markerWidth));
-          markerEl.setAttribute('markerHeight', String(marker.markerHeight));
-          markerEl.setAttribute('refX', marker.refX);
-          markerEl.setAttribute('refY', marker.refY);
-          if (marker.markerUnits) markerEl.setAttribute('markerUnits', marker.markerUnits);
-          if (marker.orient) markerEl.setAttribute('orient', marker.orient);
-          if (marker.preserveAspectRatio) markerEl.setAttribute('preserveAspectRatio', marker.preserveAspectRatio);
-          for (const el of marker.elements) {
-            const pathEl = document.createElementNS(SVG_NS_DEFS, 'path');
-            pathEl.setAttribute('d', el.pathData);
-            for (const [k, v] of Object.entries(el.styles)) pathEl.setAttribute(k, v);
-            markerEl.appendChild(pathEl);
-          }
-          defsEl.appendChild(markerEl);
-        }
+      // Build defs via the shared renderer, then run the playground-only
+      // Canvas 2D fallback for conic gradients that have no GPU-pre-rendered
+      // URL. Masks/clipPaths/patterns/markers/linear+radial gradients pass
+      // through unchanged.
+      if (defsEl) {
+        const defsVNodes = window.SvgPathExtended.buildDefs(
+          {
+            masks: defsData.masks ?? [],
+            clipPaths: defsData.clipPaths ?? [],
+            gradients: (defsData.gradients ?? []) as GradientOutput[],
+            patterns: defsData.patterns ?? [],
+            markers: (defsData.markers ?? []) as MarkerOutput[],
+            // Unused by buildDefs but required by the CompileResult shape:
+            layers: [],
+            cssProperties: [],
+            logs: [],
+            calledStdlibFunctions: [],
+          } as unknown as CompileResult,
+          {
+            width: svgW,
+            height: svgH,
+            emitPlaygroundDataAttrs: true,
+            useImageGradients: true,
+            gpuGradientUrls: defsData.gpuGradientUrls,
+          },
+        );
+        decorateConicGradientsWithCanvasFallback(
+          defsVNodes,
+          (defsData.gradients ?? []) as GradientOutput[],
+          svgW,
+          svgH,
+        );
+        window.SvgPathExtended.mountInto(defsEl, defsVNodes);
       }
 
       // Inject @property CSS declarations
@@ -450,128 +320,23 @@ export class SvgPreviewPane extends HTMLElement {
       }
 
       const SVG_NS = 'http://www.w3.org/2000/svg';
-
-      // Render a single layer to a DOM element, recursing for groups
-      const renderLayerToDOM = (layer: LayerInput, parent: SVGElement): void => {
-        // Fragment layers
-        if (layer.type === 'fragment') {
-          if (layer.fragmentDefs && defsEl) {
-            const defsDoc = new DOMParser().parseFromString(
-              `<svg xmlns="http://www.w3.org/2000/svg"><defs>${layer.fragmentDefs}</defs></svg>`,
-              'image/svg+xml',
-            );
-            const parsedDefs = defsDoc.querySelector('defs');
-            if (parsedDefs) {
-              for (const child of Array.from(parsedDefs.children)) {
-                const imported = document.importNode(child, true) as SVGElement;
-                imported.setAttribute('data-fragment-layer', layer.name);
-                defsEl.appendChild(imported);
-              }
-            }
-          }
-          if (layer.fragmentVisuals) {
-            const visualDoc = new DOMParser().parseFromString(
-              `<svg xmlns="http://www.w3.org/2000/svg">${layer.fragmentVisuals}</svg>`,
-              'image/svg+xml',
-            );
-            const visualRoot = visualDoc.documentElement;
-            const wrapper = document.createElementNS(SVG_NS, 'g');
-            (wrapper as SVGElement & { dataset: DOMStringMap }).dataset.layerName = layer.name;
-            for (const child of Array.from(visualRoot.children)) {
-              wrapper.appendChild(document.importNode(child, true));
-            }
-            parent.appendChild(wrapper);
-          }
-          return;
-        }
-
-        // Group layers
-        if (layer.type === 'group') {
-          const g = document.createElementNS(SVG_NS, 'g');
-          (g as SVGElement & { dataset: DOMStringMap }).dataset.layerName = layer.name;
-          for (const [key, value] of Object.entries(layer.styles)) {
-            g.setAttribute(key, value);
-          }
-          if (layer.transform) {
-            g.setAttribute('transform', layer.transform);
-          }
-          if (layer.children) {
-            for (const child of layer.children) {
-              renderLayerToDOM(child, g);
-            }
-          }
-          parent.appendChild(g);
-          return;
-        }
-
-        if (layer.type === 'text' && layer.textElements) {
-          for (const te of layer.textElements) {
-            const textEl = document.createElementNS(SVG_NS, 'text');
-            (textEl as SVGElement & { dataset: DOMStringMap }).dataset.layerName = layer.name;
-            textEl.setAttribute('x', String(te.x));
-            textEl.setAttribute('y', String(te.y));
-            if (te.rotation != null) {
-              const deg = (te.rotation * 180) / Math.PI;
-              textEl.setAttribute('transform', `rotate(${deg}, ${te.x}, ${te.y})`);
-            }
-            for (const [key, value] of Object.entries(layer.styles)) {
-              textEl.setAttribute(key, value);
-            }
-            if (te.styles) {
-              for (const [key, value] of Object.entries(te.styles)) {
-                textEl.setAttribute(key, value);
-              }
-            }
-            for (const child of te.children) {
-              if (child.type === 'run') {
-                textEl.appendChild(document.createTextNode(child.text));
-              } else {
-                const tspan = document.createElementNS(SVG_NS, 'tspan');
-                tspan.textContent = child.text;
-                if (child.dx != null) tspan.setAttribute('dx', String(child.dx));
-                if (child.dy != null) tspan.setAttribute('dy', String(child.dy));
-                if (child.rotation != null) tspan.setAttribute('rotate', String((child.rotation * 180) / Math.PI));
-                if (child.styles) {
-                  for (const [key, value] of Object.entries(child.styles)) {
-                    tspan.setAttribute(key, value);
-                  }
-                }
-                textEl.appendChild(tspan);
-              }
-            }
-            parent.appendChild(textEl);
-          }
-          return;
-        }
-
-        // Default: path layer
-        const path = document.createElementNS(SVG_NS, 'path');
-        (path as SVGElement & { dataset: DOMStringMap }).dataset.layerName = layer.name;
-        path.setAttribute('d', layer.data || '');
-        path.setAttribute('fill', 'none');
-
-        if (layer.transform) {
-          path.setAttribute('transform', layer.transform);
-        }
-
-        const hasCustomStroke = !!layer.styles.stroke;
-        const hasCustomStrokeWidth = !!layer.styles['stroke-width'];
-        path.setAttribute('stroke', layer.styles.stroke || DEFAULT_STROKE);
-        path.setAttribute('stroke-width', layer.styles['stroke-width'] || String(DEFAULT_STROKE_WIDTH));
-        if (hasCustomStroke) (path as SVGElement & { dataset: DOMStringMap }).dataset.hasLayerStroke = 'true';
-        if (hasCustomStrokeWidth)
-          (path as SVGElement & { dataset: DOMStringMap }).dataset.hasLayerStrokeWidth = 'true';
-        path.setAttribute('fill', layer.styles.fill || 'none');
-        for (const [key, value] of Object.entries(layer.styles)) {
-          if (key !== 'stroke' && key !== 'stroke-width' && key !== 'fill') {
-            path.setAttribute(key, value);
-          }
-        }
-        parent.appendChild(path);
+      const layerBuildOptions = {
+        emitPlaygroundDataAttrs: true,
+        defaultStroke: DEFAULT_STROKE,
+        defaultFill: 'none',
+        defaultStrokeWidth: String(DEFAULT_STROKE_WIDTH),
       };
 
+      // Render each layer in order. Fragment layers are special-cased because
+      // they produce raw SVG strings that must split between <defs> and the
+      // layer group; all other layer types flow through the shared renderer.
       for (const layer of layers) {
-        renderLayerToDOM(layer, layersGroup);
+        if (layer.type === 'fragment') {
+          this._insertFragmentLayer(layer, defsEl, layersGroup, SVG_NS);
+          continue;
+        }
+        const vnode: VNode = window.SvgPathExtended.buildSingleLayer(layer as unknown as LayerOutput, layerBuildOptions);
+        window.SvgPathExtended.mountInto(layersGroup, vnode);
       }
 
       // Hide the single preview-path when using layers group
@@ -597,6 +362,47 @@ export class SvgPreviewPane extends HTMLElement {
     this.updateNavigatorContent();
 
     return renderTime;
+  }
+
+  /**
+   * Handle a fragment layer: parse its raw SVG strings and insert them
+   * into the preview. fragmentDefs go into <defs> tagged with
+   * `data-fragment-layer`; fragmentVisuals are wrapped in a <g> with
+   * `data-layer-name` and appended to the layers group.
+   */
+  private _insertFragmentLayer(
+    layer: LayerInput,
+    defsEl: SVGDefsElement | null,
+    layersGroup: SVGGElement,
+    svgNs: string,
+  ): void {
+    if (layer.fragmentDefs && defsEl) {
+      const defsDoc = new DOMParser().parseFromString(
+        `<svg xmlns="${svgNs}"><defs>${layer.fragmentDefs}</defs></svg>`,
+        'image/svg+xml',
+      );
+      const parsedDefs = defsDoc.querySelector('defs');
+      if (parsedDefs) {
+        for (const child of Array.from(parsedDefs.children)) {
+          const imported = document.importNode(child, true) as SVGElement;
+          imported.setAttribute('data-fragment-layer', layer.name);
+          defsEl.appendChild(imported);
+        }
+      }
+    }
+    if (layer.fragmentVisuals) {
+      const visualDoc = new DOMParser().parseFromString(
+        `<svg xmlns="${svgNs}">${layer.fragmentVisuals}</svg>`,
+        'image/svg+xml',
+      );
+      const visualRoot = visualDoc.documentElement;
+      const wrapper = document.createElementNS(svgNs, 'g') as SVGGElement;
+      wrapper.setAttribute('data-layer-name', layer.name);
+      for (const child of Array.from(visualRoot.children)) {
+        wrapper.appendChild(document.importNode(child, true));
+      }
+      layersGroup.appendChild(wrapper);
+    }
   }
 
   applyLayerVisibility(): void {

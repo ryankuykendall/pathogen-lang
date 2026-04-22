@@ -8,6 +8,21 @@ export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated, BUIL
 export { stdlib } from './stdlib';
 export { generateSvg } from './svg-generator';
 export type { SvgGeneratorOptions } from './svg-generator';
+export {
+  buildDefs,
+  buildLayers,
+  buildSingleLayer,
+  buildSvgTree,
+  mountInto,
+  toSvgString,
+} from './render';
+export type {
+  BuildDefsOptions,
+  BuildLayersOptions,
+  BuildTreeOptions,
+  VNode,
+  VNodeChild,
+} from './render';
 export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
 
 export type {
