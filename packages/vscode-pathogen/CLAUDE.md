@@ -12,7 +12,7 @@ packages/vscode-pathogen/             packages/pathogen-language-server/
   (stdio transport)                     Wraps language-services functions
     ↓                                   in LSP type converters
   Registers preview command                ↓
-  (src/preview.ts — placeholder)        import from 'svg-path-extended'
+  (src/preview.ts — functional)         import from 'svg-path-extended'
                                         (file:../../ dependency)
 ```
 
@@ -25,7 +25,7 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/extension.ts` | Entry point. Starts LanguageClient, registers preview command |
-| `src/preview.ts` | SVG preview webview panel — **NOT FUNCTIONAL** (see Readiness Status below) |
+| `src/preview.ts` | SVG preview webview panel — functional; webview consumes the bundled library via `<script src="${compilerUri}">` and renders via the shared `buildSvgTree` + `mountInto` adapters |
 | `syntaxes/pathogen.tmLanguage.json` | TextMate grammar for syntax highlighting |
 | `snippets/pathogen.code-snippets` | 18 code snippets (for, fn, if, shapes, etc.) |
 | `language-configuration.json` | Comment toggling, brackets, auto-closing, indentation, folding |
@@ -107,17 +107,19 @@ For the full cross-system checklist, see `project-docs/developer-experience/cros
 
 ## Readiness Status
 
-**This extension is NOT production-ready.** The following issues must be resolved before it can be considered shippable:
+The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `svg-path-extended` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (`src/preview.ts` lines ~711–755, as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator.
+
+Other items below are still open.
 
 ### Broken
 
 - [ ] **Language server does not activate when installed from .vsix** — The packaging pipeline bundles dependencies into `server/node_modules/`, but the language server process fails to start. The extension activates (preview command works) but no LSP features are available (no completions, hover, diagnostics, or formatting). Root cause: the server subprocess runs in its own Node process and may not resolve dependencies from the bundled path.
-- [ ] **Preview panel shows placeholder** — `src/preview.ts` renders a static "Compile preview requires runtime bundle" message. The compiler is not bundled into the webview. This command is registered and visible to users but does nothing useful.
 
 ### Missing
 
 - [ ] **No extension tests** — `"test": "echo 'No tests yet'"`. There are zero automated tests verifying that the extension activates, the language server starts, commands register, or LSP features work.
-- [ ] **No end-to-end install verification** — The build script (`scripts/build-vscode-extension.ts`) packages a `.vsix` but does not verify that it works when installed. The packaging was never tested until 2026-04-08 and multiple dependency resolution issues were discovered.
+- [ ] **No end-to-end install verification** — The build script (`scripts/build-vscode-extension.ts`) packages a `.vsix` but does not verify that it works when installed. The packaging was never tested until 2026-04-08 and multiple dependency resolution issues were discovered. The render-pipeline unification (2026-04-21) did a manual install-verify for the preview webview; no automated gate yet.
+- [ ] **No automated render-channel parity for VS Code** — `tests/render-channel-parity.test.ts` diffs CLI string output vs. playground DOM output; VS Code uses the same shared tree + `mountInto` adapter as the playground, so it is covered indirectly, but there is no test that drives the `preview.ts` entry point end-to-end.
 
 ### Known Gaps
 

@@ -711,43 +711,48 @@ function getWebviewContent(compilerUri: string): string {
         const result = SvgPathExtended.compile(modifiedSource);
         lastResult = result;
 
-        // Generate SVG and inject
-        const svgStr = SvgPathExtended.generateSvg(result, {
+        // Build the shared render tree and split its children across the two
+        // DOM targets: <defs>/<style> go next to previewBg (z-order below
+        // everything but not rendered directly); layer elements go into
+        // previewContent. Replaces the previous generateSvg() + DOMParser +
+        // importNode chain — same DOM shape, one fewer round-trip.
+        const tree = SvgPathExtended.buildSvgTree(result, {
           viewBox: vb,
           width: String(canvasW),
           height: String(canvasH),
         });
 
-        // Parse SVG and inject into preview
-        const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(svgStr, 'image/svg+xml');
-        const svgRoot = svgDoc.documentElement;
-
-        // Clear and inject content
+        // Clear and clean up previous injections
         previewContent.innerHTML = '';
-        // Remove existing injected defs/styles
         preview.querySelectorAll('.injected-defs, .injected-style').forEach(el => el.remove());
 
-        // Import defs
-        const defs = svgRoot.querySelector('defs');
-        if (defs) {
-          const imported = document.importNode(defs, true);
-          imported.classList.add('injected-defs');
-          preview.insertBefore(imported, previewBg);
-        }
+        const SVG_NS = 'http://www.w3.org/2000/svg';
 
-        // Import style
-        const style = svgRoot.querySelector('style');
-        if (style) {
-          const imported = document.importNode(style, true);
-          imported.classList.add('injected-style');
-          preview.insertBefore(imported, previewBg);
-        }
-
-        // Import visual elements (everything except defs, style, script)
-        for (const child of svgRoot.children) {
-          if (child.tagName === 'defs' || child.tagName === 'style' || child.tagName === 'script') continue;
-          previewContent.appendChild(document.importNode(child, true));
+        for (const child of tree.children) {
+          if (!child || typeof child !== 'object' || !('tag' in child)) continue;
+          if (child.tag === 'defs') {
+            const defsEl = document.createElementNS(SVG_NS, 'defs');
+            defsEl.classList.add('injected-defs');
+            SvgPathExtended.mountInto(defsEl, child.children);
+            preview.insertBefore(defsEl, previewBg);
+          } else if (child.tag === 'style') {
+            // The shared renderer emits <style> with a RawText CDATA child.
+            // For a webview <style>, we need the raw CSS text (no CDATA
+            // wrapper) assigned to textContent.
+            const styleEl = document.createElementNS(SVG_NS, 'style');
+            styleEl.classList.add('injected-style');
+            const rawChild = child.children.find(c => c && typeof c === 'object' && 'raw' in c);
+            if (rawChild) {
+              const cssText = rawChild.raw.replace(/^<!\\[CDATA\\[\\n/, '').replace(/\\n\\s*\\]\\]>$/, '');
+              styleEl.textContent = cssText;
+            }
+            preview.insertBefore(styleEl, previewBg);
+          } else if (child.tag === 'script') {
+            // Metadata script — skip in VS Code preview.
+            continue;
+          } else {
+            SvgPathExtended.mountInto(previewContent, child);
+          }
         }
 
         // Apply layer visibility
