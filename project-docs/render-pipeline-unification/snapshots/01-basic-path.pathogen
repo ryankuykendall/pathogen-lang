@@ -1,0 +1,11 @@
+// Baseline: single-layer path, no defs. Tests bare minimum CLI output shape.
+
+define PathLayer('line') ${
+  stroke: Color('#333333');
+  stroke-width: 2;
+  fill: none;
+}
+
+layer('line').apply {
+  M 20 20 L 180 180
+}

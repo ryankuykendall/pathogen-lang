@@ -1,0 +1,12 @@
+// ClipPath defs. Tests <clipPath> emission (geometry-only, no styles on children).
+
+let shape = @{ m 20 20 l 160 0 l 0 160 l -160 0 z };
+let c = ClipPath('frame');
+c.append(shape);
+
+define PathLayer('clipped') ${ stroke: Color('#e63946'); stroke-width: 4; fill: none; clip-path: c.id; }
+
+layer('clipped').apply {
+  M 0 0 L 200 200
+  M 0 200 L 200 0
+}

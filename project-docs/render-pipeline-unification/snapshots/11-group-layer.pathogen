@@ -1,0 +1,15 @@
+// GroupLayer with transform + nested children. Tests <g> emission.
+
+let back = PathLayer('back') ${ stroke: Color('#cccccc'); stroke-width: 2; fill: none; };
+let front = PathLayer('front') ${ stroke: Color('#222222'); stroke-width: 2; fill: none; };
+
+let g = GroupLayer('composite') ${ translate: 50, 50; };
+g.append(back);
+g.append(front);
+
+back.apply {
+  M 0 0 L 100 100
+}
+front.apply {
+  M 0 100 L 100 0
+}

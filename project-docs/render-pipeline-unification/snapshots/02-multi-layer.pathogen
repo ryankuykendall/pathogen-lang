@@ -1,0 +1,11 @@
+// Multiple layers with overlapping paths. Tests layer ordering + per-layer styles.
+
+define PathLayer('back') ${ stroke: Color('#cccccc'); stroke-width: 4; fill: none; }
+define PathLayer('front') ${ stroke: Color('#222222'); stroke-width: 2; fill: none; }
+
+layer('back').apply {
+  M 20 100 L 180 100
+}
+layer('front').apply {
+  M 100 20 L 100 180
+}

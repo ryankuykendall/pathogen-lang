@@ -1,0 +1,14 @@
+// LinearGradient with stops + non-default attrs. Tests gradient attr order.
+
+let g = LinearGradient('fade', 0, 0, 1, 0) {|g|
+  g.stop(0, Color('#e63946'));
+  g.stop(0.5, Color('#f4a261'));
+  g.stop(1, Color('#2a9d8f'));
+};
+g.spreadMethod = 'repeat';
+
+define PathLayer('bg') ${ fill: g; stroke: none; }
+
+layer('bg').apply {
+  M 0 0 L 200 0 L 200 200 L 0 200 Z
+}

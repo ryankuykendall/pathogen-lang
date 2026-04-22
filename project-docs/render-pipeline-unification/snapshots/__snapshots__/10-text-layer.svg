@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+
+  <text id="label" x="40" y="100" font-family="Inter" font-size="16" fill="#222222">Hello world</text>
+  <text x="40" y="140" font-family="Inter" font-size="16" fill="#222222">Second line</text>
+</svg>

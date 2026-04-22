@@ -1,0 +1,12 @@
+// RadialGradient. Tests radial-specific attr shape.
+
+let glow = RadialGradient('glow', 0.5, 0.5, 0.5) {|g|
+  g.stop(0, Color('#ffffff'));
+  g.stop(1, Color('#000000'));
+};
+
+define PathLayer('sphere') ${ fill: glow; stroke: none; }
+
+layer('sphere').apply {
+  M 20 100 A 80 80 0 1 1 180 100 A 80 80 0 1 1 20 100 Z
+}

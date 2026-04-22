@@ -1,0 +1,18 @@
+// Marker with all defaults (markerUnits=strokeWidth, preserveAspectRatio elided).
+// Byte-identity test for default-elision rules.
+
+let arrow = @{ m 0 0 l 10 5 l -10 5 z };
+let arrowMarker = Marker('arrowhead', 10, 10) {|m|
+  m.append(arrow, ${ fill: Color('#333333'); });
+};
+
+define PathLayer('line') ${
+  stroke: Color('#333333');
+  stroke-width: 3;
+  fill: none;
+  marker-end: arrowMarker;
+}
+
+layer('line').apply {
+  M 40 100 L 160 100
+}

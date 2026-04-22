@@ -1,0 +1,12 @@
+// Text layer. Tests <text> emission in a multi-layer program.
+
+define TextLayer('label') ${
+  font-family: 'Inter';
+  font-size: 16;
+  fill: Color('#222222');
+}
+
+layer('label').apply {
+  text(40, 100)`Hello world`
+  text(40, 140)`Second line`
+}
