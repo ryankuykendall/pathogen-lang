@@ -16,7 +16,10 @@ function escapeHtml(s: string): string {
 }
 
 function escapeAttr(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
+  );
 }
 
 interface CssVar {
@@ -230,9 +233,9 @@ export class MiniWorkspace extends HTMLElement {
       resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         for (const v of this._cssVars) {
-          const input = chipGroup.querySelector(
-            `pathogen-color-input[data-var="${v.name}"]`,
-          ) as (HTMLElement & { value: string }) | null;
+          const input = chipGroup.querySelector(`pathogen-color-input[data-var="${v.name}"]`) as
+            | (HTMLElement & { value: string })
+            | null;
           if (input) input.value = v.defaultValue;
           const chip = input?.closest('.chip') as HTMLElement | null;
           if (chip) chip.style.setProperty('--chip-color', v.defaultValue);
@@ -414,7 +417,9 @@ export class MiniWorkspace extends HTMLElement {
 
     await import('../inspector-panel.js');
 
-    this._inspectorEl = document.createElement('inspector-panel') as HTMLElement & { setData(data: Record<string, unknown>): void };
+    this._inspectorEl = document.createElement('inspector-panel') as HTMLElement & {
+      setData(data: Record<string, unknown>): void;
+    };
     this._inspectorEl.classList.add('fullscreen-overlay', 'open');
     this.shadowRoot!.appendChild(this._inspectorEl);
     // Pass metadata if we have it; otherwise hand over empty defaults so the
@@ -595,6 +600,8 @@ export class MiniWorkspace extends HTMLElement {
           overflow: hidden;
           background: var(--bg-elevated, #ffffff);
           box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+          position: relative;
+          overflow: visible;
         }
 
         /* --- Summary (always visible, 28px, click to toggle glass-bar) --- */
@@ -824,9 +831,12 @@ export class MiniWorkspace extends HTMLElement {
 
         /* Playground button — accent fill, always rightmost */
         .icon-btn.playground {
-          margin-left: auto;
           background: var(--accent-color, #10b981);
           color: var(--accent-text, #ffffff);
+          position: absolute;
+          right: -0.6rem;
+          top: 0.8rem;
+          z-index: 6;
         }
         .icon-btn.playground:hover {
           background: var(--accent-hover, #059669);
@@ -920,6 +930,10 @@ export class MiniWorkspace extends HTMLElement {
         <h2 class="mw-title">${caption}</h2>
       </button>
 
+      <button class="icon-btn playground playground-link" type="button" data-tip="Open in playground workspace" data-tip-align="right" aria-label="Open in playground workspace">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>
+      </button>
+
       <div class="glass-bar" id="glass-bar">
         <div class="glass-bar-inner">
           <button class="icon-btn${codeOpen ? ' active' : ''}" id="code-toggle" type="button" data-tip="Toggle code" data-tip-align="left" aria-pressed="${codeOpen}">
@@ -934,9 +948,6 @@ export class MiniWorkspace extends HTMLElement {
           </button>
           <button class="icon-btn" id="fullscreen-btn" type="button" data-tip="Fullscreen">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-          </button>
-          <button class="icon-btn playground playground-link" type="button" data-tip="Open in playground workspace" data-tip-align="right" aria-label="Open in playground workspace">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>
           </button>
         </div>
       </div>
