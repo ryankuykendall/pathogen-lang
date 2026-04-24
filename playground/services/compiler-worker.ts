@@ -115,9 +115,14 @@ async function sendRequest(
 
     const message: Record<string, unknown> = { id, type, source, options };
     if (fontBuffers && fontBuffers.length > 0) {
-      message.fontBuffers = fontBuffers;
-      // Transfer ArrayBuffers for zero-copy
-      const transferables = fontBuffers.map((fb) => fb.buffer);
+      // Clone each cached buffer before transferring. The font-loader cache
+      // (services/font-loader.ts) stores the ArrayBuffer reference; after
+      // postMessage detaches it, the next compile's postMessage would throw
+      // "ArrayBuffer at index 0 is already detached". Slicing yields a fresh
+      // buffer per request, leaving the cached copy intact.
+      const clonedEntries = fontBuffers.map((fb) => ({ ...fb, buffer: fb.buffer.slice(0) }));
+      message.fontBuffers = clonedEntries;
+      const transferables = clonedEntries.map((fb) => fb.buffer);
       w.postMessage(message, transferables);
     } else {
       w.postMessage(message);

@@ -299,7 +299,7 @@ export class CodeEditorPane extends HTMLElement {
         updateExtension,
         view.EditorView.lineWrapping,
         ...colorPickerExtension(view, language),
-        ...textLayerEditorExtension(view),
+        ...textLayerEditorExtension(view, language),
       ],
     });
 
