@@ -812,6 +812,21 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
     return null;
   }
 
+  // Defer to the shared engine for the leading-symbol triggers it owns:
+  //   • `@` / `&` at statement start  → block-start snippets (@font, @{, &{)
+  //   • `$` at statement start        → declaration snippets (let, PathLayer, TextLayer)
+  //   • `$` in expression position    → style-block snippet (${  })
+  //   • inside a backtick template    → ${...} interpolation snippet
+  // Without these early returns, the legacy fallback's keyword/snippet list
+  // merges into the shared engine's filtered result and dilutes precise
+  // single-option matches like `@font` for `@f`.
+  if (isInsideLegacyBacktickString(context)) {
+    return null;
+  }
+  if (isLegacyLeadingSymbolTrigger(context)) {
+    return null;
+  }
+
   // Regular word completion
   const word = context.matchBefore(/\w*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;
@@ -1000,4 +1015,48 @@ function isInsideLegacyStyleBlock(context: CompletionContext): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Detect whether the cursor is inside a backtick-quoted template literal.
+ * The shared engine offers a `${...}` interpolation snippet here. Without
+ * this defer, the legacy fallback emits keyword/snippet noise that drowns
+ * the interpolation suggestion.
+ */
+function isInsideLegacyBacktickString(context: CompletionContext): boolean {
+  const textBefore = context.state.doc.sliceString(0, context.pos);
+  let inSingle = false;
+  let inDouble = false;
+  let inBacktick = false;
+  for (let i = 0; i < textBefore.length; i++) {
+    const ch = textBefore[i];
+    if (ch === '\\') { i++; continue; }
+    if (inBacktick) {
+      if (ch === '`') inBacktick = false;
+      continue;
+    }
+    if (inSingle) {
+      if (ch === "'") inSingle = false;
+      continue;
+    }
+    if (inDouble) {
+      if (ch === '"') inDouble = false;
+      continue;
+    }
+    if (ch === '`') inBacktick = true;
+    else if (ch === "'") inSingle = true;
+    else if (ch === '"') inDouble = true;
+  }
+  return inBacktick;
+}
+
+/**
+ * Detect whether the cursor follows a leading-symbol trigger (`@`, `&`, or
+ * `$`) that the shared engine handles exclusively. The shared engine
+ * decides which snippet menu to surface based on statement-start position
+ * and expression context — the legacy fallback should not contribute here.
+ */
+function isLegacyLeadingSymbolTrigger(context: CompletionContext): boolean {
+  const textBefore = context.state.doc.sliceString(0, context.pos);
+  return /[@&]\w*$/.test(textBefore) || /\$$/.test(textBefore);
 }

@@ -59,7 +59,7 @@ export const LANGUAGE_FEATURES: readonly LanguageFeature[] = [
     id: 'completion',
     fn: 'getCompletions',
     vscodeCapability: 'completionProvider',
-    lspTriggerCharacters: ['.', '$'],
+    lspTriggerCharacters: ['.', '$', '@', '&'],
     playgroundRequired: true,
   },
   {

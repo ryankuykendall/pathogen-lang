@@ -41,11 +41,12 @@ export function sharedCompletionSource(context: CompletionContext): CompletionRe
     return null;
   }
 
-  // Find the word being typed. `[\w.]*` captures both plain identifiers
-  // (`cir`) and member-access prefixes (`bg.app`). We reject zero-length
-  // non-explicit matches so that punctuation keystrokes (e.g. `;`) don't
-  // trigger the completion popup for no reason.
-  const word = context.matchBefore(/[\w.]*/);
+  // Find the word being typed. `[@&$\w.]*` captures plain identifiers
+  // (`cir`), member-access prefixes (`bg.app`), and leading-symbol prefixes
+  // (`@font`, `&{`, `$`) that surface block-start and declaration snippets.
+  // We reject zero-length non-explicit matches so that punctuation keystrokes
+  // (e.g. `;`) don't trigger the completion popup for no reason.
+  const word = context.matchBefore(/[@&$\w.]*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;
 
   const source = context.state.doc.toString();
@@ -118,7 +119,7 @@ export function sharedCompletionSource(context: CompletionContext): CompletionRe
         },
       } : {}),
     })),
-    validFor: /^[\w.]*$/,
+    validFor: /^[@&$\w.]*$/,
   };
 }
 

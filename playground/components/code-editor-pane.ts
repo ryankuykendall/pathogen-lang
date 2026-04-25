@@ -104,6 +104,8 @@ interface CmAutocompleteModule {
   autocompletion(config: unknown): unknown;
   completionKeymap: unknown[];
   startCompletion(view: unknown): boolean;
+  closeBrackets(): unknown;
+  closeBracketsKeymap: unknown[];
 }
 
 interface CmOneDarkModule {
@@ -269,9 +271,11 @@ export class CodeEditorPane extends HTMLElement {
         view.highlightActiveLine(),
         language.indentOnInput(),
         language.bracketMatching(),
+        autocomplete.closeBrackets(),
         this._themeCompartment.of(this._getThemeExtensions()),
         pathogenLanguage(language as any),
         view.keymap.of([
+          ...autocomplete.closeBracketsKeymap,
           ...commands.defaultKeymap,
           ...commands.historyKeymap,
           ...autocomplete.completionKeymap,

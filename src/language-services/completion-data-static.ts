@@ -65,6 +65,87 @@ export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = [
   { label: 'marker-end', kind: 'property', detail: 'Marker at path end', boost: 6 },
 ];
 
+// --- Block-start snippets (offered when typing @, & at statement start) ---
+
+export const BLOCK_START_SNIPPETS: CompletionEntry[] = [
+  {
+    label: '@font',
+    kind: 'snippet',
+    detail: 'Font directive — load a font with weight',
+    boost: 12,
+    insertText: '@font "${1:Inconsolata}" ${2:400};',
+    isSnippet: true,
+  },
+  {
+    label: '@{',
+    kind: 'snippet',
+    detail: 'PathBlock — group of path commands',
+    boost: 11,
+    insertText: '@{\n\t$0\n}',
+    isSnippet: true,
+  },
+  {
+    label: '&{',
+    kind: 'snippet',
+    detail: 'TextBlock — group of text/tspan elements',
+    boost: 11,
+    insertText: '&{\n\t$0\n}',
+    isSnippet: true,
+  },
+];
+
+// --- Declaration snippets (offered when typing $ at statement start) ---
+
+export const DECLARATION_SNIPPETS: CompletionEntry[] = [
+  {
+    label: 'let',
+    kind: 'snippet',
+    detail: 'Variable declaration',
+    boost: 12,
+    insertText: 'let ${1:name} = $0;',
+    isSnippet: true,
+  },
+  {
+    label: 'PathLayer',
+    kind: 'snippet',
+    detail: 'Define a named path layer with styles',
+    boost: 11,
+    insertText: "define PathLayer('${1:name}') ${\n\t${2:stroke}: $0;\n}",
+    isSnippet: true,
+  },
+  {
+    label: 'TextLayer',
+    kind: 'snippet',
+    detail: 'Define a named text layer with styles',
+    boost: 11,
+    insertText: "define TextLayer('${1:name}') ${\n\tfont-family: $0;\n}",
+    isSnippet: true,
+  },
+];
+
+// --- Template interpolation snippet (offered inside backtick strings) ---
+
+export const INTERPOLATION_SNIPPET: CompletionEntry = {
+  label: '${...}',
+  kind: 'snippet',
+  detail: 'String interpolation — embed an expression',
+  boost: 15,
+  insertText: '${${1:expr}}',
+  isSnippet: true,
+};
+
+// --- Style-block snippet (offered when typing $ in expression position) ---
+// Provides a balanced `${  }` literal for `let foo = $` style use.
+
+export const STYLE_BLOCK_SNIPPET: CompletionEntry = {
+  label: '${...}',
+  kind: 'snippet',
+  detail: 'Style block — inline style declarations',
+  boost: 14,
+  insertText: '${\n\t$0\n}',
+  isSnippet: true,
+};
+
 // --- Member access completions (now generated — see completion-data.generated.ts) ---
 
 export interface MemberCompletionSet {

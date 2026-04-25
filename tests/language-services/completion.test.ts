@@ -583,4 +583,130 @@ describe('getCompletions', () => {
       expect(letItem!.insertText).toContain('${1:name}');
     });
   });
+
+  describe('block-start snippets at statement start', () => {
+    it('@ offers @font and @{ snippets', () => {
+      const names = labels(completeAtEnd('@'));
+      expect(names).toContain('@font');
+      expect(names).toContain('@{');
+    });
+
+    it('@f filters to @font and hides @{', () => {
+      const names = labels(completeAtEnd('@f'));
+      expect(names).toContain('@font');
+      expect(names).not.toContain('@{');
+    });
+
+    it('@font still includes @font', () => {
+      expect(labels(completeAtEnd('@font'))).toContain('@font');
+    });
+
+    it('& offers &{ snippet', () => {
+      expect(labels(completeAtEnd('&'))).toContain('&{');
+    });
+
+    it('@ in expression position (after =) offers @{ but NOT @font', () => {
+      const names = labels(completeAtEnd('let x = @'));
+      expect(names).toContain('@{');
+      expect(names).not.toContain('@font');
+    });
+
+    it('& in expression position (after =) offers &{', () => {
+      expect(labels(completeAtEnd('let x = &'))).toContain('&{');
+    });
+
+    it('@ after + offers @{ in expression position', () => {
+      const names = labels(completeAtEnd('let x = a + @'));
+      expect(names).toContain('@{');
+      expect(names).not.toContain('@font');
+    });
+
+    it('@ after identifier (mid-word) does NOT offer block snippets', () => {
+      const names = labels(completeAtEnd('let x = abc@'));
+      expect(names).not.toContain('@font');
+      expect(names).not.toContain('@{');
+    });
+
+    it('after } offers block snippets at statement start', () => {
+      expect(labels(completeAtEnd('@{ M 0 0 }\n@'))).toContain('@font');
+    });
+
+    it('after ; offers block snippets at statement start', () => {
+      expect(labels(completeAtEnd('let x = 1;\n@'))).toContain('@font');
+    });
+
+    it('@ snippet entries are marked isSnippet', () => {
+      const items = completeAtEnd('@');
+      const fontItem = items.find((i) => i.label === '@font');
+      expect(fontItem?.isSnippet).toBe(true);
+      expect(fontItem?.insertText).toBe('@font "${1:Inconsolata}" ${2:400};');
+    });
+  });
+
+  describe('declaration snippets via $', () => {
+    it('$ at statement start offers let/PathLayer/TextLayer', () => {
+      const names = labels(completeAtEnd('$'));
+      expect(names).toContain('let');
+      expect(names).toContain('PathLayer');
+      expect(names).toContain('TextLayer');
+    });
+
+    it('$ after ; offers declaration snippets', () => {
+      const names = labels(completeAtEnd('let x = 1;\n$'));
+      expect(names).toContain('PathLayer');
+    });
+  });
+
+  describe('style-block snippet via $ in expression position', () => {
+    it('$ after = offers ${ ... } style block', () => {
+      const items = completeAtEnd('let foo = $');
+      const styleBlock = items.find((i) => i.label === '${...}' && i.detail.includes('Style block'));
+      expect(styleBlock).toBeDefined();
+      expect(styleBlock!.insertText).toBe('${\n\t$0\n}');
+    });
+
+    it('$ after ( offers style block', () => {
+      const items = completeAtEnd('foo($');
+      expect(items.find((i) => i.label === '${...}' && i.detail.includes('Style block'))).toBeDefined();
+    });
+
+    it('$ at statement start does NOT offer style block (declaration snippets instead)', () => {
+      const items = completeAtEnd('$');
+      expect(items.find((i) => i.label === '${...}' && i.detail.includes('Style block'))).toBeUndefined();
+    });
+  });
+
+  describe('template interpolation snippet', () => {
+    it('inside backtick string offers ${...}', () => {
+      const names = labels(completeAtEnd('text(0,0)`hello $'));
+      expect(names).toContain('${...}');
+    });
+
+    it('inside backtick string after ${ offers ${...}', () => {
+      const names = labels(completeAtEnd('text(0,0)`hello ${'));
+      expect(names).toContain('${...}');
+    });
+
+    it('regression: NO style props inside backtick interpolation', () => {
+      const names = labels(completeAtEnd('text(0,0)`hello ${'));
+      expect(names).not.toContain('stroke');
+      expect(names).not.toContain('fill');
+    });
+
+    it('regression: real style block still gets style props', () => {
+      const names = labels(completeAtEnd("define PathLayer('a') ${\n  "));
+      expect(names).toContain('stroke');
+      expect(names).toContain('fill');
+    });
+
+    it('${...} insertText strips to literal ${expr}', () => {
+      const item = completeAtEnd('text(0,0)`hello $').find((i) => i.label === '${...}');
+      expect(item?.insertText).toBe('${${1:expr}}');
+    });
+
+    it('outside backticks does NOT offer ${...}', () => {
+      const names = labels(completeAtEnd('let x = 1;\n'));
+      expect(names).not.toContain('${...}');
+    });
+  });
 });

@@ -2,6 +2,10 @@ import { analyzeScopes } from './scope-analysis';
 import {
   KEYWORD_COMPLETIONS,
   STYLE_PROPERTY_COMPLETIONS,
+  BLOCK_START_SNIPPETS,
+  DECLARATION_SNIPPETS,
+  INTERPOLATION_SNIPPET,
+  STYLE_BLOCK_SNIPPET,
 } from './completion-data-static';
 import {
   ENUM_COMPLETIONS,
@@ -31,6 +35,55 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   const source = document.getText();
   const offset = document.offsetAt(position);
   const textBefore = source.slice(0, offset);
+
+  // Inside a backtick template literal: offer the ${expr} interpolation
+  // snippet plus normal scope-aware expression completions. Must run BEFORE
+  // the style-block branch — otherwise an unmatched `${` inside a backtick
+  // string is misclassified as a style block and we'd surface CSS property
+  // completions where they don't belong.
+  if (isInsideBacktickString(textBefore)) {
+    const items: CompletionItem[] = [toCompletionItem(INTERPOLATION_SNIPPET)];
+    items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
+    items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
+    items.push(...collectScopeDeclarations(document, position));
+    const prefixMatch = textBefore.match(/[a-zA-Z_$]\w*$|\$\{?$/);
+    const prefix = prefixMatch ? prefixMatch[0] : '';
+    return filterByPrefix(items, prefix);
+  }
+
+  // Leading `@` or `&` — surface block-start snippets. Two valid contexts:
+  //   • Statement start  → @font directive, @{ } PathBlock, &{ } TextBlock
+  //   • Expression value → @{ } PathBlock, &{ } TextBlock (e.g. `let x = @{`)
+  // `@font` is a top-level directive and is filtered out of expression
+  // contexts where it would not parse.
+  const blockStartMatch = textBefore.match(/[@&]\w*$/);
+  if (blockStartMatch) {
+    const before = textBefore.slice(0, textBefore.length - blockStartMatch[0].length);
+    const stmtStart = isAtStatementStart(before);
+    const exprPos = isInExpressionPosition(before);
+    if (stmtStart || exprPos) {
+      const snippets = stmtStart
+        ? BLOCK_START_SNIPPETS
+        : BLOCK_START_SNIPPETS.filter((s) => s.label !== '@font');
+      return filterByPrefix(snippets.map(toCompletionItem), blockStartMatch[0]);
+    }
+  }
+
+  // Trailing `$` outside of style/backtick contexts. Two routings:
+  //   • At statement start  → declaration snippets (let, PathLayer, TextLayer)
+  //   • In expression value → style-block snippet (`${ … }`)
+  // The expression case covers `let foo = $` where the user is reaching for
+  // an inline style block — we surface the balanced-brace snippet so they
+  // don't have to remember the exact `${ }` syntax.
+  if (textBefore.endsWith('$')) {
+    const before = textBefore.slice(0, -1);
+    if (isAtStatementStart(before)) {
+      return DECLARATION_SNIPPETS.map(toCompletionItem);
+    }
+    if (isInExpressionPosition(before)) {
+      return [toCompletionItem(STYLE_BLOCK_SNIPPET)];
+    }
+  }
 
   // Check if we're inside a style block ${ ... }. Style blocks have two
   // completion contexts:
@@ -526,4 +579,88 @@ function filterByPrefix(items: CompletionItem[], prefix: string): CompletionItem
   if (!prefix) return items;
   const lower = prefix.toLowerCase();
   return items.filter((item) => item.label.toLowerCase().startsWith(lower));
+}
+
+/**
+ * Walk forward through `textBefore` toggling on unescaped backticks while
+ * respecting `'…'` and `"…"` quote states. Returns true if the cursor is
+ * currently inside a backtick template literal (no closing backtick seen
+ * before the end of textBefore).
+ */
+function isInsideBacktickString(textBefore: string): boolean {
+  let inSingle = false;
+  let inDouble = false;
+  let inBacktick = false;
+  for (let i = 0; i < textBefore.length; i++) {
+    const ch = textBefore[i];
+    if (ch === '\\') { i++; continue; }
+    if (inBacktick) {
+      if (ch === '`') inBacktick = false;
+      continue;
+    }
+    if (inSingle) {
+      if (ch === "'") inSingle = false;
+      continue;
+    }
+    if (inDouble) {
+      if (ch === '"') inDouble = false;
+      continue;
+    }
+    if (ch === '`') inBacktick = true;
+    else if (ch === "'") inSingle = true;
+    else if (ch === '"') inDouble = true;
+  }
+  return inBacktick;
+}
+
+/**
+ * Returns true if `textBefore` ends in a position where a new statement may
+ * begin: at the start of the file, or after `;`, `{`, or `}` (with optional
+ * whitespace and newlines in between).
+ */
+function isAtStatementStart(textBefore: string): boolean {
+  let i = textBefore.length - 1;
+  while (i >= 0 && /\s/.test(textBefore[i])) i--;
+  if (i < 0) return true;
+  const ch = textBefore[i];
+  return ch === ';' || ch === '{' || ch === '}';
+}
+
+/**
+ * Returns true if `textBefore` ends in a position where a new expression
+ * value may begin: after `=`, `(`, `,`, `[`, `+`, `-`, `*`, `/`, or `:`
+ * (with optional whitespace). Used to surface the `${ … }` style-block
+ * snippet on `$` keystroke in expression context.
+ */
+function isInExpressionPosition(textBefore: string): boolean {
+  let i = textBefore.length - 1;
+  while (i >= 0 && /\s/.test(textBefore[i])) i--;
+  if (i < 0) return false;
+  const ch = textBefore[i];
+  return ch === '=' || ch === '(' || ch === ',' || ch === '['
+    || ch === '+' || ch === '-' || ch === '*' || ch === '/' || ch === ':';
+}
+
+/**
+ * Collect scope-aware user declarations (let bindings, fn definitions) as
+ * CompletionItems. Used by branches that need scope-aware completions
+ * without falling through to the main path.
+ */
+function collectScopeDeclarations(document: TextDocument, position: Position): CompletionItem[] {
+  const scopeInfo = analyzeScopes(document);
+  const seen = new Set<string>();
+  const items: CompletionItem[] = [];
+  for (const decl of scopeInfo.declarations) {
+    if (seen.has(decl.name)) continue;
+    seen.add(decl.name);
+    if (decl.range.start.line <= position.line) {
+      items.push({
+        label: decl.name,
+        kind: decl.kind === 'function' ? 'function' : 'variable',
+        detail: decl.kind === 'function' ? `fn ${decl.name}(...)` : `${decl.kind}: ${decl.name}`,
+        sortText: sortKey(20, decl.name),
+      });
+    }
+  }
+  return items;
 }
