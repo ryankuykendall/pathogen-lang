@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix: object literal property values now correctly parse function calls, method chains, and member access (previously dropped to NullLiteral).
 
 #### Language Services
+- **Leading-character completion triggers** — typing `@`, `&`, `$`, or `${` no longer dead-ends in a parse error. The completion menu now offers contextual snippets:
+  - `@` / `@f` / `@font` at statement start → `@font "Name" weight;` directive and `@{ }` PathBlock snippets.
+  - `@` and `&` in expression position (after `=`, `(`, `,`, etc.) → `@{ }` PathBlock and `&{ }` TextBlock.
+  - `&` at statement start → `&{ }` TextBlock.
+  - `$` at statement start → `let`, `PathLayer`, `TextLayer` declaration snippets.
+  - `$` in expression position → `${ }` style-block snippet.
+  - `$` or `${` inside a backtick template literal → `${expr}` interpolation snippet.
+  - Fix: backtick interpolations were misclassified as style blocks and offered CSS property completions; now the engine distinguishes the two contexts.
 - **Completion engine rewrite** — generated from TypeScript API declarations via ts-morph instead of hand-maintained static data.
   - All 12 enums with 42 members now have completions.
   - 79 stdlib/constructor completions with accurate signatures.
@@ -63,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inspector panel with stacked layers, palette, and CSS variable panels.
 - Completion UX fix — error panel no longer covers completion popups (z-index override + longer debounce during member access).
 - Error panel badge showing error count.
+- Auto-balanced brackets and quotes — typing `(`, `[`, `{`, `"`, `'`, or `` ` `` now inserts the matching closer, so a stray opener no longer cascades into a chain of "missing token" parse errors.
 
 #### Documentation
 - Formatter style guide and 25-question formatting questionnaire.
