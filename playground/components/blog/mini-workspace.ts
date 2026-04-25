@@ -836,7 +836,7 @@ export class MiniWorkspace extends HTMLElement {
           position: absolute;
           right: -0.6rem;
           top: 0.8rem;
-          z-index: 6;
+          z-index: 25;
         }
         .icon-btn.playground:hover {
           background: var(--accent-hover, #059669);
