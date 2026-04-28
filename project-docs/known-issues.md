@@ -311,6 +311,50 @@ Don't parse the code at all. Scan line-by-line, track `{ }` nesting depth, and r
 
 ---
 
+## ISSUE-006: Style block parser strips `//` as a line comment, dropping URL-like values
+
+**Discovered:** 2026-04-27 (during SVG sanitization hardening, [security plan](../.claude/plans/i-was-reading-the-polished-peacock.md))
+
+**Severity:** Low
+
+**Description:**
+
+The style-block AST builder treats `//` as a line comment delimiter (`parser/ast-builder.ts:1704`):
+
+```ts
+const stripped = raw.replace(/\/\/[^\n]*/g, ''); // Strip comments
+```
+
+The replacement happens before the property-extraction regex runs, and it does not respect string literal boundaries. For a property like:
+
+```pathogen
+define PathLayer('a') ${ background-image: "url(https://evil.example/log)"; }
+```
+
+…the `//` inside `https://` truncates the value at `https:` and the regex `/([a-zA-Z][a-zA-Z0-9-]*)\s*:\s*([^;\n]+);/g` no longer matches. The property is silently dropped from the AST and the compiled SVG contains no styles for that layer.
+
+**Impact:**
+
+- **Currently a coincidental safety net:** the malicious URL never reaches the compiled output, but for the wrong reason — by parser truncation, not by validation.
+- **Future-fragility:** if anyone fixes the comment stripper without restoring it as a parser feature, `https://`, `http://`, and any other `//`-bearing value would suddenly survive. Phase 1 of the SVG sanitization plan (compiler emission hardening, 2026-04-27) added a strict CSS-value allow-list at `src/evaluator/sanitize.ts` that already rejects every `url()`/`image-set()`/`var()`/etc. shape, so the safety net being removed would not regress the security contract — but the user-facing behavior would change (silent drop becomes loud rejection).
+- **Functional regression:** legitimate uses of `//` in style values (e.g. `data:image/png;...` URIs in `mask` references) are also silently dropped today.
+
+**Current Workarounds:**
+
+Avoid `//` in style block values. The Pathogen language already routes legitimate URL refs through `Mask()`, `ClipPath()`, `LinearGradient()`, etc. — `url(#id)` (no `//`) — so users rarely hit this in practice.
+
+**Potential Solutions:**
+
+1. **String-aware comment stripping** — track open string-literal state while scanning, only treat `//` as a comment when not inside `"…"` or `'…'`. ~10 lines of code.
+2. **Two-pass parse** — extract string-literal spans first, replace each with a placeholder, strip comments, then restore. Slightly cleaner but more work.
+3. **Drop line-comment support inside style blocks entirely** — Pathogen has block comments `/* … */`; remove `//`-stripping from the style block path. Simpler but breaks any user relying on `//` comments inside `${ … }`.
+
+**Recommended Long-term Solution:**
+
+Option 1 — string-aware stripping, since users do use `//` comments and `data:` URIs are a legitimate value form. Tracked separately from the security work because the security contract is already enforced by `validateCSSValue` regardless of which path delivers the value.
+
+---
+
 ## Template for New Issues
 
 ```markdown

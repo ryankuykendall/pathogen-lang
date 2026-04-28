@@ -9,6 +9,7 @@
  */
 
 import { renderConicToWedges } from '../conic-renderer';
+import { validateCSSIdent } from '../evaluator/sanitize';
 import type {
   CompileResult,
   GradientOutput,
@@ -19,6 +20,20 @@ import type {
 import type { ClipPathOutput } from '../evaluator/types';
 
 import { h, type VNode } from './types';
+
+/**
+ * Defense-in-depth check on URLs that flow into <image href=...> from gpu
+ * gradient rasterization. Producers (workspace-view, gradient-service) emit
+ * data: URLs only; this assertion prevents a regression there from leaking a
+ * remote URL into the SVG output.
+ */
+function assertSafeGpuImageUrl(url: string): void {
+  if (!url.startsWith('data:image/')) {
+    throw new Error(
+      `GPU gradient href must be a data:image/... URI, got ${JSON.stringify(url.slice(0, 80))}`,
+    );
+  }
+}
 
 export interface BuildDefsOptions {
   /** SVG canvas width — used for conic gradient wedge sizing. Defaults to 200. */
@@ -115,7 +130,10 @@ function buildGradient(
         height: String(svgH),
       };
       const url = gpuGradientUrls?.get(grad.id);
-      if (url) imgAttrs.href = url;
+      if (url) {
+        assertSafeGpuImageUrl(url);
+        imgAttrs.href = url;
+      }
       return h('pattern', attrs, [h('image', imgAttrs)]);
     }
     const wedges = renderConicToWedges(
@@ -161,7 +179,10 @@ function buildGradient(
         preserveAspectRatio: 'none',
       };
       const url = gpuGradientUrls?.get(grad.id);
-      if (url) imgAttrs.href = url;
+      if (url) {
+        assertSafeGpuImageUrl(url);
+        imgAttrs.href = url;
+      }
       return h('pattern', attrs, [h('image', imgAttrs)]);
     }
     let w: number, hgt: number;
@@ -213,7 +234,13 @@ function buildGradient(
   if (grad.gradientUnits) attrs.gradientUnits = grad.gradientUnits;
   if (grad.gradientTransform) attrs.gradientTransform = grad.gradientTransform;
   if (grad.colorInterpolation) attrs['color-interpolation'] = grad.colorInterpolation;
-  if (grad.href) attrs.href = `#${grad.href}`;
+  if (grad.href) {
+    // Defense-in-depth: gradient inheritance refs are validated at evaluation
+    // (LinearGradient/RadialGradient constructors); re-check here to protect
+    // any future caller that bypasses the constructor path.
+    validateCSSIdent(grad.href, 'gradient-href');
+    attrs.href = `#${grad.href}`;
+  }
 
   const stops: VNode[] = grad.stops.map((s) =>
     h('stop', { offset: String(s.offset), 'stop-color': s.color }),

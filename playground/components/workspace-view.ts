@@ -427,15 +427,20 @@ export class WorkspaceView extends HTMLElement {
       autosave.onPreferencesChange(preferences);
     });
 
-    // CSS variable overrides from inspector panel -> apply to SVG preview
+    // CSS variable overrides from inspector panel -> apply to SVG preview.
+    // Phase 3 moved compiled SVG into a sandboxed iframe; setCssVar / removeCssVar
+    // forward the override into the iframe document where the SVG lives.
     this.shadowRoot!.addEventListener('cssvar-override', (e: Event) => {
-      const svg = this.previewPane?.shadowRoot?.querySelector('#preview') as HTMLElement | null;
-      if (!svg) return;
+      const pane = this.previewPane as (HTMLElement & {
+        setCssVar?(n: string, v: string): void;
+        removeCssVar?(n: string): void;
+      }) | null;
+      if (!pane) return;
       const { varName, value } = (e as CustomEvent<{ varName: string; value: string }>).detail;
-      if (value) {
-        svg.style.setProperty(varName, value);
-      } else {
-        svg.style.removeProperty(varName);
+      if (value && pane.setCssVar) {
+        pane.setCssVar(varName, value);
+      } else if (pane.removeCssVar) {
+        pane.removeCssVar(varName);
       }
     });
 

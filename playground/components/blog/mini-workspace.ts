@@ -89,12 +89,14 @@ export class MiniWorkspace extends HTMLElement {
 
     const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement & {
       setSvgContent(svg: string): void;
+      setCssVar(name: string, value: string): void;
+      removeCssVar(name: string): void;
     };
     if (this._svgContent && preview) {
       preview.setSvgContent(this._svgContent);
     }
     if (this._cssVars.length > 0 && preview) {
-      for (const v of this._cssVars) preview.style.setProperty(v.name, v.defaultValue);
+      for (const v of this._cssVars) preview.setCssVar(v.name, v.defaultValue);
     }
 
     if (this.hasAttribute('code-open')) {
@@ -176,9 +178,11 @@ export class MiniWorkspace extends HTMLElement {
 
     chipGroup.innerHTML = this._renderChipGroupInner();
 
-    const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+    const preview = this.shadowRoot!.querySelector('mini-preview') as
+      | (HTMLElement & { setCssVar(n: string, v: string): void; removeCssVar(n: string): void })
+      | null;
     if (preview) {
-      for (const v of this._cssVars) preview.style.setProperty(v.name, v.defaultValue);
+      for (const v of this._cssVars) preview.setCssVar(v.name, v.defaultValue);
     }
 
     this._wireChipGroup();
@@ -216,14 +220,16 @@ export class MiniWorkspace extends HTMLElement {
     const chipGroup = this.shadowRoot!.querySelector('#chip-group') as HTMLElement | null;
     if (!chipGroup) return;
     this._chipGroupWired = true;
-    const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+    const preview = this.shadowRoot!.querySelector('mini-preview') as
+      | (HTMLElement & { setCssVar(n: string, v: string): void })
+      | null;
 
     chipGroup.addEventListener('color-change', (e: Event) => {
       const target = e.target as HTMLElement;
       const varName = target.dataset.var;
       if (!varName) return;
       const value = (e as CustomEvent<{ value: string }>).detail.value;
-      if (preview) preview.style.setProperty(varName, value);
+      if (preview) preview.setCssVar(varName, value);
       const chip = target.closest('.chip') as HTMLElement | null;
       if (chip) chip.style.setProperty('--chip-color', value);
     });
@@ -239,7 +245,7 @@ export class MiniWorkspace extends HTMLElement {
           if (input) input.value = v.defaultValue;
           const chip = input?.closest('.chip') as HTMLElement | null;
           if (chip) chip.style.setProperty('--chip-color', v.defaultValue);
-          if (preview) preview.style.setProperty(v.name, v.defaultValue);
+          if (preview) preview.setCssVar(v.name, v.defaultValue);
         }
       });
     }
@@ -442,10 +448,12 @@ export class MiniWorkspace extends HTMLElement {
 
     this._inspectorEl.addEventListener('cssvar-override', ((e: CustomEvent) => {
       const { varName, value } = e.detail;
-      const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
+      const preview = this.shadowRoot!.querySelector('mini-preview') as
+        | (HTMLElement & { setCssVar?(n: string, v: string): void; removeCssVar?(n: string): void })
+        | null;
       if (preview) {
-        if (value) preview.style.setProperty(varName, value);
-        else preview.style.removeProperty(varName);
+        if (value && preview.setCssVar) preview.setCssVar(varName, value);
+        else if (preview.removeCssVar) preview.removeCssVar(varName);
       }
     }) as EventListener);
 

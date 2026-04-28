@@ -38,6 +38,8 @@
     "website:admin-token": "npm run build:website && tsx scripts/rotate-admin-token.ts",
     "test": "vitest",
     "test:run": "vitest run",
+    "security:audit": "vitest run tests/security/",
+    "security:browser-audit": "tsx scripts/security-browser-audit.ts",
     "cli": "tsx src/cli.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",

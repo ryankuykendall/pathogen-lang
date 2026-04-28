@@ -16,6 +16,7 @@ import {
   subPathCommands,
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 
 /** Maximum iterations allowed per for-loop to prevent runaway programs. */
@@ -976,12 +977,14 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
   const properties: Record<string, string> = {};
   for (const prop of expr.properties) {
     let resolvedValue = prop.value;
+    let trusted = false;
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
           resolvedValue = String(evaluated);
+          trusted = true;
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
         } else if (isColorValue(evaluated)) {
@@ -994,20 +997,31 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           } else {
             resolvedValue = oklchToCSS(evaluated.oklch);
           }
+          trusted = true;
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = evaluated.fallback
             ? `var(${evaluated.varName}, ${evaluated.fallback})`
             : `var(${evaluated.varName})`;
+          trusted = true;
         } else if (isGradientValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         } else if (isPatternValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         } else if (isMarkerValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         }
       }
     } catch {
       // Keep raw string
+    }
+    if (!trusted) {
+      // StyleBlockLiteral has no source-location field, so we surface the
+      // validator's message verbatim. Callers that want line/col use the
+      // primary evaluator (src/evaluator/index.ts), which threads getLine/getCol.
+      validateCSSValue(resolvedValue, prop.name);
     }
     properties[prop.name] = resolvedValue;
   }
@@ -3229,12 +3243,22 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(formatError('CSSVar() first argument must be a string', cvLine, cvCol));
     if (!name.startsWith('--'))
       throw new Error(formatError("CSSVar() variable name must start with '--'", cvLine, cvCol));
+    try {
+      validateCSSIdent(name, 'css-var');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, cvLine, cvCol));
+    }
     let fallback: string | null = null;
     if (call.args.length === 2) {
       const fb = evaluateExpression(call.args[1], scope);
       if (typeof fb === 'number') {
         fallback = String(fb);
       } else if (typeof fb === 'string') {
+        try {
+          validateCSSValue(fb, '__cssvar_fallback__');
+        } catch (e) {
+          throw new Error(formatError(`CSSVar() fallback rejected: ${(e as Error).message}`, cvLine, cvCol));
+        }
         fallback = fb;
       } else if (isColorValue(fb)) {
         fallback = oklchToCSS(fb.oklch);
@@ -3261,6 +3285,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(
         formatError('LinearGradient() first argument must be a string', call.loc?.line, call.loc?.column),
       );
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
     const x1 = evaluateExpression(call.args[1], scope);
     const y1 = evaluateExpression(call.args[2], scope);
     const x2 = evaluateExpression(call.args[3], scope);
@@ -3298,6 +3323,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(
         formatError('RadialGradient() first argument must be a string', call.loc?.line, call.loc?.column),
       );
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     const r = evaluateExpression(call.args[3], scope);
@@ -3335,6 +3361,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('ConicGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     if (typeof cx !== 'number' || typeof cy !== 'number') {
@@ -3377,6 +3404,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('Pattern() first argument must be a string', call.loc?.line, call.loc?.column));
+    try { validateCSSIdent(id, 'pattern-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
     const x = evaluateExpression(call.args[1], scope);
     const y = evaluateExpression(call.args[2], scope);
     const w = evaluateExpression(call.args[3], scope);
@@ -3417,6 +3445,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('Marker() first argument must be a string', call.loc?.line, call.loc?.column));
+    try { validateCSSIdent(id, 'marker-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
     const markerWidth = evaluateExpression(call.args[1], scope);
     const markerHeight = evaluateExpression(call.args[2], scope);
     if (typeof markerWidth !== 'number' || typeof markerHeight !== 'number') {

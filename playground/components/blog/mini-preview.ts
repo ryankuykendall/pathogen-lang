@@ -3,6 +3,7 @@
 // Extracted from svg-preview-pane.js for use in blog embeds
 
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../../utils/fullscreen-toggle.js';
+import { bootstrapPreviewIframe } from '../../utils/preview-iframe.js';
 
 const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
 
@@ -44,6 +45,17 @@ export class MiniPreview extends HTMLElement {
   private _onDocMouseMove: (e: MouseEvent) => void;
   private _onDocMouseUp: () => void;
 
+  /**
+   * Compiled-SVG render surface lives inside a sandboxed iframe — see
+   * `playground/utils/preview-iframe.ts` and
+   * `project-docs/security/iframe-sandbox-rationale.md`. `_iframeDoc` is the
+   * document we query for `#preview*` selectors after `srcdoc` parses;
+   * `_pendingSvgString` buffers any `setSvgContent` call that fires before
+   * the iframe is ready (rare — srcdoc parsing is fast — but possible).
+   */
+  private _iframeDoc: Document | null = null;
+  private _pendingSvgString: string | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -60,8 +72,8 @@ export class MiniPreview extends HTMLElement {
 
   connectedCallback(): void {
     this.render();
+    this._setupIframe();
     this.setupEventListeners();
-    this.updateSvgStyles();
     this._cleanupFullscreen = attachFullscreenBehavior(this, this.shadowRoot!);
   }
 
@@ -69,6 +81,71 @@ export class MiniPreview extends HTMLElement {
     document.removeEventListener('mousemove', this._onDocMouseMove);
     document.removeEventListener('mouseup', this._onDocMouseUp);
     if (this._cleanupFullscreen) this._cleanupFullscreen();
+  }
+
+  private _setupIframe(): void {
+    // Pre-set srcdoc + sandbox before appending to the DOM — see
+    // playground/utils/preview-iframe.ts for why (avoids Chrome's spurious
+    // per-iframe sandbox warning during the about:blank load phase).
+    const container = this.shadowRoot!.querySelector('#preview-container');
+    if (!container) return;
+    const iframe = document.createElement('iframe');
+    iframe.id = 'preview-frame';
+    const ready = bootstrapPreviewIframe(iframe, 'mini');
+    container.insertBefore(iframe, container.firstChild);
+    ready.then((doc) => {
+      this._iframeDoc = doc;
+      this.updateSvgStyles();
+      if (this._pendingSvgString !== null) {
+        const pending = this._pendingSvgString;
+        this._pendingSvgString = null;
+        this.setSvgContent(pending);
+      }
+      // Replay any CSS-var writes that arrived before the iframe was ready.
+      for (const [name, value] of this._pendingCssVars) {
+        doc.documentElement.style.setProperty(name, value);
+      }
+      this._pendingCssVars.clear();
+      this._setupIframeEventListeners(doc);
+    });
+  }
+
+  /**
+   * Pan and wheel listeners attach to the iframe document because mouse and
+   * wheel events fired inside an iframe do not bubble to the parent. Without
+   * mousemove / mouseup on the iframe doc, drags initiated inside the iframe
+   * never tick (no movement) and never end (panning state stuck on); the
+   * parent-document listeners only catch drags that travel out of the iframe.
+   * Wheel keeps the Ctrl/Cmd-modified gate so plain scrolling does not trap
+   * visitors of long blog pages.
+   */
+  private _setupIframeEventListeners(doc: Document): void {
+    doc.addEventListener('mousedown', (e: MouseEvent) => this.startPan(e));
+    doc.addEventListener('mousemove', (e: MouseEvent) => this.doPan(e));
+    doc.addEventListener('mouseup', () => this.endPan());
+    const scrollHint = this.shadowRoot!.querySelector('#scroll-hint') as HTMLElement | null;
+    doc.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const dampening = 0.002;
+          const delta = -e.deltaY * dampening;
+          const oldZoom = this._zoomLevel;
+          const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
+          this.adjustPanForZoom(oldZoom, newZoom);
+          this._zoomLevel = newZoom;
+          this.updateViewBox();
+        } else if (scrollHint) {
+          scrollHint.classList.add('visible');
+          clearTimeout(this._scrollHintTimer);
+          this._scrollHintTimer = setTimeout(() => {
+            scrollHint.classList.remove('visible');
+          }, 800);
+        }
+      },
+      { passive: false },
+    );
   }
 
   // --- Public API ---
@@ -103,8 +180,38 @@ export class MiniPreview extends HTMLElement {
   /**
    * Set SVG content from a string. Parses and injects inner elements.
    */
+  /**
+   * Write a CSS custom property on the iframe document so it cascades into
+   * the compiled SVG. Used by `<mini-workspace>` chip controls. Pre-Phase-3
+   * the SVG was inline in this component's shadow root, so chip controls
+   * could write directly to `mini-preview.style.setProperty(...)`. The
+   * iframe boundary breaks that — this method forwards into the right doc.
+   */
+  setCssVar(name: string, value: string): void {
+    if (!this._iframeDoc) {
+      this._pendingCssVars.set(name, value);
+      return;
+    }
+    this._iframeDoc.documentElement.style.setProperty(name, value);
+  }
+
+  removeCssVar(name: string): void {
+    if (!this._iframeDoc) {
+      this._pendingCssVars.delete(name);
+      return;
+    }
+    this._iframeDoc.documentElement.style.removeProperty(name);
+  }
+
+  /** Pending CSS-var writes buffered while the iframe is still parsing. */
+  private _pendingCssVars: Map<string, string> = new Map();
+
   setSvgContent(svgString: string): void {
-    const contentGroup = this.shadowRoot!.querySelector('#preview-content');
+    if (!this._iframeDoc) {
+      this._pendingSvgString = svgString;
+      return;
+    }
+    const contentGroup = this._iframeDoc.getElementById('preview-content');
     if (!contentGroup) return;
     contentGroup.innerHTML = '';
 
@@ -113,6 +220,16 @@ export class MiniPreview extends HTMLElement {
     // Parse the SVG string
     const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
     const svgRoot = doc.documentElement;
+
+    // Defense in depth: strip every <script> descendant from the parsed tree
+    // before any importNode runs. Compiled SVGs from the CLI emit a metadata
+    // `<script type="application/json">` block; old samples may contain
+    // others. The sandboxed iframe blocks execution either way, but importing
+    // the element triggers the browser's "Blocked script execution" console
+    // warning. Removing them here keeps the console clean.
+    for (const script of Array.from(svgRoot.querySelectorAll('script'))) {
+      script.remove();
+    }
 
     // Extract width/height/viewBox from the SVG if present
     const w = svgRoot.getAttribute('width');
@@ -129,18 +246,28 @@ export class MiniPreview extends HTMLElement {
       }
     }
 
-    // Import all children (defs, paths, groups, etc.)
+    // Import all children (defs, paths, groups, etc.) into the iframe doc.
+    // Skip <script> blocks — every CLI-generated SVG bundles a
+    // `<script type="application/json" id="pathogen-metadata">` for the
+    // inspector that this preview does not surface. The sandboxed iframe
+    // would correctly block its execution, but importing it triggers the
+    // browser's "Blocked script execution" console warning, which looks
+    // like a bug. Filtering at import keeps the console clean and
+    // double-locks defense in depth.
     for (const child of Array.from(svgRoot.children)) {
-      contentGroup.appendChild(document.importNode(child, true));
+      if (child.tagName.toLowerCase() === 'script') continue;
+      contentGroup.appendChild(this._iframeDoc.importNode(child, true));
     }
 
-    // Also import any inline styles from the SVG root
+    // Move any inline <style> into the iframe document. Hosting styles inside
+    // the sandboxed iframe is the structural defense — even if a regression
+    // lets unsafe CSS reach this point, it cannot leak into the parent.
     const svgStyle = svgRoot.querySelector('style');
     if (svgStyle) {
-      const preview = this.shadowRoot!.querySelector('#preview') as SVGSVGElement;
+      const preview = this._iframeDoc.getElementById('preview') as unknown as SVGSVGElement;
       const existingStyle = preview.querySelector('style[data-svg-style]');
       if (existingStyle) existingStyle.remove();
-      const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+      const styleEl = this._iframeDoc.createElementNS('http://www.w3.org/2000/svg', 'style');
       styleEl.setAttribute('data-svg-style', '');
       styleEl.textContent = svgStyle.textContent;
       preview.insertBefore(styleEl, preview.firstChild);
@@ -153,7 +280,7 @@ export class MiniPreview extends HTMLElement {
   // --- Zoom/Pan ---
 
   private updateViewBox(): void {
-    const preview = this.shadowRoot!.querySelector('#preview') as SVGSVGElement | null;
+    const preview = this._iframeDoc?.getElementById('preview') as unknown as SVGSVGElement | null;
     const container = this.shadowRoot!.querySelector('#preview-container') as HTMLElement | null;
     if (!preview) return;
 
@@ -184,6 +311,7 @@ export class MiniPreview extends HTMLElement {
 
     this.updateNavigatorViewport();
     if (container) container.classList.toggle('can-pan', this._zoomLevel >= 0.5);
+    if (this._iframeDoc) this._iframeDoc.body.classList.toggle('can-pan', this._zoomLevel >= 0.5);
   }
 
   private adjustPanForZoom(oldZoom: number, newZoom: number): void {
@@ -230,13 +358,15 @@ export class MiniPreview extends HTMLElement {
     this.panStartX = e.clientX;
     this.panStartY = e.clientY;
     this.shadowRoot!.querySelector('#preview-container')?.classList.add('panning');
+    if (this._iframeDoc) this._iframeDoc.body.classList.add('panning');
     e.preventDefault();
   }
 
   private doPan(e: MouseEvent): void {
     if (!this.isPanning) return;
 
-    const ctm = (this.shadowRoot!.querySelector('#preview') as SVGSVGElement)?.getScreenCTM();
+    const preview = this._iframeDoc?.getElementById('preview') as unknown as SVGSVGElement | null;
+    const ctm = preview?.getScreenCTM();
     if (!ctm) return;
 
     const dx = (this.panStartX - e.clientX) / ctm.a;
@@ -253,6 +383,7 @@ export class MiniPreview extends HTMLElement {
   private endPan(): void {
     this.isPanning = false;
     this.shadowRoot!.querySelector('#preview-container')?.classList.remove('panning');
+    if (this._iframeDoc) this._iframeDoc.body.classList.remove('panning');
   }
 
   // --- Navigator ---
@@ -278,11 +409,14 @@ export class MiniPreview extends HTMLElement {
 
     navGroup.innerHTML = '';
 
-    // Clone content group elements into navigator
-    const contentGroup = this.shadowRoot!.querySelector('#preview-content');
+    // Clone content group elements into navigator. Source lives in the
+    // sandboxed iframe document; importNode is the spec-correct cross-doc
+    // path (cloneNode + appendChild also works in practice but importNode
+    // is unambiguous about adoption).
+    const contentGroup = this._iframeDoc?.getElementById('preview-content');
     if (contentGroup) {
       for (const child of Array.from(contentGroup.children)) {
-        navGroup.appendChild(child.cloneNode(true));
+        navGroup.appendChild(document.importNode(child, true));
       }
     }
 
@@ -359,8 +493,9 @@ export class MiniPreview extends HTMLElement {
   // --- Styles ---
 
   private updateSvgStyles(): void {
-    const preview = this.shadowRoot!.querySelector('#preview') as SVGSVGElement | null;
-    const bg = this.shadowRoot!.querySelector('#preview-bg') as SVGRectElement | null;
+    if (!this._iframeDoc) return;
+    const preview = this._iframeDoc.getElementById('preview') as unknown as SVGSVGElement | null;
+    const bg = this._iframeDoc.getElementById('preview-bg') as unknown as SVGRectElement | null;
     if (!preview || !bg) return;
 
     preview.setAttribute('width', String(this._width));
@@ -413,39 +548,18 @@ export class MiniPreview extends HTMLElement {
     });
 
     // Mouse wheel zoom — requires Ctrl/Cmd to prevent scroll traps in long pages
-    const container = this.shadowRoot!.querySelector('#preview-container') as HTMLElement;
+    // Mouse wheel zoom and pan-mousedown listeners are wired against the
+    // iframe document in _setupIframeEventListeners (events inside an iframe
+    // do not bubble to the parent). The scroll-hint message text still lives
+    // here because it is platform-dependent.
     const scrollHint = this.shadowRoot!.querySelector('#scroll-hint') as HTMLElement;
     const isMac = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
     (scrollHint.querySelector('span') as HTMLSpanElement).textContent = isMac
       ? '\u2318 + scroll to zoom'
       : 'Ctrl + scroll to zoom';
 
-    container.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          const dampening = 0.002;
-          const delta = -e.deltaY * dampening;
-          const oldZoom = this._zoomLevel;
-          const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
-          this.adjustPanForZoom(oldZoom, newZoom);
-          this._zoomLevel = newZoom;
-          this.updateViewBox();
-        } else {
-          // Show hint briefly
-          scrollHint.classList.add('visible');
-          clearTimeout(this._scrollHintTimer);
-          this._scrollHintTimer = setTimeout(() => {
-            scrollHint.classList.remove('visible');
-          }, 800);
-        }
-      },
-      { passive: false },
-    );
-
-    // Pan via drag
-    container.addEventListener('mousedown', (e: MouseEvent) => this.startPan(e));
+    // Document-level move/up listeners still required so the user can drag
+    // past the iframe boundary without losing the pan grab.
     document.addEventListener('mousemove', this._onDocMouseMove);
     document.addEventListener('mouseup', this._onDocMouseUp);
 
@@ -478,10 +592,15 @@ export class MiniPreview extends HTMLElement {
           overflow: hidden;
         }
 
-        #preview {
+        /* The compiled-SVG render surface lives inside the sandboxed iframe.
+           See playground/utils/preview-iframe.ts and
+           project-docs/security/iframe-sandbox-rationale.md. */
+        #preview-frame {
           display: block;
           width: 100%;
           height: 100%;
+          border: 0;
+          background: transparent;
         }
 
         /* Scroll hint overlay */
@@ -687,10 +806,9 @@ export class MiniPreview extends HTMLElement {
       </style>
 
       <div id="preview-container">
-        <svg id="preview" xmlns="http://www.w3.org/2000/svg">
-          <rect id="preview-bg" width="100%" height="100%"></rect>
-          <g id="preview-content"></g>
-        </svg>
+        <!-- The sandboxed iframe is created programmatically in _setupIframe
+             so srcdoc is set before insertion (avoids the about:blank phase
+             warning). See playground/utils/preview-iframe.ts. -->
         <div id="scroll-hint"><span></span></div>
       </div>
 

@@ -10,6 +10,7 @@ import type { VNode } from '../../src/render/index.js';
 import { store } from '../state/store.js';
 import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
+import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
 
 // Runtime access to the render API is via the bundled global (the playground
 // loads `dist/index.global.js` rather than importing `src/` directly). Typed
@@ -148,6 +149,18 @@ export class SvgPreviewPane extends HTMLElement {
   // Fullscreen toggle
   private _cleanupFullscreen: (() => void) | null = null;
 
+  /**
+   * The compiled-SVG render surface lives inside a sandboxed iframe (see
+   * `playground/utils/preview-iframe.ts` and
+   * `project-docs/security/iframe-sandbox-rationale.md`). Once the iframe's
+   * `srcdoc` has parsed, `_iframeDoc` is the document we query against for
+   * every `#preview*` element. Until ready, mutations are buffered in
+   * `_pendingLayerCall` and replayed when ready.
+   */
+  private _iframeDoc: Document | null = null;
+  private _iframeReady: Promise<Document> | null = null;
+  private _pendingLayerCall: { layers: LayerInput[]; defsData: DefsData } | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -155,14 +168,75 @@ export class SvgPreviewPane extends HTMLElement {
 
   connectedCallback(): void {
     this.render();
+    this._setupIframe();
     this.setupEventListeners();
     this.subscribeToStore();
-    this.updateSvgStyles();
     this._cleanupFullscreen = attachFullscreenBehavior(this, this.shadowRoot!);
   }
 
   disconnectedCallback(): void {
     if (this._cleanupFullscreen) this._cleanupFullscreen();
+  }
+
+  /**
+   * Bootstrap the sandboxed iframe and replay any buffered layer call once
+   * the inner document is reachable. Called once from connectedCallback.
+   */
+  private _setupIframe(): void {
+    // Cover the brief srcdoc-parse window with the loading spinner so users
+    // never see an empty iframe. `srcdoc` parsing is fast (well under the
+    // first compile's 150ms debounce) but a flash is still possible on slow
+    // machines; keeping the overlay visible until ready avoids it.
+    this.showLoading();
+    // Create the iframe programmatically and pre-set srcdoc + sandbox before
+    // appending to the DOM. Inserting an iframe via innerHTML and then setting
+    // srcdoc after-the-fact triggers an about:blank initial load that emits
+    // a one-shot "Blocked script execution" sandbox warning per iframe; the
+    // pre-attached path skips it.
+    const iframe = document.createElement('iframe');
+    iframe.id = 'preview-frame';
+    this._iframeReady = bootstrapPreviewIframe(iframe);
+    this.previewContainer.appendChild(iframe);
+    this._iframeReady.then((doc) => {
+      this._iframeDoc = doc;
+      this.updateSvgStyles();
+      if (this._pendingLayerCall) {
+        const pending = this._pendingLayerCall;
+        this._pendingLayerCall = null;
+        this.setLayersWithTiming(pending.layers, pending.defsData);
+      }
+      this._setupIframeEventListeners(doc);
+      this.hideLoading();
+      return doc;
+    });
+  }
+
+  /**
+   * Pan / wheel listeners attach to the iframe document because mouse events
+   * inside the iframe do not bubble to the parent. Same-origin sandbox makes
+   * this reach legal; the iframe never runs scripts, so we are not bridging
+   * across a script boundary.
+   */
+  private _setupIframeEventListeners(doc: Document): void {
+    doc.addEventListener('mousedown', (e: MouseEvent) => this.startPan(e));
+    doc.addEventListener('mousemove', (e: MouseEvent) => this.doPan(e));
+    doc.addEventListener('mouseup', () => this.endPan());
+    doc.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        e.preventDefault();
+        const dampening = 0.002;
+        const delta = -e.deltaY * dampening;
+
+        const oldZoom = store.get('zoomLevel') as number;
+        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
+
+        this.adjustPanForZoom(oldZoom, newZoom);
+        store.set('zoomLevel', newZoom);
+        this.updateViewBox();
+      },
+      { passive: false },
+    );
   }
 
   subscribeToStore(): void {
@@ -196,21 +270,46 @@ export class SvgPreviewPane extends HTMLElement {
     });
   }
 
+  /**
+   * The `<svg id="preview">` lives inside the sandboxed iframe document.
+   * Returns null while the iframe is still parsing; callers that need the
+   * element synchronously should gate on `_iframeDoc` or buffer.
+   */
   get preview(): SVGSVGElement {
-    return this.shadowRoot!.querySelector('#preview') as SVGSVGElement;
+    return this._iframeDoc?.getElementById('preview') as SVGSVGElement;
   }
 
   get previewPath(): SVGPathElement {
-    return this.shadowRoot!.querySelector('#preview-path') as SVGPathElement;
+    return this._iframeDoc?.getElementById('preview-path') as SVGPathElement;
   }
 
+  /** The shadow-DOM container that hosts the iframe; this is the click/wheel target for panning. */
   get previewContainer(): HTMLElement {
     return this.shadowRoot!.querySelector('#preview-container') as HTMLElement;
   }
 
+  /**
+   * Set a CSS custom property on the iframe document so it cascades into the
+   * compiled SVG. Used by the inspector panel's cssvar-override flow.
+   *
+   * Before Phase 3 the SVG was inline in the parent shadow tree, so callers
+   * could write `previewPane.shadowRoot.querySelector('#preview').style.setProperty(...)`
+   * directly. With the iframe, CSS variables on the parent don't cross the
+   * boundary; the override must be written inside the iframe document.
+   */
+  setCssVar(name: string, value: string): void {
+    if (!this._iframeDoc) return;
+    this._iframeDoc.documentElement.style.setProperty(name, value);
+  }
+
+  removeCssVar(name: string): void {
+    if (!this._iframeDoc) return;
+    this._iframeDoc.documentElement.style.removeProperty(name);
+  }
+
   set pathData(value: string) {
     store.set('pathData', value || '');
-    this.previewPath.setAttribute('d', value || '');
+    if (this.previewPath) this.previewPath.setAttribute('d', value || '');
     this.updateNavigatorContent();
   }
 
@@ -219,6 +318,7 @@ export class SvgPreviewPane extends HTMLElement {
    */
   setPathDataWithTiming(value: string): number {
     store.set('pathData', value || '');
+    if (!this.previewPath) return 0;
 
     const start = performance.now();
     this.previewPath.setAttribute('d', value || '');
@@ -245,16 +345,22 @@ export class SvgPreviewPane extends HTMLElement {
     const defaultData = layers[0]?.data || '';
     store.set('pathData', defaultData);
 
+    // Buffer until the sandboxed iframe finishes parsing srcdoc.
+    if (!this._iframeDoc) {
+      this._pendingLayerCall = { layers, defsData };
+      return 0;
+    }
+
     const start = performance.now();
 
     // Get the layers container
-    const layersGroup = this.shadowRoot!.querySelector('#preview-layers') as SVGGElement | null;
+    const layersGroup = this._iframeDoc.getElementById('preview-layers') as unknown as SVGGElement | null;
     if (layersGroup) {
       // Clear existing layer paths
       layersGroup.innerHTML = '';
 
       // Clean up previous fragment defs and mask/clipPath defs
-      const defsEl = this.shadowRoot!.querySelector('#preview defs') as SVGDefsElement | null;
+      const defsEl = this._iframeDoc.querySelector('#preview defs') as SVGDefsElement | null;
       if (defsEl) {
         for (const old of defsEl.querySelectorAll(
           '[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def], [data-marker-def]',
@@ -301,13 +407,16 @@ export class SvgPreviewPane extends HTMLElement {
         window.SvgPathExtended.mountInto(defsEl, defsVNodes);
       }
 
-      // Inject @property CSS declarations
-      const svgEl = this.shadowRoot!.querySelector('#preview') as SVGSVGElement;
+      // Inject @property CSS declarations into the iframe document. The
+      // iframe is the structural defense — even if a future CSSVar regression
+      // sneaks past `validateCSSIdent`, the resulting `<style>` cannot leak
+      // into the parent document.
+      const svgEl = this._iframeDoc.getElementById('preview') as unknown as SVGSVGElement;
       const existingCssStyle = svgEl.querySelector('style[data-css-properties]');
       if (existingCssStyle) existingCssStyle.remove();
       if (defsData.cssProperties && defsData.cssProperties.length > 0) {
         const SVG_NS = 'http://www.w3.org/2000/svg';
-        const styleEl = document.createElementNS(SVG_NS, 'style');
+        const styleEl = this._iframeDoc.createElementNS(SVG_NS, 'style');
         styleEl.setAttribute('data-css-properties', '');
         const rules = defsData.cssProperties
           .map(
@@ -340,8 +449,8 @@ export class SvgPreviewPane extends HTMLElement {
       }
 
       // Hide the single preview-path when using layers group
-      this.previewPath.setAttribute('d', '');
-    } else {
+      if (this.previewPath) this.previewPath.setAttribute('d', '');
+    } else if (this.previewPath) {
       // Fallback: single path
       this.previewPath.setAttribute('d', defaultData);
     }
@@ -376,6 +485,7 @@ export class SvgPreviewPane extends HTMLElement {
     layersGroup: SVGGElement,
     svgNs: string,
   ): void {
+    const targetDoc = this._iframeDoc ?? document;
     if (layer.fragmentDefs && defsEl) {
       const defsDoc = new DOMParser().parseFromString(
         `<svg xmlns="${svgNs}"><defs>${layer.fragmentDefs}</defs></svg>`,
@@ -384,7 +494,7 @@ export class SvgPreviewPane extends HTMLElement {
       const parsedDefs = defsDoc.querySelector('defs');
       if (parsedDefs) {
         for (const child of Array.from(parsedDefs.children)) {
-          const imported = document.importNode(child, true) as SVGElement;
+          const imported = targetDoc.importNode(child, true) as SVGElement;
           imported.setAttribute('data-fragment-layer', layer.name);
           defsEl.appendChild(imported);
         }
@@ -396,17 +506,17 @@ export class SvgPreviewPane extends HTMLElement {
         'image/svg+xml',
       );
       const visualRoot = visualDoc.documentElement;
-      const wrapper = document.createElementNS(svgNs, 'g') as SVGGElement;
+      const wrapper = targetDoc.createElementNS(svgNs, 'g') as SVGGElement;
       wrapper.setAttribute('data-layer-name', layer.name);
       for (const child of Array.from(visualRoot.children)) {
-        wrapper.appendChild(document.importNode(child, true));
+        wrapper.appendChild(targetDoc.importNode(child, true));
       }
       layersGroup.appendChild(wrapper);
     }
   }
 
   applyLayerVisibility(): void {
-    const layersGroup = this.shadowRoot!.querySelector('#preview-layers');
+    const layersGroup = this._iframeDoc?.getElementById('preview-layers');
     if (!layersGroup) return;
     const visibility = store.get('layerVisibility') as Record<string, boolean>;
 
@@ -461,8 +571,8 @@ export class SvgPreviewPane extends HTMLElement {
   }
 
   clear(): void {
-    this.previewPath.setAttribute('d', '');
-    const layersGroup = this.shadowRoot!.querySelector('#preview-layers');
+    if (this.previewPath) this.previewPath.setAttribute('d', '');
+    const layersGroup = this._iframeDoc?.getElementById('preview-layers');
     if (layersGroup) layersGroup.innerHTML = '';
     store.set('pathData', '');
     const navPaths = this.shadowRoot!.querySelector('#navigator-paths');
@@ -508,7 +618,7 @@ export class SvgPreviewPane extends HTMLElement {
     // Update store with clamped values
     store.update({ panX, panY });
 
-    this.preview.setAttribute('viewBox', `${panX} ${panY} ${viewWidth} ${viewHeight}`);
+    if (this.preview) this.preview.setAttribute('viewBox', `${panX} ${panY} ${viewWidth} ${viewHeight}`);
 
     // Update zoom level display
     const zoomDisplay = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement | null;
@@ -518,6 +628,11 @@ export class SvgPreviewPane extends HTMLElement {
 
     this.updateNavigatorViewport();
     this.previewContainer.classList.toggle('can-pan', zoomLevel >= 0.5);
+    // Mirror cursor state into the iframe document so panning shows the
+    // grabbing cursor inside the iframe too.
+    if (this._iframeDoc) {
+      this._iframeDoc.body.classList.toggle('can-pan', zoomLevel >= 0.5);
+    }
   }
 
   adjustPanForZoom(oldZoom: number, newZoom: number): void {
@@ -568,11 +683,13 @@ export class SvgPreviewPane extends HTMLElement {
     this.panStartX = e.clientX;
     this.panStartY = e.clientY;
     this.previewContainer.classList.add('panning');
+    if (this._iframeDoc) this._iframeDoc.body.classList.add('panning');
     e.preventDefault();
   }
 
   doPan(e: MouseEvent): void {
     if (!this.isPanning) return;
+    if (!this.preview) return;
 
     const ctm = this.preview.getScreenCTM();
     if (!ctm) return;
@@ -594,6 +711,7 @@ export class SvgPreviewPane extends HTMLElement {
   endPan(): void {
     this.isPanning = false;
     this.previewContainer.classList.remove('panning');
+    if (this._iframeDoc) this._iframeDoc.body.classList.remove('panning');
   }
 
   // Navigator methods
@@ -618,13 +736,17 @@ export class SvgPreviewPane extends HTMLElement {
     const navGroup = this.shadowRoot!.querySelector('#navigator-paths') as SVGGElement;
     const navBg = this.shadowRoot!.querySelector('#navigator-bg') as SVGRectElement;
     const navSvg = this.shadowRoot!.querySelector('#navigator-svg') as SVGSVGElement;
+    if (!navGroup || !navBg || !navSvg) return;
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
     // Clear existing navigator content
     navGroup.innerHTML = '';
 
-    // Build per-layer paths in the navigator
-    const layersGroup = this.shadowRoot!.querySelector('#preview-layers');
+    // Build per-layer paths in the navigator. The source content lives in
+    // the sandboxed iframe document; same-origin sandbox lets us read it
+    // directly. Cloned attributes are written into the navigator SVG which
+    // remains in shadow DOM (non-user content).
+    const layersGroup = this._iframeDoc?.getElementById('preview-layers');
     const visibleElements = layersGroup
       ? Array.from(layersGroup.querySelectorAll('path, text, g')).filter((el) => {
           let node = el as HTMLElement | null;
@@ -685,8 +807,11 @@ export class SvgPreviewPane extends HTMLElement {
           }
           navGroup.appendChild(navPath);
         } else if (el.tagName === 'text') {
-          // Clone text element into navigator
-          const navText = el.cloneNode(true) as SVGTextElement;
+          // The source <text> lives in the iframe document; importNode brings
+          // it into the shadow-DOM document (same-origin sandbox makes this
+          // legal). cloneNode + appendChild would also work in most browsers
+          // but importNode is the spec-correct cross-document path.
+          const navText = document.importNode(el, true) as unknown as SVGTextElement;
           navGroup.appendChild(navText);
         }
       }
@@ -800,17 +925,26 @@ export class SvgPreviewPane extends HTMLElement {
   updateSvgStyles(): void {
     const state = store.getAll() as Record<string, unknown>;
 
-    this.preview.setAttribute('width', String(state.width));
-    this.preview.setAttribute('height', String(state.height));
+    // Iframe may not be ready on the first store-subscription tick; bail
+    // safely. _setupIframe re-invokes updateSvgStyles once the document is
+    // reachable.
+    if (!this._iframeDoc) return;
+
+    if (this.preview) {
+      this.preview.setAttribute('width', String(state.width));
+      this.preview.setAttribute('height', String(state.height));
+    }
 
     this.updateViewBox();
 
-    this.previewPath.setAttribute('stroke', DEFAULT_STROKE);
-    this.previewPath.setAttribute('stroke-width', String(DEFAULT_STROKE_WIDTH));
-    this.previewPath.setAttribute('fill', 'none');
+    if (this.previewPath) {
+      this.previewPath.setAttribute('stroke', DEFAULT_STROKE);
+      this.previewPath.setAttribute('stroke-width', String(DEFAULT_STROKE_WIDTH));
+      this.previewPath.setAttribute('fill', 'none');
+    }
 
     // Update layer paths that don't have per-layer styles
-    const layersGroup = this.shadowRoot!.querySelector('#preview-layers');
+    const layersGroup = this._iframeDoc.getElementById('preview-layers');
     if (layersGroup) {
       for (const path of layersGroup.querySelectorAll('path')) {
         if (!(path as unknown as HTMLElement).dataset.hasLayerStroke) {
@@ -822,27 +956,31 @@ export class SvgPreviewPane extends HTMLElement {
       }
     }
 
-    const previewBg = this.shadowRoot!.querySelector('#preview-bg') as SVGRectElement;
-    previewBg.setAttribute('fill', state.background as string);
-    previewBg.setAttribute('x', '0');
-    previewBg.setAttribute('y', '0');
-    previewBg.setAttribute('width', String(state.width));
-    previewBg.setAttribute('height', String(state.height));
+    const previewBg = this._iframeDoc.getElementById('preview-bg') as unknown as SVGRectElement | null;
+    if (previewBg) {
+      previewBg.setAttribute('fill', state.background as string);
+      previewBg.setAttribute('x', '0');
+      previewBg.setAttribute('y', '0');
+      previewBg.setAttribute('width', String(state.width));
+      previewBg.setAttribute('height', String(state.height));
+    }
 
-    // Grid
-    const gridPattern = this.shadowRoot!.querySelector('#grid-pattern') as SVGPatternElement;
-    const gridPath = this.shadowRoot!.querySelector('#grid-path') as SVGPathElement;
-    const previewGrid = this.shadowRoot!.querySelector('#preview-grid') as SVGRectElement;
+    // Grid (also lives inside the iframe document)
+    const gridPattern = this._iframeDoc.getElementById('grid-pattern') as unknown as SVGPatternElement | null;
+    const gridPath = this._iframeDoc.getElementById('grid-path') as unknown as SVGPathElement | null;
+    const previewGrid = this._iframeDoc.getElementById('preview-grid') as unknown as SVGRectElement | null;
 
-    gridPattern.setAttribute('width', String(state.gridSize));
-    gridPattern.setAttribute('height', String(state.gridSize));
-    gridPath.setAttribute('d', `M ${state.gridSize} 0 L 0 0 0 ${state.gridSize}`);
-    gridPath.setAttribute('stroke', state.gridColor as string);
-    previewGrid.style.display = state.gridEnabled ? 'block' : 'none';
-    previewGrid.setAttribute('x', '0');
-    previewGrid.setAttribute('y', '0');
-    previewGrid.setAttribute('width', String(state.width));
-    previewGrid.setAttribute('height', String(state.height));
+    if (gridPattern && gridPath && previewGrid) {
+      gridPattern.setAttribute('width', String(state.gridSize));
+      gridPattern.setAttribute('height', String(state.gridSize));
+      gridPath.setAttribute('d', `M ${state.gridSize} 0 L 0 0 0 ${state.gridSize}`);
+      gridPath.setAttribute('stroke', state.gridColor as string);
+      previewGrid.style.display = state.gridEnabled ? 'block' : 'none';
+      previewGrid.setAttribute('x', '0');
+      previewGrid.setAttribute('y', '0');
+      previewGrid.setAttribute('width', String(state.width));
+      previewGrid.setAttribute('height', String(state.height));
+    }
 
     this.updateNavigatorContent();
   }
@@ -882,26 +1020,11 @@ export class SvgPreviewPane extends HTMLElement {
       }
     });
 
-    // Mouse wheel zoom
-    this.previewContainer.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const dampening = 0.002;
-        const delta = -e.deltaY * dampening;
-
-        const oldZoom = store.get('zoomLevel') as number;
-        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
-
-        this.adjustPanForZoom(oldZoom, newZoom);
-        store.set('zoomLevel', newZoom);
-        this.updateViewBox();
-      },
-      { passive: false },
-    );
-
-    // Pan via drag
-    this.previewContainer.addEventListener('mousedown', (e: MouseEvent) => this.startPan(e));
+    // Pan and wheel-zoom listeners live on the iframe document (see
+    // _setupIframeEventListeners), since mouse events inside the iframe do
+    // not bubble to the parent. Document-level listeners are still required
+    // to capture mousemove / mouseup that travel outside the iframe (e.g.
+    // when the user drags past the iframe boundary).
     document.addEventListener('mousemove', (e: MouseEvent) => this.doPan(e));
     document.addEventListener('mouseup', () => this.endPan());
 
@@ -951,14 +1074,15 @@ export class SvgPreviewPane extends HTMLElement {
           box-shadow: var(--shadow-lg);
         }
 
-        #preview {
+        /* The compiled-SVG render surface lives inside the sandboxed iframe.
+           See playground/utils/preview-iframe.ts and
+           project-docs/security/iframe-sandbox-rationale.md. */
+        #preview-frame {
           display: block;
           width: 100%;
           height: 100%;
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          translate: -50% -50%;
+          border: 0;
+          background: transparent;
         }
 
         #preview-container.can-pan {
@@ -1142,17 +1266,9 @@ export class SvgPreviewPane extends HTMLElement {
       </div>
 
       <div id="preview-container">
-        <svg id="preview" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="grid-pattern" patternUnits="userSpaceOnUse">
-              <path id="grid-path" fill="none" stroke-width="0.5"/>
-            </pattern>
-          </defs>
-          <rect id="preview-bg" width="100%" height="100%"></rect>
-          <rect id="preview-grid" width="100%" height="100%" fill="url(#grid-pattern)"></rect>
-          <g id="preview-layers"></g>
-          <path id="preview-path" fill="none"></path>
-        </svg>
+        <!-- The sandboxed iframe is created programmatically in _setupIframe
+             so srcdoc is set before insertion (avoids the about:blank phase
+             warning). See playground/utils/preview-iframe.ts. -->
         <div id="loading-overlay">
           <div class="loading-spinner"></div>
         </div>

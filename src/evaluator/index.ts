@@ -10,6 +10,7 @@ import {
   updateContextForCommand,
 } from './context';
 import { formatNum, resetNumberFormat, setNumberFormat } from './format';
+import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 
 /** Maximum iterations allowed per for-loop to prevent runaway programs. */
@@ -932,12 +933,17 @@ function commandsToAbsoluteD(commands: PathBlockCommand[]): string {
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
   const properties: Record<string, string> = {};
   for (const prop of expr.properties) {
-    // Try to evaluate the raw value string as an expression
+    // Trust tracking: compiler-emitted strings (Color → hex, CSSVar → var(...),
+    // gradient/pattern/marker → url(#id)) are validated at construction time;
+    // they cannot be distinguished from user input by string shape, so we mark
+    // them trusted here and skip the CSS-value validator. Plain string and
+    // multi-token-fallback paths remain untrusted and get strict validation.
     let resolvedValue = prop.value;
+    let trusted = false;
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
-        // If the expression is a bare color literal (#hex), preserve raw value in style blocks
+        // Bare color literal (#hex) — trusted (parser shape is restrictive).
         if (parseResult.value.type === 'ColorLiteral') {
           resolvedValue = parseResult.value.raw;
           properties[prop.name] = resolvedValue;
@@ -946,35 +952,70 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
           resolvedValue = formatNum(evaluated);
+          trusted = true;
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
+          // Untrusted: user-supplied string. Validation runs below.
         } else if (isColorValue(evaluated)) {
           resolvedValue = colorValueToCSS(evaluated);
+          trusted = true;
         } else if (isCSSVarValue(evaluated)) {
           resolvedValue = cssVarValueToCSS(evaluated);
+          trusted = true;
         } else if (isGradientValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         } else if (isPatternValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         } else if (isMarkerValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         }
-        // For other types, keep raw string
+        // For other types, keep raw string (untrusted)
       }
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
     }
     // If the whole-value expression parse didn't resolve, try resolving
     // expressions embedded inside CSS function arguments (e.g., color args in drop-shadow)
+    let allowVar = false;
     if (resolvedValue === prop.value) {
       const cssResolved = tryResolveCSSFunctionArgs(prop.value, scope);
       if (cssResolved !== null) {
         resolvedValue = cssResolved;
+        // The substituted tokens are typed values pre-validated at construction
+        // (Color, CSSVar). The remaining literal tokens still need validation,
+        // but we permit well-formed var(--ident,...) refs in the result since
+        // they were produced by the substitution itself.
+        allowVar = true;
       }
     }
     // Auto-wrap URL-reference properties with url(#...) — skip CSS function values (contain parentheses)
     if (URL_REF_PROPERTIES.has(prop.name) && typeof resolvedValue === 'string' && !/^url\(/i.test(resolvedValue) && !resolvedValue.includes('(')) {
+      // The unwrapped value becomes a fragment ref — must be a valid ident.
+      try {
+        validateCSSIdent(resolvedValue, 'fragment-ref');
+      } catch (e) {
+        const eLine = getLine(expr);
+        const eCol = getCol(expr);
+        throw new Error(formatError(`Style "${prop.name}" url() reference: ${(e as Error).message}`, eLine, eCol));
+      }
       resolvedValue = `url(#${resolvedValue})`;
+      trusted = true; // wrapped a validated ident
+    }
+    // Validate the final value against the strict CSS allow-list before
+    // storing. Trusted (compiler-emitted) values bypass the validator —
+    // they cannot escape the value string by shape (CSSVar/Color/Gradient
+    // construction validates inputs and produces a fixed grammar).
+    if (!trusted) {
+      try {
+        validateCSSValue(resolvedValue, prop.name, { allowVar });
+      } catch (e) {
+        const eLine = getLine(expr);
+        const eCol = getCol(expr);
+        throw new Error(formatError((e as Error).message, eLine, eCol));
+      }
     }
     properties[prop.name] = resolvedValue;
   }
@@ -1323,6 +1364,11 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
   const nameValue = evaluateExpression(expr.name, scope);
   if (typeof nameValue !== 'string') {
     throw new Error(formatError('Layer name must be a string', getLine(expr)));
+  }
+  try {
+    validateCSSIdent(nameValue, 'layer-name');
+  } catch (e) {
+    throw new Error(formatError((e as Error).message, getLine(expr)));
   }
   if (scope.evalState.layers.has(nameValue)) {
     throw new Error(formatError(`Duplicate layer name: '${nameValue}'`, getLine(expr)));
@@ -4975,6 +5021,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) throw new Error('Mask() requires evaluation context');
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string') throw new Error('Mask() argument must be a string');
+    try { validateCSSIdent(id, 'mask-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     if (
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
@@ -4997,6 +5044,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) throw new Error('ClipPath() requires evaluation context');
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string') throw new Error('ClipPath() argument must be a string');
+    try { validateCSSIdent(id, 'clippath-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     if (
       scope.evalState.masks.has(id) ||
       scope.evalState.clipPaths.has(id) ||
@@ -5026,6 +5074,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('LinearGradient() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const x1 = evaluateExpression(call.args[1], scope);
     const y1 = evaluateExpression(call.args[2], scope);
     const x2 = evaluateExpression(call.args[3], scope);
@@ -5078,6 +5127,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('RadialGradient() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     const r = evaluateExpression(call.args[3], scope);
@@ -5142,6 +5192,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('Pattern() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'pattern-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const x = evaluateExpression(call.args[1], scope);
     const y = evaluateExpression(call.args[2], scope);
     const w = evaluateExpression(call.args[3], scope);
@@ -5194,6 +5245,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('Marker() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'marker-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const markerWidth = evaluateExpression(call.args[1], scope);
     const markerHeight = evaluateExpression(call.args[2], scope);
     if (typeof markerWidth !== 'number' || typeof markerHeight !== 'number') {
@@ -5250,6 +5302,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('ConicGradient() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     if (typeof cx !== 'number' || typeof cy !== 'number') {
@@ -5304,6 +5357,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('MeshGradient() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const width = evaluateExpression(call.args[1], scope);
     const height = evaluateExpression(call.args[2], scope);
     const cols = evaluateExpression(call.args[3], scope);
@@ -5388,6 +5442,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('FreeformGradient() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const width = evaluateExpression(call.args[1], scope);
     const height = evaluateExpression(call.args[2], scope);
     if (typeof width !== 'number' || typeof height !== 'number') {
@@ -5440,6 +5495,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('TopoGradient() first argument must be a string', getLine(call), getCol(call)));
+    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
     const width = evaluateExpression(call.args[1], scope);
     const height = evaluateExpression(call.args[2], scope);
     if (typeof width !== 'number' || typeof height !== 'number') {
@@ -5537,14 +5593,31 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     const name = evaluateExpression(call.args[0], scope);
     if (typeof name !== 'string')
       throw new Error(formatError('CSSVar() first argument must be a string', cvLine, cvCol));
+    // Preserve the existing user-facing message for the common "no --" case
+    // before invoking the strict ident check (which gives a more pedantic
+    // error message).
     if (!name.startsWith('--'))
       throw new Error(formatError("CSSVar() variable name must start with '--'", cvLine, cvCol));
+    try {
+      validateCSSIdent(name, 'css-var');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, cvLine, cvCol));
+    }
     let fallback: string | null = null;
     if (call.args.length === 2) {
       const fb = evaluateExpression(call.args[1], scope);
       if (typeof fb === 'number') {
         fallback = String(fb);
       } else if (typeof fb === 'string') {
+        // Validate user-supplied string fallback against the CSS value
+        // allow-list. Use a synthetic property name so URL_VALUED_PROPERTIES
+        // and STRING_VALUED_PROPERTIES don't match — fallbacks are bound at
+        // use-site, not at any specific property.
+        try {
+          validateCSSValue(fb, '__cssvar_fallback__');
+        } catch (e) {
+          throw new Error(formatError(`CSSVar() fallback rejected: ${(e as Error).message}`, cvLine, cvCol));
+        }
         fallback = fb;
       } else if (isColorValue(fb)) {
         fallback = oklchToCSS(fb.oklch);
@@ -6603,6 +6676,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       const nameValue = evaluateExpression(stmt.name, scope);
       if (typeof nameValue !== 'string') {
         throw new Error(formatError('Layer name must be a string', getLine(stmt)));
+      }
+      try {
+        validateCSSIdent(nameValue, 'layer-name');
+      } catch (e) {
+        throw new Error(formatError((e as Error).message, getLine(stmt)));
       }
       if (scope.evalState.layers.has(nameValue)) {
         throw new Error(formatError(`Duplicate layer name: '${nameValue}'`, getLine(stmt)));

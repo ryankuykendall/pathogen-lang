@@ -14,6 +14,7 @@
  *   </svg>
  */
 
+import { validateCSSIdent, validateCSSValue, validatePropertySyntax } from '../evaluator/sanitize';
 import type { CompileResult, CSSPropertyDeclaration, LayerOutput } from '../evaluator/types';
 
 import { buildDefs, type BuildDefsOptions } from './build-defs';
@@ -75,10 +76,18 @@ export function buildSvgTree(result: CompileResult, options: BuildTreeOptions = 
 function buildStyle(cssProperties: CSSPropertyDeclaration[]): VNode | null {
   if (cssProperties.length === 0) return null;
   const rules = cssProperties
-    .map(
-      (prop) =>
-        `    @property ${prop.name} {\n      syntax: "${prop.syntax}";\n      inherits: ${prop.inherits};\n      initial-value: ${prop.initialValue};\n    }`,
-    )
+    .map((prop) => {
+      // Defense-in-depth validation. Each field should already be validated at
+      // CSSVar()/Color(CSSVar()) construction; re-checking here protects the
+      // serializer if a future code path bypasses the constructor.
+      validateCSSIdent(prop.name, 'css-var');
+      validatePropertySyntax(prop.syntax);
+      if (typeof prop.inherits !== 'boolean') {
+        throw new Error(`@property "${prop.name}" inherits must be a boolean, got ${typeof prop.inherits}`);
+      }
+      validateCSSValue(prop.initialValue, '__cssvar_initial__', { allowVar: true });
+      return `    @property ${prop.name} {\n      syntax: "${prop.syntax}";\n      inherits: ${prop.inherits};\n      initial-value: ${prop.initialValue};\n    }`;
+    })
     .join('\n');
   // CDATA-wrapped content; emitted verbatim by the serializer (no XML escape).
   return h('style', {}, [raw(`<![CDATA[\n${rules}\n  ]]>`)]);

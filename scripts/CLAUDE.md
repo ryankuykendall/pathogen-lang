@@ -41,6 +41,7 @@ program.parse();
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
 | `check-links.ts` | Puppeteer link checker for blog posts and documentation pages |
 | `validate-samples.ts` | Puppeteer sample validator: margins, collisions, GroupLayer checks + PNG previews |
+| `security-browser-audit.ts` | Puppeteer audit: injects malicious SVG payloads directly into the playground's preview iframe (bypassing the compiler) and verifies the iframe sandbox + CSP block every outbound request. The browser-only counterpart to `tests/security/`, since JSDOM does not enforce CSP. Run via `npm run security:browser-audit` (requires `npm run dev:website` running on :3000). |
 
 ## Git Hooks
 
