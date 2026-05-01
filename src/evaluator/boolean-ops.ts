@@ -586,24 +586,20 @@ function detectSharedEdge_LineLine(
   let bEnd = Math.min(1, Math.max(tA0_onB, tA1_onB));
   if (bEnd - bStart <= 1e-8) return null;
 
-  // Snap range endpoints to segment vertices when the off-shared
-  // remainder would be smaller than MIN_SEG_LEN. Without this, an
-  // asymmetric shared-edge geometry where one side's vertex sits
-  // ε-close to (but not at) the other side's parametric coordinate
-  // creates a tiny non-shared piece on only one side. That extra
-  // piece becomes an extra ring-walk gap with no counterpart on the
-  // other side, leaving an unmatched run in `buildIntersectionLinks`
-  // and a stray `z`-bridge in the assembled contour. Snapping
-  // collapses the tiny remainder into the shared region so the gap
-  // structure stays symmetric across A and B. Threshold matches the
-  // existing MIN_SEG_LEN convention used in `splitPathAtIntersections`
-  // for tiny-segment merging. §2.13.
-  const SNAP_DIST = 0.5; // path units, matches MIN_SEG_LEN
-  if (aStart * lenA < SNAP_DIST) aStart = 0;
-  if ((1 - aEnd) * lenA < SNAP_DIST) aEnd = 1;
-  if (bStart * lenB < SNAP_DIST) bStart = 0;
-  if ((1 - bEnd) * lenB < SNAP_DIST) bEnd = 1;
-
+  // (Earlier iter-3d-en attempts snapped near-vertex shared-range
+  // endpoints to {0, 1} here. That snap is REMOVED — it incorrectly
+  // collapsed real geometry on the longer side into the shared
+  // region. Concretely for Libre Bask UPPER EN tracking 0.5: A.seg26
+  // started at (57.04, 0) but B.seg9 started at (56.72, 0); the
+  // 0.32px "overhang" on A from (57.04, 0) to (56.72, 0) is real A
+  // outline that must remain in A's runs. Snapping made the snap
+  // expand A's shared range to include the overhang, dropping it
+  // from A. The downstream run[1] then chained to a phantom endpoint
+  // that B couldn't match → unmatched at link assembly → standalone
+  // contour = wedge artifact. The asymmetry is GEOMETRIC, not a
+  // float-noise artifact; keep both sides' shared ranges as projected.
+  // Asymmetric run counts at link assembly are handled correctly when
+  // the overhang is classified by ring-walk like any other split. §2.13. */
   const sameDirection = (dax * dbx + day * dby) > 0;
   return { aStart, aEnd, bStart, bEnd, sameDirection };
 }
@@ -2522,18 +2518,6 @@ function buildIntersectionLinks(
     links.set(runs[i], runs[j]);
   }
 
-  if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
-    const aCt = runs.filter(r => r.source === 'A').length;
-    const bCt = runs.filter(r => r.source === 'B').length;
-    // eslint-disable-next-line no-console
-    console.error(`[bool-ops] buildIntersectionLinks: A=${aCt} B=${bCt} runs (linked: ${links.size})`);
-    for (let i = 0; i < runs.length; i++) {
-      const r = runs[i];
-      // eslint-disable-next-line no-console
-      console.error(`  run[${i}] src=${r.source} cmds=${r.cmds.length} entry=(${r.entryPoint.x.toFixed(2)},${r.entryPoint.y.toFixed(2)}) exit=(${r.exitPoint.x.toFixed(2)},${r.exitPoint.y.toFixed(2)})`);
-    }
-  }
-
   return links;
 }
 
@@ -2641,7 +2625,29 @@ function traceContours(
   const visited = new Set<KeptRun>();
   const contours: TransformCmd[][] = [];
 
-  for (const run of allRuns) {
+  // Build an inbound-link set so we can prefer chain-START runs in the
+  // iteration order. A "chain start" is a run that no other run links
+  // INTO (its `entryPoint` is reached only by being the first in a
+  // contour, not by following from a predecessor). Without this, the
+  // for-loop picks the lowest-index unvisited run regardless of role.
+  // If a run with an inbound link is picked before its predecessor, the
+  // predecessor's later trace stops short (can't revisit), and the
+  // unmatched-tail run becomes a standalone contour — visible as a
+  // wedge / phantom subpath at glyph junctions where Hungarian leaves
+  // one A-run unmatched. Iterating chain-starts first attaches the
+  // tail to the proper outer contour via the existing bridge logic.
+  // §2.4 / iter-3d-en wedge fix.
+  const hasInbound = new Set<KeptRun>();
+  for (const target of links.values()) hasInbound.add(target);
+
+  // Two passes: chain-starts first (runs without inbound links), then
+  // any remaining unvisited (which are cycles closed under links).
+  const orderedRuns: KeptRun[] = [
+    ...allRuns.filter((r) => !hasInbound.has(r)),
+    ...allRuns.filter((r) => hasInbound.has(r)),
+  ];
+
+  for (const run of orderedRuns) {
     if (visited.has(run)) continue;
 
     if (run.isComplete) {
