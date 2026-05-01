@@ -1311,6 +1311,45 @@ function findAllIntersections(
     if (!dup) deduped.push(r);
   }
 
+  // Cross-path vertex-vertex snap: drop intersections whose geometric
+  // point sits within SNAP_DIST of segment endpoints on BOTH paths.
+  // These are "true vertex-vertex matches" — both A and B already
+  // have a natural segment-junction at that point, so adding an
+  // explicit split contributes nothing and creates asymmetry when
+  // the intersection's t lands at a non-vertex parametric position
+  // on one side (e.g., tA=0.0059 on A's segment vs tB=1.0 at B's
+  // vertex). Dropping these symmetrizes the run-count at link
+  // assembly and removes the stray `z`-bridge that produces wedge
+  // artifacts. Unilateral near-vertex intersections (one side near
+  // a vertex, the other mid-segment) are NOT dropped — those are
+  // legitimate cross-path intersections that the boundary classifier
+  // depends on (e.g., `radialWedge xor` test). §2.13 + iter-3d.
+  const VERTEX_SNAP_DIST = 0.5;
+  const filtered: Intersection[] = [];
+  let droppedCount = 0;
+  for (const r of deduped) {
+    if (r.boundary) {
+      filtered.push(r);
+      continue;
+    }
+    const segA = segsA[r.segA];
+    const segB = segsB[r.segB];
+    const distA = Math.min(dist(r.point, segA.start), dist(r.point, segA.end));
+    const distB = Math.min(dist(r.point, segB.start), dist(r.point, segB.end));
+    if (distA < VERTEX_SNAP_DIST && distB < VERTEX_SNAP_DIST) {
+      droppedCount++;
+      if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
+        // eslint-disable-next-line no-console
+        console.error(`  dropVtxVtx: pt=(${r.point.x.toFixed(3)},${r.point.y.toFixed(3)}) A.seg${r.segA}@tA=${r.tA.toFixed(4)} distA=${distA.toFixed(3)} B.seg${r.segB}@tB=${r.tB.toFixed(4)} distB=${distB.toFixed(3)}`);
+      }
+      continue;
+    }
+    filtered.push(r);
+  }
+  // Replace deduped with filtered for downstream stages.
+  deduped.length = 0;
+  deduped.push(...filtered);
+
   // Detect shared edges (coincident regions between segment pairs) and
   // emit boundary intersections at their endpoints so the splitting
   // step makes splits there. The shared range itself is propagated
@@ -1363,7 +1402,7 @@ function findAllIntersections(
 
   if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
     // eslint-disable-next-line no-console
-    console.error(`[bool-ops] findAllIntersections: ${deduped.length} intersections, ${sharedEdges.length} shared edges`);
+    console.error(`[bool-ops] findAllIntersections: ${deduped.length} intersections (${droppedCount} dropped as vertex-vertex), ${sharedEdges.length} shared edges`);
     for (const se of sharedEdges) {
       // eslint-disable-next-line no-console
       console.error(`  SharedEdge: A.seg${se.segA}[${se.aStart.toFixed(3)}..${se.aEnd.toFixed(3)}] ↔ B.seg${se.segB}[${se.bStart.toFixed(3)}..${se.bEnd.toFixed(3)}] sameDir=${se.sameDirection}`);
@@ -2481,6 +2520,18 @@ function buildIntersectionLinks(
     const j = assignment[i];
     if (j < 0 || cost[i][j] >= FORBIDDEN / 2) continue;
     links.set(runs[i], runs[j]);
+  }
+
+  if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
+    const aCt = runs.filter(r => r.source === 'A').length;
+    const bCt = runs.filter(r => r.source === 'B').length;
+    // eslint-disable-next-line no-console
+    console.error(`[bool-ops] buildIntersectionLinks: A=${aCt} B=${bCt} runs (linked: ${links.size})`);
+    for (let i = 0; i < runs.length; i++) {
+      const r = runs[i];
+      // eslint-disable-next-line no-console
+      console.error(`  run[${i}] src=${r.source} cmds=${r.cmds.length} entry=(${r.entryPoint.x.toFixed(2)},${r.entryPoint.y.toFixed(2)}) exit=(${r.exitPoint.x.toFixed(2)},${r.exitPoint.y.toFixed(2)})`);
+    }
   }
 
   return links;
