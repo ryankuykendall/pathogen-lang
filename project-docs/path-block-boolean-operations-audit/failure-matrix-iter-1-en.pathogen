@@ -1,0 +1,262 @@
+// viewBox="0 0 850 840"
+// Iteration 1 — minimum reproducer: word = "en", tracking = 0.5/0.6/0.7
+//
+// 4 caps × 3 fonts × 3 tracking = 36 cells.
+// 1 chained .union() call per cell (single A.union(B)).
+//
+// Same 5-color palette and layer ordering as failure-matrix-3-solid.pathogen.
+// See AUDIT.md and the parent plan for diagnostic protocol.
+
+@font "../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "../../fonts/Raleway/Raleway-ExtraLight.ttf"
+@font "../../fonts/Libre_Baskerville/LibreBaskerville-Bold.ttf"
+
+// ─── Layout constants ──────────────────────────────────────────────
+
+let cell_w = 240;
+let cell_h = 60;
+let header_w = 100;
+let header_h = 60;
+let total_w = 850;
+let total_h = 840;
+
+// ─── 5-color palette (verbatim from v3-solid) ──────────────────────
+
+let bg_color = Color('#fefce8');
+let underlay_fill_color = Color('#f9731680');
+let union_fill_color = Color('#1e3a8a80');
+let underlay_stroke_color = Color('#7c2d12e6');
+let union_stroke_color = Color('#06b6d4f2');
+let stroke_w = 0.8;
+
+let header_color = Color('#475569');
+let title_color = Color('#0f172a');
+let footer_color = Color('#64748b');
+let grid_color = Color('#e7e5d0');
+
+// ─── Background ────────────────────────────────────────────────────
+
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+layer('bg').apply { rect(0, 0, total_w, total_h); }
+
+// ─── Diagnostic layers ──────────────────────────────────────────────
+
+let underlay_fill_layer = PathLayer('underlay-fill') ${
+  fill: underlay_fill_color;
+  stroke: none;
+};
+
+let union_fill_layer = PathLayer('union-fill') ${
+  fill: union_fill_color;
+  stroke: none;
+};
+
+let underlay_stroke_layer = PathLayer('underlay-stroke') ${
+  fill: none;
+  stroke: underlay_stroke_color;
+  stroke-width: stroke_w;
+};
+
+let union_stroke_layer = PathLayer('union-stroke') ${
+  fill: none;
+  stroke: union_stroke_color;
+  stroke-width: stroke_w;
+};
+
+// ─── Axis values ───────────────────────────────────────────────────
+
+let cap_labels = ["UPPER", "lower", "First", "AlT"];
+let cap_words  = ["EN", "en", "En", "eN"];
+
+let font_labels = ["Bebas Neue 400", "Raleway 200", "Libre Bask 700"];
+let font_size = 22;
+
+let tracking_values = [0.5, 0.6, 0.7];
+
+// ─── Title ─────────────────────────────────────────────────────────
+
+let title_layer = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
+layer('title').apply {
+  text(20, 26)`Iteration 1 — word = "en", 1 chained .union(), tracking 0.5..0.7`
+}
+
+let subtitle_layer = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
+layer('subtitle').apply {
+  text(20, 44)`Single-pair .union() — surfaces direct A.union(B) failure modes (Hungarian pairing, classifier seed, near-tangent boundary).`
+}
+
+// ─── Column headers ────────────────────────────────────────────────
+
+let col_header_layer = TextLayer('col-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
+layer('col-headers').apply {
+  for (tr_idx in 0..2) {
+    let cx = calc(header_w + tr_idx * cell_w + cell_w / 2);
+    let tr = tracking_values[tr_idx];
+    text(cx, 56)`tracking = ${tr}`
+  }
+}
+
+// ─── Row headers ───────────────────────────────────────────────────
+
+let row_header_layer = TextLayer('row-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
+layer('row-headers').apply {
+  for (font_idx in 0..2) {
+    for (cap_idx in 0..3) {
+      let row_idx = calc(font_idx * 4 + cap_idx);
+      let ry = calc(header_h + row_idx * cell_h + cell_h / 2 + 3);
+      text(header_w - 8, ry)`${font_labels[font_idx]} ${cap_labels[cap_idx]}`
+    }
+  }
+}
+
+// ─── Grid ──────────────────────────────────────────────────────────
+
+let grid_layer = PathLayer('grid') ${ stroke: grid_color; stroke-width: 0.5; fill: none; };
+layer('grid').apply {
+  for (col_idx in 0..3) {
+    let gx = calc(header_w + col_idx * cell_w);
+    M gx header_h v calc(12 * cell_h)
+  }
+  for (row_idx in 0..12) {
+    let gy = calc(header_h + row_idx * cell_h);
+    M header_w gy h calc(3 * cell_w)
+  }
+}
+
+// ─── Cell rendering ────────────────────────────────────────────────
+
+// Bebas Neue (rows 0..3)
+let styles_bebas = ${ font-family: BebasNeue-Regular; font-size: font_size; };
+
+for (cap_idx_b in 0..3) {
+  let row_idx_b = cap_idx_b;
+  let row_y_b = calc(header_h + row_idx_b * cell_h);
+  let word_b = cap_words[cap_idx_b];
+  let glyphs_b = PathBlock.fromGlyph(word_b, styles_bebas);
+  let nglyphs_b = glyphs_b.length;
+  let last_b = calc(nglyphs_b - 1);
+
+  for (tr_idx_b in 0..2) {
+    let tr_b = tracking_values[tr_idx_b];
+
+    let cursor_b = 0;
+    let positions_b = [];
+    let projected_b = [];
+    for (g in glyphs_b) {
+      positions_b.push(cursor_b);
+      projected_b.push(g.project(cursor_b, 0));
+      cursor_b = calc(cursor_b + g.advanceWidth * tr_b);
+    }
+    let word_w_b = cursor_b;
+
+    let combined_b = projected_b[0];
+    for (ui in 1..last_b) {
+      combined_b = combined_b.union(projected_b[ui]);
+    }
+
+    let cell_baseline = calc(row_y_b + 42);
+    let col_x_b = calc(header_w + tr_idx_b * cell_w);
+    let dx_b = calc(col_x_b + (cell_w - word_w_b) / 2);
+
+    for (mi in 0..last_b) {
+      let gx_b = calc(dx_b + positions_b[mi]);
+      layer('underlay-fill').apply { glyphs_b[mi].drawTo(gx_b, cell_baseline); }
+      layer('underlay-stroke').apply { glyphs_b[mi].drawTo(gx_b, cell_baseline); }
+    }
+    layer('union-fill').apply { combined_b.drawTo(dx_b, cell_baseline); }
+    layer('union-stroke').apply { combined_b.drawTo(dx_b, cell_baseline); }
+  }
+}
+
+// Raleway (rows 4..7)
+let styles_raleway = ${ font-family: Raleway-ExtraLight; font-size: font_size; };
+
+for (cap_idx_r in 0..3) {
+  let row_idx_r = calc(4 + cap_idx_r);
+  let row_y_r = calc(header_h + row_idx_r * cell_h);
+  let word_r = cap_words[cap_idx_r];
+  let glyphs_r = PathBlock.fromGlyph(word_r, styles_raleway);
+  let nglyphs_r = glyphs_r.length;
+  let last_r = calc(nglyphs_r - 1);
+
+  for (tr_idx_r in 0..2) {
+    let tr_r = tracking_values[tr_idx_r];
+
+    let cursor_r = 0;
+    let positions_r = [];
+    let projected_r = [];
+    for (g in glyphs_r) {
+      positions_r.push(cursor_r);
+      projected_r.push(g.project(cursor_r, 0));
+      cursor_r = calc(cursor_r + g.advanceWidth * tr_r);
+    }
+    let word_w_r = cursor_r;
+
+    let combined_r = projected_r[0];
+    for (ui in 1..last_r) {
+      combined_r = combined_r.union(projected_r[ui]);
+    }
+
+    let cell_baseline_r = calc(row_y_r + 42);
+    let col_x_r = calc(header_w + tr_idx_r * cell_w);
+    let dx_r = calc(col_x_r + (cell_w - word_w_r) / 2);
+
+    for (mi in 0..last_r) {
+      let gx_r = calc(dx_r + positions_r[mi]);
+      layer('underlay-fill').apply { glyphs_r[mi].drawTo(gx_r, cell_baseline_r); }
+      layer('underlay-stroke').apply { glyphs_r[mi].drawTo(gx_r, cell_baseline_r); }
+    }
+    layer('union-fill').apply { combined_r.drawTo(dx_r, cell_baseline_r); }
+    layer('union-stroke').apply { combined_r.drawTo(dx_r, cell_baseline_r); }
+  }
+}
+
+// Libre Baskerville (rows 8..11)
+let styles_libre = ${ font-family: LibreBaskerville-Bold; font-size: font_size; };
+
+for (cap_idx_l in 0..3) {
+  let row_idx_l = calc(8 + cap_idx_l);
+  let row_y_l = calc(header_h + row_idx_l * cell_h);
+  let word_l = cap_words[cap_idx_l];
+  let glyphs_l = PathBlock.fromGlyph(word_l, styles_libre);
+  let nglyphs_l = glyphs_l.length;
+  let last_l = calc(nglyphs_l - 1);
+
+  for (tr_idx_l in 0..2) {
+    let tr_l = tracking_values[tr_idx_l];
+
+    let cursor_l = 0;
+    let positions_l = [];
+    let projected_l = [];
+    for (g in glyphs_l) {
+      positions_l.push(cursor_l);
+      projected_l.push(g.project(cursor_l, 0));
+      cursor_l = calc(cursor_l + g.advanceWidth * tr_l);
+    }
+    let word_w_l = cursor_l;
+
+    let combined_l = projected_l[0];
+    for (ui in 1..last_l) {
+      combined_l = combined_l.union(projected_l[ui]);
+    }
+
+    let cell_baseline_l = calc(row_y_l + 42);
+    let col_x_l = calc(header_w + tr_idx_l * cell_w);
+    let dx_l = calc(col_x_l + (cell_w - word_w_l) / 2);
+
+    for (mi in 0..last_l) {
+      let gx_l = calc(dx_l + positions_l[mi]);
+      layer('underlay-fill').apply { glyphs_l[mi].drawTo(gx_l, cell_baseline_l); }
+      layer('underlay-stroke').apply { glyphs_l[mi].drawTo(gx_l, cell_baseline_l); }
+    }
+    layer('union-fill').apply { combined_l.drawTo(dx_l, cell_baseline_l); }
+    layer('union-stroke').apply { combined_l.drawTo(dx_l, cell_baseline_l); }
+  }
+}
+
+// ─── Footer ────────────────────────────────────────────────────────
+
+let footer_layer = TextLayer('footer') ${ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
+layer('footer').apply {
+  text(20, calc(total_h - 24))`Iter 1 of progressive bisection. Once clean: widen tracking to 0.2..0.9 (iter-2), then append "c" → "enc" (iter-N).`
+}

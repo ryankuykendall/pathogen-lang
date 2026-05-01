@@ -1,0 +1,260 @@
+// viewBox="0 0 2020 840"
+// Boolean Operations Failure-Mode Stress Matrix — v2 (union-focused with underlay)
+//
+// 12 rows (3 fonts × 4 capitalizations) × 8 cols (tracking 0.2..0.9)
+// = 96 cells. Each cell layers two renders of ENCYCLOPEDIA at the cell's
+// (font, caps, tracking):
+//
+//   • Underlay (medium gray, opaque): the raw per-glyph fill a user would get
+//     without union — i.e. the pure "what the typesetting looks like" silhouette.
+//   • Overlay (saturated dark blue, semi-transparent): the .union() result.
+//
+// A correct .union() exactly silhouettes the underlay where glyphs overlap;
+// any visible mismatch (gray showing through, or blue extending past the gray
+// outline) is a boolean-op artifact. The desaturated background and warm/cool
+// contrast make these mismatches read at a glance.
+//
+// Dropped from v1: .difference state (deferred — fix union first), multi-color
+// state (low signal-to-noise), tracking ≥ 1.0 (no overlaps to test).
+//
+// See: project-docs/path-block-boolean-operations-audit/AUDIT.md
+
+@font "../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "../../fonts/Raleway/Raleway-ExtraLight.ttf"
+@font "../../fonts/Libre_Baskerville/LibreBaskerville-Bold.ttf"
+
+// ─── Layout constants ──────────────────────────────────────────────
+
+let cell_w = 240;
+let cell_h = 60;
+let header_w = 100;
+let header_h = 60;
+let total_w = 2020;
+let total_h = 840;
+
+// ─── Palette ───────────────────────────────────────────────────────
+
+let bg_color = Color('#f1f5f9');         // slate-100, desaturated near-white
+let grid_color = Color('#cbd5e1');       // slate-300, soft grid
+let header_color = Color('#475569');     // slate-600, body text
+let title_color = Color('#0f172a');      // slate-900, title contrast
+let footer_color = Color('#64748b');     // slate-500, secondary
+
+let underlay_color = Color('#94a3b8');   // slate-400, medium gray underlay
+let union_color = Color('#1e40abb3');    // blue-800 @ 70% alpha — saturated cool
+
+// ─── Background ────────────────────────────────────────────────────
+
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+layer('bg').apply { rect(0, 0, total_w, total_h); }
+
+// ─── Axis values ───────────────────────────────────────────────────
+
+let cap_labels = ["UPPER", "lower", "First", "AlT"];
+let cap_words  = ["ENCYCLOPEDIA", "encyclopedia", "Encyclopedia", "EnCyClOpEdIa"];
+
+let font_labels = ["Bebas Neue 400", "Raleway 200", "Libre Bask 700"];
+let font_size = 22;
+
+let tracking_values = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+
+// ─── Layers (declared in render order: underlay first, union on top) ──
+
+let underlay_layer = PathLayer('underlay') ${ fill: underlay_color; stroke: none; };
+let union_layer = PathLayer('union') ${ fill: union_color; stroke: none; };
+
+// ─── Title ─────────────────────────────────────────────────────────
+
+let title_layer = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
+layer('title').apply {
+  text(20, 26)`Boolean .union() Failure Matrix — ENCYCLOPEDIA × 4 caps × 8 tracking × 3 fonts`
+}
+
+let subtitle_layer = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
+layer('subtitle').apply {
+  text(20, 44)`Underlay (gray) = raw per-glyph fill. Overlay (blue) = .union() result. Mismatch = boolean-op artifact.`
+}
+
+// ─── Column headers (tracking values) ──────────────────────────────
+
+let col_header_layer = TextLayer('col-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
+layer('col-headers').apply {
+  for (tr_idx in 0..7) {
+    let cx = calc(header_w + tr_idx * cell_w + cell_w / 2);
+    let tr = tracking_values[tr_idx];
+    text(cx, 56)`tracking = ${tr}`
+  }
+}
+
+// ─── Row headers (font × caps) ─────────────────────────────────────
+
+let row_header_layer = TextLayer('row-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
+layer('row-headers').apply {
+  for (font_idx in 0..2) {
+    for (cap_idx in 0..3) {
+      let row_idx = calc(font_idx * 4 + cap_idx);
+      let ry = calc(header_h + row_idx * cell_h + cell_h / 2 + 3);
+      text(header_w - 8, ry)`${font_labels[font_idx]} ${cap_labels[cap_idx]}`
+    }
+  }
+}
+
+// ─── Cell-grid lines ───────────────────────────────────────────────
+
+let grid_layer = PathLayer('grid') ${ stroke: grid_color; stroke-width: 0.5; fill: none; };
+layer('grid').apply {
+  for (col_idx in 0..8) {
+    let gx = calc(header_w + col_idx * cell_w);
+    M gx header_h v calc(12 * cell_h)
+  }
+  for (row_idx in 0..12) {
+    let gy = calc(header_h + row_idx * cell_h);
+    M header_w gy h calc(8 * cell_w)
+  }
+}
+
+// ─── Cell rendering (one block per font for style-block resolution) ──
+
+// Bebas Neue rows (font_idx = 0)
+let styles_bebas = ${ font-family: BebasNeue-Regular; font-size: font_size; };
+
+for (cap_idx_b in 0..3) {
+  let row_idx_b = cap_idx_b;
+  let row_y_b = calc(header_h + row_idx_b * cell_h);
+  let word_b = cap_words[cap_idx_b];
+  let glyphs_b = PathBlock.fromGlyph(word_b, styles_bebas);
+  let nglyphs_b = glyphs_b.length;
+  let last_b = calc(nglyphs_b - 1);
+
+  for (tr_idx_b in 0..7) {
+    let tr_b = tracking_values[tr_idx_b];
+
+    let cursor_b = 0;
+    let positions_b = [];
+    let projected_b = [];
+    for (g in glyphs_b) {
+      positions_b.push(cursor_b);
+      projected_b.push(g.project(cursor_b, 0));
+      cursor_b = calc(cursor_b + g.advanceWidth * tr_b);
+    }
+    let word_w_b = cursor_b;
+
+    let combined_b = projected_b[0];
+    for (ui in 1..last_b) {
+      combined_b = combined_b.union(projected_b[ui]);
+    }
+
+    let cell_baseline = calc(row_y_b + 42);
+    let col_x_b = calc(header_w + tr_idx_b * cell_w);
+    let dx_b = calc(col_x_b + (cell_w - word_w_b) / 2);
+
+    // Underlay first (layer rendered below in document order)
+    for (mi in 0..last_b) {
+      layer('underlay').apply {
+        glyphs_b[mi].drawTo(calc(dx_b + positions_b[mi]), cell_baseline);
+      }
+    }
+
+    // Union overlay
+    layer('union').apply {
+      combined_b.drawTo(dx_b, cell_baseline);
+    }
+  }
+}
+
+// Raleway rows (font_idx = 1)
+let styles_raleway = ${ font-family: Raleway-ExtraLight; font-size: font_size; };
+
+for (cap_idx_r in 0..3) {
+  let row_idx_r = calc(4 + cap_idx_r);
+  let row_y_r = calc(header_h + row_idx_r * cell_h);
+  let word_r = cap_words[cap_idx_r];
+  let glyphs_r = PathBlock.fromGlyph(word_r, styles_raleway);
+  let nglyphs_r = glyphs_r.length;
+  let last_r = calc(nglyphs_r - 1);
+
+  for (tr_idx_r in 0..7) {
+    let tr_r = tracking_values[tr_idx_r];
+
+    let cursor_r = 0;
+    let positions_r = [];
+    let projected_r = [];
+    for (g in glyphs_r) {
+      positions_r.push(cursor_r);
+      projected_r.push(g.project(cursor_r, 0));
+      cursor_r = calc(cursor_r + g.advanceWidth * tr_r);
+    }
+    let word_w_r = cursor_r;
+
+    let combined_r = projected_r[0];
+    for (ui in 1..last_r) {
+      combined_r = combined_r.union(projected_r[ui]);
+    }
+
+    let cell_baseline_r = calc(row_y_r + 42);
+    let col_x_r = calc(header_w + tr_idx_r * cell_w);
+    let dx_r = calc(col_x_r + (cell_w - word_w_r) / 2);
+
+    for (mi in 0..last_r) {
+      layer('underlay').apply {
+        glyphs_r[mi].drawTo(calc(dx_r + positions_r[mi]), cell_baseline_r);
+      }
+    }
+
+    layer('union').apply {
+      combined_r.drawTo(dx_r, cell_baseline_r);
+    }
+  }
+}
+
+// Libre Baskerville rows (font_idx = 2)
+let styles_libre = ${ font-family: LibreBaskerville-Bold; font-size: font_size; };
+
+for (cap_idx_l in 0..3) {
+  let row_idx_l = calc(8 + cap_idx_l);
+  let row_y_l = calc(header_h + row_idx_l * cell_h);
+  let word_l = cap_words[cap_idx_l];
+  let glyphs_l = PathBlock.fromGlyph(word_l, styles_libre);
+  let nglyphs_l = glyphs_l.length;
+  let last_l = calc(nglyphs_l - 1);
+
+  for (tr_idx_l in 0..7) {
+    let tr_l = tracking_values[tr_idx_l];
+
+    let cursor_l = 0;
+    let positions_l = [];
+    let projected_l = [];
+    for (g in glyphs_l) {
+      positions_l.push(cursor_l);
+      projected_l.push(g.project(cursor_l, 0));
+      cursor_l = calc(cursor_l + g.advanceWidth * tr_l);
+    }
+    let word_w_l = cursor_l;
+
+    let combined_l = projected_l[0];
+    for (ui in 1..last_l) {
+      combined_l = combined_l.union(projected_l[ui]);
+    }
+
+    let cell_baseline_l = calc(row_y_l + 42);
+    let col_x_l = calc(header_w + tr_idx_l * cell_w);
+    let dx_l = calc(col_x_l + (cell_w - word_w_l) / 2);
+
+    for (mi in 0..last_l) {
+      layer('underlay').apply {
+        glyphs_l[mi].drawTo(calc(dx_l + positions_l[mi]), cell_baseline_l);
+      }
+    }
+
+    layer('union').apply {
+      combined_l.drawTo(dx_l, cell_baseline_l);
+    }
+  }
+}
+
+// ─── Footer note ────────────────────────────────────────────────────
+
+let footer_layer = TextLayer('footer') ${ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
+layer('footer').apply {
+  text(20, calc(total_h - 24))`How to read: where blue exactly silhouettes gray, the union is correct. Gray peeking out = union missing area. Blue beyond gray = spurious area.`
+}

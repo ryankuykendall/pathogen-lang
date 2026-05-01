@@ -34,6 +34,42 @@ interface Intersection {
   tB: number;
   segA: number;
   segB: number;
+  /**
+   * `true` if this intersection lies on a shared-edge region — either
+   * an endpoint of a coincident stretch or a sample inside one. Used
+   * by `splitPathAtIntersections` to mark splits as `boundary`, which
+   * `classifyByRingWalk` then treats as `'on'`. Solves §2.13 of the
+   * audit.
+   */
+  boundary?: boolean;
+}
+
+/**
+ * A coincident stretch where path A's segment overlaps path B's
+ * segment along a shared geometric curve. Produced by intersection
+ * detection (line-line collinear, arc-arc on same circle, line-curve
+ * degenerate, or curve-curve coincident) alongside the regular point
+ * intersections at the stretch's endpoints. `splitPathAtIntersections`
+ * uses these to mark which splits lie inside a shared region; those
+ * splits are classified `'on'` and `selectSegments` handles them per
+ * boolean op (drop both for union/intersection/xor; drop both for
+ * difference).
+ */
+interface SharedEdgeRange {
+  segA: number;
+  aStart: number;       // parametric range on A's original segment
+  aEnd: number;
+  segB: number;
+  bStart: number;       // parametric range on B's original segment
+  bEnd: number;
+  /**
+   * Whether A and B traverse the shared region in the same direction.
+   * For two outlines with the same winding (e.g. both CW glyph
+   * outlines) sharing an edge, this is typically `false` — the paths
+   * traverse the shared edge in opposite directions because each
+   * keeps its own interior on the same side of the boundary.
+   */
+  sameDirection: boolean;
 }
 
 interface BBox {
@@ -501,6 +537,58 @@ function intersectLineLine(
   return [{ tA: clampT(tA), tB: clampT(tB), point: evalLine(a0, a1, clampT(tA)) }];
 }
 
+/**
+ * Detect a shared (collinear, overlapping) region between two line
+ * segments. Returns the parametric overlap range on each segment plus
+ * direction-of-travel agreement, or `null` if the segments are not
+ * collinear or don't overlap.
+ *
+ * Two line segments share a stretch when:
+ *   1. They lie on the same infinite line (b0, b1 within line-distance
+ *      `1e-8` of A's line and direction is parallel/anti-parallel)
+ *   2. Their parametric ranges projected onto the shared line overlap
+ *      with positive measure (range > `1e-8`)
+ *
+ * Used by §2.13 (shared-edge first-class) — the regular
+ * `intersectLineLine` returns an empty array for collinear inputs and
+ * never produces splits along the shared region. This detector
+ * supplies the missing `SharedEdgeRange` for downstream consumption.
+ */
+function detectSharedEdge_LineLine(
+  a0: Point, a1: Point, b0: Point, b1: Point,
+): { aStart: number; aEnd: number; bStart: number; bEnd: number; sameDirection: boolean } | null {
+  const dax = a1.x - a0.x, day = a1.y - a0.y;
+  const dbx = b1.x - b0.x, dby = b1.y - b0.y;
+  const lenA2 = dax * dax + day * day;
+  const lenB2 = dbx * dbx + dby * dby;
+  if (lenA2 < 1e-20 || lenB2 < 1e-20) return null; // degenerate
+
+  // Are the two lines collinear? Check that b0 and b1 both lie on A's line.
+  const lenA = Math.sqrt(lenA2);
+  const nax = -day / lenA, nay = dax / lenA; // unit normal to A
+  const COLLINEAR_TOL = 1e-7;
+  const dist0 = Math.abs((b0.x - a0.x) * nax + (b0.y - a0.y) * nay);
+  const dist1 = Math.abs((b1.x - a0.x) * nax + (b1.y - a0.y) * nay);
+  if (dist0 > COLLINEAR_TOL || dist1 > COLLINEAR_TOL) return null;
+
+  // Project B's endpoints onto A's parametric range.
+  const tB0_onA = ((b0.x - a0.x) * dax + (b0.y - a0.y) * day) / lenA2;
+  const tB1_onA = ((b1.x - a0.x) * dax + (b1.y - a0.y) * day) / lenA2;
+  const aStart = Math.max(0, Math.min(tB0_onA, tB1_onA));
+  const aEnd = Math.min(1, Math.max(tB0_onA, tB1_onA));
+  if (aEnd - aStart <= 1e-8) return null; // no overlap
+
+  // Project A's endpoints onto B's parametric range.
+  const tA0_onB = ((a0.x - b0.x) * dbx + (a0.y - b0.y) * dby) / lenB2;
+  const tA1_onB = ((a1.x - b0.x) * dbx + (a1.y - b0.y) * dby) / lenB2;
+  const bStart = Math.max(0, Math.min(tA0_onB, tA1_onB));
+  const bEnd = Math.min(1, Math.max(tA0_onB, tA1_onB));
+  if (bEnd - bStart <= 1e-8) return null;
+
+  const sameDirection = (dax * dbx + day * dby) > 0;
+  return { aStart, aEnd, bStart, bEnd, sameDirection };
+}
+
 // ─── Pairwise Intersection: Line-Cubic ──────────────────────────────────────
 
 function intersectLineCubic(
@@ -633,6 +721,26 @@ function intersectCubicCubic(
   a0: Point, a1: Point, a2: Point, a3: Point,
   b0: Point, b1: Point, b2: Point, b3: Point,
 ): { tA: number; tB: number; point: Point }[] {
+  // Coincidence guard: identical (or reversed) control polygons cause
+  // bezierClipRecurse to never converge — its "poor convergence"
+  // branch spawns 4 sub-calls that all overlap, blowing the recursion
+  // depth and the heap. When the curves coincide, the discrete-
+  // intersection set is degenerate (every point is a "match"); the
+  // shared-edge detector handles them via §2.13. Return only the
+  // boundary intersections (endpoints) here so downstream splitting
+  // and shared-edge promotion still work. §2.13.
+  const PT_TOL = 1e-7;
+  const same = (p: Point, q: Point) =>
+    Math.abs(p.x - q.x) < PT_TOL && Math.abs(p.y - q.y) < PT_TOL;
+  const sameForward = same(a0, b0) && same(a1, b1) && same(a2, b2) && same(a3, b3);
+  const sameReverse = same(a0, b3) && same(a1, b2) && same(a2, b1) && same(a3, b0);
+  if (sameForward || sameReverse) {
+    return [
+      { tA: 0, tB: sameForward ? 0 : 1, point: { ...a0 } },
+      { tA: 1, tB: sameForward ? 1 : 0, point: { ...a3 } },
+    ];
+  }
+
   const results: { tA: number; tB: number; point: Point }[] = [];
   bezierClipRecurse(
     a0, a1, a2, a3, 0, 1,
@@ -1153,7 +1261,7 @@ function getDrawCmds(cmds: TransformCmd[]): TransformCmd[] {
 
 function findAllIntersections(
   segsA: TransformCmd[], segsB: TransformCmd[],
-): Intersection[] {
+): { intersections: Intersection[]; sharedEdges: SharedEdgeRange[] } {
   const results: Intersection[] = [];
   for (let ia = 0; ia < segsA.length; ia++) {
     for (let ib = 0; ib < segsB.length; ib++) {
@@ -1183,7 +1291,258 @@ function findAllIntersections(
     }
     if (!dup) deduped.push(r);
   }
-  return deduped;
+
+  // Detect shared edges (coincident regions between segment pairs) and
+  // emit boundary intersections at their endpoints so the splitting
+  // step makes splits there. The shared range itself is propagated
+  // through the pipeline via the `sharedEdges` channel for the
+  // classifier to mark splits as `boundary` (→ `'on'` class). §2.13.
+  const sharedEdges: SharedEdgeRange[] = [];
+  for (let ia = 0; ia < segsA.length; ia++) {
+    for (let ib = 0; ib < segsB.length; ib++) {
+      const shared = detectSharedEdge(segsA[ia], segsB[ib]);
+      if (!shared) continue;
+      sharedEdges.push({
+        segA: ia,
+        aStart: shared.aStart,
+        aEnd: shared.aEnd,
+        segB: ib,
+        bStart: shared.bStart,
+        bEnd: shared.bEnd,
+        sameDirection: shared.sameDirection,
+      });
+      // Add boundary intersections at the four endpoints of the shared
+      // region so the splitter creates splits at those parameters.
+      // sameDirection: A and B traverse the same way, so aStart pairs
+      // with bStart (or bEnd if sameDirection is false).
+      const aStartPt = evalCmd(segsA[ia], shared.aStart);
+      const aEndPt = evalCmd(segsA[ia], shared.aEnd);
+      const tBatAStart = shared.sameDirection ? shared.bStart : shared.bEnd;
+      const tBatAEnd = shared.sameDirection ? shared.bEnd : shared.bStart;
+      // Only emit boundary intersections that aren't already in the
+      // deduped list (within tolerance).
+      const candidates: Intersection[] = [
+        { point: aStartPt, tA: shared.aStart, tB: tBatAStart, segA: ia, segB: ib, boundary: true },
+        { point: aEndPt, tA: shared.aEnd, tB: tBatAEnd, segA: ia, segB: ib, boundary: true },
+      ];
+      for (const c of candidates) {
+        let dup = false;
+        for (const d of deduped) {
+          if (d.segA === c.segA && d.segB === c.segB &&
+              Math.abs(d.tA - c.tA) < PARAMETRIC_EPSILON * 100 &&
+              Math.abs(d.tB - c.tB) < PARAMETRIC_EPSILON * 100) {
+            // Existing intersection at this endpoint — promote to boundary.
+            d.boundary = true;
+            dup = true;
+            break;
+          }
+        }
+        if (!dup) deduped.push(c);
+      }
+    }
+  }
+
+  if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
+    // eslint-disable-next-line no-console
+    console.error(`[bool-ops] findAllIntersections: ${deduped.length} intersections, ${sharedEdges.length} shared edges`);
+    for (const se of sharedEdges) {
+      // eslint-disable-next-line no-console
+      console.error(`  SharedEdge: A.seg${se.segA}[${se.aStart.toFixed(3)}..${se.aEnd.toFixed(3)}] ↔ B.seg${se.segB}[${se.bStart.toFixed(3)}..${se.bEnd.toFixed(3)}] sameDir=${se.sameDirection}`);
+    }
+  }
+  return { intersections: deduped, sharedEdges };
+}
+
+/**
+ * Detect a shared (coincident) region between two segments. Returns
+ * the parametric overlap range on each segment plus direction
+ * agreement, or `null` if no shared region exists. Dispatches by
+ * segment type. §2.13.
+ */
+function detectSharedEdge(
+  cmdA: TransformCmd, cmdB: TransformCmd,
+): { aStart: number; aEnd: number; bStart: number; bEnd: number; sameDirection: boolean } | null {
+  const uA = cmdA.command.toLowerCase();
+  const uB = cmdB.command.toLowerCase();
+  if (cmdIsLine(cmdA) && cmdIsLine(cmdB)) {
+    return detectSharedEdge_LineLine(cmdA.start, cmdA.end, cmdB.start, cmdB.end);
+  }
+  // Arc-arc, cubic-cubic, and quadratic-quadratic dispatches are
+  // intentionally NOT enabled here. The matching helpers
+  // (`detectSharedEdge_ArcArc`, `detectSharedEdge_CubicCubic`,
+  // `detectSharedEdge_QuadraticQuadratic`) exist below and work for
+  // their happy paths, but the current `'on'` selection rule in
+  // `selectSegments` is "drop both copies for every operation". That
+  // rule is correct only when the shared region is *strictly interior*
+  // to the boolean result (the typical line-line abutting case for
+  // glyph baselines). It is wrong when the shared region spans every
+  // segment of one or both paths — e.g.:
+  //   - `a.union(a)` (identical shapes — entire boundary is shared)
+  //   - nested-curve case (a quarter pie inside a half pie sharing
+  //     an arc, sameDirection=true — union should keep the outer
+  //     boundary, not drop both)
+  //   - abutting-curve case where the shared curve survives as the
+  //     implicit `z` close: a STRAIGHT line is emitted in place of
+  //     the curve, which is fine for fill rendering but visibly wrong
+  //     under stroking.
+  // Enabling curve/arc dispatch with the current per-op rules
+  // regresses these cases vs the pre-Phase-A baseline. The proper fix
+  // is a sameDirection-aware classification (`'onSame'`/`'onOpposite'`
+  // in `SegmentClass`, per-op tiebreakers), which is its own
+  // mini-phase tracked in §2.13. Until then, only line-line shared
+  // edges run through the pipeline; other shared geometry falls
+  // through to the `handleNoIntersections` containment fallback.
+  // Glyphs (the iter-1 visible target) primarily share baselines
+  // (lines), so the line-line case covers the dominant artifact
+  // class.
+  return null;
+}
+
+/**
+ * Detect shared (coincident) angular range between two arcs that lie
+ * on the same circle. Returns the parametric overlap range on each arc
+ * plus direction agreement, or `null` if no shared region exists.
+ *
+ * Currently handles circular arcs (rx ≈ ry, no rotation). Elliptical
+ * shared arcs require additional axis-and-rotation matching that is
+ * deferred until a real-world case appears. §2.13.
+ */
+function detectSharedEdge_ArcArc(
+  cmdA: TransformCmd, cmdB: TransformCmd,
+): { aStart: number; aEnd: number; bStart: number; bEnd: number; sameDirection: boolean } | null {
+  const cA = cmdArcCenter(cmdA);
+  const cB = cmdArcCenter(cmdB);
+  if (!cA || !cB) return null;
+
+  // Same circle? Match center and radii.
+  const CENTER_TOL = 1e-7;
+  const RADIUS_TOL = 1e-7;
+  if (Math.abs(cA.cx - cB.cx) > CENTER_TOL) return null;
+  if (Math.abs(cA.cy - cB.cy) > CENTER_TOL) return null;
+  if (Math.abs(cA.rx - cB.rx) > RADIUS_TOL) return null;
+  if (Math.abs(cA.ry - cB.ry) > RADIUS_TOL) return null;
+
+  // Restrict to circular arcs for now. Elliptical shared arcs need
+  // additional rotation/axis matching.
+  const isCircA = Math.abs(cA.rx - cA.ry) < RADIUS_TOL && Math.abs(cA.phi) < CENTER_TOL;
+  const isCircB = Math.abs(cB.rx - cB.ry) < RADIUS_TOL && Math.abs(cB.phi) < CENTER_TOL;
+  if (!isCircA || !isCircB) return null;
+
+  // Each arc spans [startAngle, startAngle + deltaAngle]. Find overlap.
+  const aLo = Math.min(cA.startAngle, cA.startAngle + cA.deltaAngle);
+  const aHi = Math.max(cA.startAngle, cA.startAngle + cA.deltaAngle);
+  const bLo = Math.min(cB.startAngle, cB.startAngle + cB.deltaAngle);
+  const bHi = Math.max(cB.startAngle, cB.startAngle + cB.deltaAngle);
+
+  // Try direct overlap and modulo-2π shifted overlap (since angles wrap).
+  const TWO_PI = Math.PI * 2;
+  const ANGLE_TOL = 1e-7;
+  const candidates: Array<{ lo: number; hi: number }> = [];
+  for (const shift of [-TWO_PI, 0, TWO_PI]) {
+    const sLo = bLo + shift;
+    const sHi = bHi + shift;
+    const lo = Math.max(aLo, sLo);
+    const hi = Math.min(aHi, sHi);
+    if (hi - lo > ANGLE_TOL) candidates.push({ lo, hi });
+  }
+  if (candidates.length === 0) return null;
+  // Prefer the largest overlap.
+  candidates.sort((p, q) => (q.hi - q.lo) - (p.hi - p.lo));
+  const overlap = candidates[0];
+
+  // Convert overlap angles back to parametric t on each arc.
+  // arc(t).angle = startAngle + t * deltaAngle  →  t = (angle - startAngle) / deltaAngle
+  const tA1 = (overlap.lo - cA.startAngle) / cA.deltaAngle;
+  const tA2 = (overlap.hi - cA.startAngle) / cA.deltaAngle;
+  const aStart = Math.max(0, Math.min(tA1, tA2));
+  const aEnd = Math.min(1, Math.max(tA1, tA2));
+  if (aEnd - aStart < ANGLE_TOL) return null;
+
+  // For B we need to handle the angular shift used to find overlap.
+  // Use a robust round-trip: pick the t value on B whose point matches
+  // the arc point at aStart/aEnd on A.
+  const ptStart = arcPointAt(cA, aStart);
+  const ptEnd = arcPointAt(cA, aEnd);
+  const tB1raw = arcTForPoint(cB, ptStart);
+  const tB2raw = arcTForPoint(cB, ptEnd);
+  if (tB1raw === null || tB2raw === null) return null;
+  const bStart = Math.max(0, Math.min(tB1raw, tB2raw));
+  const bEnd = Math.min(1, Math.max(tB1raw, tB2raw));
+  if (bEnd - bStart < ANGLE_TOL) return null;
+
+  // Direction agreement: do A and B traverse the shared region the
+  // same way? Test by sampling slightly inward from each shared
+  // endpoint on both arcs and checking direction.
+  const sameDirection = (cA.deltaAngle > 0) === (cB.deltaAngle > 0);
+
+  return { aStart, aEnd, bStart, bEnd, sameDirection };
+}
+
+/**
+ * Detect coincident cubic curves. Currently catches only the easy
+ * sub-case: two cubics with identical (or reversed) endpoints AND
+ * matching internal control points. This case appears when two paths
+ * include the same cubic outline segment — for example, font glyph
+ * outlines duplicated by two adjacent letters in tightly-tracked text.
+ *
+ * Partial coincidence (one cubic is a sub-range of another) requires
+ * Bezier-clip recursion and is deferred until a real-world case
+ * surfaces. §2.13.
+ */
+function detectSharedEdge_CubicCubic(
+  cmdA: TransformCmd, cmdB: TransformCmd,
+): { aStart: number; aEnd: number; bStart: number; bEnd: number; sameDirection: boolean } | null {
+  const sA = cmdA.start, eA = cmdA.end;
+  const sB = cmdB.start, eB = cmdB.end;
+  const [adx1, ady1, adx2, ady2] = cmdA.args;
+  const [bdx1, bdy1, bdx2, bdy2] = cmdB.args;
+  const cp1A = { x: sA.x + adx1, y: sA.y + ady1 };
+  const cp2A = { x: sA.x + adx2, y: sA.y + ady2 };
+  const cp1B = { x: sB.x + bdx1, y: sB.y + bdy1 };
+  const cp2B = { x: sB.x + bdx2, y: sB.y + bdy2 };
+
+  const PT_TOL = 1e-7;
+  const ptEqTol = (p: Point, q: Point): boolean =>
+    Math.abs(p.x - q.x) < PT_TOL && Math.abs(p.y - q.y) < PT_TOL;
+
+  // Same-direction full overlap: endpoints match and control polygons match.
+  if (ptEqTol(sA, sB) && ptEqTol(eA, eB) && ptEqTol(cp1A, cp1B) && ptEqTol(cp2A, cp2B)) {
+    return { aStart: 0, aEnd: 1, bStart: 0, bEnd: 1, sameDirection: true };
+  }
+  // Reversed-direction full overlap: A.start == B.end, A.end == B.start,
+  // cp1A == cp2B, cp2A == cp1B.
+  if (ptEqTol(sA, eB) && ptEqTol(eA, sB) && ptEqTol(cp1A, cp2B) && ptEqTol(cp2A, cp1B)) {
+    return { aStart: 0, aEnd: 1, bStart: 0, bEnd: 1, sameDirection: false };
+  }
+  return null;
+}
+
+/**
+ * Detect coincident quadratic curves. Catches identical (or reversed)
+ * endpoint+control pairs. Same caveat as cubic detection — partial
+ * coincidence requires recursive subdivision and is deferred. §2.13.
+ */
+function detectSharedEdge_QuadraticQuadratic(
+  cmdA: TransformCmd, cmdB: TransformCmd,
+): { aStart: number; aEnd: number; bStart: number; bEnd: number; sameDirection: boolean } | null {
+  const sA = cmdA.start, eA = cmdA.end;
+  const sB = cmdB.start, eB = cmdB.end;
+  const [adx1, ady1] = cmdA.args;
+  const [bdx1, bdy1] = cmdB.args;
+  const cpA = { x: sA.x + adx1, y: sA.y + ady1 };
+  const cpB = { x: sB.x + bdx1, y: sB.y + bdy1 };
+
+  const PT_TOL = 1e-7;
+  const ptEqTol = (p: Point, q: Point): boolean =>
+    Math.abs(p.x - q.x) < PT_TOL && Math.abs(p.y - q.y) < PT_TOL;
+
+  if (ptEqTol(sA, sB) && ptEqTol(eA, eB) && ptEqTol(cpA, cpB)) {
+    return { aStart: 0, aEnd: 1, bStart: 0, bEnd: 1, sameDirection: true };
+  }
+  if (ptEqTol(sA, eB) && ptEqTol(eA, sB) && ptEqTol(cpA, cpB)) {
+    return { aStart: 0, aEnd: 1, bStart: 0, bEnd: 1, sameDirection: false };
+  }
+  return null;
 }
 
 // ─── Splitting at Intersections ─────────────────────────────────────────────
@@ -1193,12 +1552,20 @@ interface SplitSegment {
   origIndex: number;
   tStart: number;
   tEnd: number;
+  /**
+   * `true` if this split's parametric range lies entirely within a
+   * `SharedEdgeRange` — i.e. this split is a fragment of a shared
+   * boundary with the other path. `classifyByRingWalk` short-circuits
+   * boundary splits to `'on'`. §2.13.
+   */
+  boundary?: boolean;
 }
 
 function splitPathAtIntersections(
   segs: TransformCmd[],
   intersections: Intersection[],
   side: 'A' | 'B',
+  sharedEdges: SharedEdgeRange[] = [],
 ): SplitSegment[] {
   // Group intersection t-values by segment index
   const tsBySegment = new Map<number, number[]>();
@@ -1209,14 +1576,28 @@ function splitPathAtIntersections(
     tsBySegment.get(segIdx)!.push(t);
   }
 
+  // Group shared-edge ranges by segment index for this side. Used to
+  // mark splits whose parametric range falls entirely inside a shared
+  // region as `boundary: true`. §2.13.
+  const sharedBySegment = new Map<number, { start: number; end: number }[]>();
+  for (const se of sharedEdges) {
+    const segIdx = side === 'A' ? se.segA : se.segB;
+    const start = side === 'A' ? se.aStart : se.bStart;
+    const end = side === 'A' ? se.aEnd : se.bEnd;
+    if (!sharedBySegment.has(segIdx)) sharedBySegment.set(segIdx, []);
+    sharedBySegment.get(segIdx)!.push({ start, end });
+  }
+
   const result: SplitSegment[] = [];
 
   for (let i = 0; i < segs.length; i++) {
     const cmd = segs[i];
     const ts = tsBySegment.get(i);
+    const sharedRanges = sharedBySegment.get(i) ?? [];
 
     if (!ts || ts.length === 0) {
-      result.push({ cmd, origIndex: i, tStart: 0, tEnd: 1 });
+      const inShared = sharedRanges.some(s => s.start <= 0 && s.end >= 1);
+      result.push({ cmd, origIndex: i, tStart: 0, tEnd: 1, boundary: inShared });
       continue;
     }
 
@@ -1254,7 +1635,12 @@ function splitPathAtIntersections(
       const tEnd = splits[j + 1];
       if (tEnd - tStart < PARAMETRIC_EPSILON) continue;
       const subCmd = splitCmdRange(cmd, tStart, tEnd);
-      result.push({ cmd: subCmd, origIndex: i, tStart, tEnd });
+      // A split is `boundary` if its parametric range is contained
+      // in any shared-edge range for this segment. Tolerance matches
+      // the dedup tolerance used elsewhere.
+      const TOL = PARAMETRIC_EPSILON * 100;
+      const inShared = sharedRanges.some(s => tStart >= s.start - TOL && tEnd <= s.end + TOL);
+      result.push({ cmd: subCmd, origIndex: i, tStart, tEnd, boundary: inShared });
     }
   }
 
@@ -1510,8 +1896,25 @@ function isCrossingAtBoundary(
     // Cross product of the two tangent vectors
     const cross = tanThis.x * (tanOtherY / tanOtherLen) - tanThis.y * (tanOtherX / tanOtherLen);
 
-    // Small cross product → tangent touch; large → transverse crossing
-    return Math.abs(cross) > 0.05;
+    // Large cross product → unambiguous transverse crossing.
+    if (Math.abs(cross) > 0.05) return true;
+
+    // Cross is small (parallel or near-parallel tangents). This can be
+    // either: (1) a true tangent-touch where two paths kiss at a point
+    // and separate (no class flip), or (2) a shared-edge boundary where
+    // two paths coincide along a segment and the intersection point is
+    // the start/end of that shared edge (class DOES flip — entering or
+    // leaving the coincident region). The cross product alone can't
+    // distinguish these. Fall back to winding-number sampling at points
+    // just inside splitBefore and splitAfter: if those fall in different
+    // winding regions of the other path, the path crosses. Solves §2.4
+    // of the audit for shared-edge / near-tangent cases that surface in
+    // thin-stroke glyph unions (e.g., Raleway-200 ExtraLight EN).
+    const sampleBefore = evalCmd(splitBefore.cmd, 0.95);
+    const sampleAfter = evalCmd(splitAfter.cmd, 0.05);
+    const wnBefore = windingNumber(sampleBefore, otherSegs);
+    const wnAfter = windingNumber(sampleAfter, otherSegs);
+    return (wnBefore === 0) !== (wnAfter === 0);
   }
 
   // Couldn't find matching intersection — assume crossing (conservative)
@@ -1524,6 +1927,16 @@ function classifyByRingWalk(
   otherSegs: TransformCmd[],
 ): SegmentClass[] {
   const classes: SegmentClass[] = new Array(splits.length);
+
+  // Pre-pass: any split flagged as `boundary` (lies inside a shared-edge
+  // region with the other path) is classified `'on'` directly. The
+  // ring-walk skips these — they don't participate in flip parity, they
+  // just sit between regular segments. selectSegments handles them
+  // per-op (drop both sides for union/intersection/xor; drop both for
+  // difference). §2.13.
+  for (let i = 0; i < splits.length; i++) {
+    if (splits[i].boundary) classes[i] = 'on';
+  }
 
   // Identify ring boundaries (where consecutive segments don't connect)
   const ringStarts: number[] = [0];
@@ -1541,55 +1954,135 @@ function classifyByRingWalk(
     if (rEnd - rStart === 0) continue;
 
     // Find a reliable seed segment: one whose classification is unambiguous.
-    // Sample at t=0.3 and t=0.7 — if both agree, the segment is not on the boundary.
+    // Sample at multiple t-values; accept the first segment where any two
+    // distinct samples agree on inside/outside. Escalating sequence covers
+    // the case where the segment is itself a shared boundary edge — sampling
+    // at the legacy [0.3, 0.7] alone landed both points on the boundary,
+    // making the winding test unreliable. Solves §2.3 of the audit.
+    //
+    // Skip already-classified `'on'` (boundary) splits when seeding — they
+    // are not propagation anchors. §2.13.
+    const SEED_TS = [0.5, 0.3, 0.7, 0.1, 0.9, 0.2, 0.8, 0.4, 0.6];
     let seedIdx = rStart;
     let seedClass: SegmentClass = 'outside';
     let found = false;
-    for (let i = rStart; i < rEnd; i++) {
+    for (let i = rStart; i < rEnd && !found; i++) {
+      if (classes[i] === 'on') continue;
       const cmd = splits[i].cmd;
-      const p1 = evalCmd(cmd, 0.3);
-      const p2 = evalCmd(cmd, 0.7);
-      const wn1 = windingNumber(p1, otherPath);
-      const wn2 = windingNumber(p2, otherPath);
-      if ((wn1 === 0) === (wn2 === 0)) {
-        // Both agree on inside/outside → reliable seed
-        seedIdx = i;
-        seedClass = wn1 === 0 ? 'outside' : 'inside';
-        found = true;
-        break;
+      let firstSide: number | null = null;
+      for (const t of SEED_TS) {
+        const p = evalCmd(cmd, t);
+        const wn = windingNumber(p, otherPath);
+        const side = wn === 0 ? 0 : 1;
+        if (firstSide === null) {
+          firstSide = side;
+          continue;
+        }
+        if (side === firstSide) {
+          seedIdx = i;
+          seedClass = side === 0 ? 'outside' : 'inside';
+          found = true;
+          break;
+        }
       }
     }
     if (!found) {
-      // Fallback: use midpoint test on first segment
-      const mid = evalCmd(splits[rStart].cmd, 0.5);
-      seedClass = windingNumber(mid, otherPath) === 0 ? 'outside' : 'inside';
+      // Fallback: use midpoint test on first segment that isn't `'on'`.
+      let fallbackIdx = rStart;
+      while (fallbackIdx < rEnd && classes[fallbackIdx] === 'on') fallbackIdx++;
+      if (fallbackIdx < rEnd) {
+        const mid = evalCmd(splits[fallbackIdx].cmd, 0.5);
+        seedClass = windingNumber(mid, otherPath) === 0 ? 'outside' : 'inside';
+        seedIdx = fallbackIdx;
+      } else {
+        // Entire ring is `'on'` — leave it; no propagation needed.
+        continue;
+      }
     }
 
-    // Assign seed
+    // First-pass classification: walk forward from seed, flipping at
+    // intra-segment crossings. The walk produces a topologically
+    // consistent class assignment relative to the seed. Skip transitions
+    // involving `'on'` segments (they don't participate in flip parity)
+    // — write only to non-`'on'` slots. §2.13.
     classes[seedIdx] = seedClass;
-
-    // Walk forward from seed, flipping at transverse crossings
     let cls = seedClass;
-    for (let i = seedIdx + 1; i < rEnd; i++) {
-      if (splits[i].origIndex === splits[i - 1].origIndex) {
-        // Same original segment → boundary is an intersection.
-        // Only flip if it's a transverse crossing (not a tangent touch).
-        if (isCrossingAtBoundary(splits[i - 1], splits[i], intersections, side, otherSegs)) {
+    const ringLen = rEnd - rStart;
+    for (let step = 1; step < ringLen; step++) {
+      const i = rStart + ((seedIdx - rStart + step) % ringLen);
+      const prev = rStart + ((seedIdx - rStart + step - 1 + ringLen) % ringLen);
+      // If we're moving INTO an `'on'` segment, don't change cls and don't overwrite.
+      if (classes[i] === 'on') continue;
+      // If the previous segment was `'on'`, no flip evaluation — cls
+      // continues from before the `'on'` block.
+      if (classes[prev] !== 'on' &&
+          splits[i].origIndex === splits[prev].origIndex) {
+        if (isCrossingAtBoundary(splits[prev], splits[i], intersections, side, otherSegs)) {
           cls = cls === 'inside' ? 'outside' : 'inside';
         }
       }
       classes[i] = cls;
     }
 
-    // Walk backward from seed
-    cls = seedClass;
-    for (let i = seedIdx - 1; i >= rStart; i--) {
-      if (splits[i].origIndex === splits[i + 1].origIndex) {
-        if (isCrossingAtBoundary(splits[i], splits[i + 1], intersections, side, otherSegs)) {
-          cls = cls === 'inside' ? 'outside' : 'inside';
+    // Direct-sample repair pass. The walk produces a topologically
+    // consistent class assignment relative to the seed, but each
+    // intra-segment isCrossingAtBoundary decision can be wrong (most
+    // commonly at near-tangent crossings or near-coincident
+    // intersections). For each split, sample at three t-values via
+    // direct winding-number against the other path; if ALL THREE
+    // samples agree AND the agreed class disagrees with the walk's,
+    // override IF a wider sampling band confirms the override (a
+    // 5-sample re-check at additional t values to defend against
+    // accidental short-segment midpoint coincidences). Ambiguous
+    // segments (samples disagree) keep the walk's class because they
+    // are likely on a shared edge where the walk's flip-based
+    // propagation handles them better.
+    // Direct-sample repair pass with perpendicular-offset sampling. The
+    // walk produces a topologically consistent class assignment from a
+    // seed but each isCrossingAtBoundary decision can be wrong (most
+    // commonly at near-tangent crossings). For each split, sample at
+    // midpoint OFFSET PERPENDICULAR to the segment in both directions
+    // — if both offset samples agree on inside/outside, the segment is
+    // in a uniform region (not on a shared boundary edge of the other
+    // path) and that class is authoritative. If they disagree, the
+    // segment lies on the other path's boundary (a shared-edge
+    // candidate) and we keep the walk's class because it propagates
+    // from a reliable seed across the shared edge.
+    //
+    // Sampling on the segment itself (at midpoint, t=0.3, t=0.7) was
+    // tried first but produces false-positive overrides for shared-
+    // baseline segments where same-segment samples accidentally agree
+    // due to float precision near the boundary.
+    if (rEnd - rStart > 1) {
+      const PERP_EPSILON = 0.01;
+      const T_EPSILON = 1e-3;
+      const SAMPLE_TS = [0.25, 0.5, 0.75];
+      for (let i = rStart; i < rEnd; i++) {
+        if (classes[i] === 'on') continue; // §2.13 — boundary splits are authoritative
+        const cmd = splits[i].cmd;
+        let suggested: 'outside' | 'inside' | null = null;
+        let unanimous = true;
+        for (const t of SAMPLE_TS) {
+          const p = evalCmd(cmd, t);
+          const before = evalCmd(cmd, Math.max(0, t - T_EPSILON));
+          const after = evalCmd(cmd, Math.min(1, t + T_EPSILON));
+          const tx = after.x - before.x;
+          const ty = after.y - before.y;
+          const tlen = Math.sqrt(tx * tx + ty * ty);
+          if (tlen < 1e-12) { unanimous = false; break; } // degenerate
+          const px = (-ty / tlen) * PERP_EPSILON;
+          const py = (tx / tlen) * PERP_EPSILON;
+          const wnPlus = windingNumber({ x: p.x + px, y: p.y + py }, otherPath);
+          const wnMinus = windingNumber({ x: p.x - px, y: p.y - py }, otherPath);
+          if ((wnPlus === 0) !== (wnMinus === 0)) { unanimous = false; break; }
+          const c: 'outside' | 'inside' = wnPlus === 0 ? 'outside' : 'inside';
+          if (suggested === null) suggested = c;
+          else if (suggested !== c) { unanimous = false; break; }
+        }
+        if (unanimous && suggested !== null && classes[i] !== suggested) {
+          classes[i] = suggested;
         }
       }
-      classes[i] = cls;
     }
   }
 
@@ -1604,6 +2097,13 @@ function selectSegments(
   classA: SegmentClass, classB: SegmentClass,
   op: BooleanOp,
 ): { keepA: boolean; keepB: boolean; reverseA: boolean; reverseB: boolean } {
+  // §2.13 — `'on'` (shared-edge boundary) class falls through these
+  // strict-equality checks against `'outside'` / `'inside'` and ends up
+  // dropped from both sides for every operation. That matches the
+  // shared-edge per-op rules in the redesign plan: union/intersection/
+  // xor drop both copies, difference drops both A's `'on'` (not part of
+  // A's exclusive area) and B's `'on'` (not subtracted). This is
+  // intentional — do not "fix" by widening the comparisons.
   let keepA = false, keepB = false, reverseA = false, reverseB = false;
   switch (op) {
     case 'union':
@@ -1629,23 +2129,33 @@ function selectSegments(
   return { keepA, keepB, reverseA, reverseB };
 }
 
+// Snap arithmetic residue (≤ 1e-12 ≈ machine epsilon scale) to zero so
+// reversed commands don't carry visually meaningless coordinates like
+// `1.1102230246251565e-16` into the emitted SVG. Threshold sits well below
+// any legitimate path coordinate yet above accumulated FP noise.
+function snapEpsilon(v: number): number {
+  return Math.abs(v) < 1e-12 ? 0 : v;
+}
+
 function reverseCmd(cmd: TransformCmd): TransformCmd {
   const u = cmd.command.toLowerCase();
   const s = cmd.end, e = cmd.start;
 
   if (cmdIsLine(cmd)) {
-    return { command: 'l', args: [e.x - s.x, e.y - s.y], start: s, end: e };
+    return { command: 'l', args: [snapEpsilon(e.x - s.x), snapEpsilon(e.y - s.y)], start: s, end: e };
   }
 
   if (u === 'c') {
     const [dx1, dy1, dx2, dy2] = cmd.args;
-    // Original absolute control points
     const cp1 = { x: cmd.start.x + dx1, y: cmd.start.y + dy1 };
     const cp2 = { x: cmd.start.x + dx2, y: cmd.start.y + dy2 };
-    // Reversed: swap order, cp2 becomes first, cp1 becomes second
     return {
       command: 'c',
-      args: [cp2.x - s.x, cp2.y - s.y, cp1.x - s.x, cp1.y - s.y, e.x - s.x, e.y - s.y],
+      args: [
+        snapEpsilon(cp2.x - s.x), snapEpsilon(cp2.y - s.y),
+        snapEpsilon(cp1.x - s.x), snapEpsilon(cp1.y - s.y),
+        snapEpsilon(e.x - s.x), snapEpsilon(e.y - s.y),
+      ],
       start: s, end: e,
     };
   }
@@ -1655,22 +2165,21 @@ function reverseCmd(cmd: TransformCmd): TransformCmd {
     const cp = { x: cmd.start.x + dx1, y: cmd.start.y + dy1 };
     return {
       command: 'q',
-      args: [cp.x - s.x, cp.y - s.y, e.x - s.x, e.y - s.y],
+      args: [snapEpsilon(cp.x - s.x), snapEpsilon(cp.y - s.y), snapEpsilon(e.x - s.x), snapEpsilon(e.y - s.y)],
       start: s, end: e,
     };
   }
 
   if (u === 'a') {
     const [rx, ry, rotation, largeArc, sweep] = cmd.args;
-    // Reverse arc: flip sweep flag
     return {
       command: 'a',
-      args: [rx, ry, rotation, largeArc, sweep ? 0 : 1, e.x - s.x, e.y - s.y],
+      args: [rx, ry, rotation, largeArc, sweep ? 0 : 1, snapEpsilon(e.x - s.x), snapEpsilon(e.y - s.y)],
       start: s, end: e,
     };
   }
 
-  return { command: 'l', args: [e.x - s.x, e.y - s.y], start: s, end: e };
+  return { command: 'l', args: [snapEpsilon(e.x - s.x), snapEpsilon(e.y - s.y)], start: s, end: e };
 }
 
 // ─── Ring-Based Assembly (Weiler-Atherton style) ────────────────────────────
@@ -1883,48 +2392,172 @@ function extractKeptRuns(ring: RingEntry[], source: 'A' | 'B'): KeptRun[] {
 }
 
 /**
- * Build intersection links: map each run's exit point to the matching run's
- * entry point on the other path. At intersection points, multiple segment
- * endpoints converge — use tangent dot product to pick smoothest continuation
- * when there are multiple candidates.
+ * Build intersection links: map each non-complete run's exit point to the
+ * non-complete run on the other path whose entry point continues the contour.
+ *
+ * At a clustered intersection, several exit and entry points converge within
+ * float-noise distance of one another. Distance-only greedy pairing picks
+ * whichever (exit, entry) pair happens to sort shortest — which on a tie can
+ * be the topologically wrong pairing, producing a "diagonal close" notch
+ * where the contour zig-zags across the shape interior.
+ *
+ * This function instead solves a global minimum-cost bipartite matching with
+ * a cost function that combines distance with tangent continuity:
+ *
+ *     cost(i → j) = dist(exit_i, entry_j) − α · (t_exit_i · t_entry_j)
+ *
+ * where α = bboxDiag / 10 pins the tangent term to the same order of
+ * magnitude as bbox-scale distances. Same-source pairs (i.source == j.source)
+ * get a forbidding cost so they're never matched.
+ *
+ * Implemented via classical Munkres (Hungarian) on the square N×N matrix of
+ * non-complete runs. O(N³) per call; for typical glyph union N ≤ 50, well
+ * under 1 ms.
+ *
+ * Solves §2.5 of the audit (the diagonal-close notch).
  */
 function buildIntersectionLinks(
-  runsA: KeptRun[], runsB: KeptRun[],
+  runsA: KeptRun[], runsB: KeptRun[], bboxDiag: number,
 ): Map<KeptRun, KeptRun> {
-  // Distance-sorted greedy assignment: pair each run exit with a run entry on
-  // the other path, processing shortest distances first. Each run participates
-  // in at most one link (as exit and as entry). This replaces the fixed-
-  // tolerance + fallback approach which failed when coincident arc detection
-  // shifted split points away from exact intersection coordinates.
   const links = new Map<KeptRun, KeptRun>();
 
-  interface LinkCandidate { exitRun: KeptRun; entryRun: KeptRun; d: number }
-  const allCandidates: LinkCandidate[] = [];
-  for (const aRun of runsA) {
-    if (aRun.isComplete) continue;
-    for (const bRun of runsB) {
-      allCandidates.push({ exitRun: aRun, entryRun: bRun, d: dist(aRun.exitPoint, bRun.entryPoint) });
-    }
-  }
-  for (const bRun of runsB) {
-    if (bRun.isComplete) continue;
-    for (const aRun of runsA) {
-      allCandidates.push({ exitRun: bRun, entryRun: aRun, d: dist(bRun.exitPoint, aRun.entryPoint) });
+  // Combine non-complete runs from both paths into a single indexed list.
+  // Index ordering: A-runs first, B-runs second. Index identifies a run for
+  // both its exit (row) and its entry (column) in the cost matrix.
+  const runs: KeptRun[] = [];
+  for (const r of runsA) if (!r.isComplete) runs.push(r);
+  for (const r of runsB) if (!r.isComplete) runs.push(r);
+  const N = runs.length;
+  if (N === 0) return links;
+
+  // Forbidding cost for invalid pairings (same source, self-pair). Must
+  // dominate any legitimate cost; bboxDiag scales with shape size so
+  // FORBIDDEN = bboxDiag * 1000 is safe.
+  const FORBIDDEN = Math.max(bboxDiag * 1000, 1e9);
+  const alpha = bboxDiag / 10;
+
+  // Precompute tangents at each run's exit and entry.
+  const exitTangents: Point[] = runs.map((r) => tangentAtEnd(r.cmds[r.cmds.length - 1]));
+  const entryTangents: Point[] = runs.map((r) => tangentAtStart(r.cmds[0]));
+
+  // Build N×N cost matrix.
+  const cost: number[][] = Array.from({ length: N }, () => new Array(N).fill(0));
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      if (i === j || runs[i].source === runs[j].source) {
+        cost[i][j] = FORBIDDEN;
+        continue;
+      }
+      const d = dist(runs[i].exitPoint, runs[j].entryPoint);
+      const cont = exitTangents[i].x * entryTangents[j].x + exitTangents[i].y * entryTangents[j].y;
+      cost[i][j] = d - alpha * cont;
     }
   }
 
-  allCandidates.sort((a, b) => a.d - b.d);
+  // Solve minimum-cost assignment.
+  const assignment = hungarianMinCost(cost);
 
-  const usedExits = new Set<KeptRun>();
-  const usedEntries = new Set<KeptRun>();
-  for (const c of allCandidates) {
-    if (usedExits.has(c.exitRun) || usedEntries.has(c.entryRun)) continue;
-    links.set(c.exitRun, c.entryRun);
-    usedExits.add(c.exitRun);
-    usedEntries.add(c.entryRun);
+  // Apply links, skipping any FORBIDDEN matches (would mean no valid partner).
+  for (let i = 0; i < N; i++) {
+    const j = assignment[i];
+    if (j < 0 || cost[i][j] >= FORBIDDEN / 2) continue;
+    links.set(runs[i], runs[j]);
   }
 
   return links;
+}
+
+/**
+ * Classical Hungarian (Kuhn-Munkres) algorithm for minimum-cost perfect
+ * matching on a square cost matrix. O(n³). Returns assignment[i] = j meaning
+ * row i is matched to column j. Returns -1 for any unmatched row (shouldn't
+ * happen on a valid square matrix, but guards against degenerate inputs).
+ *
+ * Implementation: standard 1-indexed potentials algorithm with one row added
+ * per outer iteration. Augmenting paths via the alternating-tree method.
+ * No allocations per inner iteration beyond the temporary `minv`, `way`,
+ * `used` arrays sized N+1.
+ */
+function hungarianMinCost(cost: number[][]): number[] {
+  const n = cost.length;
+  if (n === 0) return [];
+  const u = new Array(n + 1).fill(0);
+  const v = new Array(n + 1).fill(0);
+  const p = new Array(n + 1).fill(0);
+  const way = new Array(n + 1).fill(0);
+
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Array(n + 1).fill(Infinity);
+    const used = new Array(n + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = p[j0];
+      let delta = Infinity;
+      let j1 = -1;
+      for (let j = 1; j <= n; j++) {
+        if (!used[j]) {
+          const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+          if (cur < minv[j]) {
+            minv[j] = cur;
+            way[j] = j0;
+          }
+          if (minv[j] < delta) {
+            delta = minv[j];
+            j1 = j;
+          }
+        }
+      }
+      if (j1 === -1) break; // safety
+      for (let j = 0; j <= n; j++) {
+        if (used[j]) {
+          u[p[j]] += delta;
+          v[j] -= delta;
+        } else {
+          minv[j] -= delta;
+        }
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+
+    do {
+      const j1 = way[j0];
+      p[j0] = p[j1];
+      j0 = j1;
+    } while (j0 !== 0);
+  }
+
+  const assignment = new Array(n).fill(-1);
+  for (let j = 1; j <= n; j++) {
+    if (p[j] !== 0) {
+      assignment[p[j] - 1] = j - 1;
+    }
+  }
+  return assignment;
+}
+
+/**
+ * Compute the diagonal length of the combined bounding box of two segment
+ * arrays. Used to scale relative-tolerance and tangent-weight constants in
+ * the assembly step so they track shape size.
+ */
+function computeBBoxDiag(segsA: TransformCmd[], segsB: TransformCmd[]): number {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const fold = (cmds: TransformCmd[]): void => {
+    for (const c of cmds) {
+      const b = cmdBBox(c);
+      if (b.minX < minX) minX = b.minX;
+      if (b.minY < minY) minY = b.minY;
+      if (b.maxX > maxX) maxX = b.maxX;
+      if (b.maxY > maxY) maxY = b.maxY;
+    }
+  };
+  fold(segsA);
+  fold(segsB);
+  if (!isFinite(minX)) return 0;
+  const dx = maxX - minX, dy = maxY - minY;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 /**
@@ -1958,7 +2591,6 @@ function traceContours(
         const prevEnd = contour[contour.length - 1].end;
         const nextStart = current.cmds[0].start;
         if (!ptEq(prevEnd, nextStart)) {
-          // Insert connecting line segment for shared boundary gaps
           contour.push({
             command: 'l',
             args: [nextStart.x - prevEnd.x, nextStart.y - prevEnd.y],
@@ -1982,6 +2614,100 @@ function traceContours(
 }
 
 /**
+ * Remove visible spurs — closed sub-loops where the contour returns to a
+ * previously visited point through a small enclosed area — and degenerate
+ * near-zero line segments. Both come from the link-assembly step when
+ * overlapping curves (e.g. tightly-tracked glyph unions) produce clustered
+ * intersection points that the greedy distance-based link assignment routes
+ * through tiny detours.
+ *
+ * Conservative thresholds: only removes spurs whose endpoint distance and
+ * enclosed area are both small relative to typical path coordinates. Valid
+ * figure-8 / self-touching paths have larger enclosed areas and pass through.
+ */
+function simplifyContourSpurs(contour: TransformCmd[]): TransformCmd[] {
+  // Drop degenerate near-zero `l` commands (machine-epsilon residue from
+  // bridge segments inserted in traceContours when ptEq misses by < 1e-6).
+  const NEAR_ZERO_DELTA = 1e-6;
+  const filtered: TransformCmd[] = [];
+  for (const cmd of contour) {
+    if (cmdIsLine(cmd)) {
+      const [dx, dy] = cmd.args;
+      if (Math.abs(dx) < NEAR_ZERO_DELTA && Math.abs(dy) < NEAR_ZERO_DELTA) continue;
+    }
+    filtered.push(cmd);
+  }
+
+  if (filtered.length < 4) return filtered;
+
+  // Detect spurs: walk the endpoint list, look for revisit within a small
+  // window. If found and the enclosed sub-area is small, drop the spur.
+  // Threshold is adaptive: max(50, 0.0001 × bbox area). The minimum keeps
+  // the prior behavior at typical scales; the relative term scales up so
+  // larger glyphs still catch their (proportionally larger) wrong-link
+  // loops without dropping serif features at small scales. Solves §2.7.
+  const SPUR_POINT_TOL = 1e-3;
+  const SPUR_MAX_WINDOW = 6;
+  const SPUR_MAX_PASSES = 8;
+
+  let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
+  for (const p of filtered) {
+    if (p.end.x < bMinX) bMinX = p.end.x;
+    if (p.end.y < bMinY) bMinY = p.end.y;
+    if (p.end.x > bMaxX) bMaxX = p.end.x;
+    if (p.end.y > bMaxY) bMaxY = p.end.y;
+  }
+  const bboxArea = isFinite(bMinX) ? (bMaxX - bMinX) * (bMaxY - bMinY) : 0;
+  const SPUR_AREA_THRESHOLD = Math.max(50, bboxArea * 0.0001);
+
+  let result = filtered;
+  for (let pass = 0; pass < SPUR_MAX_PASSES; pass++) {
+    const next = removeOneSpur(result, SPUR_POINT_TOL, SPUR_AREA_THRESHOLD, SPUR_MAX_WINDOW);
+    if (next === result) break;
+    result = next;
+  }
+  return result;
+}
+
+function removeOneSpur(
+  contour: TransformCmd[],
+  pointTol: number,
+  areaThreshold: number,
+  maxWindow: number,
+): TransformCmd[] {
+  const ends = contour.map((c) => c.end);
+  for (let i = 0; i < ends.length - 1; i++) {
+    const limit = Math.min(ends.length, i + 1 + maxWindow);
+    for (let j = i + 1; j < limit; j++) {
+      const dx = ends[i].x - ends[j].x;
+      const dy = ends[i].y - ends[j].y;
+      if (Math.abs(dx) >= pointTol || Math.abs(dy) >= pointTol) continue;
+      // Shoelace area of the polygon formed by ends[i], ends[i+1], ..., ends[j]
+      let area2 = 0;
+      for (let k = i; k < j; k++) {
+        const a = ends[k];
+        const b = ends[k + 1];
+        area2 += a.x * b.y - b.x * a.y;
+      }
+      const area = Math.abs(area2) / 2;
+      if (area >= areaThreshold) continue;
+      // Drop segments (i+1)..j inclusive. The next segment at position j+1
+      // (if any) had start = ends[j]; its delta args remain valid since
+      // ends[i] ≈ ends[j] within pointTol.
+      const head = contour.slice(0, i + 1);
+      const tail = contour.slice(j + 1);
+      if (tail.length > 0) {
+        const cmd = tail[0];
+        // Snap the next command's start to ends[i] so the contour is exact.
+        tail[0] = { ...cmd, start: { ...ends[i] } };
+      }
+      return [...head, ...tail];
+    }
+  }
+  return contour;
+}
+
+/**
  * Assemble the result path from classified segments using ring-based traversal.
  * Replaces greedy endpoint matching with Weiler-Atherton style ordered traversal
  * that uses explicit intersection links between path rings.
@@ -1989,7 +2715,7 @@ function traceContours(
 function assembleResult(
   splitsA: SplitSegment[], classesA: SegmentClass[],
   splitsB: SplitSegment[], classesB: SegmentClass[],
-  op: BooleanOp,
+  op: BooleanOp, bboxDiag: number,
 ): TransformCmd[] {
   // Step 1: Build ordered rings
   const ringsA = buildRings(splitsA, classesA, op, 'A');
@@ -2008,13 +2734,19 @@ function assembleResult(
   const allRuns = [...allRunsA, ...allRunsB];
   if (allRuns.length === 0) return [];
 
-  // Step 3: Build intersection links between runs
+  // Step 3: Build intersection links between runs (tangent-aware Hungarian)
   const nonCompleteA = allRunsA.filter(r => !r.isComplete);
   const nonCompleteB = allRunsB.filter(r => !r.isComplete);
-  const links = buildIntersectionLinks(nonCompleteA, nonCompleteB);
+  const links = buildIntersectionLinks(nonCompleteA, nonCompleteB, bboxDiag);
 
   // Step 4: Trace contours
-  const contours = traceContours(allRuns, links);
+  const tracedContours = traceContours(allRuns, links);
+
+  // Step 4.5: Simplify each contour — remove near-zero edges and small spurs
+  // that arise when overlapping shapes (e.g. tightly-tracked glyphs) produce
+  // clusters of intersection points where greedy link assignment routes the
+  // contour through a tiny detour and back.
+  const contours = tracedContours.map(simplifyContourSpurs);
 
   // Step 5: Emit output with m/z wrapping
   const result: TransformCmd[] = [];
@@ -2133,11 +2865,17 @@ function extractDrawCmds(cmds: TransformCmd[]): TransformCmd[] {
     const u = cmd.command.toLowerCase();
     if (u === 'm') continue;
     if (u === 'z') {
-      // Convert close to explicit line if it has nonzero length
-      if (!ptEq(cmd.start, cmd.end)) {
+      // Convert close to explicit line if it has visibly nonzero length.
+      // The looser threshold (1e-6 vs ptEq's 1e-8) drops accumulated
+      // float drift that would otherwise appear as a degenerate `l` like
+      // `l 3.18e-9 1.23e-8` after the contour's start `m` — visible in
+      // boolean-op outputs that round-trip through assembleResult's z.
+      const cdx = cmd.end.x - cmd.start.x;
+      const cdy = cmd.end.y - cmd.start.y;
+      if (Math.abs(cdx) >= 1e-6 || Math.abs(cdy) >= 1e-6) {
         result.push({
           command: 'l',
-          args: [cmd.end.x - cmd.start.x, cmd.end.y - cmd.start.y],
+          args: [cdx, cdy],
           start: { ...cmd.start },
           end: { ...cmd.end },
         });
@@ -2197,8 +2935,8 @@ function booleanOp(
 
   if (segsA.length === 0 || segsB.length === 0) return [];
 
-  // Step 1: Find all intersections
-  const intersections = findAllIntersections(segsA, segsB);
+  // Step 1: Find all intersections (and shared-edge regions, §2.13)
+  const { intersections, sharedEdges } = findAllIntersections(segsA, segsB);
 
   // Check if there are effective intersections (ones that create actual splits).
   // Vertex-vertex intersections (both t at endpoints) don't create splits but
@@ -2211,16 +2949,27 @@ function booleanOp(
     return handleNoIntersections(cmdsA, cmdsB, segsA, segsB, op);
   }
 
-  // Step 2: Split segments at intersections
-  const splitsA = splitPathAtIntersections(segsA, intersections, 'A');
-  const splitsB = splitPathAtIntersections(segsB, intersections, 'B');
+  // Step 2: Split segments at intersections, marking splits within
+  // shared-edge regions as `boundary: true` for the §2.13 classifier.
+  const splitsA = splitPathAtIntersections(segsA, intersections, 'A', sharedEdges);
+  const splitsB = splitPathAtIntersections(segsB, intersections, 'B', sharedEdges);
 
-  // Step 3: Classify each split segment
-  const classesA = classifyAllSegments(splitsA, segsB, intersections, 'A', segsA);
-  const classesB = classifyAllSegments(splitsB, segsA, intersections, 'B', segsB);
+  // Step 3: Classify each split segment.
+  // 5th arg (otherSegs) MUST equal 2nd arg (otherPath): both are "the
+  // other path's segment array", used by isCrossingAtBoundary's lookup
+  // of ix.segA/ix.segB indices into the other path. Earlier code passed
+  // the SAME-side path as otherSegs, which made tangent lookups index
+  // out of bounds when the other path's segment index exceeded the
+  // same-side length — silently dropping isCrossingAtBoundary matches
+  // and corrupting flip parity in classifyByRingWalk. Surfaced as the
+  // §2.11 Raleway-200 ExtraLight EN counter-fill artifact.
+  const classesA = classifyAllSegments(splitsA, segsB, intersections, 'A', segsB);
+  const classesB = classifyAllSegments(splitsB, segsA, intersections, 'B', segsA);
 
-  // Step 4: Assemble result
-  return assembleResult(splitsA, classesA, splitsB, classesB, op);
+  // Step 4: Assemble result. Pass shape-scale diag so the tangent-aware
+  // link assembly uses size-relative thresholds and weights.
+  const bboxDiag = computeBBoxDiag(segsA, segsB);
+  return assembleResult(splitsA, classesA, splitsB, classesB, op, bboxDiag);
 }
 
 function handleNoIntersections(

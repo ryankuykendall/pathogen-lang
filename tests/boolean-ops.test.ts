@@ -506,21 +506,465 @@ describe('Boolean Operations', () => {
       expect(result).toHaveSVGCommandCount('z', 2);
     });
 
-    it('union of rectangles sharing a collinear edge renders correctly', () => {
-      // Two rectangles share part of an edge at y=0 (top of A, bottom of B).
-      // Ring-walk classifier produces 1 subpath (correctly merged).
-      // Older midpoint classifier produced 2 subpaths due to boundary ambiguity.
-      // Both render correctly with SVG fill-rule.
+    it('union of rectangles sharing a collinear edge renders as one closed contour', () => {
+      // Two co-oriented rectangles share part of a collinear edge at y=50.
+      // After §2.13 shared-edge detection, the shared interior segment is
+      // dropped from both A and B, leaving a single clean perimeter.
+      // A: (0,50)→(40,50)→(40,90)→(0,90), CW in screen-y.
+      // B: (5,20)→(35,20)→(35,50)→(5,50), CW in screen-y.
+      // Shared: x=[5,35] at y=50.
       const result = compilePath(`
         let a = @{ h 40 v 40 h -40 z };
-        let b = @{ h 30 v -30 h -30 z };
-        let u = a.project(0, 0).union(b.project(5, 0));
+        let b = @{ h 30 v 30 h -30 z };
+        let u = a.project(0, 50).union(b.project(5, 20));
         u.drawTo(0, 0);
       `);
       expect(result).toClosePath();
       const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(1);
+    });
+  });
+
+  describe('output cleanliness — no near-zero artifacts', () => {
+    // Backstop for the post12 text-cutout regression (April 2026): unioning
+    // tightly-tracked overlapping shapes was leaving visible "spur" detours
+    // in the assembled contour and machine-epsilon residue (1e-9 .. 1e-16)
+    // in `l` deltas and `q` control points.
+
+    function maxAbsExp(d: string): number {
+      // Largest absolute exponent in scientific-notation tokens like `1.23e-8`.
+      // Returns 0 when the path has no scientific-notation residue.
+      const matches = d.match(/-?\d+(?:\.\d+)?e-(\d+)/g);
+      if (!matches) return 0;
+      let max = 0;
+      for (const m of matches) {
+        const exp = parseInt(m.split('e-')[1], 10);
+        if (exp > max) max = exp;
+      }
+      return max;
+    }
+
+    it('union of two overlapping rectangles emits no near-zero residue', () => {
+      const result = compilePath(`
+        let a = @{ h 50 v 50 h -50 z };
+        let b = @{ h 50 v 50 h -50 z };
+        let u = a.project(0, 0).union(b.project(25, 25));
+        u.drawTo(0, 0);
+      `);
+      // No values like `l 1.23e-8 ...` or `q ... 1.11e-16 ...` in the output.
+      expect(maxAbsExp(result)).toBe(0);
+    });
+
+    it('difference (rect - inner shape) emits no near-zero residue at the close-path bridge', () => {
+      // plate.difference(inner) takes the bInsideA branch in handleNoIntersections
+      // which round-trips through extractDrawCmds (z→l) and reverseCmd. Both
+      // were sources of near-zero artifacts.
+      const result = compilePath(`
+        let plate = @{ h 100 v 100 h -100 z };
+        let inner = @{ h 30 v 30 h -30 z };
+        let cut = plate.project(0, 0).difference(inner.project(35, 35));
+        cut.drawTo(0, 0);
+      `);
+      expect(maxAbsExp(result)).toBe(0);
+    });
+
+    it('union of curved overlapping shapes does not emit visible spur detours', () => {
+      // Two semicircle-like shapes with overlapping curves — the spur
+      // remover catches link-assembly artifacts that revisit a point with a
+      // small enclosed area. Output should have well-formed contours.
+      const result = compilePath(`
+        let a = @{ q 20 0 40 20 q -20 20 -40 20 z };
+        let b = @{ q 20 0 40 20 q -20 20 -40 20 z };
+        let u = a.project(0, 0).union(b.project(15, 0));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      expect(maxAbsExp(result)).toBe(0);
+    });
+  });
+
+  describe('audit regressions', () => {
+    // Regression backstops keyed to the failure modes catalogued in
+    // project-docs/path-block-boolean-operations-audit/AUDIT.md §2.
+    // One test per audit-named failure mode. When any of these starts
+    // failing, the audit should be the first place to look.
+
+    function maxAbsExp(d: string): number {
+      const matches = d.match(/-?\d+(?:\.\d+)?e-(\d+)/g);
+      if (!matches) return 0;
+      let max = 0;
+      for (const m of matches) {
+        const exp = parseInt(m.split('e-')[1], 10);
+        if (exp > max) max = exp;
+      }
+      return max;
+    }
+
+    function maxChord(d: string): number {
+      // Largest single-segment chord length in the path. Used as a coarse
+      // detector for "diagonal close" lines: a sudden long line in an
+      // otherwise small contour signals a wrong link in buildIntersectionLinks.
+      const cmds = parseSVGPath(d);
+      let cx = 0, cy = 0, sx = 0, sy = 0;
+      let max = 0;
+      for (const c of cmds) {
+        const op = c.command;
+        const a = c.args;
+        let nx = cx, ny = cy;
+        if (op === 'M' || op === 'L') { nx = a[0]; ny = a[1]; }
+        else if (op === 'm' || op === 'l') { nx = cx + a[0]; ny = cy + a[1]; }
+        else if (op === 'H') nx = a[0];
+        else if (op === 'h') nx = cx + a[0];
+        else if (op === 'V') ny = a[0];
+        else if (op === 'v') ny = cy + a[0];
+        else if (op === 'C') { nx = a[4]; ny = a[5]; }
+        else if (op === 'c') { nx = cx + a[4]; ny = cy + a[5]; }
+        else if (op === 'Q') { nx = a[2]; ny = a[3]; }
+        else if (op === 'q') { nx = cx + a[2]; ny = cy + a[3]; }
+        else if (op === 'A') { nx = a[5]; ny = a[6]; }
+        else if (op === 'a') { nx = cx + a[5]; ny = cy + a[6]; }
+        else if (op === 'Z' || op === 'z') { nx = sx; ny = sy; }
+        if (op === 'L' || op === 'l' || op === 'H' || op === 'h' || op === 'V' || op === 'v') {
+          const d = Math.hypot(nx - cx, ny - cy);
+          if (d > max) max = d;
+        }
+        if (op === 'M' || op === 'm') { sx = nx; sy = ny; }
+        cx = nx; cy = ny;
+      }
+      return max;
+    }
+
+    // §2.5 — diagonal-close notch on adjacent shapes sharing an edge.
+    // Two squares offset by exactly the width of one. The shared edge
+    // makes endpoint-distances tie at the boundary; greedy distance-only
+    // would zigzag, tangent-aware Hungarian must continue along the cap.
+    it('union of adjacent squares sharing an edge has no diagonal-close notch', () => {
+      const result = compilePath(`
+        let a = @{ h 40 v 40 h -40 z };
+        let b = @{ h 40 v 40 h -40 z };
+        let u = a.project(0, 0).union(b.project(40, 0));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      // Outer perimeter of the merged 80×40 rectangle is at most 80 long
+      // on each side. A "diagonal close" cuts across as a chord of length
+      // > 80 (typically ~89 for diagonal of 80×40). A clean union has all
+      // l/h/v segments ≤ 80.
+      expect(maxChord(result)).toBeLessThanOrEqual(80 + 1e-6);
+    });
+
+    // §2.7 — adaptive AREA_THRESHOLD must preserve real serif features at
+    // small font sizes. Two heavily-overlapping rounded shapes: the union's
+    // boundary contains real curves; with a too-aggressive spur remover the
+    // small-radius features get dropped. Catches the case where the
+    // adaptive threshold is too permissive.
+    it('union of two heavily-overlapping rounded shapes preserves boundary direction', () => {
+      const result = compilePath(`
+        let a = @{ q 20 0 40 20 q -20 20 -40 20 z };
+        let b = @{ q 20 0 40 20 q -20 20 -40 20 z };
+        let u = a.project(0, 0).union(b.project(12, 0));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      // Heavily-overlapping unions should produce a single closed contour
+      // (not multiple disconnected pieces from missing classification).
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(1);
+    });
+
+    // §2.7 plus the existing "near-zero residue" tests — chained 5-shape
+    // union must not accumulate float drift in any path command.
+    it('chained union of 5 overlapping shapes does not accumulate residue', () => {
+      const result = compilePath(`
+        let a = @{ h 30 v 30 h -30 z };
+        let combined = a.project(0, 0);
+        combined = combined.union(a.project(15, 0));
+        combined = combined.union(a.project(30, 0));
+        combined = combined.union(a.project(45, 0));
+        combined = combined.union(a.project(60, 0));
+        combined.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      expect(maxAbsExp(result)).toBe(0);
+    });
+
+    // §2.10 — coincident-vertex difference must not lose holes. Plate
+    // minus inner shape produces a rectangle with a hole; if the
+    // single-sample fallback in handleNoIntersections misclassifies, the
+    // hole would be lost.
+    it('difference at coincident-vertex tracking still produces a hole', () => {
+      const result = compilePath(`
+        let plate = @{ h 100 v 100 h -100 z };
+        let inner = @{ h 30 v 30 h -30 z };
+        let cut = plate.project(0, 0).difference(inner.project(35, 35));
+        cut.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      // Should have exactly 2 closed subpaths (outer plate + inner hole).
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(2);
+    });
+
+    // §2.4 + §2.5 — near-tangent thin shapes. Two thin rectangles
+    // overlapping at a near-tangent angle stress both the
+    // isCrossingAtBoundary classifier and the link assembly. Output
+    // must be one closed contour with no degenerate chords.
+    it('union of thin near-tangent shapes classifies and assembles correctly', () => {
+      const result = compilePath(`
+        let a = @{ h 60 v 4 h -60 z };
+        let b = @{ h 60 v 4 h -60 z };
+        let u = a.project(0, 0).union(b.project(0, 3));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(1);
+      // Outer extent is 60×7. No straight segment should exceed the
+      // diagonal of the bounding box.
+      expect(maxChord(result)).toBeLessThanOrEqual(Math.hypot(60, 7) + 1e-6);
+    });
+
+    // §2.11 — multi-subpath overlap counter preservation.
+    // A solid rectangle overlapping a rectangle-with-hole should produce
+    // a union that PRESERVES the hole. Synthetic axis-aligned case is
+    // currently CORRECT; real-glyph cases (Raleway-200 ExtraLight `EN`
+    // and similar — see iter-1 BBWP) still exhibit counter loss, so the
+    // bug is more specific than "any multi-subpath overlap" — likely
+    // related to curved-boundary classification or specific subpath
+    // ordering. This test backstops the simple case so that improvements
+    // to multi-subpath handling don't regress it.
+    it('union of solid + (rect with hole) preserves the hole [§2.11 simple]', () => {
+      const result = compilePath(`
+        let a = @{ h 50 v 50 h -50 z };
+        let b = @{ h 80 v 80 h -80 z m 25 -55 v 30 h 30 v -30 z };
+        let u = a.project(0, 0).union(b.project(40, -20));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(2);
+    });
+
+    // §2.12 — wrap-parity repair backstop. When classifyByRingWalk's
+    // walk produces an odd flip-count around a closed ring (because one
+    // intra-segment isCrossingAtBoundary decision was wrong, e.g. a
+    // tangent-near-boundary that should be a crossing), the wrap class
+    // ends up inconsistent: split[rEnd-1] and split[rStart] meet at a
+    // path vertex (no flip) but classify differently. The repair pass
+    // re-classifies each split via direct midpoint winding-number
+    // sampling when samples agree on inside/outside; this overrides the
+    // walk's parity-broken class for unambiguous segments and leaves
+    // the walk in place for shared-edge ambiguous segments.
+    //
+    // Synthetic reproducer is hard to write — the walk-parity error
+    // requires a specific intersection topology. The simplest case is
+    // two thick-stroke shapes overlapping with multiple intersection
+    // clusters where one cluster's classification is mishandled.
+    it('union of asymmetric thick shapes recovers from walk-parity errors [§2.12]', () => {
+      // Two L-shapes overlapping. Each has thick strokes with multiple
+      // intersection points where the L's corners meet the other L's
+      // strokes. Tests the repair path even when classifyByRingWalk's
+      // walk produces inconsistent wrap classification.
+      const result = compilePath(`
+        let l1 = @{ h 30 v 8 h -22 v 22 h -8 z };
+        let l2 = @{ h 30 v 8 h -22 v 22 h -8 z };
+        let u = l1.project(0, 0).union(l2.project(15, 12));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      // The merged silhouette of two overlapping L-shapes should be a
+      // single connected polygon (possibly with one hole if the L's
+      // counter is preserved). No long spurious chord through the
+      // interior.
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
       expect(zCount).toBeGreaterThanOrEqual(1);
       expect(zCount).toBeLessThanOrEqual(2);
+      // Bounding box of the union: roughly 45×42 (overlapping Ls span
+      // 0..45 horizontally and 0..42 vertically). Diagonal ~62. No
+      // straight segment should exceed that diagonal.
+      expect(maxChord(result)).toBeLessThanOrEqual(Math.hypot(45, 42) + 2);
     });
+
+    // §2.11 root-cause backstop. The bug was at boolean-ops.ts:2575-2576
+    // where classifyAllSegments was passed `segsA` as both `otherPath`
+    // and the (incorrectly-supplied) `otherSegs` for one side, and
+    // `segsB` for both for the other side. The mismatch made
+    // isCrossingAtBoundary's `otherSegs[ix.segA/segB]` lookups go out of
+    // bounds for one side's calls, silently dropping `continue` and
+    // corrupting flip parity in classifyByRingWalk.
+    //
+    // The synthetic reproducer: two thin overlapping shapes where one
+    // has more segments than the other. With the bug, the smaller path
+    // sees out-of-bounds lookups; the wrap classification ends
+    // inconsistent and the union output contains a long spurious
+    // bridge / interior fill. With the fix, the union outline is clean.
+    it('union of asymmetric-segment-count thin shapes does not produce spurious interior fill', () => {
+      // A: rectangle (4 segments)
+      // B: pentagon-ish polygon with extra vertices (more segments than A),
+      //    overlapping A on the left half
+      const result = compilePath(`
+        let a = @{ h 40 v 30 h -40 z };
+        let b = @{ h 10 v 5 h 10 v 5 h 10 v 5 h 10 v 5 h 10 v 5 h -50 z };
+        let u = a.project(0, 0).union(b.project(0, 0));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      // Outer extent of A∪B is at most 50 wide × 35 tall — no straight
+      // segment should cross from far-left to far-right or top to bottom
+      // (those would be spurious bridges).
+      expect(maxChord(result)).toBeLessThanOrEqual(Math.hypot(50, 35) + 1e-6);
+      // Single connected outer contour expected (1 z, possibly 2 if the
+      // shape has a counter from the irregular pentagon).
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBeGreaterThanOrEqual(1);
+      expect(zCount).toBeLessThanOrEqual(3);
+    });
+
+    // §2.13 — shared-edge promotion. When two paths share a collinear
+    // edge segment, that segment is interior to the union and must be
+    // dropped from BOTH paths. Detected at intersection time as a
+    // SharedEdgeRange, propagated through splits as boundary=true,
+    // classified as 'on' by the ring walker, and dropped by
+    // selectSegments.
+
+    it('shared-edge union: collinear lines drop both copies (§2.13)', () => {
+      // Two co-oriented squares abutting along a shared edge.
+      // A spans (0,50)→(40,50)→(40,90)→(0,90)
+      // B spans (5,20)→(35,20)→(35,50)→(5,50)
+      // Shared: x=[5,35] at y=50.
+      // Expected union perimeter: one closed contour, no interior segments.
+      const result = compilePath(`
+        let a = @{ h 40 v 40 h -40 z };
+        let b = @{ h 30 v 30 h -30 z };
+        let u = a.project(0, 50).union(b.project(5, 20));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(1);
+      // The expected perimeter is the outline of an inverted-T:
+      //   (5,50) → (5,20) → (35,20) → (35,50) → (40,50) → (40,90) → (0,90) → (0,50) → close
+      // The shared interior segment (5,50)→(35,50) must NOT appear. A
+      // length-30 horizontal segment at y=50 would be a smoking gun for
+      // the shared edge surviving.
+      const cmds = parseSVGPath(result);
+      let cx = 0, cy = 0, sx = 0, sy = 0;
+      let foundSharedEdge = false;
+      for (const c of cmds) {
+        const op = c.command, a = c.args;
+        let nx = cx, ny = cy;
+        if (op === 'M' || op === 'L') { nx = a[0]; ny = a[1]; }
+        else if (op === 'm' || op === 'l') { nx = cx + a[0]; ny = cy + a[1]; }
+        else if (op === 'H') nx = a[0];
+        else if (op === 'h') nx = cx + a[0];
+        else if (op === 'V') ny = a[0];
+        else if (op === 'v') ny = cy + a[0];
+        else if (op === 'Z' || op === 'z') { nx = sx; ny = sy; }
+        if (op === 'M' || op === 'm') { sx = nx; sy = ny; }
+        // Look for any horizontal segment at y=50 with length ≥ 25.
+        // The clean perimeter has horizontals at y=50 of length 5 only.
+        if ((op === 'l' || op === 'L' || op === 'h' || op === 'H') &&
+            Math.abs(cy - 50) < 1e-6 && Math.abs(ny - 50) < 1e-6) {
+          if (Math.abs(nx - cx) >= 25) foundSharedEdge = true;
+        }
+        cx = nx; cy = ny;
+      }
+      expect(foundSharedEdge).toBe(false);
+    });
+
+    it('shared-edge intersection: zero-area shared region is empty (§2.13)', () => {
+      // Two squares that share only an edge (no interior overlap).
+      // A: (0,50)→(40,50)→(40,90)→(0,90), B: (5,20)→(35,20)→(35,50)→(5,50).
+      // Their intersection has zero area — it's a line segment along y=50,
+      // x=[5,35]. The boolean intersection of two filled polygons is
+      // the interior overlap, which is empty.
+      const result = compilePath(`
+        let a = @{ h 40 v 40 h -40 z };
+        let b = @{ h 30 v 30 h -30 z };
+        let u = a.project(0, 50).intersection(b.project(5, 20));
+        u.drawTo(0, 0);
+      `);
+      // No interior overlap → empty result. The path data should have
+      // no closed subpaths.
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(0);
+    });
+
+    it('shared-edge difference: shared baseline does not appear in output (§2.13)', () => {
+      // A square below, B square above, sharing y=50. A.difference(B)
+      // should return A unchanged (B doesn't overlap A's interior).
+      const result = compilePath(`
+        let a = @{ h 40 v 40 h -40 z };
+        let b = @{ h 30 v 30 h -30 z };
+        let u = a.project(0, 50).difference(b.project(5, 20));
+        u.drawTo(0, 0);
+      `);
+      expect(result).toClosePath();
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBe(1);
+      // Result perimeter is exactly A's perimeter: 40+40+40+40 = 160.
+      // If the shared edge appeared as a spurious internal feature,
+      // total path length would differ. The four cardinal extents
+      // should match A's extent: x in [0,40], y in [50,90].
+      const cmds = parseSVGPath(result);
+      let cx = 0, cy = 0, sx = 0, sy = 0;
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      let moveCount = 0;
+      for (const c of cmds) {
+        const op = c.command, a = c.args;
+        let nx = cx, ny = cy;
+        if (op === 'M' || op === 'L') { nx = a[0]; ny = a[1]; }
+        else if (op === 'm' || op === 'l') { nx = cx + a[0]; ny = cy + a[1]; }
+        else if (op === 'H') nx = a[0];
+        else if (op === 'h') nx = cx + a[0];
+        else if (op === 'V') ny = a[0];
+        else if (op === 'v') ny = cy + a[0];
+        else if (op === 'Z' || op === 'z') { nx = sx; ny = sy; }
+        if (op === 'M' || op === 'm') { moveCount++; sx = nx; sy = ny; }
+        // Skip the very first M 0 0 produced by drawTo(0,0). Track from
+        // the second move (the relative `m` to the actual start) and
+        // every subsequent draw command.
+        if (moveCount >= 2) {
+          if (nx < minX) minX = nx;
+          if (nx > maxX) maxX = nx;
+          if (ny < minY) minY = ny;
+          if (ny > maxY) maxY = ny;
+        }
+        cx = nx; cy = ny;
+      }
+      expect(minX).toBeCloseTo(0, 5);
+      expect(maxX).toBeCloseTo(40, 5);
+      expect(minY).toBeCloseTo(50, 5);
+      expect(maxY).toBeCloseTo(90, 5);
+    });
+
+    // Pre-existing bug fixed alongside §2.13: two cubic curves with
+    // identical control polygons cause `bezierClipRecurse` to never
+    // converge (every subdivision keeps both halves overlapping →
+    // exponential branching → OOM). Phase A added a same-control-
+    // polygon coincidence guard at the top of `intersectCubicCubic`
+    // that returns just the two endpoint intersections. This test
+    // protects the guard — without it the call would blow the heap.
+    it('boolean op on paths with identical cubic segments completes without OOM', () => {
+      const result = compilePath(`
+        let a = @{ c 5 -10 35 -10 40 0 v 30 h -40 z };
+        let b = @{ c 5 -10 35 -10 40 0 v -20 h -40 z };
+        let u = a.project(10, 50).union(b.project(10, 50));
+        u.drawTo(0, 0);
+      `);
+      // Smoke test only — exact geometry of the result depends on
+      // how the no-effective-intersections fallback handles two
+      // abutting paths with vertex-only intersections. The key
+      // contract is "completes" — without the guard this case
+      // exhausted node's heap. Output should be non-empty.
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    // §2.13 limitation: the test above uses co-oriented rectangles.
+    // The opposite-wound input (b's z winds CCW vs a's CW) is a known
+    // failure that is NOT a shared-edge bug — it's a separate
+    // orientation-handling concern in run assembly. Captured here so
+    // the limitation has a test record, not just a prose note.
+    it.todo('shared-edge union with opposite-wound rectangles produces clean perimeter (separate orientation bug, NOT §2.13)');
   });
 });
