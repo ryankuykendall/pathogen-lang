@@ -565,6 +565,7 @@ function detectSharedEdge_LineLine(
 
   // Are the two lines collinear? Check that b0 and b1 both lie on A's line.
   const lenA = Math.sqrt(lenA2);
+  const lenB = Math.sqrt(lenB2);
   const nax = -day / lenA, nay = dax / lenA; // unit normal to A
   const COLLINEAR_TOL = 1e-7;
   const dist0 = Math.abs((b0.x - a0.x) * nax + (b0.y - a0.y) * nay);
@@ -574,16 +575,34 @@ function detectSharedEdge_LineLine(
   // Project B's endpoints onto A's parametric range.
   const tB0_onA = ((b0.x - a0.x) * dax + (b0.y - a0.y) * day) / lenA2;
   const tB1_onA = ((b1.x - a0.x) * dax + (b1.y - a0.y) * day) / lenA2;
-  const aStart = Math.max(0, Math.min(tB0_onA, tB1_onA));
-  const aEnd = Math.min(1, Math.max(tB0_onA, tB1_onA));
+  let aStart = Math.max(0, Math.min(tB0_onA, tB1_onA));
+  let aEnd = Math.min(1, Math.max(tB0_onA, tB1_onA));
   if (aEnd - aStart <= 1e-8) return null; // no overlap
 
   // Project A's endpoints onto B's parametric range.
   const tA0_onB = ((a0.x - b0.x) * dbx + (a0.y - b0.y) * dby) / lenB2;
   const tA1_onB = ((a1.x - b0.x) * dbx + (a1.y - b0.y) * dby) / lenB2;
-  const bStart = Math.max(0, Math.min(tA0_onB, tA1_onB));
-  const bEnd = Math.min(1, Math.max(tA0_onB, tA1_onB));
+  let bStart = Math.max(0, Math.min(tA0_onB, tA1_onB));
+  let bEnd = Math.min(1, Math.max(tA0_onB, tA1_onB));
   if (bEnd - bStart <= 1e-8) return null;
+
+  // Snap range endpoints to segment vertices when the off-shared
+  // remainder would be smaller than MIN_SEG_LEN. Without this, an
+  // asymmetric shared-edge geometry where one side's vertex sits
+  // ε-close to (but not at) the other side's parametric coordinate
+  // creates a tiny non-shared piece on only one side. That extra
+  // piece becomes an extra ring-walk gap with no counterpart on the
+  // other side, leaving an unmatched run in `buildIntersectionLinks`
+  // and a stray `z`-bridge in the assembled contour. Snapping
+  // collapses the tiny remainder into the shared region so the gap
+  // structure stays symmetric across A and B. Threshold matches the
+  // existing MIN_SEG_LEN convention used in `splitPathAtIntersections`
+  // for tiny-segment merging. §2.13.
+  const SNAP_DIST = 0.5; // path units, matches MIN_SEG_LEN
+  if (aStart * lenA < SNAP_DIST) aStart = 0;
+  if ((1 - aEnd) * lenA < SNAP_DIST) aEnd = 1;
+  if (bStart * lenB < SNAP_DIST) bStart = 0;
+  if ((1 - bEnd) * lenB < SNAP_DIST) bEnd = 1;
 
   const sameDirection = (dax * dbx + day * dby) > 0;
   return { aStart, aEnd, bStart, bEnd, sameDirection };
