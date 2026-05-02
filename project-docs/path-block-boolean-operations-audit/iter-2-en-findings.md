@@ -282,12 +282,13 @@ consumer strokes glyph union output — current consumers all fill).
 If audit visualization parity is desired, switch the matrix
 visualization layers to fill rendering; the artifact disappears.
 
-### O3. Red spur on lowercase c (LB-F-80, LB-A-80)
-A small red triangular feature appears on the right side of the
-lowercase c in Libre Baskerville cells. Hypothesis: font-intrinsic
-additive subpath in c's glyph (similar to Playfair's E having an
-internal "T" decoration). To confirm: probe LB lowercase c for
-subpath count.
+### O3. Red spur on lowercase c (LB-F-80, LB-A-80) — NOT A BUG (confirmed font-intrinsic)
+
+**Diagnosis (2026-05-02)**: LB Bold lowercase c is a single-subpath
+glyph (1 outer outline, no additive subpaths). The "small red
+triangular feature" is the natural top-right terminal serif of LB
+Bold c, visible in the raw glyph render as part of the natural
+glyph design. Not a boolean-op artifact.
 
 ### O4. Missing fill / yellow showing through interior
 (RW-U-70, RW-A-70) — REAL FILL BUG, deeper structural cause
@@ -358,13 +359,20 @@ fill bug — fill rendering still shows a small spike/peninsula
 extending below the baseline at the e/n junction.
 
 ### O6. Missing intersection — N's bottom-left serif vs e
-(LB-A-70)
-At tracking 0.7 in Libre Bask AlT, the e and N appear visually
-to overlap at N's bottom-left serif but the boolean op doesn't
-register the intersection — the two glyphs render as separate
-shapes where they should merge. Likely a numerical precision
-case: the serif's edge passes near (but doesn't quite touch) e's
-boundary, falling inside the intersection-finder's tolerance.
+(LB-A-70) — LIKELY NOT A BUG (confirmed by underlay-vs-union comparison)
+
+**Diagnosis (2026-05-02)**: Built isolation. Boolean op finds 3
+intersections and produces a 1-chain 54-cmd output. At zoom into
+the e/N junction, the underlay (raw eN) and union (boolean output)
+render as **essentially identical** — both show the same small
+notch where e's tail meets N's bottom-left serif. That notch is
+the natural shape where e and N don't fully overlap at tracking
+0.7. The boolean op is doing the right thing.
+
+The original "missing intersection" perception was a misread — at
+small render size the glyphs visually appear to merge, but the
+actual geometry has them just touching with limited overlap. The
+union output matches the underlay's filled silhouette.
 
 ### O7. Messy cluster of lines at E/N junction (PF-U-70)
 Capital ENC at tracking 0.7 in Playfair shows a "messy cluster"
