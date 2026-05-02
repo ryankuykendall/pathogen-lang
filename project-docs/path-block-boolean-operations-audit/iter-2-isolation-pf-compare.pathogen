@@ -1,0 +1,31 @@
+// Side-by-side: PF E alone vs PF E.union(N), big size for visual comparison
+@font "../../fonts/Playfair_Display/PlayfairDisplay-Bold.ttf"
+
+let styles = ${ font-family: PlayfairDisplay-Bold; font-size: 100; };
+let glyphs = PathBlock.fromGlyph("EN", styles);
+let g0 = glyphs[0];
+let g1 = glyphs[1];
+
+let pos1 = calc(g0.advanceWidth * 0.7);
+let g0p = g0.project(0, 0);
+let g1p = g1.project(pos1, 0);
+let combined = g0p.union(g1p);
+
+let bg = PathLayer('bg') ${ fill: '#fefce8'; stroke: none; };
+layer('bg').apply { rect(0, 0, 1200, 600); }
+
+let stroke_col = Color('#06b6d4f2');
+
+// LEFT: just E with stroke (no union)
+let e_alone = PathLayer('e-alone') ${ fill: none; stroke: stroke_col; stroke-width: 0.5; };
+layer('e-alone').apply { g0.drawTo(50, 450); }
+
+let label_layer = TextLayer('labels') ${ font-family: monospace; font-size: 14; fill: '#475569'; text-anchor: start; };
+layer('labels').apply {
+  text(50, 30)`E glyph stroked alone (3 raw subpaths, no boolean op)`
+  text(700, 30)`E.union(N) result stroked (post boolean op)`
+}
+
+// RIGHT: E.union(N) stroked
+let union_stroke_layer = PathLayer('union-stroke') ${ fill: none; stroke: stroke_col; stroke-width: 0.5; };
+layer('union-stroke').apply { combined.drawTo(700, 450); }

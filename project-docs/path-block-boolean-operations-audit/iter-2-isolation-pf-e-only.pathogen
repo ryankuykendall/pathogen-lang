@@ -1,0 +1,8 @@
+@font "../../fonts/Playfair_Display/PlayfairDisplay-Bold.ttf"
+let styles = ${ font-family: PlayfairDisplay-Bold; font-size: 100; };
+let glyphs = PathBlock.fromGlyph("e", styles);
+let g0 = glyphs[0];
+let bg = PathLayer('bg') ${ fill: '#fefce8'; stroke: none; };
+layer('bg').apply { rect(0, 0, 800, 600); }
+let glyph_layer = PathLayer('glyph') ${ fill: '#1e3a8a40'; stroke: '#06b6d4'; stroke-width: 0.5; };
+layer('glyph').apply { g0.drawTo(100, 450); }

@@ -193,6 +193,7 @@ program
   .option('--stroke <color>', 'Default stroke color')
   .option('--fill <color>', 'Default fill color')
   .option('--stroke-width <w>', 'Default stroke width')
+  .option('--svg <path>', 'Skip compilation and use this pre-built SVG file. The .pathogen <file> arg is still required for naming/source-display in mw.html.')
   .action(async (file, opts) => {
     // Validate input file
     if (!existsSync(file)) {
@@ -225,47 +226,61 @@ program
     }
     const renderMode = useGpu ? ('gpu' as const) : ('cpu' as const);
 
-    console.log(`Compiling: ${file}`);
-    console.log(`  Roadmap:  ${roadmap}`);
-    console.log(`  Feature:  ${feature}`);
-    console.log(`  ViewBox:  ${viewBox}`);
-    console.log(`  Size:     ${width}x${height}${useGpu ? ` @ ${scale}x` : ''}`);
-    console.log(`  Render:   ${useGpu ? 'GPU (headless Chrome)' : 'string-based (no Puppeteer)'}`);
-
-    // Step 1: Compile to SVG
-    const tmpSvg = join(PROJECT_ROOT, '.compile-bbwp-tmp.svg');
-    const cliArgs = [
-      `--src=${file}`,
-      `--output-svg-file=${tmpSvg}`,
-      `--viewBox=${viewBox}`,
-      `--width=${width}`,
-      `--height=${height}`,
-    ];
-    cliArgs.push('--include-metadata');
-    if (useGpu) {
-      cliArgs.push('--render-gpu', `--scale=${scale}`);
-    }
-    if (opts.stroke) cliArgs.push(`--stroke=${opts.stroke}`);
-    if (opts.fill) cliArgs.push(`--fill=${opts.fill}`);
-    if (opts.strokeWidth) cliArgs.push(`--stroke-width=${opts.strokeWidth}`);
-
-    try {
-      console.log(useGpu ? '  Rendering via headless Chrome...' : '  Rendering...');
-      const result = spawnSync('npx', ['tsx', 'src/cli.ts', ...cliArgs], {
-        cwd: PROJECT_ROOT,
-        encoding: 'utf-8',
-        timeout: 120_000,
-      });
-      if (result.status !== 0) {
-        throw new Error(result.stderr || result.stdout || 'Unknown error');
+    if (opts.svg) {
+      if (!existsSync(opts.svg)) {
+        console.error(`Error: --svg file not found: ${opts.svg}`);
+        process.exit(1);
       }
-    } catch (err: any) {
-      console.error(`Compilation failed: ${err.message}`);
-      process.exit(1);
+      console.log(`Wrapping pre-built SVG: ${opts.svg}`);
+      console.log(`  Source:   ${file}`);
+      console.log(`  Roadmap:  ${roadmap}`);
+      console.log(`  Feature:  ${feature}`);
+    } else {
+      console.log(`Compiling: ${file}`);
+      console.log(`  Roadmap:  ${roadmap}`);
+      console.log(`  Feature:  ${feature}`);
+      console.log(`  ViewBox:  ${viewBox}`);
+      console.log(`  Size:     ${width}x${height}${useGpu ? ` @ ${scale}x` : ''}`);
+      console.log(`  Render:   ${useGpu ? 'GPU (headless Chrome)' : 'string-based (no Puppeteer)'}`);
     }
 
-    // Step 2: Read the SVG and wrap in HTML
-    const svgContent = readFileSync(tmpSvg, 'utf-8');
+    // Step 1: Compile to SVG (skipped when --svg is provided)
+    const tmpSvg = join(PROJECT_ROOT, '.compile-bbwp-tmp.svg');
+    if (!opts.svg) {
+      const cliArgs = [
+        `--src=${file}`,
+        `--output-svg-file=${tmpSvg}`,
+        `--viewBox=${viewBox}`,
+        `--width=${width}`,
+        `--height=${height}`,
+      ];
+      cliArgs.push('--include-metadata');
+      if (useGpu) {
+        cliArgs.push('--render-gpu', `--scale=${scale}`);
+      }
+      if (opts.stroke) cliArgs.push(`--stroke=${opts.stroke}`);
+      if (opts.fill) cliArgs.push(`--fill=${opts.fill}`);
+      if (opts.strokeWidth) cliArgs.push(`--stroke-width=${opts.strokeWidth}`);
+
+      try {
+        console.log(useGpu ? '  Rendering via headless Chrome...' : '  Rendering...');
+        const result = spawnSync('npx', ['tsx', 'src/cli.ts', ...cliArgs], {
+          cwd: PROJECT_ROOT,
+          encoding: 'utf-8',
+          timeout: 120_000,
+        });
+        if (result.status !== 0) {
+          throw new Error(result.stderr || result.stdout || 'Unknown error');
+        }
+      } catch (err: any) {
+        console.error(`Compilation failed: ${err.message}`);
+        process.exit(1);
+      }
+    }
+
+    // Step 2: Read the SVG (compiled output, or the pre-built one) and wrap in HTML
+    const svgPath = opts.svg ?? tmpSvg;
+    const svgContent = readFileSync(svgPath, 'utf-8');
     const timestamp = generateTimestamp();
     const bbwpHtml = wrapSvgInHtml(svgContent, {
       feature,

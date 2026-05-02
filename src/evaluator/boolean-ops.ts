@@ -2511,6 +2511,29 @@ function buildIntersectionLinks(
   // Solve minimum-cost assignment.
   const assignment = hungarianMinCost(cost);
 
+  const dbg = typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1';
+  if (dbg) {
+    // eslint-disable-next-line no-console
+    console.error(`[buildIntersectionLinks] N=${N}, runs:`);
+    for (let i = 0; i < N; i++) {
+      const r = runs[i];
+      // eslint-disable-next-line no-console
+      console.error(`  run[${i}] ${r.source} cmds=${r.cmds.length} exit=(${r.exitPoint.x.toFixed(3)},${r.exitPoint.y.toFixed(3)}) entry=(${r.entryPoint.x.toFixed(3)},${r.entryPoint.y.toFixed(3)})`);
+    }
+    // eslint-disable-next-line no-console
+    console.error(`[buildIntersectionLinks] Hungarian assignments + costs:`);
+    for (let i = 0; i < N; i++) {
+      const j = assignment[i];
+      if (j < 0) {
+        // eslint-disable-next-line no-console
+        console.error(`  run[${i}] -> UNMATCHED`);
+        continue;
+      }
+      // eslint-disable-next-line no-console
+      console.error(`  run[${i}] -> run[${j}]  cost=${cost[i][j].toFixed(3)}  d=${dist(runs[i].exitPoint, runs[j].entryPoint).toFixed(3)}`);
+    }
+  }
+
   // Apply links, skipping any FORBIDDEN matches (would mean no valid partner).
   for (let i = 0; i < N; i++) {
     const j = assignment[i];
@@ -2647,6 +2670,8 @@ function traceContours(
     ...allRuns.filter((r) => hasInbound.has(r)),
   ];
 
+  const dbg = typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1';
+
   for (const run of orderedRuns) {
     if (visited.has(run)) continue;
 
@@ -2654,12 +2679,18 @@ function traceContours(
       // Standalone contour — emit directly
       visited.add(run);
       contours.push([...run.cmds]);
+      if (dbg) {
+        const c0 = run.cmds[0];
+        // eslint-disable-next-line no-console
+        console.error(`[traceContours] STANDALONE source=${run.source} cmds=${run.cmds.length} start=(${c0.start.x.toFixed(3)},${c0.start.y.toFixed(3)})`);
+      }
       continue;
     }
 
     // Trace through links
     const contour: TransformCmd[] = [];
     let current: KeptRun | undefined = run;
+    const traceLog: string[] = [];
     while (current && !visited.has(current)) {
       visited.add(current);
       // Bridge gap between previous run's exit and this run's entry
@@ -2678,11 +2709,20 @@ function traceContours(
       for (const cmd of current.cmds) {
         contour.push(cmd);
       }
+      if (dbg) {
+        const c0 = current.cmds[0];
+        traceLog.push(`${current.source}@(${c0.start.x.toFixed(2)},${c0.start.y.toFixed(2)})·${current.cmds.length}`);
+      }
       current = links.get(current);
     }
 
     if (contour.length > 0) {
       contours.push(contour);
+      if (dbg) {
+        const c0 = contour[0];
+        // eslint-disable-next-line no-console
+        console.error(`[traceContours] CHAIN runs=${traceLog.length} cmds=${contour.length} start=(${c0.start.x.toFixed(3)},${c0.start.y.toFixed(3)}): ${traceLog.join(' → ')}`);
+      }
     }
   }
 
@@ -2993,13 +3033,509 @@ function includeClosingSegment(cmds: TransformCmd[]): TransformCmd[] {
   return result;
 }
 
+// ─── Glyph Topology Normalization (§2.14) ───────────────────────────────────
+
+/**
+ * Compute the signed area of a single closed subpath using the shoelace
+ * formula on segment endpoints. Curve interior bumps are ignored (start →
+ * end chord is used) — the SIGN is what matters for winding-direction
+ * detection, and the chord polygon has the same winding sign as the curved
+ * polygon for any non-self-intersecting closed contour.
+ *
+ * Convention: in SVG (y-down) coordinates, positive shoelace = clockwise
+ * visually = "outer" winding (TTF convention). Negative = counterclockwise
+ * = "hole" winding.
+ */
+function subpathSignedArea(cmds: TransformCmd[]): number {
+  let area = 0;
+  for (const cmd of cmds) {
+    const u = cmd.command.toLowerCase();
+    if (u === 'm' || u === 'z') continue;
+    area += cmd.start.x * cmd.end.y - cmd.end.x * cmd.start.y;
+  }
+  return area / 2;
+}
+
+/**
+ * §2.14 normalization Phase 1: drop subpaths that are fully enclosed by
+ * another subpath of the SAME winding direction within the same path.
+ *
+ * Rationale: under nonzero fill rule, two CW subpaths nested produce winding
+ * count 2 in their overlap and 1 elsewhere — both fill the same. The inner
+ * subpath contributes no visible region. Glyph fonts that encode such
+ * "additive" reinforcement subpaths (Playfair Bold capital E ships with 3
+ * CW subpaths: outer + 2 small internal decorations) produce spurious extra
+ * contours in boolean op output because the additive runs survive
+ * classification as STANDALONE rings — they show as visible artifacts when
+ * the result is stroked.
+ *
+ * Holes (opposite winding to their enclosing outer) are preserved — those
+ * are legitimate counters that must remain to carve out unfilled regions.
+ *
+ * Disjoint subpaths of any winding combination are preserved — only NESTED
+ * subpaths of the SAME winding are dropped.
+ */
+function dropNestedSameWindingSubpaths(cmds: TransformCmd[]): TransformCmd[] {
+  const subpaths = splitCmdsIntoSubpaths(cmds);
+  if (subpaths.length < 2) return cmds;
+
+  // Compute winding direction for each subpath
+  const isCW: boolean[] = subpaths.map(sp => subpathSignedArea(sp) > 0);
+
+  // For each subpath, find a representative point GENUINELY INSIDE its
+  // boundary. Picking the first vertex is unsafe — if that vertex
+  // coincides with another subpath's edge, the winding-number test for
+  // containment becomes ambiguous (boundary case). Instead: try several
+  // candidates (bbox center, centroid of vertices, midpoints of segments)
+  // and accept the first one whose windingNumber against the subpath ITSELF
+  // is non-zero, confirming it's strictly interior.
+  const testPoints: (Point | null)[] = subpaths.map(sp => {
+    const drawCmds = extractDrawCmds(sp);
+    if (drawCmds.length === 0) return null;
+
+    // Collect candidate points
+    const candidates: Point[] = [];
+
+    // Candidate 1: bbox center
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const c of drawCmds) {
+      minX = Math.min(minX, c.start.x, c.end.x);
+      minY = Math.min(minY, c.start.y, c.end.y);
+      maxX = Math.max(maxX, c.start.x, c.end.x);
+      maxY = Math.max(maxY, c.start.y, c.end.y);
+    }
+    candidates.push({ x: (minX + maxX) / 2, y: (minY + maxY) / 2 });
+
+    // Candidate 2: centroid of vertex starts
+    let sumX = 0, sumY = 0, n = 0;
+    for (const c of drawCmds) { sumX += c.start.x; sumY += c.start.y; n++; }
+    if (n > 0) candidates.push({ x: sumX / n, y: sumY / n });
+
+    // Candidates 3+: midpoints of each segment, slightly offset toward the
+    // bbox center (inward). For a closed simple curve, midpoint+offset is
+    // very likely strictly interior.
+    for (const c of drawCmds) {
+      const mx = (c.start.x + c.end.x) / 2;
+      const my = (c.start.y + c.end.y) / 2;
+      const dx = candidates[0].x - mx;
+      const dy = candidates[0].y - my;
+      const dlen = Math.sqrt(dx * dx + dy * dy);
+      if (dlen < 1e-9) continue;
+      const eps = Math.min(0.01, dlen * 0.1);
+      candidates.push({ x: mx + (dx / dlen) * eps, y: my + (dy / dlen) * eps });
+    }
+
+    // Accept the first candidate strictly inside the subpath itself
+    for (const cand of candidates) {
+      const wn = windingNumber(cand, drawCmds);
+      if (wn !== 0) return cand;
+    }
+    return null;
+  });
+
+  // Mark subpaths that are nested inside another same-winding subpath.
+  const dropped = new Set<number>();
+  const dbg = typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1';
+  for (let i = 0; i < subpaths.length; i++) {
+    const pt = testPoints[i];
+    if (!pt) continue;
+    if (dbg) {
+      // eslint-disable-next-line no-console
+      console.error(`[normalize] subpath[${i}] pt=(${pt.x.toFixed(2)},${pt.y.toFixed(2)}) cw=${isCW[i]} area=${subpathSignedArea(subpaths[i]).toFixed(2)}`);
+    }
+    for (let j = 0; j < subpaths.length; j++) {
+      if (i === j) continue;
+      if (dropped.has(j)) continue;
+      if (isCW[i] !== isCW[j]) continue;
+      const segs = extractDrawCmds(subpaths[j]);
+      const wn = windingNumber(pt, segs);
+      if (dbg) {
+        // eslint-disable-next-line no-console
+        console.error(`  vs subpath[${j}] (cw=${isCW[j]}): wn=${wn}`);
+      }
+      if (wn !== 0) {
+        dropped.add(i);
+        break;
+      }
+    }
+  }
+
+  if (dbg && dropped.size > 0) {
+    // eslint-disable-next-line no-console
+    console.error(`[normalize] dropping subpaths: ${[...dropped].join(',')}`);
+  }
+
+  if (dropped.size === 0) return cmds;
+
+  const result: TransformCmd[] = [];
+  for (let i = 0; i < subpaths.length; i++) {
+    if (!dropped.has(i)) result.push(...subpaths[i]);
+  }
+  return result;
+}
+
+/**
+ * §2.14 normalization Phase 2: split a single-subpath self-intersecting
+ * contour into multiple non-self-intersecting subpaths.
+ *
+ * Used to clean up glyph fonts (e.g. Playfair Bold lowercase e) that
+ * encode a letterform's outer perimeter AND interior bowl counter as a
+ * single 40-cmd contour that crosses itself. Without splitting, the
+ * boolean op classifier sees ambiguous topology — inside-vs-outside is
+ * ill-defined at self-intersection points — and produces visible
+ * artifacts in stroked output (the "peninsula" extending into the bowl).
+ *
+ * Algorithm:
+ *  1. Find every self-intersection: pair of non-adjacent segments that
+ *     cross at interior parametric values.
+ *  2. Split each intersected segment at its t-values; build a list of
+ *     "pieces" (sub-segments) in cyclic contour order.
+ *  3. Default cyclic next-pointer: piece[i] → piece[(i+1) mod n].
+ *  4. At each self-intersection node N, swap the next-pointers of the
+ *     two pieces ending at N: each now points to the OTHER segment's
+ *     continuation (X-pattern crossing). This cleaves the single cycle
+ *     into multiple cycles.
+ *  5. Walk the next-pointer graph to extract closed cycles, each
+ *     becoming a separate non-self-intersecting subpath.
+ *
+ * Multi-subpath inputs: each subpath is processed independently. Shared
+ * winding still requires the Phase 1 union step.
+ */
+function splitSelfIntersectingContour(cmds: TransformCmd[]): TransformCmd[] {
+  // Only operate on single-subpath inputs. Multi-subpath inputs come from
+  // either (a) glyphs that already separate counter from outer (no
+  // self-intersection in any single subpath), or (b) outputs of previous
+  // boolean ops (already topologically clean by construction). Running
+  // O(n²) self-intersection detection on those is expensive and
+  // unnecessary; chained .union(B).union(C) calls would otherwise
+  // re-process accumulating results and exhaust memory.
+  const subpaths = splitCmdsIntoSubpaths(cmds);
+  if (subpaths.length !== 1) return cmds;
+
+  const split = splitOneSubpathSelfIntersections(subpaths[0]);
+  if (split === subpaths[0]) return cmds;
+  return split;
+}
+
+function splitOneSubpathSelfIntersections(subpath: TransformCmd[]): TransformCmd[] {
+  const segs = extractDrawCmds(subpath);
+  if (segs.length < 4) return subpath;
+
+  const n = segs.length;
+
+  // Find self-intersections (non-adjacent pairs only).
+  type SI = { iA: number; tA: number; iB: number; tB: number; pt: Point };
+  const selfInts: SI[] = [];
+  for (let iA = 0; iA < n; iA++) {
+    for (let iB = iA + 1; iB < n; iB++) {
+      const adjacent = iB === iA + 1 || (iA === 0 && iB === n - 1);
+      if (adjacent) continue;
+      const ints = pairwiseIntersect(segs[iA], segs[iB]);
+      for (const ix of ints) {
+        const EPS = PARAMETRIC_EPSILON * 100;
+        if (ix.tA <= EPS || ix.tA >= 1 - EPS) continue;
+        if (ix.tB <= EPS || ix.tB >= 1 - EPS) continue;
+        selfInts.push({ iA, tA: ix.tA, iB, tB: ix.tB, pt: ix.point });
+      }
+    }
+  }
+  if (selfInts.length === 0) return subpath;
+
+  // For each segment, gather (t, intId) pairs.
+  const perSegTs = new Map<number, Array<{ t: number; intId: number }>>();
+  selfInts.forEach((si, idx) => {
+    if (!perSegTs.has(si.iA)) perSegTs.set(si.iA, []);
+    if (!perSegTs.has(si.iB)) perSegTs.set(si.iB, []);
+    perSegTs.get(si.iA)!.push({ t: si.tA, intId: idx });
+    perSegTs.get(si.iB)!.push({ t: si.tB, intId: idx });
+  });
+
+  type Piece = {
+    cmd: TransformCmd;
+    fromOrigSeg: number;
+    startNode: number; // intersection ID, or -1 if at segment endpoint
+    endNode: number;
+  };
+  const pieces: Piece[] = [];
+
+  for (let i = 0; i < n; i++) {
+    const ts = (perSegTs.get(i) ?? []).slice().sort((a, b) => a.t - b.t);
+    const splits = [0, ...ts.map(x => x.t), 1];
+    for (let k = 0; k < splits.length - 1; k++) {
+      const tStart = splits[k];
+      const tEnd = splits[k + 1];
+      if (tEnd - tStart < PARAMETRIC_EPSILON) continue;
+      const subCmd = splitCmdRange(segs[i], tStart, tEnd);
+      pieces.push({
+        cmd: subCmd,
+        fromOrigSeg: i,
+        startNode: k === 0 ? -1 : ts[k - 1].intId,
+        endNode: k === splits.length - 2 ? -1 : ts[k].intId,
+      });
+    }
+  }
+
+  // Default cyclic next pointers.
+  const nextPtr: number[] = pieces.map((_, idx) => (idx + 1) % pieces.length);
+
+  // At each intersection node, swap the two incoming pieces' next-pointers
+  // (X-pattern: each crosses to the OTHER segment's continuation).
+  for (let nodeId = 0; nodeId < selfInts.length; nodeId++) {
+    const incoming: number[] = [];
+    const outgoing: number[] = [];
+    pieces.forEach((p, idx) => {
+      if (p.endNode === nodeId) incoming.push(idx);
+      if (p.startNode === nodeId) outgoing.push(idx);
+    });
+    if (incoming.length !== 2 || outgoing.length !== 2) continue;
+
+    const inA = incoming[0];
+    const inB = incoming[1];
+    const segIn0 = pieces[inA].fromOrigSeg;
+    const segIn1 = pieces[inB].fromOrigSeg;
+    const outOnSegA = outgoing.find(o => pieces[o].fromOrigSeg === segIn0);
+    const outOnSegB = outgoing.find(o => pieces[o].fromOrigSeg === segIn1);
+    if (outOnSegA === undefined || outOnSegB === undefined) continue;
+
+    nextPtr[inA] = outOnSegB;
+    nextPtr[inB] = outOnSegA;
+  }
+
+  // Walk cycles.
+  const visited = new Set<number>();
+  const subpathOuts: TransformCmd[][] = [];
+  for (let start = 0; start < pieces.length; start++) {
+    if (visited.has(start)) continue;
+    const cycleCmds: TransformCmd[] = [];
+    let cur = start;
+    let safety = 0;
+    while (!visited.has(cur) && safety < pieces.length * 2) {
+      visited.add(cur);
+      cycleCmds.push(pieces[cur].cmd);
+      cur = nextPtr[cur];
+      safety++;
+    }
+    if (cycleCmds.length > 0) subpathOuts.push(cycleCmds);
+  }
+
+  if (subpathOuts.length <= 1) return subpath;
+
+  // Reassemble each cycle as a closed subpath with explicit M / z.
+  const result: TransformCmd[] = [];
+  for (const cycle of subpathOuts) {
+    if (cycle.length === 0) continue;
+    const first = cycle[0];
+    result.push({
+      command: 'M',
+      args: [first.start.x, first.start.y],
+      start: { x: 0, y: 0 },
+      end: { ...first.start },
+    });
+    for (const c of cycle) result.push(c);
+    const last = cycle[cycle.length - 1];
+    result.push({
+      command: 'z',
+      args: [],
+      start: { ...last.end },
+      end: { ...first.start },
+    });
+  }
+
+  if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
+    // eslint-disable-next-line no-console
+    console.error(`[normalize-self-split] ${selfInts.length} self-intersection(s), produced ${subpathOuts.length} subpath(s)`);
+  }
+
+  return result;
+}
+
+/**
+ * §2.14 normalization Phase 1b: union pairs of same-winding subpaths
+ * within a single path that are NOT strictly nested but DO touch or
+ * partially overlap. Examples from glyph fonts:
+ *   - Playfair Bold capital E ships the cap-bar's "T" decoration as a
+ *     separate subpath that partially overlaps the E's outer outline at
+ *     the cap-bar edge. The two are visually one shape but encoded as
+ *     two subpaths; without merging, the boolean op against another
+ *     glyph treats them as independent and the merge produces visible
+ *     gaps where the T meets the outer.
+ *
+ * Algorithm: bbox overlap is the cheap pre-filter. If bboxes overlap,
+ * test for boundary contact via findAllIntersections + shared-edge
+ * detection. If contact exists, recursively call booleanOp(union) on
+ * the two subpaths and replace them with the merged result. Iterate to
+ * fixed point.
+ *
+ * Recursion termination: the recursive booleanOp call passes two
+ * single-subpath inputs. dropNestedSameWindingSubpaths and this
+ * function both early-return when subpaths.length < 2, so no further
+ * normalization fires inside the recursive call.
+ */
+function unionIntersectingSameWindingSubpaths(cmds: TransformCmd[]): TransformCmd[] {
+  let subpaths = splitCmdsIntoSubpaths(cmds);
+  if (subpaths.length < 2) return cmds;
+
+  const dbg = typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1';
+
+  // Compute bbox for each subpath (using draw command endpoints; curve
+  // bumps add at most a few units on either side, which is acceptable
+  // for bbox-overlap pre-filtering).
+  type SP = { cmds: TransformCmd[]; cw: boolean; bbox: { minX: number; minY: number; maxX: number; maxY: number } };
+  const computeBbox = (sp: TransformCmd[]) => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const c of sp) {
+      const u = c.command.toLowerCase();
+      if (u === 'm' || u === 'z') continue;
+      minX = Math.min(minX, c.start.x, c.end.x);
+      minY = Math.min(minY, c.start.y, c.end.y);
+      maxX = Math.max(maxX, c.start.x, c.end.x);
+      maxY = Math.max(maxY, c.start.y, c.end.y);
+    }
+    return { minX, minY, maxX, maxY };
+  };
+  const bboxesOverlap = (a: SP['bbox'], b: SP['bbox']) =>
+    !(a.maxX < b.minX || b.maxX < a.minX || a.maxY < b.minY || b.maxY < a.minY);
+
+  // Find a representative interior point for each subpath. Tries bbox
+  // center, vertex centroid, and segment midpoints offset toward the
+  // bbox center; accepts the first candidate strictly inside the
+  // subpath (windingNumber !== 0 against itself). Used for "nested
+  // inside" detection where boundaries don't cross.
+  const findInteriorPoint = (sp: TransformCmd[]): Point | null => {
+    const drawCmds = extractDrawCmds(sp);
+    if (drawCmds.length === 0) return null;
+    const candidates: Point[] = [];
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const c of drawCmds) {
+      minX = Math.min(minX, c.start.x, c.end.x);
+      minY = Math.min(minY, c.start.y, c.end.y);
+      maxX = Math.max(maxX, c.start.x, c.end.x);
+      maxY = Math.max(maxY, c.start.y, c.end.y);
+    }
+    candidates.push({ x: (minX + maxX) / 2, y: (minY + maxY) / 2 });
+    let sumX = 0, sumY = 0, n = 0;
+    for (const c of drawCmds) { sumX += c.start.x; sumY += c.start.y; n++; }
+    if (n > 0) candidates.push({ x: sumX / n, y: sumY / n });
+    for (const c of drawCmds) {
+      const mx = (c.start.x + c.end.x) / 2;
+      const my = (c.start.y + c.end.y) / 2;
+      const dx = candidates[0].x - mx;
+      const dy = candidates[0].y - my;
+      const dlen = Math.sqrt(dx * dx + dy * dy);
+      if (dlen < 1e-9) continue;
+      const eps = Math.min(0.01, dlen * 0.1);
+      candidates.push({ x: mx + (dx / dlen) * eps, y: my + (dy / dlen) * eps });
+    }
+    for (const cand of candidates) {
+      const wn = windingNumber(cand, drawCmds);
+      if (wn !== 0) return cand;
+    }
+    return null;
+  };
+
+  let entries: SP[] = subpaths.map(sp => ({
+    cmds: sp,
+    cw: subpathSignedArea(sp) > 0,
+    bbox: computeBbox(sp),
+  }));
+
+  let changed = true;
+  let iter = 0;
+  const maxIter = entries.length * entries.length; // safety
+  while (changed && iter < maxIter) {
+    changed = false;
+    iter++;
+    let mergedAt: [number, number] | null = null;
+    let mergedResult: TransformCmd[] | null = null;
+    outer: for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        if (entries[i].cw !== entries[j].cw) continue;
+        if (!bboxesOverlap(entries[i].bbox, entries[j].bbox)) continue;
+        const segsI = extractDrawCmds(entries[i].cmds);
+        const segsJ = extractDrawCmds(entries[j].cmds);
+        // Detect: boundary crossings, shared edges, OR one nested inside other.
+        const { intersections, sharedEdges } = findAllIntersections(segsI, segsJ);
+        let touches = intersections.length > 0 || sharedEdges.length > 0;
+        if (!touches) {
+          const ptI = findInteriorPoint(entries[i].cmds);
+          const ptJ = findInteriorPoint(entries[j].cmds);
+          if (ptI && windingNumber(ptI, segsJ) !== 0) touches = true;
+          else if (ptJ && windingNumber(ptJ, segsI) !== 0) touches = true;
+        }
+        if (!touches) continue;
+        // Contact exists. Union the two subpaths.
+        try {
+          const merged = booleanOp(entries[i].cmds, entries[j].cmds, 'union', { normalize: false });
+          if (merged.length === 0) continue; // degenerate; skip
+          mergedAt = [i, j];
+          mergedResult = merged;
+          if (dbg) {
+            // eslint-disable-next-line no-console
+            console.error(`[normalize-union] merged subpath[${i}] + subpath[${j}] (cw=${entries[i].cw}, intersections=${intersections.length}, shared=${sharedEdges.length}) → ${splitCmdsIntoSubpaths(merged).length} subpath(s)`);
+          }
+          break outer;
+        } catch {
+          // recursive boolean op failed; leave them as-is
+          continue;
+        }
+      }
+    }
+    if (mergedAt && mergedResult) {
+      const [i, j] = mergedAt;
+      const newSubpaths = splitCmdsIntoSubpaths(mergedResult);
+      const next: SP[] = [];
+      for (let k = 0; k < entries.length; k++) {
+        if (k !== i && k !== j) next.push(entries[k]);
+      }
+      for (const sp of newSubpaths) {
+        next.push({ cmds: sp, cw: subpathSignedArea(sp) > 0, bbox: computeBbox(sp) });
+      }
+      entries = next;
+      changed = true;
+    }
+  }
+
+  if (entries.length === subpaths.length) {
+    // No merges happened
+    return cmds;
+  }
+
+  const result: TransformCmd[] = [];
+  for (const e of entries) result.push(...e.cmds);
+  return result;
+}
+
 // ─── Core Boolean Operation ─────────────────────────────────────────────────
 
 function booleanOp(
   cmdsA: TransformCmd[], cmdsB: TransformCmd[], op: BooleanOp,
+  options: { normalize?: boolean } = {},
 ): TransformCmd[] {
   validateClosedPath(cmdsA, 'first');
   validateClosedPath(cmdsB, 'second');
+
+  // §2.14 input normalization. Skipped on recursive entry (set by
+  // unionIntersectingSameWindingSubpaths' inner booleanOp call) to
+  // avoid infinite recursion / memory explosion on chained unions.
+  // Two passes:
+  //   (Phase 2) splitSelfIntersectingContour: find self-touch points
+  //   in single-subpath inputs and split into separate non-self-touching
+  //   subpaths. Glyph fonts (Playfair Bold lowercase e) sometimes encode
+  //   the whole letterform — outer + bowl counter — as a single
+  //   self-intersecting contour. Without splitting, the boolean op's
+  //   intersection finder sees this as one path with internal crossings
+  //   and produces ambiguous run classifications.
+  //   (Phase 1) unionIntersectingSameWindingSubpaths: merge same-winding
+  //   subpaths that touch, overlap, or are nested (Playfair Bold
+  //   capital E's outer + 2 additive subpaths). After Phase 2 splits a
+  //   self-touching contour, Phase 1 may need to merge sibling pieces
+  //   if they share boundaries.
+  if (options.normalize !== false) {
+    cmdsA = splitSelfIntersectingContour(cmdsA);
+    cmdsB = splitSelfIntersectingContour(cmdsB);
+    cmdsA = unionIntersectingSameWindingSubpaths(cmdsA);
+    cmdsB = unionIntersectingSameWindingSubpaths(cmdsB);
+  }
 
   // Extract draw-only segments, converting z to lines where needed
   let segsA = extractDrawCmds(cmdsA);

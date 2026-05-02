@@ -1,0 +1,327 @@
+// viewBox="0 0 1080 900"
+// Iteration 2 — word = "en", tracking = 0.5/0.6/0.7/0.8
+//
+// Bebas Neue 400 (1 row, UPPER only — all-caps font),
+// Raleway 200 ExtraLight (4 caps),
+// Libre Baskerville 700 Bold (4 caps),
+// Playfair Display 700 Bold (4 caps).
+// 13 rows × 4 tracking = 52 cells.
+// 1 chained .union() call per cell (single A.union(B)).
+//
+// Same 5-color palette and layer ordering as iter-1.
+// Once clean: append "c" → "enc" (iter-3).
+
+@font "../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "../../fonts/Raleway/Raleway-ExtraLight.ttf"
+@font "../../fonts/Libre_Baskerville/LibreBaskerville-Bold.ttf"
+@font "../../fonts/Playfair_Display/PlayfairDisplay-Bold.ttf"
+
+// ─── Layout constants ──────────────────────────────────────────────
+
+let cell_w = 240;
+let cell_h = 60;
+let header_w = 100;
+let header_h = 60;
+let total_w = 1080;
+let total_h = 900;
+let n_rows = 13;
+let n_cols = 4;
+
+// ─── 5-color palette (verbatim from iter-1) ────────────────────────
+
+let bg_color = Color('#fefce8');
+let underlay_fill_color = Color('#f9731680');
+let union_fill_color = Color('#1e3a8a80');
+let underlay_stroke_color = Color('#7c2d12e6');
+let union_stroke_color = Color('#06b6d4f2');
+let stroke_w = 0.8;
+
+let header_color = Color('#475569');
+let title_color = Color('#0f172a');
+let footer_color = Color('#64748b');
+let grid_color = Color('#e7e5d0');
+
+// ─── Background ────────────────────────────────────────────────────
+
+let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+layer('bg').apply { rect(0, 0, total_w, total_h); }
+
+// ─── Diagnostic layers ──────────────────────────────────────────────
+
+let underlay_fill_layer = PathLayer('underlay-fill') ${ fill: underlay_fill_color; stroke: none; };
+let union_fill_layer = PathLayer('union-fill') ${ fill: union_fill_color; stroke: none; };
+let underlay_stroke_layer = PathLayer('underlay-stroke') ${ fill: none; stroke: underlay_stroke_color; stroke-width: stroke_w; };
+let union_stroke_layer = PathLayer('union-stroke') ${ fill: none; stroke: union_stroke_color; stroke-width: stroke_w; };
+
+// ─── Axis values ───────────────────────────────────────────────────
+
+let cap_labels = ["UPPER", "lower", "First", "AlT"];
+let cap_words  = ["EN", "en", "En", "eN"];
+
+let font_size = 48;
+let tracking_values = [0.5, 0.6, 0.7, 0.8];
+
+// ─── Title ─────────────────────────────────────────────────────────
+
+let title_layer = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
+layer('title').apply {
+  text(20, 26)`Iteration 2 — word = "en", tracking 0.5..0.8, 4 fonts`
+}
+
+let subtitle_layer = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
+layer('subtitle').apply {
+  text(20, 44)`Single-pair .union(); Bebas reduced to 1 row (all-caps); Playfair Display added; tracking widened to 0.5..0.8.`
+}
+
+// ─── Column headers ────────────────────────────────────────────────
+
+let col_header_layer = TextLayer('col-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
+layer('col-headers').apply {
+  for (tr_idx in 0..3) {
+    let cx = calc(header_w + tr_idx * cell_w + cell_w / 2);
+    let tr = tracking_values[tr_idx];
+    text(cx, 56)`tracking = ${tr}`
+  }
+}
+
+// ─── Row headers ───────────────────────────────────────────────────
+// Row 0: Bebas UPPER. Rows 1..4: Raleway 4 caps. Rows 5..8: Libre Bask 4 caps.
+// Rows 9..12: Playfair Display 4 caps.
+
+let row_header_layer = TextLayer('row-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
+layer('row-headers').apply {
+  text(header_w - 8, calc(header_h + 0 * cell_h + cell_h / 2 + 3))`Bebas Neue 400 UPPER`
+
+  for (cap_idx_r in 0..3) {
+    let row_idx_r = calc(1 + cap_idx_r);
+    let ry_r = calc(header_h + row_idx_r * cell_h + cell_h / 2 + 3);
+    text(header_w - 8, ry_r)`Raleway 200 ${cap_labels[cap_idx_r]}`
+  }
+
+  for (cap_idx_l in 0..3) {
+    let row_idx_l = calc(5 + cap_idx_l);
+    let ry_l = calc(header_h + row_idx_l * cell_h + cell_h / 2 + 3);
+    text(header_w - 8, ry_l)`Libre Bask 700 ${cap_labels[cap_idx_l]}`
+  }
+
+  for (cap_idx_p in 0..3) {
+    let row_idx_p = calc(9 + cap_idx_p);
+    let ry_p = calc(header_h + row_idx_p * cell_h + cell_h / 2 + 3);
+    text(header_w - 8, ry_p)`Playfair 700 ${cap_labels[cap_idx_p]}`
+  }
+}
+
+// ─── Grid ──────────────────────────────────────────────────────────
+
+let grid_layer = PathLayer('grid') ${ stroke: grid_color; stroke-width: 0.5; fill: none; };
+layer('grid').apply {
+  for (col_idx in 0..4) {
+    let gx = calc(header_w + col_idx * cell_w);
+    M gx header_h v calc(n_rows * cell_h)
+  }
+  for (row_idx in 0..13) {
+    let gy = calc(header_h + row_idx * cell_h);
+    M header_w gy h calc(n_cols * cell_w)
+  }
+}
+
+// ─── Cell IDs (top-left of every cell, screenshot-friendly) ────────
+// Format: <font>-<caps>-<tracking×100>
+//   font: BB=Bebas Neue, RW=Raleway, LB=Libre Bask, PF=Playfair
+//   caps: U=UPPER, l=lower, F=First, A=AlT
+//   tracking: 50/60/70/80 (tracking_value × 100)
+
+let cap_codes = ["U", "l", "F", "A"];
+let tracking_codes = ["50", "60", "70", "80"];
+
+let cell_id_color = Color('#9333ea');
+let cell_id_layer = TextLayer('cell-ids') ${ font-family: monospace; font-size: 9; fill: cell_id_color; text-anchor: middle; };
+layer('cell-ids').apply {
+  for (tr_idx_id_b in 0..3) {
+    let cx_id_b = calc(header_w + tr_idx_id_b * cell_w + cell_w / 2);
+    let cy_id_b = calc(header_h + 0 * cell_h + 10);
+    text(cx_id_b, cy_id_b)`BB-U-${tracking_codes[tr_idx_id_b]}`
+  }
+  for (cap_idx_id_r in 0..3) {
+    for (tr_idx_id_r in 0..3) {
+      let cx_id_r = calc(header_w + tr_idx_id_r * cell_w + cell_w / 2);
+      let cy_id_r = calc(header_h + (1 + cap_idx_id_r) * cell_h + 10);
+      text(cx_id_r, cy_id_r)`RW-${cap_codes[cap_idx_id_r]}-${tracking_codes[tr_idx_id_r]}`
+    }
+  }
+  for (cap_idx_id_l in 0..3) {
+    for (tr_idx_id_l in 0..3) {
+      let cx_id_l = calc(header_w + tr_idx_id_l * cell_w + cell_w / 2);
+      let cy_id_l = calc(header_h + (5 + cap_idx_id_l) * cell_h + 10);
+      text(cx_id_l, cy_id_l)`LB-${cap_codes[cap_idx_id_l]}-${tracking_codes[tr_idx_id_l]}`
+    }
+  }
+  for (cap_idx_id_p in 0..3) {
+    for (tr_idx_id_p in 0..3) {
+      let cx_id_p = calc(header_w + tr_idx_id_p * cell_w + cell_w / 2);
+      let cy_id_p = calc(header_h + (9 + cap_idx_id_p) * cell_h + 10);
+      text(cx_id_p, cy_id_p)`PF-${cap_codes[cap_idx_id_p]}-${tracking_codes[tr_idx_id_p]}`
+    }
+  }
+}
+
+// ─── Cell rendering ────────────────────────────────────────────────
+
+// Bebas Neue (row 0, UPPER only)
+let styles_bebas = ${ font-family: BebasNeue-Regular; font-size: font_size; };
+let row_y_b = header_h;
+let word_b = cap_words[0];
+let glyphs_b = PathBlock.fromGlyph(word_b, styles_bebas);
+let nglyphs_b = glyphs_b.length;
+let last_b = calc(nglyphs_b - 1);
+
+for (tr_idx_b in 0..3) {
+  let tr_b = tracking_values[tr_idx_b];
+  let cursor_b = 0;
+  let positions_b = [];
+  let projected_b = [];
+  for (g in glyphs_b) {
+    positions_b.push(cursor_b);
+    projected_b.push(g.project(cursor_b, 0));
+    cursor_b = calc(cursor_b + g.advanceWidth * tr_b);
+  }
+  let word_w_b = cursor_b;
+  let combined_b = projected_b[0];
+  for (ui in 1..last_b) {
+    combined_b = combined_b.union(projected_b[ui]);
+  }
+  let cell_baseline_b = calc(row_y_b + 52);
+  let col_x_b = calc(header_w + tr_idx_b * cell_w);
+  let dx_b = calc(col_x_b + (cell_w - word_w_b) / 2);
+  for (mi_b in 0..last_b) {
+    let gx_b = calc(dx_b + positions_b[mi_b]);
+    layer('underlay-fill').apply { glyphs_b[mi_b].drawTo(gx_b, cell_baseline_b); }
+    layer('underlay-stroke').apply { glyphs_b[mi_b].drawTo(gx_b, cell_baseline_b); }
+  }
+  layer('union-fill').apply { combined_b.drawTo(dx_b, cell_baseline_b); }
+  layer('union-stroke').apply { combined_b.drawTo(dx_b, cell_baseline_b); }
+}
+
+// Raleway 200 ExtraLight (rows 1..4)
+let styles_raleway = ${ font-family: Raleway-ExtraLight; font-size: font_size; };
+
+for (cap_idx_r in 0..3) {
+  let row_idx_r = calc(1 + cap_idx_r);
+  let row_y_r = calc(header_h + row_idx_r * cell_h);
+  let word_r = cap_words[cap_idx_r];
+  let glyphs_r = PathBlock.fromGlyph(word_r, styles_raleway);
+  let nglyphs_r = glyphs_r.length;
+  let last_r = calc(nglyphs_r - 1);
+
+  for (tr_idx_r in 0..3) {
+    let tr_r = tracking_values[tr_idx_r];
+    let cursor_r = 0;
+    let positions_r = [];
+    let projected_r = [];
+    for (g in glyphs_r) {
+      positions_r.push(cursor_r);
+      projected_r.push(g.project(cursor_r, 0));
+      cursor_r = calc(cursor_r + g.advanceWidth * tr_r);
+    }
+    let word_w_r = cursor_r;
+    let combined_r = projected_r[0];
+    for (ui in 1..last_r) {
+      combined_r = combined_r.union(projected_r[ui]);
+    }
+    let cell_baseline_r = calc(row_y_r + 52);
+    let col_x_r = calc(header_w + tr_idx_r * cell_w);
+    let dx_r = calc(col_x_r + (cell_w - word_w_r) / 2);
+    for (mi_r in 0..last_r) {
+      let gx_r = calc(dx_r + positions_r[mi_r]);
+      layer('underlay-fill').apply { glyphs_r[mi_r].drawTo(gx_r, cell_baseline_r); }
+      layer('underlay-stroke').apply { glyphs_r[mi_r].drawTo(gx_r, cell_baseline_r); }
+    }
+    layer('union-fill').apply { combined_r.drawTo(dx_r, cell_baseline_r); }
+    layer('union-stroke').apply { combined_r.drawTo(dx_r, cell_baseline_r); }
+  }
+}
+
+// Libre Baskerville 700 Bold (rows 5..8)
+let styles_libre = ${ font-family: LibreBaskerville-Bold; font-size: font_size; };
+
+for (cap_idx_l in 0..3) {
+  let row_idx_l = calc(5 + cap_idx_l);
+  let row_y_l = calc(header_h + row_idx_l * cell_h);
+  let word_l = cap_words[cap_idx_l];
+  let glyphs_l = PathBlock.fromGlyph(word_l, styles_libre);
+  let nglyphs_l = glyphs_l.length;
+  let last_l = calc(nglyphs_l - 1);
+
+  for (tr_idx_l in 0..3) {
+    let tr_l = tracking_values[tr_idx_l];
+    let cursor_l = 0;
+    let positions_l = [];
+    let projected_l = [];
+    for (g in glyphs_l) {
+      positions_l.push(cursor_l);
+      projected_l.push(g.project(cursor_l, 0));
+      cursor_l = calc(cursor_l + g.advanceWidth * tr_l);
+    }
+    let word_w_l = cursor_l;
+    let combined_l = projected_l[0];
+    for (ui in 1..last_l) {
+      combined_l = combined_l.union(projected_l[ui]);
+    }
+    let cell_baseline_l = calc(row_y_l + 52);
+    let col_x_l = calc(header_w + tr_idx_l * cell_w);
+    let dx_l = calc(col_x_l + (cell_w - word_w_l) / 2);
+    for (mi_l in 0..last_l) {
+      let gx_l = calc(dx_l + positions_l[mi_l]);
+      layer('underlay-fill').apply { glyphs_l[mi_l].drawTo(gx_l, cell_baseline_l); }
+      layer('underlay-stroke').apply { glyphs_l[mi_l].drawTo(gx_l, cell_baseline_l); }
+    }
+    layer('union-fill').apply { combined_l.drawTo(dx_l, cell_baseline_l); }
+    layer('union-stroke').apply { combined_l.drawTo(dx_l, cell_baseline_l); }
+  }
+}
+
+// Playfair Display 700 Bold (rows 9..12)
+let styles_playfair = ${ font-family: PlayfairDisplay-Bold; font-size: font_size; };
+
+for (cap_idx_p in 0..3) {
+  let row_idx_p = calc(9 + cap_idx_p);
+  let row_y_p = calc(header_h + row_idx_p * cell_h);
+  let word_p = cap_words[cap_idx_p];
+  let glyphs_p = PathBlock.fromGlyph(word_p, styles_playfair);
+  let nglyphs_p = glyphs_p.length;
+  let last_p = calc(nglyphs_p - 1);
+
+  for (tr_idx_p in 0..3) {
+    let tr_p = tracking_values[tr_idx_p];
+    let cursor_p = 0;
+    let positions_p = [];
+    let projected_p = [];
+    for (g in glyphs_p) {
+      positions_p.push(cursor_p);
+      projected_p.push(g.project(cursor_p, 0));
+      cursor_p = calc(cursor_p + g.advanceWidth * tr_p);
+    }
+    let word_w_p = cursor_p;
+    let combined_p = projected_p[0];
+    for (ui in 1..last_p) {
+      combined_p = combined_p.union(projected_p[ui]);
+    }
+    let cell_baseline_p = calc(row_y_p + 52);
+    let col_x_p = calc(header_w + tr_idx_p * cell_w);
+    let dx_p = calc(col_x_p + (cell_w - word_w_p) / 2);
+    for (mi_p in 0..last_p) {
+      let gx_p = calc(dx_p + positions_p[mi_p]);
+      layer('underlay-fill').apply { glyphs_p[mi_p].drawTo(gx_p, cell_baseline_p); }
+      layer('underlay-stroke').apply { glyphs_p[mi_p].drawTo(gx_p, cell_baseline_p); }
+    }
+    layer('union-fill').apply { combined_p.drawTo(dx_p, cell_baseline_p); }
+    layer('union-stroke').apply { combined_p.drawTo(dx_p, cell_baseline_p); }
+  }
+}
+
+// ─── Footer ────────────────────────────────────────────────────────
+
+let footer_layer = TextLayer('footer') ${ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
+layer('footer').apply {
+  text(20, calc(total_h - 24))`Iter 2 of progressive bisection (en, wider tracking, Playfair added). Once clean: append "c" → "enc" (iter-3).`
+}
