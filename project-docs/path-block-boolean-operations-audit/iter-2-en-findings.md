@@ -140,7 +140,7 @@ current boolean op pipeline. Neither fix is small. Both should be
 costed and prioritized separately from this audit's existing P0/P1
 fix list.
 
-## B. Half-width / asymmetric strokes (Raleway, Playfair)
+## B. Half-width / asymmetric strokes (Raleway, Playfair) — REVISED 2026-05-02: more severe than half-width
 
 A subset of cells show sections of the union stroke at roughly
 half the expected width — the cyan boundary is rendered on only one
@@ -148,18 +148,46 @@ side of an edge.
 
 | Cell | Notes |
 |---|---|
-| `RW-l-50` | "en" — half-width stroke through the e/n junction. |
+| `RW-l-50` | "en" — bowl of e is COMPLETELY FILLED in union output (not half-width — total topology break). |
 | `RW-A-50` | "eN" — half-width stroke. |
 | `RW-A-60` | "eN" — half-width stroke. |
 | `PF-F-50` | "En" — also has half-width strokes alongside the phantom-line issue. |
 
-**Hypothesis**: §2.13's "drop both copies of shared edges" is
-firing on edges that are *not* truly shared. If detection
-classifies an edge as shared but only ONE side actually overlaps,
-the algorithm drops the kept-side and the rendered output traces
-the un-dropped side once → visible as half-width. This is the
-inverse of the iter-1 wedge problem: there we kept a shared edge
-twice, here we may be dropping a non-shared edge once too often.
+**Diagnosis (2026-05-02)**: Investigated RW-l-50 in detail. The
+artifact is more severe than "half-width strokes" — the e's bowl
+counter is ENTIRELY FILLED in the union output (visible as a solid
+disk). The original "half-width" framing was based on small-render
+visual perception; at higher zoom, the bowl is solid.
+
+`DEBUG_BOOLEAN_OPS` trace shows:
+- Raleway lowercase e has **0 detectable self-intersections**, so
+  Phase 2 doesn't process it. The e is a single 38-segment concave
+  contour with the bowl traced as a bay.
+- Boolean op produces **14 runs** at the e/n intersection cluster
+  (16 intersections found, 3 dropped as vertex-vertex).
+- Hungarian linker chains all 14 runs into ONE big trace of 67
+  commands. The chain order is not e's natural walk order — runs
+  are reordered by minimum cost. Some links span distance 5.368
+  (substantial in this glyph's local scale).
+- Result: the chain outlines an outer boundary that bypasses the
+  bowl interior topologically. With only 1 output subpath (no
+  inner CCW counter), nonzero fill paints the bowl as solid.
+
+Mechanism similarities with O4 (RW-U-70):
+- Both involve dense intersection clusters at the glyph junction
+- Both involve the Hungarian linker selecting links that produce
+  topologically wrong output
+- Both indicate the run-extraction + linking stages can't handle
+  certain configurations of concave inputs
+
+Difference from O4: O4 produces 2 disjoint cycles (correct outer +
+spurious inner CCW). RW-l-50 produces 1 cycle that's globally
+mis-routed (no separate inner CCW for the bowl).
+
+**Same conclusion as O4**: structural fix required in run
+extraction or linking. Cannot be patched by post-assembly cleanup.
+
+Decision recorded 2026-05-02: pause Class B with this analysis.
 
 ## C. N protrusion through E intersection (Playfair UPPER)
 
