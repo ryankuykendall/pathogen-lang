@@ -3376,15 +3376,27 @@ function splitOneSubpathSelfIntersections(subpath: TransformCmd[]): TransformCmd
 
   if (subpathOuts.length <= 1) return subpath;
 
-  // Reassemble each cycle as a closed subpath with explicit M / z.
+  // Reassemble each cycle as a closed subpath. Use lowercase 'm' (relative
+  // moveto) per the codebase convention — TransformCmd.command is always
+  // lowercase, with absolute start/end points carried alongside for
+  // tracking. Uppercase 'M' would falls through commandsToRelativeD's
+  // catch-all and emit a literal absolute "M dx dy" with relative
+  // displacement, putting the path at the wrong absolute position when
+  // drawTo() translates it later.
   const result: TransformCmd[] = [];
-  for (const cycle of subpathOuts) {
+  for (let cycleIdx = 0; cycleIdx < subpathOuts.length; cycleIdx++) {
+    const cycle = subpathOuts[cycleIdx];
     if (cycle.length === 0) continue;
     const first = cycle[0];
+    // Compute relative move from the previous subpath's last point (or
+    // origin for the first subpath).
+    const prevEnd: Point = cycleIdx === 0
+      ? { x: 0, y: 0 }
+      : { ...subpathOuts[cycleIdx - 1][subpathOuts[cycleIdx - 1].length - 1].end };
     result.push({
-      command: 'M',
-      args: [first.start.x, first.start.y],
-      start: { x: 0, y: 0 },
+      command: 'm',
+      args: [first.start.x - prevEnd.x, first.start.y - prevEnd.y],
+      start: { ...prevEnd },
       end: { ...first.start },
     });
     for (const c of cycle) result.push(c);
