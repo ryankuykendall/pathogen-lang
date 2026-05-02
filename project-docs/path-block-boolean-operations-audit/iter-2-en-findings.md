@@ -291,7 +291,7 @@ Bold c, visible in the raw glyph render as part of the natural
 glyph design. Not a boolean-op artifact.
 
 ### O4. Missing fill / yellow showing through interior
-(RW-U-70, RW-A-70) — REAL FILL BUG, deeper structural cause
+(RW-U-70, RW-A-70) — REVISED 2026-05-02: also a misperception, output is correct
 For Raleway 200 ExtraLight at tracking 0.7, both upper-case ENC
 and AlT eNc cells show:
 - Capital E rendered with a CLOSING vertical stroke on the right
@@ -344,6 +344,25 @@ existing 52 tests cover.
 Decision recorded 2026-05-02: pause O4, leave the bug filed
 with this analysis. Approach won't be fixed in this audit
 session.
+
+**REVISED 2026-05-02 (later)**: Deep winding analysis showed
+the inner CCW cycle's interior is the e/E body's BAY regions
+(concave portions of E's outline outside E's filled area).
+Sampled grid points: 0% inside either input. The CCW correctly
+represents real holes (regions outside both E and N).
+
+Side-by-side high-zoom comparison of the underlay (raw E + N)
+vs the union output at the right side of E shows them
+**essentially identical**. The "closing vertical" the
+observation described is N's filled left vertical body sitting
+adjacent to E's right edge — present in both underlay and
+union. At small render scale (matrix view), N's left vertical
+visually merges with E's right edge, creating the perceived
+"closed E," but this is correct boolean op output, not a bug.
+
+**Status**: O4 closed as a perceptual artifact at matrix scale.
+The boolean op produces topologically correct output for
+RW-U-70 / RW-A-70.
 
 ### O5. Peninsula-like blue stroke (LB-l-70) — REAL FILL BUG
 Lowercase Libre Baskerville e shows a peninsula-like blue stroke
