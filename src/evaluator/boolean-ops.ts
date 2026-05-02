@@ -2140,6 +2140,62 @@ function classifyByRingWalk(
     }
   }
 
+  // Post-pass: shared-edge boundary splits on the OUTER boundary of the
+  // merged shape need to be kept (once, from A's copy) rather than
+  // dropped. §2.13's "drop both copies" simplification is correct for
+  // strictly-INTERIOR shared edges (e.g. abutting rectangles where the
+  // shared edge is invisible because both sides are filled), but WRONG
+  // for shared edges that sit on the outer boundary of (A ∪ B). For
+  // example, Raleway thin-stroke E's top horizontal stroke is collinear
+  // with N's top serif at the same y-value; the shared edge IS part of
+  // the merged outer boundary, and dropping both copies leaves a gap.
+  //
+  // Disambiguation: sample perpendicular off the boundary split's
+  // midpoint. If either perpendicular sample is OUTSIDE the other path,
+  // the shared edge sits on a boundary of (A ∪ B) — keep A's copy as
+  // 'outside'; B's copy stays 'on' (selectSegments drops it). For
+  // strictly-interior shared edges (both perpendicular samples inside
+  // the other path), keep the 'on' classification (drop both copies).
+  // Only applies on side === 'A'; side B's boundary splits always stay
+  // 'on' so the shared edge appears just once in the output.
+  // §2.14 normalization Phase 3.
+  if (side === 'A') {
+    const PERP_EPSILON_BOUNDARY = 0.5;
+    // Build a path representation of A (this side) by collecting all split
+    // cmds. The splits cover A's geometry as a connected sequence, suitable
+    // for windingNumber.
+    const thisSegs: TransformCmd[] = splits.map(s => s.cmd);
+    for (let i = 0; i < splits.length; i++) {
+      if (!splits[i].boundary) continue;
+      if (classes[i] !== 'on') continue;
+      const seg = splits[i].cmd;
+      const mid = evalCmd(seg, 0.5);
+      const tx = seg.end.x - seg.start.x;
+      const ty = seg.end.y - seg.start.y;
+      const tlen = Math.sqrt(tx * tx + ty * ty);
+      if (tlen < 1e-9) continue;
+      const nx = -ty / tlen;
+      const ny = tx / tlen;
+      const samplePlus = { x: mid.x + nx * PERP_EPSILON_BOUNDARY, y: mid.y + ny * PERP_EPSILON_BOUNDARY };
+      const sampleMinus = { x: mid.x - nx * PERP_EPSILON_BOUNDARY, y: mid.y - ny * PERP_EPSILON_BOUNDARY };
+      // A perpendicular sample is "outside (A ∪ B)" iff it is outside BOTH
+      // A's path AND B's path. Keep A's boundary copy as 'outside' only
+      // when at least one perpendicular side is outside the union — that
+      // identifies a shared edge sitting on the merged outer boundary.
+      // For strictly-interior shared edges (both sides inside one or the
+      // other), keep 'on' (drop both copies, original §2.13 behaviour).
+      const plusOutsideOther = windingNumber(samplePlus, otherSegs) === 0;
+      const minusOutsideOther = windingNumber(sampleMinus, otherSegs) === 0;
+      const plusOutsideThis = windingNumber(samplePlus, thisSegs) === 0;
+      const minusOutsideThis = windingNumber(sampleMinus, thisSegs) === 0;
+      const plusOutsideUnion = plusOutsideOther && plusOutsideThis;
+      const minusOutsideUnion = minusOutsideOther && minusOutsideThis;
+      if (plusOutsideUnion || minusOutsideUnion) {
+        classes[i] = 'outside';
+      }
+    }
+  }
+
   return classes;
 }
 

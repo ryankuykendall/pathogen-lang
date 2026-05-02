@@ -205,3 +205,78 @@ variant that the ordering fix doesn't cover.
 - iter-3 (enc, chained union): not yet reviewed at this depth —
   expected to inherit iter-2's classes plus chained-error
   compounding (§2.9).
+
+## Post-Phase-1+2 audit observations (2026-05-02)
+
+After committing the §2.14 normalization (Phase 1: union
+intersecting same-winding subpaths, Phase 2: split self-touching
+contours), the user did a sweep of the iter-2-en + iter-3-enc
+matrices at font-size 48 and called out the following remaining
+issues. Recorded here for tracking; not all are necessarily
+boolean-op bugs (some may be font-intrinsic or browser-chrome
+effects).
+
+### O1. Browser favicon thumbnail (likely not a code bug)
+The matrix BBWP page shows a small "eN" thumbnail at the top-left
+(image 19). This is the browser auto-generating a favicon from
+page content when the BBWP wrapper doesn't supply
+`<link rel="icon">`. Fix: add a blank favicon link to the BBWP
+template if visually distracting.
+
+### O2. Phantom vertical stroke on right side of E (PF-F-80)
+A thin extra cyan vertical stroke appears on the right side of
+the capital E in PF-F-80, where the merged outer should not have
+any vertical edge. Likely the same class C residual 2-cycle
+mechanism — a spurious extra contour at the E/N junction now that
+the inputs are normalized. Boolean-op-level bug.
+
+### O3. Red spur on lowercase c (LB-F-80, LB-A-80)
+A small red triangular feature appears on the right side of the
+lowercase c in Libre Baskerville cells. Hypothesis: font-intrinsic
+additive subpath in c's glyph (similar to Playfair's E having an
+internal "T" decoration). To confirm: probe LB lowercase c for
+subpath count.
+
+### O4. Missing fill / yellow showing through interior
+(RW-U-70, RW-A-70)
+For Raleway 200 ExtraLight at tracking 0.7, both upper-case ENC
+and AlT eNc cells show:
+- Capital E rendered with a CLOSING vertical stroke on the right
+  (Raleway sans-serif E is normally open right-side)
+- Yellow background showing through where union fill should cover
+- C with crossing strokes inside its bowl
+This looks like the union output is keeping interior boundaries
+that shouldn't survive (extra contours splitting filled regions).
+
+### O5. Peninsula-like blue stroke (LB-l-70)
+Lowercase Libre Baskerville e shows a peninsula-like blue stroke
+extending from middle to bottom at the e/n intersection.
+Different font than PF (LB lowercase e has 0 detectable
+self-intersections per the Phase 2 probe), so the Phase 2 split
+doesn't fire. The artifact is geometrically similar to the PF
+peninsula but stems from a different topology — possibly a
+near-tangent crossing of e's bowl with n's left vertical.
+
+### O6. Missing intersection — N's bottom-left serif vs e
+(LB-A-70)
+At tracking 0.7 in Libre Bask AlT, the e and N appear visually
+to overlap at N's bottom-left serif but the boolean op doesn't
+register the intersection — the two glyphs render as separate
+shapes where they should merge. Likely a numerical precision
+case: the serif's edge passes near (but doesn't quite touch) e's
+boundary, falling inside the intersection-finder's tolerance.
+
+### O7. Messy cluster of lines at E/N junction (PF-U-70)
+Capital ENC at tracking 0.7 in Playfair shows a "messy cluster"
+of cyan strokes at the E/N junction. Combination of class C
+residual (multiple spurious contours) + possibly compounding
+from the chained union (.union(B).union(C) means N's right edge
+also intersects C, with each step adding noise).
+
+### Common root candidates
+Most of O2, O4, O5, O7 trace to the boolean op producing extra
+contours that survive classification when they shouldn't —
+either via the §2.5 Hungarian routing creating unwanted 2-cycles,
+or via per-segment classification giving inconsistent results in
+dense intersection clusters. Class C "residual 2-cycle" remains
+the highest-leverage single fix candidate.
