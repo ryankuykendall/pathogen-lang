@@ -171,16 +171,26 @@ This may simply be the underlay (orange) showing through where the
 union (cyan) should cover, OR it may be a kept run that bridges
 through the wrong endpoint. Without close-up zoom, ambiguous.
 
-## D. Spur on Playfair `e` (AlT)
+## D. Spur on Playfair `e` (AlT) — RESOLVED
 
 | Cell | Notes |
 |---|---|
-| `PF-A-60` | "eN" — small triangular spur protrudes from the right side of the `e` glyph in the middle region. The user-supplied close-up shows the spur sitting just outside the e's bowl, where the bowl meets N's diagonal. |
+| `PF-A-60` | "eN" — small triangular spur protrudes from the right side of the `e` glyph in the middle region. |
 
-**Hypothesis**: similar to the iter-1 wedge — an unmatched-tail
-single-run contour from `traceContours`. The §2.13 chain-start
-ordering fix addresses one variant; the AlT case may be a sibling
-variant that the ordering fix doesn't cover.
+**Resolution (2026-05-01 verification)**: The "spurious 2-cycle"
+diagnosis was a misread of path data. The PF-A-60 union output
+contains **3 subpaths**: outer eN perimeter + upper e counter +
+lower e counter, which is the **correct** topology for a Playfair
+'e' glyph (whose crossbar legitimately divides the bowl into two
+counters). Verification: with Phase 2 disabled, output collapses to
+2 subpaths and the e crossbar shows as an unsplit self-intersection
+sliver — the wrong topology. With Phase 2 enabled (current state),
+the e renders cleanly with two separate counter regions.
+
+In context, PF-A-60 in `failure-matrix-iter-2-en.pathogen` renders
+clean. The visible "spur" the original observation described was a
+reading of pre-§2.13 output; the §2.13 boundary-promotion + chain
+ordering fixes already eliminated it. Class D is closed.
 
 ## Plan for next round
 
