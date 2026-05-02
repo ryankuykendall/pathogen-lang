@@ -364,18 +364,13 @@ visually merges with E's right edge, creating the perceived
 The boolean op produces topologically correct output for
 RW-U-70 / RW-A-70.
 
-### O5. Peninsula-like blue stroke (LB-l-70) — REAL FILL BUG
-Lowercase Libre Baskerville e shows a peninsula-like blue stroke
-extending from middle to bottom at the e/n intersection.
-Different font than PF (LB lowercase e has 0 detectable
-self-intersections per the Phase 2 probe), so the Phase 2 split
-doesn't fire. The artifact is geometrically similar to the PF
-peninsula but stems from a different topology — possibly a
-near-tangent crossing of e's bowl with n's left vertical.
+### O5. Peninsula-like blue stroke (LB-l-70) — REVISED 2026-05-02: not a fill bug
 
-**Diagnosis (2026-05-02 fill-vs-stroke check)**: confirmed real
-fill bug — fill rendering still shows a small spike/peninsula
-extending below the baseline at the e/n junction.
+**Diagnosis (2026-05-02)**: high-zoom fill comparison of underlay
+vs union shows them **essentially identical**. The "peninsula" was
+a stroke-rendering perception of n's natural left-edge geometry
+meeting e at the junction, not a fill artifact. Boolean op output
+is correct. Status: closed.
 
 ### O6. Missing intersection — N's bottom-left serif vs e
 (LB-A-70) — LIKELY NOT A BUG (confirmed by underlay-vs-union comparison)
