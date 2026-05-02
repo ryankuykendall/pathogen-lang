@@ -233,12 +233,26 @@ page content when the BBWP wrapper doesn't supply
 `<link rel="icon">`. Fix: add a blank favicon link to the BBWP
 template if visually distracting.
 
-### O2. Phantom vertical stroke on right side of E (PF-F-80)
-A thin extra cyan vertical stroke appears on the right side of
-the capital E in PF-F-80, where the merged outer should not have
-any vertical edge. Likely the same class C residual 2-cycle
-mechanism — a spurious extra contour at the E/N junction now that
-the inputs are normalized. Boolean-op-level bug.
+### O2. Phantom vertical stroke on right side of E (PF-F-80) — STROKE-ONLY ARTIFACT
+
+**Diagnosis (2026-05-02 fill-vs-stroke check)**: The output is
+**topologically correct under nonzero fill rule** — fill rendering
+of the union path produces a perfect "En" silhouette with both E
+counters and the n bowl correctly unfilled. The "phantom vertical"
+visible in the audit's stroked rendering is a self-touching
+figure-8 CCW contour: a single closed loop that traces both E
+counters connected via a narrow-neck wrap-around the middle arm.
+Two parallel vertical edges at x=spine (separated by the
+middle-arm thickness, ~2 units) form the figure-8 neck, which
+strokes as the visible "phantom vertical" but is interior under
+fill.
+
+**Class**: not a fill-correctness bug. Decision recorded
+2026-05-02: skip a deep fix (would require a narrow-neck splitter
+in boolean op output, ~half day, only justified if a downstream
+consumer strokes glyph union output — current consumers all fill).
+If audit visualization parity is desired, switch the matrix
+visualization layers to fill rendering; the artifact disappears.
 
 ### O3. Red spur on lowercase c (LB-F-80, LB-A-80)
 A small red triangular feature appears on the right side of the
@@ -248,17 +262,61 @@ internal "T" decoration). To confirm: probe LB lowercase c for
 subpath count.
 
 ### O4. Missing fill / yellow showing through interior
-(RW-U-70, RW-A-70)
+(RW-U-70, RW-A-70) — REAL FILL BUG, deeper structural cause
 For Raleway 200 ExtraLight at tracking 0.7, both upper-case ENC
 and AlT eNc cells show:
 - Capital E rendered with a CLOSING vertical stroke on the right
   (Raleway sans-serif E is normally open right-side)
 - Yellow background showing through where union fill should cover
 - C with crossing strokes inside its bowl
-This looks like the union output is keeping interior boundaries
-that shouldn't survive (extra contours splitting filled regions).
 
-### O5. Peninsula-like blue stroke (LB-l-70)
+**Diagnosis (2026-05-02 deeper investigation)**: confirmed real
+fill bug, not a stroke artifact. Root cause is **structural in
+run extraction + Hungarian linking**, not a post-assembly
+cleanup that's missing.
+
+`DEBUG_BOOLEAN_OPS` trace on `iter-2-isolation-rw-u-70.pathogen`
+shows the boolean op produces 4 runs that the Hungarian solver
+correctly pairs into **2 separate cycles**:
+- Cycle 1 (CW outer): run[0] (E outer, C2→C1) + run[3] (N outer
+  right, C1→C2). This is the correct merged outer perimeter.
+- Cycle 2 (CCW inner): run[1] (E interior segments around spine
+  + arms, C4→C3) + run[2] (N's outer-left vertical at x=152.65,
+  C3→C4). Under nonzero fill, this CCW carves a 0-winding region
+  inside the outer, producing the visible "yellow through" + the
+  closed-right look on E.
+
+The two cycles don't share intersection points (C1, C2 vs C3,
+C4), so the Hungarian linker has only one local-cost-minimum
+pairing per cluster. Each pair has cost 0 (perfect endpoint
+matches), so no global rerouting is possible from cost adjustment
+alone.
+
+**Attempted fix (reverted)**: a `dropUnionSpuriousHoles`
+post-assembly pass that would drop nested CCW subpaths whose
+interior lies inside one of the inputs. Reverted because the
+predicate doesn't fire for this case — the CCW cycle traces
+around E's entire body shape (including the upper/lower
+counters), so a sampled interior point lands in E's *counter*
+(unfilled by E), not E's filled spine. The cycle isn't simply
+"spurious in E's body"; it's tracing E's complete body
+silhouette via N's outer-left, and the boundary between
+"inside E" and "outside E" runs through the cycle's interior.
+
+**What a real fix needs**: either (a) restructure run
+extraction to produce a single chain through all 4 cluster
+points, (b) add cluster-aware run merging that joins sub-cycles
+sharing a common cluster, or (c) topology-aware classification
+that recognizes interior-only kept runs and either bridges them
+with virtual links or drops them. None of these is a small
+change — each touches the core walking/linking logic that the
+existing 52 tests cover.
+
+Decision recorded 2026-05-02: pause O4, leave the bug filed
+with this analysis. Approach won't be fixed in this audit
+session.
+
+### O5. Peninsula-like blue stroke (LB-l-70) — REAL FILL BUG
 Lowercase Libre Baskerville e shows a peninsula-like blue stroke
 extending from middle to bottom at the e/n intersection.
 Different font than PF (LB lowercase e has 0 detectable
@@ -266,6 +324,10 @@ self-intersections per the Phase 2 probe), so the Phase 2 split
 doesn't fire. The artifact is geometrically similar to the PF
 peninsula but stems from a different topology — possibly a
 near-tangent crossing of e's bowl with n's left vertical.
+
+**Diagnosis (2026-05-02 fill-vs-stroke check)**: confirmed real
+fill bug — fill rendering still shows a small spike/peninsula
+extending below the baseline at the e/n junction.
 
 ### O6. Missing intersection — N's bottom-left serif vs e
 (LB-A-70)
