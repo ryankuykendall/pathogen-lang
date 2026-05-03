@@ -189,6 +189,50 @@ extraction or linking. Cannot be patched by post-assembly cleanup.
 
 Decision recorded 2026-05-02: pause Class B with this analysis.
 
+**Deeper diagnosis (2026-05-02 follow-up)**: After re-investigating
+RW e's input topology, found that Raleway lowercase e is actually
+**2 subpaths**, not 1: outer (CW, 30 vertices) + bowl counter
+(CCW, 10 vertices). The earlier `probe-self-intersections.mjs`
+result of "0 self-intersections, 38 segments" combined all
+segments. Under nonzero rule the outer + counter give the bowl as
+a hole — standard glyph topology.
+
+When unioned with n at tracking 0.5, e's outer and counter both
+get split at intersections with n. Ring extraction debug:
+```
+A ring[0] (outer) entries=36 keep=25 gap=4 degenerate=7
+A ring[1] (counter) entries=15 keep=9 gap=4 degenerate=2
+B ring[0] (n) entries=37 keep=26 gap=7 degenerate=4
+```
+
+The COUNTER ring has 4 gap entries — meaning 4 counter segments
+are classified as "inside n" and dropped. The counter and n DO
+overlap in bbox at this tight tracking (0.5 advance) since e's
+bowl extends to the right side of e where n approaches.
+
+Expected output topology: 2 cycles
+- Outer perimeter of e∪n (CW)
+- Bowl-minus-n region (CCW hole) — composed of e's counter arcs +
+  n's edge along the bowl side
+
+Actual output: 1 chain of 14 runs, 67 cmds.
+
+Hungarian linking is fusing what should be 2 disjoint cycles into
+1. The cost function favors d=5.368 vertical jumps at x=8.151 and
+x=8.899 (across the bowl interior) because of high tangent
+continuity, even though they geometrically cut across e's bowl
+interior. Cluster-aware constraints (require local pairings) or a
+modified cost function (penalize jumps disproportionate to local
+cluster scale) would likely fix this.
+
+**Concrete fix candidate**: in `buildIntersectionLinks` cost
+function, add a strong distance penalty when `d` exceeds the
+distance to the *nearest* valid run partner. Long-distance pairings
+should only be selected when no closer partner exists.
+
+Status: confirmed real fill bug, root cause identified, fix is
+multi-day work outside this audit's scope.
+
 ## C. N protrusion through E intersection (Playfair UPPER)
 
 | Cell | Notes |
