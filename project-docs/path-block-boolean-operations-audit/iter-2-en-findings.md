@@ -230,8 +230,25 @@ function, add a strong distance penalty when `d` exceeds the
 distance to the *nearest* valid run partner. Long-distance pairings
 should only be selected when no closer partner exists.
 
-Status: confirmed real fill bug, root cause identified, fix is
-multi-day work outside this audit's scope.
+**RESOLVED 2026-05-03**: Fixed via simpler approach — alpha tuning.
+Changed `alpha = bboxDiag / 10` → `alpha = bboxDiag / 100` in
+buildIntersectionLinks. The original §2.5 alpha (bboxDiag/10) made
+tangent continuity the dominant cost factor; a long-distance link
+with high tangent continuity could outweigh a near-zero local
+pairing. The new alpha (bboxDiag/100) keeps tangent continuity as a
+tie-breaker (the §2.5 purpose) without overriding distance.
+
+Verification:
+- High-zoom render of RW-l-50 union now shows the e bowl correctly
+  open (matches underlay shape).
+- All 2722 existing tests still pass + 1 new audit backstop test.
+- Iter-1 matrix renders clean.
+- Synthetic axis-aligned donut+bar test does NOT discriminate the
+  fix — the bug is curve-driven (dense intersection clusters along
+  curved boundaries). The visual regression check is the
+  iter-2-isolation-rw-l-50.pathogen rendered with fill.
+
+Status: closed.
 
 ## C. N protrusion through E intersection (Playfair UPPER)
 

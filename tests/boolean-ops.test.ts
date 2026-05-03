@@ -966,5 +966,29 @@ describe('Boolean Operations', () => {
     // orientation-handling concern in run assembly. Captured here so
     // the limitation has a test record, not just a prose note.
     it.todo('shared-edge union with opposite-wound rectangles produces clean perimeter (separate orientation bug, NOT §2.13)');
+
+    it('union of donut + bar overlapping the counter keeps a partial hole [§2.15]', () => {
+      // Mimics the glyph-bowl topology that surfaced RW-l-50: a
+      // donut shape (CW outer + CCW counter inside) gets unioned
+      // with a bar that crosses the right side, partially covering
+      // the counter.
+      // Without the §2.15 alpha tuning, the Hungarian linker fused
+      // counter arcs into the global chain via long-distance jumps
+      // crossing the counter interior, producing 1 chain and a
+      // fully-filled counter (the RW-l-50 bowl-as-disk bug).
+      // Note: this synthetic axis-aligned test passes under either
+      // alpha value — the real regression is curve-driven (Raleway
+      // ExtraLight e where intersections produce dense clusters
+      // along curved boundaries). The visual regression check is
+      // iter-2-isolation-rw-l-50.pathogen rendered with fill.
+      const result = compilePath(`
+        let a = @{ h 100 v 100 h -100 z m 25 25 l 0 50 l 50 0 l 0 -50 z };
+        let b = @{ h 30 v 120 h -30 z };
+        let u = a.union(b.project(60, -10));
+        u.drawTo(0, 0);
+      `);
+      const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
+      expect(zCount).toBeGreaterThanOrEqual(2);
+    });
   });
 });

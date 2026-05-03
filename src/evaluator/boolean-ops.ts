@@ -2516,8 +2516,11 @@ function extractKeptRuns(ring: RingEntry[], source: 'A' | 'B'): KeptRun[] {
  *
  *     cost(i → j) = dist(exit_i, entry_j) − α · (t_exit_i · t_entry_j)
  *
- * where α = bboxDiag / 10 pins the tangent term to the same order of
- * magnitude as bbox-scale distances. Same-source pairs (i.source == j.source)
+ * where α = bboxDiag / 100 makes the tangent term a tie-breaker
+ * subordinate to distance — large enough to break ties on near-zero
+ * distance pairings, small enough that a long-distance link can never
+ * become cheaper than a local pairing solely from tangent continuity
+ * (see §2.15 RW-l-50 fix). Same-source pairs (i.source == j.source)
  * get a forbidding cost so they're never matched.
  *
  * Implemented via classical Munkres (Hungarian) on the square N×N matrix of
@@ -2544,7 +2547,17 @@ function buildIntersectionLinks(
   // dominate any legitimate cost; bboxDiag scales with shape size so
   // FORBIDDEN = bboxDiag * 1000 is safe.
   const FORBIDDEN = Math.max(bboxDiag * 1000, 1e9);
-  const alpha = bboxDiag / 10;
+  // §2.15 alpha tuning: tangent continuity is for tie-breaking only,
+  // not for dominating distance. With alpha = bboxDiag/10 (the original
+  // §2.5 value), the tangent term could make a long-distance link
+  // (d=5+ in glyph-local) cheaper than a near-zero local pairing at the
+  // same cluster. This produced "interior crossing" links — vertical
+  // jumps across e's bowl interior at glyph-junction tracking — that
+  // fused what should be 2 disjoint cycles (outer perimeter + bowl-
+  // counter hole) into one mis-routed chain (RW-l-50 bowl filled as
+  // solid disk). bboxDiag/100 keeps the tie-break behavior the §2.5
+  // fix needed without overriding distance.
+  const alpha = bboxDiag / 100;
 
   // Precompute tangents at each run's exit and entry.
   const exitTangents: Point[] = runs.map((r) => tangentAtEnd(r.cmds[r.cmds.length - 1]));
