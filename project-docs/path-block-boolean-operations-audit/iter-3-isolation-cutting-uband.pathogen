@@ -1,0 +1,51 @@
+// CUTTING U-band — chained union of "CUT" in Bebas Neue at tracking 0.8
+// Reproduces the spurious horizontal band visible inside the U in
+// post12/text-cutout-cutting.svg.
+@font "../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+
+let styles = ${ font-family: BebasNeue-Regular; font-size: 60; };
+let glyphs = PathBlock.fromGlyph("CUT", styles);
+
+let tracking = 0.8;
+let cursor = 0;
+let projected = [];
+for (g in glyphs) {
+  projected.push(g.project(cursor, 0));
+  cursor = calc(cursor + g.advanceWidth * tracking);
+}
+
+let bg = PathLayer('bg') ${ fill: '#fefce8'; stroke: none; };
+layer('bg').apply { rect(0, 0, 1200, 600); }
+
+let underlay_fill = PathLayer('underlay-fill') ${ fill: '#f9731680'; stroke: none; };
+let underlay_stroke = PathLayer('underlay-stroke') ${ fill: none; stroke: '#7c2d12e6'; stroke-width: 0.5; };
+
+let union_cu = projected[0].union(projected[1]);
+let union_cut = union_cu.union(projected[2]);
+
+let cu_fill = PathLayer('cu-fill') ${ fill: '#1e3a8a80'; stroke: none; };
+let cu_stroke = PathLayer('cu-stroke') ${ fill: none; stroke: '#1e3a8a'; stroke-width: 0.5; };
+
+let cut_fill = PathLayer('cut-fill') ${ fill: '#06b6d480'; stroke: none; };
+let cut_stroke = PathLayer('cut-stroke') ${ fill: none; stroke: '#06b6d4'; stroke-width: 0.5; };
+
+let label_layer = TextLayer('labels') ${ font-family: monospace; font-size: 14; fill: '#475569'; text-anchor: start; };
+layer('labels').apply {
+  text(50, 30)`underlay (raw CUT)`
+  text(450, 30)`union(C, U)`
+  text(800, 30)`union(union(C,U), T)`
+}
+
+let baseline = 200;
+layer('underlay-fill').apply {
+  for (i in 0..2) { glyphs[i].drawTo(calc(50 + i * (glyphs[i].advanceWidth * tracking)), baseline); }
+}
+layer('underlay-stroke').apply {
+  for (i in 0..2) { glyphs[i].drawTo(calc(50 + i * (glyphs[i].advanceWidth * tracking)), baseline); }
+}
+
+layer('cu-fill').apply { union_cu.drawTo(450, baseline); }
+layer('cu-stroke').apply { union_cu.drawTo(450, baseline); }
+
+layer('cut-fill').apply { union_cut.drawTo(800, baseline); }
+layer('cut-stroke').apply { union_cut.drawTo(800, baseline); }
