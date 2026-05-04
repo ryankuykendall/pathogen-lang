@@ -3544,6 +3544,32 @@ function unionIntersectingSameWindingSubpaths(cmds: TransformCmd[]): TransformCm
           else if (ptJ && windingNumber(ptJ, segsI) !== 0) touches = true;
         }
         if (!touches) continue;
+        // Skip merge if the two subpaths share a full-range
+        // opposite-direction edge (artificial split-along-an-edge case).
+        // This pattern arises when an earlier union step in a chain
+        // produced output where one continuous CW outline was split into
+        // two CW subpaths along a diagonal edge. The two subpaths share
+        // that diagonal in opposite parametric directions, covering the
+        // entire parametric range of one of the segments. Re-merging
+        // them via booleanOp(union, normalize:false) introduces a notch
+        // (visible as the Bebas Neue CUTTING U-bowl artifact) because
+        // the recursive op doesn't handle this specific input topology
+        // cleanly. Leaving them as separate CW subpaths is fine under
+        // nonzero fill — the two filled regions sum correctly.
+        const FULL_RANGE_TOL = 1e-3;
+        const hasFullOppositeShared = sharedEdges.some(se => {
+          if (se.sameDirection) return false;
+          const aFull = se.aStart < FULL_RANGE_TOL && se.aEnd > 1 - FULL_RANGE_TOL;
+          const bFull = se.bStart < FULL_RANGE_TOL && se.bEnd > 1 - FULL_RANGE_TOL;
+          return aFull && bFull;
+        });
+        if (hasFullOppositeShared) {
+          if (dbg) {
+            // eslint-disable-next-line no-console
+            console.error(`[normalize-union] skip subpath[${i}] + subpath[${j}]: artificial split-along-edge (full-range opposite-direction shared edge)`);
+          }
+          continue;
+        }
         // Contact exists. Union the two subpaths.
         try {
           const merged = booleanOp(entries[i].cmds, entries[j].cmds, 'union', { normalize: false });

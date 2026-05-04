@@ -10,13 +10,16 @@
   <text x="60" y="246" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">Inconsolata · 48px · uniform advance widths</text>
   <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0" text-anchor="start">Glyph Layout with Advance Widths</text>
   <g id="code-block" transform="translate(350, 20)">
-    <text id="code" x="0" y="0" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">let cursor_x = start_x;</text>
-    <text x="0" y="12" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">for (g in glyphs) {</text>
-    <text x="8" y="24" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">g.drawTo(cursor_x, baseline)</text>
-    <text x="8" y="36" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">cursor_x += g.advanceWidth</text>
-    <text x="0" y="48" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">}</text>
-    <text id="kw" x="0" y="0" font-family="monospace" font-size="8" fill="#c084fc" text-anchor="start">let</text>
-    <text x="0" y="12" font-family="monospace" font-size="8" fill="#c084fc" text-anchor="start">for</text>
+    <__text-siblings__>
+      <text id="code" x="0" y="0" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">let cursor_x = start_x;</text>
+      <text x="0" y="12" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">for (g in glyphs) {</text>
+      <text x="8" y="24" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">g.drawTo(cursor_x, baseline)</text>
+      <text x="8" y="36" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">cursor_x += g.advanceWidth</text>
+      <text x="0" y="48" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">}</text>
+    </__text-siblings__>
+    <__text-siblings__>
+      <text id="kw" x="0" y="0" font-family="monospace" font-size="8" fill="#c084fc" text-anchor="start">let</text>
+      <text x="0" y="12" font-family="monospace" font-size="8" fill="#c084fc" text-anchor="start">for</text>
+    </__text-siblings__>
   </g>
-<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"glyphs","type":"path","styles":{"fill":"#3b82f6","stroke":"none"},"isDefault":false},{"name":"markers","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"ticks","type":"path","styles":{"stroke":"rgba(245, 158, 11, 0.376)","stroke-width":"0.5","stroke-dasharray":"2 3","fill":"none"},"isDefault":false},{"name":"glyphs2","type":"path","styles":{"fill":"#22c55e","stroke":"none"},"isDefault":false},{"name":"markers2","type":"path","styles":{"stroke":"#22c55e","stroke-width":"0.75","fill":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"13","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"code-block","type":"group","styles":{},"isDefault":false,"transform":"translate(350, 20)","children":[{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#c084fc","text-anchor":"start"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

@@ -1,6 +1,7 @@
+import { readFileSync, existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { compile } from '../src';
+import { compile, createFontRegistry, addFont } from '../src';
 import { compilePath, parseSVGPath } from './helpers';
 
 describe('Boolean Operations', () => {
@@ -989,6 +990,110 @@ describe('Boolean Operations', () => {
       `);
       const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
       expect(zCount).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  // §2.16 backstop — Bebas Neue CUTTING at tracking 0.8 must render
+  // with the U's bowl interior unfilled. Phase 1 of §2.14 input
+  // normalization (`unionIntersectingSameWindingSubpaths`) was merging
+  // two CW subpaths in chained-union accumulator outputs that shared
+  // a full-range opposite-direction edge (an artificial-split topology
+  // produced by earlier union steps); the recursive
+  // booleanOp(union, normalize:false) for that input introduced a
+  // notch in the U bowl. Fix: detect the artificial-split case in
+  // unionIntersectingSameWindingSubpaths and skip the merge — the
+  // two subpaths render correctly as separate CW siblings under
+  // nonzero fill.
+  //
+  // Skipped if Bebas Neue is not present (the font lives at
+  // fonts/Bebas_Neue/BebasNeue-Regular.ttf at the repo root, outside
+  // tests/fixtures, so headless CI without the full repo will skip).
+  describe('§2.16 chained-union U-bowl regression', () => {
+    const fontPath = 'fonts/Bebas_Neue/BebasNeue-Regular.ttf';
+    const haveFont = existsSync(fontPath);
+    (haveFont ? it : it.skip)('CUTTING in Bebas Neue at tracking 0.8 has unfilled U-bowl interior', () => {
+      const buf = readFileSync(fontPath);
+      const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+      const registry = createFontRegistry();
+      addFont(registry, 'BebasNeue-Regular', 400, 'normal', ab);
+      const src = `
+@font "${fontPath}"
+let styles = \${ font-family: BebasNeue-Regular; font-size: 60; };
+let glyphs = PathBlock.fromGlyph("CUTTING", styles);
+let tracking = 0.8;
+let cursor = 0;
+let projected = [];
+for (g in glyphs) {
+  projected.push(g.project(cursor, 0));
+  cursor = calc(cursor + g.advanceWidth * tracking);
+}
+let merged = projected[0];
+for (i in 1..6) { merged = merged.union(projected[i]); }
+merged.drawTo(40, 130);
+`;
+      const result = compile(src, { fonts: registry });
+      const d = (result.layers[0] as { data: string }).data;
+      // U bowl center in render coords: U starts at glyph-local x ≈ 21,
+      // drawn at offset (40, 130). Bowl interior x ≈ [62, 79], y ≈
+      // [95, 122]. Sample three bowl-interior points; under nonzero
+      // fill rule, ray-casting from each must report an even number of
+      // crossings (= outside the filled region).
+      const bowlPoints = [
+        { x: 70, y: 110 },
+        { x: 71, y: 112 },
+        { x: 69, y: 108 },
+      ];
+      const cmds = d.split(/(?=[MmLlHhVvCcSsQqTtAaZz])/).filter(s => s.trim());
+      function rayCrossings(px: number, py: number): number {
+        let cx = 0, cy = 0, sx = 0, sy = 0;
+        let crossings = 0;
+        const cross = (x0: number, y0: number, x1: number, y1: number) => {
+          if ((y0 <= py && y1 > py) || (y1 <= py && y0 > py)) {
+            const t = (py - y0) / (y1 - y0);
+            const xi = x0 + t * (x1 - x0);
+            if (xi > px) crossings++;
+          }
+        };
+        for (const cmd of cmds) {
+          const op = cmd[0];
+          const args = cmd.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number);
+          let nx = cx, ny = cy;
+          if (op === 'M') { nx = args[0]; ny = args[1]; sx = nx; sy = ny; }
+          else if (op === 'm') { nx = cx + args[0]; ny = cy + args[1]; sx = nx; sy = ny; }
+          else if (op === 'L') { nx = args[0]; ny = args[1]; cross(cx, cy, nx, ny); }
+          else if (op === 'l') { nx = cx + args[0]; ny = cy + args[1]; cross(cx, cy, nx, ny); }
+          else if (op === 'H') { nx = args[0]; cross(cx, cy, nx, ny); }
+          else if (op === 'h') { nx = cx + args[0]; cross(cx, cy, nx, ny); }
+          else if (op === 'V') { ny = args[0]; cross(cx, cy, nx, ny); }
+          else if (op === 'v') { ny = cy + args[0]; cross(cx, cy, nx, ny); }
+          else if (op === 'Q' || op === 'q') {
+            // Approximate quadratic with chord — sufficient for the
+            // U-bowl scale where curves are >5 path units from sample
+            // points, so ray-casting through chord vs curve gives the
+            // same in/out result.
+            if (op === 'Q') { nx = args[2]; ny = args[3]; }
+            else { nx = cx + args[2]; ny = cy + args[3]; }
+            cross(cx, cy, nx, ny);
+          }
+          else if (op === 'C' || op === 'c') {
+            if (op === 'C') { nx = args[4]; ny = args[5]; }
+            else { nx = cx + args[4]; ny = cy + args[5]; }
+            cross(cx, cy, nx, ny);
+          }
+          else if (op === 'Z' || op === 'z') {
+            cross(cx, cy, sx, sy);
+            nx = sx; ny = sy;
+          }
+          cx = nx; cy = ny;
+        }
+        return crossings;
+      }
+      for (const p of bowlPoints) {
+        const c = rayCrossings(p.x, p.y);
+        expect(c % 2,
+          `bowl point (${p.x}, ${p.y}) has odd crossings (${c}) — point is filled, U-bowl notch present`,
+        ).toBe(0);
+      }
     });
   });
 });
