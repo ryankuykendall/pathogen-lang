@@ -1130,7 +1130,11 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           );
         }
       }
-      return { type: 'ColorValue' as const, oklch: parseColor(raw) };
+      try {
+        return { type: 'ColorValue' as const, oklch: parseColor(raw) };
+      } catch (e) {
+        throw new Error(formatError((e as Error).message, getLine(expr), getCol(expr)));
+      }
     }
 
     case 'StringLiteral':

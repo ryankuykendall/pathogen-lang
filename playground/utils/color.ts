@@ -223,40 +223,55 @@ export function parseColor(str: string): ParsedColor {
       format: 'hex',
     };
 
-  // rgba(r, g, b, a)
-  m = str.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/);
-  if (m) return { r: +m[1], g: +m[2], b: +m[3], a: +m[4], format: 'rgba' };
+  // CSS Color L4 percentage helpers — kept inline here so this module stays
+  // self-contained (it's the playground's chip-side parser, separate from
+  // src/color.ts which serves the evaluator). Scaling matches strict CSS L4:
+  //   L (oklch/oklab):        100% = 1.0  → /100
+  //   C (oklch chroma) / a, b (oklab axis): 100% = 0.4  → /250
+  //   alpha:                  100% = 1.0  → /100
+  //   rgb component:          100% = 255  → /100, otherwise as-is (0-255)
+  const pctL = (s: string): number => (s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s));
+  const pctC = (s: string): number => (s.endsWith('%') ? parseFloat(s) / 250 : parseFloat(s));
+  const pctA = (s: string): number => (s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s));
+  const pctRgb = (s: string): number => (s.endsWith('%') ? (parseFloat(s) / 100) * 255 : parseFloat(s));
 
-  // rgb(r, g, b)
-  m = str.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
-  if (m) return { r: +m[1], g: +m[2], b: +m[3], a: 1, format: 'rgb' };
+  // rgb() / rgba() — modern: rgb(R G B[ / A]); legacy: rgb(R, G, B[, A]).
+  // R/G/B may be 0-255 or 0%-100%. A may be 0-1 or 0%-100%.
+  const rgbModern = str.match(/^rgba?\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+%?)\s*(?:\/\s*([\d.]+%?))?\s*\)$/);
+  const rgbLegacy = str.match(/^rgba?\(\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*(?:,\s*([\d.]+%?))?\s*\)$/);
+  m = rgbModern || rgbLegacy;
+  if (m) {
+    const r = pctRgb(m[1]);
+    const g = pctRgb(m[2]);
+    const b = pctRgb(m[3]);
+    const a = m[4] != null ? pctA(m[4]) : 1;
+    const isAlpha = /^rgba/i.test(str) || a < 1;
+    return { r, g, b, a, format: isAlpha ? 'rgba' : 'rgb' };
+  }
 
-  // hsla(h, s%, l%, a)
-  m = str.match(/^hsla\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*,\s*([\d.]+)\s*\)$/);
+  // hsl() / hsla() — modern: hsl(H S% L%[ / A]); legacy: hsl(H, S%, L%[, A]).
+  const hslModern = str.match(/^hsla?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+%?))?\s*\)$/);
+  const hslLegacy = str.match(/^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+%?))?\s*\)$/);
+  m = hslModern || hslLegacy;
   if (m) {
     const [r, g, b] = hslToRgb(+m[1] / 360, +m[2] / 100, +m[3] / 100);
-    return { r, g, b, a: +m[4], format: 'hsla' };
+    const a = m[4] != null ? pctA(m[4]) : 1;
+    const isAlpha = /^hsla/i.test(str) || a < 1;
+    return { r, g, b, a, format: isAlpha ? 'hsla' : 'hsl' };
   }
 
-  // hsl(h, s%, l%)
-  m = str.match(/^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/);
+  // oklch(L C H) / oklch(L% C% H) / oklch(... / A)
+  m = str.match(/^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+)\s*(?:\/\s*([\d.]+%?))?\s*\)$/);
   if (m) {
-    const [r, g, b] = hslToRgb(+m[1] / 360, +m[2] / 100, +m[3] / 100);
-    return { r, g, b, a: 1, format: 'hsl' };
+    const [r, g, b] = oklchToRgb(pctL(m[1]), pctC(m[2]), parseFloat(m[3]));
+    return { r, g, b, a: m[4] != null ? pctA(m[4]) : 1, format: 'oklch' };
   }
 
-  // oklch(L C H) or oklch(L C H / alpha)
-  m = str.match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/);
+  // oklab(L a b) / oklab(L% a% b%) / oklab(... / A)
+  m = str.match(/^oklab\(\s*([\d.]+%?)\s+(-?[\d.e+-]+%?)\s+(-?[\d.e+-]+%?)\s*(?:\/\s*([\d.]+%?))?\s*\)$/);
   if (m) {
-    const [r, g, b] = oklchToRgb(+m[1], +m[2], +m[3]);
-    return { r, g, b, a: m[4] != null ? +m[4] : 1, format: 'oklch' };
-  }
-
-  // oklab(L a b) or oklab(L a b / alpha)
-  m = str.match(/^oklab\(\s*([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)\s*(?:\/\s*([\d.]+))?\s*\)$/);
-  if (m) {
-    const [r, g, b] = oklabToRgb(+m[1], +m[2], +m[3]);
-    return { r, g, b, a: m[4] != null ? +m[4] : 1, format: 'oklab' };
+    const [r, g, b] = oklabToRgb(pctL(m[1]), pctC(m[2]), pctC(m[3]));
+    return { r, g, b, a: m[4] != null ? pctA(m[4]) : 1, format: 'oklab' };
   }
 
   // Named color → resolve via canvas
@@ -288,19 +303,22 @@ export function formatColor({ r, g, b, a }: ParsedColor, format: ColorFormat): s
     case 'named':
       if (hasAlpha) return `#${hex2(r)}${hex2(g)}${hex2(b)}${hex2(a * 255)}`;
       return `#${hex2(r)}${hex2(g)}${hex2(b)}`;
+    // Modern CSS L4 syntax: space-separated components, `/` for alpha.
+    // Avoids downgrading modern source syntax to legacy comma form on user
+    // edits.
     case 'rgb':
-      if (hasAlpha) return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${rd(a)})`;
-      return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+      if (hasAlpha) return `rgb(${Math.round(r)} ${Math.round(g)} ${Math.round(b)} / ${rd(a)})`;
+      return `rgb(${Math.round(r)} ${Math.round(g)} ${Math.round(b)})`;
     case 'rgba':
-      return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${rd(a)})`;
+      return `rgb(${Math.round(r)} ${Math.round(g)} ${Math.round(b)} / ${rd(a)})`;
     case 'hsl': {
       const [h, s, l] = rgbToHsl(r, g, b);
-      if (hasAlpha) return `hsla(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, ${rd(a)})`;
-      return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+      if (hasAlpha) return `hsl(${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}% / ${rd(a)})`;
+      return `hsl(${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
     }
     case 'hsla': {
       const [h, s, l] = rgbToHsl(r, g, b);
-      return `hsla(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, ${rd(a)})`;
+      return `hsl(${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}% / ${rd(a)})`;
     }
     case 'oklch': {
       const lch = rgbToOKLCH(r, g, b);

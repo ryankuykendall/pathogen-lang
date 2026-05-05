@@ -2315,6 +2315,96 @@ describe('Evaluator', () => {
       expect(result.logs[0].parts[0].value).toMatch(/^#|^rgb/);
     });
 
+    it('evaluates oklch() with percentage L and C (CSS spec scaling)', () => {
+      // CSS spec: L 100% = 1.0, C 100% = 0.4. So 79% L → 0.79, 32% C → 0.128.
+      // Matches what hdr-color-input emits and what colorjs.io parses.
+      const result = compile(
+        'let c = oklch(79% 32% 178); log(c.lightness); log(c.chroma); log(c.hue);',
+      );
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.79, 4);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.128, 4);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(178, 2);
+    });
+
+    it('oklch() accepts percentage alpha', () => {
+      const result = compile('let c = oklch(0.79 0.32 178 / 50%); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 4);
+    });
+
+    it('oklch() accepts mixed numeric and percentage forms per axis', () => {
+      const result = compile(
+        'let c = oklch(0.79 32% 178); log(c.lightness); log(c.chroma);',
+      );
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.79, 4);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0.128, 4);
+    });
+
+    it('evaluates oklab() with percentage L and a/b (CSS spec scaling)', () => {
+      // CSS spec: oklab L 100% = 1.0, a/b 100% = 0.4.
+      const result = compile(
+        'let c = oklab(73% 50% -25%); log(c.lightness);',
+      );
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.73, 4);
+    });
+
+    it('oklab() with negative numeric a/b still parses (no percentage)', () => {
+      // The user's commented-out example: oklab(73% .19 -.09)
+      const result = compile('let c = oklab(73% .19 -.09); log(c.lightness);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.73, 4);
+    });
+
+    it('hsl() accepts modern space-separated form', () => {
+      const result = compile('let c = hsl(120 100% 40%); log(c.hex);');
+      // hsl(120, 100%, 40%) is pure green at 40% lightness
+      expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('hsl() modern form with / alpha', () => {
+      const result = compile('let c = hsl(120 100% 40% / 50%); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 4);
+    });
+
+    it('hsl() legacy comma form still works', () => {
+      const result = compile('let c = hsl(120, 100%, 40%); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('rgb() accepts modern space-separated form', () => {
+      const result = compile('let c = rgb(255 128 0); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toBe('#ff8000');
+    });
+
+    it('rgb() accepts percentage components', () => {
+      // 100% 50% 0% → 255, 127.5, 0 → rounds to ff8000 (or close)
+      const result = compile('let c = rgb(100% 50% 0%); log(c.hex);');
+      expect(result.logs[0].parts[0].value).toMatch(/^#ff[78][0f]00$/);
+    });
+
+    it('rgb() modern form with / alpha', () => {
+      const result = compile('let c = rgb(255 128 0 / 50%); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.5, 4);
+    });
+
+    it('hwb() accepts percent alpha via /', () => {
+      const result = compile('let c = hwb(120 0% 50% / 25%); log(c.a);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.25, 4);
+    });
+
+    it('reports source position when color is invalid', () => {
+      // Regression: parseColor() throws without loc, so the error read "Line 1:1"
+      // even when the call was on a later line.
+      let err: Error | null = null;
+      try {
+        compile('let a = 1;\nlet b = 2;\nlet c = oklch(bogus);');
+      } catch (e) {
+        err = e as Error;
+      }
+      expect(err).not.toBeNull();
+      // Should reference line 3 (where oklch(bogus) sits), not line 1.
+      expect(err!.message).toMatch(/Line 3/);
+      expect(err!.message).toMatch(/Invalid color/);
+    });
+
     it('method chaining on CSS color function', () => {
       const result = compile('let c = rgb(255, 0, 0).lighten(0.2); log(c.hex);');
       expect(result.logs[0].parts[0].value).not.toBe('#ff0000');

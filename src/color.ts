@@ -447,6 +447,23 @@ function cieLCHToOKLCH(L: number, C: number, H: number, alpha: number): OKLCH {
 
 // ── Unified parser ─────────────────────────────────────────────────────
 
+// CSS Color L4 percentage scaling helpers for oklch / oklab. Each axis uses
+// a different scaling: L and alpha map 100% → 1.0; chroma (oklch C, oklab a/b)
+// maps 100% → 0.4 per spec.
+function parsePctL(s: string): number {
+  return s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s);
+}
+function parsePctChroma(s: string): number {
+  return s.endsWith('%') ? parseFloat(s) / 250 : parseFloat(s);
+}
+function parsePctAlpha(s: string): number {
+  return s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s);
+}
+// rgb()/rgba() per-component: percent is 100%=1.0; integer/decimal is 0-255.
+function parsePctRgb(s: string): number {
+  return s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s) / 255;
+}
+
 export function parseColor(input: string): OKLCH {
   const trimmed = input.trim().toLowerCase();
 
@@ -462,55 +479,70 @@ export function parseColor(input: string): OKLCH {
   }
 
   // rgb() / rgba()
-  const rgbMatch = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  // Modern (CSS Color L4): rgb(R G B [/ A]) — components may be 0-255 or 0%-100%
+  // Legacy: rgb(R, G, B [, A]) — same per-component flexibility
+  // R/G/B percent: 100% = 1.0 sRGB component (= 255 in 8-bit). Number: divide by 255.
+  const rgbModern = /^rgba?\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+%?)\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
+  const rgbLegacy = /^rgba?\(\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*(?:,\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
+  const rgbMatch = rgbModern || rgbLegacy;
   if (rgbMatch) {
-    const r = parseInt(rgbMatch[1], 10) / 255;
-    const g = parseInt(rgbMatch[2], 10) / 255;
-    const b = parseInt(rgbMatch[3], 10) / 255;
-    const a = rgbMatch[4] !== undefined ? parseFloat(rgbMatch[4]) : 1;
-    return srgbToOKLCH({ r, g, b, alpha: a });
+    return srgbToOKLCH({
+      r: parsePctRgb(rgbMatch[1]),
+      g: parsePctRgb(rgbMatch[2]),
+      b: parsePctRgb(rgbMatch[3]),
+      alpha: rgbMatch[4] !== undefined ? parsePctAlpha(rgbMatch[4]) : 1,
+    });
   }
 
   // hsl() / hsla()
-  const hslMatch = /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  // Modern: hsl(H S% L% [/ A])
+  // Legacy: hsl(H, S%, L% [, A])
+  const hslModern = /^hsla?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
+  const hslLegacy = /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
+  const hslMatch = hslModern || hslLegacy;
   if (hslMatch) {
     const h = parseFloat(hslMatch[1]);
     const s = parseFloat(hslMatch[2]) / 100;
     const l = parseFloat(hslMatch[3]) / 100;
-    const a = hslMatch[4] !== undefined ? parseFloat(hslMatch[4]) : 1;
+    const a = hslMatch[4] !== undefined ? parsePctAlpha(hslMatch[4]) : 1;
     return srgbToOKLCH(hslToSRGB(h, s, l, a));
   }
 
-  // oklch()
-  const oklchMatch = /^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  // oklch() / oklab() — CSS Color L4 percentage scaling per axis:
+  //   L: 100% = 1.0           → /100
+  //   C (oklch chroma):       → /250 (CSS spec: 100% = 0.4)
+  //   a, b (oklab axis):      → /250 (CSS spec: 100% = 0.4)
+  //   alpha: 100% = 1.0       → /100
+  // Matches the format hdr-color-input emits and what colorjs.io parses to.
+  const oklchMatch = /^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+)\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
   if (oklchMatch) {
     return {
-      L: parseFloat(oklchMatch[1]),
-      C: parseFloat(oklchMatch[2]),
+      L: parsePctL(oklchMatch[1]),
+      C: parsePctChroma(oklchMatch[2]),
       H: parseFloat(oklchMatch[3]),
-      alpha: oklchMatch[4] !== undefined ? parseFloat(oklchMatch[4]) : 1,
+      alpha: oklchMatch[4] !== undefined ? parsePctAlpha(oklchMatch[4]) : 1,
     };
   }
 
   // oklab()
-  const oklabMatch = /^oklab\(\s*([\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  const oklabMatch = /^oklab\(\s*([\d.]+%?)\s+(-?[\d.]+%?)\s+(-?[\d.]+%?)\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
   if (oklabMatch) {
     const lab: OKLab = {
-      L: parseFloat(oklabMatch[1]),
-      a: parseFloat(oklabMatch[2]),
-      b: parseFloat(oklabMatch[3]),
-      alpha: oklabMatch[4] !== undefined ? parseFloat(oklabMatch[4]) : 1,
+      L: parsePctL(oklabMatch[1]),
+      a: parsePctChroma(oklabMatch[2]),
+      b: parsePctChroma(oklabMatch[3]),
+      alpha: oklabMatch[4] !== undefined ? parsePctAlpha(oklabMatch[4]) : 1,
     };
     return oklabToOKLCH(lab);
   }
 
-  // hwb() / hwba()
-  const hwbMatch = /^hwba?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
+  // hwb() / hwba() — CSS L4: modern space-separated form only.
+  const hwbMatch = /^hwba?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
   if (hwbMatch) {
     const h = parseFloat(hwbMatch[1]);
     const w = parseFloat(hwbMatch[2]) / 100;
     const b = parseFloat(hwbMatch[3]) / 100;
-    const a = hwbMatch[4] !== undefined ? parseFloat(hwbMatch[4]) : 1;
+    const a = hwbMatch[4] !== undefined ? parsePctAlpha(hwbMatch[4]) : 1;
     return srgbToOKLCH(hwbToSRGB(h, w, b, a));
   }
 
