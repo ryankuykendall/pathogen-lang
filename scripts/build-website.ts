@@ -66,36 +66,15 @@ async function build(): Promise<void> {
     bundle: false,
   });
 
-  // Build playground (esbuild transpile + asset copy) → public/pathogen/
+  // Build playground (esbuild transpile + asset copy + dist artifacts) →
+  // public/pathogen/. buildPlayground() now stages dist/index.global.js and
+  // dist/worker.worker.js as part of its own output, so we don't duplicate
+  // that copy here. Anyone running `npm run build:playground` standalone
+  // gets a fully-functional playground without needing build:website.
   console.log('Building playground...');
   await buildPlayground();
 
   const pathogenDest = join(DIST, 'pathogen');
-
-  // Copy library dist (for global script tag)
-  console.log('Copying library dist...');
-  await fs.mkdir(join(pathogenDest, 'dist'), { recursive: true });
-  await copyFile(join(ROOT, 'dist', 'index.global.js'), join(pathogenDest, 'dist', 'index.global.js'));
-  // Also copy source map if it exists
-  try {
-    await copyFile(join(ROOT, 'dist', 'index.global.js.map'), join(pathogenDest, 'dist', 'index.global.js.map'));
-  } catch {
-    // Map file doesn't exist, that's fine
-  }
-
-  // Copy worker file for async compilation
-  console.log('Copying worker...');
-  try {
-    await copyFile(join(ROOT, 'dist', 'worker.worker.js'), join(pathogenDest, 'dist', 'worker.worker.js'));
-    // Also copy worker source map if it exists
-    try {
-      await copyFile(join(ROOT, 'dist', 'worker.worker.js.map'), join(pathogenDest, 'dist', 'worker.worker.js.map'));
-    } catch {
-      // Map file doesn't exist, that's fine
-    }
-  } catch {
-    console.warn('  Worker file not found, skipping...');
-  }
 
   // Copy static docs page if it exists
   try {

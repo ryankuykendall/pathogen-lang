@@ -1673,32 +1673,35 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
 function evaluateIndexExpression(expr: IndexExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
   const index = evaluateExpression(expr.index, scope);
+  const line = getLine(expr);
+  const col = getCol(expr);
+  const iError = (message: string): Error => new Error(formatError(message, line, col));
 
   if (isObjectValue(obj)) {
     if (typeof index !== 'string') {
-      throw new Error('Object key must be a string');
+      throw iError('Object key must be a string');
     }
     return obj.properties.get(index) ?? null;
   }
 
   if (typeof obj === 'string') {
     if (typeof index !== 'number') {
-      throw new Error('String index must be a number');
+      throw iError('String index must be a number');
     }
     if (!Number.isInteger(index) || index < 0 || index >= obj.length) {
-      throw new Error(`String index ${index} out of bounds (length ${obj.length})`);
+      throw iError(`String index ${index} out of bounds (length ${obj.length})`);
     }
     return obj[index];
   }
 
   if (!isArrayValue(obj)) {
-    throw new Error('Index access requires an array, object, or string');
+    throw iError('Index access requires an array, object, or string');
   }
   if (typeof index !== 'number') {
-    throw new Error('Array index must be a number');
+    throw iError('Array index must be a number');
   }
   if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length) {
-    throw new Error(`Array index ${index} out of bounds (length ${obj.elements.length})`);
+    throw iError(`Array index ${index} out of bounds (length ${obj.elements.length})`);
   }
   return obj.elements[index];
 }
@@ -4077,7 +4080,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
         const registry = scope.evalState?.fontRegistry;
         if (!registry) {
-          throw mError('PathBlock.fromGlyph() requires font data. Use @font directive to load a font.');
+          throw mError(
+            'PathBlock.fromGlyph() requires font data, but no fonts were loaded. ' +
+              'If you wrote an @font directive, font loading may have failed earlier — ' +
+              'look for a preceding font-loading error.',
+          );
         }
 
         const fontData = getFont(registry, fontFamily, fontWeight);
@@ -6498,7 +6505,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       if (isArrayValue(obj)) {
         if (typeof index !== 'number') throw new Error(formatError('Array index must be a number', getLine(stmt)));
         if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length)
-          throw new Error(formatError(`Array index ${index} out of bounds`, getLine(stmt)));
+          throw new Error(formatError(`Array index ${index} out of bounds (length ${obj.elements.length})`, getLine(stmt)));
         obj.elements[index] = value;
         return;
       }

@@ -866,5 +866,5 @@ Each contour is a closed PathBlock with all standard properties and methods.
 | First argument not a string | `PathBlock.fromGlyph() first argument must be a string` |
 | Second argument not a style block | `PathBlock.fromGlyph() second argument must be a style block` |
 | Style block missing font-family | `PathBlock.fromGlyph() requires font-family in style block` |
-| No fonts loaded | `PathBlock.fromGlyph() requires font data. Use @font directive to load a font.` |
+| No fonts loaded | `PathBlock.fromGlyph() requires font data, but no fonts were loaded. If you wrote an @font directive, font loading may have failed earlier — look for a preceding font-loading error.` |
 | Font not in registry | `Font 'X' not found in font registry. Available fonts: [list]` |

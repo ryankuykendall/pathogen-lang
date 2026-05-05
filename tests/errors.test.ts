@@ -552,3 +552,28 @@ describe('Color literal errors', () => {
     expect(() => compile('let c = #abcdef0;')).toThrow(/Invalid hex color.*must be 3, 4, 6, or 8 hex digits/);
   });
 });
+
+describe('Index expression errors include source location', () => {
+  // Regression: IndexExpression and MemberExpression nodes were created
+  // without `loc`, so runtime errors like array-OOB threw with no line
+  // number. The error panel showed "Array index 7 out of bounds (length 7)"
+  // and the user had to scan the whole file to find the offending lookup.
+
+  it('reports line number for array-out-of-bounds reads', () => {
+    const source = `let arr = [1, 2, 3];
+let x = arr[5];`;
+    expect(() => compile(source)).toThrow(/Line 2.*Array index 5 out of bounds \(length 3\)/);
+  });
+
+  it('reports line number for string-out-of-bounds reads', () => {
+    const source = `let s = 'abc';
+let c = s[10];`;
+    expect(() => compile(source)).toThrow(/Line 2.*String index 10 out of bounds \(length 3\)/);
+  });
+
+  it('reports line number for non-numeric array index', () => {
+    const source = `let arr = [1, 2, 3];
+let x = arr['oops'];`;
+    expect(() => compile(source)).toThrow(/Line 2.*Array index must be a number/);
+  });
+});

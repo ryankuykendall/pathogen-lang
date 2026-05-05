@@ -8,6 +8,21 @@ export interface FontBinaryEntry {
   buffer: ArrayBuffer;
 }
 
+export interface FontResolutionFailure {
+  family: string;
+  weight: number;
+  reason: string;
+}
+
+export interface FontResolutionResult {
+  binaries: FontBinaryEntry[];
+  failures: FontResolutionFailure[];
+}
+
+type FontFetchOutcome =
+  | { ok: true; buffer: ArrayBuffer }
+  | { ok: false; reason: string };
+
 // CSS generic font families — not fetchable from Google Fonts
 const GENERIC_FONT_FAMILIES = new Set([
   'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
@@ -21,51 +36,61 @@ const GENERIC_FONT_FAMILIES = new Set([
 // not Google Fonts families — skip them so we don't emit failing fetches.
 const LEGACY_FILENAME_FAMILY = /-(?:Thin|ExtraLight|UltraLight|Light|Regular|Medium|SemiBold|DemiBold|Bold|ExtraBold|UltraBold|Black|Heavy|Italic|Oblique)$/;
 
-// Cache: "family:weight" → ArrayBuffer
+// Cache: "family:weight" → ArrayBuffer (only successful fetches are cached)
 const fontBinaryCache: Map<string, ArrayBuffer> = new Map();
 
-// In-flight fetch dedup: "family:weight" → Promise<ArrayBuffer>
-const pendingFetches: Map<string, Promise<ArrayBuffer>> = new Map();
+// In-flight fetch dedup: "family:weight" → Promise<FontFetchOutcome>
+const pendingFetches: Map<string, Promise<FontFetchOutcome>> = new Map();
 
 /**
  * Fetch a font binary from Google Fonts CDN.
- * Uses the proven pattern: fetch CSS with TTF-triggering User-Agent, extract URL, fetch binary.
- * Caches results so each font is only fetched once per session.
+ *
+ * Returns a tagged outcome: `{ ok: true, buffer }` on success or
+ * `{ ok: false, reason }` on every recoverable failure (CSS fetch error,
+ * URL extraction failure, binary fetch error, WOFF2 decode error). Errors
+ * are reported up the stack rather than silently swallowed so the caller
+ * can surface them to the user instead of letting compilation continue
+ * with an empty registry and produce a misleading downstream error.
+ *
+ * Successful results are cached for the session; failures are not, so a
+ * subsequent compile re-attempts the fetch.
  */
 export async function fetchFontBinary(
   family: string,
   weight: number = 400,
-): Promise<ArrayBuffer | null> {
+): Promise<FontFetchOutcome> {
   // Skip CSS generic font families — these are not real fonts on Google Fonts
   if (GENERIC_FONT_FAMILIES.has(family)) {
-    return null;
+    return { ok: false, reason: `'${family}' is a CSS generic family and cannot be fetched from Google Fonts` };
   }
 
   const cacheKey = `${family}:${weight}`;
 
   // Check cache
-  if (fontBinaryCache.has(cacheKey)) {
-    return fontBinaryCache.get(cacheKey)!;
+  const cached = fontBinaryCache.get(cacheKey);
+  if (cached) {
+    return { ok: true, buffer: cached };
   }
 
   // Dedup in-flight fetches
-  if (pendingFetches.has(cacheKey)) {
-    return pendingFetches.get(cacheKey)!;
-  }
+  const inflight = pendingFetches.get(cacheKey);
+  if (inflight) return inflight;
 
-  const fetchPromise = fetchFontBinaryUncached(family, weight);
+  const fetchPromise = (async (): Promise<FontFetchOutcome> => {
+    try {
+      const buffer = await fetchFontBinaryUncached(family, weight);
+      fontBinaryCache.set(cacheKey, buffer);
+      return { ok: true, buffer };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { ok: false, reason };
+    } finally {
+      pendingFetches.delete(cacheKey);
+    }
+  })();
+
   pendingFetches.set(cacheKey, fetchPromise);
-
-  try {
-    const buffer = await fetchPromise;
-    fontBinaryCache.set(cacheKey, buffer);
-    return buffer;
-  } catch (err) {
-    console.warn(`[font-loader] Failed to fetch font ${family}:${weight}:`, err);
-    return null;
-  } finally {
-    pendingFetches.delete(cacheKey);
-  }
+  return fetchPromise;
 }
 
 async function fetchFontBinaryUncached(
@@ -98,7 +123,12 @@ async function fetchFontBinaryUncached(
 
   let buffer = await fontRes.arrayBuffer();
   if (isWoff2(buffer)) {
-    buffer = await decompressWoff2(buffer);
+    try {
+      buffer = await decompressWoff2(buffer);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(`WOFF2 decode failed: ${detail}`);
+    }
   }
   return buffer;
 }
@@ -140,23 +170,31 @@ async function decompressWoff2(buffer: ArrayBuffer): Promise<ArrayBuffer> {
 
 /**
  * Resolve font binaries for a set of font families.
- * Returns an array of FontBinaryEntry for all successfully loaded fonts.
+ *
+ * Fetches all in parallel and partitions outcomes into `binaries`
+ * (successful loads) and `failures` (per-family error reasons). The
+ * caller surfaces failures to the user — silently dropping them caused
+ * `PathBlock.fromGlyph()` to throw a misleading "requires font data"
+ * error when the actual root cause was a fetch / WOFF2 decode error.
  */
 export async function resolveFontBinaries(
   families: { family: string; weight?: number }[],
-): Promise<FontBinaryEntry[]> {
-  const results: FontBinaryEntry[] = [];
+): Promise<FontResolutionResult> {
+  const binaries: FontBinaryEntry[] = [];
+  const failures: FontResolutionFailure[] = [];
 
-  // Fetch all in parallel
-  const promises = families.map(async ({ family, weight = 400 }) => {
-    const buffer = await fetchFontBinary(family, weight);
-    if (buffer) {
-      results.push({ family, weight, style: 'normal', buffer });
-    }
-  });
+  await Promise.all(
+    families.map(async ({ family, weight = 400 }) => {
+      const outcome = await fetchFontBinary(family, weight);
+      if (outcome.ok) {
+        binaries.push({ family, weight, style: 'normal', buffer: outcome.buffer });
+      } else {
+        failures.push({ family, weight, reason: outcome.reason });
+      }
+    }),
+  );
 
-  await Promise.all(promises);
-  return results;
+  return { binaries, failures };
 }
 
 /**

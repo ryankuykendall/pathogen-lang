@@ -784,6 +784,7 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
               type: 'MemberExpression',
               object: expr as Expression,
               property: propName,
+              loc: (expr as { loc?: SourceLocation }).loc,
             } as MemberExpression;
           } else if (argsText[pos] === '[') {
             // Index access
@@ -796,6 +797,7 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
                 type: 'IndexExpression',
                 object: expr as Expression,
                 index: indexExpr as Expression,
+                loc: (expr as { loc?: SourceLocation }).loc,
               } as IndexExpression;
               pos += bracketContent.length + 2;
             } else {
@@ -960,7 +962,12 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
       while (cursor.nextSibling()) {
         if (cursor.name === '.' && cursor.nextSibling() && isExpressionNode(cursor.name)) {
           const propName = text(cursor, source);
-          expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+          expr = {
+            type: 'MemberExpression',
+            object: expr,
+            property: propName,
+            loc: (expr as { loc?: SourceLocation }).loc,
+          } as MemberExpression;
         } else {
           // Hit comma or closing paren — let the outer loop handle this token
           if (cursor.name === ')') inParens = false;
@@ -1006,7 +1013,12 @@ function buildTspanStatement(cursor: TreeCursor, source: string): TspanStatement
       while (cursor.nextSibling()) {
         if (cursor.name === '.' && cursor.nextSibling() && isExpressionNode(cursor.name)) {
           const propName = text(cursor, source);
-          expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+          expr = {
+            type: 'MemberExpression',
+            object: expr,
+            property: propName,
+            loc: (expr as { loc?: SourceLocation }).loc,
+          } as MemberExpression;
         } else {
           if (cursor.name === ')') inParens = false;
           break;
@@ -1277,7 +1289,12 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
           const methodArgs = parseFunctionArgs(fnMatch[2], cursor.from + fnMatch[1].length + 1, source);
           expr = { type: 'MethodCallExpression', object: expr, method: fnMatch[1], args: methodArgs, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
         } else {
-          expr = { type: 'MemberExpression', object: expr, property: raw } as MemberExpression;
+          expr = {
+            type: 'MemberExpression',
+            object: expr,
+            property: raw,
+            loc: (expr as { loc?: SourceLocation }).loc,
+          } as MemberExpression;
         }
         // Continue — cursor is on the CSSColorLiteral, next iteration will advance
         continue;
@@ -1287,7 +1304,12 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
 
       // Peek ahead for ArgList, TrailingBlock, or next op
       if (!cursor.nextSibling()) {
-        expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+        expr = {
+          type: 'MemberExpression',
+          object: expr,
+          property: propName,
+          loc: (expr as { loc?: SourceLocation }).loc,
+        } as MemberExpression;
         break;
       }
 
@@ -1307,14 +1329,24 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
         expr = { type: 'MethodCallExpression', object: expr, method: propName, args: [], block, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
       } else {
         // Simple member access — cursor is already on the next token
-        expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
+        expr = {
+          type: 'MemberExpression',
+          object: expr,
+          property: propName,
+          loc: (expr as { loc?: SourceLocation }).loc,
+        } as MemberExpression;
         needsAdvance = false; // Don't skip the current token
       }
     } else if (sibName === '[') {
       if (!cursor.nextSibling()) break;
       const index = buildExpression(cursor, source);
       cursor.nextSibling(); // skip ']'
-      expr = { type: 'IndexExpression', object: expr, index } as IndexExpression;
+      expr = {
+        type: 'IndexExpression',
+        object: expr,
+        index,
+        loc: (expr as { loc?: SourceLocation }).loc,
+      } as IndexExpression;
     } else if (sibName === 'TrailingBlock') {
       const block = buildTrailingBlock(cursor, source);
       if (expr.type === 'FunctionCall') {
@@ -1388,6 +1420,7 @@ function buildPostfixExpression(cursor: TreeCursor, source: string): Expression 
             type: 'MemberExpression',
             object: expr,
             property: propName,
+            loc: (expr as { loc?: SourceLocation }).loc,
           } as MemberExpression;
           // We consumed too far — the cursor is on the next thing
           continue;
@@ -1413,6 +1446,7 @@ function buildPostfixExpression(cursor: TreeCursor, source: string): Expression 
           type: 'IndexExpression',
           object: expr,
           index,
+          loc: (expr as { loc?: SourceLocation }).loc,
         } as IndexExpression;
       }
     } else if (name === ';' || name === '⚠') {

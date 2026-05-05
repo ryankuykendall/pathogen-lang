@@ -257,4 +257,42 @@ describe('getDiagnostics', () => {
       expect(diags[1].message).toContain("Missing ';'");
     });
   });
+
+  describe('font-availability false positives', () => {
+    // The diagnostics layer runs evaluate(ast) without a font registry.
+    // Programs using PathBlock.fromGlyph() / TextBlock.toPathBlock() throw
+    // "no fonts were loaded" on this fontless pass even when the real host
+    // compile (which has fonts) would succeed. Such errors are noise for
+    // language-services consumers and must be filtered out — otherwise
+    // they mask the host's authoritative result in the playground UI.
+
+    it('does not surface "no fonts were loaded" when source uses PathBlock.fromGlyph', () => {
+      const source = `
+        @font "Inconsolata" 400;
+        let s = \${ font-family: "Inconsolata"; font-size: 16; };
+        let g = PathBlock.fromGlyph('A', s);
+      `;
+      const diags = diagnose(source);
+      expect(diags.every((d) => !d.message.includes('no fonts were loaded'))).toBe(true);
+      expect(diags.every((d) => !d.message.includes('Available fonts: none'))).toBe(true);
+    });
+
+    it('does not surface "requires fonts to be loaded" for TextBlock.toPathBlock', () => {
+      const source = `
+        @font "Inconsolata" 400;
+        let t = TextBlock(0, 0)\`hi\`;
+        let p = t.toPathBlock();
+      `;
+      const diags = diagnose(source);
+      expect(diags.every((d) => !d.message.includes('requires fonts to be loaded'))).toBe(true);
+    });
+
+    it('still surfaces non-font runtime errors from Phase 3 evaluate', () => {
+      // Undefined-variable is a real Phase-3 runtime error unrelated to
+      // fonts. The filter must not swallow it.
+      const diags = diagnose('let x = unknownVar;');
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags.some((d) => /Undefined variable/i.test(d.message))).toBe(true);
+    });
+  });
 });

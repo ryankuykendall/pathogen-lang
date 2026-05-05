@@ -87,11 +87,23 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
     return diagnostics;
   }
 
-  // Phase 3: Parse succeeded — try to evaluate
+  // Phase 3: Parse succeeded — try to evaluate.
+  //
+  // We pass no font registry here, so any program that uses font-requiring
+  // constructs (PathBlock.fromGlyph, TextBlock.toPathBlock, …) will throw
+  // "no fonts were loaded" on this fontless pass — even though the host's
+  // real compile (with fonts) may have succeeded in the worker. Such errors
+  // are language-services false positives, not real user errors. Filter
+  // them out so they don't mask the host's authoritative result.
   try {
     evaluate(ast);
   } catch (err) {
     const message = (err as Error).message;
+    if (isFontAvailabilityError(message)) {
+      // The host compile is the source of truth for font-related diagnostics.
+      // Skip — surfacing this here would override the real error/success.
+      return diagnostics;
+    }
     const diag = parseEvaluatorError(message, document);
     if (diag) {
       diagnostics.push(diag);
@@ -106,6 +118,19 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
   }
 
   return diagnostics;
+}
+
+/**
+ * Recognize errors that fire only because the language-services evaluator
+ * runs without a font registry. A real host compile with fonts would not
+ * throw these.
+ */
+function isFontAvailabilityError(message: string): boolean {
+  return (
+    message.includes('no fonts were loaded') ||
+    message.includes('requires fonts to be loaded') ||
+    message.includes('Available fonts: none')
+  );
 }
 
 /**

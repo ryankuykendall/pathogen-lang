@@ -1031,14 +1031,17 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
 function evaluateIndexExpression(expr: IndexExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
   const index = evaluateExpression(expr.index, scope);
+  const line = getLine(expr);
+  const iError = (message: string): Error => new Error(formatError(message, line));
+
   if (isObjectValue(obj)) {
-    if (typeof index !== 'string') throw new Error('Object key must be a string');
+    if (typeof index !== 'string') throw iError('Object key must be a string');
     return obj.properties.get(index) ?? null;
   }
-  if (!isArrayValue(obj)) throw new Error('Index access requires an array or object');
-  if (typeof index !== 'number') throw new Error('Array index must be a number');
+  if (!isArrayValue(obj)) throw iError('Index access requires an array or object');
+  if (typeof index !== 'number') throw iError('Array index must be a number');
   if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length) {
-    throw new Error(`Array index ${index} out of bounds (length ${obj.elements.length})`);
+    throw iError(`Array index ${index} out of bounds (length ${obj.elements.length})`);
   }
   return obj.elements[index];
 }
@@ -2290,7 +2293,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
         const registry = scope.evalState?.fontRegistry;
         if (!registry) {
-          throw mError('PathBlock.fromGlyph() requires font data. Use @font directive to load a font.');
+          throw mError(
+            'PathBlock.fromGlyph() requires font data, but no fonts were loaded. ' +
+              'If you wrote an @font directive, font loading may have failed earlier — ' +
+              'look for a preceding font-loading error.',
+          );
         }
 
         const fontData = getFont(registry, fontFamily, fontWeight);
@@ -3797,16 +3804,18 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       const obj = evaluateExpression(stmt.object, scope);
       const index = evaluateExpression(stmt.index, scope);
       const value = evaluateExpression(stmt.value, scope);
+      const line = getLine(stmt);
+      const aError = (message: string): Error => new Error(formatError(message, line));
       if (isObjectValue(obj)) {
-        if (typeof index !== 'string') throw new Error('Object key must be a string');
+        if (typeof index !== 'string') throw aError('Object key must be a string');
         obj.properties.set(index, value);
       } else if (isArrayValue(obj)) {
-        if (typeof index !== 'number') throw new Error('Array index must be a number');
+        if (typeof index !== 'number') throw aError('Array index must be a number');
         if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length)
-          throw new Error(`Array index ${index} out of bounds`);
+          throw aError(`Array index ${index} out of bounds (length ${obj.elements.length})`);
         obj.elements[index] = value;
       } else {
-        throw new Error('Indexed assignment requires an object or array');
+        throw aError('Indexed assignment requires an object or array');
       }
       return '';
     }
@@ -4175,16 +4184,18 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const obj = evaluateExpression(stmt.object, scope);
       const index = evaluateExpression(stmt.index, scope);
       const value = evaluateExpression(stmt.value, scope);
+      const line = getLine(stmt);
+      const aError = (message: string): Error => new Error(formatError(message, line));
       if (isObjectValue(obj)) {
-        if (typeof index !== 'string') throw new Error('Object key must be a string');
+        if (typeof index !== 'string') throw aError('Object key must be a string');
         obj.properties.set(index, value);
       } else if (isArrayValue(obj)) {
-        if (typeof index !== 'number') throw new Error('Array index must be a number');
+        if (typeof index !== 'number') throw aError('Array index must be a number');
         if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length)
-          throw new Error(`Array index ${index} out of bounds`);
+          throw aError(`Array index ${index} out of bounds (length ${obj.elements.length})`);
         obj.elements[index] = value;
       } else {
-        throw new Error('Indexed assignment requires an object or array');
+        throw aError('Indexed assignment requires an object or array');
       }
       break;
     }

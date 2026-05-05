@@ -162,6 +162,49 @@ async function copyAssets(): Promise<void> {
   await fs.writeFile(join(OUT, 'index.html'), indexHtml);
   // SPA fallback for subdirectory routing
   await fs.writeFile(join(OUT, '404.html'), indexHtml);
+
+  // Copy library bundle + worker bundle from dist/ → public/pathogen/dist/.
+  // The playground loads `dist/index.global.js` (window.SvgPathExtended) and
+  // spawns `dist/worker.worker.js` for async compilation. If we don't stage
+  // them here, a dev who runs `npm run build` + `npm run build:playground`
+  // ends up with a fresh playground pointing at stale lib/worker bundles —
+  // which manifested today as `@font` directives silently being dropped
+  // because the pre-fix worker didn't pass the font registry into compile.
+  await copyLibArtifacts();
+}
+
+async function copyLibArtifacts(): Promise<void> {
+  const distSrc = join(ROOT, 'dist');
+  const distDest = join(OUT, 'dist');
+  await fs.mkdir(distDest, { recursive: true });
+
+  const required = ['index.global.js', 'worker.worker.js'];
+  const optional = ['index.global.js.map', 'worker.worker.js.map'];
+
+  let missing = 0;
+  for (const name of required) {
+    const src = join(distSrc, name);
+    try {
+      await fs.copyFile(src, join(distDest, name));
+    } catch {
+      console.warn(
+        `  ${name} not found in dist/ — playground will load a stale or missing bundle. ` +
+          `Run \`npm run build\` first.`,
+      );
+      missing++;
+    }
+  }
+  for (const name of optional) {
+    try {
+      await fs.copyFile(join(distSrc, name), join(distDest, name));
+    } catch {
+      // Source map is optional — esbuild may not have emitted it.
+    }
+  }
+
+  if (missing === 0) {
+    console.log(`  Copied ${required.length} library artifact(s) from dist/`);
+  }
 }
 
 // Only run CLI when executed directly (not when imported by build-website.ts)
