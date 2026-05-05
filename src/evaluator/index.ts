@@ -7685,6 +7685,8 @@ export interface EvaluateWithContextOptions {
   trackHistory?: boolean;
   /** Fixed decimal precision for number formatting */
   toFixed?: number;
+  /** Font registry with loaded font data for precise metrics and glyph extraction */
+  fonts?: import('./types').FontRegistry;
 }
 
 /**
@@ -7716,6 +7718,7 @@ export function evaluateWithContext(
       patterns: new Map(),
       markers: new Map(),
       cssProperties: new Map(),
+      fontRegistry: options.fonts,
     };
 
     const scope = createScope();

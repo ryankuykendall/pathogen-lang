@@ -773,6 +773,7 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
                   object: expr as Expression,
                   method: propName,
                   args: methodArgs,
+                  loc: (expr as { loc?: SourceLocation }).loc,
                 } as MethodCallExpression;
                 pos += parenContent.length + 2;
                 continue;
@@ -1274,7 +1275,7 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
         const fnMatch = raw.match(/^(\w+)\(([^)]*)\)$/);
         if (fnMatch) {
           const methodArgs = parseFunctionArgs(fnMatch[2], cursor.from + fnMatch[1].length + 1, source);
-          expr = { type: 'MethodCallExpression', object: expr, method: fnMatch[1], args: methodArgs } as MethodCallExpression;
+          expr = { type: 'MethodCallExpression', object: expr, method: fnMatch[1], args: methodArgs, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
         } else {
           expr = { type: 'MemberExpression', object: expr, property: raw } as MemberExpression;
         }
@@ -1300,10 +1301,10 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
             needsAdvance = false;
           }
         }
-        expr = { type: 'MethodCallExpression', object: expr, method: propName, args, block } as MethodCallExpression;
+        expr = { type: 'MethodCallExpression', object: expr, method: propName, args, block, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
       } else if (cursor.name === 'TrailingBlock') {
         const block = buildTrailingBlock(cursor, source);
-        expr = { type: 'MethodCallExpression', object: expr, method: propName, args: [], block } as MethodCallExpression;
+        expr = { type: 'MethodCallExpression', object: expr, method: propName, args: [], block, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
       } else {
         // Simple member access — cursor is already on the next token
         expr = { type: 'MemberExpression', object: expr, property: propName } as MemberExpression;
@@ -1379,6 +1380,7 @@ function buildPostfixExpression(cursor: TreeCursor, source: string): Expression 
             object: expr,
             method: propName,
             args,
+            loc: (expr as { loc?: SourceLocation }).loc,
           } as MethodCallExpression;
         } else {
           // Simple member access

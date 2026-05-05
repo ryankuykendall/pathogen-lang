@@ -187,6 +187,8 @@ export interface CompileWithContextOptions {
   trackHistory?: boolean;
   /** Fixed decimal precision for number formatting (0-20) */
   toFixed?: number;
+  /** Font registry with loaded font data for precise metrics and glyph extraction */
+  fonts?: import('./evaluator/types').FontRegistry;
 }
 
 /**

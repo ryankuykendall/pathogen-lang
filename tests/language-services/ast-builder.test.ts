@@ -286,6 +286,19 @@ describe('Lezer AST Builder', () => {
       expect(prop.value.method).toBe('lighten');
     });
 
+    it('MethodCallExpression carries source location for error reporting', () => {
+      const src = `let a = 1;
+let b = 2;
+let g = PathBlock.fromGlyph("A", styles);`;
+      const ast = lezerParse(src);
+      const decl = ast.body[2] as any;
+      expect(decl.value.type).toBe('MethodCallExpression');
+      expect(decl.value.loc).toBeDefined();
+      expect(decl.value.loc.line).toBe(3);
+      expect(decl.value.loc.line).toBeGreaterThan(0);
+      expect(decl.value.loc.column).toBeGreaterThan(0);
+    });
+
     it('parses member access as object property value', () => {
       const ast = lezerParse('let x = { w: bb.width };');
       const decl = ast.body[0] as any;
