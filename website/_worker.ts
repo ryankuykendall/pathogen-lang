@@ -18,6 +18,7 @@ import {
 } from './auth/handlers.js';
 import { getSessionUserId, readSessionTokenFromRequest } from './auth/session.js';
 import { findUserById, findUserByHandle } from './auth/users.js';
+import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 
 // ─── Type Definitions ─────────────────────────────────────────────────
 
@@ -204,30 +205,6 @@ function initialOf(name: string): string {
   return trimmed.slice(0, 2).toUpperCase();
 }
 
-function renderAccountSlot(user: SsrUser | null): string {
-  if (user) {
-    const profileHref = `/pathogen/u/${encodeURIComponent(user.handle)}`;
-    return `
-      <details class="account-dropdown">
-        <summary class="account-chip" aria-label="Account menu" title="Account menu">
-          <span class="account-initial">${escapeHtml(initialOf(user.displayName))}</span>
-          <span class="account-name">${escapeHtml(user.displayName)}</span>
-          <svg class="account-chev" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
-            <path d="M2 4 L6 8 L10 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </summary>
-        <div class="account-menu" role="menu">
-          <a class="account-menu-item" role="menuitem" href="${profileHref}">
-            <span class="account-menu-label">View profile</span>
-            <span class="account-menu-handle">@${escapeHtml(user.handle)}</span>
-          </a>
-          <a class="account-menu-item" role="menuitem" href="/pathogen/?signout=1">Sign out</a>
-        </div>
-      </details>`;
-  }
-  return `<a class="signin-pill" href="/pathogen/?signin=1">Sign in</a>`;
-}
-
 function renderPage({
   title,
   description,
@@ -243,27 +220,11 @@ function renderPage({
   headExtra?: string;
   currentUser?: SsrUser | null;
 }): string {
-  const fullTitle = title ? `${title} — Pathogen` : 'Pathogen — SVG Path Extended Playground';
+  const fullTitle = title ? `${title} — Pathogen Studio` : 'Pathogen Studio — SVG Path Extended Playground';
   const desc =
     description ||
     'A visual playground for svg-path-extended — variables, expressions, control flow, functions, and more for SVG paths.';
   const canonical = `${SITE_URL}${path}`;
-
-  const navLinks = [
-    { href: '/pathogen/', label: 'Workspaces', match: '/pathogen/' },
-    { href: '/pathogen/docs', label: 'Docs', match: '/pathogen/docs' },
-    { href: '/pathogen/explore', label: 'Explore', match: '/pathogen/explore' },
-    { href: '/pathogen/featured', label: 'Featured', match: '/pathogen/featured' },
-    { href: '/pathogen/blog', label: 'Blog', match: '/pathogen/blog' },
-    { href: '/pathogen/preferences', label: 'Preferences', match: '/pathogen/preferences' },
-  ];
-
-  const navHtml = navLinks
-    .map((link) => {
-      const isActive = path === link.match || (link.match !== '/pathogen/' && path.startsWith(link.match));
-      return `<a class="nav-link${isActive ? ' active' : ''}" href="${link.href}">${link.label}</a>`;
-    })
-    .join('\n          ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -279,233 +240,38 @@ function renderPage({
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
   ${headExtra}
   <style>
-    /* SEO page layout */
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, atmospheric grain) are defined
+     * globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar — matches app-header.js */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-    }
-    .site-header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1rem;
-      max-width: 100%;
-      height: 56px;
-      box-sizing: border-box;
-      gap: 1rem;
-    }
-    .logo {
-      display: flex;
-      flex-direction: column;
-      text-decoration: none;
-      line-height: 1.1;
-      flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive;
-      font-size: 1.5rem;
-      font-weight: 400;
-      color: var(--text-primary, #1a1a2e);
-      transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace;
-      font-size: 0.6rem;
-      color: var(--text-secondary, #64748b);
-      white-space: nowrap;
-    }
-    .site-nav {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      flex: 1;
-      justify-content: center;
-    }
-    .nav-link {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-      color: var(--text-secondary, #64748b);
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover {
-      background: var(--hover-bg, rgba(0,0,0,0.04));
-      color: var(--text-primary, #1a1a2e);
-    }
-    .nav-link.active {
-      background: var(--accent-color, #10b981);
-      color: var(--accent-text, #ffffff);
-    }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
     .site-main {
       max-width: 1200px;
       margin: 0 auto;
       padding: 2rem 1rem;
     }
-
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
       .site-main { padding: 1.5rem 0.75rem; }
-    }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
-
-    /* Account slot — server-rendered version of <account-menu> for SSR pages.
-     * The SPA replaces this with the live web component when the playground
-     * loads; until then the chip + sign-out link gives signed-in users
-     * visual continuity across the SSR pages (explore, featured, /u/handle). */
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .signin-pill {
-      background: transparent;
-      color: var(--accent-color, #10b981);
-      border: 1px solid var(--accent-color, #10b981);
-      border-radius: 8px;
-      padding: 0.4rem 0.9rem;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-    }
-    .signin-pill:hover {
-      background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
-      color: var(--accent-hover, #059669);
-      border-color: var(--accent-hover, #059669);
-    }
-    /* Native <details> dropdown — no JS required for open/close. */
-    .account-dropdown {
-      position: relative;
-      display: inline-flex;
-    }
-    .account-dropdown > summary { list-style: none; }
-    .account-dropdown > summary::-webkit-details-marker { display: none; }
-    .account-chip {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      background: var(--bg-elevated, #f1f5f9);
-      border: 1px solid var(--border-color, #e2e8f0);
-      border-radius: 999px;
-      padding: 0.25rem 0.6rem 0.25rem 0.25rem;
-      color: var(--text-primary, #1a1a2e);
-      font-size: 0.8125rem;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    .account-chip:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); }
-    .account-initial {
-      width: 22px; height: 22px;
-      display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 50%;
-      background: var(--accent-color, #10b981);
-      color: var(--accent-text, #fff);
-      font-size: 0.6875rem;
-      font-weight: 600;
-    }
-    .account-name {
-      max-width: 12ch;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-    .account-chev {
-      opacity: 0.6;
-      transition: transform 0.15s ease;
-    }
-    .account-dropdown[open] .account-chev { transform: rotate(180deg); }
-    .account-menu {
-      position: absolute;
-      top: calc(100% + 6px);
-      right: 0;
-      min-width: 200px;
-      background: var(--bg-secondary, #fff);
-      border: 1px solid var(--border-color, #e2e8f0);
-      border-radius: 8px;
-      box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.08));
-      padding: 0.25rem;
-      display: flex;
-      flex-direction: column;
-      z-index: 1000;
-    }
-    .account-menu-item {
-      display: flex; flex-direction: column; align-items: flex-start;
-      padding: 0.5rem 0.75rem;
-      text-decoration: none;
-      color: var(--text-primary, #1a1a2e);
-      font-size: 0.8125rem;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .account-menu-item:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); }
-    .account-menu-label { font-weight: 500; }
-    .account-menu-handle {
-      font-size: 0.6875rem;
-      color: var(--text-secondary, #64748b);
-      font-family: var(--font-mono, ui-monospace, monospace);
-    }
-    @media (max-width: 600px) {
-      .account-name { max-width: 8ch; }
     }
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
-          ${navHtml}
-      </nav>
-      <div class="header-actions">
-        <theme-toggle></theme-toggle>
-        ${renderAccountSlot(currentUser)}
-      </div>
-    </div>
-  </header>
+  ${siteHeaderHtml({ pathname: path, context: 'static' })}
   <main class="site-main">
     ${content}
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script>
-    // Close the account dropdown when clicking outside it. Native <details>
-    // elements don't auto-close, so this is the small bit of JS needed for
-    // the SPA-like UX. ~5 lines, no module needed.
-    document.addEventListener('click', function (e) {
-      var open = document.querySelector('details.account-dropdown[open]');
-      if (open && !open.contains(e.target)) open.removeAttribute('open');
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape') return;
-      var open = document.querySelector('details.account-dropdown[open]');
-      if (open) open.removeAttribute('open');
-    });
-  </script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
 </body>
 </html>`;
 }

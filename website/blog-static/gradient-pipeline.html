@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Building the Gradient Pipeline: From Compiler to Blog — Pathogen</title>
+  <title>Building the Gradient Pipeline: From Compiler to Blog — Pathogen Studio</title>
   <meta name="description" content="How Pathogen's gradient system flows from .pathogen source through the compiler, GPU renderer, and blog build pipeline to produce the interactive demos in this series.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/gradient-pipeline">
-  <meta property="og:title" content="Building the Gradient Pipeline: From Compiler to Blog — Pathogen">
+  <meta property="og:title" content="Building the Gradient Pipeline: From Compiler to Blog — Pathogen Studio">
   <meta property="og:description" content="How Pathogen's gradient system flows from .pathogen source through the compiler, GPU renderer, and blog build pipeline to produce the interactive demos in this series.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/gradient-pipeline">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Building the Gradient Pipeline: From Compiler to Blog</span></nav></div>
   <main class="blog-main">
     <article>
@@ -301,29 +266,29 @@ code.hljs {
 // --- Background ---
 
 let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
-  g.stop(0, Color('#0a0a14'))
-  g.stop(1, Color('#12121f'))
+  g.stop(0, Color('#0a0a14'));
+  g.stop(1, Color('#12121f'));
 };
 
 let bg = PathLayer('bg') ${ fill: bg_grad; stroke: none; };
-bg.apply { rect(0, 0, 700, 250) }
+bg.apply { rect(0, 0, 700, 250); }
 
 // --- Stage boxes (5 pipeline stages) ---
 
 let box1 = PathLayer('box1') ${ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
-box1.apply { roundRect(15, 60, 115, 55, 6) }
+box1.apply { roundRect(15, 60, 115, 55, 6); }
 
 let box2 = PathLayer('box2') ${ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
-box2.apply { roundRect(160, 60, 115, 55, 6) }
+box2.apply { roundRect(160, 60, 115, 55, 6); }
 
 let box3 = PathLayer('box3') ${ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
-box3.apply { roundRect(305, 60, 115, 55, 6) }
+box3.apply { roundRect(305, 60, 115, 55, 6); }
 
 let box4 = PathLayer('box4') ${ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
-box4.apply { roundRect(450, 60, 115, 55, 6) }
+box4.apply { roundRect(450, 60, 115, 55, 6); }
 
 let box5 = PathLayer('box5') ${ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
-box5.apply { roundRect(595, 60, 90, 55, 6) }
+box5.apply { roundRect(595, 60, 90, 55, 6); }
 
 // --- Arrow lines ---
 
@@ -416,7 +381,7 @@ subtitle.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle)
+scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle);
 </code>
   <img src="/pathogen/blog/samples/post5/pipeline-flow.svg" alt="Five stages: source, compiler, GPU renderer, SVG output, blog embed" loading="lazy">
 </mini-workspace></p>
@@ -449,16 +414,16 @@ card.<span class="hljs-title function_">append</span>(fill_layer, label_layer, t
 // --- Gradients ---
 
 let warm = LinearGradient('warm', 0, 0, 1, 1) {|g|
-  g.stop(0, Color('#ff6b6b'))
-  g.stop(0.5, Color('#feca57'))
-  g.stop(1, Color('#48dbfb'))
+  g.stop(0, Color('#ff6b6b'));
+  g.stop(0.5, Color('#feca57'));
+  g.stop(1, Color('#48dbfb'));
 };
 warm.interpolation = 'oklch';
 
 let cool = RadialGradient('cool', 0.5, 0.45, 0.55) {|g|
-  g.stop(0, Color('#ff9ff3'))
-  g.stop(0.6, Color('#a29bfe'))
-  g.stop(1, Color('#2d1b69'))
+  g.stop(0, Color('#ff9ff3'));
+  g.stop(0.6, Color('#a29bfe'));
+  g.stop(1, Color('#2d1b69'));
 };
 
 let blob1 = @{
@@ -473,15 +438,15 @@ let blob2 = @{
   c -10 50 -105 45 -110 -50
   z
 };
-let dot = @{ circle(0, 0, 8); closePath() };
+let dot = @{ circle(0, 0, 8); closePath(); };
 
 let topo_fill = TopoGradient('topo-card', 170, 140) {|g|
-  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'))
-  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'))
-  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'))
-  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'))
-  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'))
-  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.4, 0.4).project(12, 55), 0.2, Color('#f72585'));
+  g.contour(dot.project(42, 78), 0.5, Color('#f9c74f'));
+  g.contour(blob2.scale(0.4, 0.4).project(80, 15), 0.25, Color('#4cc9f0'));
+  g.contour(dot.project(108, 38), 0.6, Color('#7209b7'));
+  g.contour(blob1.scale(0.3, 0.3).project(55, 40), 0.35, Color('#43aa8b'));
+  g.contour(dot.project(85, 60), 0.75, Color('#f4a261'));
 };
 topo_fill.baseColor = Color('#0a0a1a');
 topo_fill.easing = 'ease-in-out';
@@ -492,7 +457,7 @@ topo_fill.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 600, 320) }
+bg.apply { rect(0, 0, 600, 320); }
 
 // --- Card 1: Linear (left) ---
 
@@ -502,7 +467,7 @@ let card1 = GroupLayer('card-1') ${
 };
 
 let c1_fill = PathLayer('c1-fill') ${ fill: warm; stroke: #444; stroke-width: 1; };
-c1_fill.apply { roundRect(0, 0, 170, 140, 8) }
+c1_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
 let c1_label = TextLayer('c1-label') ${
   font-family: system-ui, sans-serif;
@@ -521,7 +486,7 @@ let c1_tag = TextLayer('c1-tag') ${
 };
 c1_tag.apply { text(85, 174)`native SVG element` }
 
-card1.append(c1_fill, c1_label, c1_tag)
+card1.append(c1_fill, c1_label, c1_tag);
 
 // --- Card 2: Radial (center) ---
 
@@ -531,7 +496,7 @@ let card2 = GroupLayer('card-2') ${
 };
 
 let c2_fill = PathLayer('c2-fill') ${ fill: cool; stroke: #444; stroke-width: 1; };
-c2_fill.apply { roundRect(0, 0, 170, 140, 8) }
+c2_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
 let c2_label = TextLayer('c2-label') ${
   font-family: system-ui, sans-serif;
@@ -550,7 +515,7 @@ let c2_tag = TextLayer('c2-tag') ${
 };
 c2_tag.apply { text(85, 174)`native SVG element` }
 
-card2.append(c2_fill, c2_label, c2_tag)
+card2.append(c2_fill, c2_label, c2_tag);
 
 // --- Card 3: Topo (right) ---
 
@@ -560,7 +525,7 @@ let card3 = GroupLayer('card-3') ${
 };
 
 let c3_fill = PathLayer('c3-fill') ${ fill: topo_fill; stroke: #444; stroke-width: 1; };
-c3_fill.apply { roundRect(0, 0, 170, 140, 8) }
+c3_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
 let c3_label = TextLayer('c3-label') ${
   font-family: system-ui, sans-serif;
@@ -579,7 +544,7 @@ let c3_tag = TextLayer('c3-tag') ${
 };
 c3_tag.apply { text(85, 174)`GPU rendered (base64)` }
 
-card3.append(c3_fill, c3_label, c3_tag)
+card3.append(c3_fill, c3_label, c3_tag);
 
 // --- Title ---
 
@@ -606,7 +571,7 @@ subtitle.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, card1, card2, card3, title, subtitle)
+scene.append(bg, card1, card2, card3, title, subtitle);
 </code>
   <img src="/pathogen/blog/samples/post5/grouplayer-cards.svg" alt="Three cards positioned with GroupLayer translate — mixing native and GPU gradients" loading="lazy">
 </mini-workspace></p>
@@ -651,27 +616,27 @@ npm run dev:website   <span class="hljs-comment"># Build + serve at localhost:30
 // --- Linear ---
 
 let g_lin = LinearGradient('lin', 0, 0, 1, 1) {|g|
-  g.stop(0, Color('#ff6b6b'))
-  g.stop(0.5, Color('#feca57'))
-  g.stop(1, Color('#48dbfb'))
+  g.stop(0, Color('#ff6b6b'));
+  g.stop(0.5, Color('#feca57'));
+  g.stop(1, Color('#48dbfb'));
 };
 g_lin.interpolation = 'oklch';
 
 // --- Radial ---
 
 let g_rad = RadialGradient('rad', 0.5, 0.45, 0.55) {|g|
-  g.stop(0, Color('#ff9ff3'))
-  g.stop(0.6, Color('#a29bfe'))
-  g.stop(1, Color('#2d1b69'))
+  g.stop(0, Color('#ff9ff3'));
+  g.stop(0.6, Color('#a29bfe'));
+  g.stop(1, Color('#2d1b69'));
 };
 
 // --- Conic ---
 
 let g_con = ConicGradient('con', 480, 80) {|g|
-  g.stop(0, Color('#e74c3c'))
-  g.stop(0.33, Color('#f1c40f'))
-  g.stop(0.66, Color('#3498db'))
-  g.stop(1, Color('#e74c3c'))
+  g.stop(0, Color('#e74c3c'));
+  g.stop(0.33, Color('#f1c40f'));
+  g.stop(0.66, Color('#3498db'));
+  g.stop(1, Color('#e74c3c'));
 };
 
 // --- Mesh ---
@@ -686,11 +651,11 @@ let g_mesh = MeshGradient('mesh', 160, 120, 2, 2) {|g|
 // --- Freeform ---
 
 let g_free = FreeformGradient('free', 160, 120) {|g|
-  g.point(25, 25, Color('#e74c3c'))
-  g.point(135, 20, Color('#f1c40f'))
-  g.point(80, 100, Color('#3498db'))
-  g.point(20, 95, Color('#2ecc71'))
-  g.point(140, 85, Color('#9b59b6'))
+  g.point(25, 25, Color('#e74c3c'));
+  g.point(135, 20, Color('#f1c40f'));
+  g.point(80, 100, Color('#3498db'));
+  g.point(20, 95, Color('#2ecc71'));
+  g.point(140, 85, Color('#9b59b6'));
 };
 
 // --- Topo (abstract overlapping contours) ---
@@ -707,15 +672,15 @@ let blob2 = @{
   c -10 50 -105 45 -110 -50
   z
 };
-let tdot = @{ circle(0, 0, 8); closePath() };
+let tdot = @{ circle(0, 0, 8); closePath(); };
 
 let g_topo = TopoGradient('topo', 160, 120) {|g|
-  g.contour(blob1.scale(0.38, 0.38).project(10, 45), 0.2, Color('#f72585'))
-  g.contour(tdot.project(38, 68), 0.5, Color('#f9c74f'))
-  g.contour(blob2.scale(0.38, 0.38).project(75, 12), 0.25, Color('#4cc9f0'))
-  g.contour(tdot.project(100, 32), 0.6, Color('#7209b7'))
-  g.contour(blob1.scale(0.28, 0.28).project(50, 35), 0.35, Color('#43aa8b'))
-  g.contour(tdot.project(78, 55), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.38, 0.38).project(10, 45), 0.2, Color('#f72585'));
+  g.contour(tdot.project(38, 68), 0.5, Color('#f9c74f'));
+  g.contour(blob2.scale(0.38, 0.38).project(75, 12), 0.25, Color('#4cc9f0'));
+  g.contour(tdot.project(100, 32), 0.6, Color('#7209b7'));
+  g.contour(blob1.scale(0.28, 0.28).project(50, 35), 0.35, Color('#43aa8b'));
+  g.contour(tdot.project(78, 55), 0.75, Color('#f4a261'));
 };
 g_topo.baseColor = Color('#0a0a1a');
 g_topo.easing = 'ease-in-out';
@@ -726,27 +691,27 @@ g_topo.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 580, 400) }
+bg.apply { rect(0, 0, 580, 400); }
 
 // --- Panels (2 rows × 3 columns) ---
 
 let p1 = PathLayer('p-lin') ${ fill: g_lin; stroke: #444; stroke-width: 1; };
-p1.apply { roundRect(20, 20, 160, 120, 6) }
+p1.apply { roundRect(20, 20, 160, 120, 6); }
 
 let p2 = PathLayer('p-rad') ${ fill: g_rad; stroke: #444; stroke-width: 1; };
-p2.apply { roundRect(210, 20, 160, 120, 6) }
+p2.apply { roundRect(210, 20, 160, 120, 6); }
 
 let p3 = PathLayer('p-con') ${ fill: g_con; stroke: #444; stroke-width: 1; };
-p3.apply { roundRect(400, 20, 160, 120, 6) }
+p3.apply { roundRect(400, 20, 160, 120, 6); }
 
 let p4 = PathLayer('p-mesh') ${ fill: g_mesh; stroke: #444; stroke-width: 1; };
-p4.apply { roundRect(20, 210, 160, 120, 6) }
+p4.apply { roundRect(20, 210, 160, 120, 6); }
 
 let p5 = PathLayer('p-free') ${ fill: g_free; stroke: #444; stroke-width: 1; };
-p5.apply { roundRect(210, 210, 160, 120, 6) }
+p5.apply { roundRect(210, 210, 160, 120, 6); }
 
 let p6 = PathLayer('p-topo') ${ fill: g_topo; stroke: #444; stroke-width: 1; };
-p6.apply { roundRect(400, 210, 160, 120, 6) }
+p6.apply { roundRect(400, 210, 160, 120, 6); }
 
 // --- Labels ---
 
@@ -796,7 +761,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title)
+scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);
 </code>
   <img src="/pathogen/blog/samples/post5/gradient-gallery.svg" alt="The complete Pathogen gradient system — six types, one language" loading="lazy">
 </mini-workspace></p>
@@ -816,6 +781,7 @@ scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title)
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

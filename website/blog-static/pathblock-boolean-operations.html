@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR — Pathogen</title>
+  <title>Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR — Pathogen Studio</title>
   <meta name="description" content="How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/pathblock-boolean-operations">
-  <meta property="og:title" content="Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR — Pathogen">
+  <meta property="og:title" content="Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR — Pathogen Studio">
   <meta property="og:description" content="How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/pathblock-boolean-operations">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR</span></nav></div>
   <main class="blog-main">
     <article>
@@ -326,7 +291,7 @@ let sq = @{ h 50 v 50 h -50 z };
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 580, 480) }
+bg.apply { rect(0, 0, 580, 480); }
 
 // ═══════════════════════════════════════
 // Union (top-left quadrant)
@@ -339,8 +304,8 @@ let u_orig = PathLayer('u-orig') ${
   fill: none;
 };
 u_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let u_result = PathLayer('u-result') ${
@@ -350,7 +315,7 @@ let u_result = PathLayer('u-result') ${
 };
 u_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0)
+  u.drawTo(0, 0);
 }
 
 let u_ab = TextLayer('u-ab') ${
@@ -399,8 +364,8 @@ let d_orig = PathLayer('d-orig') ${
   fill: none;
 };
 d_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let d_result = PathLayer('d-result') ${
@@ -410,7 +375,7 @@ let d_result = PathLayer('d-result') ${
 };
 d_result.apply {
   let d = sq.project(0, 0).difference(sq.project(25, 25));
-  d.drawTo(0, 0)
+  d.drawTo(0, 0);
 }
 
 let d_ab = TextLayer('d-ab') ${
@@ -459,8 +424,8 @@ let i_orig = PathLayer('i-orig') ${
   fill: none;
 };
 i_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let i_result = PathLayer('i-result') ${
@@ -470,7 +435,7 @@ let i_result = PathLayer('i-result') ${
 };
 i_result.apply {
   let ix = sq.project(0, 0).intersection(sq.project(25, 25));
-  ix.drawTo(0, 0)
+  ix.drawTo(0, 0);
 }
 
 let i_ab = TextLayer('i-ab') ${
@@ -519,8 +484,8 @@ let x_orig = PathLayer('x-orig') ${
   fill: none;
 };
 x_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let x_result = PathLayer('x-result') ${
@@ -530,7 +495,7 @@ let x_result = PathLayer('x-result') ${
 };
 x_result.apply {
   let xr = sq.project(0, 0).xor(sq.project(25, 25));
-  xr.drawTo(0, 0)
+  xr.drawTo(0, 0);
 }
 
 let x_ab = TextLayer('x-ab') ${
@@ -704,7 +669,7 @@ let sq = @{ h 60 v 60 h -60 z };
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 520, 280) }
+bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Step 1: Two overlapping squares (input)
@@ -717,8 +682,8 @@ let s1_orig = PathLayer('s1-orig') ${
   fill: none;
 };
 s1_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let s1_label = TextLayer('s1-label') ${
@@ -755,8 +720,8 @@ let s2_orig = PathLayer('s2-orig') ${
   fill: none;
 };
 s2_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let s2_result = PathLayer('s2-result') ${
@@ -766,7 +731,7 @@ let s2_result = PathLayer('s2-result') ${
 };
 s2_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0)
+  u.drawTo(0, 0);
 }
 
 let s2_label = TextLayer('s2-label') ${
@@ -803,8 +768,8 @@ let s3_orig = PathLayer('s3-orig') ${
   fill: none;
 };
 s3_orig.apply {
-  sq.drawTo(0, 0)
-  sq.drawTo(25, 25)
+  sq.drawTo(0, 0);
+  sq.drawTo(25, 25);
 }
 
 let s3_result = PathLayer('s3-result') ${
@@ -815,7 +780,7 @@ let s3_result = PathLayer('s3-result') ${
 s3_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
   let rounded = u.fillet(8);
-  rounded.drawTo(0, 0)
+  rounded.drawTo(0, 0);
 }
 
 let s3_label = TextLayer('s3-label') ${
@@ -933,12 +898,12 @@ drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 // Standard library shapes with boolean operations
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 400, 200) }
+bg.apply { rect(0, 0, 400, 200); }
 
 // --- Plate with drilled holes ---
 
-let plate = @{ rect(0, 0, 80, 80) };
-let hole = @{ circle(0, 0, 10) };
+let plate = @{ rect(0, 0, 80, 80); };
+let hole = @{ circle(0, 0, 10); };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
 let d2 = d1.project(0, 0).difference(hole.project(55, 25));
@@ -951,7 +916,7 @@ let plate_result = PathLayer('plate-result') ${
   fill: Color('#3b82f618');
 };
 plate_result.apply {
-  drilled.drawTo(30, 55)
+  drilled.drawTo(30, 55);
 }
 
 let plate_label = TextLayer('plate-label') ${
@@ -976,8 +941,8 @@ plate_desc.apply {
 
 // --- Star union circle ---
 
-let st = @{ star(0, 0, 30, 14, 5) };
-let circ = @{ circle(0, 0, 18) };
+let st = @{ star(0, 0, 30, 14, 5); };
+let circ = @{ circle(0, 0, 18); };
 
 let badge = st.project(0, 0).union(circ.project(0, 0));
 
@@ -987,7 +952,7 @@ let badge_result = PathLayer('badge-result') ${
   fill: Color('#3b82f618');
 };
 badge_result.apply {
-  badge.drawTo(260, 100)
+  badge.drawTo(260, 100);
 }
 
 let badge_label = TextLayer('badge-label') ${
@@ -1029,6 +994,7 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

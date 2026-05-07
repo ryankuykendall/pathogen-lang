@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Topological Gradients: Painting with Signed Distance Fields — Pathogen</title>
+  <title>Topological Gradients: Painting with Signed Distance Fields — Pathogen Studio</title>
   <meta name="description" content="What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/gradient-topological">
-  <meta property="og:title" content="Topological Gradients: Painting with Signed Distance Fields — Pathogen">
+  <meta property="og:title" content="Topological Gradients: Painting with Signed Distance Fields — Pathogen Studio">
   <meta property="og:description" content="What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/gradient-topological">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Topological Gradients: Painting with Signed Distance Fields</span></nav></div>
   <main class="blog-main">
     <article>
@@ -331,14 +296,14 @@ let mid = @{
   z
 };
 
-let peak = @{ circle(0, 0, 35); closePath() };
+let peak = @{ circle(0, 0, 35); closePath(); };
 
 // --- Gradient ---
 
 let topo = TopoGradient('terrain', 400, 400) {|g|
-  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'))
-  g.contour(mid.project(90, 90), 0.5,  Color('#27ae60'))
-  g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'))
+  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'));
+  g.contour(mid.project(90, 90), 0.5,  Color('#27ae60'));
+  g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
@@ -347,7 +312,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Labels ---
 
@@ -377,7 +342,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, labels, title)
+scene.append(bg, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
 </mini-workspace></p>
@@ -407,18 +372,18 @@ let island = @{
   z
 };
 
-let summit = @{ circle(0, 0, 25); closePath() };
+let summit = @{ circle(0, 0, 25); closePath(); };
 
 // --- Gradient with two separate peaks ---
 
 let topo = TopoGradient('twins', 500, 350) {|g|
   // Left peak — warm tones
-  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'))
-  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'))
+  g.contour(island.project(30, 60), 0.3, Color('#f9e79f'));
+  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'));
 
   // Right peak — cool tones (same elevation = separate feature)
-  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'))
-  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'))
+  g.contour(island.project(260, 80), 0.3, Color('#aed9e0'));
+  g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'));
 };
 topo.baseColor = Color('#0f2027');
 topo.easing = 'smoothstep';
@@ -427,7 +392,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 500, 350) }
+bg.apply { rect(0, 0, 500, 350); }
 
 // --- Labels ---
 
@@ -455,7 +420,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, labels, title)
+scene.append(bg, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
 </mini-workspace></p>
@@ -477,15 +442,15 @@ topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">3
 
 // --- Shared contour shapes ---
 
-let ring = @{ circle(0, 0, 60); closePath() };
-let inner = @{ circle(0, 0, 25); closePath() };
+let ring = @{ circle(0, 0, 60); closePath(); };
+let inner = @{ circle(0, 0, 25); closePath(); };
 
 // --- Distance method (left) ---
 
 let topo_d = TopoGradient('dist', 220, 220) {|g|
-  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
-  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
-  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'));
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'));
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'));
 };
 topo_d.method = 'distance';
 topo_d.baseColor = Color('#1a1a2e');
@@ -494,9 +459,9 @@ topo_d.easing = 'smoothstep';
 // --- Laplace method (right) ---
 
 let topo_l = TopoGradient('lapl', 220, 220) {|g|
-  g.contour(ring.project(110, 110), 0.3, Color('#3498db'))
-  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'))
-  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'))
+  g.contour(ring.project(110, 110), 0.3, Color('#3498db'));
+  g.contour(ring.scale(0.6, 0.6).project(110, 110), 0.6, Color('#2ecc71'));
+  g.contour(inner.project(110, 110), 0.85, Color('#e74c3c'));
 };
 topo_l.method = 'laplace';
 topo_l.iterations = 300;
@@ -506,15 +471,15 @@ topo_l.easing = 'smoothstep';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 500, 300) }
+bg.apply { rect(0, 0, 500, 300); }
 
 // --- Fills ---
 
 let left = PathLayer('left') ${ fill: topo_d; stroke: #333; stroke-width: 1; };
-left.apply { roundRect(20, 30, 220, 220, 6) }
+left.apply { roundRect(20, 30, 220, 220, 6); }
 
 let right = PathLayer('right') ${ fill: topo_l; stroke: #333; stroke-width: 1; };
-right.apply { roundRect(260, 30, 220, 220, 6) }
+right.apply { roundRect(260, 30, 220, 220, 6); }
 
 // --- Labels ---
 
@@ -554,13 +519,13 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') ${};
-left_group.append(left)
+left_group.append(left);
 
 let right_group = GroupLayer('right-group') ${};
-right_group.append(right)
+right_group.append(right);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_group, right_group, labels, desc, title)
+scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
 </mini-workspace></p>
@@ -581,46 +546,46 @@ scene.append(bg, left_group, right_group, labels, desc, title)
 
 // --- Shared contour shapes (sized for 400×400 gradient) ---
 
-let ring = @{ circle(0, 0, 160); closePath() };
-let core = @{ circle(0, 0, 60); closePath() };
+let ring = @{ circle(0, 0, 160); closePath(); };
+let core = @{ circle(0, 0, 60); closePath(); };
 
 // --- Five gradients at proper resolution ---
 
 let t1 = TopoGradient('ease-0', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t1.baseColor = Color('#1a1a2e');
 t1.easing = 'linear';
 t1.interpolation = 'oklch';
 
 let t2 = TopoGradient('ease-1', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t2.baseColor = Color('#1a1a2e');
 t2.easing = 'smoothstep';
 t2.interpolation = 'oklch';
 
 let t3 = TopoGradient('ease-2', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t3.baseColor = Color('#1a1a2e');
 t3.easing = 'ease-in';
 t3.interpolation = 'oklch';
 
 let t4 = TopoGradient('ease-3', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t4.baseColor = Color('#1a1a2e');
 t4.easing = 'ease-out';
 t4.interpolation = 'oklch';
 
 let t5 = TopoGradient('ease-4', 400, 400) {|g|
-  g.contour(ring.project(200, 200), 0.3, Color('#3498db'))
-  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'))
+  g.contour(ring.project(200, 200), 0.3, Color('#3498db'));
+  g.contour(core.project(200, 200), 0.8, Color('#e74c3c'));
 };
 t5.baseColor = Color('#1a1a2e');
 t5.easing = 'ease-in-out';
@@ -629,24 +594,24 @@ t5.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 550, 350) }
+bg.apply { rect(0, 0, 550, 350); }
 
 // --- Fills ---
 
 let p1 = PathLayer('p1') ${ fill: t1; stroke: #333; stroke-width: 1; };
-p1.apply { roundRect(15, 60, 90, 90, 6) }
+p1.apply { roundRect(15, 60, 90, 90, 6); }
 
 let p2 = PathLayer('p2') ${ fill: t2; stroke: #333; stroke-width: 1; };
-p2.apply { roundRect(120, 60, 90, 90, 6) }
+p2.apply { roundRect(120, 60, 90, 90, 6); }
 
 let p3 = PathLayer('p3') ${ fill: t3; stroke: #333; stroke-width: 1; };
-p3.apply { roundRect(225, 60, 90, 90, 6) }
+p3.apply { roundRect(225, 60, 90, 90, 6); }
 
 let p4 = PathLayer('p4') ${ fill: t4; stroke: #333; stroke-width: 1; };
-p4.apply { roundRect(330, 60, 90, 90, 6) }
+p4.apply { roundRect(330, 60, 90, 90, 6); }
 
 let p5 = PathLayer('p5') ${ fill: t5; stroke: #333; stroke-width: 1; };
-p5.apply { roundRect(435, 60, 90, 90, 6) }
+p5.apply { roundRect(435, 60, 90, 90, 6); }
 
 // --- Labels ---
 
@@ -702,7 +667,7 @@ note.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note)
+scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 </code>
   <img src="/pathogen/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
 </mini-workspace></p>
@@ -745,16 +710,16 @@ let ridge = @{
   z
 };
 
-let summit = @{ circle(0, 0, 18); closePath() };
+let summit = @{ circle(0, 0, 18); closePath(); };
 
 // --- Gradient ---
 
 let topo = TopoGradient('island', 500, 400) {|g|
-  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'))
-  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'))
-  g.contour(highland.project(120, 100), 0.55, Color('#228b22'))
-  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'))
-  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'))
+  g.contour(coast.project(60, 50), 0.15, Color('#c2b280'));
+  g.contour(lowland.project(90, 75), 0.35, Color('#8fbc8f'));
+  g.contour(highland.project(120, 100), 0.55, Color('#228b22'));
+  g.contour(ridge.project(160, 130), 0.75, Color('#8b6914'));
+  g.contour(summit.project(200, 160), 0.92, Color('#dcdcdc'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
@@ -765,25 +730,25 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 500, 400) }
+bg.apply { rect(0, 0, 500, 400); }
 
 // --- Elevation legend ---
 
 let legend_bg = PathLayer('legend-bg') ${ fill: #00000066; stroke: none; };
-legend_bg.apply { roundRect(350, 270, 135, 110, 4) }
+legend_bg.apply { roundRect(350, 270, 135, 110, 4); }
 
 let s1 = PathLayer('s1') ${ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
-s1.apply { rect(360, 280, 14, 10) }
+s1.apply { rect(360, 280, 14, 10); }
 let s2 = PathLayer('s2') ${ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
-s2.apply { rect(360, 296, 14, 10) }
+s2.apply { rect(360, 296, 14, 10); }
 let s3 = PathLayer('s3') ${ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
-s3.apply { rect(360, 312, 14, 10) }
+s3.apply { rect(360, 312, 14, 10); }
 let s4 = PathLayer('s4') ${ fill: #228b22; stroke: #444; stroke-width: 0.5; };
-s4.apply { rect(360, 328, 14, 10) }
+s4.apply { rect(360, 328, 14, 10); }
 let s5 = PathLayer('s5') ${ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
-s5.apply { rect(360, 344, 14, 10) }
+s5.apply { rect(360, 344, 14, 10); }
 let s6 = PathLayer('s6') ${ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
-s6.apply { rect(360, 360, 14, 10) }
+s6.apply { rect(360, 360, 14, 10); }
 
 let legend = TextLayer('legend') ${
   font-family: monospace;
@@ -813,10 +778,10 @@ title.apply {
 // --- Scene ---
 
 let legend_group = GroupLayer('legend-group') ${};
-legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend)
+legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, legend_group, title)
+scene.append(bg, legend_group, title);
 </code>
   <img src="/pathogen/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
 </mini-workspace></p>
@@ -844,22 +809,22 @@ let blob2 = @{
   z
 };
 
-let dot = @{ circle(0, 0, 20); closePath() };
+let dot = @{ circle(0, 0, 20); closePath(); };
 
 // --- Gradient with overlapping regions ---
 
 let topo = TopoGradient('abstract', 400, 400) {|g|
   // Lower-left cluster — warm
-  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'))
-  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'))
+  g.contour(blob1.project(30, 180), 0.2, Color('#f72585'));
+  g.contour(dot.project(100, 240), 0.5, Color('#f9c74f'));
 
   // Upper-right cluster — cool
-  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'))
-  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'))
+  g.contour(blob2.project(200, 50), 0.25, Color('#4cc9f0'));
+  g.contour(dot.project(260, 110), 0.6, Color('#7209b7'));
 
   // Center overlap — creates interesting blending
-  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'))
-  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'))
+  g.contour(blob1.scale(0.8, 0.8).project(140, 120), 0.35, Color('#43aa8b'));
+  g.contour(dot.project(210, 180), 0.75, Color('#f4a261'));
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'ease-in-out';
@@ -870,7 +835,7 @@ topo.interpolation = 'oklch';
 // --- Layers ---
 
 let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 let title = TextLayer('title') ${
   font-family: system-ui, sans-serif;
@@ -885,7 +850,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, title)
+scene.append(bg, title);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
 </mini-workspace></p>
@@ -942,10 +907,10 @@ let r4 = diamond.rotateAtVertexIndex(0, 0.22);
 // Projections computed to center all shapes at (200, 200)
 
 let topo = TopoGradient('rects', 400, 400) {|g|
-  g.contour(r1.project(209, 189), 0.15, Color('#264653'))
-  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'))
-  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'))
-  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'))
+  g.contour(r1.project(209, 189), 0.15, Color('#264653'));
+  g.contour(r2.project(209, 190), 0.4, Color('#2a9d8f'));
+  g.contour(r3.project(207, 193), 0.65, Color('#e9c46a'));
+  g.contour(r4.project(203, 200), 0.88, Color('#e76f51'));
 };
 topo.baseColor = Color('#0a0a1a');
 topo.easing = 'smoothstep';
@@ -956,15 +921,15 @@ topo.interpolation = 'oklch';
 // ========== LEFT PANEL: Rendered Gradient ==========
 
 let bg = PathLayer('bg') ${ fill: #111; stroke: none; };
-bg.apply { rect(0, 0, 840, 420) }
+bg.apply { rect(0, 0, 840, 420); }
 
 let left_fill = PathLayer('left-fill') ${ fill: topo; stroke: #333; stroke-width: 1; };
-left_fill.apply { roundRect(10, 10, 400, 400, 6) }
+left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(430, 10, 400, 400, 6) }
+schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic: same shapes drawn at +430 x offset (center ≈ 630, 200)
 // M positions mirror the gradient projections offset into right panel
@@ -984,16 +949,16 @@ outline4.apply { M 633 200 r4.draw() }
 // --- Paint chips (25% larger: 15x13) + elevation labels ---
 
 let chip1 = PathLayer('chip1') ${ fill: #264653; stroke: #555; stroke-width: 0.5; };
-chip1.apply { rect(770, 145, 15, 13) }
+chip1.apply { rect(770, 145, 15, 13); }
 
 let chip2 = PathLayer('chip2') ${ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
-chip2.apply { rect(770, 190, 15, 13) }
+chip2.apply { rect(770, 190, 15, 13); }
 
 let chip3 = PathLayer('chip3') ${ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
-chip3.apply { rect(770, 235, 15, 13) }
+chip3.apply { rect(770, 235, 15, 13); }
 
 let chip4 = PathLayer('chip4') ${ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
-chip4.apply { rect(770, 280, 15, 13) }
+chip4.apply { rect(770, 280, 15, 13); }
 
 let elev_labels = TextLayer('elev-labels') ${
   font-family: monospace;
@@ -1035,7 +1000,7 @@ panel_labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels)
+scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
 </mini-workspace></p>
@@ -1113,18 +1078,18 @@ let shard_r2 = shard.rotateAtVertexIndex(0, -0.3);
 
 let topo = TopoGradient('crystal', 400, 400) {|g|
   // Primary cluster — center (blue facets)
-  g.contour(hex_r.project(190, 185), 0.12, Color('#1e3a5f'))
-  g.contour(pent_r.project(195, 188), 0.35, Color('#4a90d9'))
-  g.contour(sq_r.project(195, 190), 0.6, Color('#a5d8ff'))
-  g.contour(tri_r.project(198, 192), 0.85, Color('#ffffff'))
+  g.contour(hex_r.project(190, 185), 0.12, Color('#1e3a5f'));
+  g.contour(pent_r.project(195, 188), 0.35, Color('#4a90d9'));
+  g.contour(sq_r.project(195, 190), 0.6, Color('#a5d8ff'));
+  g.contour(tri_r.project(198, 192), 0.85, Color('#ffffff'));
 
   // Secondary cluster — lower right (magenta)
-  g.contour(wedge_r.project(310, 295), 0.15, Color('#5f1e3a'))
-  g.contour(shard_r.project(315, 298), 0.5, Color('#d94a90'))
+  g.contour(wedge_r.project(310, 295), 0.15, Color('#5f1e3a'));
+  g.contour(shard_r.project(315, 298), 0.5, Color('#d94a90'));
 
   // Tertiary shard — upper left (green)
-  g.contour(shard_r2.scale(1.3, 1.3).project(85, 90), 0.18, Color('#3a5f1e'))
-  g.contour(tri_r.project(92, 97), 0.55, Color('#90d94a'))
+  g.contour(shard_r2.scale(1.3, 1.3).project(85, 90), 0.18, Color('#3a5f1e'));
+  g.contour(tri_r.project(92, 97), 0.55, Color('#90d94a'));
 };
 topo.baseColor = Color('#08080f');
 topo.easing = 'ease-in-out';
@@ -1135,15 +1100,15 @@ topo.interpolation = 'oklch';
 // ========== LEFT PANEL: Rendered Gradient ==========
 
 let bg = PathLayer('bg') ${ fill: #111; stroke: none; };
-bg.apply { rect(0, 0, 840, 420) }
+bg.apply { rect(0, 0, 840, 420); }
 
 let left_fill = PathLayer('left-fill') ${ fill: topo; stroke: #333; stroke-width: 1; };
-left_fill.apply { roundRect(10, 10, 400, 400, 6) }
+left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(430, 10, 400, 400, 6) }
+schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic offset: +420 to x for all projections
 // Primary cluster: hex(190,185)→(610,185), pent(195,188)→(615,188), sq(195,190)→(615,190), tri(198,192)→(618,192)
@@ -1183,27 +1148,27 @@ o_tri2.apply { M 512 97 tri_r.draw() }
 // --- Paint chips + labels: Primary cluster (right of center) ---
 
 let cp1 = PathLayer('cp1') ${ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
-cp1.apply { rect(700, 120, 12, 10) }
+cp1.apply { rect(700, 120, 12, 10); }
 let cp2 = PathLayer('cp2') ${ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
-cp2.apply { rect(700, 138, 12, 10) }
+cp2.apply { rect(700, 138, 12, 10); }
 let cp3 = PathLayer('cp3') ${ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
-cp3.apply { rect(700, 156, 12, 10) }
+cp3.apply { rect(700, 156, 12, 10); }
 let cp4 = PathLayer('cp4') ${ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
-cp4.apply { rect(700, 174, 12, 10) }
+cp4.apply { rect(700, 174, 12, 10); }
 
 // --- Paint chips + labels: Secondary cluster ---
 
 let cs1 = PathLayer('cs1') ${ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
-cs1.apply { rect(770, 280, 12, 10) }
+cs1.apply { rect(770, 280, 12, 10); }
 let cs2 = PathLayer('cs2') ${ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
-cs2.apply { rect(770, 298, 12, 10) }
+cs2.apply { rect(770, 298, 12, 10); }
 
 // --- Paint chips + labels: Tertiary cluster ---
 
 let ct1 = PathLayer('ct1') ${ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
-ct1.apply { rect(460, 55, 12, 10) }
+ct1.apply { rect(460, 55, 12, 10); }
 let ct2 = PathLayer('ct2') ${ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
-ct2.apply { rect(460, 73, 12, 10) }
+ct2.apply { rect(460, 73, 12, 10); }
 
 // --- Elevation labels ---
 
@@ -1289,7 +1254,7 @@ panel_labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels)
+scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);
 </code>
   <img src="/pathogen/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
 </mini-workspace></p>
@@ -1330,9 +1295,9 @@ let spire = @{
 // --- Distance method (left panel) ---
 
 let topo_d = TopoGradient('dist-org', 220, 260) {|g|
-  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
-  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
-  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'));
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'));
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'));
 };
 topo_d.method = 'distance';
 topo_d.baseColor = Color('#0a0a1a');
@@ -1342,9 +1307,9 @@ topo_d.interpolation = 'oklch';
 // --- Laplace method (center panel) ---
 
 let topo_l = TopoGradient('lapl-org', 220, 260) {|g|
-  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'))
-  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'))
-  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'))
+  g.contour(coast.project(30, 50), 0.2, Color('#4cc9f0'));
+  g.contour(mesa.project(55, 85), 0.5, Color('#43aa8b'));
+  g.contour(spire.project(110, 130), 0.8, Color('#f9c74f'));
 };
 topo_l.method = 'laplace';
 topo_l.iterations = 350;
@@ -1355,22 +1320,22 @@ topo_l.interpolation = 'oklch';
 // ========== BACKGROUND ==========
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 740, 370) }
+bg.apply { rect(0, 0, 740, 370); }
 
 // ========== LEFT PANEL: Distance ==========
 
 let left = PathLayer('left') ${ fill: topo_d; stroke: #333; stroke-width: 1; };
-left.apply { roundRect(15, 30, 220, 260, 6) }
+left.apply { roundRect(15, 30, 220, 260, 6); }
 
 // ========== CENTER PANEL: Laplace ==========
 
 let center = PathLayer('center') ${ fill: topo_l; stroke: #333; stroke-width: 1; };
-center.apply { roundRect(255, 30, 220, 260, 6) }
+center.apply { roundRect(255, 30, 220, 260, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
 let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
-schema_border.apply { roundRect(495, 30, 230, 260, 6) }
+schema_border.apply { roundRect(495, 30, 230, 260, 6); }
 
 // Contour outlines — offset shapes into schematic panel
 // Original projections: coast(30,50), mesa(55,85), spire(110,130)
@@ -1388,13 +1353,13 @@ o_spire.apply { M 605 160 spire.draw() }
 // --- Paint chips ---
 
 let chip_coast = PathLayer('chip-coast') ${ fill: #4cc9f0; stroke: #555; stroke-width: 0.5; };
-chip_coast.apply { rect(680, 90, 12, 10) }
+chip_coast.apply { rect(680, 90, 12, 10); }
 
 let chip_mesa = PathLayer('chip-mesa') ${ fill: #43aa8b; stroke: #555; stroke-width: 0.5; };
-chip_mesa.apply { rect(680, 140, 12, 10) }
+chip_mesa.apply { rect(680, 140, 12, 10); }
 
 let chip_spire = PathLayer('chip-spire') ${ fill: #f9c74f; stroke: #555; stroke-width: 0.5; };
-chip_spire.apply { rect(680, 190, 12, 10) }
+chip_spire.apply { rect(680, 190, 12, 10); }
 
 // --- Elevation labels ---
 
@@ -1477,13 +1442,13 @@ title.apply {
 // --- Scene ---
 
 let left_group = GroupLayer('left-group') ${};
-left_group.append(left)
+left_group.append(left);
 
 let center_group = GroupLayer('center-group') ${};
-center_group.append(center)
+center_group.append(center);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title)
+scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
 </mini-workspace></p>
@@ -1494,6 +1459,7 @@ scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spi
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

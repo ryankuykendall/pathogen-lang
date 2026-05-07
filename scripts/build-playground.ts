@@ -153,6 +153,9 @@ async function copyAssets(): Promise<void> {
   // Copy global stylesheets (loaded via <link> tags, not imported by JS)
   await copyDir(join(PLAYGROUND, 'styles'), join(OUT, 'styles'));
 
+  // Copy static assets (material-icons-sprite.svg, etc.)
+  await copyDir(join(PLAYGROUND, 'assets'), join(OUT, 'assets'));
+
   // Copy and modify index.html for production
   let indexHtml = await fs.readFile(join(PLAYGROUND, 'index.html'), 'utf-8');
   indexHtml = indexHtml

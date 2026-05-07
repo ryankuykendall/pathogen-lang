@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Smooth Curves Made Simple: Chained Bézier Splines in Pathogen — Pathogen</title>
+  <title>Smooth Curves Made Simple: Chained Bézier Splines in Pathogen — Pathogen Studio</title>
   <meta name="description" content="Three stdlib functions that turn waypoints into G1-continuous Bézier curves — cubicSpline for explicit tangent control, quadSpline for implicit angles, and clippedQuadSpline for eccentricity dampening.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/chained-bezier-splines">
-  <meta property="og:title" content="Smooth Curves Made Simple: Chained Bézier Splines in Pathogen — Pathogen">
+  <meta property="og:title" content="Smooth Curves Made Simple: Chained Bézier Splines in Pathogen — Pathogen Studio">
   <meta property="og:description" content="Three stdlib functions that turn waypoints into G1-continuous Bézier curves — cubicSpline for explicit tangent control, quadSpline for implicit angles, and clippedQuadSpline for eccentricity dampening.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/chained-bezier-splines">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Smooth Curves Made Simple: Chained Bézier Splines in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
@@ -360,7 +325,7 @@ C 367.6 141.7  410.9 72.6  470 70
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 330) }
+bg.apply { rect(0, 0, 540, 330); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -417,13 +382,13 @@ layer('title').apply { text(30, 24)`cubicSpline — waypoints, tangent lines, an
 // The curve
 define PathLayer('curve') ${ fill: none; stroke: #3b82f6; stroke-width: 3 }
 layer('diagram').append(layer('curve'));
-layer('curve').apply { cubicSpline(pts) }
+layer('curve').apply { cubicSpline(pts); }
 
 // On-curve points
 define PathLayer('anchors') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
-  for ([p, i] in pts) { circle(p.x, p.y, 5) }
+  for ([p, i] in pts) { circle(p.x, p.y, 5); }
 }
 
 // Control points and tangent lines
@@ -441,8 +406,8 @@ for (i in 1..n) {
   let c2x = calc(curr.x - curr.entry * cos(curr.angle));
   let c2y = calc(curr.y - curr.entry * sin(curr.angle));
 
-  layer('cp-exit').apply { circle(c1x, c1y, 4) }
-  layer('cp-entry').apply { circle(c2x, c2y, 4) }
+  layer('cp-exit').apply { circle(c1x, c1y, 4); }
+  layer('cp-entry').apply { circle(c2x, c2y, 4); }
   layer('tangent').apply {
     M prev.x prev.y L c1x c1y
     M curr.x curr.y L c2x c2y
@@ -456,7 +421,7 @@ define PathLayer('angle-ticks') ${ fill: none; stroke: #f59e0b; stroke-width: 0.
 define TextLayer('angle-labels') ${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif }
 layer('diagram').append(layer('angle-fills'), layer('angle-arcs'), layer('angle-ticks'), layer('angle-labels'));
 
-for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle) }
+for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle); }
 
 // Point labels
 define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
@@ -478,9 +443,9 @@ define PathLayer('sw-tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; 
 define PathLayer('sw-angle') ${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1 }
 layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
 
-layer('sw-curve').apply { rect(0, 0, 12, 3) }
-layer('sw-exit').apply { circle(6, 20, 4) }
-layer('sw-entry').apply { circle(6, 36, 4) }
+layer('sw-curve').apply { rect(0, 0, 12, 3); }
+layer('sw-exit').apply { circle(6, 20, 4); }
+layer('sw-entry').apply { circle(6, 36, 4); }
 layer('sw-tangent').apply { M 0 50 L 12 50 }
 layer('sw-angle').apply {
   M 0 64 L 12 64 A 6 6 0 0 0 6 58 Z
@@ -506,7 +471,7 @@ layer('legend-text').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 420, 255) }
+bg.apply { rect(0, 0, 420, 255); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -546,21 +511,21 @@ layer('curves').apply {
 // Join point
 define PathLayer('anchor') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
 layer('diagram').append(layer('anchor'));
-layer('anchor').apply { circle(joinPt.x, joinPt.y, 6) }
+layer('anchor').apply { circle(joinPt.x, joinPt.y, 6); }
 
 // Control points
 define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
 define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
 layer('diagram').append(layer('cp-entry'), layer('cp-exit'));
-layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4) }
-layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4) }
+layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4); }
+layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4); }
 
 // Endpoint markers
 define PathLayer('endpoints') ${ fill: #64748b; stroke: #334155; stroke-width: 1 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(75, 175, 3)
-  circle(365, 120, 3)
+  circle(75, 175, 3);
+  circle(365, 120, 3);
 }
 
 // Labels — positioned with clearance from geometry
@@ -592,7 +557,7 @@ layer('note').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 460, 145) }
+bg.apply { rect(0, 0, 460, 145); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -618,7 +583,7 @@ layer('s-curve').apply {
     { x: 0,  y: 105, angle: 0, exit: 30 },
     { x: 50, y: 30,  angle: 0, entry: 30, exit: 30 },
     { x: 100, y: 105, angle: 0, entry: 30 }
-  ])
+  ]);
 }
 
 // --- Sine wave group ---
@@ -638,7 +603,7 @@ layer('sine').apply {
     { x: 50, y: 65,  angle: 90deg, entry: 18, exit: 18 },
     { x: 75, y: 30,  angle: 0,     entry: 15, exit: 15 },
     { x: 100, y: 65,  angle: 90deg, entry: 18 }
-  ])
+  ]);
 }
 
 // --- Closed loop group ---
@@ -658,7 +623,7 @@ layer('loop').apply {
     { x: 60, y: 102, angle: 180deg, entry: 22, exit: 22 },
     { x: 10, y: 65,  angle: -90deg, entry: 22, exit: 22 },
     { x: 60, y: 28,  angle: 0,      entry: 22 }
-  ])
+  ]);
 }
 </code>
   <img src="/pathogen/blog/samples/post13/cubic-spline-demos.svg" alt="cubicSpline examples — S-curve, sine wave, and closed loop" loading="lazy">
@@ -705,7 +670,7 @@ layer('loop').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 350) }
+bg.apply { rect(0, 0, 540, 350); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -732,15 +697,15 @@ layer('title').apply { text(30, 24)`quadSpline — implicit angle derivation` }
 // The curve
 define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
 layer('diagram').append(layer('curve'));
-layer('curve').apply { quadSpline(startPt, midPts, endPt) }
+layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // On-curve points
 define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
-  circle(startPt.x, startPt.y, 5)
-  for ([p, i] in midPts) { circle(p.x, p.y, 5) }
-  circle(endPt.x, endPt.y, 5)
+  circle(startPt.x, startPt.y, 5);
+  for ([p, i] in midPts) { circle(p.x, p.y, 5); }
+  circle(endPt.x, endPt.y, 5);
 }
 
 // Recompute CPs for visualization
@@ -753,7 +718,7 @@ layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derive
 let cp0x = calc(startPt.x + startPt.exit * cos(startPt.angle));
 let cp0y = calc(startPt.y + startPt.exit * sin(startPt.angle));
 
-layer('shared-cp').apply { circle(cp0x, cp0y, 4) }
+layer('shared-cp').apply { circle(cp0x, cp0y, 4); }
 layer('tangent-line').apply { M startPt.x startPt.y L cp0x cp0y }
 
 // Subsequent CPs from derived angles
@@ -769,7 +734,7 @@ for ([pt, idx] in midPts) {
   // Tangent extension: pt -&gt; newCP (orange dashed)
   layer('tangent-line').apply { M pt.x pt.y L newCPx newCPy }
   // Shared CP marker
-  layer('shared-cp').apply { circle(newCPx, newCPy, 4) }
+  layer('shared-cp').apply { circle(newCPx, newCPy, 4); }
 
   prevCPx = newCPx;
   prevCPy = newCPy;
@@ -796,7 +761,7 @@ define PathLayer('lg-tan') ${ fill: none; stroke: #f97316; stroke-width: 1; stro
 layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
 
 layer('lg-curve').apply { M 0 0 L 16 0 }
-layer('lg-cp').apply { circle(8, 16, 4) }
+layer('lg-cp').apply { circle(8, 16, 4); }
 layer('lg-dir').apply { M 0 30 L 16 30 }
 layer('lg-tan').apply { M 0 44 L 16 44 }
 
@@ -825,7 +790,7 @@ layer('note').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 460, 145) }
+bg.apply { rect(0, 0, 460, 145); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -851,7 +816,7 @@ layer('arc').apply {
     { x: 0, y: 100, angle: -30deg, exit: 40 },
     [],
     { x: 100, y: 100 }
-  )
+  );
 }
 
 // --- Flowing curve group ---
@@ -873,7 +838,7 @@ layer('flowing').apply {
       { x: 100, y: 35, exit: 25 }
     ],
     { x: 140, y: 100 }
-  )
+  );
 }
 
 // --- Zigzag group ---
@@ -895,7 +860,7 @@ layer('zigzag').apply {
       { x: 90,  y: 35, exit: 25 }
     ],
     { x: 120, y: 100 }
-  )
+  );
 }
 </code>
   <img src="/pathogen/blog/samples/post13/quad-spline-demos.svg" alt="quadSpline examples — simple arc, flowing curve, and zigzag" loading="lazy">
@@ -945,7 +910,7 @@ layer('zigzag').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 460, 270) }
+bg.apply { rect(0, 0, 460, 270); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -997,8 +962,8 @@ layer('virtual').apply {
 define PathLayer('cp1') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
 define PathLayer('cp2') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
 layer('diagram').append(layer('cp1'), layer('cp2'));
-layer('cp1').apply { circle(cp1x, cp1y, 5) }
-layer('cp2').apply { circle(cp2x, cp2y, 5) }
+layer('cp1').apply { circle(cp1x, cp1y, 5); }
+layer('cp2').apply { circle(cp2x, cp2y, 5); }
 
 // Lines from endpoints to actual CPs
 define PathLayer('cp1-arm') ${ fill: none; stroke: #ef4444; stroke-width: 1.5 }
@@ -1021,8 +986,8 @@ layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 define PathLayer('endpoints') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
-  circle(sx, sy, 5)
-  circle(ex, ey, 5)
+  circle(sx, sy, 5);
+  circle(ex, ey, 5);
 }
 
 // Labels — positioned with clearance from geometry
@@ -1063,7 +1028,7 @@ layer('ref-note').apply {
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 250) }
+bg.apply { rect(0, 0, 520, 250); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -1084,7 +1049,7 @@ layer('t100').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 1.0 },
     [{ x: 190, y: 45, exit: 70, exitTime: 1.0, entryTime: 1.0 }],
     { x: 320, y: 165, entryTime: 1.0 }
-  )
+  );
 }
 
 // t = 0.75
@@ -1094,7 +1059,7 @@ layer('t075').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.75 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.75, entryTime: 0.75 }],
     { x: 320, y: 165, entryTime: 0.75 }
-  )
+  );
 }
 
 // t = 0.5
@@ -1104,7 +1069,7 @@ layer('t050').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.5 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.5, entryTime: 0.5 }],
     { x: 320, y: 165, entryTime: 0.5 }
-  )
+  );
 }
 
 // t = 0.25
@@ -1114,16 +1079,16 @@ layer('t025').apply {
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.25 },
     [{ x: 190, y: 45, exit: 70, exitTime: 0.25, entryTime: 0.25 }],
     { x: 320, y: 165, entryTime: 0.25 }
-  )
+  );
 }
 
 // On-curve points
 define PathLayer('pts') ${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5 }
 layer('diagram').append(layer('t100'), layer('t075'), layer('t050'), layer('t025'), layer('pts'));
 layer('pts').apply {
-  circle(60, 165, 5)
-  circle(190, 45, 5)
-  circle(320, 165, 5)
+  circle(60, 165, 5);
+  circle(190, 45, 5);
+  circle(320, 165, 5);
 }
 
 // === Legend group ===
@@ -1166,6 +1131,7 @@ layer('note').apply {
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

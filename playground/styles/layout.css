@@ -1,9 +1,9 @@
-/* Body and main layout */
+/* Body and main layout — SPA-specific.
+ * font-family, background (atmospheric radial-gradient + grain), and color
+ * come from theme.css's global body rule. We only set the SPA-specific
+ * full-viewport flex layout here. */
 
 body {
-  font-family: var(--font-sans);
-  background: var(--bg-primary);
-  color: var(--text-primary);
   height: 100vh;
   display: flex;
   flex-direction: column;

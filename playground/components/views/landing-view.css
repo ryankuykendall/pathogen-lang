@@ -2,7 +2,9 @@
   display: block;
   padding: 2rem;
   overflow-y: auto;
-  background: var(--bg-primary, #f8f9fa);
+  /* Transparent so the body's atmospheric backplate (radial halos + grain)
+   * shows through the landing surface. */
+  background: transparent;
 }
 
 .landing-header {
@@ -14,9 +16,11 @@
 
 h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: var(--text-primary, #1a1a2e);
+  font-family: var(--font-display, 'DM Serif Display', Georgia, serif);
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--text-primary, #1c1722);
 }
 
 .controls {
@@ -25,55 +29,99 @@ h1 {
   align-items: center;
 }
 
+/* List/Grid toggle — secondary accent (lavender) for the active state.
+ * The single primary-accent element on this view is the +New Workspace
+ * CTA below; the toggle is a SECONDARY-color affordance per the
+ * per-view CTA contract in the redesign plan. */
 .view-toggle {
-  display: flex;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-  background: var(--bg-secondary, #ffffff);
+  display: inline-flex;
+  border: 1px solid var(--border-subtle, rgba(28, 23, 34, 0.06));
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .view-toggle button {
-  padding: 0.5rem 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
   border: none;
   background: transparent;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary, #5a4f6a);
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: 500;
-  transition: all var(--transition-base, 0.15s ease);
+  border-radius: 999px;
+  transition: background var(--transition-base, 0.15s ease),
+              color var(--transition-base, 0.15s ease);
 }
 
-.view-toggle button:not(:last-child) {
-  border-right: 1px solid var(--border-color, #e2e8f0);
+.view-toggle button .toggle-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .view-toggle button.active {
-  background: var(--accent-color, #10b981);
-  color: var(--accent-text, #ffffff);
+  background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.16));
+  color: var(--secondary-accent-text, #5e3590);
+  box-shadow: inset 0 0 14px rgba(148, 97, 196, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .view-toggle button:hover:not(.active) {
-  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+  color: var(--text-primary, #1c1722);
 }
 
+/* Primary CTA — the ONE peach/pink gradient pill on the landing view. */
 .new-btn {
-  padding: 0.625rem 1.25rem;
-  background: var(--accent-color, #10b981);
-  color: var(--accent-text, #ffffff);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.55rem 1.1rem 0.55rem 0.9rem;
+  background: linear-gradient(135deg, var(--accent-from, #e16a8f) 0%, var(--accent-to, #a83d80) 100%);
+  color: var(--accent-text, #fffaf2);
   border: none;
-  border-radius: var(--radius-md, 8px);
+  border-radius: 999px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-base, 0.15s ease);
-  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-glow, 0 8px 28px rgba(192, 81, 142, 0.30));
+  transition: transform var(--transition-base, 0.12s ease);
+}
+
+.new-btn .cta-icon {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.new-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sweep highlight — animates on hover for a subtle shimmer */
+.new-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
 }
 
 .new-btn:hover {
-  background: var(--accent-hover, #059669);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+}
+
+.new-btn:hover::after {
+  transform: translateX(100%);
 }
 
 .new-btn:active {
@@ -82,12 +130,12 @@ h1 {
 
 .workspace-list {
   display: grid;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .workspace-list.grid {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
+  gap: 2.5rem;
 }
 
 .workspace-list.list {
@@ -106,10 +154,18 @@ h1 {
   box-shadow: var(--shadow-sm);
 }
 
+/* Material Design elevation on hover — layered shadows tinted with a
+ * desaturated primary (--shadow-tint-rgb) so the lift carries brand
+ * identity without the loud full-saturation outline that the previous
+ * border-color: var(--accent-color) hover used. */
 .workspace-list.grid .workspace-item:hover {
-  border-color: var(--accent-color, #10b981);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  border-color: var(--border-color, rgba(28, 23, 34, 0.10));
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.08),
+    0 4px 8px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.10),
+    0 12px 22px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.16),
+    0 24px 44px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.10);
 }
 
 .workspace-thumb {
@@ -160,9 +216,13 @@ h1 {
 }
 
 .workspace-list.list .workspace-item:hover {
-  border-color: var(--accent-color, #10b981);
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-color, rgba(28, 23, 34, 0.10));
   transform: translateY(-2px);
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.08),
+    0 4px 8px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.10),
+    0 10px 20px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.14),
+    0 20px 36px rgba(var(--shadow-tint-rgb, 165, 110, 140), 0.08);
 }
 
 .workspace-thumb-sm {
@@ -229,12 +289,27 @@ h1 {
 }
 
 .workspace-meta .public-badge {
-  background: var(--success-bg, #ecfdf5);
-  color: var(--success-color, #10b981);
-  padding: 0.125rem 0.5rem;
-  border-radius: var(--radius-sm, 4px);
-  font-weight: 500;
-  border: 1px solid var(--success-border, #a7f3d0);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.15rem 0.6rem 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.16));
+  color: var(--secondary-accent-text, #5e3590);
+  border: 1px solid var(--secondary-accent, #9461c4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.workspace-meta .public-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--secondary-accent, #9461c4);
+  box-shadow: 0 0 6px rgba(148, 97, 196, 0.5);
 }
 
 /* Overflow menu */

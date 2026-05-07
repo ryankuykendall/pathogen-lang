@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exploration 01 — Editorial / refined · Pathogen Studio nav redesign</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=Baumans&family=Inconsolata:wght@400;500;600&display=swap">
+<style>
+  /* ---------- shared shell + tokens ---------- */
+  :root {
+    color-scheme: light dark;
+    --gutter: 32px;
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    background: #ece8e0;
+    color: #1f1d1a;
+    padding: 48px 0 96px;
+  }
+  .doc-head {
+    max-width: 1280px;
+    margin: 0 auto 48px;
+    padding: 0 var(--gutter);
+  }
+  .doc-eyebrow {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 14px;
+    letter-spacing: .02em;
+    color: #7a6f5a;
+    margin: 0 0 8px;
+  }
+  .doc-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(38px, 4.5vw, 60px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    margin: 0 0 16px;
+  }
+  .doc-title em { font-style: italic; font-weight: 500; color: #7a6f5a; }
+  .doc-lead {
+    max-width: 70ch;
+    font-size: 17px;
+    line-height: 1.55;
+    color: #443e35;
+    margin: 0 0 4px;
+  }
+  .doc-meta { font-size: 13px; color: #7a6f5a; margin-top: 24px; }
+  .doc-meta code { font-family: 'Inconsolata', ui-monospace, monospace; background: rgba(0,0,0,.05); padding: 2px 6px; border-radius: 3px; }
+
+  .panels {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+  .panel-row { display: flex; flex-direction: column; gap: 16px; }
+  .panel { display: flex; flex-direction: column; }
+  .panel-label {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    letter-spacing: .03em;
+    color: #7a6f5a;
+    margin: 0 0 10px 4px;
+    display: flex; gap: 12px; align-items: baseline;
+  }
+  .panel-label strong { font-weight: 600; font-style: normal; color: #1f1d1a; letter-spacing: 0; font-size: 14px; }
+
+  /* ---------- THEME — Editorial ----------
+     Light + dark token sets. Compatible with the playground's theme.css contract. */
+  .theme-light {
+    --bg-primary: #f7f3ec;
+    --bg-secondary: #fffbf2;
+    --bg-tertiary: #ece6db;
+    --bg-elevated: #fffefa;
+    --text-primary: #1c1a16;
+    --text-secondary: #6e6353;
+    --text-tertiary: #a09681;
+    --border-color: #d8cfbd;
+    --border-subtle: #e8e1d2;
+    --border-strong: #b8ac96;
+    /* primary CTA — used ONCE per view */
+    --accent-color: #2f6b3c;
+    --accent-hover: #265731;
+    --accent-text: #fffbf2;
+    /* secondary — for active-tab underline + minor accents */
+    --secondary-accent: #a83a2b;
+    --secondary-accent-soft: rgba(168, 58, 43, 0.08);
+    --shadow-soft: 0 1px 2px rgba(28, 26, 22, 0.04), 0 6px 16px rgba(28, 26, 22, 0.06);
+  }
+  .theme-dark {
+    --bg-primary: #181613;
+    --bg-secondary: #100f0d;
+    --bg-tertiary: #211e19;
+    --bg-elevated: #1f1c17;
+    --text-primary: #f4ecd8;
+    --text-secondary: #9d927c;
+    --text-tertiary: #6c624e;
+    --border-color: #322d24;
+    --border-subtle: #25221c;
+    --border-strong: #4a4334;
+    --accent-color: #c8a96a;
+    --accent-hover: #d8b977;
+    --accent-text: #181613;
+    --secondary-accent: #d97a6e;
+    --secondary-accent-soft: rgba(217, 122, 110, 0.12);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.45);
+  }
+
+  /* ---------- nav shell ---------- */
+  .stage {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+  }
+  .stage[data-context='workspace'] { padding-bottom: 200px; } /* room for the open menu */
+
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+  }
+
+  /* logo lockup ------------ */
+  .logo {
+    display: flex; flex-direction: column; gap: 1px;
+    line-height: 1;
+  }
+  .logo-main {
+    font-family: 'Baumans', cursive;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .logo-main em { font-style: normal; color: var(--secondary-accent); }
+  .logo-sub {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 9.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-top: 3px;
+  }
+
+  /* primary tabs ----------- */
+  .tabs {
+    justify-self: center;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .tab {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 14.5px;
+    letter-spacing: -0.005em;
+    color: var(--text-secondary);
+    background: none;
+    border: 0;
+    padding: 6px 12px 10px;
+    cursor: pointer;
+    position: relative;
+    transition: color .18s ease;
+  }
+  .tab:hover { color: var(--text-primary); }
+  .tab.is-active { color: var(--text-primary); }
+  .tab.is-active::after {
+    content: '';
+    position: absolute;
+    left: 12px; right: 12px; bottom: 3px;
+    height: 1.5px;
+    background: var(--secondary-accent);
+    border-radius: 1px;
+  }
+
+  /* right cluster ---------- */
+  .cluster { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease, border-color .18s ease;
+  }
+  .icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .icon-btn .icon { width: 18px; height: 18px; }
+  .avatar-pill {
+    display: inline-flex; gap: 8px; align-items: center;
+    padding: 4px 12px 4px 4px;
+    border-radius: 30px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .avatar-pill .dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--secondary-accent-soft);
+    color: var(--secondary-accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11.5px;
+    letter-spacing: .04em;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 600;
+  }
+  .avatar-pill .icon { width: 14px; height: 14px; color: var(--text-tertiary); }
+
+  /* primary CTA — exactly ONCE per view */
+  .cta-primary {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 14.5px;
+    letter-spacing: .005em;
+    padding: 10px 18px;
+    border-radius: 4px;
+    background: var(--accent-color);
+    color: var(--accent-text);
+    border: 1px solid var(--accent-color);
+    display: inline-flex; gap: 8px; align-items: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+  .cta-primary:hover { background: var(--accent-hover); }
+  .cta-primary .icon { width: 16px; height: 16px; }
+
+  /* ---------- secondary nav ---------- */
+  .subbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 24px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    min-height: 44px;
+  }
+  .pagetitle {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .breadcrumb .crumb-link { color: var(--text-tertiary); text-decoration: none; }
+  .breadcrumb .sep { color: var(--text-tertiary); }
+  .breadcrumb .current {
+    color: var(--text-primary);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 15px;
+  }
+
+  /* secondary toggles — secondary-accent treatment for active state */
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+  .seg button {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .01em;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 0;
+    padding: 5px 12px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .seg button:not(:first-child) { border-left: 1px solid var(--border-color); }
+  .seg button.is-active {
+    background: var(--secondary-accent-soft);
+    color: var(--secondary-accent);
+  }
+  .seg button .icon { width: 14px; height: 14px; }
+
+  .ghost-btn {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 5px 12px;
+    cursor: pointer;
+    display: inline-flex; gap: 6px; align-items: center;
+  }
+  .ghost-btn .icon { width: 14px; height: 14px; }
+
+  .kebab {
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .kebab.is-open { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-strong); }
+  .kebab .icon { width: 18px; height: 18px; }
+
+  /* ---------- overflow menu ---------- */
+  .menu-anchor { position: relative; }
+  .menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 280px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.10);
+    z-index: 5;
+    font-family: 'Bricolage Grotesque', sans-serif;
+  }
+  .theme-dark .menu { box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 24px 48px rgba(0,0,0,0.45); }
+  .menu-item {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background .12s ease;
+  }
+  .menu-item:hover { background: var(--bg-tertiary); }
+  .menu-item .icon { width: 18px; height: 18px; color: var(--text-secondary); }
+  .menu-item .meta {
+    font-family: 'Inconsolata', ui-monospace, monospace;
+    font-size: 11.5px;
+    color: var(--text-tertiary);
+    letter-spacing: .02em;
+  }
+  .menu-item.is-publish { color: var(--secondary-accent); }
+  .menu-item.is-publish .icon { color: var(--secondary-accent); }
+  .menu-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 6px 4px;
+  }
+
+  /* sample editor + preview faces (workspace context only — pure presentation) */
+  .work-body {
+    height: 76px;
+    background: linear-gradient(90deg, var(--bg-tertiary) 50%, var(--bg-secondary) 50%);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  /* misc spacing */
+  .icon { display: inline-block; flex: 0 0 auto; }
+</style>
+</head>
+<body class="theme-light">
+
+<header class="doc-head">
+  <p class="doc-eyebrow">Exploration 01 of 05</p>
+  <h1 class="doc-title">Editorial <em>refined</em></h1>
+  <p class="doc-lead">A serif-led lockup with surgical use of the primary color. Active tabs are marked by a hairline rule in the secondary accent — calm, literary, disciplined. The "Pathogen Studio" wordmark uses Fraunces with the italic <em>Studio</em> picking up the secondary accent.</p>
+  <p class="doc-meta">Brand: <code>Baumans</code> · Display: <code>Fraunces</code> · Body: <code>Bricolage Grotesque</code> · Mono: <code>Inconsolata</code> · Active tab: hairline underline · Single CTA: filled rectangle in <code>--accent-color</code></p>
+</header>
+
+<div class="panels">
+
+  <!-- ===== ROW A — LANDING VIEW ===== -->
+  <section>
+    <div class="panel-label"><strong>Landing view</strong> — primary CTA: "+ New Workspace" (only --accent-color element on this screen)</div>
+    <div class="panel-row">
+
+      <!-- LIGHT — landing -->
+      <div class="panel theme-light">
+        <div class="panel-label">light</div>
+        <div class="stage">
+          <div class="topbar">
+            <div class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </div>
+            <nav class="tabs">
+              <button class="tab is-active">Workspaces</button>
+              <button class="tab">Docs</button>
+              <button class="tab">Explore</button>
+              <button class="tab">Featured</button>
+              <button class="tab">Blog</button>
+              <button class="tab">Preferences</button>
+            </nav>
+            <div class="cluster">
+              <button class="icon-btn" title="Theme"><svg class="icon"><use href="#mi-dark-mode"/></svg></button>
+              <button class="avatar-pill"><span class="dot">RK</span> Ryan K <svg class="icon"><use href="#mi-arrow-down"/></svg></button>
+            </div>
+          </div>
+          <div class="subbar">
+            <h2 class="pagetitle">My Workspaces</h2>
+            <div class="cluster">
+              <div class="seg">
+                <button><svg class="icon"><use href="#mi-list"/></svg> List</button>
+                <button class="is-active"><svg class="icon"><use href="#mi-grid"/></svg> Grid</button>
+              </div>
+              <button class="cta-primary"><svg class="icon"><use href="#mi-add"/></svg> New Workspace</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DARK — landing -->
+      <div class="panel theme-dark">
+        <div class="panel-label">dark</div>
+        <div class="stage">
+          <div class="topbar">
+            <div class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </div>
+            <nav class="tabs">
+              <button class="tab is-active">Workspaces</button>
+              <button class="tab">Docs</button>
+              <button class="tab">Explore</button>
+              <button class="tab">Featured</button>
+              <button class="tab">Blog</button>
+              <button class="tab">Preferences</button>
+            </nav>
+            <div class="cluster">
+              <button class="icon-btn" title="Theme"><svg class="icon"><use href="#mi-light-mode"/></svg></button>
+              <button class="avatar-pill"><span class="dot">RK</span> Ryan K <svg class="icon"><use href="#mi-arrow-down"/></svg></button>
+            </div>
+          </div>
+          <div class="subbar">
+            <h2 class="pagetitle">My Workspaces</h2>
+            <div class="cluster">
+              <div class="seg">
+                <button><svg class="icon"><use href="#mi-list"/></svg> List</button>
+                <button class="is-active"><svg class="icon"><use href="#mi-grid"/></svg> Grid</button>
+              </div>
+              <button class="cta-primary"><svg class="icon"><use href="#mi-add"/></svg> New Workspace</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== ROW B — WORKSPACE VIEW with overflow menu open ===== -->
+  <section>
+    <div class="panel-label"><strong>Workspace view</strong> — zero --accent-color elements. Overflow menu lives in the secondary nav. Export &amp; Publish workspace are now items.</div>
+    <div class="panel-row">
+
+      <!-- LIGHT — workspace -->
+      <div class="panel theme-light">
+        <div class="panel-label">light</div>
+        <div class="stage" data-context="workspace">
+          <div class="topbar">
+            <div class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </div>
+            <nav class="tabs">
+              <button class="tab is-active">Workspaces</button>
+              <button class="tab">Docs</button>
+              <button class="tab">Explore</button>
+              <button class="tab">Featured</button>
+              <button class="tab">Blog</button>
+              <button class="tab">Preferences</button>
+            </nav>
+            <div class="cluster">
+              <button class="icon-btn" title="Theme"><svg class="icon"><use href="#mi-dark-mode"/></svg></button>
+              <button class="avatar-pill"><span class="dot">RK</span> Ryan K <svg class="icon"><use href="#mi-arrow-down"/></svg></button>
+            </div>
+          </div>
+          <div class="subbar">
+            <div class="breadcrumb">
+              <a class="crumb-link">Workspaces</a>
+              <span class="sep">/</span>
+              <span class="current">Polar coordinates &amp; tangent S-curves</span>
+            </div>
+            <div class="cluster">
+              <div class="seg">
+                <button class="is-active"><svg class="icon"><use href="#mi-subtitles"/></svg> Annotated</button>
+                <button><svg class="icon"><use href="#mi-terminal"/></svg> Console</button>
+              </div>
+              <button class="ghost-btn"><svg class="icon"><use href="#mi-content-copy"/></svg> Copy Code</button>
+              <div class="menu-anchor">
+                <button class="kebab is-open"><svg class="icon"><use href="#mi-more-vert"/></svg></button>
+                <div class="menu" role="menu">
+                  <div class="menu-item"><svg class="icon"><use href="#mi-download"/></svg><span>Export</span><span class="meta">SVG</span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-format-left"/></svg><span>Format Document</span><span class="meta">⇧⌥F</span></div>
+                  <div class="menu-divider"></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-link"/></svg><span>Copy URL</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-content-copy"/></svg><span>Copy Workspace</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-code"/></svg><span>Copy SVG</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-bug-report"/></svg><span>Copy Debug Info</span><span class="meta"></span></div>
+                  <div class="menu-divider"></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-share"/></svg><span>Export with Legend</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-image"/></svg><span>Set Thumbnail</span><span class="meta"></span></div>
+                  <div class="menu-divider"></div>
+                  <div class="menu-item is-publish"><svg class="icon"><use href="#mi-public"/></svg><span>Publish workspace</span><span class="meta">private</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="work-body"></div>
+        </div>
+      </div>
+
+      <!-- DARK — workspace -->
+      <div class="panel theme-dark">
+        <div class="panel-label">dark</div>
+        <div class="stage" data-context="workspace">
+          <div class="topbar">
+            <div class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </div>
+            <nav class="tabs">
+              <button class="tab is-active">Workspaces</button>
+              <button class="tab">Docs</button>
+              <button class="tab">Explore</button>
+              <button class="tab">Featured</button>
+              <button class="tab">Blog</button>
+              <button class="tab">Preferences</button>
+            </nav>
+            <div class="cluster">
+              <button class="icon-btn" title="Theme"><svg class="icon"><use href="#mi-light-mode"/></svg></button>
+              <button class="avatar-pill"><span class="dot">RK</span> Ryan K <svg class="icon"><use href="#mi-arrow-down"/></svg></button>
+            </div>
+          </div>
+          <div class="subbar">
+            <div class="breadcrumb">
+              <a class="crumb-link">Workspaces</a>
+              <span class="sep">/</span>
+              <span class="current">Polar coordinates &amp; tangent S-curves</span>
+            </div>
+            <div class="cluster">
+              <div class="seg">
+                <button class="is-active"><svg class="icon"><use href="#mi-subtitles"/></svg> Annotated</button>
+                <button><svg class="icon"><use href="#mi-terminal"/></svg> Console</button>
+              </div>
+              <button class="ghost-btn"><svg class="icon"><use href="#mi-content-copy"/></svg> Copy Code</button>
+              <div class="menu-anchor">
+                <button class="kebab is-open"><svg class="icon"><use href="#mi-more-vert"/></svg></button>
+                <div class="menu" role="menu">
+                  <div class="menu-item"><svg class="icon"><use href="#mi-download"/></svg><span>Export</span><span class="meta">SVG</span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-format-left"/></svg><span>Format Document</span><span class="meta">⇧⌥F</span></div>
+                  <div class="menu-divider"></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-link"/></svg><span>Copy URL</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-content-copy"/></svg><span>Copy Workspace</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-code"/></svg><span>Copy SVG</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-bug-report"/></svg><span>Copy Debug Info</span><span class="meta"></span></div>
+                  <div class="menu-divider"></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-share"/></svg><span>Export with Legend</span><span class="meta"></span></div>
+                  <div class="menu-item"><svg class="icon"><use href="#mi-image"/></svg><span>Set Thumbnail</span><span class="meta"></span></div>
+                  <div class="menu-divider"></div>
+                  <div class="menu-item is-publish"><svg class="icon"><use href="#mi-public"/></svg><span>Publish workspace</span><span class="meta">private</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="work-body"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- Material Symbols defs (sourced from @material-symbols/svg-400, Apache 2.0) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="mi-more-vert" viewBox="0 -960 960 960"><path fill="currentColor" d="M479.86-160Q460-160 446-174.14t-14-34Q432-228 446.14-242t34-14Q500-256 514-241.86t14 34Q528-188 513.86-174t-34 14Zm0-272Q460-432 446-446.14t-14-34Q432-500 446.14-514t34-14Q500-528 514-513.86t14 34Q528-460 513.86-446t-34 14Zm0-272Q460-704 446-718.14t-14-34Q432-772 446.14-786t34-14Q500-800 514-785.86t14 34Q528-732 513.86-718t-34 14Z"/></symbol>
+    <symbol id="mi-content-copy" viewBox="0 -960 960 960"><path fill="currentColor" d="M300-200q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h440q24 0 42 18t18 42v560q0 24-18 42t-42 18H300Zm0-60h440v-560H300v560ZM180-80q-24 0-42-18t-18-42v-620h60v620h500v60H180Zm120-180v-560 560Z"/></symbol>
+    <symbol id="mi-link" viewBox="0 -960 960 960"><path fill="currentColor" d="M450-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h170v60H280q-58.33 0-99.17 40.76-40.83 40.77-40.83 99Q140-422 180.83-381q40.84 41 99.17 41h170v60ZM325-450v-60h310v60H325Zm185 170v-60h170q58.33 0 99.17-40.76 40.83-40.77 40.83-99Q820-538 779.17-579q-40.84-41-99.17-41H510v-60h170q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H510Z"/></symbol>
+    <symbol id="mi-code" viewBox="0 -960 960 960"><path fill="currentColor" d="M320-242 80-482l242-242 43 43-199 199 197 197-43 43Zm318 2-43-43 199-199-197-197 43-43 240 240-242 242Z"/></symbol>
+    <symbol id="mi-bug-report" viewBox="0 -960 960 960"><path fill="currentColor" d="M480-120q-65 0-121-31t-83-89H160v-60h92q-7-26-7-52.5V-406h-85v-60h85q0-29 .5-57.5T254-580h-94v-60h120q14-28 37-49t51-35l-77-76 40-40 94 94q28-10 56.5-10t56.5 10l94-94 40 40-76 76q28 14 49.5 35.5T683-640h117v60h-94q9 28 8.5 56.5T714-466h86v60h-86q0 27 .5 53.5T708-300h92v60H685q-26 59-82.5 89.5T480-120Zm0-60q72 0 123-50.5T654-353v-167q0-72-51-122.5T480-693q-72 0-123 50.5T306-520v167q0 72 51 122.5T480-180Zm-80-140h160v-60H400v60Zm0-173h160v-60H400v60Z"/></symbol>
+    <symbol id="mi-download" viewBox="0 -960 960 960"><path fill="currentColor" d="M480-313 287-506l43-43 120 120v-371h60v371l120-120 43 43-193 193ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z"/></symbol>
+    <symbol id="mi-image" viewBox="0 -960 960 960"><path fill="currentColor" d="M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Z"/></symbol>
+    <symbol id="mi-public" viewBox="0 -960 960 960"><path fill="currentColor" d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM437-141v-82q-35 0-59-26t-24-61v-44L149-559q-5 20-7 39.5t-2 39.5q0 130 84.5 227T437-141Zm294-108q44-48 66.5-107.5T820-480q0-106-58-192.5T607-799v18q0 35-24 61t-59 26h-87v87q0 17-13.5 28T393-568h-83v88h258q17 0 28 13t11 30v127h43q29 0 51 17t30 44Z"/></symbol>
+    <symbol id="mi-lock" viewBox="0 -960 960 960"><path fill="currentColor" d="M220-80q-24.75 0-42.37-17.63Q160-115.25 160-140v-434q0-24.75 17.63-42.38Q195.25-634 220-634h70v-96q0-78.85 55.61-134.42Q401.21-920 480.11-920q78.89 0 134.39 55.58Q670-808.85 670-730v96h70q24.75 0 42.38 17.62Q800-598.75 800-574v434q0 24.75-17.62 42.37Q764.75-80 740-80H220Zm0-60h520v-434H220v434Zm260-130q31 0 53-22.03t22-52.97q0-30-22.67-54.5T480-424q-31 0-53.5 24.5T404-345q0 30.93 22.5 52.97Q449-270 480-270ZM350-634h260v-96q0-54.17-37.88-92.08-37.88-37.92-92-37.92T388-822.08q-38 37.91-38 92.08v96Z"/></symbol>
+    <symbol id="mi-dark-mode" viewBox="0 -960 960 960"><path fill="currentColor" d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q8 0 17 .5t23 1.5q-36 32-56 79t-20 99q0 90 63 153t153 63q52 0 99-18.5t79-51.5q1 12 1.5 19.5t.5 14.5q0 150-105 255T480-120Zm0-60q109 0 190-67.5T771-406q-25 11-53.67 16.5Q688.67-384 660-384q-114.69 0-195.34-80.66Q384-545.31 384-660q0-24 5-51.5t18-62.5q-98 27-162.5 109.5T180-480q0 125 87.5 212.5T480-180Z"/></symbol>
+    <symbol id="mi-light-mode" viewBox="0 -960 960 960"><path fill="currentColor" d="M480-280q83 0 141.5-58.5T680-480q0-83-58.5-141.5T480-680q-83 0-141.5 58.5T280-480q0 83 58.5 141.5T480-280Zm0-60q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41ZM200-450H40v-60h160v60Zm720 0H760v-60h160v60ZM450-760v-160h60v160h-60Zm0 720v-160h60v160h-60ZM262-658l-100-97 43-44 96 100-39 41Zm494 496-98-100 41-41 99 98-42 43Zm-99-537 98-99 44 42-99 98-43-41ZM162-205l99-98 42 42-98 99-43-43Z"/></symbol>
+    <symbol id="mi-arrow-down" viewBox="0 -960 960 960"><path fill="currentColor" d="M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z"/></symbol>
+    <symbol id="mi-add" viewBox="0 -960 960 960"><path fill="currentColor" d="M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z"/></symbol>
+    <symbol id="mi-terminal" viewBox="0 -960 960 960"><path fill="currentColor" d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-436H140v436Zm160-72-42-42 103-104-104-104 43-42 146 146-146 146Zm190 4v-60h220v60H490Z"/></symbol>
+    <symbol id="mi-format-left" viewBox="0 -960 960 960"><path fill="currentColor" d="M120-120v-60h720v60H120Zm0-165v-60h480v60H120Zm0-165v-60h720v60H120Zm0-165v-60h480v60H120Zm0-165v-60h720v60H120Z"/></symbol>
+    <symbol id="mi-grid" viewBox="0 -960 960 960"><path fill="currentColor" d="M120-510v-330h330v330H120Zm0 390v-330h330v330H120Zm390-390v-330h330v330H510Zm0 390v-330h330v330H510ZM180-570h210v-210H180v210Zm390 0h210v-210H570v210Zm0 390h210v-210H570v210Zm-390 0h210v-210H180v210Z"/></symbol>
+    <symbol id="mi-list" viewBox="0 -960 960 960"><path fill="currentColor" d="M350-220h470v-137H350v137ZM140-603h150v-137H140v137Zm0 187h150v-127H140v127Zm0 196h150v-137H140v137Zm210-196h470v-127H350v127Zm0-187h470v-137H350v137ZM140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Z"/></symbol>
+    <symbol id="mi-share" viewBox="0 -960 960 960"><path fill="currentColor" d="M220-80q-24 0-42-18t-18-42v-469q0-24 18-42t42-18h169v60H220v469h520v-469H569v-60h171q24 0 42 18t18 42v469q0 24-18 42t-42 18H220Zm229-267v-457l-88 88-43-43 161-161 161 161-43 43-88-88v457h-60Z"/></symbol>
+    <symbol id="mi-subtitles" viewBox="0 -960 960 960"><path fill="currentColor" d="M240-350h360v-60H240v60Zm420 0h60v-60h-60v60ZM240-470h60v-60h-60v60Zm120 0h360v-60H360v60ZM140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-520H140v520Z"/></symbol>
+  </defs>
+</svg>
+</body>
+</html>

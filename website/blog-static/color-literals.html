@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Drop the Quotes: Color Literals in Pathogen — Pathogen</title>
+  <title>Drop the Quotes: Color Literals in Pathogen — Pathogen Studio</title>
   <meta name="description" content="A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/color-literals">
-  <meta property="og:title" content="Drop the Quotes: Color Literals in Pathogen — Pathogen">
+  <meta property="og:title" content="Drop the Quotes: Color Literals in Pathogen — Pathogen Studio">
   <meta property="og:description" content="A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/color-literals">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Drop the Quotes: Color Literals in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
@@ -312,7 +277,7 @@ let base = ${ fill: #94a3b8; };
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 280) }
+bg.apply { rect(0, 0, 540, 280); }
 
 // ═══════════════════════════════════════
 // Title
@@ -372,7 +337,7 @@ let before_code_bg = PathLayer('before-code-bg') ${
   stroke: #334155;
   stroke-width: 1;
 };
-before_code_bg.apply { roundRect(30, 90, 225, 80, 6) }
+before_code_bg.apply { roundRect(30, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
 let before_code = TextLayer('before-code') ${
@@ -400,13 +365,13 @@ before_code.apply {
 
 // Swatches for before
 let b_swatch1 = PathLayer('b-sw1') ${ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
-b_swatch1.apply { roundRect(48, 183, 55, 40, 4) }
+b_swatch1.apply { roundRect(48, 183, 55, 40, 4); }
 
 let b_swatch2 = PathLayer('b-sw2') ${ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
-b_swatch2.apply { roundRect(113, 183, 55, 40, 4) }
+b_swatch2.apply { roundRect(113, 183, 55, 40, 4); }
 
 let b_swatch3 = PathLayer('b-sw3') ${ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
-b_swatch3.apply { roundRect(178, 183, 55, 40, 4) }
+b_swatch3.apply { roundRect(178, 183, 55, 40, 4); }
 
 let b_sw_labels = TextLayer('b-sw-labels') ${
   font-family: monospace;
@@ -440,7 +405,7 @@ let after_code_bg = PathLayer('after-code-bg') ${
   stroke: #38bdf8;
   stroke-width: 1;
 };
-after_code_bg.apply { roundRect(285, 90, 225, 80, 6) }
+after_code_bg.apply { roundRect(285, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
 let after_code = TextLayer('after-code') ${
@@ -472,13 +437,13 @@ after_code.apply {
 
 // Swatches for after
 let a_swatch1 = PathLayer('a-sw1') ${ fill: #cc0000; stroke: #475569; stroke-width: 1; };
-a_swatch1.apply { roundRect(298, 183, 55, 40, 4) }
+a_swatch1.apply { roundRect(298, 183, 55, 40, 4); }
 
 let a_swatch2 = PathLayer('a-sw2') ${ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
-a_swatch2.apply { roundRect(363, 183, 55, 40, 4) }
+a_swatch2.apply { roundRect(363, 183, 55, 40, 4); }
 
 let a_swatch3 = PathLayer('a-sw3') ${ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
-a_swatch3.apply { roundRect(428, 183, 55, 40, 4) }
+a_swatch3.apply { roundRect(428, 183, 55, 40, 4); }
 
 let a_sw_labels = TextLayer('a-sw-labels') ${
   font-family: monospace;
@@ -529,7 +494,7 @@ equals.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 320) }
+bg.apply { rect(0, 0, 520, 320); }
 
 // ═══════════════════════════════════════
 // Title
@@ -630,7 +595,7 @@ row_labels.apply {
 for ([color, i] in lightness_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`l_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -650,7 +615,7 @@ row_labels.apply {
 for ([color, i] in hue_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`h_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -670,7 +635,7 @@ row_labels.apply {
 for ([color, i] in sat_row) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`s_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 sw_labels.apply {
@@ -733,7 +698,7 @@ base_line.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 560, 340) }
+bg.apply { rect(0, 0, 560, 340); }
 
 // ═══════════════════════════════════════
 // Title
@@ -810,7 +775,7 @@ for ([color, i] in colors) {
 
   // Swatch
   let swatch = PathLayer(`cs_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(x, y, sw, sh, sr) }
+  swatch.apply { roundRect(x, y, sw, sh, sr); }
 
   // Space name
   space_label.apply {
@@ -871,7 +836,7 @@ arrow_line.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 300) }
+bg.apply { rect(0, 0, 520, 300); }
 
 // ═══════════════════════════════════════
 // Title
@@ -969,7 +934,7 @@ row_label.apply {
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`t_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -989,7 +954,7 @@ row_label.apply {
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`d_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1010,13 +975,13 @@ row_label.apply {
 for ([_, i] in alphas) {
   let x = calc(sx + i * sp - sw / 2);
   let checker = PathLayer(`ck_${i}`) ${ fill: #ffffff; stroke: none; };
-  checker.apply { roundRect(x, row3_y, sw, sh, sr) }
+  checker.apply { roundRect(x, row3_y, sw, sh, sr); }
 }
 
 for ([color, i] in alphas) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`a_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1059,7 +1024,7 @@ base_ind.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 340) }
+bg.apply { rect(0, 0, 520, 340); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1139,7 +1104,7 @@ row_label.apply {
 for ([color, i] in ramp) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`r_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1163,7 +1128,7 @@ row_label.apply {
 for ([color, i] in transforms) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`x_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 sw_label.apply {
@@ -1186,7 +1151,7 @@ row_label.apply {
 for ([color, i] in triad) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`tri_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
 let triad_names = ['0°', '+120°', '+240°'];
@@ -1201,7 +1166,7 @@ sw_label.apply {
 // ═══════════════════════════════════════
 
 let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
-code_bg.apply { roundRect(30, 300, 460, 28, 4) }
+code_bg.apply { roundRect(30, 300, 460, 28, 4); }
 
 let code = TextLayer('code') ${
   font-family: monospace;
@@ -1236,7 +1201,7 @@ code_kw.apply {
 // ═══════════════════════════════════════
 
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 520, 280) }
+bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Title
@@ -1316,7 +1281,7 @@ let tints = [
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`lt_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
 let tint_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
@@ -1349,7 +1314,7 @@ let shades = [
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
   let swatch = PathLayer(`dk_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
-  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr) }
+  swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
 let shade_pcts = ['0%', '10%', '20%', '30%', '40%', '50%', '60%'];
@@ -1364,7 +1329,7 @@ pct_label.apply {
 // ═══════════════════════════════════════
 
 let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
-code_bg.apply { roundRect(30, 228, 460, 40, 4) }
+code_bg.apply { roundRect(30, 228, 460, 40, 4); }
 
 let code = TextLayer('code') ${
   font-family: monospace;
@@ -1415,6 +1380,7 @@ code_comment.apply {
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

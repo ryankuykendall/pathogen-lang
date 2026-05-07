@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clean Tangent Control: heading() and turn() in Pathogen — Pathogen</title>
+  <title>Clean Tangent Control: heading() and turn() in Pathogen — Pathogen Studio</title>
   <meta name="description" content="Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/heading-turn">
-  <meta property="og:title" content="Clean Tangent Control: heading() and turn() in Pathogen — Pathogen">
+  <meta property="og:title" content="Clean Tangent Control: heading() and turn() in Pathogen — Pathogen Studio">
   <meta property="og:description" content="Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/heading-turn">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Clean Tangent Control: heading() and turn() in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
@@ -320,7 +285,7 @@ h <span class="hljs-number">0.01</span>            <span class="hljs-comment">//
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 540, 220) }
+bg.apply { rect(0, 0, 540, 220); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -341,8 +306,8 @@ define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
 
 // C-shape
 let cBlock = @{
-  heading(-135deg)
-  tangentArc(r, 270deg)
+  heading(-135deg);
+  tangentArc(r, 270deg);
   z
 };
 let cBB = cBlock.boundingBox();
@@ -350,33 +315,33 @@ let cBB = cBlock.boundingBox();
 // S-curve (smaller radius to fit vertically)
 let sR = 15;
 let sBlock = @{
-  heading(0)
-  tangentArc(sR, 180deg)
-  turn(180deg)
-  tangentArc(sR, 180deg)
+  heading(0);
+  tangentArc(sR, 180deg);
+  turn(180deg);
+  tangentArc(sR, 180deg);
 };
 let sBB = sBlock.boundingBox();
 
 // Zigzag
 let zBlock = @{
-  heading(45deg)
-  tangentLine(25)
-  turn(-90deg)
-  tangentLine(25)
-  turn(90deg)
-  tangentLine(25)
-  turn(-90deg)
-  tangentLine(25)
+  heading(45deg);
+  tangentLine(25);
+  turn(-90deg);
+  tangentLine(25);
+  turn(90deg);
+  tangentLine(25);
+  turn(-90deg);
+  tangentLine(25);
 };
 let zBB = zBlock.boundingBox();
 
 // Spiral
 let spBlock = @{
-  heading(0)
-  tangentArc(28, 180deg)
-  tangentArc(22, 180deg)
-  tangentArc(15, 180deg)
-  tangentArc(10, 180deg)
+  heading(0);
+  tangentArc(28, 180deg);
+  tangentArc(22, 180deg);
+  tangentArc(15, 180deg);
+  tangentArc(10, 180deg);
 };
 let spBB = spBlock.boundingBox();
 
@@ -429,7 +394,7 @@ for ([shape, idx] in shapes) {
   let plName = `p${idx}`;
   define PathLayer(plName) ${ fill: none; stroke: shape.col; stroke-width: 2.5 }
   layer(gName).append(layer(plName));
-  layer(plName).apply { shape.pb.drawTo(drawX, drawY) }
+  layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
   // --- Code snippet ---
   let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
@@ -468,7 +433,7 @@ fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-param
 
 // --- Background ---
 let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-bg.apply { rect(0, 0, 680, 400) }
+bg.apply { rect(0, 0, 680, 400); }
 
 let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
@@ -483,10 +448,10 @@ fn sharpPolyBlock(sides) {
   let extRad = calc(2 * PI() / sides);
   let sideLen = calc(2 * r * sin(extRad / 2));
   let headAngle = calc(extRad / 2);
-  heading(headAngle)
+  heading(headAngle);
   for (i in 0..sides) {
-    tangentLine(sideLen)
-    turn(extRad)
+    tangentLine(sideLen);
+    turn(extRad);
   }
 }
 
@@ -497,14 +462,14 @@ fn roundedPolyBlock(sides, cornerRadius) {
   let arcOffset = calc(cornerRadius * tan(extRad / 2));
   let straight = calc(sideLen - 2 * arcOffset);
   let headAngle = calc(extRad / 2);
-  heading(headAngle)
+  heading(headAngle);
   let last = calc(sides - 1);
-  tangentLine(straight)
+  tangentLine(straight);
   for (i in 1..last) {
-    tangentArc(cornerRadius, extRad)
-    tangentLine(straight)
+    tangentArc(cornerRadius, extRad);
+    tangentLine(straight);
   }
-  tangentArc(cornerRadius, extRad)
+  tangentArc(cornerRadius, extRad);
   z
 }
 
@@ -531,7 +496,7 @@ for (idx in 0..7) {
   let name = names[idx];
 
   // Create PathBlock and query its bounds
-  let pb = @{ sharpPolyBlock(n) };
+  let pb = @{ sharpPolyBlock(n); };
   let bb = pb.boundingBox();
   let cx = calc(55 + idx * spacing);
 
@@ -546,7 +511,7 @@ for (idx in 0..7) {
   let lName = `s${n}`;
   define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2 }
   layer(gName).append(layer(lName));
-  layer(lName).apply { pb.drawTo(drawX, drawY) }
+  layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   // Center label under the shape
   let labelX = calc(cx - name.length * 2.7);
@@ -569,7 +534,7 @@ for (idx in 0..7) {
   let cr = calc(min(r * 0.35, 8));
   let name = names[idx];
 
-  let pb = @{ roundedPolyBlock(n, cr) };
+  let pb = @{ roundedPolyBlock(n, cr); };
   let bb = pb.boundingBox();
   let cx = calc(55 + idx * spacing);
 
@@ -583,7 +548,7 @@ for (idx in 0..7) {
   let lName = `r${n}`;
   define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2 }
   layer(gName).append(layer(lName));
-  layer(lName).apply { pb.drawTo(drawX, drawY) }
+  layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   let labelX = calc(cx - name.length * 2.7);
   let tlName = `r${n}-l`;
@@ -631,6 +596,7 @@ M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

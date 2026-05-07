@@ -115,52 +115,61 @@ const baseStyles = `
    * green pill creates color crowding.
    */
   .signin-btn {
-    background: transparent;
-    color: var(--accent-color, #10b981);
-    border: 1px solid var(--accent-color, #10b981);
-    border-radius: 8px;
-    padding: 0.4rem 0.9rem;
+    background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
+    color: var(--secondary-accent-text, #5e3590);
+    border: 1px solid var(--border-subtle, rgba(28, 23, 34, 0.06));
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
     font: inherit;
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     transition: background var(--transition-base, 0.15s ease),
                 color var(--transition-base, 0.15s ease),
-                border-color var(--transition-base, 0.15s ease);
+                border-color var(--transition-base, 0.15s ease),
+                transform var(--transition-base, 0.15s ease);
   }
   .signin-btn:hover {
-    background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
-    color: var(--accent-hover, #059669);
-    border-color: var(--accent-hover, #059669);
+    background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.16));
+    border-color: var(--secondary-accent, #9461c4);
+    transform: translateY(-1px);
   }
   .signin-btn:focus-visible {
-    outline: 2px solid var(--focus-ring, rgba(16, 185, 129, 0.4));
+    outline: 2px solid var(--focus-ring, rgba(192, 81, 142, 0.4));
     outline-offset: 2px;
   }
 
   .wrap { position: relative; }
   .chip {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    background: var(--bg-elevated, #f1f5f9);
-    border: 1px solid var(--border-color, #e2e8f0);
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
+    border: 1px solid var(--border-subtle, rgba(28, 23, 34, 0.06));
     border-radius: 999px;
-    padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+    padding: 0.2rem 0.7rem 0.2rem 0.2rem;
     cursor: pointer;
-    color: var(--text-primary, #1a1a2e);
+    color: var(--text-primary, #1c1722);
     font: inherit;
     font-size: 0.8125rem;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     transition: background 0.15s ease, border-color 0.15s ease;
   }
-  .chip:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); }
+  .chip:hover {
+    background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.16));
+    border-color: var(--secondary-accent, #9461c4);
+  }
   .initial {
-    width: 22px; height: 22px;
+    width: 24px; height: 24px;
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 50%;
-    background: var(--accent-color, #10b981);
-    color: var(--accent-text, #fff);
+    background: linear-gradient(135deg, var(--secondary-from, #b384e0) 0%, var(--secondary-to, #6d3aa6) 100%);
+    color: #ffffff;
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.02em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .name {
     max-width: 12ch;

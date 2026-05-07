@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Painting with Math: Linear and Radial Gradients in Pathogen — Pathogen</title>
+  <title>Painting with Math: Linear and Radial Gradients in Pathogen — Pathogen Studio</title>
   <meta name="description" content="How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/gradient-linear-radial">
-  <meta property="og:title" content="Painting with Math: Linear and Radial Gradients in Pathogen — Pathogen">
+  <meta property="og:title" content="Painting with Math: Linear and Radial Gradients in Pathogen — Pathogen Studio">
   <meta property="og:description" content="How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/gradient-linear-radial">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Painting with Math: Linear and Radial Gradients in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
@@ -340,10 +305,10 @@ let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
 // --- Layers ---
 
 let sky = PathLayer('sky-fill') ${ fill: sky_grad; stroke: none; };
-sky.apply { rect(0, 0, 400, 300) }
+sky.apply { rect(0, 0, 400, 300); }
 
 let sun = PathLayer('sun-streak') ${ fill: sun_grad; stroke: none; };
-sun.apply { rect(0, 155, 400, 30) }
+sun.apply { rect(0, 155, 400, 30); }
 
 let far_mtns = PathLayer('far-mountains') ${ fill: mtn_grad; stroke: none; };
 far_mtns.apply {
@@ -362,15 +327,15 @@ near_mtns.apply {
 }
 
 let ground = PathLayer('ground-fill') ${ fill: ground_grad; stroke: none; };
-ground.apply { rect(0, 255, 400, 45) }
+ground.apply { rect(0, 255, 400, 45); }
 
 let frame = PathLayer('frame') ${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
-frame.apply { rect(0, 0, 400, 300) }
+frame.apply { rect(0, 0, 400, 300); }
 
 // --- Scene Organization ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(sky, sun, far_mtns, near_mtns, ground, frame)
+scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 </code>
   <img src="/pathogen/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
 </mini-workspace></p>
@@ -417,27 +382,27 @@ let g270 = LinearGradient('g-up', 0, 1, 0, 0) {|g|
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #1a1a2e; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Swatch grid: 3 columns × 2 rows ---
 
 let sw1 = PathLayer('swatch-right') ${ fill: g0; stroke: #333; stroke-width: 1; };
-sw1.apply { roundRect(20, 55, 110, 70, 6) }
+sw1.apply { roundRect(20, 55, 110, 70, 6); }
 
 let sw2 = PathLayer('swatch-down-right') ${ fill: g60; stroke: #333; stroke-width: 1; };
-sw2.apply { roundRect(145, 55, 110, 70, 6) }
+sw2.apply { roundRect(145, 55, 110, 70, 6); }
 
 let sw3 = PathLayer('swatch-down') ${ fill: g90; stroke: #333; stroke-width: 1; };
-sw3.apply { roundRect(270, 55, 110, 70, 6) }
+sw3.apply { roundRect(270, 55, 110, 70, 6); }
 
 let sw4 = PathLayer('swatch-left') ${ fill: g180; stroke: #333; stroke-width: 1; };
-sw4.apply { roundRect(20, 215, 110, 70, 6) }
+sw4.apply { roundRect(20, 215, 110, 70, 6); }
 
 let sw5 = PathLayer('swatch-up-left') ${ fill: g240; stroke: #333; stroke-width: 1; };
-sw5.apply { roundRect(145, 215, 110, 70, 6) }
+sw5.apply { roundRect(145, 215, 110, 70, 6); }
 
 let sw6 = PathLayer('swatch-up') ${ fill: g270; stroke: #333; stroke-width: 1; };
-sw6.apply { roundRect(270, 215, 110, 70, 6) }
+sw6.apply { roundRect(270, 215, 110, 70, 6); }
 
 // --- Direction labels ---
 
@@ -481,7 +446,7 @@ connector.apply {
 // --- Scene ---
 
 let fan = GroupLayer('fan') ${};
-fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector)
+fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </code>
   <img src="/pathogen/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
 </mini-workspace></p>
@@ -541,35 +506,35 @@ let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
 // --- Background and Nebula ---
 
 let bg = PathLayer('bg') ${ fill: #080612; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 let nebula = PathLayer('nebula-layer') ${ fill: nebula_grad; stroke: none; };
-nebula.apply { rect(0, 0, 400, 400) }
+nebula.apply { rect(0, 0, 400, 400); }
 
 // --- Stars ---
 
 let s1 = PathLayer('s1') ${ fill: star_grad; stroke: none; };
-s1.apply { circle(70, 55, 18); closePath() }
+s1.apply { circle(70, 55, 18); closePath(); }
 
 let s2 = PathLayer('s2') ${ fill: warm_star; stroke: none; };
-s2.apply { circle(330, 80, 22); closePath() }
+s2.apply { circle(330, 80, 22); closePath(); }
 
 let s3 = PathLayer('s3') ${ fill: star_grad; stroke: none; };
-s3.apply { circle(60, 320, 14); closePath() }
+s3.apply { circle(60, 320, 14); closePath(); }
 
 let s4 = PathLayer('s4') ${ fill: warm_star; stroke: none; };
-s4.apply { circle(350, 290, 16); closePath() }
+s4.apply { circle(350, 290, 16); closePath(); }
 
 let s5 = PathLayer('s5') ${ fill: star_grad; stroke: none; };
-s5.apply { circle(200, 40, 10); closePath() }
+s5.apply { circle(200, 40, 10); closePath(); }
 
 let stars = GroupLayer('stars') ${};
-stars.append(s1, s2, s3, s4, s5)
+stars.append(s1, s2, s3, s4, s5);
 
 // --- Planet with Ring ---
 
 let planet_body = PathLayer('planet-body') ${ fill: planet_grad; stroke: none; };
-planet_body.apply { circle(260, 280, 45); closePath() }
+planet_body.apply { circle(260, 280, 45); closePath(); }
 
 let planet_ring = PathLayer('planet-ring') ${ fill: ring_grad; stroke: none; opacity: 0.6; };
 planet_ring.apply {
@@ -578,12 +543,12 @@ planet_ring.apply {
 }
 
 let planet = GroupLayer('planet') ${};
-planet.append(planet_body, planet_ring)
+planet.append(planet_body, planet_ring);
 
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, nebula, stars, planet)
+scene.append(bg, nebula, stars, planet);
 </code>
   <img src="/pathogen/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
 </mini-workspace></p>
@@ -604,7 +569,7 @@ scene.append(bg, nebula, stars, planet)
 // --- Shared background ---
 
 let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
-bg.apply { rect(0, 0, 450, 180) }
+bg.apply { rect(0, 0, 450, 180); }
 
 // --- Sphere gradients with different focal points ---
 
@@ -638,13 +603,13 @@ sphere3_grad.interpolation = 'oklch';
 // --- Sphere layers ---
 
 let s1 = PathLayer('s1') ${ fill: sphere1_grad; stroke: none; };
-s1.apply { circle(80, 80, 60); closePath() }
+s1.apply { circle(80, 80, 60); closePath(); }
 
 let s2 = PathLayer('s2') ${ fill: sphere2_grad; stroke: none; };
-s2.apply { circle(225, 80, 60); closePath() }
+s2.apply { circle(225, 80, 60); closePath(); }
 
 let s3 = PathLayer('s3') ${ fill: sphere3_grad; stroke: none; };
-s3.apply { circle(370, 80, 60); closePath() }
+s3.apply { circle(370, 80, 60); closePath(); }
 
 // --- Labels ---
 
@@ -663,7 +628,7 @@ labels.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, s1, s2, s3, labels)
+scene.append(bg, s1, s2, s3, labels);
 </code>
   <img src="/pathogen/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
 </mini-workspace></p>
@@ -723,7 +688,7 @@ oklch_mag_green.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Gradient bars ---
 
@@ -733,24 +698,24 @@ let x0 = 50;
 
 // Pair 1
 let by_srgb = PathLayer('by-srgb') ${ fill: srgb_blue_yellow; stroke: none; };
-by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4) }
+by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4); }
 
 let by_oklch = PathLayer('by-oklch') ${ fill: oklch_blue_yellow; stroke: none; };
-by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4) }
+by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4); }
 
 // Pair 2
 let rc_srgb = PathLayer('rc-srgb') ${ fill: srgb_red_cyan; stroke: none; };
-rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4) }
+rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4); }
 
 let rc_oklch = PathLayer('rc-oklch') ${ fill: oklch_red_cyan; stroke: none; };
-rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4) }
+rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4); }
 
 // Pair 3
 let mg_srgb = PathLayer('mg-srgb') ${ fill: srgb_mag_green; stroke: none; };
-mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4) }
+mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4); }
 
 let mg_oklch = PathLayer('mg-oklch') ${ fill: oklch_mag_green; stroke: none; };
-mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4) }
+mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4); }
 
 // --- Labels ---
 
@@ -785,7 +750,7 @@ pair_labels.apply {
 // --- Scene ---
 
 let comparison = GroupLayer('comparison') ${};
-comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels)
+comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
 </code>
   <img src="/pathogen/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
 </mini-workspace></p>
@@ -838,18 +803,18 @@ repeat_grad.spreadMethod = 'repeat';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #14141e; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Gradient strips ---
 
 let strip_pad = PathLayer('strip-pad') ${ fill: pad_grad; stroke: #333; stroke-width: 1; };
-strip_pad.apply { roundRect(60, 45, 320, 50, 4) }
+strip_pad.apply { roundRect(60, 45, 320, 50, 4); }
 
 let strip_reflect = PathLayer('strip-reflect') ${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
-strip_reflect.apply { roundRect(60, 120, 320, 50, 4) }
+strip_reflect.apply { roundRect(60, 120, 320, 50, 4); }
 
 let strip_repeat = PathLayer('strip-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
-strip_repeat.apply { roundRect(60, 195, 320, 50, 4) }
+strip_repeat.apply { roundRect(60, 195, 320, 50, 4); }
 
 // --- Range indicator (shows the 0–30% region) ---
 
@@ -899,7 +864,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title)
+scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
 </mini-workspace></p>
@@ -949,47 +914,47 @@ let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Base showcase (large card) ---
 
 let base_card = PathLayer('base-card') ${ fill: base; stroke: #333; stroke-width: 1; };
-base_card.apply { roundRect(20, 40, 170, 80, 8) }
+base_card.apply { roundRect(20, 40, 170, 80, 8); }
 
 let cool_card = PathLayer('cool-card') ${ fill: cool; stroke: #333; stroke-width: 1; };
-cool_card.apply { roundRect(210, 40, 170, 80, 8) }
+cool_card.apply { roundRect(210, 40, 170, 80, 8); }
 
 // --- Vertical variant: tall sidebar ---
 
 let vert_bar = PathLayer('vert-bar') ${ fill: vertical; stroke: #333; stroke-width: 1; };
-vert_bar.apply { roundRect(20, 145, 60, 120, 8) }
+vert_bar.apply { roundRect(20, 145, 60, 120, 8); }
 
 // --- Subtle variant: UI elements ---
 
 let btn1 = PathLayer('btn1') ${ fill: subtle; stroke: none; };
-btn1.apply { roundRect(100, 145, 120, 36, 6) }
+btn1.apply { roundRect(100, 145, 120, 36, 6); }
 
 let btn2 = PathLayer('btn2') ${ fill: subtle; stroke: none; };
-btn2.apply { roundRect(100, 195, 120, 36, 6) }
+btn2.apply { roundRect(100, 195, 120, 36, 6); }
 
 // --- Small accent circles using base ---
 
 let dot1 = PathLayer('dot1') ${ fill: base; stroke: none; };
-dot1.apply { circle(260, 163, 18); closePath() }
+dot1.apply { circle(260, 163, 18); closePath(); }
 
 let dot2 = PathLayer('dot2') ${ fill: cool; stroke: none; };
-dot2.apply { circle(310, 163, 18); closePath() }
+dot2.apply { circle(310, 163, 18); closePath(); }
 
 let dot3 = PathLayer('dot3') ${ fill: vertical; stroke: none; };
-dot3.apply { circle(360, 163, 18); closePath() }
+dot3.apply { circle(360, 163, 18); closePath(); }
 
 // --- Pill shapes with inherited gradient ---
 
 let pill1 = PathLayer('pill1') ${ fill: base; stroke: none; };
-pill1.apply { roundRect(240, 200, 140, 28, 14) }
+pill1.apply { roundRect(240, 200, 140, 28, 14); }
 
 let pill2 = PathLayer('pill2') ${ fill: cool; stroke: none; };
-pill2.apply { roundRect(240, 236, 140, 28, 14) }
+pill2.apply { roundRect(240, 236, 140, 28, 14); }
 
 // --- Labels ---
 
@@ -1021,7 +986,7 @@ title.apply {
 // --- Scene ---
 
 let palette = GroupLayer('palette') ${};
-palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title)
+palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
 </code>
   <img src="/pathogen/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
 </mini-workspace></p>
@@ -1065,23 +1030,23 @@ glow_c.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
-bg.apply { rect(0, 0, 400, 300) }
+bg.apply { rect(0, 0, 400, 300); }
 
 // --- Light circles (overlapping for color mixing) ---
 
 let la = PathLayer('light-a') ${ fill: glow_a; stroke: none; opacity: 0.8; };
-la.apply { circle(140, 120, 130); closePath() }
+la.apply { circle(140, 120, 130); closePath(); }
 
 let lb = PathLayer('light-b') ${ fill: glow_b; stroke: none; opacity: 0.8; };
-lb.apply { circle(280, 110, 130); closePath() }
+lb.apply { circle(280, 110, 130); closePath(); }
 
 let lc = PathLayer('light-c') ${ fill: glow_c; stroke: none; opacity: 0.8; };
-lc.apply { circle(200, 220, 130); closePath() }
+lc.apply { circle(200, 220, 130); closePath(); }
 
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, la, lb, lc)
+scene.append(bg, la, lb, lc);
 </code>
   <img src="/pathogen/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
 </mini-workspace></p>
@@ -1093,6 +1058,7 @@ scene.append(bg, la, lb, lc)
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

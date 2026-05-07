@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TextBlock: Measure-First Text for SVG Diagrams — Pathogen</title>
+  <title>TextBlock: Measure-First Text for SVG Diagrams — Pathogen Studio</title>
   <meta name="description" content="Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/textblock-introduction">
-  <meta property="og:title" content="TextBlock: Measure-First Text for SVG Diagrams — Pathogen">
+  <meta property="og:title" content="TextBlock: Measure-First Text for SVG Diagrams — Pathogen Studio">
   <meta property="og:description" content="Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/textblock-introduction">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">TextBlock: Measure-First Text for SVG Diagrams</span></nav></div>
   <main class="blog-main">
     <article>
@@ -318,7 +283,7 @@ code.hljs {
 // ─── Background ─────────────────────────────────────────────────────
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 340) }
+bg.apply { rect(0, 0, 600, 340); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -357,7 +322,7 @@ let bb1_layer = PathLayer('bb1') ${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
 let cross1 = PathLayer('cross1') ${
@@ -392,7 +357,7 @@ let bb2_layer = PathLayer('bb2') ${
   stroke-width: 1;
   stroke-dasharray: "4 3";
 };
-bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height) }
+bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
 let cross2 = PathLayer('cross2') ${
@@ -520,8 +485,8 @@ let leg = TextLayer('legend') ${
 let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
 
-leg_o.apply { rect(0, 0, 8, 8) }
-leg_b.apply { rect(0, 14, 8, 8) }
+leg_o.apply { rect(0, 0, 8, 8); }
+leg_b.apply { rect(0, 14, 8, 8); }
 
 leg.apply {
   text(12, 7)`Origin`
@@ -582,7 +547,7 @@ legend_group.append(leg_o, leg_b, leg);
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 300) }
+bg.apply { rect(0, 0, 600, 300); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -623,7 +588,7 @@ let styled1 = info &lt;&lt; mono_sm;
 let bb1 = styled1.boundingBox();
 
 let v1_bbox = PathLayer('v1-bbox') ${ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height) }
+v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let v1_label = TextLayer('v1-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v1_label.apply { text(0, -10)`mono 10px` }
@@ -649,7 +614,7 @@ let styled2 = info &lt;&lt; mono_lg;
 let bb2 = styled2.boundingBox();
 
 let v2_bbox = PathLayer('v2-bbox') ${ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height) }
+v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let v2_label = TextLayer('v2-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v2_label.apply { text(0, -10)`mono 14px` }
@@ -675,7 +640,7 @@ let styled3 = info &lt;&lt; sans;
 let bb3 = styled3.boundingBox();
 
 let v3_bbox = PathLayer('v3-bbox') ${ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
-v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height) }
+v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let v3_label = TextLayer('v3-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v3_label.apply { text(0, -10)`sans-serif 12px` }
@@ -790,7 +755,7 @@ dims.apply {
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 360) }
+bg.apply { rect(0, 0, 600, 360); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -821,7 +786,7 @@ let t1_layer = TextLayer('t1') ${ font-family: monospace; font-size: 10; fill: C
 t1_layer.apply { t1.drawTo(0, 0); }
 
 let bb1_layer = PathLayer('bb1') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height) }
+bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let wy1 = calc(bb1.y - dim_above);
 let wd1 = PathLayer('wd1') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -856,7 +821,7 @@ let t2_layer = TextLayer('t2') ${ font-family: monospace; font-size: 16; fill: C
 t2_layer.apply { t2.drawTo(0, 0); }
 
 let bb2_layer = PathLayer('bb2') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height) }
+bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let wy2 = calc(bb2.y - dim_above);
 let wd2 = PathLayer('wd2') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -889,7 +854,7 @@ let t3_layer = TextLayer('t3') ${ font-family: monospace; font-size: 24; fill: C
 t3_layer.apply { t3.drawTo(0, 0); }
 
 let bb3_layer = PathLayer('bb3') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
-bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height) }
+bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let wy3 = calc(bb3.y - dim_above);
 let wd3 = PathLayer('wd3') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
@@ -965,7 +930,7 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 500, 500) }
+bg.apply { rect(0, 0, 500, 500); }
 
 // --- Title (top-level) ---
 
@@ -1002,14 +967,14 @@ let hex = PathLayer('hex') ${
   stroke: Color('#3b82f6');
   stroke-width: 2;
 };
-hex.apply { polygon(0, 0, 80, 6) }
+hex.apply { polygon(0, 0, 80, 6); }
 
 // Center marker
 let center_dot = PathLayer('center-dot') ${
   fill: Color('#22c55e');
   stroke: none;
 };
-center_dot.apply { circle(0, 0, 3) }
+center_dot.apply { circle(0, 0, 3); }
 
 // Guide circle
 let guide = PathLayer('guide') ${
@@ -1018,7 +983,7 @@ let guide = PathLayer('guide') ${
   stroke-dasharray: "3 4";
   fill: none;
 };
-guide.apply { circle(0, 0, 140) }
+guide.apply { circle(0, 0, 140); }
 
 // Radial lines from hex edge to guide circle
 let radials = PathLayer('radials') ${
@@ -1048,7 +1013,7 @@ dots.apply {
     let angle = calc(i * 0.7854 - 1.5708);
     let dx = calc(cos(angle) * 140);
     let dy = calc(sin(angle) * 140);
-    circle(dx, dy, 3)
+    circle(dx, dy, 3);
   }
 }
 
@@ -1087,13 +1052,13 @@ layer('labels').apply {
 
     // Verify label doesn't overlap central hexagon
     if (proj.intersects(hex_bb)) {
-      log(`WARN: label "${names[i]}" intersects central hexagon`)
+      log(`WARN: label "${names[i]}" intersects central hexagon`);
     }
 
     // Verify label doesn't overlap any previously placed label
     for (prev in placed_labels) {
       if (proj.intersects(prev)) {
-        log(`WARN: label "${names[i]}" intersects a previously placed label`)
+        log(`WARN: label "${names[i]}" intersects a previously placed label`);
       }
     }
 
@@ -1196,7 +1161,7 @@ code_group.append(code, kw);
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
@@ -1265,7 +1230,7 @@ let l_dots = PathLayer('l-dots') ${
   stroke-width: 1.5;
 };
 l_dots.apply {
-  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+  for (pt in points) { circle(pt.x, pt.y, dot_r); }
 }
 
 // Labels — all placed to the right (naive)
@@ -1314,8 +1279,8 @@ l_collision_boxes.apply {
         if (a.intersects(b)) {
           let abb = a.boundingBox();
           let bbb = b.boundingBox();
-          rect(abb.x, abb.y, abb.width, abb.height)
-          rect(bbb.x, bbb.y, bbb.width, bbb.height)
+          rect(abb.x, abb.y, abb.width, abb.height);
+          rect(bbb.x, bbb.y, bbb.width, bbb.height);
         }
       }
       cj = calc(cj + 1);
@@ -1357,7 +1322,7 @@ let r_dots = PathLayer('r-dots') ${
   stroke-width: 1.5;
 };
 r_dots.apply {
-  for (pt in points) { circle(pt.x, pt.y, dot_r) }
+  for (pt in points) { circle(pt.x, pt.y, dot_r); }
 }
 
 // Labels — smart placement using polarProject with collision avoidance
@@ -1428,7 +1393,7 @@ let r_ok_rects = PathLayer('r-ok') ${
 };
 r_ok_rects.apply {
   for (sbb in smart_bboxes) {
-    rect(sbb.x, sbb.y, sbb.width, sbb.height)
+    rect(sbb.x, sbb.y, sbb.width, sbb.height);
   }
 }
 
@@ -1519,9 +1484,9 @@ let leg_red = PathLayer('leg-red') ${ fill: Color('#ef4444'); stroke: none; };
 let leg_green = PathLayer('leg-green') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_blue = PathLayer('leg-blue') ${ fill: Color('#3b82f6'); stroke: none; };
 
-leg_red.apply { rect(20, 370, 6, 6) }
-leg_green.apply { rect(20, 380, 6, 6) }
-leg_blue.apply { rect(110, 370, 6, 6) }
+leg_red.apply { rect(20, 370, 6, 6); }
+leg_green.apply { rect(20, 380, 6, 6); }
+leg_blue.apply { rect(110, 370, 6, 6); }
 
 leg.apply {
   text(30, 375)`Collision detected`
@@ -1556,7 +1521,7 @@ left_label.<span class="hljs-title function_">polarProject</span>(<span class="h
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 400) }
+bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
@@ -1588,8 +1553,8 @@ let guides = PathLayer('guides') ${
   fill: none;
 };
 guides.apply {
-  circle(150, 210, 75)
-  circle(450, 210, 75)
+  circle(150, 210, 75);
+  circle(450, 210, 75);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1621,7 +1586,7 @@ let hex_left = PathLayer('hex-l') ${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-hex_left.apply { polygon(150, 210, 55, 6) }
+hex_left.apply { polygon(150, 210, 55, 6); }
 
 // Manual labels — hardcoded positions with magic numbers
 let manual_labels = TextLayer('manual') ${
@@ -1715,7 +1680,7 @@ let hex_right = PathLayer('hex-r') ${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-hex_right.apply { polygon(450, 210, 55, 6) }
+hex_right.apply { polygon(450, 210, 55, 6); }
 
 // Polar-projected labels
 let styles = ${ font-family: monospace; font-size: 10; };
@@ -1738,10 +1703,10 @@ let bottom_proj = bottom_label.polarProject(450, 210, calc(0.5 * 3.1415926535897
 let left_proj = left_label.polarProject(450, 210, calc(3.14159265358979), 75, BBoxAnchor.Right);
 
 polar_labels.apply {
-  top_proj.draw()
-  right_proj.draw()
-  bottom_proj.draw()
-  left_proj.draw()
+  top_proj.draw();
+  right_proj.draw();
+  bottom_proj.draw();
+  left_proj.draw();
 }
 
 // Green annotations showing BBoxAnchor names
@@ -1821,6 +1786,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

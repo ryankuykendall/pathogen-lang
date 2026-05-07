@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen</title>
+  <title>PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen Studio</title>
   <meta name="description" content="How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/pathblock-introduction">
-  <meta property="og:title" content="PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen">
+  <meta property="og:title" content="PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen Studio">
   <meta property="og:description" content="How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/pathblock-introduction">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">PathBlocks: Reusable Shape Primitives in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
@@ -331,7 +296,7 @@ let arrow = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 380) }
+bg.apply { rect(0, 0, 600, 380); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -361,7 +326,7 @@ let shape = PathLayer('shape') ${
 // V0(220,190) V1(280,190) V2(280,170) V3(310,200)
 // V4(280,230) V5(280,210) V6(220,210)
 shape.apply {
-  arrow.drawTo(220, 190)
+  arrow.drawTo(220, 190);
 }
 
 // --- Bounding box overlay ---
@@ -374,7 +339,7 @@ let bbox = PathLayer('bbox') ${
 };
 bbox.apply {
   // BBox: x=220, y=170, w=90, h=60
-  rect(220, 170, 90, 60)
+  rect(220, 170, 90, 60);
 }
 
 // --- Vertex dots ---
@@ -385,13 +350,13 @@ let vdots = PathLayer('vdots') ${
   stroke-width: 1.5;
 };
 vdots.apply {
-  circle(220, 190, 3.5)
-  circle(280, 190, 3.5)
-  circle(280, 170, 3.5)
-  circle(310, 200, 3.5)
-  circle(280, 230, 3.5)
-  circle(280, 210, 3.5)
-  circle(220, 210, 3.5)
+  circle(220, 190, 3.5);
+  circle(280, 190, 3.5);
+  circle(280, 170, 3.5);
+  circle(310, 200, 3.5);
+  circle(280, 230, 3.5);
+  circle(280, 210, 3.5);
+  circle(220, 210, 3.5);
 }
 
 // --- Origin crosshair ---
@@ -570,11 +535,11 @@ let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
 let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_d = PathLayer('leg-d') ${ fill: Color('#818cf8'); stroke: none; };
 
-leg_s.apply { rect(30, 335, 8, 8) }
-leg_b.apply { rect(30, 349, 8, 8) }
-leg_v.apply { rect(30, 363, 8, 8) }
-leg_o.apply { rect(120, 335, 8, 8) }
-leg_d.apply { rect(120, 349, 8, 8) }
+leg_s.apply { rect(30, 335, 8, 8); }
+leg_b.apply { rect(30, 349, 8, 8); }
+leg_v.apply { rect(30, 363, 8, 8); }
+leg_o.apply { rect(120, 335, 8, 8); }
+leg_d.apply { rect(120, 349, 8, 8); }
 
 leg.apply {
   text(42, 342)`Shape`
@@ -639,7 +604,7 @@ manual.apply {
 // drawTo approach: single call
 drawto.apply {
   for (i in 0..3) {
-    diamond.drawTo(calc(60 + i * 50), 140)
+    diamond.drawTo(calc(60 + i * 50), 140);
   }
 }
 </code>
@@ -678,7 +643,7 @@ let gem = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Radial leaf pattern (center) ---
 
@@ -700,7 +665,7 @@ leaves.apply {
     let angle = calc(i * 0.7854);
     let cx = calc(200 + cos(angle) * 60);
     let cy = calc(200 + sin(angle) * 60);
-    leaf.drawTo(calc(cx - 15), cy)
+    leaf.drawTo(calc(cx - 15), cy);
   }
 }
 
@@ -710,7 +675,7 @@ leaves2.apply {
     let angle = calc(i * 0.5236 + 0.2618);
     let cx = calc(200 + cos(angle) * 120);
     let cy = calc(200 + sin(angle) * 120);
-    leaf.drawTo(calc(cx - 15), cy)
+    leaf.drawTo(calc(cx - 15), cy);
   }
 }
 
@@ -726,7 +691,7 @@ gems.apply {
     let angle = calc(i * 0.7854 + 0.3927);
     let gx = calc(200 + cos(angle) * 90 - 5);
     let gy = calc(200 + sin(angle) * 90);
-    gem.drawTo(gx, gy)
+    gem.drawTo(gx, gy);
   }
 }
 
@@ -737,7 +702,7 @@ let center = PathLayer('center') ${
   stroke: none;
 };
 center.apply {
-  circle(200, 200, 4)
+  circle(200, 200, 4);
 }
 
 // --- Construction circles ---
@@ -749,9 +714,9 @@ let guides = PathLayer('guides') ${
   fill: none;
 };
 guides.apply {
-  circle(200, 200, 60)
-  circle(200, 200, 90)
-  circle(200, 200, 120)
+  circle(200, 200, 60);
+  circle(200, 200, 90);
+  circle(200, 200, 120);
 }
 
 // --- Annotations ---
@@ -863,10 +828,10 @@ for (j in 0..8) {
 
 // Reuse the arrow at different positions
 arrows.apply {
-  arrow.drawTo(80, 90)
-  arrow.drawTo(200, 130)
-  arrow.drawTo(160, 210)
-  arrow.drawTo(280, 170)
+  arrow.drawTo(80, 90);
+  arrow.drawTo(200, 130);
+  arrow.drawTo(160, 210);
+  arrow.drawTo(280, 170);
 }
 </code>
   <img src="/pathogen/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
@@ -900,7 +865,7 @@ arrows.apply {
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 600, 260) }
+bg.apply { rect(0, 0, 600, 260); }
 
 // --- Grid cells ---
 
@@ -910,11 +875,11 @@ let cells = PathLayer('cells') ${
   stroke-width: 1;
 };
 cells.apply {
-  roundRect(15, 50, 100, 100, 6)
-  roundRect(130, 50, 100, 100, 6)
-  roundRect(245, 50, 100, 100, 6)
-  roundRect(360, 50, 100, 100, 6)
-  roundRect(475, 50, 100, 100, 6)
+  roundRect(15, 50, 100, 100, 6);
+  roundRect(130, 50, 100, 100, 6);
+  roundRect(245, 50, 100, 100, 6);
+  roundRect(360, 50, 100, 100, 6);
+  roundRect(475, 50, 100, 100, 6);
 }
 
 // --- Shapes ---
@@ -924,35 +889,35 @@ let s1 = PathLayer('s-circle') ${
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
-s1.apply { circle(65, 100, 30) }
+s1.apply { circle(65, 100, 30); }
 
 let s2 = PathLayer('s-rect') ${
   fill: Color('#22c55e18');
   stroke: Color('#22c55e');
   stroke-width: 1.5;
 };
-s2.apply { rect(150, 72, 60, 40) }
+s2.apply { rect(150, 72, 60, 40); }
 
 let s3 = PathLayer('s-star') ${
   fill: Color('#f59e0b18');
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
 };
-s3.apply { star(295, 100, 32, 14, 5) }
+s3.apply { star(295, 100, 32, 14, 5); }
 
 let s4 = PathLayer('s-polygon') ${
   fill: Color('#ef444418');
   stroke: Color('#ef4444');
   stroke-width: 1.5;
 };
-s4.apply { polygon(410, 100, 30, 6) }
+s4.apply { polygon(410, 100, 30, 6); }
 
 let s5 = PathLayer('s-roundrect') ${
   fill: Color('#8b5cf618');
   stroke: Color('#8b5cf6');
   stroke-width: 1.5;
 };
-s5.apply { roundRect(498, 75, 55, 40, 8) }
+s5.apply { roundRect(498, 75, 55, 40, 8); }
 
 // --- Shape names ---
 
@@ -1052,6 +1017,7 @@ subtitle.apply {
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

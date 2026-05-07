@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Beyond CSS: Conic Gradients with WebGPU Rendering — Pathogen</title>
+  <title>Beyond CSS: Conic Gradients with WebGPU Rendering — Pathogen Studio</title>
   <meta name="description" content="SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/gradient-conic">
-  <meta property="og:title" content="Beyond CSS: Conic Gradients with WebGPU Rendering — Pathogen">
+  <meta property="og:title" content="Beyond CSS: Conic Gradients with WebGPU Rendering — Pathogen Studio">
   <meta property="og:description" content="SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/gradient-conic">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Beyond CSS: Conic Gradients with WebGPU Rendering</span></nav></div>
   <main class="blog-main">
     <article>
@@ -333,25 +298,25 @@ wheel_inner.innerFill = 'center';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 400, 400) }
+bg.apply { rect(0, 0, 400, 400); }
 
 // --- Outer ring (donut) ---
 
 let ring = PathLayer('ring') ${ fill: wheel_outer; stroke: none; };
-ring.apply { circle(200, 200, 155); closePath() }
+ring.apply { circle(200, 200, 155); closePath(); }
 
 // --- Inner disc ---
 
 let disc = PathLayer('disc') ${ fill: wheel_inner; stroke: none; };
-disc.apply { circle(200, 200, 62); closePath() }
+disc.apply { circle(200, 200, 62); closePath(); }
 
 // --- Subtle frame ---
 
 let frame = PathLayer('frame') ${ fill: none; stroke: #333; stroke-width: 1; };
-frame.apply { circle(200, 200, 155); closePath() }
+frame.apply { circle(200, 200, 155); closePath(); }
 
 let inner_frame = PathLayer('inner-frame') ${ fill: none; stroke: #333; stroke-width: 0.5; };
-inner_frame.apply { circle(200, 200, 62); closePath() }
+inner_frame.apply { circle(200, 200, 62); closePath(); }
 
 // --- Title ---
 
@@ -368,7 +333,7 @@ title.apply {
 // --- Scene ---
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, ring, disc, frame, inner_frame, title)
+scene.append(bg, ring, disc, frame, inner_frame, title);
 </code>
   <img src="/pathogen/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
@@ -432,26 +397,26 @@ fuel_grad.spread = 'transparent';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 660, 340) }
+bg.apply { rect(0, 0, 660, 340); }
 
 // --- Gauge faces ---
 
 let g1 = PathLayer('g1') ${ fill: speed_grad; stroke: none; };
-g1.apply { circle(120, 160, 80); closePath() }
+g1.apply { circle(120, 160, 80); closePath(); }
 
 let g2 = PathLayer('g2') ${ fill: temp_grad; stroke: none; };
-g2.apply { circle(330, 160, 80); closePath() }
+g2.apply { circle(330, 160, 80); closePath(); }
 
 let g3 = PathLayer('g3') ${ fill: fuel_grad; stroke: none; };
-g3.apply { circle(540, 160, 65); closePath() }
+g3.apply { circle(540, 160, 65); closePath(); }
 
 // --- Gauge rims ---
 
 let rims = PathLayer('rims') ${ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
-  circle(120, 160, 81); closePath()
-  circle(330, 160, 81); closePath()
-  circle(540, 160, 66); closePath()
+  circle(120, 160, 81); closePath();
+  circle(330, 160, 81); closePath();
+  circle(540, 160, 66); closePath();
 }
 
 // --- Tick marks for Speed gauge (135° to 405°, 270° sweep) ---
@@ -461,19 +426,19 @@ rims.apply {
 let speed_ticks = PathLayer('speed-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
 speed_ticks.apply {
   // 135° (bottom-left) — 0 km/h
-  line(51, 217, 63, 205)
+  line(51, 217, 63, 205);
   // 180° (left) — 40 km/h
-  line(33, 160, 47, 160)
+  line(33, 160, 47, 160);
   // 225° (top-left) — 80 km/h
-  line(51, 103, 63, 115)
+  line(51, 103, 63, 115);
   // 270° (top) — 120 km/h
-  line(120, 73, 120, 87)
+  line(120, 73, 120, 87);
   // 315° (top-right) — 160 km/h
-  line(189, 103, 177, 115)
+  line(189, 103, 177, 115);
   // 360° (right) — 200 km/h
-  line(207, 160, 193, 160)
+  line(207, 160, 193, 160);
   // 405° (bottom-right) — 240 km/h
-  line(189, 217, 177, 205)
+  line(189, 217, 177, 205);
 }
 
 // --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
@@ -481,19 +446,19 @@ speed_ticks.apply {
 let temp_ticks = PathLayer('temp-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
 temp_ticks.apply {
   // 135° — -20°C
-  line(261, 217, 273, 205)
+  line(261, 217, 273, 205);
   // 180° — 0°C
-  line(243, 160, 257, 160)
+  line(243, 160, 257, 160);
   // 225° — 20°C
-  line(261, 103, 273, 115)
+  line(261, 103, 273, 115);
   // 270° — 40°C
-  line(330, 73, 330, 87)
+  line(330, 73, 330, 87);
   // 315° — 60°C
-  line(399, 103, 387, 115)
+  line(399, 103, 387, 115);
   // 360° — 80°C
-  line(417, 160, 403, 160)
+  line(417, 160, 403, 160);
   // 405° — 100°C
-  line(399, 217, 387, 205)
+  line(399, 217, 387, 205);
 }
 
 // --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
@@ -501,15 +466,15 @@ temp_ticks.apply {
 let fuel_ticks = PathLayer('fuel-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
 fuel_ticks.apply {
   // 180° (left) — E
-  line(468, 160, 480, 160)
+  line(468, 160, 480, 160);
   // 225° — 1/4
-  line(487, 114, 497, 124)
+  line(487, 114, 497, 124);
   // 270° (top) — 1/2
-  line(540, 88, 540, 100)
+  line(540, 88, 540, 100);
   // 315° — 3/4
-  line(593, 114, 583, 124)
+  line(593, 114, 583, 124);
   // 360° (right) — F
-  line(612, 160, 600, 160)
+  line(612, 160, 600, 160);
 }
 
 // --- Speed tick labels ---
@@ -607,16 +572,16 @@ subtitle.apply {
 // --- Scene ---
 
 let speed_group = GroupLayer('speed-gauge') ${};
-speed_group.append(g1, speed_ticks)
+speed_group.append(g1, speed_ticks);
 
 let temp_group = GroupLayer('temp-gauge') ${};
-temp_group.append(g2, temp_ticks)
+temp_group.append(g2, temp_ticks);
 
 let fuel_group = GroupLayer('fuel-gauge') ${};
-fuel_group.append(g3, fuel_ticks)
+fuel_group.append(g3, fuel_ticks);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle)
+scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);
 </code>
   <img src="/pathogen/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
 </mini-workspace></p>
@@ -657,15 +622,15 @@ ccw_grad.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
-bg.apply { rect(0, 0, 500, 300) }
+bg.apply { rect(0, 0, 500, 300); }
 
 // --- Gradient circles ---
 
 let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
-cw_circle.apply { circle(140, 150, 90); closePath() }
+cw_circle.apply { circle(140, 150, 90); closePath(); }
 
 let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
-ccw_circle.apply { circle(360, 150, 90); closePath() }
+ccw_circle.apply { circle(360, 150, 90); closePath(); }
 
 // --- Direction arrows (curved sweep arcs with arrowheads) ---
 
@@ -714,13 +679,13 @@ note.apply {
 // --- Scene ---
 
 let left = GroupLayer('left') ${};
-left.append(cw_circle, cw_arrow)
+left.append(cw_circle, cw_arrow);
 
 let right = GroupLayer('right') ${};
-right.append(ccw_circle, ccw_arrow)
+right.append(ccw_circle, ccw_arrow);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, left, right, labels, note)
+scene.append(bg, left, right, labels, note);
 </code>
   <img src="/pathogen/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
 </mini-workspace></p>
@@ -804,21 +769,21 @@ g4.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 520, 530) }
+bg.apply { rect(0, 0, 520, 530); }
 
 // --- Circles ---
 
 let c1 = PathLayer('c1') ${ fill: g1; stroke: #333; stroke-width: 1; };
-c1.apply { circle(cx1, cy1, r); closePath() }
+c1.apply { circle(cx1, cy1, r); closePath(); }
 
 let c2 = PathLayer('c2') ${ fill: g2; stroke: #333; stroke-width: 1; };
-c2.apply { circle(cx2, cy2, r); closePath() }
+c2.apply { circle(cx2, cy2, r); closePath(); }
 
 let c3 = PathLayer('c3') ${ fill: g3; stroke: #333; stroke-width: 1; };
-c3.apply { circle(cx3, cy3, r); closePath() }
+c3.apply { circle(cx3, cy3, r); closePath(); }
 
 let c4 = PathLayer('c4') ${ fill: g4; stroke: #333; stroke-width: 1; };
-c4.apply { circle(cx4, cy4, r); closePath() }
+c4.apply { circle(cx4, cy4, r); closePath(); }
 
 // --- Labels ---
 
@@ -863,13 +828,13 @@ title.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') ${};
-top_row.append(c1, c2)
+top_row.append(c1, c2);
 
 let bottom_row = GroupLayer('bottom-row') ${};
-bottom_row.append(c3, c4)
+bottom_row.append(c3, c4);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, top_row, bottom_row, labels, desc, title)
+scene.append(bg, top_row, bottom_row, labels, desc, title);
 </code>
   <img src="/pathogen/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
 </mini-workspace></p>
@@ -914,21 +879,21 @@ oklch_rc.interpolation = 'oklch';
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
-bg.apply { rect(0, 0, 600, 540) }
+bg.apply { rect(0, 0, 600, 540); }
 
 // --- Gradient circles ---
 
 let by_s = PathLayer('by-srgb') ${ fill: srgb_by; stroke: #333; stroke-width: 1; };
-by_s.apply { circle(160, 165, 85); closePath() }
+by_s.apply { circle(160, 165, 85); closePath(); }
 
 let by_o = PathLayer('by-oklch') ${ fill: oklch_by; stroke: #333; stroke-width: 1; };
-by_o.apply { circle(440, 165, 85); closePath() }
+by_o.apply { circle(440, 165, 85); closePath(); }
 
 let rc_s = PathLayer('rc-srgb') ${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
-rc_s.apply { circle(160, 400, 85); closePath() }
+rc_s.apply { circle(160, 400, 85); closePath(); }
 
 let rc_o = PathLayer('rc-oklch') ${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
-rc_o.apply { circle(440, 400, 85); closePath() }
+rc_o.apply { circle(440, 400, 85); closePath(); }
 
 // --- Column headers ---
 
@@ -985,13 +950,13 @@ footer.apply {
 // --- Scene ---
 
 let top_row = GroupLayer('top-row') ${};
-top_row.append(by_s, by_o)
+top_row.append(by_s, by_o);
 
 let bottom_row = GroupLayer('bottom-row') ${};
-bottom_row.append(rc_s, rc_o)
+bottom_row.append(rc_s, rc_o);
 
 let scene = GroupLayer('scene') ${};
-scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)
+scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </code>
   <img src="/pathogen/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
 </mini-workspace></p>
@@ -1014,6 +979,7 @@ scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer)
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

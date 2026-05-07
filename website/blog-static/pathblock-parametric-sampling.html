@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Parametric Sampling: Placing Elements Along Curves — Pathogen</title>
+  <title>Parametric Sampling: Placing Elements Along Curves — Pathogen Studio</title>
   <meta name="description" content="How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.">
   <link rel="canonical" href="https://pedestal.design/pathogen/blog/pathblock-parametric-sampling">
-  <meta property="og:title" content="Parametric Sampling: Placing Elements Along Curves — Pathogen">
+  <meta property="og:title" content="Parametric Sampling: Placing Elements Along Curves — Pathogen Studio">
   <meta property="og:description" content="How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.">
   <meta property="og:url" content="https://pedestal.design/pathogen/blog/pathblock-parametric-sampling">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/pathogen/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
@@ -22,43 +22,11 @@
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: var(--bg-primary, #f8f9fa);
-      color: var(--text-primary, #1a1a2e);
-    }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /pathogen/styles/theme.css. */
 
-    /* Nav bar */
-    .site-header {
-      background: var(--bg-secondary, #ffffff);
-      border-bottom: 1px solid var(--border-color, #e2e8f0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .site-header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; height: 56px; gap: 1rem;
-    }
-    .logo {
-      display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; flex-shrink: 0;
-    }
-    .logo:hover .logo-main { color: var(--accent-color, #10b981); }
-    .logo-main {
-      font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400;
-      color: var(--text-primary, #1a1a2e); transition: color 0.15s ease;
-    }
-    .logo-sub {
-      font-family: 'Inconsolata', monospace; font-size: 0.6rem;
-      color: var(--text-secondary, #64748b); white-space: nowrap;
-    }
-    .site-nav { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: center; }
-    .nav-link {
-      padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
-      color: var(--text-secondary, #64748b); font-size: 0.875rem; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .nav-link:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); color: var(--text-primary, #1a1a2e); }
-    .nav-link.active { background: var(--accent-color, #10b981); color: var(--accent-text, #ffffff); }
+    /* Site header is shared via /pathogen/styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
     .breadcrumb-bar {
@@ -249,38 +217,35 @@ code.hljs {
 }
 
     @media (max-width: 768px) {
-      .site-header-inner { padding: 0 0.75rem; height: 52px; }
-      .breadcrumb-bar { top: 52px; }
-      .logo-sub { display: none; }
-      .site-nav { gap: 0; }
-      .nav-link { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+      .breadcrumb-bar { top: 50px; }
       .blog-main { padding: 1.5rem 0.75rem; }
       .blog-content pre { font-size: 0.8125rem; }
       .blog-content table { display: block; overflow-x: auto; }
     }
-    @media (max-width: 600px) {
-      .site-nav { display: none; }
-    }
   </style>
+  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="site-header-inner">
-      <a class="logo" href="/pathogen/">
-        <span class="logo-main">Pathogen</span>
-        <span class="logo-sub">built on svg-path-extended v1.0</span>
-      </a>
-      <nav class="site-nav">
+  <div class="site-header-inner">
+    <a class="logo" href="/pathogen/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on svg-path-extended v1.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
           <a class="nav-link" href="/pathogen/">Workspaces</a>
           <a class="nav-link" href="/pathogen/docs">Docs</a>
           <a class="nav-link" href="/pathogen/explore">Explore</a>
           <a class="nav-link" href="/pathogen/featured">Featured</a>
           <a class="nav-link active" href="/pathogen/blog">Blog</a>
           <a class="nav-link" href="/pathogen/preferences">Preferences</a>
-      </nav>
+    </nav>
+    <div class="actions">
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
     </div>
-  </header>
+  </div>
+</header>
   <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Workspaces</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Parametric Sampling: Placing Elements Along Curves</span></nav></div>
   <main class="blog-main">
     <article>
@@ -331,7 +296,7 @@ let curve = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 560, 360) }
+bg.apply { rect(0, 0, 560, 360); }
 
 let grid = PathLayer('grid') ${
   stroke: Color('#1e293b');
@@ -357,7 +322,7 @@ let path = PathLayer('path') ${
   fill: none;
 };
 path.apply {
-  curve.drawTo(80, 240)
+  curve.drawTo(80, 240);
 }
 
 // --- Get real sampling data at t=0.4 ---
@@ -375,7 +340,7 @@ let sample_dot = PathLayer('sample-dot') ${
   stroke-width: 2;
 };
 sample_dot.apply {
-  circle(pt.x, pt.y, 5)
+  circle(pt.x, pt.y, 5);
 }
 
 // --- Tangent line ---
@@ -440,8 +405,8 @@ let endpoints = PathLayer('endpoints') ${
   stroke-width: 1.5;
 };
 endpoints.apply {
-  circle(80, 240, 3.5)
-  circle(300, 240, 3.5)
+  circle(80, 240, 3.5);
+  circle(300, 240, 3.5);
 }
 
 // --- Leader lines ---
@@ -530,10 +495,10 @@ let leg_t = PathLayer('leg-tan') ${ fill: Color('#22c55e'); stroke: none; };
 let leg_n = PathLayer('leg-norm') ${ fill: Color('#f59e0b'); stroke: none; };
 let leg_p = PathLayer('leg-pt') ${ fill: Color('#ef4444'); stroke: none; };
 
-leg_c.apply { rect(370, 310, 8, 8) }
-leg_t.apply { rect(370, 324, 8, 8) }
-leg_n.apply { rect(460, 310, 8, 8) }
-leg_p.apply { rect(460, 324, 8, 8) }
+leg_c.apply { rect(370, 310, 8, 8); }
+leg_t.apply { rect(370, 324, 8, 8); }
+leg_n.apply { rect(460, 310, 8, 8); }
+leg_p.apply { rect(460, 324, 8, 8); }
 
 leg.apply {
   text(382, 317)`Curve path`
@@ -609,7 +574,7 @@ let proj = curve.project(50, 150);
 
 // Draw the curve
 path.apply {
-  curve.drawTo(50, 150)
+  curve.drawTo(50, 150);
 }
 
 // Sample 8 points along the curve
@@ -679,7 +644,7 @@ let curve = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 520, 300) }
+bg.apply { rect(0, 0, 520, 300); }
 
 // --- The curve ---
 
@@ -689,7 +654,7 @@ let path = PathLayer('path') ${
   fill: none;
 };
 path.apply {
-  curve.drawTo(60, 150)
+  curve.drawTo(60, 150);
 }
 
 // --- Partition points (n=8) using real data ---
@@ -704,7 +669,7 @@ let dots = PathLayer('dots') ${
 };
 dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 4)
+    circle(p.point.x, p.point.y, 4);
   }
 }
 
@@ -801,7 +766,7 @@ let road = @{
 // --- Background ---
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
-bg.apply { rect(0, 0, 540, 320) }
+bg.apply { rect(0, 0, 540, 320); }
 
 // --- Layers ---
 
@@ -830,7 +795,7 @@ let pts = proj.partition(n);
 
 // Draw the road
 roadLayer.apply {
-  road.drawTo(50, 180)
+  road.drawTo(50, 180);
 }
 
 // Place fence posts evenly along the road
@@ -867,7 +832,7 @@ let base_dots = PathLayer('base-dots') ${
 };
 base_dots.apply {
   for (p in pts) {
-    circle(p.point.x, p.point.y, 2)
+    circle(p.point.x, p.point.y, 2);
   }
 }
 
@@ -962,6 +927,7 @@ subtitle.apply {
     </article>
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
   <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
   <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>

@@ -3,6 +3,7 @@
 
 import { thumbnailApi, workspaceApi } from '../../services/api.js';
 import { store } from '../../state/store.js';
+import { materialIcon } from '../../utils/material-icons.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 import styles from './landing-view.css';
 
@@ -366,10 +367,10 @@ class LandingView extends HTMLElement {
         <h1>My Workspaces</h1>
         <div class="controls">
           <div class="view-toggle">
-            <button data-view="list" class="${this.viewMode === 'list' ? 'active' : ''}">List</button>
-            <button data-view="grid" class="${this.viewMode === 'grid' ? 'active' : ''}">Grid</button>
+            <button data-view="list" class="${this.viewMode === 'list' ? 'active' : ''}">${materialIcon('list', { size: 14, className: 'toggle-icon' })}<span>List</span></button>
+            <button data-view="grid" class="${this.viewMode === 'grid' ? 'active' : ''}">${materialIcon('grid', { size: 14, className: 'toggle-icon' })}<span>Grid</span></button>
           </div>
-          <button class="new-btn">+ New Workspace</button>
+          <button class="new-btn">${materialIcon('add', { size: 16, className: 'cta-icon' })}<span>New Workspace</span></button>
         </div>
       </div>
 

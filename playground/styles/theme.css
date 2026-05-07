@@ -1,38 +1,48 @@
 /* CSS Custom Properties (Theme) */
-/* Visual design inspired by modern app interfaces with light/dark mode support */
+/* Atmospheric direction — see project-docs/top-nav-redesign/explorations/05-atmospheric.html */
 
 :root {
-  /* ===== Light Theme (Default) ===== */
+  /* ===== Light Theme (Default) — atmospheric warm cream ===== */
 
-  /* Backgrounds - off-white with white cards */
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f0f1f2;
+  /* Backgrounds — warm cream surfaces, gradient endpoints for nav backplates */
+  --bg-primary: #f7f0e3;
+  --bg-secondary: #fdf6ed;
+  --bg-tertiary: rgba(28, 23, 34, 0.05);
   --bg-elevated: #ffffff;
 
-  /* Text */
-  --text-primary: #1a1a2e;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
-  --text-inverse: #ffffff;
+  --bg-primary-from: #fdf6ed;
+  --bg-primary-to: #f6e9da;
+  --bg-secondary-from: #fffaf2;
+  --bg-secondary-to: #fbecd9;
+
+  /* Text — warm purple-tinged */
+  --text-primary: #1c1722;
+  --text-secondary: #5a4f6a;
+  --text-tertiary: #9087a0;
+  --text-inverse: #fffaf2;
 
   /* Borders & Dividers */
-  --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
-  --border-strong: #cbd5e1;
+  --border-color: rgba(28, 23, 34, 0.10);
+  --border-subtle: rgba(28, 23, 34, 0.06);
+  --border-strong: rgba(28, 23, 34, 0.18);
 
-  /* Primary Accent - Teal/Emerald */
-  --accent-color: #10b981;
-  --accent-hover: #059669;
-  --accent-subtle: rgba(16, 185, 129, 0.1);
-  --accent-text: #ffffff;
+  /* Primary Accent — Rose/Pink (used ONCE per view as the CTA) */
+  --accent-color: #c0518e;
+  --accent-hover: #b04680;
+  --accent-subtle: rgba(192, 81, 142, 0.10);
+  --accent-text: #fffaf2;
+  --accent-from: #e16a8f;
+  --accent-to: #a83d80;
 
-  /* Secondary Accent - Amber */
-  --secondary-accent: #f59e0b;
-  --secondary-accent-hover: #d97706;
-  --secondary-accent-subtle: rgba(245, 158, 11, 0.1);
+  /* Secondary Accent — Lavender (active tabs, decorative wordmark) */
+  --secondary-accent: #9461c4;
+  --secondary-accent-hover: #7e4fb0;
+  --secondary-accent-subtle: rgba(148, 97, 196, 0.16);
+  --secondary-accent-text: #5e3590;
+  --secondary-from: #b384e0;
+  --secondary-to: #6d3aa6;
 
-  /* Status Colors */
+  /* Status Colors (unchanged — status semantics are independent of brand) */
   --success-color: #10b981;
   --success-bg: #ecfdf5;
   --success-border: #a7f3d0;
@@ -53,13 +63,19 @@
   /* Interactive States */
   --hover-bg: rgba(0, 0, 0, 0.04);
   --active-bg: rgba(0, 0, 0, 0.08);
-  --focus-ring: rgba(16, 185, 129, 0.4);
+  --focus-ring: rgba(192, 81, 142, 0.4);
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(28, 23, 34, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(28, 23, 34, 0.07), 0 2px 4px -1px rgba(28, 23, 34, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(28, 23, 34, 0.08), 0 4px 6px -2px rgba(28, 23, 34, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(28, 23, 34, 0.10), 0 10px 10px -5px rgba(28, 23, 34, 0.04);
+  --shadow-glow: 0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+
+  /* Desaturated primary used to tint Material-elevation shadows.
+   * #c0518e (full primary) → desaturated ~50% toward grey (RGB 165, 110, 140).
+   * Used as `rgba(var(--shadow-tint-rgb), <alpha>)` in elevation stacks. */
+  --shadow-tint-rgb: 165, 110, 140;
 
   /* Border Radius */
   --radius-sm: 4px;
@@ -76,6 +92,13 @@
   /* Font stacks */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-mono: 'Inconsolata', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --font-brand: 'Baumans', cursive;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+
+  /* Atmospheric body backplate — soft radial halos behind the whole viewport */
+  --bg-atmosphere-1: rgba(180, 130, 220, 0.18);
+  --bg-atmosphere-2: rgba(255, 175, 130, 0.20);
 
   /* Z-index layers */
   --z-dropdown: 100;
@@ -84,35 +107,45 @@
   --z-tooltip: 400;
 }
 
-/* ===== Dark Theme ===== */
+/* ===== Dark Theme — atmospheric deep purple ===== */
 [data-theme='dark'] {
-  /* Backgrounds - warm dark grays */
-  --bg-primary: #242220;
-  --bg-secondary: #1f1e1c;
-  --bg-tertiary: #2a2826;
-  --bg-elevated: #2c2a28;
+  /* Backgrounds — deep purple-black with gradient endpoints */
+  --bg-primary: #14101c;
+  --bg-secondary: #100c17;
+  --bg-tertiary: rgba(255, 250, 242, 0.05);
+  --bg-elevated: #1a1424;
 
-  /* Text - slightly warm */
-  --text-primary: #f5f3f0;
-  --text-secondary: #a39e96;
-  --text-tertiary: #6e6962;
-  --text-inverse: #1a1a1a;
+  --bg-primary-from: #1a1424;
+  --bg-primary-to: #110d18;
+  --bg-secondary-from: #15101e;
+  --bg-secondary-to: #0c0913;
+
+  /* Text — warm cream */
+  --text-primary: #f6e9da;
+  --text-secondary: #b5a8c4;
+  --text-tertiary: #7a6f8a;
+  --text-inverse: #14101c;
 
   /* Borders & Dividers */
-  --border-color: #353230;
-  --border-subtle: #2c2a28;
-  --border-strong: #464340;
+  --border-color: rgba(246, 233, 218, 0.10);
+  --border-subtle: rgba(246, 233, 218, 0.05);
+  --border-strong: rgba(246, 233, 218, 0.20);
 
-  /* Primary Accent - Pale Yellow */
-  --accent-color: #ccbf6b;
-  --accent-hover: #d6cb78;
-  --accent-subtle: rgba(204, 191, 107, 0.15);
-  --accent-text: #2c2822;
+  /* Primary Accent — Warm Amber/Peach (CTA) */
+  --accent-color: #f7b56e;
+  --accent-hover: #ffc585;
+  --accent-subtle: rgba(247, 181, 110, 0.15);
+  --accent-text: #1a1424;
+  --accent-from: #ffd194;
+  --accent-to: #e89254;
 
-  /* Secondary Accent - Warm Rose */
-  --secondary-accent: #c9736e;
-  --secondary-accent-hover: #d8908b;
-  --secondary-accent-subtle: rgba(201, 115, 110, 0.15);
+  /* Secondary Accent — Pale Lavender (active tabs, decorative) */
+  --secondary-accent: #c4a4e8;
+  --secondary-accent-hover: #d4baef;
+  --secondary-accent-subtle: rgba(196, 164, 232, 0.16);
+  --secondary-accent-text: #d4bcef;
+  --secondary-from: #d8c4f0;
+  --secondary-to: #9c7cd5;
 
   /* Status Colors */
   --success-color: #22c55e;
@@ -135,47 +168,60 @@
   /* Interactive States */
   --hover-bg: rgba(255, 255, 255, 0.06);
   --active-bg: rgba(255, 255, 255, 0.1);
-  --focus-ring: rgba(204, 191, 107, 0.4);
+  --focus-ring: rgba(247, 181, 110, 0.4);
 
-  /* Shadows - subtler in dark mode */
+  /* Shadows — subtler in dark mode */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 8px 28px rgba(247, 181, 110, 0.32), 0 0 0 1px rgba(247, 181, 110, 0.30);
+
+  /* Desaturated primary tint for elevation shadows in dark mode.
+   * #f7b56e (full peach primary) → desaturated ~50% (RGB 213, 180, 144). */
+  --shadow-tint-rgb: 213, 180, 144;
+
+  /* Dark-mode atmosphere — deeper, cooler halos */
+  --bg-atmosphere-1: rgba(140, 100, 200, 0.18);
+  --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
 }
 
 /* Auto dark mode based on system preference (when no explicit theme set) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    /* Backgrounds - warm dark grays */
-    --bg-primary: #242220;
-    --bg-secondary: #1f1e1c;
-    --bg-tertiary: #2a2826;
-    --bg-elevated: #2c2a28;
+    --bg-primary: #14101c;
+    --bg-secondary: #100c17;
+    --bg-tertiary: rgba(255, 250, 242, 0.05);
+    --bg-elevated: #1a1424;
 
-    /* Text - slightly warm */
-    --text-primary: #f5f3f0;
-    --text-secondary: #a39e96;
-    --text-tertiary: #6e6962;
-    --text-inverse: #1a1a1a;
+    --bg-primary-from: #1a1424;
+    --bg-primary-to: #110d18;
+    --bg-secondary-from: #15101e;
+    --bg-secondary-to: #0c0913;
 
-    /* Borders & Dividers */
-    --border-color: #353230;
-    --border-subtle: #2c2a28;
-    --border-strong: #464340;
+    --text-primary: #f6e9da;
+    --text-secondary: #b5a8c4;
+    --text-tertiary: #7a6f8a;
+    --text-inverse: #14101c;
 
-    /* Primary Accent - Pale Yellow */
-    --accent-color: #ccbf6b;
-    --accent-hover: #d6cb78;
-    --accent-subtle: rgba(204, 191, 107, 0.15);
-    --accent-text: #2c2822;
+    --border-color: rgba(246, 233, 218, 0.10);
+    --border-subtle: rgba(246, 233, 218, 0.05);
+    --border-strong: rgba(246, 233, 218, 0.20);
 
-    /* Secondary Accent - Warm Rose */
-    --secondary-accent: #c9736e;
-    --secondary-accent-hover: #d8908b;
-    --secondary-accent-subtle: rgba(201, 115, 110, 0.15);
+    --accent-color: #f7b56e;
+    --accent-hover: #ffc585;
+    --accent-subtle: rgba(247, 181, 110, 0.15);
+    --accent-text: #1a1424;
+    --accent-from: #ffd194;
+    --accent-to: #e89254;
 
-    /* Status Colors */
+    --secondary-accent: #c4a4e8;
+    --secondary-accent-hover: #d4baef;
+    --secondary-accent-subtle: rgba(196, 164, 232, 0.16);
+    --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0;
+    --secondary-to: #9c7cd5;
+
     --success-color: #22c55e;
     --success-bg: rgba(34, 197, 94, 0.15);
     --success-border: rgba(34, 197, 94, 0.3);
@@ -193,16 +239,18 @@
     --info-bg: rgba(59, 130, 246, 0.15);
     --info-border: rgba(59, 130, 246, 0.3);
 
-    /* Interactive States */
     --hover-bg: rgba(255, 255, 255, 0.06);
     --active-bg: rgba(255, 255, 255, 0.1);
-    --focus-ring: rgba(204, 191, 107, 0.4);
+    --focus-ring: rgba(247, 181, 110, 0.4);
 
-    /* Shadows - subtler in dark mode */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 8px 28px rgba(247, 181, 110, 0.32), 0 0 0 1px rgba(247, 181, 110, 0.30);
+    --shadow-tint-rgb: 213, 180, 144;
+    --bg-atmosphere-1: rgba(140, 100, 200, 0.18);
+    --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
   }
 }
 
@@ -213,11 +261,41 @@
   padding: 0;
 }
 
-/* Smooth theme transitions */
+/* Body — atmospheric warm-cream backplate with soft radial halos.
+ * Same surface treatment behind every page (SPA + static), so the
+ * grain texture and gradient atmosphere span the entire viewport. */
 body {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background:
+    radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1, rgba(180, 130, 220, 0.18)), transparent 60%),
+    radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2, rgba(255, 175, 130, 0.20)), transparent 60%),
+    var(--bg-primary);
+  min-height: 100vh;
+  position: relative;
   transition:
     background-color var(--transition-slow),
     color var(--transition-slow);
+}
+
+/* Grain texture — fixed-position overlay so it stays put as the user scrolls.
+ * Pointer-events disabled, blend-mode multiply tints the warm bg subtly. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.45;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: -1;
+}
+
+[data-theme='dark'] body::before,
+[data-active-theme='dark'] body::before {
+  mix-blend-mode: overlay;
+  opacity: 0.32;
 }
 
 /* Prevent CLS before custom element upgrade */
@@ -229,7 +307,7 @@ app-shell:not(:defined) {
 
 app-header:not(:defined) {
   display: block;
-  height: 56px;
+  height: 52px;
 }
 
 /* CodeMirror completion tooltip must render above the error panel (z-index: 10) */

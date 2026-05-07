@@ -1,0 +1,174 @@
+/* Site header — single source of truth for the global top navigation.
+ * Used by both the SPA's <app-header> (inlined into shadow DOM) and the
+ * static-page builders (linked via <link rel="stylesheet">).
+ *
+ * Layout: CSS Grid throughout. The .site-header element is the grid
+ * container with three columns:
+ *   minmax(280px, 1fr) | auto | minmax(280px, 1fr)
+ * Side zones share the same fr-track so the centre tab row is
+ * mathematically anchored across all routes (anti-shift contract).
+ *
+ * IMPORTANT: do NOT change box dimensions in active-tab state.
+ * scripts/verify-nav-stability.ts asserts ≤0.5px drift between routes.
+ */
+
+/* Transparent surfaces — the body's atmospheric backplate (warm cream
+ * gradient + fixed grain noise overlay, defined in theme.css) flows
+ * continuously through the top nav and breadcrumb so the texture reads
+ * as a single ambient surface rather than a stack of discrete panels.
+ * Hairline border-bottom is the only visual separator. */
+.site-header {
+  position: relative;
+  background: transparent;
+  border-bottom: 1px solid var(--border-subtle, rgba(28, 23, 34, 0.06));
+}
+
+.site-header-inner {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr);
+  align-items: center;
+  padding: 0 1.5rem;
+  height: 52px;
+  position: relative;
+  background: transparent;
+}
+
+/* Note: the grain texture is now applied globally via body::before in
+ * theme.css so it spans the entire viewport behind the nav, sub-nav, and
+ * page content (matching the atmospheric direction). The site-header
+ * doesn't need its own grain overlay. */
+
+/* ---------- LEFT zone — logo lockup ---------- */
+.site-header .logo {
+  display: grid;
+  grid-template-columns: auto;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1.1;
+  row-gap: 1px;
+  justify-self: start;
+}
+
+.site-header .logo:hover .logo-main {
+  filter: brightness(1.05);
+}
+
+.site-header .logo-main {
+  font-family: var(--font-brand, 'Baumans', cursive);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--text-primary, #1c1722);
+  white-space: nowrap;
+  letter-spacing: 0;
+  transition: filter var(--transition-base, 0.15s ease);
+}
+
+.site-header .logo-main em {
+  font-style: normal;
+  background: linear-gradient(120deg, var(--secondary-from, #b384e0) 0%, var(--secondary-to, #6d3aa6) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.site-header .logo-sub {
+  font-family: var(--font-mono, 'Inconsolata', monospace);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary, #9087a0);
+  white-space: nowrap;
+}
+
+/* ---------- CENTRE zone — atmospheric tabs-wrap ---------- */
+.site-header .tabs-wrap {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  align-items: center;
+  gap: 2px;
+  justify-self: center;
+  padding: 4px;
+  background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
+  border: 1px solid var(--border-subtle, rgba(28, 23, 34, 0.06));
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.site-header .nav-link {
+  /* Active state must use background + box-shadow only — never padding,
+   * border, or font-weight changes. See verify-nav-stability.ts. */
+  padding: 6px 13px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-secondary, #5a4f6a);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  white-space: nowrap;
+  transition: background var(--transition-base, 0.18s ease), color var(--transition-base, 0.18s ease);
+}
+
+.site-header .nav-link:hover {
+  color: var(--text-primary, #1c1722);
+}
+
+.site-header .nav-link.active {
+  background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.16));
+  color: var(--secondary-accent-text, #5e3590);
+  box-shadow: inset 0 0 16px rgba(148, 97, 196, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+[data-theme='dark'] .site-header .nav-link.active,
+[data-active-theme='dark'] .site-header .nav-link.active {
+  box-shadow: inset 0 0 18px rgba(196, 164, 232, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ---------- RIGHT zone — actions cluster ---------- */
+.site-header .actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: end;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .site-header-inner {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    padding: 0 1rem;
+    height: 50px;
+  }
+  .site-header .logo-main {
+    font-size: 1.375rem;
+  }
+  .site-header .nav-link {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  .site-header .tabs-wrap {
+    padding: 3px;
+  }
+}
+
+@media (max-width: 768px) {
+  .site-header .logo-sub {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-header .tabs-wrap {
+    display: none;
+  }
+  .site-header-inner {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 0.75rem;
+  }
+}
