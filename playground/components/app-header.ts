@@ -6,6 +6,7 @@ import { store } from '../state/store.js';
 import { buildWorkspaceSlugId, navigateTo, routeUrl } from '../utils/router.js';
 import { themeManager } from '../utils/theme.js';
 import { copyURL } from '../utils/url-state.js';
+import './shared/account-menu.js';
 import './shared/theme-toggle.js';
 import styles from './app-header.css';
 
@@ -242,6 +243,7 @@ class AppHeader extends HTMLElement {
 
         <div class="actions">
           <theme-toggle></theme-toggle>
+          <account-menu></account-menu>
 
           ${
             isWorkspaceView
@@ -342,6 +344,7 @@ class AppHeader extends HTMLElement {
     // Update visibility of workspace-specific actions
     actionsContainer.innerHTML = `
       <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
 
       ${
         isWorkspaceView

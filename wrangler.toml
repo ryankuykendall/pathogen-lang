@@ -1,6 +1,6 @@
 # CloudFlare Pages configuration
 name = "svg-path-extended"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-04-30"
 pages_build_output_dir = "public"
 
 # KV Namespace binding for workspace persistence
@@ -17,5 +17,29 @@ binding = "THUMBNAILS"
 bucket_name = "svg-path-extended-thumbnails"
 preview_bucket_name = "svg-path-extended-thumbnails-preview"
 
+# D1 — users + sessions for email-OTP accounts.
+# See migrations/0001_users.sql and project-docs/auth/design.md.
+[[d1_databases]]
+binding = "USERS_DB"
+database_name = "svg-path-extended-users"
+database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
+
+# Cloudflare Email Sending (public beta, April 2026). The [[send_email]]
+# block is shared with legacy Email Routing — omitting `destination_address`
+# / `allowed_destination_addresses` puts it in the new arbitrary-recipient
+# Email Sending mode. Sending domain (pedestal.design) is verified in the CF
+# Email Service dashboard. Add `remote = true` to call the real API from
+# `wrangler pages dev`; without it, dev simulates and logs to console.
+[[send_email]]
+name = "EMAIL"
+remote = true
+
 [vars]
-# Environment variables can be added here
+AUTH_FROM_EMAIL   = "hello@pedestal.design"
+AUTH_PRODUCT_NAME = "Pathogen Studio"   # email-only brand; in-app UI stays "Pathogen"
+PRODUCTION        = "1"
+# AUTH_DEV_LOG_OTP and PRODUCTION="" are set in .dev.vars (gitignored) so
+# local `wrangler pages dev` logs OTP codes to the console and serves a
+# non-Secure cookie over plain HTTP, while production gets real email and
+# Secure cookies.
+# AUTH_RESEND_API_KEY = "..."  # backup transport — set if CF Email Sending breaks

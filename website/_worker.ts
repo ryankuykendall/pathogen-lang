@@ -7,11 +7,23 @@
  * API routes under /pathogen/api/* are handled by the worker.
  */
 
+import { getEffectiveUserId } from './auth/effective-id.js';
+import {
+  handleAuthClaim,
+  handleAuthLogout,
+  handleAuthStart,
+  handleAuthVerify,
+  handleMe,
+  handlePublicProfile,
+} from './auth/handlers.js';
+import { getSessionUserId, readSessionTokenFromRequest } from './auth/session.js';
+import { findUserById, findUserByHandle } from './auth/users.js';
+
 // ─── Type Definitions ─────────────────────────────────────────────────
 
 interface KVNamespace {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
   list(options?: {
     prefix?: string;
@@ -33,11 +45,34 @@ interface R2Object {
   body: ReadableStream;
 }
 
+interface D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement;
+  first<T = Record<string, unknown>>(): Promise<T | null>;
+  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
+  run(): Promise<{ success: boolean; meta: { changes: number } }>;
+}
+
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  exec(query: string): Promise<unknown>;
+}
+
+interface EmailBinding {
+  send(message: { from: string; to: string; subject: string; text?: string; html?: string }): Promise<{ messageId: string }>;
+}
+
 interface Env {
   ASSETS: { fetch(input: RequestInfo): Promise<Response> };
   WORKSPACES: KVNamespace;
   THUMBNAILS: R2Bucket;
+  USERS_DB: D1Database;
+  EMAIL?: EmailBinding;
   ADMIN_TOKEN?: string;
+  AUTH_FROM_EMAIL?: string;
+  AUTH_PRODUCT_NAME?: string;
+  AUTH_DEV_LOG_OTP?: string;
+  AUTH_RESEND_API_KEY?: string;
+  PRODUCTION?: string;
 }
 
 interface WorkspaceListing {
@@ -124,19 +159,74 @@ function jsonResponse(data: unknown, status: number = 200): Response {
   });
 }
 
+// Merge corsHeaders into a Response that didn't include them (e.g. responses
+// constructed by the auth handler module, which is shared and CORS-agnostic).
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(corsHeaders)) headers.set(k, v);
+  return new Response(response.body, { status: response.status, headers });
+}
+
 // Error response helper
 function errorResponse(message: string, status: number = 400): Response {
   return jsonResponse({ error: message }, status);
 }
 
-// Extract user ID from request headers
-function getUserId(request: Request): string | null {
-  return request.headers.get('X-User-Id') || null;
-}
-
 // ─── SEO Page Rendering ───────────────────────────────────────────────
 
 const SITE_URL = 'https://pedestal.design';
+
+interface SsrUser {
+  displayName: string;
+  handle: string;
+}
+
+async function getSsrUser(request: Request, env: Env): Promise<SsrUser | null> {
+  if (!env.USERS_DB) return null;
+  const token = readSessionTokenFromRequest(request);
+  if (!token) return null;
+  try {
+    const userId = await getSessionUserId(env.USERS_DB, token);
+    if (!userId) return null;
+    const user = await findUserById(env.USERS_DB, userId);
+    if (!user) return null;
+    return { displayName: user.display_name, handle: user.handle };
+  } catch {
+    return null;
+  }
+}
+
+function initialOf(name: string): string {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return '?';
+  const [first, second] = trimmed.split(/\s+/);
+  if (second) return (first[0] + second[0]).toUpperCase();
+  return trimmed.slice(0, 2).toUpperCase();
+}
+
+function renderAccountSlot(user: SsrUser | null): string {
+  if (user) {
+    const profileHref = `/pathogen/u/${encodeURIComponent(user.handle)}`;
+    return `
+      <details class="account-dropdown">
+        <summary class="account-chip" aria-label="Account menu" title="Account menu">
+          <span class="account-initial">${escapeHtml(initialOf(user.displayName))}</span>
+          <span class="account-name">${escapeHtml(user.displayName)}</span>
+          <svg class="account-chev" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
+            <path d="M2 4 L6 8 L10 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </summary>
+        <div class="account-menu" role="menu">
+          <a class="account-menu-item" role="menuitem" href="${profileHref}">
+            <span class="account-menu-label">View profile</span>
+            <span class="account-menu-handle">@${escapeHtml(user.handle)}</span>
+          </a>
+          <a class="account-menu-item" role="menuitem" href="/pathogen/?signout=1">Sign out</a>
+        </div>
+      </details>`;
+  }
+  return `<a class="signin-pill" href="/pathogen/?signin=1">Sign in</a>`;
+}
 
 function renderPage({
   title,
@@ -144,12 +234,14 @@ function renderPage({
   path,
   content,
   headExtra = '',
+  currentUser = null,
 }: {
   title: string;
   description?: string;
   path: string;
   content: string;
   headExtra?: string;
+  currentUser?: SsrUser | null;
 }): string {
   const fullTitle = title ? `${title} — Pathogen` : 'Pathogen — SVG Path Extended Playground';
   const desc =
@@ -280,6 +372,104 @@ function renderPage({
     @media (max-width: 600px) {
       .site-nav { display: none; }
     }
+
+    /* Account slot — server-rendered version of <account-menu> for SSR pages.
+     * The SPA replaces this with the live web component when the playground
+     * loads; until then the chip + sign-out link gives signed-in users
+     * visual continuity across the SSR pages (explore, featured, /u/handle). */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .signin-pill {
+      background: transparent;
+      color: var(--accent-color, #10b981);
+      border: 1px solid var(--accent-color, #10b981);
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .signin-pill:hover {
+      background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+      color: var(--accent-hover, #059669);
+      border-color: var(--accent-hover, #059669);
+    }
+    /* Native <details> dropdown — no JS required for open/close. */
+    .account-dropdown {
+      position: relative;
+      display: inline-flex;
+    }
+    .account-dropdown > summary { list-style: none; }
+    .account-dropdown > summary::-webkit-details-marker { display: none; }
+    .account-chip {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--bg-elevated, #f1f5f9);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 999px;
+      padding: 0.25rem 0.6rem 0.25rem 0.25rem;
+      color: var(--text-primary, #1a1a2e);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .account-chip:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); }
+    .account-initial {
+      width: 22px; height: 22px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      background: var(--accent-color, #10b981);
+      color: var(--accent-text, #fff);
+      font-size: 0.6875rem;
+      font-weight: 600;
+    }
+    .account-name {
+      max-width: 12ch;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .account-chev {
+      opacity: 0.6;
+      transition: transform 0.15s ease;
+    }
+    .account-dropdown[open] .account-chev { transform: rotate(180deg); }
+    .account-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 200px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 8px;
+      box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.08));
+      padding: 0.25rem;
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    .account-menu-item {
+      display: flex; flex-direction: column; align-items: flex-start;
+      padding: 0.5rem 0.75rem;
+      text-decoration: none;
+      color: var(--text-primary, #1a1a2e);
+      font-size: 0.8125rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .account-menu-item:hover { background: var(--hover-bg, rgba(0,0,0,0.04)); }
+    .account-menu-label { font-weight: 500; }
+    .account-menu-handle {
+      font-size: 0.6875rem;
+      color: var(--text-secondary, #64748b);
+      font-family: var(--font-mono, ui-monospace, monospace);
+    }
+    @media (max-width: 600px) {
+      .account-name { max-width: 8ch; }
+    }
   </style>
 </head>
 <body>
@@ -292,13 +482,30 @@ function renderPage({
       <nav class="site-nav">
           ${navHtml}
       </nav>
-      <theme-toggle></theme-toggle>
+      <div class="header-actions">
+        <theme-toggle></theme-toggle>
+        ${renderAccountSlot(currentUser)}
+      </div>
     </div>
   </header>
   <main class="site-main">
     ${content}
   </main>
   <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
+  <script>
+    // Close the account dropdown when clicking outside it. Native <details>
+    // elements don't auto-close, so this is the small bit of JS needed for
+    // the SPA-like UX. ~5 lines, no module needed.
+    document.addEventListener('click', function (e) {
+      var open = document.querySelector('details.account-dropdown[open]');
+      if (open && !open.contains(e.target)) open.removeAttribute('open');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var open = document.querySelector('details.account-dropdown[open]');
+      if (open) open.removeAttribute('open');
+    });
+  </script>
 </body>
 </html>`;
 }
@@ -307,7 +514,7 @@ function renderPage({
 const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]) => Promise<Response>> = {
   // GET /api/workspaces - List user's workspaces
   async listWorkspaces(request: Request, env: Env): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -352,7 +559,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // POST /api/workspace - Create new workspace
   async createWorkspace(request: Request, env: Env): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -420,7 +627,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
       }
 
       const workspace: Workspace = JSON.parse(wsJson);
-      const userId = getUserId(request);
+      const userId = await getEffectiveUserId(request, env);
       const url = new URL(request.url);
       const adminToken = url.searchParams.get('token');
       const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
@@ -438,7 +645,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // PUT /api/workspace/:id - Update workspace (autosave)
   async updateWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -504,7 +711,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // DELETE /api/workspace/:id - Delete workspace
   async deleteWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -544,7 +751,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // POST /api/workspace/:id/copy - Duplicate workspace
   async copyWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -596,7 +803,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // GET /api/preferences - Get user preferences
   async getPreferences(request: Request, env: Env): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -612,7 +819,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // PUT /api/preferences - Save user preferences
   async savePreferences(request: Request, env: Env): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -628,7 +835,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // PUT /api/workspace/:id/thumbnail - Upload thumbnails (3 sizes via FormData)
   async uploadThumbnail(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     const url = new URL(request.url);
     const adminToken = url.searchParams.get('token');
     const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
@@ -684,7 +891,7 @@ const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]
 
   // DELETE /api/workspace/:id/thumbnail - Delete thumbnails from R2
   async deleteThumbnail(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = getUserId(request);
+    const userId = await getEffectiveUserId(request, env);
     if (!userId) {
       return errorResponse('User ID required', 401);
     }
@@ -757,6 +964,27 @@ async function handleApiRequest(request: Request, env: Env, apiPath: string): Pr
   // Handle CORS preflight
   if (method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // ─── Auth + identity routes ───────────────────────────────────────
+  if (apiPath === '/auth/start' && method === 'POST') {
+    return withCors(await handleAuthStart(request, env));
+  }
+  if (apiPath === '/auth/verify' && method === 'POST') {
+    return withCors(await handleAuthVerify(request, env));
+  }
+  if (apiPath === '/auth/logout' && method === 'POST') {
+    return withCors(await handleAuthLogout(request, env));
+  }
+  if (apiPath === '/auth/claim' && method === 'POST') {
+    return withCors(await handleAuthClaim(request, env));
+  }
+  if (apiPath === '/me' && method === 'GET') {
+    return withCors(await handleMe(request, env));
+  }
+  const profileMatch = apiPath.match(/^\/u\/([a-z0-9-]+)$/);
+  if (profileMatch && method === 'GET') {
+    return withCors(await handlePublicProfile(request, env, profileMatch[1]));
   }
 
   // Route matching
@@ -887,7 +1115,8 @@ async function handleApiRequest(request: Request, env: Env, apiPath: string): Pr
 
 // ─── Explore Page (Worker-Rendered) ───────────────────────────────────
 
-async function renderExplorePage(_request: Request, env: Env, url: URL): Promise<Response> {
+async function renderExplorePage(request: Request, env: Env, url: URL): Promise<Response> {
+  const currentUser = await getSsrUser(request, env);
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const perPage = 24;
 
@@ -1008,6 +1237,7 @@ async function renderExplorePage(_request: Request, env: Env, url: URL): Promise
     path: '/pathogen/explore',
     content,
     headExtra,
+    currentUser,
   });
 
   return new Response(html, {
@@ -1022,9 +1252,147 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ─── Public Profile Page (Worker-Rendered) ────────────────────────────
+
+async function renderProfilePage(request: Request, env: Env, url: URL, handle: string): Promise<Response> {
+  if (!env.USERS_DB) {
+    return new Response('Profiles are not enabled on this deployment.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+
+  const currentUser = await getSsrUser(request, env);
+  const user = await findUserByHandle(env.USERS_DB, handle);
+  if (!user) {
+    const html = renderPage({
+      title: 'Profile not found',
+      description: 'No Pathogen profile with that handle.',
+      path: url.pathname,
+      content: `<h1>Profile not found</h1><p>No user with handle <code>${escapeHtml(handle)}</code>.</p><p><a href="/pathogen/explore">Browse public workspaces &rarr;</a></p>`,
+      currentUser,
+    });
+    return new Response(html, {
+      status: 404,
+      headers: { 'Content-Type': 'text/html;charset=utf-8' },
+    });
+  }
+
+  let entries: PublicIndexEntry[] = [];
+  try {
+    const raw = await env.WORKSPACES.get('public:workspaces');
+    if (raw) entries = JSON.parse(raw);
+  } catch {
+    /* empty */
+  }
+  const candidates = entries.filter((e: PublicIndexEntry) => e.userId === user.id);
+
+  // Stale-index defense: each public:workspaces entry is verified against
+  // the underlying workspace:<id> record. Skip entries where the record is
+  // missing (deleted-but-not-deindexed) or where isPublic has flipped to
+  // false. Trades N KV reads per profile-render for correctness.
+  const workspaces: PublicIndexEntry[] = [];
+  for (const entry of candidates) {
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${entry.id}`);
+      if (!wsJson) continue;
+      const ws: Workspace = JSON.parse(wsJson);
+      if (!ws.isPublic) continue;
+      if (ws.userId !== user.id) continue;
+      workspaces.push(entry);
+    } catch {
+      /* skip malformed records */
+    }
+  }
+
+  let cardsHtml: string;
+  if (workspaces.length === 0) {
+    cardsHtml = `<p style="text-align:center;color:var(--text-secondary);padding:3rem 0;">${escapeHtml(user.display_name)} hasn't shared any public workspaces yet.</p>`;
+  } else {
+    cardsHtml = `<div class="explore-grid">${workspaces
+      .map((ws: PublicIndexEntry) => {
+        const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
+        const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
+        const date = ws.updatedAt
+          ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : '';
+        const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
+        <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
+        <div class="explore-info">
+          <h3>${escapeHtml(ws.name || 'Untitled')}</h3>
+          ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
+          ${date ? `<time>${date}</time>` : ''}
+        </div>
+      </a></article>`;
+      })
+      .join('')}</div>`;
+  }
+
+  const content = `
+    <h1>${escapeHtml(user.display_name)}</h1>
+    <p class="profile-handle"><span>@${escapeHtml(user.handle)}</span></p>
+    ${cardsHtml}
+  `;
+
+  const headExtra = `<style>
+    .profile-handle { color: var(--text-secondary); margin: 0 0 2rem; font-family: var(--font-mono, 'Inconsolata', monospace); font-size: 0.9375rem; }
+    .explore-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .explore-card-wrap { display: contents; }
+    .explore-card {
+      border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .explore-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent-color, #10b981);
+    }
+    .explore-thumb {
+      aspect-ratio: 4/3;
+      background: var(--bg-tertiary, #f0f1f2);
+      overflow: hidden;
+    }
+    .explore-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .explore-placeholder { width: 100%; height: 100%; }
+    .explore-info { padding: 0.75rem 1rem; }
+    .explore-info h3 { margin: 0 0 0.25rem; font-size: 0.9375rem; }
+    .explore-info p { margin: 0 0 0.25rem; font-size: 0.8125rem; color: var(--text-secondary); }
+    .explore-info time { font-size: 0.75rem; color: var(--text-tertiary); }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    @media (max-width: 900px) { .explore-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .explore-grid { grid-template-columns: 1fr; } }
+  </style>`;
+
+  const html = renderPage({
+    title: `${user.display_name} (@${user.handle})`,
+    description: `Public Pathogen workspaces by ${user.display_name}`,
+    path: url.pathname,
+    content,
+    headExtra,
+    currentUser,
+  });
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html;charset=utf-8',
+      'Cache-Control': 'public, s-maxage=60, max-age=30',
+    },
+  });
+}
+
 // ─── Featured Page (Worker-Rendered) ──────────────────────────────────
 
-async function renderFeaturedPage(_request: Request, env: Env, _url: URL): Promise<Response> {
+async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promise<Response> {
+  const currentUser = await getSsrUser(request, env);
   let featuredIds: string[] = [];
   try {
     const raw = await env.WORKSPACES.get('featured:workspaces');
@@ -1127,6 +1495,7 @@ async function renderFeaturedPage(_request: Request, env: Env, _url: URL): Promi
     path: '/pathogen/featured',
     content,
     headExtra,
+    currentUser,
   });
 
   return new Response(html, {
@@ -1209,6 +1578,10 @@ export default {
     }
     if (path === '/pathogen/featured') {
       return renderFeaturedPage(request, env, url);
+    }
+    const profilePathMatch = path.match(/^\/pathogen\/u\/([a-z0-9-]+)$/);
+    if (profilePathMatch) {
+      return renderProfilePage(request, env, url, profilePathMatch[1]);
     }
 
     // Blog SEO routes

@@ -63,7 +63,7 @@ async function build(): Promise<void> {
     format: 'esm',
     platform: 'neutral',
     target: 'es2022',
-    bundle: false,
+    bundle: true,
   });
 
   // Build playground (esbuild transpile + asset copy + dist artifacts) →

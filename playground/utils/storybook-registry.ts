@@ -1239,6 +1239,106 @@ dot.apply { circle(100, 100, 14); }`;
       `;
     },
   },
+  {
+    id: 'account-menu',
+    name: 'Account Menu',
+    category: 'Auth',
+    description: 'Header chip — "Sign in" pill when signed out, name+initial chip with dropdown when signed in.',
+    notes:
+      'Subscribes to store.currentUser. Set the "Signed in" story to populate a fake user; the real component reads the live store, so changes here only affect the storybook preview.',
+    stories: [
+      { name: 'Signed out', props: { signedIn: false } },
+      { name: 'Signed in', props: { signedIn: true, displayName: 'Ryan K', handle: 'ryan-k' } },
+      { name: 'Long display name', props: { signedIn: true, displayName: 'Ada Augusta Lovelace', handle: 'ada-lovelace' } },
+    ],
+    controls: [
+      { name: 'signedIn', type: 'toggle', label: 'Signed in', default: true },
+      { name: 'displayName', type: 'text', label: 'Display name', default: 'Ryan K' },
+      { name: 'handle', type: 'text', label: 'Handle', default: 'ryan-k' },
+    ],
+    render: (container, props, controls) => {
+      // Lazy import: only load the store + element when this story is opened.
+      void import('../state/store.js').then(({ store }) => {
+        void import('../components/shared/account-menu.js').then(() => {
+          const apply = (p: Record<string, unknown>): void => {
+            if (p.signedIn) {
+              store.set('currentUser', {
+                id: 'storybook-user',
+                email: 'demo@example.test',
+                handle: (p.handle as string) || 'ryan-k',
+                displayName: (p.displayName as string) || 'Ryan K',
+              });
+            } else {
+              store.set('currentUser', null);
+            }
+          };
+          apply(props);
+          const menu = document.createElement('account-menu');
+          container.appendChild(menu);
+          controls.on('signedIn', (v) => apply({ ...props, signedIn: Boolean(v) }));
+          controls.on('displayName', (v) => apply({ ...props, displayName: v as string }));
+          controls.on('handle', (v) => apply({ ...props, handle: v as string }));
+        });
+      });
+    },
+  },
+  {
+    id: 'auth-modal',
+    name: 'Auth Modal',
+    category: 'Auth',
+    description: 'Two-step passwordless sign-in modal: email + display name, then a 6-digit code grid.',
+    notes:
+      'Visibility is driven by store.authModalOpen. The "Open" story sets that key to true; close it via the X or Escape. The 6-digit grid is paste-aware and auto-advances.',
+    stories: [
+      { name: 'Closed', props: { open: false } },
+      { name: 'Open', props: { open: true } },
+    ],
+    controls: [{ name: 'open', type: 'toggle', label: 'Open', default: true }],
+    render: (container, props, controls) => {
+      void import('../state/store.js').then(({ store }) => {
+        void import('../components/shared/auth-modal.js').then(() => {
+          const modal = document.createElement('auth-modal');
+          container.appendChild(modal);
+          store.set('authModalOpen', Boolean(props.open));
+          controls.on('open', (v) => store.set('authModalOpen', Boolean(v)));
+        });
+      });
+    },
+  },
+  {
+    id: 'claim-workspaces-prompt',
+    name: 'Claim Workspaces Prompt',
+    category: 'Auth',
+    description: 'Post-verify dialog asking the user whether to claim anonymous workspaces created on the device.',
+    notes:
+      'Visibility is driven by store.pendingClaimCount + pendingClaimAnonymousId. The "Open" story sets fake values to render the prompt without a real claim flow.',
+    stories: [
+      { name: 'Closed', props: { open: false, count: 0 } },
+      { name: 'One workspace', props: { open: true, count: 1 } },
+      { name: 'Many workspaces', props: { open: true, count: 7 } },
+    ],
+    controls: [
+      { name: 'open', type: 'toggle', label: 'Open', default: true },
+      { name: 'count', type: 'number', label: 'Count', default: 3, min: 0, max: 99 },
+    ],
+    render: (container, props, controls) => {
+      void import('../state/store.js').then(({ store }) => {
+        void import('../components/shared/claim-workspaces-prompt.js').then(() => {
+          const apply = (p: Record<string, unknown>): void => {
+            store.update({
+              pendingClaimAnonymousId: p.open ? 'fake-anon-id-storybook' : null,
+              pendingClaimCount: p.open ? Number(p.count) || 0 : 0,
+            });
+          };
+          apply(props);
+          const prompt = document.createElement('claim-workspaces-prompt');
+          container.appendChild(prompt);
+          controls.on('open', (v) => apply({ ...props, open: Boolean(v) }));
+          controls.on('count', (v) => apply({ ...props, count: Number(v) }));
+        });
+      });
+    },
+  },
 ];
 
 // Get component by ID

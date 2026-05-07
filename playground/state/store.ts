@@ -150,6 +150,13 @@ export const store = createStore({
   // File state
   currentFileName: null,
   currentFileHandle: null,
+
+  // Auth (populated by services/auth.ts on app boot via /api/me)
+  currentUser: null as unknown,
+  authModalOpen: false,
+  authModalReturnTo: null as string | null,
+  pendingClaimAnonymousId: null as string | null,
+  pendingClaimCount: 0,
 });
 
 export { createStore };

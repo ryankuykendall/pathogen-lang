@@ -1,10 +1,13 @@
 // App Shell - Root component with router
 // Renders the appropriate view based on current route
 
+import { bootstrapCurrentUser, signOut } from '../services/auth.js';
 import { store } from '../state/store.js';
 import { initRouter, navigateTo } from '../utils/router.js';
 import './app-header.js';
 import './app-breadcrumb.js';
+import './shared/auth-modal.js';
+import './shared/claim-workspaces-prompt.js';
 import './views/admin-thumbnails-view.js';
 import './views/blog-post-view.js';
 import './views/blog-view.js';
@@ -36,6 +39,31 @@ class AppShell extends HTMLElement {
     this.render();
     this.setupRouter();
     this.setupEventListeners();
+    // Best-effort: load currentUser from /api/me. Then handle any auth query
+    // params left by the SSR header's Sign in / Sign out links.
+    void bootstrapCurrentUser().then(() => this.handleAuthQueryParams());
+  }
+
+  /** Handle ?signin=1 / ?signout=1 from SSR-rendered Sign in / Sign out links. */
+  private async handleAuthQueryParams(): Promise<void> {
+    const params = new URLSearchParams(window.location.search);
+    const signin = params.get('signin');
+    const signout = params.get('signout');
+    if (!signin && !signout) return;
+
+    if (signout) {
+      await signOut();
+    }
+    if (signin) {
+      store.set('authModalOpen', true);
+    }
+
+    // Strip the param from the URL so a refresh doesn't re-trigger.
+    params.delete('signin');
+    params.delete('signout');
+    const search = params.toString();
+    const cleanUrl = window.location.pathname + (search ? `?${search}` : '') + window.location.hash;
+    window.history.replaceState(null, '', cleanUrl);
   }
 
   disconnectedCallback(): void {
@@ -143,6 +171,9 @@ class AppShell extends HTMLElement {
         <blog-post-view></blog-post-view>
         <admin-thumbnails-view></admin-thumbnails-view>
       </main>
+
+      <auth-modal></auth-modal>
+      <claim-workspaces-prompt></claim-workspaces-prompt>
     `;
   }
 }
