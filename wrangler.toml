@@ -24,15 +24,19 @@ binding = "USERS_DB"
 database_name = "svg-path-extended-users"
 database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
 
-# Cloudflare Email Sending (public beta, April 2026). The [[send_email]]
-# block is shared with legacy Email Routing — omitting `destination_address`
-# / `allowed_destination_addresses` puts it in the new arbitrary-recipient
-# Email Sending mode. Sending domain (pedestal.design) is verified in the CF
-# Email Service dashboard. Add `remote = true` to call the real API from
-# `wrangler pages dev`; without it, dev simulates and logs to console.
-[[send_email]]
-name = "EMAIL"
-remote = true
+# Cloudflare Email Sending binding ("EMAIL")
+#
+# Cloudflare Pages does not accept [[send_email]] in wrangler.toml — the
+# Pages build pipeline rejects the field as unsupported. Configure the
+# binding via the Cloudflare dashboard instead:
+#   Pages project → Settings → Functions → Bindings → Send Email
+#   - Name: EMAIL
+#   - Sending domain: pedestal.design (verified in Email Service)
+#
+# website/auth/email.ts gracefully degrades when env.EMAIL is undefined —
+# it falls back to Resend (AUTH_RESEND_API_KEY) or returns a delivery
+# error. Local `wrangler pages dev` runs simulate via .dev.vars
+# (AUTH_DEV_LOG_OTP=1 prints codes to the console).
 
 [vars]
 AUTH_FROM_EMAIL   = "hello@pedestal.design"
