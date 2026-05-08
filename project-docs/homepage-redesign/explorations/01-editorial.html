@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Homepage exploration 01 · Editorial — Pathogen Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Doc-page chrome ===== */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #efeae0;
+    color: #1c1722;
+    padding: 48px 0 96px;
+    overflow-x: hidden;
+  }
+  .doc-head {
+    max-width: 1280px;
+    margin: 0 auto 48px;
+    padding: 0 32px;
+  }
+  .doc-eyebrow {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #786a83;
+    margin: 0 0 12px;
+  }
+  .doc-title {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    font-size: clamp(40px, 5.5vw, 76px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+  }
+  .doc-title em { font-style: italic; color: #c0518e; }
+  .doc-lead { max-width: 70ch; font-size: 17px; line-height: 1.6; color: #3a324a; margin: 0; }
+  .doc-meta { font-size: 13px; color: #786a83; margin-top: 24px; }
+  .doc-meta code { font-family: 'Inconsolata', monospace; background: rgba(192, 81, 142, 0.08); padding: 2px 6px; border-radius: 4px; color: #6b2a4a; }
+
+  /* minmax(0, 1fr) prevents the auto min-track size from growing past
+   * the viewport when a child has wide intrinsic min-content (e.g. an
+   * unbroken code-snippet line). */
+  .panels {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 56px;
+  }
+  .panels > section { min-width: 0; }
+  .panels > section > * { min-width: 0; }
+  .panel-label {
+    font-family: 'Inconsolata', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #786a83;
+    margin: 0 0 12px 4px;
+  }
+
+  /* ===== Atmospheric tokens (per-theme wrappers) ===== */
+  .theme-light {
+    --bg-primary: #f7f0e3;
+    --bg-secondary: #fdf6ed;
+    --bg-tertiary: rgba(28, 23, 34, 0.05);
+    --bg-elevated: #ffffff;
+    --bg-primary-from: #fdf6ed;
+    --bg-primary-to: #f6e9da;
+    --bg-secondary-from: #fffaf2;
+    --bg-secondary-to: #fbecd9;
+    --bg-atmosphere-1: rgba(180, 130, 220, 0.18);
+    --bg-atmosphere-2: rgba(255, 175, 130, 0.20);
+    --text-primary: #1c1722;
+    --text-secondary: #5a4f6a;
+    --text-tertiary: #9087a0;
+    --border-color: rgba(28, 23, 34, 0.10);
+    --border-subtle: rgba(28, 23, 34, 0.06);
+    --border-strong: rgba(28, 23, 34, 0.18);
+    --accent-color: #c0518e;
+    --accent-from: #e16a8f;
+    --accent-to: #a83d80;
+    --accent-text: #fffaf2;
+    --secondary-accent: #9461c4;
+    --secondary-accent-subtle: rgba(148, 97, 196, 0.16);
+    --secondary-accent-text: #5e3590;
+    --secondary-from: #b384e0;
+    --secondary-to: #6d3aa6;
+    --shadow-tint-rgb: 165, 110, 140;
+    --shadow-glow: 0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+  }
+  .theme-dark {
+    --bg-primary: #14101c;
+    --bg-secondary: #100c17;
+    --bg-tertiary: rgba(255, 250, 242, 0.05);
+    --bg-elevated: #1a1424;
+    --bg-primary-from: #1a1424;
+    --bg-primary-to: #110d18;
+    --bg-secondary-from: #15101e;
+    --bg-secondary-to: #0c0913;
+    --bg-atmosphere-1: rgba(140, 100, 200, 0.18);
+    --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
+    --text-primary: #f6e9da;
+    --text-secondary: #b5a8c4;
+    --text-tertiary: #7a6f8a;
+    --border-color: rgba(246, 233, 218, 0.10);
+    --border-subtle: rgba(246, 233, 218, 0.05);
+    --border-strong: rgba(246, 233, 218, 0.20);
+    --accent-color: #f7b56e;
+    --accent-from: #ffd194;
+    --accent-to: #e89254;
+    --accent-text: #1a1424;
+    --secondary-accent: #c4a4e8;
+    --secondary-accent-subtle: rgba(196, 164, 232, 0.16);
+    --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0;
+    --secondary-to: #9c7cd5;
+    --shadow-tint-rgb: 213, 180, 144;
+    --shadow-glow: 0 8px 28px rgba(247, 181, 110, 0.32), 0 0 0 1px rgba(247, 181, 110, 0.30);
+  }
+
+  /* ===== Stage (atmospheric backplate per panel) ===== */
+  .stage {
+    background:
+      radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%),
+      var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+    box-shadow: 0 1px 2px rgba(28, 23, 34, 0.04), 0 12px 36px rgba(28, 23, 34, 0.10);
+  }
+  .theme-dark .stage { box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 44px rgba(0,0,0,.55); }
+
+  .stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.45;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .theme-dark .stage::before { mix-blend-mode: overlay; opacity: 0.3; }
+  .stage > * { position: relative; z-index: 1; }
+
+  /* ===== Top nav (matches production site-header) ===== */
+  .site-header { background: transparent; border-bottom: 1px solid var(--border-subtle); }
+  .site-header-inner {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr);
+    align-items: center;
+    padding: 0 1.5rem;
+    height: 52px;
+  }
+  .logo { display: grid; grid-template-columns: auto; text-decoration: none; cursor: pointer; line-height: 1.1; row-gap: 1px; justify-self: start; }
+  .logo-main {
+    font-family: 'Baumans', cursive;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .logo-main em {
+    font-style: normal;
+    background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .logo-sub { font-family: 'Inconsolata', monospace; font-size: 0.625rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-tertiary); }
+  .tabs-wrap {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: auto;
+    gap: 2px;
+    justify-self: center;
+    padding: 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+  }
+  .nav-link {
+    padding: 6px 13px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: inherit;
+    background: none;
+    border: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .nav-link.active {
+    background: var(--secondary-accent-subtle);
+    color: var(--secondary-accent-text);
+    box-shadow: inset 0 0 16px rgba(148, 97, 196, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  .actions { display: grid; grid-auto-flow: column; grid-auto-columns: auto; gap: 0.5rem; align-items: center; justify-self: end; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    backdrop-filter: blur(6px);
+  }
+  .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .signin-pill {
+    background: var(--bg-tertiary);
+    color: var(--secondary-accent-text);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    backdrop-filter: blur(6px);
+    text-decoration: none;
+  }
+
+  /* ===== Editorial hero — centered, generous whitespace ===== */
+  .hero {
+    text-align: center;
+    padding: 96px 24px 64px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-family: 'Inconsolata', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+    margin: 0 0 20px;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(48px, 6.5vw, 88px);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+    margin: 0 0 24px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.lede {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    max-width: 60ch;
+    margin: 0 auto 36px;
+  }
+
+  /* The single primary-color CTA */
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.85rem 1.6rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--accent-text);
+    background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.12s ease;
+  }
+  .cta-primary:hover { transform: translateY(-1px); }
+  .cta-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  .cta-primary:hover::after { transform: translateX(100%); }
+  .cta-primary svg { width: 18px; height: 18px; fill: currentColor; position: relative; z-index: 1; }
+  .cta-primary span { position: relative; z-index: 1; }
+
+  .cta-cluster {
+    display: inline-flex; gap: 16px; align-items: center;
+  }
+  .cta-secondary {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--secondary-accent-text);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 0.4rem 0.6rem;
+  }
+  .cta-secondary:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+  /* ===== Editorial section strips ===== */
+  .editorial-section {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 80px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: center;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .editorial-section > * { min-width: 0; }
+  .editorial-section.reverse > .ed-text { order: 2; }
+  .editorial-section .ed-eyebrow {
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 14px;
+  }
+  .editorial-section .ed-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.005em;
+    color: var(--text-primary);
+    margin: 0 0 16px;
+  }
+  .editorial-section .ed-body {
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+    max-width: 48ch;
+  }
+  .editorial-section .ed-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--secondary-accent-text);
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .editorial-section .ed-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+  /* CLI snippet */
+  .ed-codeblock {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+    overflow-x: auto;
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), 0.06), 0 6px 16px rgba(var(--shadow-tint-rgb), 0.10);
+  }
+  .ed-codeblock .prompt { color: var(--text-tertiary); }
+  .ed-codeblock .cmd { color: var(--secondary-accent-text); font-weight: 600; }
+  .ed-codeblock .comment { color: var(--text-tertiary); font-style: italic; }
+
+  /* Showcase tile */
+  .ed-tile {
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-elevated);
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), 0.08), 0 12px 32px rgba(var(--shadow-tint-rgb), 0.16);
+  }
+  .ed-tile-conic {
+    background:
+      radial-gradient(circle at 50% 50%, var(--bg-elevated) 0%, transparent 32%),
+      conic-gradient(from 220deg at 50% 50%,
+        #c0518e 0deg,
+        #f7b56e 60deg,
+        #9461c4 120deg,
+        #6d3aa6 180deg,
+        #c0518e 240deg,
+        #f7b56e 300deg,
+        #c0518e 360deg);
+    filter: saturate(0.85);
+  }
+  .ed-tile-mesh {
+    background:
+      radial-gradient(640px 420px at 22% 30%, rgba(180, 130, 220, 0.65), transparent 55%),
+      radial-gradient(560px 380px at 78% 20%, rgba(255, 175, 130, 0.50), transparent 55%),
+      radial-gradient(720px 460px at 50% 80%, rgba(192, 81, 142, 0.42), transparent 55%),
+      var(--bg-elevated);
+  }
+  .ed-tile-attractor {
+    background: var(--bg-elevated);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ed-tile svg { width: 100%; height: 100%; display: block; }
+
+  /* Showcase grid (in editorial: simple 3-up footer band) */
+  .ed-showcase-band {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 80px 24px 96px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .ed-showcase-band h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    text-align: center;
+    margin: 0 0 8px;
+    color: var(--text-primary);
+  }
+  .ed-showcase-band p.sub {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0 0 40px;
+  }
+  .ed-showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .ed-showcase-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    cursor: pointer;
+  }
+  .ed-showcase-tile:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 6px 12px rgba(var(--shadow-tint-rgb), 0.10),
+      0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+  }
+  .ed-showcase-tile-label {
+    position: absolute;
+    left: 12px; bottom: 12px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  /* tile variants */
+  .tile-conic { background: conic-gradient(from 220deg at 50% 50%, #c0518e, #f7b56e, #9461c4, #6d3aa6, #c0518e); }
+  .tile-mesh {
+    background:
+      radial-gradient(420px 320px at 22% 30%, rgba(180, 130, 220, 0.85), transparent 55%),
+      radial-gradient(360px 280px at 78% 20%, rgba(255, 175, 130, 0.65), transparent 55%),
+      radial-gradient(440px 340px at 50% 80%, rgba(192, 81, 142, 0.55), transparent 55%),
+      var(--bg-elevated);
+  }
+  .tile-topo {
+    background:
+      radial-gradient(circle at 50% 50%,
+        var(--secondary-accent-subtle) 0 8%,
+        transparent 8% 12%,
+        var(--secondary-accent-subtle) 12% 20%,
+        transparent 20% 24%,
+        var(--secondary-accent-subtle) 24% 32%,
+        transparent 32% 36%,
+        var(--secondary-accent-subtle) 36% 44%,
+        transparent 44% 48%,
+        var(--secondary-accent-subtle) 48% 56%,
+        transparent 56% 60%,
+        var(--secondary-accent-subtle) 60% 68%,
+        transparent 68% 100%);
+    background-color: var(--bg-elevated);
+  }
+  .tile-bool {
+    background: var(--bg-elevated);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tile-bool svg { width: 80%; height: 80%; }
+  .tile-attractor { background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; }
+  .tile-attractor svg { width: 90%; height: 90%; }
+  .tile-grid {
+    background:
+      repeating-linear-gradient(0deg, var(--bg-elevated) 0 28px, var(--secondary-accent-subtle) 28px 30px),
+      repeating-linear-gradient(90deg, var(--bg-elevated) 0 28px, var(--secondary-accent-subtle) 28px 30px),
+      var(--bg-elevated);
+  }
+
+  /* Footer */
+  .ed-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+  .ed-footer a { color: var(--secondary-accent-text); text-decoration: none; margin: 0 8px; }
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <p class="doc-eyebrow">Homepage exploration 01 of 04</p>
+  <h1 class="doc-title">Editorial <em>centred</em></h1>
+  <p class="doc-lead">A serif-led, magazine-quality hero. Generous whitespace, a single primary CTA, and reading-flow sections that introduce the toolchain one idea at a time. Calm, considered, very on-brand for a language-design product.</p>
+  <p class="doc-meta">Hero: <code>DM Serif Display</code> 88px · CTA: peach-rose gradient · Sections: 1140px max with title-left / visual-right pairs</p>
+</header>
+
+<div class="panels">
+
+  <!-- ============================================== LIGHT ============================================== -->
+  <section>
+    <div class="panel-label">light · /pathogen/ for signed-out visitors</div>
+    <div class="theme-light">
+      <div class="stage">
+
+        <!-- Top nav (matches production site-header.css) -->
+        <header class="site-header">
+          <div class="site-header-inner">
+            <a class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </a>
+            <nav class="tabs-wrap">
+              <button class="nav-link active">Workspaces</button>
+              <a class="nav-link">Docs</a>
+              <a class="nav-link">Explore</a>
+              <a class="nav-link">Featured</a>
+              <a class="nav-link">Blog</a>
+              <a class="nav-link">Preferences</a>
+            </nav>
+            <div class="actions">
+              <button class="icon-btn" title="Theme"><svg viewBox="0 -960 960 960"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q8 0 17 .5t23 1.5q-36 32-56 79t-20 99q0 90 63 153t153 63q52 0 99-18.5t79-51.5q1 12 1.5 19.5t.5 14.5q0 150-105 255T480-120Z"/></svg></button>
+              <a class="signin-pill">Sign in</a>
+            </div>
+          </div>
+        </header>
+
+        <!-- Hero -->
+        <section class="hero">
+          <p class="hero-eyebrow">SVG-Path-Extended · v1.0</p>
+          <h1>Code paths into <em>pictures.</em></h1>
+          <p class="lede">An expression-first language for SVG. Variables, control flow, gradients, layers, and a stdlib of geometric primitives — turning <code style="font-family: 'Inconsolata', monospace; font-size: 0.92em; background: rgba(148, 97, 196, 0.08); padding: 1px 5px; border-radius: 3px;">M 100 100 C…</code> into something you'd actually want to maintain.</p>
+          <div class="cta-cluster">
+            <a class="cta-primary">
+              <span>Open My Workspaces</span>
+              <svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+            <a class="cta-secondary">
+              <span>Read the docs</span>
+              <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+          </div>
+        </section>
+
+        <!-- Section: GitHub -->
+        <section class="editorial-section">
+          <div class="ed-text">
+            <p class="ed-eyebrow">Open source · MIT licensed</p>
+            <h2 class="ed-title">The compiler is on GitHub.</h2>
+            <p class="ed-body">Read the source, file an issue, send a pull request. The Lezer parser, evaluator, stdlib, and CLI all live in one repository — small enough to read in an afternoon.</p>
+            <a class="ed-link" href="https://github.com/ryankuykendall/svg-path-extended">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              <span>github.com/ryankuykendall/svg-path-extended</span>
+            </a>
+          </div>
+          <div class="ed-tile ed-tile-mesh"></div>
+        </section>
+
+        <!-- Section: CLI -->
+        <section class="editorial-section reverse">
+          <div class="ed-text">
+            <p class="ed-eyebrow">CLI · Node + tsx</p>
+            <h2 class="ed-title">A single binary, anywhere.</h2>
+            <p class="ed-body">Compile a file, pipe stdin, or eval inline. Output as a path string, full SVG, or annotated debug view. Add it to a Makefile and treat your graphics like build artefacts.</p>
+            <pre class="ed-codeblock"><span class="prompt">$</span> <span class="cmd">echo</span> 'circle(100, 100, 50)' | <span class="cmd">svg-path-extended</span> -
+<span class="comment">→ M 50 100 A 50 50 0 1 0 150 100 A 50 50 0 1 0 50 100 Z</span></pre>
+            <a class="ed-link">
+              <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+              <span>npm install -g svg-path-extended</span>
+            </a>
+          </div>
+          <div class="ed-tile ed-tile-conic"></div>
+        </section>
+
+        <!-- Section: VS Code (placeholder) -->
+        <section class="editorial-section">
+          <div class="ed-text">
+            <p class="ed-eyebrow">Editor support · Coming soon</p>
+            <h2 class="ed-title">In your editor, with you.</h2>
+            <p class="ed-body">Syntax highlighting, completions, hover docs, diagnostics, and a live preview pane — built on the Language Server Protocol. Currently in private beta; publishes to the VS Code Marketplace later this year.</p>
+            <a class="ed-link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36zM2.91 18.86l13.01-9.85 4.27 4.27v6.49a1.5 1.5 0 0 1-1.5 1.5H4.41a1.5 1.5 0 0 1-1.5-1.5z"/></svg>
+              <span>Notify me when it ships</span>
+            </a>
+          </div>
+          <div class="ed-tile" style="background: linear-gradient(135deg, var(--bg-secondary-from), var(--bg-secondary-to)); display: flex; align-items: center; justify-content: center;">
+            <div style="font-family: 'Inconsolata', monospace; font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.18em; text-transform: uppercase;">[ vscode-hero.png placeholder ]</div>
+          </div>
+        </section>
+
+        <!-- Section: Blog -->
+        <section class="editorial-section reverse">
+          <div class="ed-text">
+            <p class="ed-eyebrow">From the blog</p>
+            <h2 class="ed-title">Strange Attractors: Clifford Attractor Art with Pathogen.</h2>
+            <p class="ed-body">A deep dive into the Clifford attractor — using Pathogen's loop primitives, complex stdlib, and gradient palettes to render a million-point chaotic system as a single SVG.</p>
+            <a class="ed-link">
+              <span>Read on the blog · 2026-04-14</span>
+              <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+          </div>
+          <div class="ed-tile ed-tile-attractor">
+            <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.012" fill="none" stroke-linecap="round">
+              <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 C-1.8,0.1 -1.85,-0.1 -1.8,-0.2 Z" opacity="0.6"/>
+              <path d="M-1.5,-0.05 C-1.4,-1.2 -0.6,-1.45 0.05,-1.35 C0.55,-1.18 1.25,-0.7 1.4,-0.05 C1.32,0.5 0.7,1.25 0.05,1.32 C-0.5,1.3 -1.15,0.9 -1.4,0.3 C-1.5,0.1 -1.5,0 -1.5,-0.05 Z" opacity="0.5"/>
+              <path d="M-1.2,0.1 C-1.1,-0.95 -0.4,-1.2 0.1,-1.1 C0.42,-0.95 1,-0.55 1.1,0.1 C1.05,0.4 0.55,1 0.05,1.05 C-0.4,1.02 -0.9,0.7 -1.1,0.2 C-1.2,0.05 -1.2,0.1 -1.2,0.1 Z" opacity="0.4"/>
+              <path d="M-0.9,0.2 C-0.8,-0.7 -0.25,-0.95 0.1,-0.85 C0.32,-0.7 0.78,-0.4 0.85,0.15 C0.78,0.35 0.4,0.78 0.05,0.82 C-0.3,0.78 -0.7,0.55 -0.83,0.3 C-0.9,0.2 -0.9,0.2 -0.9,0.2 Z" opacity="0.3"/>
+              <path d="M-0.6,0.25 C-0.55,-0.5 -0.15,-0.7 0.1,-0.6 C0.25,-0.45 0.55,-0.25 0.6,0.2 C0.5,0.3 0.25,0.55 0.05,0.55 C-0.2,0.5 -0.5,0.4 -0.55,0.3 C-0.6,0.25 -0.6,0.25 -0.6,0.25 Z" opacity="0.2"/>
+            </svg>
+          </div>
+        </section>
+
+        <!-- Showcase strip -->
+        <section class="ed-showcase-band">
+          <h2>Made with Pathogen Studio.</h2>
+          <p class="sub">A handful of Pathogen renders pulled from the blog.</p>
+          <div class="ed-showcase-grid">
+            <div class="ed-showcase-tile tile-conic"><span class="ed-showcase-tile-label">Conic Gradient →</span></div>
+            <div class="ed-showcase-tile tile-mesh"><span class="ed-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Mesh Gradient →</span></div>
+            <div class="ed-showcase-tile tile-topo"><span class="ed-showcase-tile-label" style="color: var(--secondary-accent-text); text-shadow: none;">Topographic →</span></div>
+            <div class="ed-showcase-tile tile-bool">
+              <svg viewBox="0 0 100 100">
+                <circle cx="36" cy="50" r="26" fill="rgba(180, 130, 220, 0.55)"/>
+                <circle cx="64" cy="50" r="26" fill="rgba(255, 175, 130, 0.55)"/>
+                <path d="M 50 30 A 26 26 0 0 1 50 70 A 26 26 0 0 1 50 30 Z" fill="rgba(192, 81, 142, 0.6)"/>
+              </svg>
+              <span class="ed-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Boolean Ops →</span>
+            </div>
+            <div class="ed-showcase-tile tile-attractor">
+              <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.018" fill="none">
+                <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 Z" opacity="0.55"/>
+                <path d="M-1.4,0.1 C-1.3,-1.0 -0.4,-1.2 0.1,-1.1 C0.55,-0.9 1.2,-0.5 1.3,0.1 C1.2,0.55 0.65,1.2 0.05,1.25 C-0.5,1.2 -1.1,0.85 -1.3,0.3 Z" opacity="0.4"/>
+                <path d="M-1.0,0.2 C-0.9,-0.8 -0.3,-1.0 0.1,-0.85 C0.4,-0.7 0.85,-0.35 0.95,0.2 C0.85,0.45 0.45,0.95 0.05,1.0 C-0.4,0.95 -0.85,0.65 -0.95,0.3 Z" opacity="0.3"/>
+              </svg>
+              <span class="ed-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Attractors →</span>
+            </div>
+            <div class="ed-showcase-tile tile-grid"><span class="ed-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Grid Functions →</span></div>
+          </div>
+        </section>
+
+        <footer class="ed-footer">
+          <span>built on svg-path-extended v1.0</span>
+          <span>·</span>
+          <a>github</a>
+          <a>docs</a>
+          <a>blog</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== DARK ============================================== -->
+  <section>
+    <div class="panel-label">dark · /pathogen/ for signed-out visitors</div>
+    <div class="theme-dark">
+      <div class="stage">
+
+        <header class="site-header">
+          <div class="site-header-inner">
+            <a class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </a>
+            <nav class="tabs-wrap">
+              <button class="nav-link active">Workspaces</button>
+              <a class="nav-link">Docs</a>
+              <a class="nav-link">Explore</a>
+              <a class="nav-link">Featured</a>
+              <a class="nav-link">Blog</a>
+              <a class="nav-link">Preferences</a>
+            </nav>
+            <div class="actions">
+              <button class="icon-btn" title="Theme"><svg viewBox="0 -960 960 960"><path d="M480-280q83 0 141.5-58.5T680-480q0-83-58.5-141.5T480-680q-83 0-141.5 58.5T280-480q0 83 58.5 141.5T480-280ZM200-450H40v-60h160v60Zm720 0H760v-60h160v60ZM450-760v-160h60v160h-60Zm0 720v-160h60v160h-60Z"/></svg></button>
+              <a class="signin-pill">Sign in</a>
+            </div>
+          </div>
+        </header>
+
+        <section class="hero">
+          <p class="hero-eyebrow">SVG-Path-Extended · v1.0</p>
+          <h1>Code paths into <em>pictures.</em></h1>
+          <p class="lede">An expression-first language for SVG. Variables, control flow, gradients, layers, and a stdlib of geometric primitives — turning <code style="font-family: 'Inconsolata', monospace; font-size: 0.92em; background: rgba(196, 164, 232, 0.12); padding: 1px 5px; border-radius: 3px;">M 100 100 C…</code> into something you'd actually want to maintain.</p>
+          <div class="cta-cluster">
+            <a class="cta-primary">
+              <span>Open My Workspaces</span>
+              <svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+            <a class="cta-secondary">
+              <span>Read the docs</span>
+              <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+          </div>
+        </section>
+
+        <section class="editorial-section">
+          <div class="ed-text">
+            <p class="ed-eyebrow">Open source · MIT licensed</p>
+            <h2 class="ed-title">The compiler is on GitHub.</h2>
+            <p class="ed-body">Read the source, file an issue, send a pull request. The Lezer parser, evaluator, stdlib, and CLI all live in one repository — small enough to read in an afternoon.</p>
+            <a class="ed-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              <span>github.com/ryankuykendall/svg-path-extended</span>
+            </a>
+          </div>
+          <div class="ed-tile ed-tile-mesh"></div>
+        </section>
+
+        <section class="editorial-section reverse">
+          <div class="ed-text">
+            <p class="ed-eyebrow">CLI · Node + tsx</p>
+            <h2 class="ed-title">A single binary, anywhere.</h2>
+            <p class="ed-body">Compile a file, pipe stdin, or eval inline. Output as a path string, full SVG, or annotated debug view. Add it to a Makefile and treat your graphics like build artefacts.</p>
+            <pre class="ed-codeblock"><span class="prompt">$</span> <span class="cmd">echo</span> 'circle(100, 100, 50)' | <span class="cmd">svg-path-extended</span> -
+<span class="comment">→ M 50 100 A 50 50 0 1 0 150 100 A 50 50 0 1 0 50 100 Z</span></pre>
+            <a class="ed-link">
+              <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+              <span>npm install -g svg-path-extended</span>
+            </a>
+          </div>
+          <div class="ed-tile ed-tile-conic"></div>
+        </section>
+
+        <section class="editorial-section">
+          <div class="ed-text">
+            <p class="ed-eyebrow">Editor support · Coming soon</p>
+            <h2 class="ed-title">In your editor, with you.</h2>
+            <p class="ed-body">Syntax highlighting, completions, hover docs, diagnostics, and a live preview pane — built on the Language Server Protocol. Currently in private beta; publishes to the VS Code Marketplace later this year.</p>
+            <a class="ed-link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>
+              <span>Notify me when it ships</span>
+            </a>
+          </div>
+          <div class="ed-tile" style="background: linear-gradient(135deg, var(--bg-secondary-from), var(--bg-secondary-to)); display: flex; align-items: center; justify-content: center;">
+            <div style="font-family: 'Inconsolata', monospace; font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.18em; text-transform: uppercase;">[ vscode-hero.png placeholder ]</div>
+          </div>
+        </section>
+
+        <section class="editorial-section reverse">
+          <div class="ed-text">
+            <p class="ed-eyebrow">From the blog</p>
+            <h2 class="ed-title">Strange Attractors: Clifford Attractor Art with Pathogen.</h2>
+            <p class="ed-body">A deep dive into the Clifford attractor — using Pathogen's loop primitives, complex stdlib, and gradient palettes to render a million-point chaotic system as a single SVG.</p>
+            <a class="ed-link">
+              <span>Read on the blog · 2026-04-14</span>
+              <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+          </div>
+          <div class="ed-tile ed-tile-attractor">
+            <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.012" fill="none" stroke-linecap="round">
+              <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 C-1.8,0.1 -1.85,-0.1 -1.8,-0.2 Z" opacity="0.6"/>
+              <path d="M-1.5,-0.05 C-1.4,-1.2 -0.6,-1.45 0.05,-1.35 C0.55,-1.18 1.25,-0.7 1.4,-0.05 C1.32,0.5 0.7,1.25 0.05,1.32 C-0.5,1.3 -1.15,0.9 -1.4,0.3 C-1.5,0.1 -1.5,0 -1.5,-0.05 Z" opacity="0.5"/>
+              <path d="M-1.2,0.1 C-1.1,-0.95 -0.4,-1.2 0.1,-1.1 C0.42,-0.95 1,-0.55 1.1,0.1 C1.05,0.4 0.55,1 0.05,1.05 C-0.4,1.02 -0.9,0.7 -1.1,0.2 C-1.2,0.05 -1.2,0.1 -1.2,0.1 Z" opacity="0.4"/>
+              <path d="M-0.9,0.2 C-0.8,-0.7 -0.25,-0.95 0.1,-0.85 C0.32,-0.7 0.78,-0.4 0.85,0.15 C0.78,0.35 0.4,0.78 0.05,0.82 C-0.3,0.78 -0.7,0.55 -0.83,0.3 C-0.9,0.2 -0.9,0.2 -0.9,0.2 Z" opacity="0.3"/>
+              <path d="M-0.6,0.25 C-0.55,-0.5 -0.15,-0.7 0.1,-0.6 C0.25,-0.45 0.55,-0.25 0.6,0.2 C0.5,0.3 0.25,0.55 0.05,0.55 C-0.2,0.5 -0.5,0.4 -0.55,0.3 C-0.6,0.25 -0.6,0.25 -0.6,0.25 Z" opacity="0.2"/>
+            </svg>
+          </div>
+        </section>
+
+        <section class="ed-showcase-band">
+          <h2>Made with Pathogen Studio.</h2>
+          <p class="sub">A handful of Pathogen renders pulled from the blog.</p>
+          <div class="ed-showcase-grid">
+            <div class="ed-showcase-tile tile-conic"><span class="ed-showcase-tile-label">Conic Gradient →</span></div>
+            <div class="ed-showcase-tile tile-mesh"><span class="ed-showcase-tile-label">Mesh Gradient →</span></div>
+            <div class="ed-showcase-tile tile-topo"><span class="ed-showcase-tile-label" style="color: var(--secondary-accent-text); text-shadow: none;">Topographic →</span></div>
+            <div class="ed-showcase-tile tile-bool">
+              <svg viewBox="0 0 100 100">
+                <circle cx="36" cy="50" r="26" fill="rgba(196, 164, 232, 0.55)"/>
+                <circle cx="64" cy="50" r="26" fill="rgba(247, 181, 110, 0.55)"/>
+                <path d="M 50 30 A 26 26 0 0 1 50 70 A 26 26 0 0 1 50 30 Z" fill="rgba(217, 122, 110, 0.6)"/>
+              </svg>
+              <span class="ed-showcase-tile-label">Boolean Ops →</span>
+            </div>
+            <div class="ed-showcase-tile tile-attractor">
+              <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.018" fill="none">
+                <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 Z" opacity="0.55"/>
+                <path d="M-1.4,0.1 C-1.3,-1.0 -0.4,-1.2 0.1,-1.1 C0.55,-0.9 1.2,-0.5 1.3,0.1 C1.2,0.55 0.65,1.2 0.05,1.25 C-0.5,1.2 -1.1,0.85 -1.3,0.3 Z" opacity="0.4"/>
+                <path d="M-1.0,0.2 C-0.9,-0.8 -0.3,-1.0 0.1,-0.85 C0.4,-0.7 0.85,-0.35 0.95,0.2 C0.85,0.45 0.45,0.95 0.05,1.0 C-0.4,0.95 -0.85,0.65 -0.95,0.3 Z" opacity="0.3"/>
+              </svg>
+              <span class="ed-showcase-tile-label">Attractors →</span>
+            </div>
+            <div class="ed-showcase-tile tile-grid"><span class="ed-showcase-tile-label">Grid Functions →</span></div>
+          </div>
+        </section>
+
+        <footer class="ed-footer">
+          <span>built on svg-path-extended v1.0</span>
+          <span>·</span>
+          <a>github</a>
+          <a>docs</a>
+          <a>blog</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

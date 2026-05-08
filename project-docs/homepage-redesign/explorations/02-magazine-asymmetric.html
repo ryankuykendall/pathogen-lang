@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Homepage exploration 02 · Magazine asymmetric — Pathogen Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Doc-page chrome (same as 01) ===== */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #efeae0; color: #1c1722; padding: 48px 0 96px; overflow-x: hidden; }
+  .doc-head { max-width: 1280px; margin: 0 auto 48px; padding: 0 32px; }
+  .doc-eyebrow { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: #786a83; margin: 0 0 12px; }
+  .doc-title { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: clamp(40px, 5.5vw, 76px); line-height: 1; letter-spacing: -0.01em; margin: 0 0 16px; }
+  .doc-title em { font-style: italic; color: #c0518e; }
+  .doc-lead { max-width: 70ch; font-size: 17px; line-height: 1.6; color: #3a324a; margin: 0; }
+  .doc-meta { font-size: 13px; color: #786a83; margin-top: 24px; }
+  .doc-meta code { font-family: 'Inconsolata', monospace; background: rgba(192, 81, 142, 0.08); padding: 2px 6px; border-radius: 4px; color: #6b2a4a; }
+  /* minmax(0, 1fr) here is critical — without it, the grid's auto min
+   * track size grows to match the widest child's intrinsic min-content
+   * width (e.g. an unbroken code-snippet line), which pushes the section
+   * past the viewport even though .panels has max-width: 1480px. */
+  .panels { max-width: 1480px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
+  .panels > section { min-width: 0; }
+  .panels > section > * { min-width: 0; }
+  .panel-label { font-family: 'Inconsolata', monospace; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #786a83; margin: 0 0 12px 4px; }
+
+  /* ===== Atmospheric tokens (same as 01) ===== */
+  .theme-light {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28, 23, 34, 0.05); --bg-elevated: #ffffff;
+    --bg-primary-from: #fdf6ed; --bg-primary-to: #f6e9da; --bg-secondary-from: #fffaf2;
+    --bg-atmosphere-1: rgba(180, 130, 220, 0.18); --bg-atmosphere-2: rgba(255, 175, 130, 0.20);
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0;
+    --border-color: rgba(28, 23, 34, 0.10); --border-subtle: rgba(28, 23, 34, 0.06); --border-strong: rgba(28, 23, 34, 0.18);
+    --accent-color: #c0518e; --accent-from: #e16a8f; --accent-to: #a83d80; --accent-text: #fffaf2;
+    --secondary-accent: #9461c4; --secondary-accent-subtle: rgba(148, 97, 196, 0.16); --secondary-accent-text: #5e3590;
+    --secondary-from: #b384e0; --secondary-to: #6d3aa6;
+    --shadow-tint-rgb: 165, 110, 140;
+    --shadow-glow: 0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+  }
+  .theme-dark {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255, 250, 242, 0.05); --bg-elevated: #1a1424;
+    --bg-primary-from: #1a1424; --bg-primary-to: #110d18; --bg-secondary-from: #15101e;
+    --bg-atmosphere-1: rgba(140, 100, 200, 0.18); --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a;
+    --border-color: rgba(246, 233, 218, 0.10); --border-subtle: rgba(246, 233, 218, 0.05); --border-strong: rgba(246, 233, 218, 0.20);
+    --accent-color: #f7b56e; --accent-from: #ffd194; --accent-to: #e89254; --accent-text: #1a1424;
+    --secondary-accent: #c4a4e8; --secondary-accent-subtle: rgba(196, 164, 232, 0.16); --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0; --secondary-to: #9c7cd5;
+    --shadow-tint-rgb: 213, 180, 144;
+    --shadow-glow: 0 8px 28px rgba(247, 181, 110, 0.32), 0 0 0 1px rgba(247, 181, 110, 0.30);
+  }
+
+  /* ===== Stage ===== */
+  .stage {
+    background:
+      radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%),
+      var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+    box-shadow: 0 1px 2px rgba(28, 23, 34, 0.04), 0 12px 36px rgba(28, 23, 34, 0.10);
+  }
+  .theme-dark .stage { box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 44px rgba(0,0,0,.55); }
+  .stage::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px; opacity: 0.45; mix-blend-mode: multiply; pointer-events: none; z-index: 0;
+  }
+  .theme-dark .stage::before { mix-blend-mode: overlay; opacity: 0.3; }
+  .stage > * { position: relative; z-index: 1; }
+
+  /* ===== Top nav (same as 01) ===== */
+  .site-header { background: transparent; border-bottom: 1px solid var(--border-subtle); }
+  .site-header-inner { display: grid; grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr); align-items: center; padding: 0 1.5rem; height: 52px; }
+  .logo { display: grid; grid-template-columns: auto; text-decoration: none; cursor: pointer; line-height: 1.1; row-gap: 1px; justify-self: start; }
+  .logo-main { font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; }
+  .logo-main em { font-style: normal; background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo-sub { font-family: 'Inconsolata', monospace; font-size: 0.625rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-tertiary); }
+  .tabs-wrap { display: grid; grid-auto-flow: column; gap: 2px; justify-self: center; padding: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 12px; backdrop-filter: blur(8px); }
+  .nav-link { padding: 6px 13px; border-radius: 8px; text-decoration: none; color: var(--text-secondary); font-size: 0.8125rem; font-weight: 500; font-family: inherit; background: none; border: none; white-space: nowrap; cursor: pointer; }
+  .nav-link.active { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); box-shadow: inset 0 0 16px rgba(148, 97, 196, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .actions { display: grid; grid-auto-flow: column; gap: 0.5rem; align-items: center; justify-self: end; }
+  .icon-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border-subtle); background: var(--bg-tertiary); color: var(--text-secondary); backdrop-filter: blur(6px); }
+  .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .signin-pill { background: var(--bg-tertiary); color: var(--secondary-accent-text); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 0.3rem 0.85rem; font-size: 0.8125rem; font-weight: 500; backdrop-filter: blur(6px); text-decoration: none; }
+
+  /* ===== Magazine hero — split layout =====
+   * minmax(0, 1fr) instead of 1fr lets the columns shrink below their
+   * intrinsic min-content width (e.g. when the right column has a wide
+   * featured render or the left column has a long lede), which prevents
+   * horizontal page overflow on narrower viewports. */
+  .mag-hero {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 64px 24px 80px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr);
+    gap: 56px;
+    align-items: center;
+  }
+  .mag-hero > * { min-width: 0; }
+  .mag-hero-text .hero-eyebrow {
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+    margin: 0 0 18px;
+  }
+  .mag-hero-text h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(40px, 5vw, 64px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+    margin: 0 0 20px;
+  }
+  .mag-hero-text h1 em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .mag-hero-text .lede {
+    font-size: 17.5px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    max-width: 44ch;
+    margin: 0 0 32px;
+  }
+  .mag-cta-cluster { display: inline-flex; gap: 14px; align-items: center; }
+
+  .cta-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0.85rem 1.5rem;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
+    color: var(--accent-text);
+    background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+    border: 0; border-radius: 999px; cursor: pointer; text-decoration: none;
+    box-shadow: var(--shadow-glow);
+    position: relative; overflow: hidden;
+    transition: transform 0.12s ease;
+  }
+  .cta-primary::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+    transform: translateX(-100%); transition: transform 0.6s ease;
+  }
+  .cta-primary:hover { transform: translateY(-1px); }
+  .cta-primary:hover::after { transform: translateX(100%); }
+  .cta-primary svg { width: 18px; height: 18px; fill: currentColor; position: relative; z-index: 1; }
+  .cta-primary span { position: relative; z-index: 1; }
+
+  .cta-secondary {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--secondary-accent-text);
+    font-size: 14px; font-weight: 500; text-decoration: none;
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* Featured render — large topographic */
+  .mag-feature-render {
+    aspect-ratio: 4 / 3;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 12px 24px rgba(var(--shadow-tint-rgb), 0.14),
+      0 32px 64px rgba(var(--shadow-tint-rgb), 0.18);
+    background:
+      radial-gradient(circle at 50% 50%,
+        rgba(192, 81, 142, 0.0) 0 8%,
+        rgba(192, 81, 142, 0.16) 8% 12%,
+        rgba(148, 97, 196, 0.0) 12% 20%,
+        rgba(148, 97, 196, 0.20) 20% 24%,
+        rgba(247, 181, 110, 0.0) 24% 32%,
+        rgba(247, 181, 110, 0.20) 32% 36%,
+        rgba(192, 81, 142, 0.0) 36% 44%,
+        rgba(192, 81, 142, 0.18) 44% 48%,
+        rgba(148, 97, 196, 0.0) 48% 56%,
+        rgba(148, 97, 196, 0.16) 56% 60%,
+        rgba(247, 181, 110, 0.0) 60% 68%,
+        rgba(247, 181, 110, 0.14) 68% 72%,
+        rgba(192, 81, 142, 0.0) 72% 100%),
+      radial-gradient(820px 560px at 30% 35%, rgba(180, 130, 220, 0.45), transparent 55%),
+      radial-gradient(720px 480px at 75% 70%, rgba(255, 175, 130, 0.40), transparent 55%),
+      var(--bg-elevated);
+    position: relative;
+  }
+  .mag-feature-render::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(20, 16, 28, 0.18) 100%);
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+  .theme-dark .mag-feature-render::after { mix-blend-mode: overlay; }
+  .mag-feature-caption {
+    position: absolute; left: 16px; bottom: 16px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    z-index: 2;
+  }
+
+  /* ===== Asymmetric grid — section cards =====
+   * repeat(12, minmax(0, 1fr)) lets each column shrink below its
+   * content's min-content width — important because the CLI card's
+   * <pre> has unbroken lines that would otherwise blow the grid out
+   * past the viewport. The pre's own overflow-x: auto handles the
+   * horizontal scroll inside the card. */
+  .mag-grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 24px 72px;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .mag-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    text-decoration: none;
+    color: inherit;
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+  .mag-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 6px 12px rgba(var(--shadow-tint-rgb), 0.10),
+      0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+  }
+  .mag-card .card-eyebrow {
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mag-card .card-eyebrow svg { width: 14px; height: 14px; fill: currentColor; }
+  .mag-card .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+  }
+  .mag-card .card-body {
+    color: var(--text-secondary);
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+    flex: 1;
+  }
+  .mag-card .card-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--secondary-accent-text);
+    font-size: 13.5px; font-weight: 500;
+  }
+
+  .mag-card.span-4 { grid-column: span 4; }
+  .mag-card.span-5 { grid-column: span 5; }
+  .mag-card.span-7 { grid-column: span 7; }
+  .mag-card.span-8 { grid-column: span 8; }
+  .mag-card.span-12 { grid-column: span 12; }
+
+  /* CLI card with code snippet */
+  .mag-card.cli-card .ed-codeblock {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-top: auto;
+    overflow-x: auto;
+  }
+  .mag-card.cli-card .ed-codeblock .prompt { color: var(--text-tertiary); }
+  .mag-card.cli-card .ed-codeblock .cmd { color: var(--secondary-accent-text); font-weight: 600; }
+  .mag-card.cli-card .ed-codeblock .comment { color: var(--text-tertiary); font-style: italic; display: block; margin-top: 4px; }
+
+  /* VS Code card with image placeholder */
+  .mag-card.vscode-card { padding: 0; overflow: hidden; flex-direction: row; }
+  .mag-card.vscode-card .vscode-image {
+    flex: 1.1;
+    background:
+      linear-gradient(135deg, var(--bg-secondary-from), var(--bg-primary-to)),
+      var(--bg-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 220px;
+    border-right: 1px solid var(--border-subtle);
+  }
+  .mag-card.vscode-card .vscode-image-label {
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px; color: var(--text-tertiary);
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .mag-card.vscode-card .vscode-text {
+    flex: 1;
+    padding: 28px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+
+  /* Blog card with horizontal layout */
+  .mag-card.blog-card .card-meta {
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Feature card with embedded render */
+  .mag-card.github-card {
+    background:
+      radial-gradient(120px 80px at 100% 0%, var(--secondary-accent-subtle), transparent 70%),
+      var(--bg-elevated);
+  }
+
+  /* ===== Showcase strip — horizontal scroll ===== */
+  .mag-showcase {
+    max-width: 100%;
+    padding: 56px 0 80px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .mag-showcase-head {
+    max-width: 1280px;
+    margin: 0 auto 32px;
+    padding: 0 24px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .mag-showcase-head h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px; font-weight: 400;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .mag-showcase-head p {
+    font-size: 13px; color: var(--text-secondary);
+    margin: 0;
+  }
+  .mag-showcase-strip {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 320px;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 0 24px 16px;
+    scroll-snap-type: x mandatory;
+  }
+  .mag-showcase-strip::-webkit-scrollbar { height: 6px; }
+  .mag-showcase-strip::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+  .mag-showcase-tile {
+    aspect-ratio: 4 / 3;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    position: relative;
+    scroll-snap-align: start;
+    cursor: pointer;
+    transition: transform 0.18s ease;
+  }
+  .mag-showcase-tile:hover { transform: translateY(-3px); }
+  .mag-showcase-tile-label {
+    position: absolute;
+    left: 14px; bottom: 14px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  /* tile variants — same as 01 */
+  .tile-conic { background: conic-gradient(from 220deg at 50% 50%, #c0518e, #f7b56e, #9461c4, #6d3aa6, #c0518e); }
+  .tile-mesh {
+    background:
+      radial-gradient(420px 320px at 22% 30%, rgba(180, 130, 220, 0.85), transparent 55%),
+      radial-gradient(360px 280px at 78% 20%, rgba(255, 175, 130, 0.65), transparent 55%),
+      radial-gradient(440px 340px at 50% 80%, rgba(192, 81, 142, 0.55), transparent 55%),
+      var(--bg-elevated);
+  }
+  .tile-topo {
+    background:
+      radial-gradient(circle at 50% 50%,
+        var(--secondary-accent-subtle) 0 8%, transparent 8% 12%,
+        var(--secondary-accent-subtle) 12% 20%, transparent 20% 24%,
+        var(--secondary-accent-subtle) 24% 32%, transparent 32% 36%,
+        var(--secondary-accent-subtle) 36% 44%, transparent 44% 48%,
+        var(--secondary-accent-subtle) 48% 56%, transparent 56% 60%,
+        var(--secondary-accent-subtle) 60% 68%, transparent 68% 100%);
+    background-color: var(--bg-elevated);
+  }
+  .tile-bool { background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; }
+  .tile-bool svg { width: 80%; height: 80%; }
+  .tile-attractor { background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; }
+  .tile-attractor svg { width: 90%; height: 90%; }
+  .tile-grid {
+    background:
+      repeating-linear-gradient(0deg, var(--bg-elevated) 0 28px, var(--secondary-accent-subtle) 28px 30px),
+      repeating-linear-gradient(90deg, var(--bg-elevated) 0 28px, var(--secondary-accent-subtle) 28px 30px),
+      var(--bg-elevated);
+  }
+
+  /* Footer */
+  .mag-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 28px 24px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12.5px;
+  }
+  .mag-footer a { color: var(--secondary-accent-text); text-decoration: none; margin: 0 6px; }
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <p class="doc-eyebrow">Homepage exploration 02 of 04</p>
+  <h1 class="doc-title">Magazine <em>asymmetric</em></h1>
+  <p class="doc-lead">Split-column hero — copy + CTA on the left, a featured topographic-gradient render on the right. Below: an asymmetric 12-column card grid where GitHub, CLI, VS Code, and Blog get different weights, and a horizontal-scroll showcase strip closes it out. Creative-studio framing.</p>
+  <p class="doc-meta">Hero: <code>DM Serif Display</code> 64px split with featured render · Section grid: 12 cols, asymmetric spans · Showcase: horizontal scroll, snap</p>
+</header>
+
+<div class="panels">
+
+  <!-- ============================================== LIGHT ============================================== -->
+  <section>
+    <div class="panel-label">light</div>
+    <div class="theme-light">
+      <div class="stage">
+
+        <!-- Top nav -->
+        <header class="site-header">
+          <div class="site-header-inner">
+            <a class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </a>
+            <nav class="tabs-wrap">
+              <button class="nav-link active">Workspaces</button>
+              <a class="nav-link">Docs</a>
+              <a class="nav-link">Explore</a>
+              <a class="nav-link">Featured</a>
+              <a class="nav-link">Blog</a>
+              <a class="nav-link">Preferences</a>
+            </nav>
+            <div class="actions">
+              <button class="icon-btn" title="Theme"><svg viewBox="0 -960 960 960"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q8 0 17 .5t23 1.5q-36 32-56 79t-20 99q0 90 63 153t153 63q52 0 99-18.5t79-51.5q1 12 1.5 19.5t.5 14.5q0 150-105 255T480-120Z"/></svg></button>
+              <a class="signin-pill">Sign in</a>
+            </div>
+          </div>
+        </header>
+
+        <!-- Hero — split -->
+        <section class="mag-hero">
+          <div class="mag-hero-text">
+            <p class="hero-eyebrow">SVG-Path-Extended · v1.0</p>
+            <h1>SVG, but <em>a language.</em></h1>
+            <p class="lede">An expression-first toolchain for path-based graphics. Compose curves, define gradients, iterate on a sketch — without ever leaving your editor.</p>
+            <div class="mag-cta-cluster">
+              <a class="cta-primary">
+                <span>Open My Workspaces</span>
+                <svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+              </a>
+              <a class="cta-secondary">
+                <span>Read the docs</span>
+                <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="mag-feature-render">
+            <span class="mag-feature-caption">[ Topographic gradient · 0.21s render ]</span>
+          </div>
+        </section>
+
+        <!-- Asymmetric grid -->
+        <section class="mag-grid">
+          <!-- GitHub: 5 cols -->
+          <a class="mag-card github-card span-5">
+            <p class="card-eyebrow">
+              <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              <span>Open Source · MIT</span>
+            </p>
+            <h3 class="card-title">The compiler is on GitHub.</h3>
+            <p class="card-body">Lezer parser, evaluator, stdlib, CLI — all in one repository. Small enough to read in an afternoon.</p>
+            <span class="card-link">github.com/ryankuykendall/svg-path-extended →</span>
+          </a>
+
+          <!-- CLI: 7 cols -->
+          <a class="mag-card cli-card span-7">
+            <p class="card-eyebrow">
+              <svg viewBox="0 -960 960 960"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-436H140v436Zm160-72-42-42 103-104-104-104 43-42 146 146-146 146Zm190 4v-60h220v60H490Z"/></svg>
+              <span>CLI · Node + tsx</span>
+            </p>
+            <h3 class="card-title">A single binary, anywhere.</h3>
+            <p class="card-body">Compile a file, pipe stdin, or eval inline. Output as a path string, full SVG, or an annotated debug view.</p>
+            <pre class="ed-codeblock"><span class="prompt">$</span> <span class="cmd">echo</span> 'circle(100, 100, 50)' | <span class="cmd">svg-path-extended</span> -
+<span class="comment">→ M 50 100 A 50 50 0 1 0 150 100 A 50 50 0 1 0 50 100 Z</span></pre>
+          </a>
+
+          <!-- VS Code: 8 cols -->
+          <a class="mag-card vscode-card span-8">
+            <div class="vscode-image">
+              <span class="vscode-image-label">[ vscode-hero.png placeholder ]</span>
+            </div>
+            <div class="vscode-text">
+              <p class="card-eyebrow">
+                <svg viewBox="0 0 24 24"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>
+                <span>Editor · Coming soon</span>
+              </p>
+              <h3 class="card-title">In your editor, with you.</h3>
+              <p class="card-body">Highlights, completions, hover docs, diagnostics, and a live preview pane — built on the LSP.</p>
+              <span class="card-link">Notify me when it ships →</span>
+            </div>
+          </a>
+
+          <!-- Blog: 4 cols -->
+          <a class="mag-card blog-card span-4">
+            <p class="card-eyebrow">
+              <svg viewBox="0 -960 960 960"><path d="M240-350h360v-60H240v60Zm420 0h60v-60h-60v60ZM240-470h60v-60h-60v60Zm120 0h360v-60H360v60Z"/></svg>
+              <span>From the blog</span>
+            </p>
+            <h3 class="card-title">Strange Attractors.</h3>
+            <p class="card-body">Rendering a million-point Clifford attractor as a single SVG — using Pathogen's loop primitives and gradient palettes.</p>
+            <p class="card-meta">2026-04-14 · 12 min read</p>
+          </a>
+        </section>
+
+        <!-- Showcase strip -->
+        <section class="mag-showcase">
+          <div class="mag-showcase-head">
+            <h2>Made with Pathogen Studio.</h2>
+            <p>Scroll →</p>
+          </div>
+          <div class="mag-showcase-strip">
+            <div class="mag-showcase-tile tile-conic"><span class="mag-showcase-tile-label">Conic Gradient</span></div>
+            <div class="mag-showcase-tile tile-mesh"><span class="mag-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Mesh Gradient</span></div>
+            <div class="mag-showcase-tile tile-topo"><span class="mag-showcase-tile-label" style="color: var(--secondary-accent-text); text-shadow: none;">Topographic</span></div>
+            <div class="mag-showcase-tile tile-bool">
+              <svg viewBox="0 0 100 100">
+                <circle cx="36" cy="50" r="26" fill="rgba(180, 130, 220, 0.55)"/>
+                <circle cx="64" cy="50" r="26" fill="rgba(255, 175, 130, 0.55)"/>
+                <path d="M 50 30 A 26 26 0 0 1 50 70 A 26 26 0 0 1 50 30 Z" fill="rgba(192, 81, 142, 0.6)"/>
+              </svg>
+              <span class="mag-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Boolean Ops</span>
+            </div>
+            <div class="mag-showcase-tile tile-attractor">
+              <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.018" fill="none">
+                <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 Z" opacity="0.55"/>
+                <path d="M-1.4,0.1 C-1.3,-1.0 -0.4,-1.2 0.1,-1.1 C0.55,-0.9 1.2,-0.5 1.3,0.1 C1.2,0.55 0.65,1.2 0.05,1.25 C-0.5,1.2 -1.1,0.85 -1.3,0.3 Z" opacity="0.4"/>
+                <path d="M-1.0,0.2 C-0.9,-0.8 -0.3,-1.0 0.1,-0.85 C0.4,-0.7 0.85,-0.35 0.95,0.2 C0.85,0.45 0.45,0.95 0.05,1.0 C-0.4,0.95 -0.85,0.65 -0.95,0.3 Z" opacity="0.3"/>
+              </svg>
+              <span class="mag-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Attractors</span>
+            </div>
+            <div class="mag-showcase-tile tile-grid"><span class="mag-showcase-tile-label" style="color: var(--text-primary); text-shadow: none;">Grid Functions</span></div>
+          </div>
+        </section>
+
+        <footer class="mag-footer">
+          built on svg-path-extended v1.0 · <a>github</a> · <a>docs</a> · <a>blog</a> · <a>contact</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== DARK ============================================== -->
+  <section>
+    <div class="panel-label">dark</div>
+    <div class="theme-dark">
+      <div class="stage">
+
+        <header class="site-header">
+          <div class="site-header-inner">
+            <a class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </a>
+            <nav class="tabs-wrap">
+              <button class="nav-link active">Workspaces</button>
+              <a class="nav-link">Docs</a>
+              <a class="nav-link">Explore</a>
+              <a class="nav-link">Featured</a>
+              <a class="nav-link">Blog</a>
+              <a class="nav-link">Preferences</a>
+            </nav>
+            <div class="actions">
+              <button class="icon-btn" title="Theme"><svg viewBox="0 -960 960 960"><path d="M480-280q83 0 141.5-58.5T680-480q0-83-58.5-141.5T480-680q-83 0-141.5 58.5T280-480q0 83 58.5 141.5T480-280ZM200-450H40v-60h160v60Zm720 0H760v-60h160v60ZM450-760v-160h60v160h-60Zm0 720v-160h60v160h-60Z"/></svg></button>
+              <a class="signin-pill">Sign in</a>
+            </div>
+          </div>
+        </header>
+
+        <section class="mag-hero">
+          <div class="mag-hero-text">
+            <p class="hero-eyebrow">SVG-Path-Extended · v1.0</p>
+            <h1>SVG, but <em>a language.</em></h1>
+            <p class="lede">An expression-first toolchain for path-based graphics. Compose curves, define gradients, iterate on a sketch — without ever leaving your editor.</p>
+            <div class="mag-cta-cluster">
+              <a class="cta-primary">
+                <span>Open My Workspaces</span>
+                <svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+              </a>
+              <a class="cta-secondary">
+                <span>Read the docs</span>
+                <svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="mag-feature-render">
+            <span class="mag-feature-caption">[ Topographic gradient · 0.21s render ]</span>
+          </div>
+        </section>
+
+        <section class="mag-grid">
+          <a class="mag-card github-card span-5">
+            <p class="card-eyebrow">
+              <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              <span>Open Source · MIT</span>
+            </p>
+            <h3 class="card-title">The compiler is on GitHub.</h3>
+            <p class="card-body">Lezer parser, evaluator, stdlib, CLI — all in one repository. Small enough to read in an afternoon.</p>
+            <span class="card-link">github.com/ryankuykendall/svg-path-extended →</span>
+          </a>
+
+          <a class="mag-card cli-card span-7">
+            <p class="card-eyebrow">
+              <svg viewBox="0 -960 960 960"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-436H140v436Zm160-72-42-42 103-104-104-104 43-42 146 146-146 146Zm190 4v-60h220v60H490Z"/></svg>
+              <span>CLI · Node + tsx</span>
+            </p>
+            <h3 class="card-title">A single binary, anywhere.</h3>
+            <p class="card-body">Compile a file, pipe stdin, or eval inline. Output as a path string, full SVG, or an annotated debug view.</p>
+            <pre class="ed-codeblock"><span class="prompt">$</span> <span class="cmd">echo</span> 'circle(100, 100, 50)' | <span class="cmd">svg-path-extended</span> -
+<span class="comment">→ M 50 100 A 50 50 0 1 0 150 100 A 50 50 0 1 0 50 100 Z</span></pre>
+          </a>
+
+          <a class="mag-card vscode-card span-8">
+            <div class="vscode-image">
+              <span class="vscode-image-label">[ vscode-hero.png placeholder ]</span>
+            </div>
+            <div class="vscode-text">
+              <p class="card-eyebrow">
+                <svg viewBox="0 0 24 24"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>
+                <span>Editor · Coming soon</span>
+              </p>
+              <h3 class="card-title">In your editor, with you.</h3>
+              <p class="card-body">Highlights, completions, hover docs, diagnostics, and a live preview pane — built on the LSP.</p>
+              <span class="card-link">Notify me when it ships →</span>
+            </div>
+          </a>
+
+          <a class="mag-card blog-card span-4">
+            <p class="card-eyebrow">
+              <svg viewBox="0 -960 960 960"><path d="M240-350h360v-60H240v60Zm420 0h60v-60h-60v60ZM240-470h60v-60h-60v60Zm120 0h360v-60H360v60Z"/></svg>
+              <span>From the blog</span>
+            </p>
+            <h3 class="card-title">Strange Attractors.</h3>
+            <p class="card-body">Rendering a million-point Clifford attractor as a single SVG — using Pathogen's loop primitives and gradient palettes.</p>
+            <p class="card-meta">2026-04-14 · 12 min read</p>
+          </a>
+        </section>
+
+        <section class="mag-showcase">
+          <div class="mag-showcase-head">
+            <h2>Made with Pathogen Studio.</h2>
+            <p>Scroll →</p>
+          </div>
+          <div class="mag-showcase-strip">
+            <div class="mag-showcase-tile tile-conic"><span class="mag-showcase-tile-label">Conic Gradient</span></div>
+            <div class="mag-showcase-tile tile-mesh"><span class="mag-showcase-tile-label">Mesh Gradient</span></div>
+            <div class="mag-showcase-tile tile-topo"><span class="mag-showcase-tile-label" style="color: var(--secondary-accent-text); text-shadow: none;">Topographic</span></div>
+            <div class="mag-showcase-tile tile-bool">
+              <svg viewBox="0 0 100 100">
+                <circle cx="36" cy="50" r="26" fill="rgba(196, 164, 232, 0.55)"/>
+                <circle cx="64" cy="50" r="26" fill="rgba(247, 181, 110, 0.55)"/>
+                <path d="M 50 30 A 26 26 0 0 1 50 70 A 26 26 0 0 1 50 30 Z" fill="rgba(217, 122, 110, 0.6)"/>
+              </svg>
+              <span class="mag-showcase-tile-label">Boolean Ops</span>
+            </div>
+            <div class="mag-showcase-tile tile-attractor">
+              <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.018" fill="none">
+                <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 Z" opacity="0.55"/>
+                <path d="M-1.4,0.1 C-1.3,-1.0 -0.4,-1.2 0.1,-1.1 C0.55,-0.9 1.2,-0.5 1.3,0.1 C1.2,0.55 0.65,1.2 0.05,1.25 C-0.5,1.2 -1.1,0.85 -1.3,0.3 Z" opacity="0.4"/>
+                <path d="M-1.0,0.2 C-0.9,-0.8 -0.3,-1.0 0.1,-0.85 C0.4,-0.7 0.85,-0.35 0.95,0.2 C0.85,0.45 0.45,0.95 0.05,1.0 C-0.4,0.95 -0.85,0.65 -0.95,0.3 Z" opacity="0.3"/>
+              </svg>
+              <span class="mag-showcase-tile-label">Attractors</span>
+            </div>
+            <div class="mag-showcase-tile tile-grid"><span class="mag-showcase-tile-label">Grid Functions</span></div>
+          </div>
+        </section>
+
+        <footer class="mag-footer">
+          built on svg-path-extended v1.0 · <a>github</a> · <a>docs</a> · <a>blog</a> · <a>contact</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

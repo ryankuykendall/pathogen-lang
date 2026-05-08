@@ -17,6 +17,19 @@ class AccountMenu extends HTMLElement {
   }
 
   connectedCallback(): void {
+    // Server-rendered pages (homepage, /explore, /featured, /u/:handle, blog)
+    // ship with `window.__SSR_CURRENT_USER` populated when the request had a
+    // valid session cookie. Hydrate the store from that seed so the chip
+    // renders the signed-in state on first paint, before any SPA bootstrap
+    // has run. The SPA's own bootstrapCurrentUser() will overwrite this
+    // later with the full /api/me response.
+    if (!store.get('currentUser')) {
+      const seed = (window as unknown as { __SSR_CURRENT_USER?: CurrentUser }).__SSR_CURRENT_USER;
+      if (seed && seed.handle && seed.displayName) {
+        store.set('currentUser', seed as unknown);
+      }
+    }
+
     this.render();
     this.unsubscribe = store.subscribe(['currentUser'], () => this.render());
     this.outsideClick = (e: MouseEvent): void => {

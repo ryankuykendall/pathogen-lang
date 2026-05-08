@@ -28,7 +28,10 @@ interface CurrentRoute {
 // Route definitions
 // Workspace URLs use format: /workspace/slug--id (e.g., /workspace/my-project--abc123)
 export const routes: RouteDefinition[] = [
+  // /pathogen/ is server-rendered as the marketing homepage; '/' is kept as
+  // a defensive fallback in case the SPA shell is ever served at the root.
   { path: '/', view: 'landing' },
+  { path: '/workspaces', view: 'landing' },
   { path: '/workspace/new', view: 'new-workspace' }, // Must be before :slugId route
   { path: '/workspace/:slugId', view: 'workspace' }, // Format: slug--id or just id
   { path: '/preferences', view: 'preferences' },

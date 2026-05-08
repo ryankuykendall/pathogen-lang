@@ -338,7 +338,7 @@ class NewWorkspaceView extends HTMLElement {
 
   handleCancel(): void {
     this._cleanupImport();
-    navigateTo('/');
+    navigateTo('/workspaces');
   }
 
   setupEventListeners(): void {

@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Homepage exploration 03 · Showcase canvas — Pathogen Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Doc-page chrome ===== */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #efeae0; color: #1c1722; padding: 48px 0 96px; overflow-x: hidden; }
+  .doc-head { max-width: 1280px; margin: 0 auto 48px; padding: 0 32px; }
+  .doc-eyebrow { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: #786a83; margin: 0 0 12px; }
+  .doc-title { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: clamp(40px, 5.5vw, 76px); line-height: 1; letter-spacing: -0.01em; margin: 0 0 16px; }
+  .doc-title em { font-style: italic; color: #c0518e; }
+  .doc-lead { max-width: 70ch; font-size: 17px; line-height: 1.6; color: #3a324a; margin: 0; }
+  .doc-meta { font-size: 13px; color: #786a83; margin-top: 24px; }
+  .doc-meta code { font-family: 'Inconsolata', monospace; background: rgba(192, 81, 142, 0.08); padding: 2px 6px; border-radius: 4px; color: #6b2a4a; }
+  /* minmax(0, 1fr) prevents auto min-track sizing from pushing the
+   * section past the viewport when a child has wide intrinsic content. */
+  .panels { max-width: 1480px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
+  .panels > section { min-width: 0; }
+  .panels > section > * { min-width: 0; }
+  .panel-label { font-family: 'Inconsolata', monospace; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #786a83; margin: 0 0 12px 4px; }
+
+  /* ===== Atmospheric tokens ===== */
+  .theme-light {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28, 23, 34, 0.05); --bg-elevated: #ffffff;
+    --bg-secondary-from: #fffaf2; --bg-atmosphere-1: rgba(180, 130, 220, 0.18); --bg-atmosphere-2: rgba(255, 175, 130, 0.20);
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0;
+    --border-color: rgba(28, 23, 34, 0.10); --border-subtle: rgba(28, 23, 34, 0.06); --border-strong: rgba(28, 23, 34, 0.18);
+    --accent-color: #c0518e; --accent-from: #e16a8f; --accent-to: #a83d80; --accent-text: #fffaf2;
+    --secondary-accent: #9461c4; --secondary-accent-subtle: rgba(148, 97, 196, 0.16); --secondary-accent-text: #5e3590;
+    --secondary-from: #b384e0; --secondary-to: #6d3aa6;
+    --shadow-tint-rgb: 165, 110, 140;
+    --shadow-glow: 0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+  }
+  .theme-dark {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255, 250, 242, 0.05); --bg-elevated: #1a1424;
+    --bg-secondary-from: #15101e; --bg-atmosphere-1: rgba(140, 100, 200, 0.18); --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a;
+    --border-color: rgba(246, 233, 218, 0.10); --border-subtle: rgba(246, 233, 218, 0.05); --border-strong: rgba(246, 233, 218, 0.20);
+    --accent-color: #f7b56e; --accent-from: #ffd194; --accent-to: #e89254; --accent-text: #1a1424;
+    --secondary-accent: #c4a4e8; --secondary-accent-subtle: rgba(196, 164, 232, 0.16); --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0; --secondary-to: #9c7cd5;
+    --shadow-tint-rgb: 213, 180, 144;
+    --shadow-glow: 0 8px 28px rgba(247, 181, 110, 0.32), 0 0 0 1px rgba(247, 181, 110, 0.30);
+  }
+
+  /* ===== Stage ===== */
+  .stage {
+    background:
+      radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%),
+      var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+    box-shadow: 0 1px 2px rgba(28, 23, 34, 0.04), 0 12px 36px rgba(28, 23, 34, 0.10);
+  }
+  .theme-dark .stage { box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 44px rgba(0,0,0,.55); }
+  .stage::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px; opacity: 0.45; mix-blend-mode: multiply; pointer-events: none; z-index: 0;
+  }
+  .theme-dark .stage::before { mix-blend-mode: overlay; opacity: 0.3; }
+  .stage > * { position: relative; z-index: 1; }
+
+  /* ===== Top nav ===== */
+  .site-header { background: transparent; border-bottom: 1px solid var(--border-subtle); }
+  .site-header-inner { display: grid; grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr); align-items: center; padding: 0 1.5rem; height: 52px; }
+  .logo { display: grid; text-decoration: none; cursor: pointer; line-height: 1.1; row-gap: 1px; justify-self: start; }
+  .logo-main { font-family: 'Baumans', cursive; font-size: 1.5rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; }
+  .logo-main em { font-style: normal; background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo-sub { font-family: 'Inconsolata', monospace; font-size: 0.625rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-tertiary); }
+  .tabs-wrap { display: grid; grid-auto-flow: column; gap: 2px; justify-self: center; padding: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 12px; backdrop-filter: blur(8px); }
+  .nav-link { padding: 6px 13px; border-radius: 8px; text-decoration: none; color: var(--text-secondary); font-size: 0.8125rem; font-weight: 500; font-family: inherit; background: none; border: none; white-space: nowrap; cursor: pointer; }
+  .nav-link.active { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); box-shadow: inset 0 0 16px rgba(148, 97, 196, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .actions { display: grid; grid-auto-flow: column; gap: 0.5rem; align-items: center; justify-self: end; }
+  .icon-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border-subtle); background: var(--bg-tertiary); color: var(--text-secondary); backdrop-filter: blur(6px); }
+  .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .signin-pill { background: var(--bg-tertiary); color: var(--secondary-accent-text); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 0.3rem 0.85rem; font-size: 0.8125rem; font-weight: 500; backdrop-filter: blur(6px); text-decoration: none; }
+
+  /* ===== Showcase canvas hero ===== */
+  .showcase-canvas {
+    position: relative;
+    padding: 24px 24px 32px;
+    max-width: 1480px;
+    margin: 0 auto;
+  }
+  .canvas-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    aspect-ratio: 16 / 9;
+  }
+  .canvas-tile {
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: transform 0.25s ease, filter 0.25s ease;
+  }
+  .canvas-tile:hover { transform: translateY(-4px) scale(1.005); filter: brightness(1.05); }
+  .canvas-tile-label {
+    position: absolute;
+    left: 16px; bottom: 16px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    z-index: 2;
+  }
+
+  /* Floating glass overlay with hero copy + CTA */
+  .canvas-overlay {
+    position: absolute;
+    left: 56px;
+    top: 64px;
+    max-width: 480px;
+    padding: 32px 32px 28px;
+    background: linear-gradient(180deg,
+      rgba(255, 250, 242, 0.85) 0%,
+      rgba(253, 246, 237, 0.65) 100%);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 16px 40px rgba(var(--shadow-tint-rgb), 0.20),
+      0 32px 80px rgba(var(--shadow-tint-rgb), 0.18);
+    z-index: 5;
+  }
+  .theme-dark .canvas-overlay {
+    background: linear-gradient(180deg,
+      rgba(26, 20, 36, 0.85) 0%,
+      rgba(20, 16, 28, 0.70) 100%);
+  }
+  .canvas-overlay .overlay-eyebrow {
+    font-family: 'Inconsolata', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+    margin: 0 0 16px;
+  }
+  .canvas-overlay h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+    margin: 0 0 16px;
+  }
+  .canvas-overlay h1 em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .canvas-overlay p.lede {
+    font-size: 15.5px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+  }
+
+  .cta-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0.85rem 1.5rem;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
+    color: var(--accent-text);
+    background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+    border: 0; border-radius: 999px; cursor: pointer; text-decoration: none;
+    box-shadow: var(--shadow-glow);
+    position: relative; overflow: hidden;
+    transition: transform 0.12s ease;
+  }
+  .cta-primary::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+    transform: translateX(-100%); transition: transform 0.6s ease;
+  }
+  .cta-primary:hover { transform: translateY(-1px); }
+  .cta-primary:hover::after { transform: translateX(100%); }
+  .cta-primary svg { width: 18px; height: 18px; fill: currentColor; position: relative; z-index: 1; }
+  .cta-primary span { position: relative; z-index: 1; }
+
+  /* tile variants */
+  .tile-conic { background: conic-gradient(from 220deg at 50% 50%, #c0518e, #f7b56e, #9461c4, #6d3aa6, #c0518e); }
+  .tile-mesh {
+    background:
+      radial-gradient(420px 320px at 22% 30%, rgba(180, 130, 220, 0.85), transparent 55%),
+      radial-gradient(360px 280px at 78% 20%, rgba(255, 175, 130, 0.65), transparent 55%),
+      radial-gradient(440px 340px at 50% 80%, rgba(192, 81, 142, 0.55), transparent 55%),
+      var(--bg-elevated);
+  }
+  .tile-topo {
+    background:
+      radial-gradient(circle at 50% 50%,
+        rgba(192, 81, 142, 0.18) 0 6%, transparent 6% 10%,
+        rgba(148, 97, 196, 0.20) 10% 18%, transparent 18% 22%,
+        rgba(247, 181, 110, 0.20) 22% 30%, transparent 30% 34%,
+        rgba(192, 81, 142, 0.18) 34% 42%, transparent 42% 46%,
+        rgba(148, 97, 196, 0.16) 46% 54%, transparent 54% 58%,
+        rgba(247, 181, 110, 0.14) 58% 66%, transparent 66% 100%);
+    background-color: var(--bg-elevated);
+  }
+  .tile-bool { background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; }
+  .tile-bool svg { width: 70%; height: 70%; }
+  .tile-attractor { background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; }
+  .tile-attractor svg { width: 90%; height: 90%; }
+  .tile-grid {
+    background:
+      repeating-linear-gradient(0deg, var(--bg-elevated) 0 28px, var(--secondary-accent-subtle) 28px 30px),
+      repeating-linear-gradient(90deg, var(--bg-elevated) 0 28px, var(--secondary-accent-subtle) 28px 30px),
+      var(--bg-elevated);
+  }
+
+  /* ===== Section cards (compact, below the canvas) ===== */
+  .canvas-sections {
+    max-width: 1280px;
+    margin: 24px auto 0;
+    padding: 56px 24px 64px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .canvas-section-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 24px 22px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    text-decoration: none;
+    color: inherit;
+    display: flex; flex-direction: column;
+  }
+  .canvas-section-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 6px 12px rgba(var(--shadow-tint-rgb), 0.10),
+      0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+  }
+  .canvas-section-card .icon-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0 0 16px;
+  }
+  .canvas-section-card .section-icon {
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: var(--secondary-accent-subtle);
+    color: var(--secondary-accent-text);
+  }
+  .canvas-section-card .section-icon svg { width: 18px; height: 18px; fill: currentColor; }
+  .canvas-section-card .arrow {
+    color: var(--text-tertiary);
+    transition: color 0.18s ease, transform 0.18s ease;
+  }
+  .canvas-section-card:hover .arrow {
+    color: var(--secondary-accent-text);
+    transform: translateX(4px);
+  }
+  .canvas-section-card .arrow svg { width: 16px; height: 16px; fill: currentColor; }
+  .canvas-section-card .section-eyebrow {
+    font-family: 'Inconsolata', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 4px;
+  }
+  .canvas-section-card .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+  }
+  .canvas-section-card .section-sub {
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* CLI-card has a small terminal preview */
+  .canvas-section-card.cli-section .cli-preview {
+    margin-top: 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 11.5px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .canvas-section-card.cli-section .cli-preview .prompt { color: var(--text-tertiary); }
+  .canvas-section-card.cli-section .cli-preview .cmd { color: var(--secondary-accent-text); font-weight: 600; }
+
+  /* Footer */
+  .canvas-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 28px 24px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12.5px;
+  }
+  .canvas-footer a { color: var(--secondary-accent-text); text-decoration: none; margin: 0 6px; }
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <p class="doc-eyebrow">Homepage exploration 03 of 04</p>
+  <h1 class="doc-title">Showcase <em>canvas</em></h1>
+  <p class="doc-lead">A 3×2 grid of large render tiles fills the top fold — the visual answer comes before the verbal one. The hero copy and the single primary CTA float in a glass panel anchored upper-left. Below, four compact cards (GitHub / CLI / VS Code / Blog) carry the rest of the information density.</p>
+  <p class="doc-meta">Hero: 16:9 canvas of 6 large render tiles · Overlay: glass card with backdrop-blur · Sections: compact 4-col grid below the fold</p>
+</header>
+
+<div class="panels">
+
+  <!-- ============================================== LIGHT ============================================== -->
+  <section>
+    <div class="panel-label">light</div>
+    <div class="theme-light">
+      <div class="stage">
+
+        <!-- Top nav -->
+        <header class="site-header">
+          <div class="site-header-inner">
+            <a class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </a>
+            <nav class="tabs-wrap">
+              <button class="nav-link active">Workspaces</button>
+              <a class="nav-link">Docs</a>
+              <a class="nav-link">Explore</a>
+              <a class="nav-link">Featured</a>
+              <a class="nav-link">Blog</a>
+              <a class="nav-link">Preferences</a>
+            </nav>
+            <div class="actions">
+              <button class="icon-btn" title="Theme"><svg viewBox="0 -960 960 960"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q8 0 17 .5t23 1.5q-36 32-56 79t-20 99q0 90 63 153t153 63q52 0 99-18.5t79-51.5q1 12 1.5 19.5t.5 14.5q0 150-105 255T480-120Z"/></svg></button>
+              <a class="signin-pill">Sign in</a>
+            </div>
+          </div>
+        </header>
+
+        <!-- Showcase canvas -->
+        <div class="showcase-canvas">
+          <div class="canvas-grid">
+            <div class="canvas-tile tile-conic"><span class="canvas-tile-label">Conic Gradient</span></div>
+            <div class="canvas-tile tile-mesh"><span class="canvas-tile-label" style="color: var(--text-primary); text-shadow: 0 1px 2px rgba(255,250,242,0.6);">Mesh Gradient</span></div>
+            <div class="canvas-tile tile-topo"><span class="canvas-tile-label" style="color: var(--secondary-accent-text); text-shadow: 0 1px 2px rgba(255,250,242,0.6);">Topographic</span></div>
+            <div class="canvas-tile tile-bool">
+              <svg viewBox="0 0 100 100">
+                <circle cx="36" cy="50" r="26" fill="rgba(180, 130, 220, 0.55)"/>
+                <circle cx="64" cy="50" r="26" fill="rgba(255, 175, 130, 0.55)"/>
+                <path d="M 50 30 A 26 26 0 0 1 50 70 A 26 26 0 0 1 50 30 Z" fill="rgba(192, 81, 142, 0.6)"/>
+              </svg>
+              <span class="canvas-tile-label" style="color: var(--text-primary); text-shadow: 0 1px 2px rgba(255,250,242,0.6);">Boolean Ops</span>
+            </div>
+            <div class="canvas-tile tile-attractor">
+              <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.018" fill="none">
+                <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 Z" opacity="0.55"/>
+                <path d="M-1.4,0.1 C-1.3,-1.0 -0.4,-1.2 0.1,-1.1 C0.55,-0.9 1.2,-0.5 1.3,0.1 C1.2,0.55 0.65,1.2 0.05,1.25 C-0.5,1.2 -1.1,0.85 -1.3,0.3 Z" opacity="0.4"/>
+                <path d="M-1.0,0.2 C-0.9,-0.8 -0.3,-1.0 0.1,-0.85 C0.4,-0.7 0.85,-0.35 0.95,0.2 C0.85,0.45 0.45,0.95 0.05,1.0 C-0.4,0.95 -0.85,0.65 -0.95,0.3 Z" opacity="0.3"/>
+              </svg>
+              <span class="canvas-tile-label" style="color: var(--text-primary); text-shadow: 0 1px 2px rgba(255,250,242,0.6);">Attractors</span>
+            </div>
+            <div class="canvas-tile tile-grid"><span class="canvas-tile-label" style="color: var(--text-primary); text-shadow: 0 1px 2px rgba(255,250,242,0.6);">Grid Functions</span></div>
+          </div>
+
+          <!-- Floating glass hero overlay -->
+          <div class="canvas-overlay">
+            <p class="overlay-eyebrow">SVG-Path-Extended · v1.0</p>
+            <h1>An SVG <em>language.</em></h1>
+            <p class="lede">Variables, expressions, control flow, gradients, layers — turn <code style="font-family: 'Inconsolata', monospace; font-size: 0.92em; background: rgba(148, 97, 196, 0.10); padding: 1px 5px; border-radius: 3px;">M 100 100</code> into a real programming surface.</p>
+            <a class="cta-primary">
+              <span>Open My Workspaces</span>
+              <svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Compact section cards -->
+        <section class="canvas-sections">
+          <a class="canvas-section-card">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">Open Source</p>
+            <h3 class="section-title">GitHub.</h3>
+            <p class="section-sub">Compiler, evaluator, stdlib, CLI — MIT, all in one repo.</p>
+          </a>
+
+          <a class="canvas-section-card cli-section">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 -960 960 960"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-436H140v436Zm160-72-42-42 103-104-104-104 43-42 146 146-146 146Z"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">CLI · npm</p>
+            <h3 class="section-title">A binary.</h3>
+            <p class="section-sub">Compile a file, pipe stdin, eval inline. Make graphics a build artefact.</p>
+            <div class="cli-preview"><span class="prompt">$</span> <span class="cmd">svg-path-extended</span> file.pathogen</div>
+          </a>
+
+          <a class="canvas-section-card">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 0 24 24"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">Editor · Coming soon</p>
+            <h3 class="section-title">VS Code.</h3>
+            <p class="section-sub">LSP completions, diagnostics, hover docs, live preview pane.</p>
+          </a>
+
+          <a class="canvas-section-card">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 -960 960 960"><path d="M240-350h360v-60H240v60Zm420 0h60v-60h-60v60ZM240-470h60v-60h-60v60Zm120 0h360v-60H360v60Z"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">Latest post · 2026-04-14</p>
+            <h3 class="section-title">Strange Attractors.</h3>
+            <p class="section-sub">A Clifford attractor, a million points, a single SVG.</p>
+          </a>
+        </section>
+
+        <footer class="canvas-footer">
+          built on svg-path-extended v1.0 · <a>github</a> · <a>docs</a> · <a>blog</a> · <a>contact</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== DARK ============================================== -->
+  <section>
+    <div class="panel-label">dark</div>
+    <div class="theme-dark">
+      <div class="stage">
+
+        <header class="site-header">
+          <div class="site-header-inner">
+            <a class="logo">
+              <span class="logo-main">Pathogen <em>Studio</em></span>
+              <span class="logo-sub">built on svg-path-extended v1.0</span>
+            </a>
+            <nav class="tabs-wrap">
+              <button class="nav-link active">Workspaces</button>
+              <a class="nav-link">Docs</a>
+              <a class="nav-link">Explore</a>
+              <a class="nav-link">Featured</a>
+              <a class="nav-link">Blog</a>
+              <a class="nav-link">Preferences</a>
+            </nav>
+            <div class="actions">
+              <button class="icon-btn" title="Theme"><svg viewBox="0 -960 960 960"><path d="M480-280q83 0 141.5-58.5T680-480q0-83-58.5-141.5T480-680q-83 0-141.5 58.5T280-480q0 83 58.5 141.5T480-280Z"/></svg></button>
+              <a class="signin-pill">Sign in</a>
+            </div>
+          </div>
+        </header>
+
+        <div class="showcase-canvas">
+          <div class="canvas-grid">
+            <div class="canvas-tile tile-conic"><span class="canvas-tile-label">Conic Gradient</span></div>
+            <div class="canvas-tile tile-mesh"><span class="canvas-tile-label">Mesh Gradient</span></div>
+            <div class="canvas-tile tile-topo"><span class="canvas-tile-label" style="color: var(--secondary-accent-text); text-shadow: none;">Topographic</span></div>
+            <div class="canvas-tile tile-bool">
+              <svg viewBox="0 0 100 100">
+                <circle cx="36" cy="50" r="26" fill="rgba(196, 164, 232, 0.55)"/>
+                <circle cx="64" cy="50" r="26" fill="rgba(247, 181, 110, 0.55)"/>
+                <path d="M 50 30 A 26 26 0 0 1 50 70 A 26 26 0 0 1 50 30 Z" fill="rgba(217, 122, 110, 0.6)"/>
+              </svg>
+              <span class="canvas-tile-label">Boolean Ops</span>
+            </div>
+            <div class="canvas-tile tile-attractor">
+              <svg viewBox="-2.2 -2.2 4.4 4.4" stroke="var(--secondary-accent-text)" stroke-width="0.018" fill="none">
+                <path d="M-1.8,-0.2 C-1.7,-1.5 -0.8,-1.7 0,-1.6 C0.7,-1.4 1.5,-0.9 1.7,-0.2 C1.6,0.6 0.9,1.5 0.1,1.6 C-0.6,1.6 -1.4,1.1 -1.7,0.4 Z" opacity="0.55"/>
+                <path d="M-1.4,0.1 C-1.3,-1.0 -0.4,-1.2 0.1,-1.1 C0.55,-0.9 1.2,-0.5 1.3,0.1 C1.2,0.55 0.65,1.2 0.05,1.25 C-0.5,1.2 -1.1,0.85 -1.3,0.3 Z" opacity="0.4"/>
+                <path d="M-1.0,0.2 C-0.9,-0.8 -0.3,-1.0 0.1,-0.85 C0.4,-0.7 0.85,-0.35 0.95,0.2 C0.85,0.45 0.45,0.95 0.05,1.0 C-0.4,0.95 -0.85,0.65 -0.95,0.3 Z" opacity="0.3"/>
+              </svg>
+              <span class="canvas-tile-label">Attractors</span>
+            </div>
+            <div class="canvas-tile tile-grid"><span class="canvas-tile-label">Grid Functions</span></div>
+          </div>
+
+          <div class="canvas-overlay">
+            <p class="overlay-eyebrow">SVG-Path-Extended · v1.0</p>
+            <h1>An SVG <em>language.</em></h1>
+            <p class="lede">Variables, expressions, control flow, gradients, layers — turn <code style="font-family: 'Inconsolata', monospace; font-size: 0.92em; background: rgba(196, 164, 232, 0.14); padding: 1px 5px; border-radius: 3px;">M 100 100</code> into a real programming surface.</p>
+            <a class="cta-primary">
+              <span>Open My Workspaces</span>
+              <svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <section class="canvas-sections">
+          <a class="canvas-section-card">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">Open Source</p>
+            <h3 class="section-title">GitHub.</h3>
+            <p class="section-sub">Compiler, evaluator, stdlib, CLI — MIT, all in one repo.</p>
+          </a>
+
+          <a class="canvas-section-card cli-section">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 -960 960 960"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-436H140v436Zm160-72-42-42 103-104-104-104 43-42 146 146-146 146Z"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">CLI · npm</p>
+            <h3 class="section-title">A binary.</h3>
+            <p class="section-sub">Compile a file, pipe stdin, eval inline. Make graphics a build artefact.</p>
+            <div class="cli-preview"><span class="prompt">$</span> <span class="cmd">svg-path-extended</span> file.pathogen</div>
+          </a>
+
+          <a class="canvas-section-card">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 0 24 24"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">Editor · Coming soon</p>
+            <h3 class="section-title">VS Code.</h3>
+            <p class="section-sub">LSP completions, diagnostics, hover docs, live preview pane.</p>
+          </a>
+
+          <a class="canvas-section-card">
+            <div class="icon-row">
+              <span class="section-icon">
+                <svg viewBox="0 -960 960 960"><path d="M240-350h360v-60H240v60Zm420 0h60v-60h-60v60ZM240-470h60v-60h-60v60Zm120 0h360v-60H360v60Z"/></svg>
+              </span>
+              <span class="arrow"><svg viewBox="0 -960 960 960"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></span>
+            </div>
+            <p class="section-eyebrow">Latest post · 2026-04-14</p>
+            <h3 class="section-title">Strange Attractors.</h3>
+            <p class="section-sub">A Clifford attractor, a million points, a single SVG.</p>
+          </a>
+        </section>
+
+        <footer class="canvas-footer">
+          built on svg-path-extended v1.0 · <a>github</a> · <a>docs</a> · <a>blog</a> · <a>contact</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

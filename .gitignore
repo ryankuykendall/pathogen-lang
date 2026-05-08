@@ -6,6 +6,7 @@ dist/
 public/
 packages/*/out/
 website/docs-static/
+website/generated/
 playground/utils/docs-content.js
 
 # Wrangler

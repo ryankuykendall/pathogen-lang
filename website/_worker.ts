@@ -19,6 +19,7 @@ import {
 import { getSessionUserId, readSessionTokenFromRequest } from './auth/session.js';
 import { findUserById, findUserByHandle } from './auth/users.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
+import { latestBlogPost } from './generated/blog-data.js';
 
 // ─── Type Definitions ─────────────────────────────────────────────────
 
@@ -178,6 +179,8 @@ function errorResponse(message: string, status: number = 400): Response {
 const SITE_URL = 'https://pedestal.design';
 
 interface SsrUser {
+  id: string;
+  email: string;
   displayName: string;
   handle: string;
 }
@@ -191,7 +194,12 @@ async function getSsrUser(request: Request, env: Env): Promise<SsrUser | null> {
     if (!userId) return null;
     const user = await findUserById(env.USERS_DB, userId);
     if (!user) return null;
-    return { displayName: user.display_name, handle: user.handle };
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.display_name,
+      handle: user.handle,
+    };
   } catch {
     return null;
   }
@@ -225,6 +233,9 @@ function renderPage({
     description ||
     'A visual playground for svg-path-extended — variables, expressions, control flow, functions, and more for SVG paths.';
   const canonical = `${SITE_URL}${path}`;
+  const ssrUserScript = currentUser
+    ? `<script>window.__SSR_CURRENT_USER=${JSON.stringify(currentUser).replace(/</g, '\\u003c')};</script>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -247,6 +258,7 @@ function renderPage({
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
+  ${ssrUserScript}
   ${headExtra}
   <style>
     /* body styles (font-family, background, atmospheric grain) are defined
@@ -1323,6 +1335,202 @@ async function updatePublicIndex(env: Env, workspace: Workspace): Promise<void> 
   }
 }
 
+// ─── Marketing Homepage (Worker-Rendered) ─────────────────────────────
+
+interface ShowcaseTile {
+  slug: string;
+  label: string;
+  src: string;
+  alt: string;
+}
+
+const HOMEPAGE_SHOWCASE_TILES: ShowcaseTile[] = [
+  {
+    slug: 'gradient-linear-radial',
+    label: 'Linear Gradients',
+    src: '/pathogen/blog/samples/post1/linear-basics.svg',
+    alt: 'Linear and radial gradients composed into a layered landscape',
+  },
+  {
+    slug: 'gradient-conic',
+    label: 'Conic Gradient',
+    src: '/pathogen/blog/samples/post2/color-wheel.svg',
+    alt: 'Conic gradient color wheel rendered via WebGPU',
+  },
+  {
+    slug: 'gradient-mesh-freeform',
+    label: 'Mesh Gradient',
+    src: '/pathogen/blog/samples/post3/mesh-basics.svg',
+    alt: '2x2 mesh gradient with bilinear OKLCH interpolation',
+  },
+  {
+    slug: 'pathblock-parametric-sampling',
+    label: 'Parametric Sampling',
+    src: '/pathogen/blog/samples/post7/sampling-anatomy.svg',
+    alt: 'PathBlock parametric sampling — get(), tangent(), and normal() at t = 0.4',
+  },
+  {
+    slug: 'grid-functions',
+    label: 'Grids',
+    src: '/pathogen/blog/samples/post15/square-grid-patterns.svg',
+    alt: 'Procedural square grid patterns',
+  },
+  {
+    slug: 'heading-turn',
+    label: 'Tangents',
+    src: '/pathogen/blog/samples/post14/heading-turn-demo.svg',
+    alt: 'Tangent control curves — C, S, zigzag, and spiral',
+  },
+];
+
+async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Response> {
+  const currentUser = await getSsrUser(request, env);
+
+  const showcaseTilesHtml = HOMEPAGE_SHOWCASE_TILES.map(
+    (tile) =>
+      `<a class="dev-tile" href="/pathogen/blog/${tile.slug}">
+          <img src="${tile.src}" alt="${escapeHtml(tile.alt)}" loading="lazy">
+          <span class="dev-tile-label">${escapeHtml(tile.label)}</span>
+        </a>`,
+  ).join('\n        ');
+
+  const blogDateFormatted = latestBlogPost
+    ? new Date(latestBlogPost.date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : '';
+
+  const blogCardHtml = latestBlogPost
+    ? `<a class="dev-blog" href="/pathogen/blog/${latestBlogPost.slug}">
+            <p class="blog-eyebrow">From the blog · Latest</p>
+            <h3 class="blog-title">${escapeHtml(latestBlogPost.title)}</h3>
+            <p class="blog-body">${escapeHtml(latestBlogPost.description)}</p>
+            <p class="blog-meta">${blogDateFormatted}</p>
+          </a>`
+    : `<a class="dev-blog" href="/pathogen/blog">
+            <p class="blog-eyebrow">From the blog</p>
+            <h3 class="blog-title">Read the latest posts.</h3>
+            <p class="blog-body">Tutorials, deep-dives, and language-design notes from the Pathogen team.</p>
+          </a>`;
+
+  const githubIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>`;
+  const cliIcon = `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-436H140v436Zm160-72-42-42 103-104-104-104 43-42 146 146-146 146Z"/></svg>`;
+  const editorIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>`;
+  const arrowIcon = `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>`;
+
+  // 6-petal hero render — matches the Pathogen snippet to the left.
+  const heroSvg = `<svg viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="80" cy="0" r="18" fill="oklch(72% 0.18 0)"/>
+              <circle cx="40" cy="-69.28" r="18" fill="oklch(72% 0.18 60)"/>
+              <circle cx="-40" cy="-69.28" r="18" fill="oklch(72% 0.18 120)"/>
+              <circle cx="-80" cy="0" r="18" fill="oklch(72% 0.18 180)"/>
+              <circle cx="-40" cy="69.28" r="18" fill="oklch(72% 0.18 240)"/>
+              <circle cx="40" cy="69.28" r="18" fill="oklch(72% 0.18 300)"/>
+              <circle cx="0" cy="0" r="3" fill="var(--text-tertiary)"/>
+            </svg>`;
+
+  const codeSnippet = `<span class="line"><span class="cm">// petals around a circle</span></span><span class="line"><span class="kw">let</span> r <span class="pun">=</span> <span class="num">80</span><span class="pun">;</span></span><span class="line"><span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span><span class="pun">..</span><span class="num">6</span> <span class="pun">{</span></span><span class="line">  <span class="fn">circle</span><span class="pun">(</span>r <span class="pun">*</span> <span class="fn">cos</span><span class="pun">(</span>i <span class="pun">*</span> <span class="num">60°</span><span class="pun">),</span></span><span class="line">         r <span class="pun">*</span> <span class="fn">sin</span><span class="pun">(</span>i <span class="pun">*</span> <span class="num">60°</span><span class="pun">),</span> <span class="num">18</span><span class="pun">)</span></span><span class="line">    <span class="pun">.</span><span class="fn">fill</span><span class="pun">(</span><span class="fn">oklch</span><span class="pun">(</span><span class="num">72%</span> <span class="num">0.18</span> <span class="str">\${i * 60}</span><span class="pun">));</span></span><span class="line"><span class="pun">}</span></span>`;
+
+  const content = `
+    <div class="homepage">
+      <section class="dev-hero">
+        <div class="dev-hero-text">
+          <p class="hero-eyebrow">SVG-Path-Extended · v1.0</p>
+          <h1>From a one-liner to a thousand-line <em>composition.</em></h1>
+          <p class="lede">Pathogen Studio is a typed, expression-first language for SVG paths. Compile from the CLI, the playground, or your editor — get the same path output every time.</p>
+          <div class="dev-cta-cluster">
+            <a class="cta-primary" href="/pathogen/workspace/new">
+              <span>Create new workspace</span>
+              ${arrowIcon}
+            </a>
+            <a class="cta-mono" href="https://www.npmjs.com/package/svg-path-extended" target="_blank" rel="noopener">$ npm install svg-path-extended</a>
+          </div>
+        </div>
+
+        <div class="dev-editor">
+          <pre class="dev-code">${codeSnippet}</pre>
+          <div class="dev-render">
+            ${heroSvg}
+            <span class="dev-render-caption">→ 6 paths · 0.04s</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="dev-toolset">
+        <a class="dev-tool" href="https://github.com/ryankuykendall/svg-path-extended" target="_blank" rel="noopener">
+          <p class="tool-eyebrow">${githubIcon}<span>Source · MIT</span></p>
+          <h3 class="tool-title">GitHub.</h3>
+          <p class="tool-body">Read the source, file an issue, send a pull request. Compiler, evaluator, stdlib, CLI — all in one repository.</p>
+          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">git clone</span> ryankuykendall/svg-path-extended</div>
+        </a>
+
+        <a class="dev-tool" href="https://www.npmjs.com/package/svg-path-extended" target="_blank" rel="noopener">
+          <p class="tool-eyebrow">${cliIcon}<span>CLI · Node</span></p>
+          <h3 class="tool-title">Compile anywhere.</h3>
+          <p class="tool-body">Pipe stdin, eval inline, or compile a file. Output as a path string, a full SVG, or an annotated debug view.</p>
+          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">npm install</span> -g svg-path-extended</div>
+        </a>
+
+        <a class="dev-tool" href="/pathogen/blog/vscode-developer-experience">
+          <p class="tool-eyebrow">${editorIcon}<span>VS Code · Coming soon</span></p>
+          <h3 class="tool-title">In the editor.</h3>
+          <p class="tool-body">LSP-powered completions, hover docs, diagnostics, and a live preview pane — install the extension when it lands and write Pathogen anywhere you write code.</p>
+          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">code --install-extension</span> pathogen-language</div>
+        </a>
+      </section>
+
+      <section class="dev-bottom">
+        ${blogCardHtml}
+
+        <div class="dev-showcase">
+          ${showcaseTilesHtml}
+        </div>
+      </section>
+
+      <footer class="dev-footer">
+        <span>built on svg-path-extended v1.0</span>
+        <span>
+          <a href="https://github.com/ryankuykendall/svg-path-extended" target="_blank" rel="noopener">github</a> ·
+          <a href="/pathogen/docs">docs</a> ·
+          <a href="/pathogen/blog">blog</a> ·
+          <a href="/pathogen/explore">explore</a>
+        </span>
+      </footer>
+    </div>
+  `;
+
+  const headExtra = `<link rel="stylesheet" href="/pathogen/styles/homepage.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Pathogen Studio",
+    "description": "A typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.",
+    "url": "https://pedestal.design/pathogen/",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+  }
+  </script>`;
+
+  const html = renderPage({
+    title: '',
+    description:
+      'Pathogen Studio — a typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.',
+    path: '/pathogen/',
+    content,
+    headExtra,
+    currentUser,
+  });
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html;charset=utf-8',
+      'Cache-Control': 'public, s-maxage=60, max-age=30',
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -1332,6 +1540,14 @@ export default {
     if (path.startsWith('/pathogen/api/')) {
       const apiPath = path.replace('/pathogen/api', '');
       return handleApiRequest(request, env, apiPath);
+    }
+
+    // Marketing homepage at /pathogen/ and /pathogen/index.html — server-rendered
+    // for both signed-out and signed-in visitors. Must claim these URLs before
+    // the SPA fallback at the bottom of this handler so the SPA shell never
+    // loads at the root.
+    if (path === '/pathogen/' || path === '/pathogen/index.html') {
+      return renderHomepage(request, env, url);
     }
 
     // SEO routes — served before the SPA catch-all

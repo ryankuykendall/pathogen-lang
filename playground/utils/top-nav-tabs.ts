@@ -36,10 +36,9 @@ export interface TopNavTab {
 export const TOP_NAV_TABS: TopNavTab[] = [
   {
     label: 'Workspaces',
-    href: '/pathogen/',
-    spaRoute: '/',
-    matchPrefix: '/pathogen/',
-    matchExact: true,
+    href: '/pathogen/workspaces',
+    spaRoute: '/workspaces',
+    matchPrefix: '/pathogen/workspaces',
     additionalPrefixes: ['/pathogen/workspace/'],
   },
   { label: 'Docs', href: '/pathogen/docs', matchPrefix: '/pathogen/docs' },

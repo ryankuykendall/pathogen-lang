@@ -26,7 +26,8 @@ interface Measurements {
 }
 
 const ROUTES: Array<[string, string]> = [
-  ['Workspaces', '/pathogen/'],
+  ['Home', '/pathogen/'],
+  ['Workspaces', '/pathogen/workspaces'],
   ['Docs', '/pathogen/docs'],
   ['Explore', '/pathogen/explore'],
   ['Featured', '/pathogen/featured'],
