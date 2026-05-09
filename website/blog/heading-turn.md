@@ -5,7 +5,7 @@ date: 2026-03-22
 description: "Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks."
 ---
 
-Pathogen's tangent-dependent functions — [`tangentLine`](/pathogen/docs#stdlib-tangent-functions) and [`tangentArc`](/pathogen/docs#stdlib-tangent-functions) — continue drawing in the direction established by the previous command. But what if there *is* no previous command? After an `M` (moveTo), the pen has a position but no heading. Calling `tangentArc` right after `M` would fail because there's no direction to continue from.
+Pathogen's tangent-dependent functions — [`tangentLine`](/docs#stdlib-tangent-functions) and [`tangentArc`](/docs#stdlib-tangent-functions) — continue drawing in the direction established by the previous command. But what if there *is* no previous command? After an `M` (moveTo), the pen has a position but no heading. Calling `tangentArc` right after `M` would fail because there's no direction to continue from.
 
 The old workaround was a dummy segment:
 
@@ -19,7 +19,7 @@ This sets the heading, but the 0.01px offset accumulates. When you close a path 
 
 ## heading(angle)
 
-[`heading(angle)`](/pathogen/docs#stdlib-heading-control) sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:
+[`heading(angle)`](/docs#stdlib-heading-control) sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:
 
 ```pathogen
 M 50 100
@@ -31,7 +31,7 @@ Angles follow SVG's coordinate conventions: 0 is rightward, positive angles rota
 
 ## turn(delta)
 
-[`turn(delta)`](/pathogen/docs#stdlib-heading-control) rotates the current heading by a relative amount. It requires an existing heading — either from `heading()` or from a prior drawing command:
+[`turn(delta)`](/docs#stdlib-heading-control) rotates the current heading by a relative amount. It requires an existing heading — either from `heading()` or from a prior drawing command:
 
 ```pathogen
 M 50 100
@@ -86,7 +86,7 @@ The showcase below draws triangles through decagons — eight polygons in each r
 
 ## Clean PathBlock Closure
 
-`heading()` is especially valuable inside [path blocks](/pathogen/blog/pathblock-introduction). The `z` command draws a line back to the subpath start — and with `h 0.01`, that start is offset by 0.01px. With `heading()`, the start is exact:
+`heading()` is especially valuable inside [path blocks](/blog/pathblock-introduction). The `z` command draws a line back to the subpath start — and with `h 0.01`, that start is offset by 0.01px. With `heading()`, the start is exact:
 
 ```pathogen
 // With h 0.01 — z closes to (0.01, 0), leaving a gap
@@ -121,4 +121,4 @@ Any drawing command that establishes a direction — `L`, `H`, `V`, `C`, `S`, `Q
 
 Together, these two functions eliminate the dummy-segment workaround, enable clean `z` closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with `tangentLine` and `tangentArc` to build complex shapes from simple, composable operations.
 
-For more on tangent-dependent functions, see the [stdlib reference](/pathogen/docs#stdlib-tangent-functions). For path blocks, see the [PathBlock introduction](/pathogen/blog/pathblock-introduction). For multi-segment smooth curves that benefit from `heading()`, see the [chained Bézier splines post](/pathogen/blog/chained-bezier-splines).
+For more on tangent-dependent functions, see the [stdlib reference](/docs#stdlib-tangent-functions). For path blocks, see the [PathBlock introduction](/blog/pathblock-introduction). For multi-segment smooth curves that benefit from `heading()`, see the [chained Bézier splines post](/blog/chained-bezier-splines).

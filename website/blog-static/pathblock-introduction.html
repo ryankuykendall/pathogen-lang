@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen Studio</title>
   <meta name="description" content="How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/pathblock-introduction">
+  <link rel="canonical" href="https://pathogen.studio/blog/pathblock-introduction">
   <meta property="og:title" content="PathBlocks: Reusable Shape Primitives in Pathogen — Pathogen Studio">
   <meta property="og:description" content="How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/pathblock-introduction">
+  <meta property="og:url" content="https://pathogen.studio/blog/pathblock-introduction">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"PathBlocks: Reusable Shape Primitives in Pathogen","description":"How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.","datePublished":"2026-03-10","url":"https://pathogen.studio/pathogen/blog/pathblock-introduction","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"PathBlocks: Reusable Shape Primitives in Pathogen","description":"How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.","datePublished":"2026-03-10","url":"https://pathogen.studio/blog/pathblock-introduction","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">PathBlocks: Reusable Shape Primitives in Pathogen</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">PathBlocks: Reusable Shape Primitives in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -256,9 +256,9 @@ code.hljs {
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
 <li><strong>Introduction to PathBlocks</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
-<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
-<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
 </ol>
 </blockquote>
 <p>If you build parametric SVGs, icon systems, or generative art, you&#39;ve felt the friction: repeating the same shapes at different positions means copy-pasting <code>&lt;path&gt;</code> elements, tweaking <code>d</code> attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.</p>
@@ -274,8 +274,8 @@ code.hljs {
   l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
   l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
 };
-</code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/pathogen/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
-<p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/pathogen/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/pathogen/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
+</code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
+<p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
 <p><mini-workspace caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
   <code>// viewBox="0 0 600 380"
 // PathBlock Anatomy — visual guide to structure and properties
@@ -546,7 +546,7 @@ leg.apply {
   text(132, 356)`Direction`
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/pathblock-anatomy.svg" alt="PathBlock anatomy — origin, vertices, bounds, and path direction" loading="lazy">
+  <img src="/blog/samples/post6/pathblock-anatomy.svg" alt="PathBlock anatomy — origin, vertices, bounds, and path direction" loading="lazy">
 </mini-workspace></p>
 <h2>Drawing and Positioning</h2>
 <p>There are two ways to draw a PathBlock: the manual approach and the convenience method.</p>
@@ -554,7 +554,7 @@ leg.apply {
 <p>Position the cursor with an <code>M</code> command, then call <code>.draw()</code> to emit the relative commands:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">60</span> <span class="hljs-number">70</span>
 arrow.<span class="hljs-title function_">draw</span>()
-</code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/pathogen/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
+</code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
 <h3>Convenience: <code>.drawTo(x, y)</code></h3>
 <p>The <code>drawTo()</code> method combines positioning and drawing in a single call:</p>
 <pre><code class="hljs language-pathogen">arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">70</span>)
@@ -605,10 +605,10 @@ drawto.apply {
   }
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/drawto-vs-manual.svg" alt="Manual M+draw() vs drawTo() — same result, less code" loading="lazy">
+  <img src="/blog/samples/post6/drawto-vs-manual.svg" alt="Manual M+draw() vs drawTo() — same result, less code" loading="lazy">
 </mini-workspace></p>
 <h2>Reuse and Repetition</h2>
-<p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/pathogen/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
+<p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> dot = @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> };
 
 <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
@@ -616,7 +616,7 @@ drawto.apply {
     dot.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + i * <span class="hljs-number">15</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + j * <span class="hljs-number">15</span>))
   }
 }
-</code></pre><p>PathBlocks are <a href="/pathogen/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
+</code></pre><p>PathBlocks are <a href="/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
 <p>Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.</p>
 <p><mini-workspace caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
   <code>// viewBox="0 0 400 400"
@@ -781,7 +781,7 @@ title.apply {
   text(385, 25)`Define Once, Draw Everywhere`
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/pathblock-pattern.svg" alt="Radial pattern — one PathBlock drawn 28 times with trigonometric placement" loading="lazy">
+  <img src="/blog/samples/post6/pathblock-pattern.svg" alt="Radial pattern — one PathBlock drawn 28 times with trigonometric placement" loading="lazy">
 </mini-workspace></p>
 <h2>A Practical Example</h2>
 <p>Here&#39;s a grid built from two simple PathBlocks — a horizontal line and a vertical line — repeated with loops. The PathBlock captures the shape; the loop handles placement.</p>
@@ -831,10 +831,10 @@ arrows.apply {
   arrow.drawTo(280, 170);
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
+  <img src="/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
 </mini-workspace></p>
 <h2>PathBlock Properties</h2>
-<p>Every PathBlock carries metadata about its geometry. The <a href="/pathogen/docs#path-blocks-properties">Properties</a> section covers all of them:</p>
+<p>Every PathBlock carries metadata about its geometry. The <a href="/docs#path-blocks-properties">Properties</a> section covers all of them:</p>
 <ul>
 <li><code>.startPoint</code> / <code>.endPoint</code> — where the shape begins and ends</li>
 <li><code>.vertices</code> — all junction points as an array of Points</li>
@@ -843,14 +843,14 @@ arrows.apply {
 </ul>
 <p>These properties make PathBlocks queryable — you can inspect a shape&#39;s geometry before deciding how to draw or transform it.</p>
 <h2>Projection</h2>
-<p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
+<p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
 <p><code>.project()</code> returns a <code>ProjectedPath</code> — the same commands, but offset to absolute coordinates at <code>(x, y)</code>. The PathBlock itself stays unchanged; the ProjectedPath is a positioned view of it:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> proj = box.<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>);
 <span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>));  <span class="hljs-comment">// Point at midpoint of positioned path</span>
 </code></pre><p>Think of it as &quot;place the shape here, but don&#39;t draw it yet.&quot; ProjectedPaths support all the same operations as PathBlocks — sampling, fillets, chamfers, booleans — but in absolute coordinates. You&#39;ll see <code>.project()</code> used heavily in the rest of this series whenever shapes need to interact with each other spatially.</p>
 <h2>Standard Library Shapes</h2>
-<p>Pathogen&#39;s <a href="/pathogen/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
+<p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
 <span class="hljs-keyword">let</span> r = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) };
 <span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
@@ -1004,19 +1004,19 @@ subtitle.apply {
   text(220, 32)`Built-in path functions for common geometry`
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/stdlib-showcase.svg" alt="Standard library shapes — circle, rect, star, polygon, and roundRect" loading="lazy">
+  <img src="/blog/samples/post6/stdlib-showcase.svg" alt="Standard library shapes — circle, rect, star, polygon, and roundRect" loading="lazy">
 </mini-workspace></p>
 <h2>What&#39;s Next</h2>
-<p>PathBlocks are the foundation for everything that follows. In the next post, we&#39;ll explore <a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a> — querying points, tangents, and normals along a path to place elements precisely along curves. After that, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a> show how to round and cut corners, and <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a> combine shapes using union, difference, intersection, and xor.</p>
-<p>Try it yourself in the <a href="/pathogen/">Pathogen playground</a> — paste any of the examples above and see the SVG output live.</p>
+<p>PathBlocks are the foundation for everything that follows. In the next post, we&#39;ll explore <a href="/blog/pathblock-parametric-sampling">parametric sampling</a> — querying points, tangents, and normals along a path to place elements precisely along curves. After that, <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a> show how to round and cut corners, and <a href="/blog/pathblock-boolean-operations">boolean operations</a> combine shapes using union, difference, intersection, and xor.</p>
+<p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any of the examples above and see the SVG output live.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mesh and Freeform: Gradients That SVG Forgot — Pathogen Studio</title>
   <meta name="description" content="SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/gradient-mesh-freeform">
+  <link rel="canonical" href="https://pathogen.studio/blog/gradient-mesh-freeform">
   <meta property="og:title" content="Mesh and Freeform: Gradients That SVG Forgot — Pathogen Studio">
   <meta property="og:description" content="SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/gradient-mesh-freeform">
+  <meta property="og:url" content="https://pathogen.studio/blog/gradient-mesh-freeform">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Mesh and Freeform: Gradients That SVG Forgot","description":"SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.","datePublished":"2026-03-04","url":"https://pathogen.studio/pathogen/blog/gradient-mesh-freeform","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Mesh and Freeform: Gradients That SVG Forgot","description":"SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.","datePublished":"2026-03-04","url":"https://pathogen.studio/blog/gradient-mesh-freeform","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Mesh and Freeform: Gradients That SVG Forgot</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Mesh and Freeform: Gradients That SVG Forgot</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -318,7 +318,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, patch, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/mesh-basics.svg" alt="2x2 mesh — four corner colors with bilinear OKLCH interpolation" loading="lazy">
+  <img src="/blog/samples/post3/mesh-basics.svg" alt="2x2 mesh — four corner colors with bilinear OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
 <h2>Working with the Grid</h2>
 <p>Larger grids give more control. A 3x3 grid has 9 control points, allowing you to define a center color distinct from the edges. The <code>getPoint(row, col)</code> method returns a point object whose <code>.color</code> property you set.</p>
@@ -432,7 +432,7 @@ right_group.append(right);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/mesh-deformation.svg" alt="Uniform grid vs deformed grid — same colors, different point positions" loading="lazy">
+  <img src="/blog/samples/post3/mesh-deformation.svg" alt="Uniform grid vs deformed grid — same colors, different point positions" loading="lazy">
 </mini-workspace></p>
 <p>The <code>getRow(n)</code> method returns all points in a row, useful for applying consistent colors across a horizontal band. For more complex scenes, higher-resolution grids (4x4, 5x5) with translated points can simulate terrain, fabric folds, or atmospheric effects. The <code>mesh-landscape</code> sample demonstrates a 4x3 grid producing a stylized landscape.</p>
 <h2>FreeformGradient: The Scatter Model</h2>
@@ -520,7 +520,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, field, dots, point_labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/freeform-scatter.svg" alt="Six color points blended with inverse-distance weighting" loading="lazy">
+  <img src="/blog/samples/post3/freeform-scatter.svg" alt="Six color points blended with inverse-distance weighting" loading="lazy">
 </mini-workspace></p>
 <h2>Controlling Falloff</h2>
 <p>The <code>.falloff</code> property is an exponent that controls how quickly a point&#39;s influence decreases with distance. It defaults to 2.0 (inverse-square), which produces natural-looking blending. Lower values create smoother, more uniform blends. Higher values create tight halos around each point with sharper boundaries.</p>
@@ -624,7 +624,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, f1, f2, f3, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/falloff-comparison.svg" alt="Same five points at three falloff exponents: 1.0, 2.0, 4.0" loading="lazy">
+  <img src="/blog/samples/post3/falloff-comparison.svg" alt="Same five points at three falloff exponents: 1.0, 2.0, 4.0" loading="lazy">
 </mini-workspace></p>
 <h2>Mesh vs Freeform</h2>
 <p>The two gradient types serve different design needs. MeshGradient excels at structured, predictable blending — backgrounds, UI surfaces, and any case where you want precise control over the transition boundaries. FreeformGradient is better for organic, painterly effects — glows, nebulae, abstract art.</p>
@@ -735,7 +735,7 @@ right_group.append(ff_fill);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/mesh-vs-freeform.svg" alt="Same 9 colors — bilinear grid vs inverse-distance scatter" loading="lazy">
+  <img src="/blog/samples/post3/mesh-vs-freeform.svg" alt="Same 9 colors — bilinear grid vs inverse-distance scatter" loading="lazy">
 </mini-workspace></p>
 <p>In practice, the choice depends on the visual you are after. Mesh gradients give you the regularity of a grid with optional deformation for organic touches. Freeform gradients give you complete spatial freedom at the cost of less predictable boundaries. Both are tools in the same system — you can use them in the same Pathogen source file, assign them to different layers, and compose them freely.</p>
 <h2>Rendering Pipeline</h2>
@@ -747,15 +747,15 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 <p>Both shaders support OKLCH interpolation natively — the blending happens in OKLCH space when enabled, then converts to sRGB for the final output image. The result is embedded as a base64 PNG in a <code>&lt;pattern&gt;</code> element, identical to the conic gradient output.</p>
 <p>When WebGPU is unavailable, a Canvas 2D fallback renders the gradient at reduced resolution (4x downscale) and upsamples with bilinear filtering. The visual quality is slightly lower but the output is functionally identical.</p>
 <h2>What Comes Next</h2>
-<p>Linear, radial, conic, mesh, and freeform gradients all share a common pattern: colors are placed at geometric positions (along a line, around a circle, at grid intersections, at scattered points) and interpolated between them. The <a href="/pathogen/blog/gradient-topological">next post</a> introduces a fundamentally different model — topological gradients, where colors follow the contours of arbitrary path shapes using signed distance fields and Laplace solvers.</p>
+<p>Linear, radial, conic, mesh, and freeform gradients all share a common pattern: colors are placed at geometric positions (along a line, around a circle, at grid intersections, at scattered points) and interpolated between them. The <a href="/blog/gradient-topological">next post</a> introduces a fundamentally different model — topological gradients, where colors follow the contours of arbitrary path shapes using signed distance fields and Laplace solvers.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

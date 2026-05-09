@@ -1,6 +1,6 @@
 # Documentation
 
-User-facing developer documentation — every `.md` file here is compiled into the published site at `/pathogen/docs`.
+User-facing developer documentation — every `.md` file here is compiled into the published site at `/docs`.
 
 ## Scope: what belongs here vs `project-docs/`
 

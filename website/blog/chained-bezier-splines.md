@@ -16,7 +16,7 @@ C 233.1 45.9  255 137.5  320 140
 C 367.6 141.7  410.9 72.6  470 70
 ```
 
-In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen's new [spline functions](/pathogen/docs#stdlib-cubicsplinepoints) replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:
+In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen's new [spline functions](/docs#stdlib-cubicsplinepoints) replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:
 
 ```pathogen
 cubicSpline([
@@ -103,7 +103,7 @@ The signature is different from `cubicSpline`: start and end are separate argume
 
 Quadratic curves can sometimes bulge more than you want — the implicit shared control point sits far from the curve, pulling it outward. *Eccentricity* here refers to how much the curve deviates from the straight line between waypoints: more eccentric curves bulge further away from the baseline.
 
-`clippedQuadSpline` solves this by adding `exitTime` and `entryTime` parameters that control how far the actual control points are placed along the arm toward the virtual shared CP. The placement uses linear interpolation ([`lerp`](/pathogen/docs#stdlib-math-functions)) — `lerp(start, sharedCP, t)` returns a point partway between the endpoint and the virtual CP, where `t` is the fraction of the distance to travel.
+`clippedQuadSpline` solves this by adding `exitTime` and `entryTime` parameters that control how far the actual control points are placed along the arm toward the virtual shared CP. The placement uses linear interpolation ([`lerp`](/docs#stdlib-math-functions)) — `lerp(start, sharedCP, t)` returns a point partway between the endpoint and the virtual CP, where `t` is the fraction of the distance to travel.
 
 | Argument | Properties | Description |
 |----------|-----------|-------------|
@@ -134,4 +134,4 @@ Unlike `quadSpline` (which emits `q` commands), `clippedQuadSpline` emits `c` (c
 
 **When to choose clippedQuadSpline:** When you want the convenience of implicit angles (like `quadSpline`) but need to control how much the curve bulges at each segment. It's particularly useful for decorative borders, data visualization curves, and any shape where uniform curvature matters more than maximum expressiveness.
 
-All three spline functions emit relative commands, so they compose naturally with [path blocks](/pathogen/blog/pathblock-introduction) and [transforms](/pathogen/docs#path-blocks-transforms). They also pair well with [`heading()` and `turn()`](/pathogen/blog/heading-turn) for establishing tangent context before tangent-dependent functions. Try editing any of the examples above in the [Pathogen playground](/pathogen/) — adjust angles, handle lengths, and time values to see how the curves respond.
+All three spline functions emit relative commands, so they compose naturally with [path blocks](/blog/pathblock-introduction) and [transforms](/docs#path-blocks-transforms). They also pair well with [`heading()` and `turn()`](/blog/heading-turn) for establishing tangent context before tangent-dependent functions. Try editing any of the examples above in the [Pathogen playground](/) — adjust angles, handle lengths, and time values to see how the curves respond.

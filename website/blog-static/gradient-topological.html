@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Topological Gradients: Painting with Signed Distance Fields — Pathogen Studio</title>
   <meta name="description" content="What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/gradient-topological">
+  <link rel="canonical" href="https://pathogen.studio/blog/gradient-topological">
   <meta property="og:title" content="Topological Gradients: Painting with Signed Distance Fields — Pathogen Studio">
   <meta property="og:description" content="What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/gradient-topological">
+  <meta property="og:url" content="https://pathogen.studio/blog/gradient-topological">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Topological Gradients: Painting with Signed Distance Fields","description":"What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.","datePublished":"2026-03-05","url":"https://pathogen.studio/pathogen/blog/gradient-topological","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Topological Gradients: Painting with Signed Distance Fields","description":"What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.","datePublished":"2026-03-05","url":"https://pathogen.studio/blog/gradient-topological","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Topological Gradients: Painting with Signed Distance Fields</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Topological Gradients: Painting with Signed Distance Fields</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -341,7 +341,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
+  <img src="/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
 </mini-workspace></p>
 <h2>Multiple Peaks</h2>
 <p>Contours do not need to be nested. Two separate closed paths at the same elevation create independent features — like two islands in an ocean. The distance field solver treats each contour independently, producing smooth gradients around each shape that merge naturally in the shared base region.</p>
@@ -419,7 +419,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
+  <img src="/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
 </mini-workspace></p>
 <h2>Distance vs Laplace</h2>
 <p><code>TopoGradient</code> supports two solver methods that control how elevation is computed between contours.</p>
@@ -524,7 +524,7 @@ right_group.append(right);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
+  <img src="/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
 </mini-workspace></p>
 <h2>Easing</h2>
 <p>The <code>.easing</code> property controls how elevation values are interpolated between contours. Five modes are available:</p>
@@ -666,7 +666,7 @@ note.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 </code>
-  <img src="/pathogen/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
+  <img src="/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
 </mini-workspace></p>
 <p>The <code>easing-organic</code> sample demonstrates these curves on more complex contour shapes, where the visual difference is even more pronounced.</p>
 <h2>Terrain Map</h2>
@@ -780,7 +780,7 @@ legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, legend_group, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
+  <img src="/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
 </mini-workspace></p>
 <h2>Artistic Composition</h2>
 <p>TopoGradient is not limited to cartography. When contours overlap, the solver blends their influence regions, creating complex color fields that emerge from simple shape definitions. Overlapping blobs at different elevations produce layered, painterly effects.</p>
@@ -849,7 +849,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
+  <img src="/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
 </mini-workspace></p>
 <h3>Geometric Contours</h3>
 <p>When contour shapes are angular rather than organic, the results change character. Nested rotated rectangles produce sharp ridgelines and faceted valleys — the Laplace solver smooths the transitions between angular boundaries while preserving the geometric feel. The schematic on the right shows each contour outline with its elevation value and color, so you can trace how the gradient follows the shape geometry.</p>
@@ -999,7 +999,7 @@ panel_labels.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
+  <img src="/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
 </mini-workspace></p>
 <p>Multi-cluster polygonal contours create crystal-like formations. Three separate shape clusters — a central blue faceted core, a magenta wedge in the lower right, and a green shard in the upper left — compete for influence across the canvas. Where their distance fields overlap, the Laplace solver blends them into smooth transitions that emerge from purely angular geometry.</p>
 <p><mini-workspace caption="Crystal formation — eight polygonal contours across three clusters with annotated contour map">
@@ -1253,7 +1253,7 @@ panel_labels.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
+  <img src="/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
 </mini-workspace></p>
 <h3>Organic Methods Compared</h3>
 <p>The method choice matters most with complex organic contours. The same three shapes — a sweeping coastline curve, a flat-topped mesa, and a sharp triangular spire — produce markedly different results under the two solvers. Distance (SDF) creates concentric bands that follow every curve and corner exactly. The Laplace solver diffuses those boundaries into flowing transitions, softening the mesa&#39;s flat top and the spire&#39;s sharp point into a continuous potential field.</p>
@@ -1447,18 +1447,18 @@ center_group.append(center);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
+  <img src="/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
 </mini-workspace></p>
 <h2>What Comes Next</h2>
-<p>This is the sixth gradient type in Pathogen&#39;s system — linear, radial, conic, mesh, freeform, and topological. In the <a href="/pathogen/blog/gradient-pipeline">final post</a> of this series, we step back and look at the infrastructure that makes it all work: <code>GroupLayer</code> for scene composition, the CLI&#39;s <code>--render-gpu</code> flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns <code>.pathogen</code> source files into the blog you are reading now.</p>
+<p>This is the sixth gradient type in Pathogen&#39;s system — linear, radial, conic, mesh, freeform, and topological. In the <a href="/blog/gradient-pipeline">final post</a> of this series, we step back and look at the infrastructure that makes it all work: <code>GroupLayer</code> for scene composition, the CLI&#39;s <code>--render-gpu</code> flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns <code>.pathogen</code> source files into the blog you are reading now.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

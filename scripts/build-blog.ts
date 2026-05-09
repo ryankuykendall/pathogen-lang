@@ -157,7 +157,7 @@ async function processMiniWorkspaceTags(html: string, blogDir: string): Promise<
       .join(' ');
 
     const svgFallback = hasSvg
-      ? `\n  <img src="/pathogen/blog/${svgFilename}" alt="${caption || 'SVG preview'}" loading="lazy">`
+      ? `\n  <img src="/blog/${svgFilename}" alt="${caption || 'SVG preview'}" loading="lazy">`
       : '';
 
     const replacement = `<mini-workspace ${attrs}>
@@ -345,7 +345,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
@@ -355,9 +355,9 @@ export const latestBlogPost: BlogPostMeta | null = null;
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -435,7 +435,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   ${siteHeaderHtml({ pathname: path, context: 'static' })}
@@ -456,11 +456,11 @@ export const latestBlogPost: BlogPostMeta | null = null;
   <main class="blog-main">
     ${content}
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>`;
   }
@@ -471,7 +471,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
     headline: entry.title,
     description: entry.description,
     datePublished: entry.date,
-    url: `${SITE_URL}/pathogen/blog/${entry.slug}`,
+    url: `${SITE_URL}/blog/${entry.slug}`,
   }));
 
   const indexJsonLd = JSON.stringify({
@@ -479,7 +479,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
     '@type': 'Blog',
     name: 'Pathogen Blog',
     description: 'Thoughts, tutorials, and updates about svg-path-extended',
-    url: `${SITE_URL}/pathogen/blog`,
+    url: `${SITE_URL}/blog`,
     publisher: { '@type': 'Organization', name: 'Pedestal Design', url: SITE_URL },
     blogPost: blogPostingsJsonLd,
   });
@@ -491,8 +491,8 @@ export const latestBlogPost: BlogPostMeta | null = null;
         month: 'long',
         day: 'numeric',
       });
-      return `    <article class="blog-card" onclick="location.href='/pathogen/blog/${entry.slug}'">
-      <a href="/pathogen/blog/${entry.slug}" style="text-decoration:none;color:inherit;display:block;">
+      return `    <article class="blog-card" onclick="location.href='/blog/${entry.slug}'">
+      <a href="/blog/${entry.slug}" style="text-decoration:none;color:inherit;display:block;">
         <h2>${escapeHtmlAttr(entry.title)}</h2>
         <time datetime="${entry.date}">${dateFormatted}</time>
         ${entry.description ? `<p>${escapeHtmlAttr(entry.description)}</p>` : ''}
@@ -504,8 +504,8 @@ export const latestBlogPost: BlogPostMeta | null = null;
   const indexPage = renderBlogShell({
     title: 'Blog',
     description: 'Thoughts, tutorials, and updates about svg-path-extended',
-    path: '/pathogen/blog',
-    breadcrumbs: [{ label: 'Home', href: '/pathogen/' }, { label: 'Blog' }],
+    path: '/blog',
+    breadcrumbs: [{ label: 'Home', href: '/' }, { label: 'Blog' }],
     content: `
     <h1>Blog</h1>
     <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about svg-path-extended</p>
@@ -535,17 +535,17 @@ ${indexCards}
       headline: entry.title,
       description: entry.description,
       datePublished: entry.date,
-      url: `${SITE_URL}/pathogen/blog/${entry.slug}`,
+      url: `${SITE_URL}/blog/${entry.slug}`,
       author: { '@type': 'Organization', name: 'Pedestal Design', url: SITE_URL },
     });
 
     const postPage = renderBlogShell({
       title: entry.title,
       description: entry.description || `${entry.title} — a blog post from Pathogen`,
-      path: `/pathogen/blog/${entry.slug}`,
+      path: `/blog/${entry.slug}`,
       breadcrumbs: [
-        { label: 'Home', href: '/pathogen/' },
-        { label: 'Blog', href: '/pathogen/blog' },
+        { label: 'Home', href: '/' },
+        { label: 'Blog', href: '/blog' },
         { label: entry.title },
       ],
       content: `<article>

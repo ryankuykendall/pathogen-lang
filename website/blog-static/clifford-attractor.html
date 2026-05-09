@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Strange Attractors: Clifford Attractor Art with Pathogen — Pathogen Studio</title>
   <meta name="description" content="Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/clifford-attractor">
+  <link rel="canonical" href="https://pathogen.studio/blog/clifford-attractor">
   <meta property="og:title" content="Strange Attractors: Clifford Attractor Art with Pathogen — Pathogen Studio">
   <meta property="og:description" content="Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/clifford-attractor">
+  <meta property="og:url" content="https://pathogen.studio/blog/clifford-attractor">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Strange Attractors: Clifford Attractor Art with Pathogen","description":"Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.","datePublished":"2026-04-14","url":"https://pathogen.studio/pathogen/blog/clifford-attractor","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Strange Attractors: Clifford Attractor Art with Pathogen","description":"Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.","datePublished":"2026-04-14","url":"https://pathogen.studio/blog/clifford-attractor","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Strange Attractors: Clifford Attractor Art with Pathogen</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Strange Attractors: Clifford Attractor Art with Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -252,7 +252,7 @@ code.hljs {
       </header>
       <div class="blog-content">
         <blockquote>
-<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/docs#syntax-for-loops">for loops</a>, <a href="/pathogen/docs#syntax-functions">user-defined functions</a>, <a href="/pathogen/docs#layers-defining-layers">layers</a>, and <a href="/pathogen/docs#color-colorpalettecolor-n">Color.palette</a>. If you&#39;re new to Pathogen, start with the <a href="/pathogen/docs#getting-started-getting-started">getting started guide</a>.</p>
+<p><strong>Prerequisites:</strong> This post uses <a href="/docs#syntax-for-loops">for loops</a>, <a href="/docs#syntax-functions">user-defined functions</a>, <a href="/docs#layers-defining-layers">layers</a>, and <a href="/docs#color-colorpalettecolor-n">Color.palette</a>. If you&#39;re new to Pathogen, start with the <a href="/docs#getting-started-getting-started">getting started guide</a>.</p>
 </blockquote>
 <p>Every previous blog post on this site has built geometry by design — placing shapes, computing curves, arranging data. This post is different. We&#39;re going to write a tight loop, iterate a pair of equations ten thousand times, and watch structure emerge from arithmetic. The result is a <strong>Clifford attractor</strong>: a strange attractor discovered by <a href="https://en.wikipedia.org/wiki/Clifford_A._Pickover">Clifford Pickover</a> and documented beautifully by <a href="https://paulbourke.net/fractals/clifford/">Paul Bourke</a>.</p>
 <p>Strange attractors are the visual fingerprints of chaotic dynamical systems. You feed a point through a set of equations, and the output becomes the input for the next iteration. The trajectory never repeats, never diverges, but settles into a bounded region of space — tracing intricate, self-similar patterns along the way.</p>
@@ -367,7 +367,7 @@ formula.apply {
 let g = GroupLayer('concept') ${};
 g.append(bg, trail, dots, labels, formula);
 </code>
-  <img src="/pathogen/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
+  <img src="/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
 </mini-workspace></p>
 <p>The diagram above shows the first 8 iterations from seed point <code>(0.1, 0.1)</code> with parameters <code>a = -1.4, b = 1.6, c = 1.0, d = 0.7</code>. The points jump unpredictably — that&#39;s the chaos — but they stay bounded roughly within <code>[-3, 3]</code> on both axes. Draw enough points and the attractor&#39;s structure emerges.</p>
 <h2>First Implementation: A Sparse Point Cloud</h2>
@@ -425,7 +425,7 @@ for (i in 0..99) {
   y = ny;
 }
 </code>
-  <img src="/pathogen/blog/samples/post23/first-attractor.svg" alt="100 iterations — the attractor's skeleton is just barely visible" loading="lazy">
+  <img src="/blog/samples/post23/first-attractor.svg" alt="100 iterations — the attractor's skeleton is just barely visible" loading="lazy">
 </mini-workspace></p>
 <p>With only 100 points, you can see individual dots scattered across the canvas. Some clustering is visible — the attractor&#39;s structure is already hinting at itself — but the image is sparse. We need more iterations.</p>
 <h2>Scaling Up: 10,000 Points</h2>
@@ -485,7 +485,7 @@ for (i in 1..9999) {
   M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
 }
 </code>
-  <img src="/pathogen/blog/samples/post23/full-attractor.svg" alt="10,000 iterations — the full Clifford attractor emerges" loading="lazy">
+  <img src="/blog/samples/post23/full-attractor.svg" alt="10,000 iterations — the full Clifford attractor emerges" loading="lazy">
 </mini-workspace></p>
 <p>At 10,000 points, the attractor&#39;s character is unmistakable. The classic parameter set <code>(a = -1.4, b = 1.6, c = 1.0, d = 0.7)</code> produces a figure that resembles overlapping leaf forms, with dense filaments tracing the trajectories that the system visits most often.</p>
 <h2>Color Mapping with Layers</h2>
@@ -559,7 +559,7 @@ for ([colorLayer, chunk] in layers) {
 let g = GroupLayer('all') ${};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
-  <img src="/pathogen/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
+  <img src="/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
 </mini-workspace></p>
 <p>The color reveals something the monochrome version hides: the attractor doesn&#39;t fill uniformly. Early iterations (blue) trace the broad outline. Later iterations (orange) concentrate in the densest filaments, reinforcing the paths the system visits repeatedly. This temporal layering is a rough proxy for the density-based histogram rendering that professional attractor tools use.</p>
 <h2>Parameter Exploration</h2>
@@ -649,7 +649,7 @@ params.apply {
 let g = GroupLayer('gallery') ${};
 g.append(p1, p2, p3, names, params);
 </code>
-  <img src="/pathogen/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
+  <img src="/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
 </mini-workspace></p>
 <p>The <strong>Classic</strong> set produces overlapping leaf forms with clearly defined filaments. The <strong>Swirl</strong> set creates an angular, dispersed figure with sharper trajectories. The <strong>Organic</strong> set forms a denser, moon-like structure where the trajectories pack tightly together. All three emerge from the same two equations — only the four parameters differ.</p>
 <p>The implementation extracts the Clifford step into a reusable function:</p>
@@ -707,13 +707,13 @@ for ([colorLayer, chunk] in layers) {
 let g = GroupLayer('all') ${};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
-  <img src="/pathogen/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">
+  <img src="/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">
 </mini-workspace></p>
 <p>This works because <code>Color.palette()</code> generates CSS color functions that reference the underlying variables. The geometry stays fixed, but the visual character transforms instantly.</p>
 <h2>Where the Language Could Grow</h2>
 <p>Building this attractor was a satisfying exercise, but it also exposed genuine friction. These aren&#39;t bugs — they&#39;re places where Pathogen&#39;s design, shaped by geometry construction, meets the different demands of iterative generative art.</p>
 <h3>A <code>dot()</code> function</h3>
-<p>The <code>M x y l 0 0</code> idiom for rendering individual points works, but it&#39;s an SVG implementation detail leaking into the language. A <code>dot(x, y)</code> function (optionally <code>dot(x, y, radius)</code>) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to <a href="/pathogen/docs#stdlib-standard-library-reference">stdlib</a> — analogous to how <code>circle()</code> wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.</p>
+<p>The <code>M x y l 0 0</code> idiom for rendering individual points works, but it&#39;s an SVG implementation detail leaking into the language. A <code>dot(x, y)</code> function (optionally <code>dot(x, y, radius)</code>) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to <a href="/docs#stdlib-standard-library-reference">stdlib</a> — analogous to how <code>circle()</code> wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.</p>
 <h3>Higher iteration limits</h3>
 <p>The 32,000-iteration cap per loop is sufficient for most attractor visualizations, but generative art routinely wants 50,000 or 100,000 iterations for high-resolution output. A configurable compiler option like <code>--max-iterations=100000</code> would let users opt in to higher limits when they know what they&#39;re doing.</p>
 <p>The nested-loop workaround (outer loop over chunks, inner loop over iteration batches) does get you past the per-loop limit today — <code>x</code>/<code>y</code> persist across the outer scope. But a single loop with a higher cap would be cleaner.</p>
@@ -730,15 +730,15 @@ g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </ol>
 <p>The Clifford attractor is a small window into a vast space. Pathogen handles the core workflow — iterate, map coordinates, render — cleanly. The friction points we identified aren&#39;t blockers; they&#39;re signposts for where the language wants to grow as generative art becomes a larger part of its story.</p>
 <h2>Try It Yourself</h2>
-<p>Paste any of the samples above into the <a href="/pathogen/">playground</a> and start changing parameters. Try <code>a = 1.5, b = -1.8, c = 1.6, d = 0.9</code> for a dense spiral, or <code>a = -1.7, b = 1.3, c = -0.1, d = -1.2</code> for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.</p>
+<p>Paste any of the samples above into the <a href="/">playground</a> and start changing parameters. Try <code>a = 1.5, b = -1.8, c = 1.6, d = 0.9</code> for a dense spiral, or <code>a = -1.7, b = 1.3, c = -0.1, d = -1.2</code> for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

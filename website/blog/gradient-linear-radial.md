@@ -139,7 +139,7 @@ One base gradient, three variants. Change the base and all inherited gradients u
 
 ## CSS Variable Reactivity
 
-Pathogen's gradients compose naturally with the [reactive color system](/pathogen/blog/reactive-color-svg). When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.
+Pathogen's gradients compose naturally with the [reactive color system](/blog/reactive-color-svg). When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.
 
 The demo below puts three overlapping radial glows on a dark background. Each glow's center color is bound to a CSS variable (`--light-a`, `--light-b`, `--light-c`) — use the color pickers to remix the scene in real time.
 
@@ -149,4 +149,4 @@ This is the payoff of treating gradients as first-class objects: they participat
 
 ## What Comes Next
 
-Linear and radial gradients map directly to SVG elements — the compiler emits `<linearGradient>` and `<radialGradient>` and the browser handles rendering. But SVG has no `<conicGradient>`. In the [next post](/pathogen/blog/gradient-conic), we build one from scratch using WebGPU shaders and rasterized `<pattern>` elements.
+Linear and radial gradients map directly to SVG elements — the compiler emits `<linearGradient>` and `<radialGradient>` and the browser handles rendering. But SVG has no `<conicGradient>`. In the [next post](/blog/gradient-conic), we build one from scratch using WebGPU shaders and rasterized `<pattern>` elements.

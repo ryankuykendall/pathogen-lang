@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fillets and Chamfers: Rounding and Cutting Corners — Pathogen Studio</title>
   <meta name="description" content="Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/pathblock-fillets-chamfers">
+  <link rel="canonical" href="https://pathogen.studio/blog/pathblock-fillets-chamfers">
   <meta property="og:title" content="Fillets and Chamfers: Rounding and Cutting Corners — Pathogen Studio">
   <meta property="og:description" content="Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/pathblock-fillets-chamfers">
+  <meta property="og:url" content="https://pathogen.studio/blog/pathblock-fillets-chamfers">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Fillets and Chamfers: Rounding and Cutting Corners","description":"Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.","datePublished":"2026-03-12","url":"https://pathogen.studio/pathogen/blog/pathblock-fillets-chamfers","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Fillets and Chamfers: Rounding and Cutting Corners","description":"Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.","datePublished":"2026-03-12","url":"https://pathogen.studio/blog/pathblock-fillets-chamfers","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Fillets and Chamfers: Rounding and Cutting Corners</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Fillets and Chamfers: Rounding and Cutting Corners</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -255,27 +255,27 @@ code.hljs {
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
-<li><a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
-<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
 <li><strong>Fillets and Chamfers</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
 </ol>
 </blockquote>
-<p>Sharp corners are the default in SVG paths. Every junction between two line segments creates a hard vertex. Chamfers and fillets transform these corners — chamfers cut them with straight lines, fillets round them with arcs. Both operations work on <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a> and return new PathBlocks, so you can chain them with other transforms.</p>
+<p>Sharp corners are the default in SVG paths. Every junction between two line segments creates a hard vertex. Chamfers and fillets transform these corners — chamfers cut them with straight lines, fillets round them with arcs. Both operations work on <a href="/blog/pathblock-introduction">PathBlocks</a> and return new PathBlocks, so you can chain them with other transforms.</p>
 <p>When should you reach for a chamfer vs. a fillet? Chamfers produce a machined, technical look — think hardware enclosures, PCB traces, or geometric badges. Fillets produce organic, smooth corners — rounded UI elements, product forms, or anything that needs to feel softer. The choice is aesthetic: same trim-and-replace infrastructure, different visual character.</p>
 <h2>Chamfers</h2>
-<p>A <a href="/pathogen/docs#path-blocks-chamfers">chamfer</a> replaces a corner vertex with a straight line. The incoming and outgoing edges are trimmed by a distance, and a line segment connects the two trim points. The result is a beveled corner.</p>
+<p>A <a href="/docs#path-blocks-chamfers">chamfer</a> replaces a corner vertex with a straight line. The incoming and outgoing edges are trimmed by a distance, and a line segment connects the two trim points. The result is a beveled corner.</p>
 <h3>Symmetric Chamfer</h3>
 <p>The simplest form trims equal amounts from both edges at every corner:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-keyword">let</span> beveled = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">10</span>);
 beveled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Asymmetric Chamfer</h3>
-<p>Pass two distances to trim different amounts on the incoming and outgoing edges — <a href="/pathogen/docs#path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code></a>:</p>
+<p>Pass two distances to trim different amounts on the incoming and outgoing edges — <a href="/docs#path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code></a>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> asym = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">5</span>, <span class="hljs-number">25</span>);
 asym.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Per-Vertex Chamfer</h3>
-<p><a href="/pathogen/docs#path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code></a> targets a single corner. The index comes from the PathBlock&#39;s <code>.vertices</code> array:</p>
+<p><a href="/docs#path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code></a> targets a single corner. The index comes from the PathBlock&#39;s <code>.vertices</code> array:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-comment">// vertices: (0,0), (70,0), (70,70), (0,70)</span>
 <span class="hljs-keyword">let</span> oneCorner = box.<span class="hljs-title function_">chamferAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">15</span>);
@@ -531,7 +531,7 @@ subtitle.apply {
   text(30, 44)`Replace a corner vertex with a straight cut`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/chamfer-anatomy.svg" alt="Chamfer anatomy — geometric construction at a right-angle corner" loading="lazy">
+  <img src="/blog/samples/post8/chamfer-anatomy.svg" alt="Chamfer anatomy — geometric construction at a right-angle corner" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained">
   <code>// viewBox="0 0 560 300"
@@ -669,21 +669,21 @@ subtitle.apply {
   text(175, 32)`Five chamfer modes on a 70×70 square`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/chamfer-gallery.svg" alt="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained" loading="lazy">
+  <img src="/blog/samples/post8/chamfer-gallery.svg" alt="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained" loading="lazy">
 </mini-workspace></p>
 <p>The dashed outlines show the original 70×70 box. Each chamfered version demonstrates a different configuration: small symmetric (8px), large symmetric (20px), asymmetric (5px/25px), single vertex (index 1), and two-vertex chaining.</p>
 <h2>Fillets</h2>
-<p>A <a href="/pathogen/docs#path-blocks-fillets">fillet</a> replaces a corner with a circular arc tangent to both edges. The trim distance is calculated from the radius and the half-angle between the edges:</p>
+<p>A <a href="/docs#path-blocks-fillets">fillet</a> replaces a corner with a circular arc tangent to both edges. The trim distance is calculated from the radius and the half-angle between the edges:</p>
 <pre><code class="hljs">trimDistance = radius / tan(halfAngle)
 </code></pre><p>This ensures the arc is tangent to both edges at the trim points. The sweep direction is determined by the cross product of the edge vectors.</p>
-<p><strong>Important:</strong> Fillets currently work at <strong>line-line junctions only</strong>. At curve junctions (where a curve meets a line, or two curves meet), the fillet is skipped and a warning is logged. This covers the vast majority of practical cases — rectangles, polygons, stars, and polylines are all line-line. See the <a href="/pathogen/docs#path-blocks-fillets">documentation</a> for details.</p>
+<p><strong>Important:</strong> Fillets currently work at <strong>line-line junctions only</strong>. At curve junctions (where a curve meets a line, or two curves meet), the fillet is skipped and a warning is logged. This covers the vast majority of practical cases — rectangles, polygons, stars, and polylines are all line-line. See the <a href="/docs#path-blocks-fillets">documentation</a> for details.</p>
 <h3>All Corners</h3>
-<p><a href="/pathogen/docs#path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code></a> rounds every corner:</p>
+<p><a href="/docs#path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code></a> rounds every corner:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">10</span>);
 rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Per-Vertex</h3>
-<p><a href="/pathogen/docs#path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code></a> rounds a single corner:</p>
+<p><a href="/docs#path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code></a> rounds a single corner:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> oneRound = box.<span class="hljs-title function_">filletAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">20</span>);
 oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><p>The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance <code>r</code> from both edges) and the trim formula <code>trim = r / tan(halfAngle)</code> are labeled. For a right angle, <code>trim = r</code>.</p>
@@ -952,21 +952,21 @@ subtitle.apply {
   text(30, 44)`Replace a corner vertex with a tangent circular arc`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/fillet-anatomy.svg" alt="Fillet anatomy — arc center, trim points, and radius at a 90° corner" loading="lazy">
+  <img src="/blog/samples/post8/fillet-anatomy.svg" alt="Fillet anatomy — arc center, trim points, and radius at a 90° corner" loading="lazy">
 </mini-workspace></p>
 <h2>Elliptical Fillets</h2>
-<p><a href="/pathogen/docs#path-blocks-elliptical-fillets">Elliptical fillets</a> replace corners with elliptical arcs instead of circular ones. If you&#39;ve used CSS <code>border-radius</code> with two values (e.g., <code>border-radius: 15px / 8px</code>), you&#39;ve already seen elliptical fillets in action — they produce the same asymmetric corner rounding. This gives you control over the corner shape&#39;s aspect ratio, useful for UI components, pill shapes, and organic forms where a circular arc is too uniform.</p>
+<p><a href="/docs#path-blocks-elliptical-fillets">Elliptical fillets</a> replace corners with elliptical arcs instead of circular ones. If you&#39;ve used CSS <code>border-radius</code> with two values (e.g., <code>border-radius: 15px / 8px</code>), you&#39;ve already seen elliptical fillets in action — they produce the same asymmetric corner rounding. This gives you control over the corner shape&#39;s aspect ratio, useful for UI components, pill shapes, and organic forms where a circular arc is too uniform.</p>
 <h3>Basic Elliptical</h3>
-<p><a href="/pathogen/docs#path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code></a> uses two radii:</p>
+<p><a href="/docs#path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code></a> uses two radii:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-keyword">let</span> eFilleted = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>);
 eFilleted.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>With Rotation</h3>
-<p><a href="/pathogen/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code></a> adds an ellipse rotation in radians:</p>
+<p><a href="/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code></a> adds an ellipse rotation in radians:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> rotated = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>, <span class="hljs-number">0.3</span>);
 rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Per-Vertex Variants</h3>
-<p><a href="/pathogen/docs#path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex</code></a> targets individual corners, with an optional rotation parameter.</p>
+<p><a href="/docs#path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex</code></a> targets individual corners, with an optional rotation parameter.</p>
 <h3>Adapting to Corner Angles</h3>
 <p>The elliptical fillet computes separate trim distances for each edge based on the tangent parameters of the ellipse. At a 90° corner with <code>ellipticalFillet(rx, ry)</code>, the horizontal edges are trimmed by <code>rx</code> and the vertical edges by <code>ry</code> — matching CSS <code>border-radius</code> behavior. The diagram below shows two configurations — <code>ellipticalFillet(32, 16)</code> (wider) and <code>ellipticalFillet(24, 48)</code> (taller) — at eight different corner angles.</p>
 <p><mini-workspace caption="Elliptical fillet at various angles — adapts trim distances per-edge">
@@ -1131,7 +1131,7 @@ subtitle.apply {
   text(30, 46)`ellipticalFillet(rx, ry) adapts to any corner angle`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/elliptical-fillet-angles.svg" alt="Elliptical fillet at various angles — adapts trim distances per-edge" loading="lazy">
+  <img src="/blog/samples/post8/elliptical-fillet-angles.svg" alt="Elliptical fillet at various angles — adapts trim distances per-edge" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical">
   <code>// viewBox="0 0 560 300"
@@ -1271,11 +1271,11 @@ subtitle.apply {
   text(155, 32)`Circular, elliptical, per-vertex, and rotated on a 70×70 square`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/fillet-gallery.svg" alt="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical" loading="lazy">
+  <img src="/blog/samples/post8/fillet-gallery.svg" alt="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical" loading="lazy">
 </mini-workspace></p>
 <p>The gallery shows five variations: small circular (r=5), large circular (r=15), elliptical (15×8), single-vertex circular (r=20 at vertex 1), and rotated elliptical (15×8, 0.3 rad).</p>
 <h2>Edge Cases and Clamping</h2>
-<p>Both chamfers and fillets handle edge cases gracefully. From the <a href="/pathogen/docs#path-blocks-edge-cases">documentation</a>:</p>
+<p>Both chamfers and fillets handle edge cases gracefully. From the <a href="/docs#path-blocks-edge-cases">documentation</a>:</p>
 <ul>
 <li><strong>Radius/distance too large</strong>: If the trim distance exceeds the available edge length, it&#39;s clamped to the edge length and a warning is logged. This prevents the operation from failing on small shapes.</li>
 <li><strong>Out-of-range vertex index</strong>: Throws a descriptive error.</li>
@@ -1283,7 +1283,7 @@ subtitle.apply {
 <li><strong>Open paths</strong>: Corners at both endpoints are skipped (there&#39;s no second edge to trim).</li>
 </ul>
 <h2>Chaining with Other Operations</h2>
-<p>Because chamfers and fillets return PathBlocks, you can chain them with any other PathBlock method — <a href="/pathogen/docs#path-blocks-drawing-a-path-block"><code>.draw()</code></a>, <a href="/pathogen/docs#path-blocks-drawing-a-path-block"><code>.drawTo()</code></a>, <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project()</code></a>, <a href="/pathogen/docs#path-blocks-parametric-sampling">parametric sampling</a>, or <a href="/pathogen/docs#path-blocks-boolean-operations">boolean operations</a>:</p>
+<p>Because chamfers and fillets return PathBlocks, you can chain them with any other PathBlock method — <a href="/docs#path-blocks-drawing-a-path-block"><code>.draw()</code></a>, <a href="/docs#path-blocks-drawing-a-path-block"><code>.drawTo()</code></a>, <a href="/docs#path-blocks-projecting-without-drawing"><code>.project()</code></a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or <a href="/docs#path-blocks-boolean-operations">boolean operations</a>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
 <span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
 <span class="hljs-keyword">let</span> pts = rounded.<span class="hljs-title function_">partition</span>(<span class="hljs-number">20</span>);
@@ -1291,15 +1291,15 @@ subtitle.apply {
   <span class="hljs-comment">// Place dots along the rounded rectangle</span>
 }
 </code></pre><h2>What&#39;s Next</h2>
-<p>The final post in this series covers <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a> — combining two closed paths using union, difference, intersection, and xor. Since everything returns a PathBlock, you&#39;ll see how these operations compose with the fillets and chamfers covered here.</p>
+<p>The final post in this series covers <a href="/blog/pathblock-boolean-operations">boolean operations</a> — combining two closed paths using union, difference, intersection, and xor. Since everything returns a PathBlock, you&#39;ll see how these operations compose with the fillets and chamfers covered here.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

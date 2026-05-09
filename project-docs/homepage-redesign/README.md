@@ -21,7 +21,7 @@ Four self-contained HTML mockups exploring how the Pathogen Studio homepage shou
 Every mockup includes the full set, just arranged differently:
 
 1. **Hero + primary CTA** — "Open My Workspaces" pill, peach-rose gradient. The single primary-color element on the page.
-2. **GitHub repo** — Card linking to <https://github.com/ryankuykendall/svg-path-extended>. Material `code` icon.
+2. **GitHub repo** — Card linking to <https://github.com/ryankuykendall/pathogen-lang>. Material `code` icon.
 3. **CLI** — Inline code snippet of a one-liner: `echo 'circle(100, 100, 50)' | svg-path-extended -`. Plus an install hint.
 4. **Blog** — Card highlighting the most recent post: *"Strange Attractors: Clifford Attractor Art with Pathogen"* (2026-04-14).
 5. **VS Code extension** — Placeholder card labelled "Coming to VS Code Marketplace". Uses `vscode-hero.png` thumbnail.

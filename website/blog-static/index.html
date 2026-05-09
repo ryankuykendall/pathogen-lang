@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Blog — Pathogen Studio</title>
   <meta name="description" content="Thoughts, tutorials, and updates about svg-path-extended">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog">
+  <link rel="canonical" href="https://pathogen.studio/blog">
   <meta property="og:title" content="Blog — Pathogen Studio">
   <meta property="og:description" content="Thoughts, tutorials, and updates about svg-path-extended">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog">
+  <meta property="og:url" content="https://pathogen.studio/blog">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Blog","name":"Pathogen Blog","description":"Thoughts, tutorials, and updates about svg-path-extended","url":"https://pathogen.studio/pathogen/blog","publisher":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"},"blogPost":[{"@type":"BlogPosting","headline":"Strange Attractors: Clifford Attractor Art with Pathogen","description":"Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.","datePublished":"2026-04-14","url":"https://pathogen.studio/pathogen/blog/clifford-attractor"},{"@type":"BlogPosting","headline":"Building a VS Code Extension for the Pathogen Language","description":"From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.","datePublished":"2026-04-10","url":"https://pathogen.studio/pathogen/blog/vscode-developer-experience"},{"@type":"BlogPosting","headline":"Data Visualization with Pathogen: Building a Radial Bar Chart","description":"Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.","datePublished":"2026-03-29","url":"https://pathogen.studio/pathogen/blog/radial-bar-chart"},{"@type":"BlogPosting","headline":"Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen","description":"Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each.","datePublished":"2026-03-23","url":"https://pathogen.studio/pathogen/blog/grid-functions"},{"@type":"BlogPosting","headline":"Clean Tangent Control: heading() and turn() in Pathogen","description":"Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.","datePublished":"2026-03-22","url":"https://pathogen.studio/pathogen/blog/heading-turn"},{"@type":"BlogPosting","headline":"Smooth Curves Made Simple: Chained Bézier Splines in Pathogen","description":"Three stdlib functions that turn waypoints into G1-continuous Bézier curves — cubicSpline for explicit tangent control, quadSpline for implicit angles, and clippedQuadSpline for eccentricity dampening.","datePublished":"2026-03-21","url":"https://pathogen.studio/pathogen/blog/chained-bezier-splines"},{"@type":"BlogPosting","headline":"From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()","description":"Turn font glyphs into PathBlock geometry — manual text layout, contour decomposition, per-character transforms, and boolean text cutouts.","datePublished":"2026-03-17","url":"https://pathogen.studio/pathogen/blog/pathblock-glyph-extraction"},{"@type":"BlogPosting","headline":"TextBlock: Measure-First Text for SVG Diagrams","description":"Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.","datePublished":"2026-03-16","url":"https://pathogen.studio/pathogen/blog/textblock-introduction"},{"@type":"BlogPosting","headline":"Drop the Quotes: Color Literals in Pathogen","description":"A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.","datePublished":"2026-03-14","url":"https://pathogen.studio/pathogen/blog/color-literals"},{"@type":"BlogPosting","headline":"Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR","description":"How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.","datePublished":"2026-03-13","url":"https://pathogen.studio/pathogen/blog/pathblock-boolean-operations"},{"@type":"BlogPosting","headline":"Fillets and Chamfers: Rounding and Cutting Corners","description":"Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.","datePublished":"2026-03-12","url":"https://pathogen.studio/pathogen/blog/pathblock-fillets-chamfers"},{"@type":"BlogPosting","headline":"Parametric Sampling: Placing Elements Along Curves","description":"How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.","datePublished":"2026-03-11","url":"https://pathogen.studio/pathogen/blog/pathblock-parametric-sampling"},{"@type":"BlogPosting","headline":"PathBlocks: Reusable Shape Primitives in Pathogen","description":"How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.","datePublished":"2026-03-10","url":"https://pathogen.studio/pathogen/blog/pathblock-introduction"},{"@type":"BlogPosting","headline":"Building the Gradient Pipeline: From Compiler to Blog","description":"How Pathogen's gradient system flows from .pathogen source through the compiler, GPU renderer, and blog build pipeline to produce the interactive demos in this series.","datePublished":"2026-03-06","url":"https://pathogen.studio/pathogen/blog/gradient-pipeline"},{"@type":"BlogPosting","headline":"Topological Gradients: Painting with Signed Distance Fields","description":"What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.","datePublished":"2026-03-05","url":"https://pathogen.studio/pathogen/blog/gradient-topological"},{"@type":"BlogPosting","headline":"Mesh and Freeform: Gradients That SVG Forgot","description":"SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.","datePublished":"2026-03-04","url":"https://pathogen.studio/pathogen/blog/gradient-mesh-freeform"},{"@type":"BlogPosting","headline":"Beyond CSS: Conic Gradients with WebGPU Rendering","description":"SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.","datePublished":"2026-03-03","url":"https://pathogen.studio/pathogen/blog/gradient-conic"},{"@type":"BlogPosting","headline":"Painting with Math: Linear and Radial Gradients in Pathogen","description":"How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.","datePublished":"2026-03-02","url":"https://pathogen.studio/pathogen/blog/gradient-linear-radial"},{"@type":"BlogPosting","headline":"Reactive Color in SVG: From Static Paths to Dynamic Themes","description":"How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.","datePublished":"2026-02-27","url":"https://pathogen.studio/pathogen/blog/reactive-color-svg"},{"@type":"BlogPosting","headline":"Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel","description":"After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.","datePublished":"2026-02-17","url":"https://pathogen.studio/pathogen/blog/seo-pages-cloudflare-workers-routing"},{"@type":"BlogPosting","headline":"The SVG Serialization Trap: Why createElementNS Broke Our Thumbnail Pipeline","description":"How programmatically created SVG elements silently produce broken output when serialized with XMLSerializer and loaded as images — and the surprisingly simple fix.","datePublished":"2026-02-11","url":"https://pathogen.studio/pathogen/blog/svg-serialization-trap"},{"@type":"BlogPosting","headline":"The CloudFlare Pages SPA Routing Odyssey","description":"A developer's journey through documentation gaps when trying to make SPA routing work on CloudFlare Pages with subdirectory deployments.","datePublished":"2026-01-28","url":"https://pathogen.studio/pathogen/blog/cloudflare-pages-spa-routing-struggle"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Blog","name":"Pathogen Blog","description":"Thoughts, tutorials, and updates about svg-path-extended","url":"https://pathogen.studio/blog","publisher":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"},"blogPost":[{"@type":"BlogPosting","headline":"Strange Attractors: Clifford Attractor Art with Pathogen","description":"Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.","datePublished":"2026-04-14","url":"https://pathogen.studio/blog/clifford-attractor"},{"@type":"BlogPosting","headline":"Building a VS Code Extension for the Pathogen Language","description":"From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.","datePublished":"2026-04-10","url":"https://pathogen.studio/blog/vscode-developer-experience"},{"@type":"BlogPosting","headline":"Data Visualization with Pathogen: Building a Radial Bar Chart","description":"Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.","datePublished":"2026-03-29","url":"https://pathogen.studio/blog/radial-bar-chart"},{"@type":"BlogPosting","headline":"Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen","description":"Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each.","datePublished":"2026-03-23","url":"https://pathogen.studio/blog/grid-functions"},{"@type":"BlogPosting","headline":"Clean Tangent Control: heading() and turn() in Pathogen","description":"Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.","datePublished":"2026-03-22","url":"https://pathogen.studio/blog/heading-turn"},{"@type":"BlogPosting","headline":"Smooth Curves Made Simple: Chained Bézier Splines in Pathogen","description":"Three stdlib functions that turn waypoints into G1-continuous Bézier curves — cubicSpline for explicit tangent control, quadSpline for implicit angles, and clippedQuadSpline for eccentricity dampening.","datePublished":"2026-03-21","url":"https://pathogen.studio/blog/chained-bezier-splines"},{"@type":"BlogPosting","headline":"From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()","description":"Turn font glyphs into PathBlock geometry — manual text layout, contour decomposition, per-character transforms, and boolean text cutouts.","datePublished":"2026-03-17","url":"https://pathogen.studio/blog/pathblock-glyph-extraction"},{"@type":"BlogPosting","headline":"TextBlock: Measure-First Text for SVG Diagrams","description":"Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.","datePublished":"2026-03-16","url":"https://pathogen.studio/blog/textblock-introduction"},{"@type":"BlogPosting","headline":"Drop the Quotes: Color Literals in Pathogen","description":"A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.","datePublished":"2026-03-14","url":"https://pathogen.studio/blog/color-literals"},{"@type":"BlogPosting","headline":"Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR","description":"How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.","datePublished":"2026-03-13","url":"https://pathogen.studio/blog/pathblock-boolean-operations"},{"@type":"BlogPosting","headline":"Fillets and Chamfers: Rounding and Cutting Corners","description":"Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.","datePublished":"2026-03-12","url":"https://pathogen.studio/blog/pathblock-fillets-chamfers"},{"@type":"BlogPosting","headline":"Parametric Sampling: Placing Elements Along Curves","description":"How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.","datePublished":"2026-03-11","url":"https://pathogen.studio/blog/pathblock-parametric-sampling"},{"@type":"BlogPosting","headline":"PathBlocks: Reusable Shape Primitives in Pathogen","description":"How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.","datePublished":"2026-03-10","url":"https://pathogen.studio/blog/pathblock-introduction"},{"@type":"BlogPosting","headline":"Building the Gradient Pipeline: From Compiler to Blog","description":"How Pathogen's gradient system flows from .pathogen source through the compiler, GPU renderer, and blog build pipeline to produce the interactive demos in this series.","datePublished":"2026-03-06","url":"https://pathogen.studio/blog/gradient-pipeline"},{"@type":"BlogPosting","headline":"Topological Gradients: Painting with Signed Distance Fields","description":"What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.","datePublished":"2026-03-05","url":"https://pathogen.studio/blog/gradient-topological"},{"@type":"BlogPosting","headline":"Mesh and Freeform: Gradients That SVG Forgot","description":"SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.","datePublished":"2026-03-04","url":"https://pathogen.studio/blog/gradient-mesh-freeform"},{"@type":"BlogPosting","headline":"Beyond CSS: Conic Gradients with WebGPU Rendering","description":"SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.","datePublished":"2026-03-03","url":"https://pathogen.studio/blog/gradient-conic"},{"@type":"BlogPosting","headline":"Painting with Math: Linear and Radial Gradients in Pathogen","description":"How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.","datePublished":"2026-03-02","url":"https://pathogen.studio/blog/gradient-linear-radial"},{"@type":"BlogPosting","headline":"Reactive Color in SVG: From Static Paths to Dynamic Themes","description":"How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.","datePublished":"2026-02-27","url":"https://pathogen.studio/blog/reactive-color-svg"},{"@type":"BlogPosting","headline":"Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel","description":"After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.","datePublished":"2026-02-17","url":"https://pathogen.studio/blog/seo-pages-cloudflare-workers-routing"},{"@type":"BlogPosting","headline":"The SVG Serialization Trap: Why createElementNS Broke Our Thumbnail Pipeline","description":"How programmatically created SVG elements silently produce broken output when serialized with XMLSerializer and loaded as images — and the surprisingly simple fix.","datePublished":"2026-02-11","url":"https://pathogen.studio/blog/svg-serialization-trap"},{"@type":"BlogPosting","headline":"The CloudFlare Pages SPA Routing Odyssey","description":"A developer's journey through documentation gaps when trying to make SPA routing work on CloudFlare Pages with subdirectory deployments.","datePublished":"2026-01-28","url":"https://pathogen.studio/blog/cloudflare-pages-spa-routing-struggle"}]}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,161 +243,161 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><span class="breadcrumb-current">Blog</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><span class="breadcrumb-current">Blog</span></nav></div>
   <main class="blog-main">
     
     <h1>Blog</h1>
     <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about svg-path-extended</p>
     <div class="blog-cards">
-    <article class="blog-card" onclick="location.href='/pathogen/blog/clifford-attractor'">
-      <a href="/pathogen/blog/clifford-attractor" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/clifford-attractor'">
+      <a href="/blog/clifford-attractor" style="text-decoration:none;color:inherit;display:block;">
         <h2>Strange Attractors: Clifford Attractor Art with Pathogen</h2>
         <time datetime="2026-04-14">April 13, 2026</time>
         <p>Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/vscode-developer-experience'">
-      <a href="/pathogen/blog/vscode-developer-experience" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/vscode-developer-experience'">
+      <a href="/blog/vscode-developer-experience" style="text-decoration:none;color:inherit;display:block;">
         <h2>Building a VS Code Extension for the Pathogen Language</h2>
         <time datetime="2026-04-10">April 9, 2026</time>
         <p>From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/radial-bar-chart'">
-      <a href="/pathogen/blog/radial-bar-chart" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/radial-bar-chart'">
+      <a href="/blog/radial-bar-chart" style="text-decoration:none;color:inherit;display:block;">
         <h2>Data Visualization with Pathogen: Building a Radial Bar Chart</h2>
         <time datetime="2026-03-29">March 28, 2026</time>
         <p>Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/grid-functions'">
-      <a href="/pathogen/blog/grid-functions" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/grid-functions'">
+      <a href="/blog/grid-functions" style="text-decoration:none;color:inherit;display:block;">
         <h2>Procedural Grids: Square, Triangle, and Hexagon Patterns in Pathogen</h2>
         <time datetime="2026-03-23">March 22, 2026</time>
         <p>Three stdlib functions that generate complete grid geometries — squares, equilateral triangles, and hexagons — with four visual pattern types each.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/heading-turn'">
-      <a href="/pathogen/blog/heading-turn" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/heading-turn'">
+      <a href="/blog/heading-turn" style="text-decoration:none;color:inherit;display:block;">
         <h2>Clean Tangent Control: heading() and turn() in Pathogen</h2>
         <time datetime="2026-03-22">March 21, 2026</time>
         <p>Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/chained-bezier-splines'">
-      <a href="/pathogen/blog/chained-bezier-splines" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/chained-bezier-splines'">
+      <a href="/blog/chained-bezier-splines" style="text-decoration:none;color:inherit;display:block;">
         <h2>Smooth Curves Made Simple: Chained Bézier Splines in Pathogen</h2>
         <time datetime="2026-03-21">March 20, 2026</time>
         <p>Three stdlib functions that turn waypoints into G1-continuous Bézier curves — cubicSpline for explicit tangent control, quadSpline for implicit angles, and clippedQuadSpline for eccentricity dampening.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/pathblock-glyph-extraction'">
-      <a href="/pathogen/blog/pathblock-glyph-extraction" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/pathblock-glyph-extraction'">
+      <a href="/blog/pathblock-glyph-extraction" style="text-decoration:none;color:inherit;display:block;">
         <h2>From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</h2>
         <time datetime="2026-03-17">March 16, 2026</time>
         <p>Turn font glyphs into PathBlock geometry — manual text layout, contour decomposition, per-character transforms, and boolean text cutouts.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/textblock-introduction'">
-      <a href="/pathogen/blog/textblock-introduction" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/textblock-introduction'">
+      <a href="/blog/textblock-introduction" style="text-decoration:none;color:inherit;display:block;">
         <h2>TextBlock: Measure-First Text for SVG Diagrams</h2>
         <time datetime="2026-03-16">March 15, 2026</time>
         <p>Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/color-literals'">
-      <a href="/pathogen/blog/color-literals" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/color-literals'">
+      <a href="/blog/color-literals" style="text-decoration:none;color:inherit;display:block;">
         <h2>Drop the Quotes: Color Literals in Pathogen</h2>
         <time datetime="2026-03-14">March 13, 2026</time>
         <p>A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/pathblock-boolean-operations'">
-      <a href="/pathogen/blog/pathblock-boolean-operations" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/pathblock-boolean-operations'">
+      <a href="/blog/pathblock-boolean-operations" style="text-decoration:none;color:inherit;display:block;">
         <h2>Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR</h2>
         <time datetime="2026-03-13">March 12, 2026</time>
         <p>How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/pathblock-fillets-chamfers'">
-      <a href="/pathogen/blog/pathblock-fillets-chamfers" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/pathblock-fillets-chamfers'">
+      <a href="/blog/pathblock-fillets-chamfers" style="text-decoration:none;color:inherit;display:block;">
         <h2>Fillets and Chamfers: Rounding and Cutting Corners</h2>
         <time datetime="2026-03-12">March 11, 2026</time>
         <p>Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/pathblock-parametric-sampling'">
-      <a href="/pathogen/blog/pathblock-parametric-sampling" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/pathblock-parametric-sampling'">
+      <a href="/blog/pathblock-parametric-sampling" style="text-decoration:none;color:inherit;display:block;">
         <h2>Parametric Sampling: Placing Elements Along Curves</h2>
         <time datetime="2026-03-11">March 10, 2026</time>
         <p>How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/pathblock-introduction'">
-      <a href="/pathogen/blog/pathblock-introduction" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/pathblock-introduction'">
+      <a href="/blog/pathblock-introduction" style="text-decoration:none;color:inherit;display:block;">
         <h2>PathBlocks: Reusable Shape Primitives in Pathogen</h2>
         <time datetime="2026-03-10">March 9, 2026</time>
         <p>How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/gradient-pipeline'">
-      <a href="/pathogen/blog/gradient-pipeline" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/gradient-pipeline'">
+      <a href="/blog/gradient-pipeline" style="text-decoration:none;color:inherit;display:block;">
         <h2>Building the Gradient Pipeline: From Compiler to Blog</h2>
         <time datetime="2026-03-06">March 5, 2026</time>
         <p>How Pathogen's gradient system flows from .pathogen source through the compiler, GPU renderer, and blog build pipeline to produce the interactive demos in this series.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/gradient-topological'">
-      <a href="/pathogen/blog/gradient-topological" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/gradient-topological'">
+      <a href="/blog/gradient-topological" style="text-decoration:none;color:inherit;display:block;">
         <h2>Topological Gradients: Painting with Signed Distance Fields</h2>
         <time datetime="2026-03-05">March 4, 2026</time>
         <p>What if gradient color stops were not positions on a line, but closed paths? TopoGradient uses signed distance fields and Laplace solvers to create terrain-like gradients from arbitrary contour shapes.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/gradient-mesh-freeform'">
-      <a href="/pathogen/blog/gradient-mesh-freeform" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/gradient-mesh-freeform'">
+      <a href="/blog/gradient-mesh-freeform" style="text-decoration:none;color:inherit;display:block;">
         <h2>Mesh and Freeform: Gradients That SVG Forgot</h2>
         <time datetime="2026-03-04">March 3, 2026</time>
         <p>SVG2 proposed mesh gradients, then abandoned them. Pathogen implements both grid-based mesh gradients and scatter-based freeform gradients with GPU-accelerated rendering.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/gradient-conic'">
-      <a href="/pathogen/blog/gradient-conic" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/gradient-conic'">
+      <a href="/blog/gradient-conic" style="text-decoration:none;color:inherit;display:block;">
         <h2>Beyond CSS: Conic Gradients with WebGPU Rendering</h2>
         <time datetime="2026-03-03">March 2, 2026</time>
         <p>SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/gradient-linear-radial'">
-      <a href="/pathogen/blog/gradient-linear-radial" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/gradient-linear-radial'">
+      <a href="/blog/gradient-linear-radial" style="text-decoration:none;color:inherit;display:block;">
         <h2>Painting with Math: Linear and Radial Gradients in Pathogen</h2>
         <time datetime="2026-03-02">March 1, 2026</time>
         <p>How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/reactive-color-svg'">
-      <a href="/pathogen/blog/reactive-color-svg" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/reactive-color-svg'">
+      <a href="/blog/reactive-color-svg" style="text-decoration:none;color:inherit;display:block;">
         <h2>Reactive Color in SVG: From Static Paths to Dynamic Themes</h2>
         <time datetime="2026-02-27">February 26, 2026</time>
         <p>How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/seo-pages-cloudflare-workers-routing'">
-      <a href="/pathogen/blog/seo-pages-cloudflare-workers-routing" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/seo-pages-cloudflare-workers-routing'">
+      <a href="/blog/seo-pages-cloudflare-workers-routing" style="text-decoration:none;color:inherit;display:block;">
         <h2>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h2>
         <time datetime="2026-02-17">February 16, 2026</time>
         <p>After solving SPA routing on CloudFlare Pages, we needed to add server-rendered and static pages alongside the SPA. New platform, new surprises — 308 redirects, stale workers, build pipeline ordering, and the art of making static and dynamic content coexist.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/svg-serialization-trap'">
-      <a href="/pathogen/blog/svg-serialization-trap" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/svg-serialization-trap'">
+      <a href="/blog/svg-serialization-trap" style="text-decoration:none;color:inherit;display:block;">
         <h2>The SVG Serialization Trap: Why createElementNS Broke Our Thumbnail Pipeline</h2>
         <time datetime="2026-02-11">February 10, 2026</time>
         <p>How programmatically created SVG elements silently produce broken output when serialized with XMLSerializer and loaded as images — and the surprisingly simple fix.</p>
       </a>
     </article>
-    <article class="blog-card" onclick="location.href='/pathogen/blog/cloudflare-pages-spa-routing-struggle'">
-      <a href="/pathogen/blog/cloudflare-pages-spa-routing-struggle" style="text-decoration:none;color:inherit;display:block;">
+    <article class="blog-card" onclick="location.href='/blog/cloudflare-pages-spa-routing-struggle'">
+      <a href="/blog/cloudflare-pages-spa-routing-struggle" style="text-decoration:none;color:inherit;display:block;">
         <h2>The CloudFlare Pages SPA Routing Odyssey</h2>
         <time datetime="2026-01-28">January 27, 2026</time>
         <p>A developer's journey through documentation gaps when trying to make SPA routing work on CloudFlare Pages with subdirectory deployments.</p>
@@ -405,10 +405,10 @@ code.hljs {
     </article>
     </div>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

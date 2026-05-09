@@ -8,12 +8,12 @@ description: "How PathBlocks support curve-preserving boolean operations — com
 *Part 4 of 4 in our series on PathBlock extensions.*
 
 > **Series: PathBlock Extensions**
-> 1. [Introduction to PathBlocks](/pathogen/blog/pathblock-introduction)
-> 2. [Exploring Parametric Sampling](/pathogen/blog/pathblock-parametric-sampling)
-> 3. [Fillets and Chamfers](/pathogen/blog/pathblock-fillets-chamfers)
+> 1. [Introduction to PathBlocks](/blog/pathblock-introduction)
+> 2. [Exploring Parametric Sampling](/blog/pathblock-parametric-sampling)
+> 3. [Fillets and Chamfers](/blog/pathblock-fillets-chamfers)
 > 4. **Boolean Operations** (this post)
 
-Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what's the combined outline? What's left after subtracting one from the other? Where do they overlap? Pathogen's [PathBlock boolean operations](/pathogen/docs#path-blocks-boolean-operations) bring these capabilities directly into the language.
+Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what's the combined outline? What's left after subtracting one from the other? Where do they overlap? Pathogen's [PathBlock boolean operations](/docs#path-blocks-boolean-operations) bring these capabilities directly into the language.
 
 ## The Four Operations
 
@@ -21,7 +21,7 @@ All four operations take two closed paths and return a new PathBlock. Both opera
 
 ### Union
 
-[`.union(other)`](/pathogen/docs#path-blocks-unionother-pathblock) combines two paths into their outer boundary — everything covered by either shape:
+[`.union(other)`](/docs#path-blocks-unionother-pathblock) combines two paths into their outer boundary — everything covered by either shape:
 
 ```pathogen
 let a = @{ h 50 v 50 h -50 z };
@@ -31,7 +31,7 @@ let combined = a.project(30, 30).union(b.project(55, 55));
 
 ### Difference
 
-[`.difference(other)`](/pathogen/docs#path-blocks-differenceother-pathblock) subtracts the second shape from the first — everything in `a` that is not in `b`:
+[`.difference(other)`](/docs#path-blocks-differenceother-pathblock) subtracts the second shape from the first — everything in `a` that is not in `b`:
 
 ```pathogen
 let result = a.project(200, 30).difference(b.project(225, 55));
@@ -39,7 +39,7 @@ let result = a.project(200, 30).difference(b.project(225, 55));
 
 ### Intersection
 
-[`.intersection(other)`](/pathogen/docs#path-blocks-intersectionother-pathblock) returns only the overlapping region — everything in both shapes:
+[`.intersection(other)`](/docs#path-blocks-intersectionother-pathblock) returns only the overlapping region — everything in both shapes:
 
 ```pathogen
 let overlap = a.project(30, 210).intersection(b.project(55, 235));
@@ -47,7 +47,7 @@ let overlap = a.project(30, 210).intersection(b.project(55, 235));
 
 ### XOR
 
-[`.xor(other)`](/pathogen/docs#path-blocks-xorother-pathblock) returns the symmetric difference — everything in either shape but not both:
+[`.xor(other)`](/docs#path-blocks-xorother-pathblock) returns the symmetric difference — everything in either shape but not both:
 
 ```pathogen
 let exclusive = a.project(200, 210).xor(b.project(225, 235));
@@ -78,7 +78,7 @@ This matters for output quality. Linearized boolean results look jagged at any z
 
 ## Requirements
 
-From the [documentation](/pathogen/docs#path-blocks-requirements-and-behavior):
+From the [documentation](/docs#path-blocks-requirements-and-behavior):
 
 - **Both paths must be closed.** Open paths throw an error.
 - **The `other` argument** can be a PathBlock or ProjectedPath.
@@ -87,7 +87,7 @@ From the [documentation](/pathogen/docs#path-blocks-requirements-and-behavior):
 
 ## Using with `.project()`
 
-Boolean operations need absolute coordinates to compute intersections. Use [`.project(x, y)`](/pathogen/docs#path-blocks-projecting-without-drawing) to position shapes before combining them:
+Boolean operations need absolute coordinates to compute intersections. Use [`.project(x, y)`](/docs#path-blocks-projecting-without-drawing) to position shapes before combining them:
 
 ```pathogen
 let circle = @{ circle(0, 0, 30) };
@@ -101,7 +101,7 @@ The result is a PathBlock at `(0, 0)` origin. Use `.drawTo(x, y)` to place it an
 
 ## Chaining with Transforms
 
-Since boolean operations return PathBlocks, you can chain them with [fillets](/pathogen/docs#path-blocks-fillets), [chamfers](/pathogen/docs#path-blocks-chamfers), [parametric sampling](/pathogen/docs#path-blocks-parametric-sampling), or even more boolean operations:
+Since boolean operations return PathBlocks, you can chain them with [fillets](/docs#path-blocks-fillets), [chamfers](/docs#path-blocks-chamfers), [parametric sampling](/docs#path-blocks-parametric-sampling), or even more boolean operations:
 
 ```pathogen
 let sq = @{ h 50 v 50 h -50 z };
@@ -118,7 +118,7 @@ The pipeline below shows the three stages: overlapping input squares, the union 
 
 ## Standard Library Shapes
 
-Pathogen's [standard library](/pathogen/docs#stdlib-path-functions) provides PathBlock-returning functions for common shapes — `circle()`, `rect()`, `polygon()`, `star()`, and more. These work directly with boolean operations:
+Pathogen's [standard library](/docs#stdlib-path-functions) provides PathBlock-returning functions for common shapes — `circle()`, `rect()`, `polygon()`, `star()`, and more. These work directly with boolean operations:
 
 ```pathogen
 let plate = @{ rect(0, 0, 80, 80) };
@@ -147,6 +147,6 @@ for (p in pts) {
 }
 ```
 
-Define once ([PathBlocks](/pathogen/blog/pathblock-introduction)), query geometry ([parametric sampling](/pathogen/blog/pathblock-parametric-sampling)), transform corners ([fillets and chamfers](/pathogen/blog/pathblock-fillets-chamfers)), combine shapes ([boolean operations](/pathogen/blog/pathblock-boolean-operations)) — all in a single composable pipeline. The full API reference is in the [PathBlocks documentation](/pathogen/docs#path-blocks-syntax).
+Define once ([PathBlocks](/blog/pathblock-introduction)), query geometry ([parametric sampling](/blog/pathblock-parametric-sampling)), transform corners ([fillets and chamfers](/blog/pathblock-fillets-chamfers)), combine shapes ([boolean operations](/blog/pathblock-boolean-operations)) — all in a single composable pipeline. The full API reference is in the [PathBlocks documentation](/docs#path-blocks-syntax).
 
-Try it yourself in the [Pathogen playground](/pathogen/) — paste any example from this series and experiment.
+Try it yourself in the [Pathogen playground](/) — paste any example from this series and experiment.

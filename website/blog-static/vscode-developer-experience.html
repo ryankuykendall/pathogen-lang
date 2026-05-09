@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Building a VS Code Extension for the Pathogen Language — Pathogen Studio</title>
   <meta name="description" content="From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/vscode-developer-experience">
+  <link rel="canonical" href="https://pathogen.studio/blog/vscode-developer-experience">
   <meta property="og:title" content="Building a VS Code Extension for the Pathogen Language — Pathogen Studio">
   <meta property="og:description" content="From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/vscode-developer-experience">
+  <meta property="og:url" content="https://pathogen.studio/blog/vscode-developer-experience">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Building a VS Code Extension for the Pathogen Language","description":"From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.","datePublished":"2026-04-10","url":"https://pathogen.studio/pathogen/blog/vscode-developer-experience","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Building a VS Code Extension for the Pathogen Language","description":"From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language.","datePublished":"2026-04-10","url":"https://pathogen.studio/blog/vscode-developer-experience","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Building a VS Code Extension for the Pathogen Language</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Building a VS Code Extension for the Pathogen Language</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -251,12 +251,12 @@ code.hljs {
         <p class="post-meta"><time datetime="2026-04-10">April 9, 2026</time></p>
       </header>
       <div class="blog-content">
-        <img src="/pathogen/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
+        <img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
 
 <p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
-<p>This post documents how we built a complete VS Code extension for the <a href="/pathogen/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
+<p>This post documents how we built a complete VS Code extension for the <a href="/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
 <blockquote>
-<p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/pathogen/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
+<p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
 </blockquote>
 <h2>The roadmap: 10 phases</h2>
 <p>We organized the work into phases, each delivering a complete, testable improvement. Here&#39;s the full arc:</p>
@@ -269,7 +269,7 @@ code.hljs {
 </thead>
 <tbody><tr>
 <td><strong>1</strong></td>
-<td>Completion type inference — <a href="/pathogen/blog/color-literals">Color</a>, BoundingBox, layer(), stdlib returns, method chaining</td>
+<td>Completion type inference — <a href="/blog/color-literals">Color</a>, BoundingBox, layer(), stdlib returns, method chaining</td>
 </tr>
 <tr>
 <td><strong>2</strong></td>
@@ -277,7 +277,7 @@ code.hljs {
 </tr>
 <tr>
 <td><strong>3</strong></td>
-<td>Preview panel — pan/zoom, <a href="/pathogen/docs#layers-defining-layers">layer</a> toggles, CSS variable pickers, color palette</td>
+<td>Preview panel — pan/zoom, <a href="/docs#layers-defining-layers">layer</a> toggles, CSS variable pickers, color palette</td>
 </tr>
 <tr>
 <td><strong>4</strong></td>
@@ -293,7 +293,7 @@ code.hljs {
 </tr>
 <tr>
 <td><strong>7</strong></td>
-<td>Semantic highlighting — constructors, enums, <a href="/pathogen/docs#syntax-path-commands">path commands</a>, enum members</td>
+<td>Semantic highlighting — constructors, enums, <a href="/docs#syntax-path-commands">path commands</a>, enum members</td>
 </tr>
 <tr>
 <td><strong>8</strong></td>
@@ -315,7 +315,7 @@ code.hljs {
 <ul>
 <li><strong>Error recovery</strong>: A single missing semicolon doesn&#39;t break the entire parse. The parser skips the error and continues, producing a usable tree for the rest of the document.</li>
 <li><strong>Incremental parsing</strong>: When the user edits line 50 of a 500-line file, Lezer only re-parses the changed region. This makes diagnostics and completions fast enough for real-time feedback.</li>
-<li><strong>Shared infrastructure</strong>: The same grammar powers both the <a href="/pathogen/">playground&#39;s</a> CodeMirror editor and the VS Code extension&#39;s language server.</li>
+<li><strong>Shared infrastructure</strong>: The same grammar powers both the <a href="/">playground&#39;s</a> CodeMirror editor and the VS Code extension&#39;s language server.</li>
 </ul>
 <p>The migration replaced 1,558 lines of Parsimmon code with a 213-line Lezer grammar plus a CST-to-AST converter. The grammar is the single source of truth for Pathogen syntax.</p>
 <h2>Architecture: Language services as a shared layer</h2>
@@ -475,16 +475,16 @@ consumerSubs.apply {
   text(452, 270)`(batch)`;
 }
 </code>
-  <img src="/pathogen/blog/samples/post22/architecture.svg" alt="The shared language services architecture — one intelligence layer, three consumers." loading="lazy">
+  <img src="/blog/samples/post22/architecture.svg" alt="The shared language services architecture — one intelligence layer, three consumers." loading="lazy">
 </mini-workspace></p>
-<p>The VS Code extension is a thin adapter: a language server that wraps each function in an LSP handler, and an extension client that starts the server process. The same language intelligence runs in the <a href="/pathogen/">playground</a> via direct import and in the CLI for batch diagnostics.</p>
+<p>The VS Code extension is a thin adapter: a language server that wraps each function in an LSP handler, and an extension client that starts the server process. The same language intelligence runs in the <a href="/">playground</a> via direct import and in the CLI for batch diagnostics.</p>
 <h2>Completion intelligence</h2>
 <p>The completion engine evolved through three phases, each addressing real user frustrations.</p>
 <h3>Type-aware completions</h3>
-<p>Typing <code>bg.</code> after defining a <a href="/pathogen/docs#layers-defining-layers">PathLayer</a> should show <code>apply</code>, <code>name</code>, <code>styles</code>, and <code>ctx</code>. The completion engine uses lightweight regex-based type inference to determine that <code>bg</code> is a PathLayer, then looks up the member set from generated completion data.</p>
-<img src="/pathogen/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
+<p>Typing <code>bg.</code> after defining a <a href="/docs#layers-defining-layers">PathLayer</a> should show <code>apply</code>, <code>name</code>, <code>styles</code>, and <code>ctx</code>. The completion engine uses lightweight regex-based type inference to determine that <code>bg</code> is a PathLayer, then looks up the member set from generated completion data.</p>
+<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
 
-<p>This extends to every type in the language. <a href="/pathogen/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
+<p>This extends to every type in the language. <a href="/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
 <h3>Generated completion data</h3>
 <p>Rather than manually maintaining lists of stdlib functions and their signatures, we use <code>ts-morph</code> to extract completion data from TypeScript interface declarations in <code>src/pathogen-api.ts</code>. A generation script produces <code>completion-data.generated.ts</code> with every function signature, type member set, and enum value. When the language API changes, we regenerate with <code>npm run generate:completions</code> — no manual synchronization, and a CI check catches drift.</p>
 <h3>Type flow analysis</h3>
@@ -500,14 +500,14 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 </code></pre><p>The engine traces the array element type through <code>for</code> loops and <code>.map()</code> callbacks, then extracts property names from the first object literal in the array initializer.</p>
 <h2>The preview panel</h2>
 <p>Before the preview panel, Pathogen development required a save-compile-open cycle: edit code in VS Code, run the CLI to generate an SVG, open the file in a browser, and squint at the output to figure out what went wrong. The feedback loop was slow and disjointed.</p>
-<p><em>What the user sees now:</em> A live SVG preview that updates as you type, with the same interactive controls as the <a href="/pathogen/">playground</a>.</p>
+<p><em>What the user sees now:</em> A live SVG preview that updates as you type, with the same interactive controls as the <a href="/">playground</a>.</p>
 <p><em>Under the hood:</em> The preview panel runs the Pathogen compiler inside a VS Code webview. The extension sends source code via <code>postMessage</code>, the webview compiles it using the bundled IIFE compiler (~1.3 MB), renders the SVG via a shared <code>generateSvg()</code> function, and injects it into the DOM. A 150ms debounce prevents recompilation on every keystroke. Completions resolve in under 50ms; diagnostics publish within 200ms of the last keystroke.</p>
 <h3>Interactive controls</h3>
-<p>The preview isn&#39;t just a static render — it matches the <a href="/pathogen/">playground</a> experience:</p>
+<p>The preview isn&#39;t just a static render — it matches the <a href="/">playground</a> experience:</p>
 <ul>
 <li><strong>Pan and zoom</strong>: Click-drag to pan, Cmd+scroll to zoom (0.25x–10x range), with a navigator minimap</li>
-<li><strong>Layer inspector</strong>: Toggle <a href="/pathogen/docs#layers-defining-layers">layer</a> visibility, see color swatches, navigate GroupLayer hierarchy</li>
-<li><strong>CSS variable pickers</strong>: Color picker inputs for every <a href="/pathogen/docs#css-var-cssvar-type"><code>CSSVar()</code></a> in the source — changes recompile instantly</li>
+<li><strong>Layer inspector</strong>: Toggle <a href="/docs#layers-defining-layers">layer</a> visibility, see color swatches, navigate GroupLayer hierarchy</li>
+<li><strong>CSS variable pickers</strong>: Color picker inputs for every <a href="/docs#css-var-cssvar-type"><code>CSSVar()</code></a> in the source — changes recompile instantly</li>
 <li><strong>Recompile button</strong>: Re-rolls <code>randomRange()</code> values without editing source</li>
 <li><strong>Reset button</strong>: Restores zoom, pan, layer visibility, and CSS variable overrides</li>
 </ul>
@@ -526,7 +526,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
   <span class="hljs-attr">fill</span>: #0f172a;
   <span class="hljs-attr">stroke</span>: none;
 };
-</code></pre><p>Arrays, objects, style blocks, enums, <a href="/pathogen/blog/pathblock-introduction">path blocks</a>, and text blocks are always multi-line. One item per line. Trailing commas everywhere.</p>
+</code></pre><p>Arrays, objects, style blocks, enums, <a href="/blog/pathblock-introduction">path blocks</a>, and text blocks are always multi-line. One item per line. Trailing commas everywhere.</p>
 <p>Key formatter features:</p>
 <ul>
 <li><strong>Comment preservation</strong>: Comments survive formatting round-trips — they&#39;re preserved in the AST and properly re-indented</li>
@@ -536,7 +536,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <h2>Semantic highlighting</h2>
 <p>TextMate grammars provide instant syntax coloring, but semantic tokens make it smarter. The language server classifies:</p>
 <ul>
-<li><strong>Constructor types</strong> (<a href="/pathogen/blog/color-literals">Color</a>, Point, <a href="/pathogen/blog/gradient-linear-radial">LinearGradient</a>) — highlighted as types</li>
+<li><strong>Constructor types</strong> (<a href="/blog/color-literals">Color</a>, Point, <a href="/blog/gradient-linear-radial">LinearGradient</a>) — highlighted as types</li>
 <li><strong>Enum names and members</strong> (Direction.CW, Easing.Linear) — distinct coloring</li>
 <li><strong>SVG path commands</strong> (M, L, C, Z) — highlighted as keywords</li>
 <li><strong>Variables vs parameters vs loop variables</strong> — from scope analysis</li>
@@ -550,7 +550,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <li><strong>Inline variable</strong>: Select a variable name → replaces all references with the value and removes the declaration</li>
 </ul>
 <h2>Inlay hints and code lens</h2>
-<p><strong>Inlay hints</strong> show parameter names at call sites (<code>rect(x: 0, y: 0, w: 400, h: 400)</code>) and inferred types next to variable declarations (<code>let bg : PathLayer</code>). Type inference covers constructors, method return types (<a href="/pathogen/blog/pathblock-introduction"><code>boundingBox()</code> → BBox</a>), gradient constructors, and style block literals.</p>
+<p><strong>Inlay hints</strong> show parameter names at call sites (<code>rect(x: 0, y: 0, w: 400, h: 400)</code>) and inferred types next to variable declarations (<code>let bg : PathLayer</code>). Type inference covers constructors, method return types (<a href="/blog/pathblock-introduction"><code>boundingBox()</code> → BBox</a>), gradient constructors, and style block literals.</p>
 <p><strong>Code lens</strong> shows reference counts above declarations — &quot;3 references&quot;, &quot;no references&quot; — giving you instant visibility into which variables are used and which are dead code.</p>
 <h2>The build pipeline</h2>
 <p>The extension packages into a single <code>.vsix</code> file via <code>npm run build:vscode:install</code>. The build script chains six steps: root library → language server → extension → bundle server with all dependencies → bundle compiler IIFE for the preview webview → package with <code>vsce</code>. The final artifact is ~1.5 MB with all transitive dependencies resolved (Lezer, vscode-languageclient, semver, minimatch, and more).</p>
@@ -567,15 +567,15 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <li><strong>Extension marketplace publishing</strong> — making installation a one-click experience instead of building from source.</li>
 <li><strong>Deeper type flow</strong> — tracking types through function returns, complex assignment chains, and generic array element types.</li>
 </ul>
-<p>The Pathogen language is available at <a href="/pathogen/">pedestal.design/pathogen</a>, with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in <code>packages/vscode-pathogen/</code> — pull requests welcome.</p>
+<p>The Pathogen language is available at <a href="/">pedestal.design/pathogen</a>, with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in <code>packages/vscode-pathogen/</code> — pull requests welcome.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

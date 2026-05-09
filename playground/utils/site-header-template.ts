@@ -10,6 +10,7 @@
 // every server-rendered route.
 
 import { TOP_NAV_TABS, isTabActive, type TopNavTab } from './top-nav-tabs.js';
+import { PATHOGEN_VERSION } from './version.js';
 
 export interface SiteHeaderOptions {
   /**
@@ -55,9 +56,9 @@ export function siteHeaderHtml(opts: SiteHeaderOptions): string {
 
   return `<header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v${PATHOGEN_VERSION}</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
           ${tabs}

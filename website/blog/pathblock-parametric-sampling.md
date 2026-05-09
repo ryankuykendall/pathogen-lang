@@ -8,12 +8,12 @@ description: "How to query points, tangents, and normals along any path — and 
 *Part 2 of 4 in our series on PathBlock extensions.*
 
 > **Series: PathBlock Extensions**
-> 1. [Introduction to PathBlocks](/pathogen/blog/pathblock-introduction)
+> 1. [Introduction to PathBlocks](/blog/pathblock-introduction)
 > 2. **Exploring Parametric Sampling** (this post)
-> 3. [Fillets and Chamfers](/pathogen/blog/pathblock-fillets-chamfers)
-> 4. [Boolean Operations](/pathogen/blog/pathblock-boolean-operations)
+> 3. [Fillets and Chamfers](/blog/pathblock-fillets-chamfers)
+> 4. [Boolean Operations](/blog/pathblock-boolean-operations)
 
-The [previous post](/pathogen/blog/pathblock-introduction) introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path's geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What's the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.
+The [previous post](/blog/pathblock-introduction) introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path's geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What's the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.
 
 ## The Parameter `t`
 
@@ -23,7 +23,7 @@ This is a critical distinction. A cubic Bézier with uneven control point spacin
 
 ## Querying Points
 
-The simplest query is [`.get(t)`](/pathogen/docs#path-blocks-gett-point), which returns the `Point` at arc-length fraction `t`:
+The simplest query is [`.get(t)`](/docs#path-blocks-gett-point), which returns the `Point` at arc-length fraction `t`:
 
 ```pathogen
 let curve = @{ c 0 -100 200 -100 200 0 };
@@ -31,11 +31,11 @@ let mid = curve.get(0.5);
 log(mid);  // Point near the apex of the curve
 ```
 
-This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See [Sampling on ProjectedPath](/pathogen/docs#path-blocks-sampling-on-projectedpath) for the coordinate behavior.
+This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See [Sampling on ProjectedPath](/docs#path-blocks-sampling-on-projectedpath) for the coordinate behavior.
 
 ## Tangents and Normals
 
-[`.tangent(t)`](/pathogen/docs#path-blocks-tangentt-point-angle) returns both a point and the direction of travel at that point:
+[`.tangent(t)`](/docs#path-blocks-tangentt-point-angle) returns both a point and the direction of travel at that point:
 
 ```pathogen
 let curve = @{ c 0 -100 200 -100 200 0 };
@@ -44,7 +44,7 @@ log(tan.point);   // Point(0, 0) — start of curve
 log(tan.angle);   // angle in radians — direction of travel
 ```
 
-[`.normal(t)`](/pathogen/docs#path-blocks-normalt-point-angle) returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point "outward" from the curve:
+[`.normal(t)`](/docs#path-blocks-normalt-point-angle) returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point "outward" from the curve:
 
 ```pathogen
 let n = curve.normal(0.5);
@@ -78,11 +78,11 @@ The demo below shows parametric sampling in action. A sine-like curve is defined
 
 <mini-workspace src="samples/post7/sampling-points.pathogen" caption="Points and tangent lines sampled along a cubic Bézier curve" code-open></mini-workspace>
 
-The red dots use [`partition(8)`](/pathogen/docs#path-blocks-partitionn-orientedpoint) to divide the curve into 8 equal segments. Each partition point includes `.point`, `.angle`, and `.t` properties. The green tangent lines use `tangent(t)` at each eighth to show the direction of travel.
+The red dots use [`partition(8)`](/docs#path-blocks-partitionn-orientedpoint) to divide the curve into 8 equal segments. Each partition point includes `.point`, `.angle`, and `.t` properties. The green tangent lines use `tangent(t)` at each eighth to show the direction of travel.
 
 ## Even Distribution with `partition(n)`
 
-[`partition(n)`](/pathogen/docs#path-blocks-partitionn-orientedpoint) is the workhorse for distributing elements along a path. It returns `n + 1` oriented points (both endpoints included), evenly spaced by arc length:
+[`partition(n)`](/docs#path-blocks-partitionn-orientedpoint) is the workhorse for distributing elements along a path. It returns `n + 1` oriented points (both endpoints included), evenly spaced by arc length:
 
 ```pathogen
 let path = @{ h 100 };
@@ -111,7 +111,7 @@ Here's a practical example: fence posts distributed evenly along a winding road.
 The key pattern is:
 
 1. Define the base curve (the road)
-2. Use `.project(x, y)` to get a [ProjectedPath](/pathogen/docs#path-blocks-projecting-without-drawing) with absolute coordinates
+2. Use `.project(x, y)` to get a [ProjectedPath](/docs#path-blocks-projecting-without-drawing) with absolute coordinates
 3. Call `.partition(n)` to get evenly-spaced points
 4. Use `.normal(t)` to find the perpendicular direction at each point
 5. Place elements using `cos(angle)` and `sin(angle)` offsets
@@ -120,8 +120,8 @@ This pattern works for any curve — Béziers, arcs, polylines, or combinations.
 
 ## Curve Support
 
-Sampling works uniformly on every SVG path command type — lines, cubic and quadratic Béziers, and arcs. A path that mixes segment types (say, a line into a cubic into an arc) samples seamlessly across segment boundaries. The arc-length lookup table is built once per path and cached, so repeated sampling calls are efficient. See the [Curve Support](/pathogen/docs#path-blocks-curve-support) documentation for implementation details.
+Sampling works uniformly on every SVG path command type — lines, cubic and quadratic Béziers, and arcs. A path that mixes segment types (say, a line into a cubic into an arc) samples seamlessly across segment boundaries. The arc-length lookup table is built once per path and cached, so repeated sampling calls are efficient. See the [Curve Support](/docs#path-blocks-curve-support) documentation for implementation details.
 
 ## What's Next
 
-Sampling tells you about a path's geometry. The next post covers [fillets and chamfers](/pathogen/blog/pathblock-fillets-chamfers) — operations that modify the geometry itself by rounding or cutting corners. These use the same trim-and-split infrastructure under the hood: arc-length parameterization to find exact split points along edges.
+Sampling tells you about a path's geometry. The next post covers [fillets and chamfers](/blog/pathblock-fillets-chamfers) — operations that modify the geometry itself by rounding or cutting corners. These use the same trim-and-split infrastructure under the hood: arc-length parameterization to find exact split points along edges.

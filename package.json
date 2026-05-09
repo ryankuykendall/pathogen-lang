@@ -1,6 +1,6 @@
 {
   "name": "svg-path-extended",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "description": "Extended SVG path syntax with variables, expressions, control flow, and functions",
   "type": "module",
   "main": "./dist/index.cjs",

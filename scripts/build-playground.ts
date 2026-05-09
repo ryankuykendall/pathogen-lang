@@ -10,7 +10,11 @@ import { buildVendor } from './build-vendor.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const PLAYGROUND = join(ROOT, 'playground');
-const OUT = join(ROOT, 'public', 'pathogen');
+// Pathogen Studio is hosted at the apex of pathogen.studio so build output
+// goes directly under public/. The Pages worker SSRs the apex (renderHomepage
+// claims `/`) and serves /spa.html for SPA fallback routes; static assets
+// (styles, components, etc.) live alongside.
+const OUT = join(ROOT, 'public');
 
 /** Glob helper using fs — returns relative paths matching extensions */
 async function walkDir(dir: string, extensions: Set<string>): Promise<string[]> {
@@ -154,7 +158,7 @@ export async function buildPlayground(options: { watch?: boolean } = {}): Promis
     // Copy non-JS assets
     await copyAssets();
 
-    console.log(`Playground built in ${Date.now() - startTime}ms (${sourceFiles.length} files → public/pathogen/)`);
+    console.log(`Playground built in ${Date.now() - startTime}ms (${sourceFiles.length} files → public/)`);
   }
 }
 
@@ -165,14 +169,18 @@ async function copyAssets(): Promise<void> {
   // Copy static assets (material-icons-sprite.svg, etc.)
   await copyDir(join(PLAYGROUND, 'assets'), join(OUT, 'assets'));
 
-  // Copy and modify index.html for production
+  // Copy and modify index.html → spa.html (the SPA shell). The Pages
+  // worker SSRs the apex `/`, so we can't drop the SPA shell at
+  // public/index.html — it would clobber the homepage. The worker fetches
+  // /spa.html internally for extensionless routes (workspaces, workspace/:id,
+  // preferences, etc.). 404.html stays as a hard-fallback for CF Pages's
+  // built-in SPA-handling.
   let indexHtml = await fs.readFile(join(PLAYGROUND, 'index.html'), 'utf-8');
   indexHtml = indexHtml
-    .replace('<head>', '<head>\n    <base href="/pathogen/">')
+    .replace('<head>', '<head>\n    <base href="/">')
     .replace('../dist/index.global.js', 'dist/index.global.js');
   await fs.mkdir(OUT, { recursive: true });
-  await fs.writeFile(join(OUT, 'index.html'), indexHtml);
-  // SPA fallback for subdirectory routing
+  await fs.writeFile(join(OUT, 'spa.html'), indexHtml);
   await fs.writeFile(join(OUT, '404.html'), indexHtml);
 
   // Copy library bundle + worker bundle from dist/ → public/pathogen/dist/.

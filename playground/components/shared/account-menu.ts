@@ -81,7 +81,7 @@ class AccountMenu extends HTMLElement {
         </button>
         ${this.menuOpen ? `
           <div class="menu" role="menu">
-            <a class="menu-item" role="menuitem" href="/pathogen/u/${encodeURIComponent(user.handle)}">
+            <a class="menu-item" role="menuitem" href="/u/${encodeURIComponent(user.handle)}">
               <span class="menu-label">View profile</span>
               <span class="menu-handle">@${escapeHtml(user.handle)}</span>
             </a>

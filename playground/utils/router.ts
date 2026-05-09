@@ -1,10 +1,13 @@
 // History API router for playground
-// Uses clean URLs with /svg-path-extended base path
+// Pathogen Studio is hosted at the apex of pathogen.studio so BASE_PATH is
+// empty in production. Old `/pathogen/*` URLs are 301-redirected by the
+// Pages worker for backward compat (see website/_worker.ts).
 
 import { store } from '../state/store.js';
 
-// Base path for the playground app
-export const BASE_PATH = '/pathogen';
+// Base path for the playground app. Set to '/pathogen' if you ever want
+// to run the SPA under a sub-path again.
+export const BASE_PATH = '';
 
 interface RouteDefinition {
   path: string;

@@ -8,22 +8,22 @@ description: "Turn font glyphs into PathBlock geometry — manual text layout, c
 *Part 2 of 2 in our series on TextBlock and font integration.*
 
 > **Series: TextBlock & Font Integration**
-> 1. [TextBlock: Measure-First Text for SVG Diagrams](/pathogen/blog/textblock-introduction)
+> 1. [TextBlock: Measure-First Text for SVG Diagrams](/blog/textblock-introduction)
 > 2. **From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()** (this post)
 
-> **Prerequisites:** This post assumes familiarity with PathBlock basics — the `@{}` sigil, `.draw()`, `.project()`, and boolean operations. If you're new to Pathogen, start with [Introduction to PathBlocks](/pathogen/blog/pathblock-introduction). For boolean operations, see [Boolean Operations](/pathogen/blog/pathblock-boolean-operations).
+> **Prerequisites:** This post assumes familiarity with PathBlock basics — the `@{}` sigil, `.draw()`, `.project()`, and boolean operations. If you're new to Pathogen, start with [Introduction to PathBlocks](/blog/pathblock-introduction). For boolean operations, see [Boolean Operations](/blog/pathblock-boolean-operations).
 
-[TextBlock](/pathogen/blog/textblock-introduction) gives you a compose-measure-position workflow for SVG text. You build text at relative coordinates, measure its bounding box, place it precisely, and draw it to a TextLayer. That covers most labeling and annotation work. But the result is still an SVG `<text>` element — a string the browser renders with its own font engine. You can't sample points along its outline, apply a fillet to its corners, or punch it out of a rectangle with a boolean difference.
+[TextBlock](/blog/textblock-introduction) gives you a compose-measure-position workflow for SVG text. You build text at relative coordinates, measure its bounding box, place it precisely, and draw it to a TextLayer. That covers most labeling and annotation work. But the result is still an SVG `<text>` element — a string the browser renders with its own font engine. You can't sample points along its outline, apply a fillet to its corners, or punch it out of a rectangle with a boolean difference.
 
 Where Part 1 made text measurable, this post makes it malleable — converting glyphs into path geometry you can transform, decompose, and combine.
 
 What if you need text *as geometry* — actual path commands you can transform, combine, and query like any other shape? Think logo construction where letters are punched out of a background plate. Or generative typography where each character follows a different arc. Or a stencil design where glyph outlines need to be offset and duplicated. These tasks require the text's vector outline, not its rendered pixels.
 
-That's what font integration provides. The `@font` directive loads a font file, and `PathBlock.fromGlyph()` converts each character into a PathBlock with the glyph's full vector outline. From there, everything in the [PathBlock series](/pathogen/blog/pathblock-introduction) applies: [drawing and positioning](/pathogen/docs#path-blocks-drawing-a-path-block), [parametric sampling](/pathogen/blog/pathblock-parametric-sampling), [fillets and chamfers](/pathogen/blog/pathblock-fillets-chamfers), [boolean operations](/pathogen/blog/pathblock-boolean-operations), and all the transforms.
+That's what font integration provides. The `@font` directive loads a font file, and `PathBlock.fromGlyph()` converts each character into a PathBlock with the glyph's full vector outline. From there, everything in the [PathBlock series](/blog/pathblock-introduction) applies: [drawing and positioning](/docs#path-blocks-drawing-a-path-block), [parametric sampling](/blog/pathblock-parametric-sampling), [fillets and chamfers](/blog/pathblock-fillets-chamfers), [boolean operations](/blog/pathblock-boolean-operations), and all the transforms.
 
 ## Loading Fonts with @font
 
-Before you can extract glyphs, Pathogen needs access to the font's vector data. The [`@font` directive](/pathogen/docs#path-blocks-font-directive) declares a font at the top level of your program:
+Before you can extract glyphs, Pathogen needs access to the font's vector data. The [`@font` directive](/docs#path-blocks-font-directive) declares a font at the top level of your program:
 
 ```pathogen
 @font "Inter";
@@ -38,13 +38,13 @@ The directive takes a font source (family name or file path) and an optional num
 
 The directive is purely declarative — the host environment loads font data before compilation begins. If a font can't be found, a warning is logged and compilation continues. This means `@font` never blocks the build; it just determines whether glyph extraction and precise TextBlock metrics are available.
 
-A single `@font` declaration serves double duty: it makes the font available for `PathBlock.fromGlyph()` glyph extraction *and* upgrades [TextBlock](/pathogen/blog/textblock-introduction) `.boundingBox()` measurements from estimation tables to exact kerning-aware metrics via opentype.js. You don't need separate declarations for paths and text — one directive covers both.
+A single `@font` declaration serves double duty: it makes the font available for `PathBlock.fromGlyph()` glyph extraction *and* upgrades [TextBlock](/blog/textblock-introduction) `.boundingBox()` measurements from estimation tables to exact kerning-aware metrics via opentype.js. You don't need separate declarations for paths and text — one directive covers both.
 
 > **CLI vs Playground:** In the CLI, `@font` loads from local file paths or system font directories. In the Playground, fonts are fetched automatically from Google Fonts by family name. Both environments use the same opentype.js parser, so identical font files produce identical geometry.
 
 ## Extracting Glyphs with PathBlock.fromGlyph()
 
-[`PathBlock.fromGlyph(text, styles)`](/pathogen/docs#path-blocks-pathblockfromglyphtext-styles) is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:
+[`PathBlock.fromGlyph(text, styles)`](/docs#path-blocks-pathblockfromglyphtext-styles) is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:
 
 ```pathogen
 @font "Inter";
@@ -57,7 +57,7 @@ log(glyphs.length);    // 5 — one PathBlock per character
 
 The style block must include `font-family` (matching a loaded `@font` declaration). `font-size` defaults to 16 and `font-weight` defaults to 400 if omitted. The function walks each character in the text string, looks up the glyph in the loaded font, extracts its outline as cubic Bezier curves and line segments, scales to the requested font size, and wraps the result as a PathBlock with relative commands starting at `(0, 0)`.
 
-Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call `.draw()`, `.drawTo()`, `.project()`, `.get()`, `.tangent()`, `.boundingBox()`, `.scale()`, `.fillet()`, `.union()` — everything from the [PathBlock documentation](/pathogen/docs#path-blocks-syntax). The glyph is geometry now, not text.
+Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call `.draw()`, `.drawTo()`, `.project()`, `.get()`, `.tangent()`, `.boundingBox()`, `.scale()`, `.fillet()`, `.union()` — everything from the [PathBlock documentation](/docs#path-blocks-syntax). The glyph is geometry now, not text.
 
 ```pathogen
 @font "Inter";
@@ -77,13 +77,13 @@ log(glyphs[0].vertices.length);  // number of junction points
 
 Space characters are handled correctly: they return an empty PathBlock (no path commands, zero length) but still carry a non-zero `.advanceWidth` for layout purposes. This means a loop over `PathBlock.fromGlyph("Hello World", styles)` will naturally insert a gap between "Hello" and "World" without special-casing.
 
-If something goes wrong, the [error messages](/pathogen/docs#path-blocks-error-cases) are specific. Wrong argument count, missing `font-family`, no `@font` loaded, font not found in the registry — each condition has its own message telling you exactly what to fix.
+If something goes wrong, the [error messages](/docs#path-blocks-error-cases) are specific. Wrong argument count, missing `font-family`, no `@font` loaded, font not found in the registry — each condition has its own message telling you exactly what to fix.
 
 ## Manual Text Layout with advanceWidth
 
 Drawing glyph PathBlocks is straightforward, but you need to position them correctly. In a font, each glyph has an *advance width* — the horizontal distance the cursor should move after drawing that glyph before drawing the next one. This is how proportional fonts work: a narrow "i" advances less than a wide "M".
 
-Every glyph PathBlock from `fromGlyph()` carries an [`.advanceWidth`](/pathogen/docs#path-blocks-advancewidth) property. To lay out a word, accumulate advance widths in a loop:
+Every glyph PathBlock from `fromGlyph()` carries an [`.advanceWidth`](/docs#path-blocks-advancewidth) property. To lay out a word, accumulate advance widths in a loop:
 
 ```pathogen
 @font "Bebas Neue";
@@ -112,7 +112,7 @@ Because you're controlling the cursor directly, you can adjust spacing however y
 
 Most glyphs are made of multiple contours. The letter "O" has an outer ring and an inner hole — two closed paths. The letter "i" has a body and a dot — also two. Some glyphs are more complex: "B" has an outer shape plus two enclosed holes.
 
-The [`.contours`](/pathogen/docs#path-blocks-contours) property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:
+The [`.contours`](/docs#path-blocks-contours) property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:
 
 ```pathogen
 @font "Inter";
@@ -176,7 +176,7 @@ When would you use contour decomposition? Anytime you need to treat parts of a g
 
 ## Per-Character Transforms
 
-When each character is its own PathBlock, you can transform them individually. The standard PathBlock transform methods — [`.scale()`](/pathogen/docs#path-blocks-scalesx-sy-pathblock-projectedpath), [`.rotateAtVertexIndex()`](/pathogen/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath), [`.mirror()`](/pathogen/docs#path-blocks-mirrorangle-pathblock-projectedpath) — work on glyph PathBlocks just like any other shape.
+When each character is its own PathBlock, you can transform them individually. The standard PathBlock transform methods — [`.scale()`](/docs#path-blocks-scalesx-sy-pathblock-projectedpath), [`.rotateAtVertexIndex()`](/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath), [`.mirror()`](/docs#path-blocks-mirrorangle-pathblock-projectedpath) — work on glyph PathBlocks just like any other shape.
 
 These patterns appear frequently in poster design, motion graphics titles, custom lettering, and generative art.
 
@@ -237,7 +237,7 @@ Each glyph is rotated to follow the arc's tangent direction using `.rotateAtVert
 
 The three columns show each effect in isolation. The wave uses `sin()` to offset characters vertically. The grow effect scales each successive character larger with `.scale()`. The circular layout places rotated characters along a dashed guide circle. All three use the same advance-width accumulation loop — the only difference is what happens to each glyph before it's drawn.
 
-These are building blocks, not finished effects. Combine a wave offset with a scale cascade. Apply a color gradient by assigning each character to a different layer with different fill colors. Use [`.mirror()`](/pathogen/docs#path-blocks-mirrorangle-pathblock-projectedpath) to flip alternating characters for a decorative pattern. Apply a rotation to characters along a Bezier curve instead of a circle (using [parametric sampling](/pathogen/blog/pathblock-parametric-sampling) from Part 2 of the PathBlock series). The transform methods compose freely because each one returns a new PathBlock.
+These are building blocks, not finished effects. Combine a wave offset with a scale cascade. Apply a color gradient by assigning each character to a different layer with different fill colors. Use [`.mirror()`](/docs#path-blocks-mirrorangle-pathblock-projectedpath) to flip alternating characters for a decorative pattern. Apply a rotation to characters along a Bezier curve instead of a circle (using [parametric sampling](/blog/pathblock-parametric-sampling) from Part 2 of the PathBlock series). The transform methods compose freely because each one returns a new PathBlock.
 
 The key insight is that the advance-width loop structure stays the same across all these effects. You always accumulate cursor positions using `.advanceWidth`. The creative part is what you do to each glyph *before* drawing it — and since PathBlock transforms return new PathBlocks without modifying the original, you can experiment freely.
 
@@ -247,7 +247,7 @@ One of the most visually striking uses of glyph extraction is punching text out 
 
 ### Punching Text from Geometry
 
-The approach uses [`.union()`](/pathogen/docs#path-blocks-unionother-pathblock) and [`.difference()`](/pathogen/docs#path-blocks-differenceother-pathblock) from the [boolean operations post](/pathogen/blog/pathblock-boolean-operations). First, extract and lay out the glyphs, then union them into a single outline and subtract from a plate:
+The approach uses [`.union()`](/docs#path-blocks-unionother-pathblock) and [`.difference()`](/docs#path-blocks-differenceother-pathblock) from the [boolean operations post](/blog/pathblock-boolean-operations). First, extract and lay out the glyphs, then union them into a single outline and subtract from a plate:
 
 ```pathogen
 @font "Bebas Neue";
@@ -270,7 +270,7 @@ for (i in 1..6) {  // remaining 6 of 7 glyphs
 let cutout = plate.project(px, py).difference(combined);
 ```
 
-The chaining works because every boolean operation returns a PathBlock, so the result of `.union()` feeds directly into the next `.union()` or `.difference()` — for any number of glyphs. Because boolean operations [preserve curve types](/pathogen/blog/pathblock-boolean-operations), the glyph outlines stay smooth at any zoom level.
+The chaining works because every boolean operation returns a PathBlock, so the result of `.union()` feeds directly into the next `.union()` or `.difference()` — for any number of glyphs. Because boolean operations [preserve curve types](/blog/pathblock-boolean-operations), the glyph outlines stay smooth at any zoom level.
 
 The demo below shows the full pipeline in five panels: individual glyph outlines, a `.union()` arrow, the combined path, a `.difference()` arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using `.difference()`.
 
@@ -278,7 +278,7 @@ The demo below shows the full pipeline in five panels: individual glyph outlines
 
 Text cutouts are common in logo design, stencil art, and anywhere you need negative-space typography. The pipeline is `.union()` calls followed by `.difference()` — a few lines of code instead of manual path editing in a vector graphics tool.
 
-You can extend the boolean pipeline further. Apply a [fillet](/pathogen/blog/pathblock-fillets-chamfers) to the plate's corners before punching to get a rounded badge. Use `.intersection()` instead of `.difference()` to clip text to a circular mask. Chain multiple `.difference()` calls to punch text at different positions on the same plate. The boolean operations return PathBlocks, so the entire [PathBlock composability model](/pathogen/blog/pathblock-introduction) is available at every stage.
+You can extend the boolean pipeline further. Apply a [fillet](/blog/pathblock-fillets-chamfers) to the plate's corners before punching to get a rounded badge. Use `.intersection()` instead of `.difference()` to clip text to a circular mask. Chain multiple `.difference()` calls to punch text at different positions on the same plate. The boolean operations return PathBlocks, so the entire [PathBlock composability model](/blog/pathblock-introduction) is available at every stage.
 
 ## Paths vs Text: Why @font Matters
 
@@ -323,10 +323,10 @@ That's three steps: `@font` declares the font, `fromGlyph()` converts text to ge
 
 ## What's Next
 
-TextBlock and glyph extraction form two sides of the same coin. [TextBlock](/pathogen/blog/textblock-introduction) gives you a fast, compose-measure-position workflow for text labels in diagrams — estimation-based measurement is good enough, and the output is semantic SVG `<text>` that's accessible and searchable. `PathBlock.fromGlyph()` gives you text as geometry — exact outlines you can transform, decompose, and combine with any PathBlock operation.
+TextBlock and glyph extraction form two sides of the same coin. [TextBlock](/blog/textblock-introduction) gives you a fast, compose-measure-position workflow for text labels in diagrams — estimation-based measurement is good enough, and the output is semantic SVG `<text>` that's accessible and searchable. `PathBlock.fromGlyph()` gives you text as geometry — exact outlines you can transform, decompose, and combine with any PathBlock operation.
 
-Together, they cover the full spectrum of text needs in programmatic SVG. Labels that need to avoid overlapping? TextBlock with `.intersects()`. A logo with text punched out of a shape? `fromGlyph()` with `.difference()`. Characters scattered along a curved path? `fromGlyph()` with [parametric sampling](/pathogen/blog/pathblock-parametric-sampling). A diagram with precisely measured annotations? TextBlock with a loaded `@font` for exact metrics.
+Together, they cover the full spectrum of text needs in programmatic SVG. Labels that need to avoid overlapping? TextBlock with `.intersects()`. A logo with text punched out of a shape? `fromGlyph()` with `.difference()`. Characters scattered along a curved path? `fromGlyph()` with [parametric sampling](/blog/pathblock-parametric-sampling). A diagram with precisely measured annotations? TextBlock with a loaded `@font` for exact metrics.
 
-The font integration features build directly on the PathBlock foundation covered in the [PathBlock series](/pathogen/blog/pathblock-introduction) — if you haven't explored [transforms](/pathogen/docs#path-blocks-transforms), [sampling](/pathogen/blog/pathblock-parametric-sampling), [fillets](/pathogen/blog/pathblock-fillets-chamfers), and [boolean operations](/pathogen/blog/pathblock-boolean-operations), those posts show the full range of what glyph PathBlocks inherit. Every operation that works on a hand-drawn `@{ h 50 v 30 z }` shape works identically on a glyph extracted from a font.
+The font integration features build directly on the PathBlock foundation covered in the [PathBlock series](/blog/pathblock-introduction) — if you haven't explored [transforms](/docs#path-blocks-transforms), [sampling](/blog/pathblock-parametric-sampling), [fillets](/blog/pathblock-fillets-chamfers), and [boolean operations](/blog/pathblock-boolean-operations), those posts show the full range of what glyph PathBlocks inherit. Every operation that works on a hand-drawn `@{ h 50 v 30 z }` shape works identically on a glyph extracted from a font.
 
-Try it yourself in the [Pathogen playground](/pathogen/) — load a font with `@font`, extract some glyphs, and see what happens when typography becomes geometry.
+Try it yourself in the [Pathogen playground](/) — load a font with `@font`, extract some glyphs, and see what happens when typography becomes geometry.

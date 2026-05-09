@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Painting with Math: Linear and Radial Gradients in Pathogen — Pathogen Studio</title>
   <meta name="description" content="How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/gradient-linear-radial">
+  <link rel="canonical" href="https://pathogen.studio/blog/gradient-linear-radial">
   <meta property="og:title" content="Painting with Math: Linear and Radial Gradients in Pathogen — Pathogen Studio">
   <meta property="og:description" content="How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/gradient-linear-radial">
+  <meta property="og:url" content="https://pathogen.studio/blog/gradient-linear-radial">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Painting with Math: Linear and Radial Gradients in Pathogen","description":"How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.","datePublished":"2026-03-02","url":"https://pathogen.studio/pathogen/blog/gradient-linear-radial","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Painting with Math: Linear and Radial Gradients in Pathogen","description":"How Pathogen turns SVG's linearGradient and radialGradient into programmable, composable building blocks with OKLCH interpolation, spread methods, and gradient inheritance.","datePublished":"2026-03-02","url":"https://pathogen.studio/blog/gradient-linear-radial","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Painting with Math: Linear and Radial Gradients in Pathogen</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Painting with Math: Linear and Radial Gradients in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -334,7 +334,7 @@ frame.apply { rect(0, 0, 400, 300); }
 let scene = GroupLayer('scene') ${};
 scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 </code>
-  <img src="/pathogen/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
+  <img src="/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
 </mini-workspace></p>
 <h2>Gradient Direction</h2>
 <p>The <code>x1, y1 → x2, y2</code> coordinates control the gradient&#39;s angle. A vertical gradient uses <code>(0, 0, 0, 1)</code>. A horizontal one uses <code>(0, 0, 1, 0)</code>. Diagonals use any combination. Reversing the coordinates reverses the color flow — <code>(1, 0, 0, 0)</code> runs right to left.</p>
@@ -445,7 +445,7 @@ connector.apply {
 let fan = GroupLayer('fan') ${};
 fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </code>
-  <img src="/pathogen/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
+  <img src="/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
 </mini-workspace></p>
 <h2>RadialGradient</h2>
 <p><code>RadialGradient</code> works the same way, but radiates outward from a center point. The constructor takes <code>(id, cx, cy, r)</code>, where <code>cx</code> and <code>cy</code> are the center coordinates (again in <code>objectBoundingBox</code> space) and <code>r</code> is the radius as a fraction of the bounding box.</p>
@@ -547,7 +547,7 @@ planet.append(planet_body, planet_ring);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, nebula, stars, planet);
 </code>
-  <img src="/pathogen/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
+  <img src="/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
 </mini-workspace></p>
 <h3>Focal Points</h3>
 <p>The basic constructor centers the gradient&#39;s falloff at <code>(cx, cy)</code>. But <code>RadialGradient</code> also accepts two extra arguments — <code>fx</code> and <code>fy</code> — that shift the <em>focal point</em> away from the geometric center. The gradient still fills the same circle, but the highlight moves, creating the illusion of directional light on a 3D surface.</p>
@@ -627,7 +627,7 @@ labels.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, s1, s2, s3, labels);
 </code>
-  <img src="/pathogen/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
+  <img src="/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
 </mini-workspace></p>
 <h2>OKLCH Interpolation</h2>
 <p>By default, SVG gradients interpolate in sRGB. This is the web platform default, and it produces muddy midpoints when transitioning between colors that are far apart on the hue wheel. Blue to yellow passes through gray. Red to cyan desaturates through brown.</p>
@@ -749,7 +749,7 @@ pair_labels.apply {
 let comparison = GroupLayer('comparison') ${};
 comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
 </code>
-  <img src="/pathogen/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
+  <img src="/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
 </mini-workspace></p>
 <h2>Spread Methods</h2>
 <p>When a gradient covers less than the full bounding box, the <code>spreadMethod</code> property controls what happens outside the defined range. SVG supports three modes:</p>
@@ -863,7 +863,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
+  <img src="/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
 </mini-workspace></p>
 <h2>Gradient Inheritance</h2>
 <p>When you need variations of a gradient — reversed, rotated, desaturated — copying and modifying the stop list is fragile. Pathogen&#39;s <code>.inherit()</code> method creates a new gradient that shares the parent&#39;s stop definitions but can override any property.</p>
@@ -985,10 +985,10 @@ title.apply {
 let palette = GroupLayer('palette') ${};
 palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
+  <img src="/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
 </mini-workspace></p>
 <h2>CSS Variable Reactivity</h2>
-<p>Pathogen&#39;s gradients compose naturally with the <a href="/pathogen/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
+<p>Pathogen&#39;s gradients compose naturally with the <a href="/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
 <p>The demo below puts three overlapping radial glows on a dark background. Each glow&#39;s center color is bound to a CSS variable (<code>--light-a</code>, <code>--light-b</code>, <code>--light-c</code>) — use the color pickers to remix the scene in real time.</p>
 <p><mini-workspace code-open caption="Drag the color pickers to recolor three overlapping radial lights">
   <code>// viewBox="0 0 400 300"
@@ -1045,19 +1045,19 @@ lc.apply { circle(200, 220, 130); closePath(); }
 let scene = GroupLayer('scene') ${};
 scene.append(bg, la, lb, lc);
 </code>
-  <img src="/pathogen/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
+  <img src="/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
 </mini-workspace></p>
 <p>This is the payoff of treating gradients as first-class objects: they participate in the same variable binding, OKLCH manipulation, and reactive update system as every other part of the language.</p>
 <h2>What Comes Next</h2>
-<p>Linear and radial gradients map directly to SVG elements — the compiler emits <code>&lt;linearGradient&gt;</code> and <code>&lt;radialGradient&gt;</code> and the browser handles rendering. But SVG has no <code>&lt;conicGradient&gt;</code>. In the <a href="/pathogen/blog/gradient-conic">next post</a>, we build one from scratch using WebGPU shaders and rasterized <code>&lt;pattern&gt;</code> elements.</p>
+<p>Linear and radial gradients map directly to SVG elements — the compiler emits <code>&lt;linearGradient&gt;</code> and <code>&lt;radialGradient&gt;</code> and the browser handles rendering. But SVG has no <code>&lt;conicGradient&gt;</code>. In the <a href="/blog/gradient-conic">next post</a>, we build one from scratch using WebGPU shaders and rasterized <code>&lt;pattern&gt;</code> elements.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

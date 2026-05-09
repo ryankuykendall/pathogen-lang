@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Clean Tangent Control: heading() and turn() in Pathogen — Pathogen Studio</title>
   <meta name="description" content="Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/heading-turn">
+  <link rel="canonical" href="https://pathogen.studio/blog/heading-turn">
   <meta property="og:title" content="Clean Tangent Control: heading() and turn() in Pathogen — Pathogen Studio">
   <meta property="og:description" content="Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/heading-turn">
+  <meta property="og:url" content="https://pathogen.studio/blog/heading-turn">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Clean Tangent Control: heading() and turn() in Pathogen","description":"Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.","datePublished":"2026-03-22","url":"https://pathogen.studio/pathogen/blog/heading-turn","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Clean Tangent Control: heading() and turn() in Pathogen","description":"Two stdlib functions that set and rotate the pen's direction without emitting path commands — enabling tangentLine and tangentArc immediately after M, and clean z closure in PathBlocks.","datePublished":"2026-03-22","url":"https://pathogen.studio/blog/heading-turn","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Clean Tangent Control: heading() and turn() in Pathogen</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Clean Tangent Control: heading() and turn() in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -251,20 +251,20 @@ code.hljs {
         <p class="post-meta"><time datetime="2026-03-22">March 21, 2026</time></p>
       </header>
       <div class="blog-content">
-        <p>Pathogen&#39;s tangent-dependent functions — <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
+        <p>Pathogen&#39;s tangent-dependent functions — <a href="/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
 <p>The old workaround was a dummy segment:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
 h <span class="hljs-number">0.01</span>            <span class="hljs-comment">// invisible line to set heading rightward</span>
 <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg)
 </code></pre><p>This sets the heading, but the 0.01px offset accumulates. When you close a path with <code>z</code>, it draws a line back to <code>(50.01, 100)</code> instead of <code>(50, 100)</code> — a tiny but visible artifact.</p>
 <h2>heading(angle)</h2>
-<p><a href="/pathogen/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
+<p><a href="/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
 <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)           <span class="hljs-comment">// set heading rightward — nothing drawn</span>
 <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg) <span class="hljs-comment">// works immediately</span>
 </code></pre><p>Angles follow SVG&#39;s coordinate conventions: 0 is rightward, positive angles rotate clockwise (downward in SVG&#39;s y-down coordinate system). Use the <code>deg</code> suffix for degrees.</p>
 <h2>turn(delta)</h2>
-<p><a href="/pathogen/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
+<p><a href="/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
 <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)          <span class="hljs-comment">// start rightward</span>
 <span class="hljs-title function_">turn</span>(90deg)         <span class="hljs-comment">// now downward</span>
@@ -401,7 +401,7 @@ for ([shape, idx] in shapes) {
   layer(gName).append(snippet);
 }
 </code>
-  <img src="/pathogen/blog/samples/post14/heading-turn-demo.svg" alt="heading() and turn() — C-shape, S-curve, zigzag, and spiral" loading="lazy">
+  <img src="/blog/samples/post14/heading-turn-demo.svg" alt="heading() and turn() — C-shape, S-curve, zigzag, and spiral" loading="lazy">
 </mini-workspace></p>
 <h2>Building Regular Polygons</h2>
 <p><code>heading</code>, <code>turn</code>, and <code>tangentLine</code> are all you need to draw any regular polygon. Set an initial heading at half the exterior angle (this orients the first edge so the polygon sits upright), then loop: draw a side with <code>tangentLine</code>, turn by the exterior angle. Replace <code>tangentLine</code> with <code>tangentArc</code> on the turns and the corners become rounded:</p>
@@ -560,10 +560,10 @@ layer('caption').apply {
   text(20, 382)`All shapes built with heading(), turn(), tangentLine(), and tangentArc().`
 }
 </code>
-  <img src="/pathogen/blog/samples/post14/polygon-showcase.svg" alt="Regular polygons from 3 to 10 sides — sharp and rounded corners" loading="lazy">
+  <img src="/blog/samples/post14/polygon-showcase.svg" alt="Regular polygons from 3 to 10 sides — sharp and rounded corners" loading="lazy">
 </mini-workspace></p>
 <h2>Clean PathBlock Closure</h2>
-<p><code>heading()</code> is especially valuable inside <a href="/pathogen/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
+<p><code>heading()</code> is especially valuable inside <a href="/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-comment">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
 <span class="hljs-keyword">let</span> old = @{
   h <span class="hljs-number">0.01</span>
@@ -587,15 +587,15 @@ M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
 <span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// undefined (M clears heading)</span>
 </code></pre><p>Any drawing command that establishes a direction — <code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>, and stdlib path functions — sets the heading automatically. <code>heading()</code> and <code>turn()</code> let you set it explicitly when no drawing command has run yet.</p>
 <p>Together, these two functions eliminate the dummy-segment workaround, enable clean <code>z</code> closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with <code>tangentLine</code> and <code>tangentArc</code> to build complex shapes from simple, composable operations.</p>
-<p>For more on tangent-dependent functions, see the <a href="/pathogen/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/pathogen/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/pathogen/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
+<p>For more on tangent-dependent functions, see the <a href="/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

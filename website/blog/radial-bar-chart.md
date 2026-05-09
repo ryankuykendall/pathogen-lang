@@ -5,7 +5,7 @@ date: 2026-03-29
 description: "Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization."
 ---
 
-> **Prerequisites:** This post uses [PathBlocks](/pathogen/blog/pathblock-introduction), [TextBlocks](/pathogen/blog/textblock-introduction), [GroupLayers](/pathogen/docs#layers-defining-layers), and [for-loop destructuring](/pathogen/docs#syntax-destructuring). If you're new to Pathogen, start with those introductions.
+> **Prerequisites:** This post uses [PathBlocks](/blog/pathblock-introduction), [TextBlocks](/blog/textblock-introduction), [GroupLayers](/docs#layers-defining-layers), and [for-loop destructuring](/docs#syntax-destructuring). If you're new to Pathogen, start with those introductions.
 
 Radial bar charts arrange categorical data around a central point, encoding values as the length of wedge-shaped bars radiating outward. They're visually distinctive — the circular layout invites comparison across categories in a way that a standard bar chart can't — but geometrically demanding. Each bar is an annular sector whose inner and outer arcs, radial edges, and rounded corners all require precise coordinate math.
 
@@ -20,7 +20,7 @@ M cx cy
 radialWedge(innerR, outerR, fromAngle, toAngle, cornerR)
 ```
 
-The center is wherever the cursor is positioned (via `M cx cy`). The function emits only relative commands (`m`, `a`, `l`, `z`) — no absolute `M` — so it composes naturally inside [PathBlocks](/pathogen/blog/pathblock-introduction). Angles are in radians (use the `deg` suffix for degrees — e.g., `90deg`, `-45deg`), with `fromAngle` / `toAngle` following the same convention as [conic gradients](/pathogen/blog/gradient-conic). The `cornerR` parameter controls the rounding at all four arc-line junctions.
+The center is wherever the cursor is positioned (via `M cx cy`). The function emits only relative commands (`m`, `a`, `l`, `z`) — no absolute `M` — so it composes naturally inside [PathBlocks](/blog/pathblock-introduction). Angles are in radians (use the `deg` suffix for degrees — e.g., `90deg`, `-45deg`), with `fromAngle` / `toAngle` following the same convention as [conic gradients](/blog/gradient-conic). The `cornerR` parameter controls the rounding at all four arc-line junctions.
 
 <mini-workspace src="samples/post16/annular-sector.pathogen" caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" code-open></mini-workspace>
 
@@ -28,7 +28,7 @@ The ghost shape shows `cornerR = 0` (sharp edges). The solid shape uses `cornerR
 
 ### Why a stdlib function?
 
-We initially built annular sectors using a [PathBlock](/pathogen/blog/pathblock-introduction) with [`heading`](/pathogen/blog/heading-turn), `tangentArc`, `turn`, and `tangentLine`:
+We initially built annular sectors using a [PathBlock](/blog/pathblock-introduction) with [`heading`](/blog/heading-turn), `tangentArc`, `turn`, and `tangentLine`:
 
 ```pathogen
 fn makeWedge(innerR, outerR, sweep, startAngle, cornerR) {
@@ -47,7 +47,7 @@ fn makeWedge(innerR, outerR, sweep, startAngle, cornerR) {
 }
 ```
 
-This approach taught us the [heading/turn](/pathogen/blog/heading-turn) system well, but it hit real problems at chart scale:
+This approach taught us the [heading/turn](/blog/heading-turn) system well, but it hit real problems at chart scale:
 
 1. **`.fillet()` didn't handle arc-line transitions** — it only rounded line-to-line corners, silently skipping the four arc-line junctions in our wedge. We extended the fillet algorithm to compute tangent directions at arc endpoints, but this revealed deeper issues.
 2. **Narrow bars produced degenerate output** — when the inner arc was too short for the requested corner radius, the fillet split produced zero-length commands with `undefined` SVG parameters.
@@ -86,7 +86,7 @@ Placing labels around a radial chart is the trickiest part. Each label must be:
 - **Flipped** on the left hemisphere so text reads left-to-right
 - **Vertically centered** so the text midline — not baseline — aligns with the bar's angular center
 
-Doing this manually requires separate TextLayers for left and right hemispheres, manual `cos`/`sin` positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new `.radialProject()` method on [TextBlock](/pathogen/blog/textblock-introduction) handles all of this in one call:
+Doing this manually requires separate TextLayers for left and right hemispheres, manual `cos`/`sin` positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new `.radialProject()` method on [TextBlock](/blog/textblock-introduction) handles all of this in one call:
 
 ```pathogen
 let label = &{ text(0, 0)`${d.name}` } << ${ font-size: 11; };
@@ -121,7 +121,7 @@ Building `radialWedge()` required multiple iterations to get the corner geometry
 
 <mini-workspace src="samples/post16/wedge-diag-16.pathogen" caption="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs"></mini-workspace>
 
-The dark red regions show the [XOR](/pathogen/docs#path-blocks-boolean-operations) between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The `cornerR = 16` matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, `radialWedge()` analytically computes the largest corner radius that fits each end independently.
+The dark red regions show the [XOR](/docs#path-blocks-boolean-operations) between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The `cornerR = 16` matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, `radialWedge()` analytically computes the largest corner radius that fits each end independently.
 
 This matrix-based testing approach — rendering a grid of parameter combinations with geometric overlays — proved invaluable for identifying edge cases during development. The XOR diff layer made it immediately visible when a corner fillet was misaligned or a sweep flag was inverted, issues that would have been nearly impossible to catch by inspecting individual examples.
 
@@ -161,4 +161,4 @@ This project prompted several additions to the Pathogen language:
 
 The radial bar chart pattern — data array, angular distribution loop, `radialWedge()` for geometry, `radialProject()` for labels — is reusable for any categorical comparison that benefits from a circular layout. Try changing the `--bar-all` and `--bar-top` color variables in any of the examples above to explore different palettes, or modify the data array to add your own categories.
 
-For the full function signatures and parameter details, see the [stdlib reference](/pathogen/docs#stdlib-path-functions) and [TextBlock documentation](/pathogen/docs#text-block-syntax). The original visualization by [Patrick Wojda](https://observablehq.com/@gitnoise) that inspired this chart is available on [Observable](https://observablehq.com/d/33703039e1484511).
+For the full function signatures and parameter details, see the [stdlib reference](/docs#stdlib-path-functions) and [TextBlock documentation](/docs#text-block-syntax). The original visualization by [Patrick Wojda](https://observablehq.com/@gitnoise) that inspired this chart is available on [Observable](https://observablehq.com/d/33703039e1484511).

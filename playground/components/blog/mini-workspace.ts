@@ -399,7 +399,7 @@ export class MiniWorkspace extends HTMLElement {
     } catch {
       /* storage full */
     }
-    window.open(`/pathogen/workspace/new?import=${encodeURIComponent(key)}`, '_blank');
+    window.open(`/workspace/new?import=${encodeURIComponent(key)}`, '_blank');
   }
 
   // --- Inspector ---

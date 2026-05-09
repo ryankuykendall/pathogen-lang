@@ -67,7 +67,7 @@ class AppHeader extends HTMLElement {
 
   render(): void {
     const pathname =
-      typeof window !== 'undefined' && window.location ? window.location.pathname : '/pathogen/';
+      typeof window !== 'undefined' && window.location ? window.location.pathname : '/';
 
     this.shadowRoot!.innerHTML = `
       <style>${styles}</style>

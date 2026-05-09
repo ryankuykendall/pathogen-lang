@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR — Pathogen Studio</title>
   <meta name="description" content="How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/pathblock-boolean-operations">
+  <link rel="canonical" href="https://pathogen.studio/blog/pathblock-boolean-operations">
   <meta property="og:title" content="Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR — Pathogen Studio">
   <meta property="og:description" content="How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/pathblock-boolean-operations">
+  <meta property="og:url" content="https://pathogen.studio/blog/pathblock-boolean-operations">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR","description":"How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.","datePublished":"2026-03-13","url":"https://pathogen.studio/pathogen/blog/pathblock-boolean-operations","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR","description":"How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.","datePublished":"2026-03-13","url":"https://pathogen.studio/blog/pathblock-boolean-operations","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -255,28 +255,28 @@ code.hljs {
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
-<li><a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
-<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
-<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
 <li><strong>Boolean Operations</strong> (this post)</li>
 </ol>
 </blockquote>
-<p>Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what&#39;s the combined outline? What&#39;s left after subtracting one from the other? Where do they overlap? Pathogen&#39;s <a href="/pathogen/docs#path-blocks-boolean-operations">PathBlock boolean operations</a> bring these capabilities directly into the language.</p>
+<p>Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what&#39;s the combined outline? What&#39;s left after subtracting one from the other? Where do they overlap? Pathogen&#39;s <a href="/docs#path-blocks-boolean-operations">PathBlock boolean operations</a> bring these capabilities directly into the language.</p>
 <h2>The Four Operations</h2>
 <p>All four operations take two closed paths and return a new PathBlock. Both operands must be closed (end with <code>z</code> or have coincident start/end points).</p>
 <h3>Union</h3>
-<p><a href="/pathogen/docs#path-blocks-unionother-pathblock"><code>.union(other)</code></a> combines two paths into their outer boundary — everything covered by either shape:</p>
+<p><a href="/docs#path-blocks-unionother-pathblock"><code>.union(other)</code></a> combines two paths into their outer boundary — everything covered by either shape:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> combined = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">union</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
 </code></pre><h3>Difference</h3>
-<p><a href="/pathogen/docs#path-blocks-differenceother-pathblock"><code>.difference(other)</code></a> subtracts the second shape from the first — everything in <code>a</code> that is not in <code>b</code>:</p>
+<p><a href="/docs#path-blocks-differenceother-pathblock"><code>.difference(other)</code></a> subtracts the second shape from the first — everything in <code>a</code> that is not in <code>b</code>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> result = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">difference</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">55</span>));
 </code></pre><h3>Intersection</h3>
-<p><a href="/pathogen/docs#path-blocks-intersectionother-pathblock"><code>.intersection(other)</code></a> returns only the overlapping region — everything in both shapes:</p>
+<p><a href="/docs#path-blocks-intersectionother-pathblock"><code>.intersection(other)</code></a> returns only the overlapping region — everything in both shapes:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> overlap = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">intersection</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">235</span>));
 </code></pre><h3>XOR</h3>
-<p><a href="/pathogen/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
+<p><a href="/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
 </code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
   <code>// viewBox="0 0 580 480"
@@ -594,7 +594,7 @@ subtitle.apply {
   text(30, 46)`Four set operations on overlapping 50×50 squares`
 }
 </code>
-  <img src="/pathogen/blog/samples/post9/boolean-basics.svg" alt="Four boolean operations on overlapping squares — union, difference, intersection, xor" loading="lazy">
+  <img src="/blog/samples/post9/boolean-basics.svg" alt="Four boolean operations on overlapping squares — union, difference, intersection, xor" loading="lazy">
 </mini-workspace></p>
 <p>The dashed outlines show the original overlapping squares. The solid blue fills show the boolean result for each operation. Notice how union produces the combined outline, difference cuts out the overlap from the first shape, intersection keeps only the overlap, and xor keeps everything except the overlap.</p>
 <h2>How It Works</h2>
@@ -633,7 +633,7 @@ subtitle.apply {
 <p>A key design goal is that boolean operations <strong>preserve original curve types</strong>. If the input contains cubic Béziers, the output contains cubic Béziers — not polyline approximations. The intersection finder works directly on the mathematical curve representations, and the split operation uses De Casteljau subdivision (for Béziers) or angular splitting (for arcs).</p>
 <p>This matters for output quality. Linearized boolean results look jagged at any zoom level. Curve-preserving results stay smooth.</p>
 <h2>Requirements</h2>
-<p>From the <a href="/pathogen/docs#path-blocks-requirements-and-behavior">documentation</a>:</p>
+<p>From the <a href="/docs#path-blocks-requirements-and-behavior">documentation</a>:</p>
 <ul>
 <li><strong>Both paths must be closed.</strong> Open paths throw an error.</li>
 <li><strong>The <code>other</code> argument</strong> can be a PathBlock or ProjectedPath.</li>
@@ -641,7 +641,7 @@ subtitle.apply {
 <li><strong>Results are PathBlocks</strong> normalized to <code>(0, 0)</code> origin, so they work with all PathBlock methods.</li>
 </ul>
 <h2>Using with <code>.project()</code></h2>
-<p>Boolean operations need absolute coordinates to compute intersections. Use <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> to position shapes before combining them:</p>
+<p>Boolean operations need absolute coordinates to compute intersections. Use <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> to position shapes before combining them:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> circle = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
 <span class="hljs-keyword">let</span> a = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
 <span class="hljs-keyword">let</span> b = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>);
@@ -649,7 +649,7 @@ subtitle.apply {
 result.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
 </code></pre><p>The result is a PathBlock at <code>(0, 0)</code> origin. Use <code>.drawTo(x, y)</code> to place it anywhere.</p>
 <h2>Chaining with Transforms</h2>
-<p>Since boolean operations return PathBlocks, you can chain them with <a href="/pathogen/docs#path-blocks-fillets">fillets</a>, <a href="/pathogen/docs#path-blocks-chamfers">chamfers</a>, <a href="/pathogen/docs#path-blocks-parametric-sampling">parametric sampling</a>, or even more boolean operations:</p>
+<p>Since boolean operations return PathBlocks, you can chain them with <a href="/docs#path-blocks-fillets">fillets</a>, <a href="/docs#path-blocks-chamfers">chamfers</a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or even more boolean operations:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> combined = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
 <span class="hljs-keyword">let</span> rounded = combined.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">5</span>);
@@ -880,10 +880,10 @@ subtitle.apply {
   text(260, 28)`Combine shapes, then round the result`
 }
 </code>
-  <img src="/pathogen/blog/samples/post9/boolean-chaining.svg" alt="Chaining pipeline — overlapping squares → union → union + fillet(8)" loading="lazy">
+  <img src="/blog/samples/post9/boolean-chaining.svg" alt="Chaining pipeline — overlapping squares → union → union + fillet(8)" loading="lazy">
 </mini-workspace></p>
 <h2>Standard Library Shapes</h2>
-<p>Pathogen&#39;s <a href="/pathogen/docs#stdlib-path-functions">standard library</a> provides PathBlock-returning functions for common shapes — <code>circle()</code>, <code>rect()</code>, <code>polygon()</code>, <code>star()</code>, and more. These work directly with boolean operations:</p>
+<p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides PathBlock-returning functions for common shapes — <code>circle()</code>, <code>rect()</code>, <code>polygon()</code>, <code>star()</code>, and more. These work directly with boolean operations:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">80</span>, <span class="hljs-number">80</span>) };
 <span class="hljs-keyword">let</span> hole = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">10</span>) };
 <span class="hljs-keyword">let</span> d1 = plate.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
@@ -972,7 +972,7 @@ badge_desc.apply {
   text(220, 44)`star(5, 30, 14) ∪ circle(18)`
 }
 </code>
-  <img src="/pathogen/blog/samples/post9/boolean-stdlib.svg" alt="Standard library shapes — drilled plate and star-circle badge" loading="lazy">
+  <img src="/blog/samples/post9/boolean-stdlib.svg" alt="Standard library shapes — drilled plate and star-circle badge" loading="lazy">
 </mini-workspace></p>
 <h2>Putting It All Together</h2>
 <p>This series covered four layers of PathBlock capability — and since every operation returns a PathBlock, they compose freely. Here&#39;s the full pipeline in one expression: define shapes, combine them with a boolean operation, round the result with a fillet, then sample points along the filleted outline:</p>
@@ -984,16 +984,16 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 <span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
   @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">2</span>) }.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>))
 }
-</code></pre><p>Define once (<a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/pathogen/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
-<p>Try it yourself in the <a href="/pathogen/">Pathogen playground</a> — paste any example from this series and experiment.</p>
+</code></pre><p>Define once (<a href="/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
+<p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any example from this series and experiment.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

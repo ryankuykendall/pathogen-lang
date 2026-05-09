@@ -59,11 +59,11 @@ let lighter = rgb(255, 0, 0).lighten(20%);
 let muted = hsl(210, 80%, 50%).desaturate(50%);
 ```
 
-The demo below expresses the same red in seven different color spaces. Every format converts to [OKLCH](/pathogen/docs#stdlib-color) internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:
+The demo below expresses the same red in seven different color spaces. Every format converts to [OKLCH](/docs#stdlib-color) internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:
 
 <mini-workspace src="samples/post10/color-spaces.pathogen" caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally" code-open></mini-workspace>
 
-> **Note:** CSS color function names (`rgb`, `rgba`, `hsl`, `hsla`, `oklch`, `hwb`, `lab`, `lch`, `oklab`) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The `a`-suffixed legacy forms (`rgba`, `hsla`) are also supported. See the [syntax reference](/pathogen/docs#syntax-color-literals) for the full list.
+> **Note:** CSS color function names (`rgb`, `rgba`, `hsl`, `hsla`, `oklch`, `hwb`, `lab`, `lch`, `oklab`) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The `a`-suffixed legacy forms (`rgba`, `hsla`) are also supported. See the [syntax reference](/docs#syntax-color-literals) for the full list.
 
 ## The Percent Suffix
 
@@ -79,13 +79,13 @@ let muted = c.desaturate(40%);   // 40% → 0.4
 
 The percent suffix isn't limited to color methods — it works anywhere a number is expected. `50%` is `0.5` whether it's a color alpha, a mix ratio, or a variable assignment.
 
-**Disambiguation:** `20%` (no space) is a percent literal. `20 % 5` (with spaces) is the [modulus operator](/pathogen/docs#syntax-percent-suffix). Existing code that uses modulus with spaces continues to work unchanged.
+**Disambiguation:** `20%` (no space) is a percent literal. `20 % 5` (with spaces) is the [modulus operator](/docs#syntax-percent-suffix). Existing code that uses modulus with spaces continues to work unchanged.
 
 <mini-workspace src="samples/post10/percent-tints.pathogen" caption="Tint, shade, and alpha scales using the percent suffix" code-open></mini-workspace>
 
 ## Reactive Colors
 
-Color literals compose naturally with Pathogen's [CSSVar-backed reactive colors](/pathogen/blog/reactive-color-svg). Use a bare hex as the fallback value in `Color(CSSVar(...))` to create colors that update at runtime when the CSS custom property changes:
+Color literals compose naturally with Pathogen's [CSSVar-backed reactive colors](/blog/reactive-color-svg). Use a bare hex as the fallback value in `Color(CSSVar(...))` to create colors that update at runtime when the CSS custom property changes:
 
 ```pathogen
 let base = Color(CSSVar('--base-color', #0066ff));
@@ -108,7 +108,7 @@ The second demo shows a tint/shade scale — seven lighten steps and seven darke
 
 The `Color()` wrapper isn't going away. You still need it for:
 
-- **Named colors**: `Color('coral')`, `Color('dodgerblue')` — all [148 CSS named colors](/pathogen/docs#stdlib-color)
+- **Named colors**: `Color('coral')`, `Color('dodgerblue')` — all [148 CSS named colors](/docs#stdlib-color)
 - **Direct OKLCH construction**: `Color(0.6, 0.15, 30)` — numeric L, C, H values
 - **String-based input**: `Color('rgb(255, 0, 0)')` — when the color format is in a string variable
 
@@ -116,4 +116,4 @@ Everything is backwards-compatible. Existing `Color('#cc0000')` calls continue t
 
 ## Try It
 
-Open the [Pathogen playground](/pathogen/), start from `#0066ff`, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the [Color documentation](/pathogen/docs#stdlib-color), and the syntax details are in the [Color Literals](/pathogen/docs#syntax-color-literals) and [Percent Suffix](/pathogen/docs#syntax-percent-suffix) sections.
+Open the [Pathogen playground](/), start from `#0066ff`, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the [Color documentation](/docs#stdlib-color), and the syntax details are in the [Color Literals](/docs#syntax-color-literals) and [Percent Suffix](/docs#syntax-percent-suffix) sections.

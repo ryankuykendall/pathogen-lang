@@ -20,6 +20,7 @@ import type {
   Workspace,
 } from './api/types.js';
 import { latestBlogPost } from './generated/blog-data.js';
+import { PATHOGEN_VERSION } from '../playground/utils/version.js';
 
 // ─── SEO Page Rendering ───────────────────────────────────────────────
 
@@ -92,8 +93,8 @@ function renderPage({
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
@@ -102,9 +103,9 @@ function renderPage({
   ${headExtra}
   <style>
     /* body styles (font-family, background, atmospheric grain) are defined
-     * globally in /pathogen/styles/theme.css. */
+     * globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     .site-main {
@@ -122,8 +123,8 @@ function renderPage({
   <main class="site-main">
     ${content}
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
 </body>
 </html>`;
 }
@@ -160,7 +161,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : '';
-        const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        const href = `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
         return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
         <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
         <div class="explore-info">
@@ -177,9 +178,9 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
   let paginationHtml = '';
   if (totalPages > 1) {
     const links: string[] = [];
-    if (page > 1) links.push(`<a class="page-link" href="/pathogen/explore?page=${page - 1}">&larr; Previous</a>`);
+    if (page > 1) links.push(`<a class="page-link" href="/explore?page=${page - 1}">&larr; Previous</a>`);
     links.push(`<span class="page-info">Page ${page} of ${totalPages}</span>`);
-    if (page < totalPages) links.push(`<a class="page-link" href="/pathogen/explore?page=${page + 1}">Next &rarr;</a>`);
+    if (page < totalPages) links.push(`<a class="page-link" href="/explore?page=${page + 1}">Next &rarr;</a>`);
     paginationHtml = `<div class="pagination">${links.join('')}</div>`;
   }
 
@@ -196,7 +197,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
     "@type": "CollectionPage",
     "name": "Explore Public Workspaces",
     "description": "Browse public workspaces created with svg-path-extended",
-    "url": "https://pathogen.studio/pathogen/explore",
+    "url": "https://pathogen.studio/explore",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>
@@ -250,7 +251,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
   const html = renderPage({
     title: 'Explore',
     description: 'Browse public workspaces created with svg-path-extended',
-    path: '/pathogen/explore',
+    path: '/explore',
     content,
     headExtra,
     currentUser,
@@ -285,7 +286,7 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
       title: 'Profile not found',
       description: 'No Pathogen profile with that handle.',
       path: url.pathname,
-      content: `<h1>Profile not found</h1><p>No user with handle <code>${escapeHtml(handle)}</code>.</p><p><a href="/pathogen/explore">Browse public workspaces &rarr;</a></p>`,
+      content: `<h1>Profile not found</h1><p>No user with handle <code>${escapeHtml(handle)}</code>.</p><p><a href="/explore">Browse public workspaces &rarr;</a></p>`,
       currentUser,
     });
     return new Response(html, {
@@ -332,7 +333,7 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : '';
-        const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        const href = `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
         return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
         <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
         <div class="explore-info">
@@ -442,7 +443,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
       .map((ws: Workspace) => {
         const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
         const desc = ws.description ? ws.description.slice(0, 200) + (ws.description.length > 200 ? '...' : '') : '';
-        const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        const href = `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
         return `<article class="featured-card-wrap"><a class="featured-card" href="${href}">
         <div class="featured-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="featured-placeholder"></div>`}</div>
         <div class="featured-info">
@@ -466,7 +467,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
     "@type": "CollectionPage",
     "name": "Featured Workspaces",
     "description": "Hand-picked svg-path-extended workspace showcases",
-    "url": "https://pathogen.studio/pathogen/featured",
+    "url": "https://pathogen.studio/featured",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>
@@ -508,7 +509,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
   const html = renderPage({
     title: 'Featured',
     description: 'Hand-picked svg-path-extended workspace showcases',
-    path: '/pathogen/featured',
+    path: '/featured',
     content,
     headExtra,
     currentUser,
@@ -536,37 +537,37 @@ const HOMEPAGE_SHOWCASE_TILES: ShowcaseTile[] = [
   {
     slug: 'gradient-linear-radial',
     label: 'Linear Gradients',
-    src: '/pathogen/blog/samples/post1/linear-basics.svg',
+    src: '/blog/samples/post1/linear-basics.svg',
     alt: 'Linear and radial gradients composed into a layered landscape',
   },
   {
     slug: 'gradient-conic',
     label: 'Conic Gradient',
-    src: '/pathogen/blog/samples/post2/color-wheel.svg',
+    src: '/blog/samples/post2/color-wheel.svg',
     alt: 'Conic gradient color wheel rendered via WebGPU',
   },
   {
     slug: 'gradient-mesh-freeform',
     label: 'Mesh Gradient',
-    src: '/pathogen/blog/samples/post3/mesh-basics.svg',
+    src: '/blog/samples/post3/mesh-basics.svg',
     alt: '2x2 mesh gradient with bilinear OKLCH interpolation',
   },
   {
     slug: 'pathblock-parametric-sampling',
     label: 'Parametric Sampling',
-    src: '/pathogen/blog/samples/post7/sampling-anatomy.svg',
+    src: '/blog/samples/post7/sampling-anatomy.svg',
     alt: 'PathBlock parametric sampling — get(), tangent(), and normal() at t = 0.4',
   },
   {
     slug: 'grid-functions',
     label: 'Grids',
-    src: '/pathogen/blog/samples/post15/square-grid-patterns.svg',
+    src: '/blog/samples/post15/square-grid-patterns.svg',
     alt: 'Procedural square grid patterns',
   },
   {
     slug: 'heading-turn',
     label: 'Tangents',
-    src: '/pathogen/blog/samples/post14/heading-turn-demo.svg',
+    src: '/blog/samples/post14/heading-turn-demo.svg',
     alt: 'Tangent control curves — C, S, zigzag, and spiral',
   },
 ];
@@ -576,7 +577,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
 
   const showcaseTilesHtml = HOMEPAGE_SHOWCASE_TILES.map(
     (tile) =>
-      `<a class="dev-tile" href="/pathogen/blog/${tile.slug}">
+      `<a class="dev-tile" href="/blog/${tile.slug}">
           <img src="${tile.src}" alt="${escapeHtml(tile.alt)}" loading="lazy">
           <span class="dev-tile-label">${escapeHtml(tile.label)}</span>
         </a>`,
@@ -591,13 +592,13 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
     : '';
 
   const blogCardHtml = latestBlogPost
-    ? `<a class="dev-blog" href="/pathogen/blog/${latestBlogPost.slug}">
+    ? `<a class="dev-blog" href="/blog/${latestBlogPost.slug}">
             <p class="blog-eyebrow">From the blog · Latest</p>
             <h3 class="blog-title">${escapeHtml(latestBlogPost.title)}</h3>
             <p class="blog-body">${escapeHtml(latestBlogPost.description)}</p>
             <p class="blog-meta">${blogDateFormatted}</p>
           </a>`
-    : `<a class="dev-blog" href="/pathogen/blog">
+    : `<a class="dev-blog" href="/blog">
             <p class="blog-eyebrow">From the blog</p>
             <h3 class="blog-title">Read the latest posts.</h3>
             <p class="blog-body">Tutorials, deep-dives, and language-design notes from the Pathogen team.</p>
@@ -629,7 +630,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
           <h1>From a one-liner to a thousand-line <em>composition.</em></h1>
           <p class="lede">Pathogen Studio is a typed, expression-first language for SVG paths. Compile from the CLI, the playground, or your editor — get the same path output every time.</p>
           <div class="dev-cta-cluster">
-            <a class="cta-primary" href="/pathogen/workspace/new">
+            <a class="cta-primary" href="/workspace/new">
               <span>Create new workspace</span>
               ${arrowIcon}
             </a>
@@ -647,11 +648,11 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
       </section>
 
       <section class="dev-toolset">
-        <a class="dev-tool" href="https://github.com/ryankuykendall/svg-path-extended" target="_blank" rel="noopener">
+        <a class="dev-tool" href="https://github.com/ryankuykendall/pathogen-lang" target="_blank" rel="noopener">
           <p class="tool-eyebrow">${githubIcon}<span>Source · MIT</span></p>
           <h3 class="tool-title">GitHub.</h3>
           <p class="tool-body">Read the source, file an issue, send a pull request. Compiler, evaluator, stdlib, CLI — all in one repository.</p>
-          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">git clone</span> ryankuykendall/svg-path-extended</div>
+          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">git clone</span> ryankuykendall/pathogen-lang</div>
         </a>
 
         <a class="dev-tool" href="https://www.npmjs.com/package/svg-path-extended" target="_blank" rel="noopener">
@@ -661,7 +662,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
           <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">npm install</span> -g svg-path-extended</div>
         </a>
 
-        <a class="dev-tool" href="/pathogen/blog/vscode-developer-experience">
+        <a class="dev-tool" href="/blog/vscode-developer-experience">
           <p class="tool-eyebrow">${editorIcon}<span>VS Code · Coming soon</span></p>
           <h3 class="tool-title">In the editor.</h3>
           <p class="tool-body">LSP-powered completions, hover docs, diagnostics, and a live preview pane — install the extension when it lands and write Pathogen anywhere you write code.</p>
@@ -678,25 +679,25 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
       </section>
 
       <footer class="dev-footer">
-        <span>built on svg-path-extended v1.0</span>
+        <span>built on Pathogen v${PATHOGEN_VERSION}</span>
         <span>
-          <a href="https://github.com/ryankuykendall/svg-path-extended" target="_blank" rel="noopener">github</a> ·
-          <a href="/pathogen/docs">docs</a> ·
-          <a href="/pathogen/blog">blog</a> ·
-          <a href="/pathogen/explore">explore</a>
+          <a href="https://github.com/ryankuykendall/pathogen-lang" target="_blank" rel="noopener">github</a> ·
+          <a href="/docs">docs</a> ·
+          <a href="/blog">blog</a> ·
+          <a href="/explore">explore</a>
         </span>
       </footer>
     </div>
   `;
 
-  const headExtra = `<link rel="stylesheet" href="/pathogen/styles/homepage.css">
+  const headExtra = `<link rel="stylesheet" href="/styles/homepage.css">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Pathogen Studio",
     "description": "A typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.",
-    "url": "https://pathogen.studio/pathogen/",
+    "url": "https://pathogen.studio/",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>`;
@@ -705,7 +706,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
     title: '',
     description:
       'Pathogen Studio — a typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.',
-    path: '/pathogen/',
+    path: '/',
     content,
     headExtra,
     currentUser,
@@ -741,50 +742,58 @@ export default {
       );
     }
 
-    // Marketing homepage at /pathogen/ and /pathogen/index.html — server-rendered
-    // for both signed-out and signed-in visitors. Must claim these URLs before
-    // the SPA fallback at the bottom of this handler so the SPA shell never
-    // loads at the root.
-    if (path === '/pathogen/' || path === '/pathogen/index.html') {
+    // Backward-compat: the site used to live under /pathogen/* (when it was
+    // a sub-app at pedestal.design/pathogen/...). Anyone hitting an old URL
+    // gets a 301 to the prefix-less location. Preserves search params.
+    if (path === '/pathogen' || path.startsWith('/pathogen/')) {
+      const newPath = path.replace(/^\/pathogen/, '') || '/';
+      return Response.redirect(`${url.origin}${newPath}${url.search}`, 301);
+    }
+
+    // Marketing homepage at the apex — server-rendered for every visitor.
+    // Must claim / and /index.html before the SPA fallback so the static
+    // SPA shell never loads at the root.
+    if (path === '/' || path === '/index.html') {
       return renderHomepage(request, env, url);
     }
 
-    // SEO routes — served before the SPA catch-all
-    if (path === '/pathogen/docs' || path === '/pathogen/docs/') {
-      url.pathname = '/pathogen/docs/index.html';
+    // SEO routes — served before the SPA catch-all.
+    if (path === '/docs' || path === '/docs/') {
+      url.pathname = '/docs/index.html';
       return env.ASSETS.fetch(url.toString());
     }
-    if (path === '/pathogen/explore') {
+    if (path === '/explore') {
       return renderExplorePage(request, env, url);
     }
-    if (path === '/pathogen/featured') {
+    if (path === '/featured') {
       return renderFeaturedPage(request, env, url);
     }
-    const profilePathMatch = path.match(/^\/pathogen\/u\/([a-z0-9-]+)$/);
+    const profilePathMatch = path.match(/^\/u\/([a-z0-9-]+)$/);
     if (profilePathMatch) {
       return renderProfilePage(request, env, url, profilePathMatch[1]);
     }
 
     // Blog SEO routes
-    if (path === '/pathogen/blog' || path === '/pathogen/blog/') {
-      url.pathname = '/pathogen/blog/index.html';
+    if (path === '/blog' || path === '/blog/') {
+      url.pathname = '/blog/index.html';
       return env.ASSETS.fetch(url.toString());
     }
-    // Individual blog posts — check if static file exists
-    const blogPostMatch = path.match(/^\/pathogen\/blog\/([a-z0-9-]+)$/);
+    const blogPostMatch = path.match(/^\/blog\/([a-z0-9-]+)$/);
     if (blogPostMatch) {
-      url.pathname = `/pathogen/blog/${blogPostMatch[1]}.html`;
+      url.pathname = `/blog/${blogPostMatch[1]}.html`;
       return env.ASSETS.fetch(url.toString());
     }
 
-    // SPA routes under /pathogen/ that don't have file extensions
-    if (path.startsWith('/pathogen/') && path !== '/pathogen/' && !/\.\w+$/.test(path)) {
-      // Serve the SPA index.html
-      url.pathname = '/pathogen/index.html';
+    // SPA fallback — extensionless paths that didn't match a SEO route get
+    // the SPA shell. The shell file lives at /spa.html so it doesn't
+    // collide with the SSR-rendered apex (/index.html → renderHomepage).
+    if (!/\.\w+$/.test(path)) {
+      url.pathname = '/spa.html';
       return env.ASSETS.fetch(url.toString());
     }
 
-    // For everything else, serve normally
+    // For everything else (extension-bearing paths: assets, JS, CSS,
+    // images, favicons, etc.), serve normally.
     return env.ASSETS.fetch(request);
   },
 };

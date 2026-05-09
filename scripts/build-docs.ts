@@ -276,10 +276,10 @@ async function buildDocs(): Promise<void> {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Documentation — Pathogen</title>
   <meta name="description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/docs">
+  <link rel="canonical" href="https://pathogen.studio/docs">
   <meta property="og:title" content="Documentation — Pathogen">
   <meta property="og:description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/docs">
+  <meta property="og:url" content="https://pathogen.studio/docs">
   <meta property="og:type" content="website">
   <script type="application/ld+json">
   {
@@ -287,15 +287,15 @@ async function buildDocs(): Promise<void> {
     "@type": "TechArticle",
     "name": "Pathogen Documentation",
     "description": "Complete language reference for svg-path-extended",
-    "url": "https://pathogen.studio/pathogen/docs",
+    "url": "https://pathogen.studio/docs",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
@@ -304,9 +304,9 @@ async function buildDocs(): Promise<void> {
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Docs layout */
@@ -403,7 +403,7 @@ async function buildDocs(): Promise<void> {
   </style>
 </head>
 <body>
-  ${siteHeaderHtml({ pathname: '/pathogen/docs', context: 'static' })}
+  ${siteHeaderHtml({ pathname: '/docs', context: 'static' })}
 
   <div class="sidebar-backdrop"></div>
 
@@ -412,7 +412,7 @@ async function buildDocs(): Promise<void> {
       <div class="sidebar-header">
         <h1>Documentation</h1>
         <p class="subtitle">svg-path-extended</p>
-        <a href="/pathogen/docs/docs.md" class="markdown-link">View as Markdown</a>
+        <a href="/docs/docs.md" class="markdown-link">View as Markdown</a>
       </div>
       <nav class="sidebar-nav">${sidebarHtml}
       </nav>
@@ -530,8 +530,8 @@ async function buildDocs(): Promise<void> {
       }
     })();
   </script>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
 </body>
 </html>`;
 
@@ -546,7 +546,7 @@ async function buildDocs(): Promise<void> {
     `# svg-path-extended Documentation`,
     '',
     `> This is the complete documentation for svg-path-extended in a single page.`,
-    `> For the formatted version with navigation, see [the HTML docs](/pathogen/docs).`,
+    `> For the formatted version with navigation, see [the HTML docs](/docs).`,
     '',
     '---',
   ];

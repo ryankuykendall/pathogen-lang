@@ -73,7 +73,7 @@ The resulting HTML is:
 ```html
 <mini-workspace code-data="base64..." code-open caption="...">
   <code class="hljs language-pathogen">highlighted source</code>
-  <img src="/pathogen/blog/samples/post1/my-sample.svg" loading="lazy">
+  <img src="/blog/samples/post1/my-sample.svg" loading="lazy">
 </mini-workspace>
 ```
 

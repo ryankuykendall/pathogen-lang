@@ -5,7 +5,7 @@ date: 2026-04-14
 description: "Build Clifford attractor visualizations from scratch — iterative chaos math, efficient point rendering, color mapping strategies, and where the language hits its limits."
 ---
 
-> **Prerequisites:** This post uses [for loops](/pathogen/docs#syntax-for-loops), [user-defined functions](/pathogen/docs#syntax-functions), [layers](/pathogen/docs#layers-defining-layers), and [Color.palette](/pathogen/docs#color-colorpalettecolor-n). If you're new to Pathogen, start with the [getting started guide](/pathogen/docs#getting-started-getting-started).
+> **Prerequisites:** This post uses [for loops](/docs#syntax-for-loops), [user-defined functions](/docs#syntax-functions), [layers](/docs#layers-defining-layers), and [Color.palette](/docs#color-colorpalettecolor-n). If you're new to Pathogen, start with the [getting started guide](/docs#getting-started-getting-started).
 
 Every previous blog post on this site has built geometry by design — placing shapes, computing curves, arranging data. This post is different. We're going to write a tight loop, iterate a pair of equations ten thousand times, and watch structure emerge from arithmetic. The result is a **Clifford attractor**: a strange attractor discovered by [Clifford Pickover](https://en.wikipedia.org/wiki/Clifford_A._Pickover) and documented beautifully by [Paul Bourke](https://paulbourke.net/fractals/clifford/).
 
@@ -176,7 +176,7 @@ Building this attractor was a satisfying exercise, but it also exposed genuine f
 
 ### A `dot()` function
 
-The `M x y l 0 0` idiom for rendering individual points works, but it's an SVG implementation detail leaking into the language. A `dot(x, y)` function (optionally `dot(x, y, radius)`) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to [stdlib](/pathogen/docs#stdlib-standard-library-reference) — analogous to how `circle()` wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.
+The `M x y l 0 0` idiom for rendering individual points works, but it's an SVG implementation detail leaking into the language. A `dot(x, y)` function (optionally `dot(x, y, radius)`) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to [stdlib](/docs#stdlib-standard-library-reference) — analogous to how `circle()` wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.
 
 ### Higher iteration limits
 
@@ -202,4 +202,4 @@ The Clifford attractor is a small window into a vast space. Pathogen handles the
 
 ## Try It Yourself
 
-Paste any of the samples above into the [playground](/pathogen/) and start changing parameters. Try `a = 1.5, b = -1.8, c = 1.6, d = 0.9` for a dense spiral, or `a = -1.7, b = 1.3, c = -0.1, d = -1.2` for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.
+Paste any of the samples above into the [playground](/) and start changing parameters. Try `a = 1.5, b = -1.8, c = 1.6, d = 0.9` for a dense spiral, or `a = -1.7, b = 1.3, c = -0.1, d = -1.2` for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.

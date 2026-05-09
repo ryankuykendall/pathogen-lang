@@ -9,9 +9,9 @@ description: "How PathBlocks turn SVG path fragments into composable, reusable b
 
 > **Series: PathBlock Extensions**
 > 1. **Introduction to PathBlocks** (this post)
-> 2. [Exploring Parametric Sampling](/pathogen/blog/pathblock-parametric-sampling)
-> 3. [Fillets and Chamfers](/pathogen/blog/pathblock-fillets-chamfers)
-> 4. [Boolean Operations](/pathogen/blog/pathblock-boolean-operations)
+> 2. [Exploring Parametric Sampling](/blog/pathblock-parametric-sampling)
+> 3. [Fillets and Chamfers](/blog/pathblock-fillets-chamfers)
+> 4. [Boolean Operations](/blog/pathblock-boolean-operations)
 
 If you build parametric SVGs, icon systems, or generative art, you've felt the friction: repeating the same shapes at different positions means copy-pasting `<path>` elements, tweaking `d` attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.
 
@@ -32,9 +32,9 @@ let arrow = @{
 };
 ```
 
-This captures a small arrow shape. The commands are relative (`h`, `l`, `v`), so they describe the shape's geometry without committing to a position. See the full [PathBlock syntax](/pathogen/docs#path-blocks-syntax) documentation for details.
+This captures a small arrow shape. The commands are relative (`h`, `l`, `v`), so they describe the shape's geometry without committing to a position. See the full [PathBlock syntax](/docs#path-blocks-syntax) documentation for details.
 
-The anatomy diagram below shows a PathBlock's structure: the green crosshair marks the `(0, 0)` origin, red dots mark [`.vertices`](/pathogen/docs#path-blocks-properties), the dashed yellow rectangle shows [`.bounds`](/pathogen/docs#path-blocks-properties), and the purple arrows indicate path direction.
+The anatomy diagram below shows a PathBlock's structure: the green crosshair marks the `(0, 0)` origin, red dots mark [`.vertices`](/docs#path-blocks-properties), the dashed yellow rectangle shows [`.bounds`](/docs#path-blocks-properties), and the purple arrows indicate path direction.
 
 <mini-workspace src="samples/post6/pathblock-anatomy.pathogen" caption="PathBlock anatomy — origin, vertices, bounds, and path direction"></mini-workspace>
 
@@ -51,7 +51,7 @@ M 60 70
 arrow.draw()
 ```
 
-This is flexible — you control the cursor — but it's two statements for one shape. See [Drawing a Path Block](/pathogen/docs#path-blocks-drawing-a-path-block) in the documentation.
+This is flexible — you control the cursor — but it's two statements for one shape. See [Drawing a Path Block](/docs#path-blocks-drawing-a-path-block) in the documentation.
 
 ### Convenience: `.drawTo(x, y)`
 
@@ -69,7 +69,7 @@ The demo below shows both approaches — manual on top, `drawTo` on the bottom. 
 
 ## Reuse and Repetition
 
-The real power of PathBlocks shows when you draw the same shape many times. Combine `drawTo()` with [control flow](/pathogen/docs#syntax-for-loops) to generate patterns:
+The real power of PathBlocks shows when you draw the same shape many times. Combine `drawTo()` with [control flow](/docs#syntax-for-loops) to generate patterns:
 
 ```pathogen
 let dot = @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 };
@@ -81,7 +81,7 @@ for (i in 0..5) {
 }
 ```
 
-PathBlocks are [first-class values](/pathogen/docs#path-blocks-first-class-values) — you can store them in variables, pass them around, and use them wherever a value is expected.
+PathBlocks are [first-class values](/docs#path-blocks-first-class-values) — you can store them in variables, pass them around, and use them wherever a value is expected.
 
 Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.
 
@@ -95,7 +95,7 @@ Here's a grid built from two simple PathBlocks — a horizontal line and a verti
 
 ## PathBlock Properties
 
-Every PathBlock carries metadata about its geometry. The [Properties](/pathogen/docs#path-blocks-properties) section covers all of them:
+Every PathBlock carries metadata about its geometry. The [Properties](/docs#path-blocks-properties) section covers all of them:
 
 - `.startPoint` / `.endPoint` — where the shape begins and ends
 - `.vertices` — all junction points as an array of Points
@@ -106,7 +106,7 @@ These properties make PathBlocks queryable — you can inspect a shape's geometr
 
 ## Projection
 
-Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape *without* drawing it — for example, to query its geometry or use it in a boolean operation. That's what [`.project(x, y)`](/pathogen/docs#path-blocks-projecting-without-drawing) is for.
+Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape *without* drawing it — for example, to query its geometry or use it in a boolean operation. That's what [`.project(x, y)`](/docs#path-blocks-projecting-without-drawing) is for.
 
 `.project()` returns a `ProjectedPath` — the same commands, but offset to absolute coordinates at `(x, y)`. The PathBlock itself stays unchanged; the ProjectedPath is a positioned view of it:
 
@@ -120,7 +120,7 @@ Think of it as "place the shape here, but don't draw it yet." ProjectedPaths sup
 
 ## Standard Library Shapes
 
-Pathogen's [standard library](/pathogen/docs#stdlib-path-functions) provides ready-made PathBlocks for common shapes:
+Pathogen's [standard library](/docs#stdlib-path-functions) provides ready-made PathBlocks for common shapes:
 
 ```pathogen
 let c = @{ circle(0, 0, 30) };
@@ -134,6 +134,6 @@ These return PathBlocks, so all the same methods — `.draw()`, `.drawTo()`, `.p
 
 ## What's Next
 
-PathBlocks are the foundation for everything that follows. In the next post, we'll explore [parametric sampling](/pathogen/blog/pathblock-parametric-sampling) — querying points, tangents, and normals along a path to place elements precisely along curves. After that, [fillets and chamfers](/pathogen/blog/pathblock-fillets-chamfers) show how to round and cut corners, and [boolean operations](/pathogen/blog/pathblock-boolean-operations) combine shapes using union, difference, intersection, and xor.
+PathBlocks are the foundation for everything that follows. In the next post, we'll explore [parametric sampling](/blog/pathblock-parametric-sampling) — querying points, tangents, and normals along a path to place elements precisely along curves. After that, [fillets and chamfers](/blog/pathblock-fillets-chamfers) show how to round and cut corners, and [boolean operations](/blog/pathblock-boolean-operations) combine shapes using union, difference, intersection, and xor.
 
-Try it yourself in the [Pathogen playground](/pathogen/) — paste any of the examples above and see the SVG output live.
+Try it yourself in the [Pathogen playground](/) — paste any of the examples above and see the SVG output live.

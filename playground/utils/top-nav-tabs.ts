@@ -10,25 +10,24 @@ export interface TopNavTab {
   /** Public URL that crawlers and right-click "Open in new tab" use. */
   href: string;
   /**
-   * SPA-internal route key (relative to the /pathogen base) used by
-   * <app-header> to dispatch the `navigate` event. Omitted for routes
-   * that always do a full page load (Docs, Explore, Featured, Blog).
+   * SPA-internal route key used by <app-header> to dispatch the `navigate`
+   * event. Omitted for routes that always do a full page load (Docs,
+   * Explore, Featured).
    */
   spaRoute?: string;
   /**
    * Heuristic for active-state matching against the current URL pathname.
-   * Active when pathname.startsWith(prefix). The Workspaces tab uses
-   * `/pathogen/` exactly so it isn't always active.
+   * Active when pathname.startsWith(prefix).
    */
   matchPrefix: string;
   /** Whether the primary match requires exact pathname equality. */
   matchExact?: boolean;
   /**
    * Additional prefixes that should also activate this tab. The Workspaces
-   * tab uses this so opening a workspace (`/pathogen/workspace/...`) or
-   * creating a new one keeps "Workspaces" highlighted — those routes are
-   * still inside the Workspaces section even though their pathname doesn't
-   * equal `/pathogen/` exactly.
+   * tab uses this so opening a workspace (`/workspace/...`) or creating a
+   * new one keeps "Workspaces" highlighted — those routes are still inside
+   * the Workspaces section even though their pathname doesn't start with
+   * /workspaces.
    */
   additionalPrefixes?: string[];
 }
@@ -36,26 +35,26 @@ export interface TopNavTab {
 export const TOP_NAV_TABS: TopNavTab[] = [
   {
     label: 'Workspaces',
-    href: '/pathogen/workspaces',
+    href: '/workspaces',
     spaRoute: '/workspaces',
-    matchPrefix: '/pathogen/workspaces',
-    additionalPrefixes: ['/pathogen/workspace/'],
+    matchPrefix: '/workspaces',
+    additionalPrefixes: ['/workspace/'],
   },
-  { label: 'Docs', href: '/pathogen/docs', matchPrefix: '/pathogen/docs' },
-  { label: 'Explore', href: '/pathogen/explore', matchPrefix: '/pathogen/explore' },
-  { label: 'Featured', href: '/pathogen/featured', matchPrefix: '/pathogen/featured' },
-  { label: 'Blog', href: '/pathogen/blog', spaRoute: '/blog', matchPrefix: '/pathogen/blog' },
+  { label: 'Docs', href: '/docs', matchPrefix: '/docs' },
+  { label: 'Explore', href: '/explore', matchPrefix: '/explore' },
+  { label: 'Featured', href: '/featured', matchPrefix: '/featured' },
+  { label: 'Blog', href: '/blog', spaRoute: '/blog', matchPrefix: '/blog' },
   {
     label: 'Preferences',
-    href: '/pathogen/preferences',
+    href: '/preferences',
     spaRoute: '/preferences',
-    matchPrefix: '/pathogen/preferences',
+    matchPrefix: '/preferences',
   },
 ];
 
 /**
  * Returns true if the given tab should render with the active styling
- * for the supplied pathname (e.g. "/pathogen/docs" or "/pathogen/").
+ * for the supplied pathname (e.g. "/docs" or "/").
  */
 export function isTabActive(tab: TopNavTab, pathname: string): boolean {
   if (tab.matchExact) {

@@ -1,6 +1,9 @@
-# svg-path-extended
+# pathogen-lang
 
-A TypeScript compiler that extends SVG path syntax with variables, expressions, control flow, functions, multi-layer output, and text elements.
+The compiler, language services, and web playground for **Pathogen** — a
+typed, expression-first language for SVG paths. Source for the
+[`svg-path-extended`](https://www.npmjs.com/package/svg-path-extended) npm
+package and [pathogen.studio](https://pathogen.studio).
 
 ## Quick Reference
 
@@ -10,7 +13,9 @@ npm run dev             # Build with watch mode
 npm test                # Run tests in watch mode
 npm run test:run        # Run tests once
 npm run cli             # Run CLI in development (via tsx)
-npm run dev:website     # Build website + serve at localhost:3000 via Wrangler
+npm run dev:website     # Build website + serve Pages worker at localhost:3000
+npm run dev:api         # Run the API Worker locally at localhost:8787
+npm run dev:stack       # Both wranglers in parallel (Pages + API)
 npm run build:website   # Full website build (lib + docs + blog + static)
 npm run build:docs      # Build docs pages
 npm run build:blog      # Build blog pages
@@ -25,16 +30,34 @@ docs/          User-facing developer documentation     → see docs/CLAUDE.md
 project-docs/  Internal primers, plans, demos (NOT published)
 tests/         Vitest test suites
 scripts/       Build scripts (docs, blog, website, git hooks)
-website/       Cloudflare Pages worker
+website/       Cloudflare Pages worker (SSR + SPA + static) → see website/CLAUDE.md
+api/           Cloudflare Workers project (auth + workspaces + email) → see api/CLAUDE.md
+packages/      VS Code extension + LSP                 → see packages/.../CLAUDE.md
 dist/          Build output (do not edit)
 public/        Generated website build (do not edit)
 ```
+
+## Two-Project Cloudflare Architecture
+
+After commit `9ada42b`, the previously-bundled Pages worker was split:
+
+- **Pages — `pathogen.studio`**: SSR HTML (homepage, /explore, /featured,
+  /u/:handle), SPA shell at /spa.html, static blog + docs pages. Auto-deploys
+  on `git push` via Cloudflare's GitHub integration.
+- **Workers — `api.pathogen.studio`** (in `/api/`): every API endpoint
+  (auth, workspaces, thumbnails, admin, email). Auto-deploys via
+  `.github/workflows/deploy-api.yml` when files in `/api/`, `/website/api/`,
+  or `/website/auth/` change.
+
+Both projects bind to the same KV / R2 / D1 resources and share auth code
+via relative imports. Cookies are scoped `Domain=.pathogen.studio` so
+sign-in on one subdomain works across both.
 
 ### `docs/` vs `project-docs/`
 
 These directories are **not interchangeable** and serve different audiences:
 
-- **`docs/`** — User-facing developer documentation. Every `.md` file here is compiled by `scripts/build-docs.ts` and **published to the website** at `/pathogen/docs`. Every feature users can invoke from Pathogen code must have a corresponding `.md` file here, registered in `scripts/build-docs.ts` `DOC_FILES`. This is the **first artifact created** when adding a feature.
+- **`docs/`** — User-facing developer documentation. Every `.md` file here is compiled by `scripts/build-docs.ts` and **published to the website** at `/docs`. Every feature users can invoke from Pathogen code must have a corresponding `.md` file here, registered in `scripts/build-docs.ts` `DOC_FILES`. This is the **first artifact created** when adding a feature.
 - **`project-docs/`** — Internal primers, plans, demos, roadmaps, and historical decision logs. Lives alongside the code but is **never published**. Agent plans, feature primers, demo `.pathogen` files, and weekly summaries live here.
 
 **`project-docs/` is never a substitute for `docs/`.** A `project-docs/<feature>/` folder full of demo files does not satisfy the documentation requirement. If a feature has runtime behavior users can invoke, it needs a published `docs/<feature>.md` page.
@@ -120,7 +143,7 @@ Project agents in `.claude/agents/`:
 ## Live Playground
 
 - Local: `npm run dev:website` → http://localhost:3000
-- Deployed: https://pedestal.design/svg-path-extended/
+- Deployed: https://pathogen.studio/
 
 ## Changelog
 

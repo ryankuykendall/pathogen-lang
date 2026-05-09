@@ -9,17 +9,17 @@ description: "Compose, measure, and position text before drawing — collision-f
 
 > **Series: TextBlock & Font Integration**
 > 1. **TextBlock: Measure-First Text for SVG Diagrams** (this post)
-> 2. [From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()](/pathogen/blog/pathblock-glyph-extraction)
+> 2. [From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()](/blog/pathblock-glyph-extraction)
 
-> **Prerequisites:** This post assumes familiarity with PathBlock basics — the `@{}` sigil, `.draw()`, and `.project()`. If you're new to Pathogen, start with [Introduction to PathBlocks](/pathogen/blog/pathblock-introduction).
+> **Prerequisites:** This post assumes familiarity with PathBlock basics — the `@{}` sigil, `.draw()`, and `.project()`. If you're new to Pathogen, start with [Introduction to PathBlocks](/blog/pathblock-introduction).
 
 Labels on parametric diagrams have a coordination problem. The geometry is computed — points, curves, bounding boxes are all known values — but the text that annotates that geometry gets hard-coded at pixel offsets, with no way to ask "how wide is this string?" before placing it. When the font size changes, the data changes, or the viewport scales, those hard-coded offsets break silently, producing overlapping labels or text that drifts away from the thing it's supposed to annotate.
 
-TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that [PathBlock](/pathogen/blog/pathblock-introduction) brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.
+TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that [PathBlock](/blog/pathblock-introduction) brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.
 
 ## What Is a TextBlock?
 
-A TextBlock is a composition of text elements at relative coordinates. You create one with the `&{ }` sigil — the text counterpart to PathBlock's `@{ }` — and the elements inside are positioned relative to an implicit `(0, 0)` origin. Like a PathBlock, the TextBlock doesn't draw anything on its own. It's a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full [TextBlock syntax](/pathogen/docs#text-block-syntax) documentation for details.
+A TextBlock is a composition of text elements at relative coordinates. You create one with the `&{ }` sigil — the text counterpart to PathBlock's `@{ }` — and the elements inside are positioned relative to an implicit `(0, 0)` origin. Like a PathBlock, the TextBlock doesn't draw anything on its own. It's a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full [TextBlock syntax](/docs#text-block-syntax) documentation for details.
 
 ```pathogen
 let label = &{
@@ -37,7 +37,7 @@ The anatomy diagram below shows how this works in practice. A three-line TextBlo
 
 The coordinate model mirrors SVG's `<text>` element: `y` is the baseline position, so `text(0, 14)` places the first baseline 14 units below the origin. This means the text's visible pixels extend *above* that y coordinate, not below it.
 
-TextBlocks also support [control flow](/pathogen/docs#text-block-syntax) — `let`, `for`, and `if` work inside the block just as they do elsewhere in Pathogen:
+TextBlocks also support [control flow](/docs#text-block-syntax) — `let`, `for`, and `if` work inside the block just as they do elsewhere in Pathogen:
 
 ```pathogen
 let items = ["CPU: 42%", "MEM: 1.2G", "NET: 88Mb/s"];
@@ -53,10 +53,10 @@ Notice the parallel with PathBlock: `@{ h 40 v 20 h -40 z }` captures relative p
 
 ## Drawing and Positioning
 
-Once you have a TextBlock, you need to place it. There are three positioning methods, each returning a [ProjectedTextValue](/pathogen/docs#text-block-types) — text with absolute coordinates:
+Once you have a TextBlock, you need to place it. There are three positioning methods, each returning a [ProjectedTextValue](/docs#text-block-types) — text with absolute coordinates:
 
 - **`.project(x, y)`** — offset all elements to absolute coordinates without drawing. Useful when you need to measure or test collisions before committing.
-- **`.drawTo(x, y)`** — project and immediately emit to the active [TextLayer](/pathogen/docs#text-block-syntax). This is the most common method.
+- **`.drawTo(x, y)`** — project and immediately emit to the active [TextLayer](/docs#text-block-syntax). This is the most common method.
 - **`.polarProject(cx, cy, angle, distance, anchor)`** — project along a polar vector with anchor alignment. We'll cover this in detail below.
 
 TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with `define TextLayer('name') ${ styles }` and activate it with `layer('name').apply { ... }`:
@@ -73,7 +73,7 @@ This layer model keeps text and path geometry in separate SVG elements, which ma
 
 ## Style Merge with <<
 
-A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The `<<` operator merges a [style block](/pathogen/docs#text-block-style-merging) into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:
+A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The `<<` operator merges a [style block](/docs#text-block-style-merging) into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:
 
 ```pathogen
 let info = &{
@@ -107,7 +107,7 @@ The dimension annotations at the bottom of each variant confirm what the code re
 
 ## Measuring Before You Place
 
-The central insight of TextBlock is that you can measure text *before* deciding where to put it. The [`.boundingBox()`](/pathogen/docs#text-block-methods) method returns an object with `x`, `y`, `width`, and `height` — the estimated bounding rectangle of all text elements in the block. Using the `<<` operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:
+The central insight of TextBlock is that you can measure text *before* deciding where to put it. The [`.boundingBox()`](/docs#text-block-methods) method returns an object with `x`, `y`, `width`, and `height` — the estimated bounding rectangle of all text elements in the block. Using the `<<` operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:
 
 ```pathogen
 let label = &{ text(0, 14)`Hello World` } << ${ font-size: 14; };
@@ -120,7 +120,7 @@ This measurement drives layout decisions. Need to center a label above a shape? 
 
 The measurement works on both TextBlockValues (relative coordinates) and ProjectedTextValues (absolute coordinates). On a TextBlockValue, the bbox is relative to the origin — just like measuring a PathBlock's `.bounds` before drawing. On a ProjectedTextValue, the bbox reflects the absolute position.
 
-TextBlock computes these estimates using built-in [character width tables](/pathogen/docs#text-block-font-metrics) that cover three font categories:
+TextBlock computes these estimates using built-in [character width tables](/docs#text-block-font-metrics) that cover three font categories:
 
 - **Sans-serif** (default): per-character widths approximating Arial/Helvetica
 - **Serif**: per-character widths approximating Times New Roman
@@ -134,7 +134,7 @@ The metrics respect several style properties:
 - **`letter-spacing`** — adds uniform spacing between characters
 - **tspan `dx`/`dy` offsets** — accounted for in multi-span text elements
 
-> **Accuracy: 85-90% for Latin text.** A label that measures 87px might actually render at 100px — a gap of roughly one character width at typical font sizes. This is sufficient for collision avoidance, anchor-based layout, and background rectangle sizing, where a few pixels of margin are invisible. It is *not* sufficient for pixel-perfect alignment, tight kerning, or text that must match an exact grid. For those cases, Part 2 of this series covers the [`@font` directive](/pathogen/blog/pathblock-glyph-extraction), which loads OpenType font files for exact glyph measurement.
+> **Accuracy: 85-90% for Latin text.** A label that measures 87px might actually render at 100px — a gap of roughly one character width at typical font sizes. This is sufficient for collision avoidance, anchor-based layout, and background rectangle sizing, where a few pixels of margin are invisible. It is *not* sufficient for pixel-perfect alignment, tight kerning, or text that must match an exact grid. For those cases, Part 2 of this series covers the [`@font` directive](/blog/pathblock-glyph-extraction), which loads OpenType font files for exact glyph measurement.
 
 The demo below shows `.boundingBox()` at three different font sizes. Each row renders the same text, measures it, and draws width/height dimension lines. Notice how the bounding box scales with font size — the measurement adapts automatically.
 
@@ -144,7 +144,7 @@ The demo below shows `.boundingBox()` at three different font sizes. Each row re
 
 Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute `x` and `y` offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs `x = centerX + radius + gap`; a label above needs `y = centerY - radius - textHeight`. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.
 
-[`.polarProject()`](/pathogen/docs#text-block-polar-projection) replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.
+[`.polarProject()`](/docs#text-block-polar-projection) replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.
 
 ```pathogen
 let label = &{ text(0, 14)`Node A` } << ${ font-size: 14; };
@@ -153,7 +153,7 @@ let label = &{ text(0, 14)`Node A` } << ${ font-size: 14; };
 let placed = label.polarProject(100, 100, 45deg, 80, BBoxAnchor.Left);
 ```
 
-The first two arguments are the center point (the thing you're labeling). The angle and distance describe *where* the label goes in polar coordinates. The fifth argument — the [BBoxAnchor](/pathogen/docs#text-block-bboxanchor-enum) — is the key innovation: it specifies which point of the text's bounding box lands on the target location.
+The first two arguments are the center point (the thing you're labeling). The angle and distance describe *where* the label goes in polar coordinates. The fifth argument — the [BBoxAnchor](/docs#text-block-bboxanchor-enum) — is the key innovation: it specifies which point of the text's bounding box lands on the target location.
 
 The nine anchor positions form a grid over the bounding box:
 
@@ -188,7 +188,7 @@ This matters because label placement around shapes is combinatorial. A hexagon w
 
 Placing labels one at a time works until two of them end up on top of each other. Scatter plots, node graphs, and dense diagrams inevitably produce clusters where data points are close together and naive placement causes overlaps. A label that's perfectly clear in one dataset collides with its neighbor when the data changes. This is the label placement problem — well-studied in cartography and information visualization — and TextBlock brings a pragmatic solution directly into the language.
 
-TextBlock's [`.intersects()`](/pathogen/docs#text-block-intersection-detection) method detects collisions using axis-aligned bounding box (AABB) overlap testing.
+TextBlock's [`.intersects()`](/docs#text-block-intersection-detection) method detects collisions using axis-aligned bounding box (AABB) overlap testing.
 
 ```pathogen
 let label1 = (&{ text(0, 14)`First` } << styles).project(50, 50);
@@ -309,12 +309,12 @@ if (!placed.intersects(otherLabel)) {
 
 Each step is a pure value transformation until `.draw()`. You can inspect, branch on, and iterate over the intermediate results. This pipeline means text is no longer an afterthought bolted onto a diagram. It's a first-class participant in the layout — queryable, testable, and automatically adaptive. Labels can respond to the geometry they annotate instead of being hard-coded beside it.
 
-The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the [TextBlock documentation](/pathogen/docs#text-block-syntax), which covers all [methods](/pathogen/docs#text-block-methods), [properties](/pathogen/docs#text-block-properties), [style merging](/pathogen/docs#text-block-style-merging), [BBoxAnchor](/pathogen/docs#text-block-bboxanchor-enum), [font metrics](/pathogen/docs#text-block-font-metrics), [polar projection](/pathogen/docs#text-block-polar-projection), and [intersection detection](/pathogen/docs#text-block-intersection-detection).
+The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the [TextBlock documentation](/docs#text-block-syntax), which covers all [methods](/docs#text-block-methods), [properties](/docs#text-block-properties), [style merging](/docs#text-block-style-merging), [BBoxAnchor](/docs#text-block-bboxanchor-enum), [font metrics](/docs#text-block-font-metrics), [polar projection](/docs#text-block-polar-projection), and [intersection detection](/docs#text-block-intersection-detection).
 
 ## What's Next
 
-The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, [From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()](/pathogen/blog/pathblock-glyph-extraction), covers the `@font` directive that loads OpenType font files for exact measurement, and `PathBlock.fromGlyph()` that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, [sample](/pathogen/blog/pathblock-parametric-sampling), [fillet](/pathogen/blog/pathblock-fillets-chamfers), and [boolean-combine](/pathogen/blog/pathblock-boolean-operations) just like any other shape.
+The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, [From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()](/blog/pathblock-glyph-extraction), covers the `@font` directive that loads OpenType font files for exact measurement, and `PathBlock.fromGlyph()` that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, [sample](/blog/pathblock-parametric-sampling), [fillet](/blog/pathblock-fillets-chamfers), and [boolean-combine](/blog/pathblock-boolean-operations) just like any other shape.
 
 Text as geometry. That's where this is headed.
 
-Paste the collision-avoidance snippet into the [playground](/pathogen/) and change the data point positions — watch the labels redistribute automatically.
+Paste the collision-avoidance snippet into the [playground](/) and change the data point positions — watch the labels redistribute automatically.

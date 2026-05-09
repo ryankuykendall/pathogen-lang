@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TextBlock: Measure-First Text for SVG Diagrams — Pathogen Studio</title>
   <meta name="description" content="Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/textblock-introduction">
+  <link rel="canonical" href="https://pathogen.studio/blog/textblock-introduction">
   <meta property="og:title" content="TextBlock: Measure-First Text for SVG Diagrams — Pathogen Studio">
   <meta property="og:description" content="Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/textblock-introduction">
+  <meta property="og:url" content="https://pathogen.studio/blog/textblock-introduction">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"TextBlock: Measure-First Text for SVG Diagrams","description":"Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.","datePublished":"2026-03-16","url":"https://pathogen.studio/pathogen/blog/textblock-introduction","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"TextBlock: Measure-First Text for SVG Diagrams","description":"Compose, measure, and position text before drawing — collision-free label placement for parametric SVG diagrams.","datePublished":"2026-03-16","url":"https://pathogen.studio/blog/textblock-introduction","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">TextBlock: Measure-First Text for SVG Diagrams</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">TextBlock: Measure-First Text for SVG Diagrams</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -256,16 +256,16 @@ code.hljs {
 <p><strong>Series: TextBlock &amp; Font Integration</strong></p>
 <ol>
 <li><strong>TextBlock: Measure-First Text for SVG Diagrams</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a></li>
+<li><a href="/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a></li>
 </ol>
 </blockquote>
 <blockquote>
-<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the <code>@{}</code> sigil, <code>.draw()</code>, and <code>.project()</code>. If you&#39;re new to Pathogen, start with <a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a>.</p>
+<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the <code>@{}</code> sigil, <code>.draw()</code>, and <code>.project()</code>. If you&#39;re new to Pathogen, start with <a href="/blog/pathblock-introduction">Introduction to PathBlocks</a>.</p>
 </blockquote>
 <p>Labels on parametric diagrams have a coordination problem. The geometry is computed — points, curves, bounding boxes are all known values — but the text that annotates that geometry gets hard-coded at pixel offsets, with no way to ask &quot;how wide is this string?&quot; before placing it. When the font size changes, the data changes, or the viewport scales, those hard-coded offsets break silently, producing overlapping labels or text that drifts away from the thing it&#39;s supposed to annotate.</p>
-<p>TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that <a href="/pathogen/blog/pathblock-introduction">PathBlock</a> brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.</p>
+<p>TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that <a href="/blog/pathblock-introduction">PathBlock</a> brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.</p>
 <h2>What Is a TextBlock?</h2>
-<p>A TextBlock is a composition of text elements at relative coordinates. You create one with the <code>&amp;{ }</code> sigil — the text counterpart to PathBlock&#39;s <code>@{ }</code> — and the elements inside are positioned relative to an implicit <code>(0, 0)</code> origin. Like a PathBlock, the TextBlock doesn&#39;t draw anything on its own. It&#39;s a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full <a href="/pathogen/docs#text-block-syntax">TextBlock syntax</a> documentation for details.</p>
+<p>A TextBlock is a composition of text elements at relative coordinates. You create one with the <code>&amp;{ }</code> sigil — the text counterpart to PathBlock&#39;s <code>@{ }</code> — and the elements inside are positioned relative to an implicit <code>(0, 0)</code> origin. Like a PathBlock, the TextBlock doesn&#39;t draw anything on its own. It&#39;s a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full <a href="/docs#text-block-syntax">TextBlock syntax</a> documentation for details.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Server Node`</span>
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`Status: online`</span>
@@ -492,10 +492,10 @@ leg.apply {
 
 legend_group.append(leg_o, leg_b, leg);
 </code>
-  <img src="/pathogen/blog/samples/post11/textblock-anatomy.svg" alt="TextBlock anatomy — compose once, place anywhere with bounding box overlay" loading="lazy">
+  <img src="/blog/samples/post11/textblock-anatomy.svg" alt="TextBlock anatomy — compose once, place anywhere with bounding box overlay" loading="lazy">
 </mini-workspace></p>
 <p>The coordinate model mirrors SVG&#39;s <code>&lt;text&gt;</code> element: <code>y</code> is the baseline position, so <code>text(0, 14)</code> places the first baseline 14 units below the origin. This means the text&#39;s visible pixels extend <em>above</em> that y coordinate, not below it.</p>
-<p>TextBlocks also support <a href="/pathogen/docs#text-block-syntax">control flow</a> — <code>let</code>, <code>for</code>, and <code>if</code> work inside the block just as they do elsewhere in Pathogen:</p>
+<p>TextBlocks also support <a href="/docs#text-block-syntax">control flow</a> — <code>let</code>, <code>for</code>, and <code>if</code> work inside the block just as they do elsewhere in Pathogen:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> items = [<span class="hljs-string">&quot;CPU: 42%&quot;</span>, <span class="hljs-string">&quot;MEM: 1.2G&quot;</span>, <span class="hljs-string">&quot;NET: 88Mb/s&quot;</span>];
 <span class="hljs-keyword">let</span> card = &amp;{
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Dashboard`</span>
@@ -505,10 +505,10 @@ legend_group.append(leg_o, leg_b, leg);
 };
 </code></pre><p>Notice the parallel with PathBlock: <code>@{ h 40 v 20 h -40 z }</code> captures relative path commands, while <code>&amp;{ text(0, 14)\</code>Hello` }` captures relative text elements. Both are inert values until you project or draw them. Both carry metadata (bounds, element count) you can query before committing to a position.</p>
 <h2>Drawing and Positioning</h2>
-<p>Once you have a TextBlock, you need to place it. There are three positioning methods, each returning a <a href="/pathogen/docs#text-block-types">ProjectedTextValue</a> — text with absolute coordinates:</p>
+<p>Once you have a TextBlock, you need to place it. There are three positioning methods, each returning a <a href="/docs#text-block-types">ProjectedTextValue</a> — text with absolute coordinates:</p>
 <ul>
 <li><strong><code>.project(x, y)</code></strong> — offset all elements to absolute coordinates without drawing. Useful when you need to measure or test collisions before committing.</li>
-<li><strong><code>.drawTo(x, y)</code></strong> — project and immediately emit to the active <a href="/pathogen/docs#text-block-syntax">TextLayer</a>. This is the most common method.</li>
+<li><strong><code>.drawTo(x, y)</code></strong> — project and immediately emit to the active <a href="/docs#text-block-syntax">TextLayer</a>. This is the most common method.</li>
 <li><strong><code>.polarProject(cx, cy, angle, distance, anchor)</code></strong> — project along a polar vector with anchor alignment. We&#39;ll cover this in detail below.</li>
 </ul>
 <p>TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with <code>define TextLayer(&#39;name&#39;) ${ styles }</code> and activate it with <code>layer(&#39;name&#39;).apply { ... }</code>:</p>
@@ -519,7 +519,7 @@ legend_group.append(leg_o, leg_b, leg);
 }
 </code></pre><p>This layer model keeps text and path geometry in separate SVG elements, which matters for rendering order, styling, and accessibility.</p>
 <h2>Style Merge with &lt;&lt;</h2>
-<p>A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The <code>&lt;&lt;</code> operator merges a <a href="/pathogen/docs#text-block-style-merging">style block</a> into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:</p>
+<p>A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The <code>&lt;&lt;</code> operator merges a <a href="/docs#text-block-style-merging">style block</a> into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> info = &amp;{
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Node Status`</span>
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`CPU: 42%`</span>
@@ -716,18 +716,18 @@ dims.apply {
   text(420, 175)`${round(bb3.width)}x${round(bb3.height)}`
 }
 </code>
-  <img src="/pathogen/blog/samples/post11/style-merge.svg" alt="One TextBlock, three styles — bounding box adapts to each font configuration" loading="lazy">
+  <img src="/blog/samples/post11/style-merge.svg" alt="One TextBlock, three styles — bounding box adapts to each font configuration" loading="lazy">
 </mini-workspace></p>
 <p>The dimension annotations at the bottom of each variant confirm what the code reports: same content, different measurements. A monospace 10px version is compact; monospace 14px is proportionally larger; sans-serif 12px has different character widths entirely. The <code>&lt;&lt;</code> operator and <code>.boundingBox()</code> handle all of this transparently.</p>
 <h2>Measuring Before You Place</h2>
-<p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/pathogen/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
+<p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Hello World`</span> } &lt;&lt; ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
 <span class="hljs-keyword">let</span> bb = label.<span class="hljs-title function_">boundingBox</span>();
 <span class="hljs-title function_">log</span>(bb.<span class="hljs-property">width</span>);   <span class="hljs-comment">// estimated pixel width</span>
 <span class="hljs-title function_">log</span>(bb.<span class="hljs-property">height</span>);  <span class="hljs-comment">// fontSize * 1.2 (line height)</span>
 </code></pre><p>This measurement drives layout decisions. Need to center a label above a shape? Subtract half the width. Need to check whether two labels overlap? Compare their bounding boxes. Need to draw a background rectangle behind text? Use the bbox dimensions directly. Need to verify that a label fits inside a container? Compare bbox width to the container&#39;s width.</p>
 <p>The measurement works on both TextBlockValues (relative coordinates) and ProjectedTextValues (absolute coordinates). On a TextBlockValue, the bbox is relative to the origin — just like measuring a PathBlock&#39;s <code>.bounds</code> before drawing. On a ProjectedTextValue, the bbox reflects the absolute position.</p>
-<p>TextBlock computes these estimates using built-in <a href="/pathogen/docs#text-block-font-metrics">character width tables</a> that cover three font categories:</p>
+<p>TextBlock computes these estimates using built-in <a href="/docs#text-block-font-metrics">character width tables</a> that cover three font categories:</p>
 <ul>
 <li><strong>Sans-serif</strong> (default): per-character widths approximating Arial/Helvetica</li>
 <li><strong>Serif</strong>: per-character widths approximating Times New Roman</li>
@@ -742,7 +742,7 @@ dims.apply {
 <li><strong>tspan <code>dx</code>/<code>dy</code> offsets</strong> — accounted for in multi-span text elements</li>
 </ul>
 <blockquote>
-<p><strong>Accuracy: 85-90% for Latin text.</strong> A label that measures 87px might actually render at 100px — a gap of roughly one character width at typical font sizes. This is sufficient for collision avoidance, anchor-based layout, and background rectangle sizing, where a few pixels of margin are invisible. It is <em>not</em> sufficient for pixel-perfect alignment, tight kerning, or text that must match an exact grid. For those cases, Part 2 of this series covers the <a href="/pathogen/blog/pathblock-glyph-extraction"><code>@font</code> directive</a>, which loads OpenType font files for exact glyph measurement.</p>
+<p><strong>Accuracy: 85-90% for Latin text.</strong> A label that measures 87px might actually render at 100px — a gap of roughly one character width at typical font sizes. This is sufficient for collision avoidance, anchor-based layout, and background rectangle sizing, where a few pixels of margin are invisible. It is <em>not</em> sufficient for pixel-perfect alignment, tight kerning, or text that must match an exact grid. For those cases, Part 2 of this series covers the <a href="/blog/pathblock-glyph-extraction"><code>@font</code> directive</a>, which loads OpenType font files for exact glyph measurement.</p>
 </blockquote>
 <p>The demo below shows <code>.boundingBox()</code> at three different font sizes. Each row renders the same text, measures it, and draws width/height dimension lines. Notice how the bounding box scales with font size — the measurement adapts automatically.</p>
 <p><mini-workspace caption="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text">
@@ -903,16 +903,16 @@ title.apply { text(30, 30)`Measure Before You Place` }
 let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
 subtitle.apply { text(30, 44)`.boundingBox() returns { x, y, width, height }` }
 </code>
-  <img src="/pathogen/blog/samples/post11/bbox-measurement.svg" alt="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text" loading="lazy">
+  <img src="/blog/samples/post11/bbox-measurement.svg" alt="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text" loading="lazy">
 </mini-workspace></p>
 <h2>Polar Projection with BBoxAnchor</h2>
 <p>Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute <code>x</code> and <code>y</code> offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs <code>x = centerX + radius + gap</code>; a label above needs <code>y = centerY - radius - textHeight</code>. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.</p>
-<p><a href="/pathogen/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
+<p><a href="/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Node A`</span> } &lt;&lt; ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
 
 <span class="hljs-comment">// Place 80px from center at 45 degrees, anchored at center-left</span>
 <span class="hljs-keyword">let</span> placed = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, 45deg, <span class="hljs-number">80</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
-</code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/pathogen/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
+</code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
 <p>The nine anchor positions form a grid over the bounding box:</p>
 <pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
 BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
@@ -1100,7 +1100,7 @@ kw.apply {
 
 code_group.append(code, kw);
 </code>
-  <img src="/pathogen/blog/samples/post11/polar-compass.svg" alt="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment" loading="lazy">
+  <img src="/blog/samples/post11/polar-compass.svg" alt="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment" loading="lazy">
 </mini-workspace></p>
 <p>The code for each label is minimal — a one-line TextBlock, a <code>polarProject()</code> call, and a <code>draw()</code>. The loop at the center of the demo iterates through names and anchors in parallel:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
@@ -1113,7 +1113,7 @@ code_group.append(code, kw);
 <p>This matters because label placement around shapes is combinatorial. A hexagon with 6 vertex labels, 6 edge labels, and a center label requires 13 placements. Doing those with manual offsets means 26 magic numbers (x and y for each). With <code>polarProject()</code>, it&#39;s 13 calls with angles, one shared radius, and the appropriate anchors. When you add a seventh vertex to the polygon, the labels redistribute automatically.</p>
 <h2>Collision Avoidance</h2>
 <p>Placing labels one at a time works until two of them end up on top of each other. Scatter plots, node graphs, and dense diagrams inevitably produce clusters where data points are close together and naive placement causes overlaps. A label that&#39;s perfectly clear in one dataset collides with its neighbor when the data changes. This is the label placement problem — well-studied in cartography and information visualization — and TextBlock brings a pragmatic solution directly into the language.</p>
-<p>TextBlock&#39;s <a href="/pathogen/docs#text-block-intersection-detection"><code>.intersects()</code></a> method detects collisions using axis-aligned bounding box (AABB) overlap testing.</p>
+<p>TextBlock&#39;s <a href="/docs#text-block-intersection-detection"><code>.intersects()</code></a> method detects collisions using axis-aligned bounding box (AABB) overlap testing.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label1 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`First`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
 <span class="hljs-keyword">let</span> label2 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Second`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>);
 
@@ -1491,7 +1491,7 @@ leg.apply {
   text(120, 375)`Data point`
 }
 </code>
-  <img src="/pathogen/blog/samples/post11/collision-avoidance.svg" alt="Before and after — naive fixed-offset placement vs smart 8-angle collision avoidance" loading="lazy">
+  <img src="/blog/samples/post11/collision-avoidance.svg" alt="Before and after — naive fixed-offset placement vs smart 8-angle collision avoidance" loading="lazy">
 </mini-workspace></p>
 <p>Unlike force-directed label placement (as in D3), TextBlock&#39;s collision avoidance is deterministic and runs at compile time — the same input always produces the same layout.</p>
 <p>This is a greedy algorithm — it doesn&#39;t guarantee a globally optimal layout, but it&#39;s fast and produces good results for the cluster sizes typical in diagrams. The search is O(N^2) in the number of labels — fast for typical diagrams with 2-20 labels, but worth noting at larger scales. You could customize the preference order, increase the number of angles for finer-grained search, or adjust the distance for denser layouts. For truly dense point clouds, you might combine this with <code>.translate()</code> as a fallback — nudging a label incrementally until it clears.</p>
@@ -1746,7 +1746,7 @@ if (left_proj.intersects(r_left_anno)) { log("WARN: right Left label intersects 
 
 right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno);
 </code>
-  <img src="/pathogen/blog/samples/post11/before-after.svg" alt="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)" loading="lazy">
+  <img src="/blog/samples/post11/before-after.svg" alt="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)" loading="lazy">
 </mini-workspace></p>
 <p>The right panel adapts to any text content, font size, or font family without changing a single coordinate. Swap &quot;Top&quot; for &quot;North&quot; and the anchor still centers the text correctly above the shape. Double the font size and the label still clears the hexagon&#39;s edge. This is the fundamental value proposition of TextBlock: text becomes a measurable, composable value that participates in the same spatial reasoning as paths and shapes.</p>
 <p>The manual approach isn&#39;t just more work — it&#39;s more <em>fragile</em> work. Every time the diagram&#39;s parameters change (and in parametric SVGs, that&#39;s the whole point), the magic numbers need manual recalculation. <code>polarProject()</code> makes the positioning logic parameter-free with respect to text content.</p>
@@ -1773,19 +1773,19 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
   placed.<span class="hljs-title function_">draw</span>();
 }
 </code></pre><p>Each step is a pure value transformation until <code>.draw()</code>. You can inspect, branch on, and iterate over the intermediate results. This pipeline means text is no longer an afterthought bolted onto a diagram. It&#39;s a first-class participant in the layout — queryable, testable, and automatically adaptive. Labels can respond to the geometry they annotate instead of being hard-coded beside it.</p>
-<p>The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the <a href="/pathogen/docs#text-block-syntax">TextBlock documentation</a>, which covers all <a href="/pathogen/docs#text-block-methods">methods</a>, <a href="/pathogen/docs#text-block-properties">properties</a>, <a href="/pathogen/docs#text-block-style-merging">style merging</a>, <a href="/pathogen/docs#text-block-bboxanchor-enum">BBoxAnchor</a>, <a href="/pathogen/docs#text-block-font-metrics">font metrics</a>, <a href="/pathogen/docs#text-block-polar-projection">polar projection</a>, and <a href="/pathogen/docs#text-block-intersection-detection">intersection detection</a>.</p>
+<p>The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the <a href="/docs#text-block-syntax">TextBlock documentation</a>, which covers all <a href="/docs#text-block-methods">methods</a>, <a href="/docs#text-block-properties">properties</a>, <a href="/docs#text-block-style-merging">style merging</a>, <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a>, <a href="/docs#text-block-font-metrics">font metrics</a>, <a href="/docs#text-block-polar-projection">polar projection</a>, and <a href="/docs#text-block-intersection-detection">intersection detection</a>.</p>
 <h2>What&#39;s Next</h2>
-<p>The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, <a href="/pathogen/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a>, covers the <code>@font</code> directive that loads OpenType font files for exact measurement, and <code>PathBlock.fromGlyph()</code> that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, <a href="/pathogen/blog/pathblock-parametric-sampling">sample</a>, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillet</a>, and <a href="/pathogen/blog/pathblock-boolean-operations">boolean-combine</a> just like any other shape.</p>
+<p>The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, <a href="/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a>, covers the <code>@font</code> directive that loads OpenType font files for exact measurement, and <code>PathBlock.fromGlyph()</code> that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, <a href="/blog/pathblock-parametric-sampling">sample</a>, <a href="/blog/pathblock-fillets-chamfers">fillet</a>, and <a href="/blog/pathblock-boolean-operations">boolean-combine</a> just like any other shape.</p>
 <p>Text as geometry. That&#39;s where this is headed.</p>
-<p>Paste the collision-avoidance snippet into the <a href="/pathogen/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
+<p>Paste the collision-avoidance snippet into the <a href="/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Beyond CSS: Conic Gradients with WebGPU Rendering — Pathogen Studio</title>
   <meta name="description" content="SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/gradient-conic">
+  <link rel="canonical" href="https://pathogen.studio/blog/gradient-conic">
   <meta property="og:title" content="Beyond CSS: Conic Gradients with WebGPU Rendering — Pathogen Studio">
   <meta property="og:description" content="SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/gradient-conic">
+  <meta property="og:url" content="https://pathogen.studio/blog/gradient-conic">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Beyond CSS: Conic Gradients with WebGPU Rendering","description":"SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.","datePublished":"2026-03-03","url":"https://pathogen.studio/pathogen/blog/gradient-conic","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Beyond CSS: Conic Gradients with WebGPU Rendering","description":"SVG has no conic gradient primitive. Pathogen adds one with partial sweeps, inner radius, direction control, and a WebGPU rendering pipeline that falls back gracefully to Canvas 2D.","datePublished":"2026-03-03","url":"https://pathogen.studio/blog/gradient-conic","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Beyond CSS: Conic Gradients with WebGPU Rendering</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Beyond CSS: Conic Gradients with WebGPU Rendering</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -332,7 +332,7 @@ title.apply {
 let scene = GroupLayer('scene') ${};
 scene.append(bg, ring, disc, frame, inner_frame, title);
 </code>
-  <img src="/pathogen/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
+  <img src="/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
 <h2>Partial Sweeps</h2>
 <p>Not every conic gradient needs to go all the way around. The <code>from</code> and <code>to</code> properties define the angular range of the sweep, in degrees. A gauge that covers 270 degrees (from 135 to 405) leaves a gap at the bottom — a natural fit for speedometers, progress rings, and dial indicators.</p>
@@ -580,7 +580,7 @@ fuel_group.append(g3, fuel_ticks);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);
 </code>
-  <img src="/pathogen/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
+  <img src="/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
 </mini-workspace></p>
 <h2>Direction: CW and CCW</h2>
 <p>By default, conic gradients sweep clockwise. Setting <code>.direction = &#39;ccw&#39;</code> reverses the sweep direction. The color stops stay in the same order, but the angular progression runs counter-clockwise. This is useful when mirroring UI elements or creating paired visual effects.</p>
@@ -684,7 +684,7 @@ right.append(ccw_circle, ccw_arrow);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, left, right, labels, note);
 </code>
-  <img src="/pathogen/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
+  <img src="/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
 </mini-workspace></p>
 <h2>Inner Radius and Fill Modes</h2>
 <p>The <code>innerRadius</code> property carves out a hole in the center of the gradient, creating a donut shape. What fills that hole is controlled by <code>innerFill</code>, which supports four modes:</p>
@@ -833,7 +833,7 @@ bottom_row.append(c3, c4);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, top_row, bottom_row, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
+  <img src="/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
 </mini-workspace></p>
 <h2>OKLCH on Conics</h2>
 <p>OKLCH interpolation matters even more on conic gradients than on linear ones. A full-sweep color wheel interpolated in sRGB produces muddy bands wherever complementary colors meet. In OKLCH, the transitions trace a perceptually uniform arc through the hue wheel, maintaining chroma and lightness throughout.</p>
@@ -955,7 +955,7 @@ bottom_row.append(rc_s, rc_o);
 let scene = GroupLayer('scene') ${};
 scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </code>
-  <img src="/pathogen/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
+  <img src="/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
 </mini-workspace></p>
 <p>Conic gradients also support the same <code>spreadMethod</code> options as linear and radial gradients. When using a partial sweep, <code>reflect</code> and <code>repeat</code> can produce interesting patterns in the gap region. The <code>conic-spread-modes</code> sample explores this.</p>
 <h2>How It Renders</h2>
@@ -970,15 +970,15 @@ scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </ol>
 <p>In all three cases, the author writes the same <code>ConicGradient</code> code. The rendering path is an implementation detail — the compiled SVG looks identical regardless of which pipeline produced it.</p>
 <h2>What Comes Next</h2>
-<p>Conic gradients fill a gap in SVG&#39;s rendering model. But there are gradient types that no web standard has ever supported: grid-based mesh gradients and scatter-based freeform gradients. In the <a href="/pathogen/blog/gradient-mesh-freeform">next post</a>, we implement both.</p>
+<p>Conic gradients fill a gap in SVG&#39;s rendering model. But there are gradient types that no web standard has ever supported: grid-based mesh gradients and scatter-based freeform gradients. In the <a href="/blog/gradient-mesh-freeform">next post</a>, we implement both.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Parametric Sampling: Placing Elements Along Curves — Pathogen Studio</title>
   <meta name="description" content="How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/pathblock-parametric-sampling">
+  <link rel="canonical" href="https://pathogen.studio/blog/pathblock-parametric-sampling">
   <meta property="og:title" content="Parametric Sampling: Placing Elements Along Curves — Pathogen Studio">
   <meta property="og:description" content="How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/pathblock-parametric-sampling">
+  <meta property="og:url" content="https://pathogen.studio/blog/pathblock-parametric-sampling">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Parametric Sampling: Placing Elements Along Curves","description":"How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.","datePublished":"2026-03-11","url":"https://pathogen.studio/pathogen/blog/pathblock-parametric-sampling","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Parametric Sampling: Placing Elements Along Curves","description":"How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.","datePublished":"2026-03-11","url":"https://pathogen.studio/blog/pathblock-parametric-sampling","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Parametric Sampling: Placing Elements Along Curves</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Parametric Sampling: Placing Elements Along Curves</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -255,29 +255,29 @@ code.hljs {
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
-<li><a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
 <li><strong>Exploring Parametric Sampling</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
-<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
 </ol>
 </blockquote>
-<p>The <a href="/pathogen/blog/pathblock-introduction">previous post</a> introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path&#39;s geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What&#39;s the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.</p>
+<p>The <a href="/blog/pathblock-introduction">previous post</a> introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path&#39;s geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What&#39;s the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.</p>
 <h2>The Parameter <code>t</code></h2>
 <p>All sampling methods use a parameter <code>t</code> that ranges from 0 (start of path) to 1 (end of path). This isn&#39;t the raw parametric value of the underlying Bézier or arc — it&#39;s measured by <strong>arc length</strong>. That means <code>t = 0.5</code> is always the geometric midpoint of the path, regardless of how the control points are distributed.</p>
 <p>This is a critical distinction. A cubic Bézier with uneven control point spacing has a non-uniform speed along its raw parameter. Arc-length parameterization normalizes this so that equal increments of <code>t</code> correspond to equal distances along the curve.</p>
 <h2>Querying Points</h2>
-<p>The simplest query is <a href="/pathogen/docs#path-blocks-gett-point"><code>.get(t)</code></a>, which returns the <code>Point</code> at arc-length fraction <code>t</code>:</p>
+<p>The simplest query is <a href="/docs#path-blocks-gett-point"><code>.get(t)</code></a>, which returns the <code>Point</code> at arc-length fraction <code>t</code>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
 <span class="hljs-keyword">let</span> mid = curve.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-title function_">log</span>(mid);  <span class="hljs-comment">// Point near the apex of the curve</span>
-</code></pre><p>This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See <a href="/pathogen/docs#path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</a> for the coordinate behavior.</p>
+</code></pre><p>This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See <a href="/docs#path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</a> for the coordinate behavior.</p>
 <h2>Tangents and Normals</h2>
-<p><a href="/pathogen/docs#path-blocks-tangentt-point-angle"><code>.tangent(t)</code></a> returns both a point and the direction of travel at that point:</p>
+<p><a href="/docs#path-blocks-tangentt-point-angle"><code>.tangent(t)</code></a> returns both a point and the direction of travel at that point:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
 <span class="hljs-keyword">let</span> tan = curve.<span class="hljs-title function_">tangent</span>(<span class="hljs-number">0.0</span>);
 <span class="hljs-title function_">log</span>(tan.<span class="hljs-property">point</span>);   <span class="hljs-comment">// Point(0, 0) — start of curve</span>
 <span class="hljs-title function_">log</span>(tan.<span class="hljs-property">angle</span>);   <span class="hljs-comment">// angle in radians — direction of travel</span>
-</code></pre><p><a href="/pathogen/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
+</code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> n = curve.<span class="hljs-title function_">normal</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-comment">// n.angle is tangent angle - π/2</span>
 <span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
@@ -526,7 +526,7 @@ subtitle.apply {
   text(30, 344)`Query any point along a path by arc-length fraction t`
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/sampling-anatomy.svg" alt="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4" loading="lazy">
+  <img src="/blog/samples/post7/sampling-anatomy.svg" alt="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4" loading="lazy">
 </mini-workspace></p>
 <h2>Sampling Multiple Points</h2>
 <p>You can sample any number of points by calling <code>.get(t)</code> at specific values. Here&#39;s a curve with four markers at the quarter marks:</p>
@@ -595,11 +595,11 @@ tangents.apply {
   }
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/sampling-points.svg" alt="Points and tangent lines sampled along a cubic Bézier curve" loading="lazy">
+  <img src="/blog/samples/post7/sampling-points.svg" alt="Points and tangent lines sampled along a cubic Bézier curve" loading="lazy">
 </mini-workspace></p>
-<p>The red dots use <a href="/pathogen/docs#path-blocks-partitionn-orientedpoint"><code>partition(8)</code></a> to divide the curve into 8 equal segments. Each partition point includes <code>.point</code>, <code>.angle</code>, and <code>.t</code> properties. The green tangent lines use <code>tangent(t)</code> at each eighth to show the direction of travel.</p>
+<p>The red dots use <a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(8)</code></a> to divide the curve into 8 equal segments. Each partition point includes <code>.point</code>, <code>.angle</code>, and <code>.t</code> properties. The green tangent lines use <code>tangent(t)</code> at each eighth to show the direction of travel.</p>
 <h2>Even Distribution with <code>partition(n)</code></h2>
-<p><a href="/pathogen/docs#path-blocks-partitionn-orientedpoint"><code>partition(n)</code></a> is the workhorse for distributing elements along a path. It returns <code>n + 1</code> oriented points (both endpoints included), evenly spaced by arc length:</p>
+<p><a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(n)</code></a> is the workhorse for distributing elements along a path. It returns <code>n + 1</code> oriented points (both endpoints included), evenly spaced by arc length:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> path = @{ h <span class="hljs-number">100</span> };
 <span class="hljs-keyword">let</span> pts = path.<span class="hljs-title function_">partition</span>(<span class="hljs-number">4</span>);
 <span class="hljs-comment">// 5 points at t = 0, 0.25, 0.5, 0.75, 1.0</span>
@@ -747,7 +747,7 @@ subtitle.apply {
   text(295, 28)`n + 1 points at equal arc-length intervals`
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/sampling-tvalues.svg" alt="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve" loading="lazy">
+  <img src="/blog/samples/post7/sampling-tvalues.svg" alt="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve" loading="lazy">
 </mini-workspace></p>
 <h2>Building a Fence Along a Curve</h2>
 <p>Here&#39;s a practical example: fence posts distributed evenly along a winding road. The posts are placed using <code>partition(16)</code>, then oriented perpendicular to the road using <code>normal()</code>. Rails connect adjacent posts at 1/3 and 2/3 height.</p>
@@ -904,29 +904,29 @@ subtitle.apply {
   text(30, 42)`partition() + normal() for perpendicular placement`
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/partition-fence.svg" alt="Fence posts and rails distributed along a curved road" loading="lazy">
+  <img src="/blog/samples/post7/partition-fence.svg" alt="Fence posts and rails distributed along a curved road" loading="lazy">
 </mini-workspace></p>
 <p>The key pattern is:</p>
 <ol>
 <li>Define the base curve (the road)</li>
-<li>Use <code>.project(x, y)</code> to get a <a href="/pathogen/docs#path-blocks-projecting-without-drawing">ProjectedPath</a> with absolute coordinates</li>
+<li>Use <code>.project(x, y)</code> to get a <a href="/docs#path-blocks-projecting-without-drawing">ProjectedPath</a> with absolute coordinates</li>
 <li>Call <code>.partition(n)</code> to get evenly-spaced points</li>
 <li>Use <code>.normal(t)</code> to find the perpendicular direction at each point</li>
 <li>Place elements using <code>cos(angle)</code> and <code>sin(angle)</code> offsets</li>
 </ol>
 <p>This pattern works for any curve — Béziers, arcs, polylines, or combinations. The arc-length parameterization ensures even spacing regardless of the curve&#39;s complexity.</p>
 <h2>Curve Support</h2>
-<p>Sampling works uniformly on every SVG path command type — lines, cubic and quadratic Béziers, and arcs. A path that mixes segment types (say, a line into a cubic into an arc) samples seamlessly across segment boundaries. The arc-length lookup table is built once per path and cached, so repeated sampling calls are efficient. See the <a href="/pathogen/docs#path-blocks-curve-support">Curve Support</a> documentation for implementation details.</p>
+<p>Sampling works uniformly on every SVG path command type — lines, cubic and quadratic Béziers, and arcs. A path that mixes segment types (say, a line into a cubic into an arc) samples seamlessly across segment boundaries. The arc-length lookup table is built once per path and cached, so repeated sampling calls are efficient. See the <a href="/docs#path-blocks-curve-support">Curve Support</a> documentation for implementation details.</p>
 <h2>What&#39;s Next</h2>
-<p>Sampling tells you about a path&#39;s geometry. The next post covers <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a> — operations that modify the geometry itself by rounding or cutting corners. These use the same trim-and-split infrastructure under the hood: arc-length parameterization to find exact split points along edges.</p>
+<p>Sampling tells you about a path&#39;s geometry. The next post covers <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a> — operations that modify the geometry itself by rounding or cutting corners. These use the same trim-and-split infrastructure under the hood: arc-length parameterization to find exact split points along edges.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

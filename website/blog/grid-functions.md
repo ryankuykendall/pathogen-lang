@@ -7,7 +7,7 @@ description: "Three stdlib functions that generate complete grid geometries — 
 
 Grid patterns show up everywhere — engineering overlays, graph paper, game boards, architectural plans, generative art backgrounds. Building one from scratch means nested loops, coordinate math, and careful edge deduplication for triangles and hexagons. Pathogen's three new grid functions collapse all of that into a single call.
 
-`squareGrid`, `triangleGrid`, and `hexagonGrid` each generate complete path geometry within a bounding rectangle. A [`GridPatternType`](/pathogen/docs#stdlib-grid-functions) enum selects the visual style — **Shape**, **Dot**, **Intersection**, or **Partial** — and all three return `PathSegment` values, so they compose with [layers](/pathogen/docs#layers-defining-layers), transforms, and clip paths just like `circle()` or `polygon()`.
+`squareGrid`, `triangleGrid`, and `hexagonGrid` each generate complete path geometry within a bounding rectangle. A [`GridPatternType`](/docs#stdlib-grid-functions) enum selects the visual style — **Shape**, **Dot**, **Intersection**, or **Partial** — and all three return `PathSegment` values, so they compose with [layers](/docs#layers-defining-layers), transforms, and clip paths just like `circle()` or `polygon()`.
 
 ## Square Grids
 
@@ -76,7 +76,7 @@ Pattern proportions are relative to `cellSize`: dot radius is 2.5%, intersection
 
 ## Putting It Together
 
-Grid functions are most useful as background textures layered behind other geometry. Combine them with [layer transforms](/pathogen/docs#layers-defining-layers) for rotation, and use `Color` methods to derive palette variations from a single reactive base color:
+Grid functions are most useful as background textures layered behind other geometry. Combine them with [layer transforms](/docs#layers-defining-layers) for rotation, and use `Color` methods to derive palette variations from a single reactive base color:
 
 <mini-workspace src="samples/post15/grid-composition.pathogen" caption="Layered composition — rotated partial grid, hex outline, and triangle intersections" code-open></mini-workspace>
 
@@ -90,4 +90,4 @@ The core pattern is always the same: create a styled `PathLayer`, optionally set
 
 Three functions, four pattern types, two hexagon orientations — enough to cover graph paper, game boards, engineering overlays, and generative art backgrounds without writing a single loop. Try changing the `--grid-color` and `--bg-color` variables in any of the examples above to see how the reactive colors work.
 
-For the full function signatures and parameter details, see the [stdlib reference](/pathogen/docs#stdlib-grid-functions). For layer management and transforms, see the [layers documentation](/pathogen/docs#layers-defining-layers). For combining grids with reusable path blocks, see the [PathBlock introduction](/pathogen/blog/pathblock-introduction).
+For the full function signatures and parameter details, see the [stdlib reference](/docs#stdlib-grid-functions). For layer management and transforms, see the [layers documentation](/docs#layers-defining-layers). For combining grids with reusable path blocks, see the [PathBlock introduction](/blog/pathblock-introduction).

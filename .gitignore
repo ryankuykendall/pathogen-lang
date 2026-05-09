@@ -45,3 +45,4 @@ npm-debug.log*
 # Claude Code local files (personal preferences, not shared)
 .claude/CLAUDE.local.md
 CLAUDE.local.md
+.claude/scheduled_tasks.lock

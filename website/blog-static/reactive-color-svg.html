@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reactive Color in SVG: From Static Paths to Dynamic Themes — Pathogen Studio</title>
   <meta name="description" content="How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/reactive-color-svg">
+  <link rel="canonical" href="https://pathogen.studio/blog/reactive-color-svg">
   <meta property="og:title" content="Reactive Color in SVG: From Static Paths to Dynamic Themes — Pathogen Studio">
   <meta property="og:description" content="How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/reactive-color-svg">
+  <meta property="og:url" content="https://pathogen.studio/blog/reactive-color-svg">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Reactive Color in SVG: From Static Paths to Dynamic Themes","description":"How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.","datePublished":"2026-02-27","url":"https://pathogen.studio/pathogen/blog/reactive-color-svg","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Reactive Color in SVG: From Static Paths to Dynamic Themes","description":"How Pathogen's Color system turns SVG into a reactive medium — from OKLCH color manipulation to CSS-variable-driven theming that updates at runtime.","datePublished":"2026-02-27","url":"https://pathogen.studio/blog/reactive-color-svg","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Reactive Color in SVG: From Static Paths to Dynamic Themes</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Reactive Color in SVG: From Static Paths to Dynamic Themes</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -418,7 +418,7 @@ for ([m, i] in methods) {
 layer('labels').append(layer('label'));
 layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
 </code>
-  <img src="/pathogen/blog/samples/post24/methods-radial.svg" alt="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice." loading="lazy">
+  <img src="/blog/samples/post24/methods-radial.svg" alt="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice." loading="lazy">
 </mini-workspace></p>
 <p>What makes this reactive? The SVG above was compiled <em>once</em>. There is no JavaScript updating colors. The fill values use CSS relative color syntax:</p>
 <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)&quot;</span>
@@ -712,7 +712,7 @@ legend.apply { text(15, legend_y)`CHORDS:  ANA  TRI  TET  SPLIT-COMP  —  VERTI
 layer('strips').append(layer('strip-label'), layer('strip-sub'), layer('legend'));
 layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
 </code>
-  <img src="/pathogen/blog/samples/post24/harmonies-wheel.svg" alt="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex." loading="lazy">
+  <img src="/blog/samples/post24/harmonies-wheel.svg" alt="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex." loading="lazy">
 </mini-workspace></p>
 <p>Notice the palette rows. The lightness ramp uses CSS relative color syntax to override the <code>l</code> component at fixed steps:</p>
 <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--harmony-color) 0.35 c h)&quot;</span>
@@ -1034,7 +1034,7 @@ layer('stage').append(
 
 layer('diagram').append(layer('bg'), layer('sys'), layer('seam'), layer('stage'));
 </code>
-  <img src="/pathogen/blog/samples/post24/theme-combined.svg" alt="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych." loading="lazy">
+  <img src="/blog/samples/post24/theme-combined.svg" alt="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych." loading="lazy">
 </mini-workspace></p>
 <p>This composition has two halves. The top half is a geometric system — a central star (primary), orbiting circles (secondary), corner diamonds plus linking arcs and a halo (accent), all sitting on a dashed reference ring. The bottom half is the same theme as a presentational triptych: primary, secondary, and accent as first-class design elements. The star fill uses <code>oklch(from var(--primary) calc(l + 0.15) c h)</code> for a lighter shade, the corner diamonds use <code>oklch(from var(--accent) l c calc(h + 60))</code> for a hue-shifted variation, and each triptych card carries auto-contrasting ink against its own fill. One source file, infinite themes.</p>
 <h2>@property: Enabling Transitions</h2>
@@ -1269,7 +1269,7 @@ layer('labels').append(
 
 layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), layer('labels'));
 </code>
-  <img src="/pathogen/blog/samples/post24/lightdark-conic.svg" alt="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once." loading="lazy">
+  <img src="/blog/samples/post24/lightdark-conic.svg" alt="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once." loading="lazy">
 </mini-workspace></p>
 <p>The gradient places each chip in a different angular slice of the bg. Chips near the top sit on the light plateau, chips near the bottom on the dark plateau, and every chip crosses the transition band at its middle — a single-color wedge visibly rendered against the full spectrum. Move the <code>--base-color</code> picker and every chip recomputes; move a bg picker and the whole gradient re-interpolates.</p>
 <p>Three CSS variables. One gradient. Seven method derivations, each visible against the full light/dark spectrum. Compiled once, reactive forever.</p>
@@ -1281,10 +1281,10 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

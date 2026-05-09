@@ -33,7 +33,8 @@ program.parse();
 | `build-blog.ts` | Convert blog markdown to `playground/utils/blog-content.js` |
 | `build-website.ts` | Assemble CloudFlare Pages output in `public/` |
 | `new-blog-post.ts` | Scaffold a new blog post with frontmatter |
-| `rotate-admin-token.ts` | Generate and deploy a new admin token via Wrangler |
+| `rotate-admin-token.ts` | Generate a new ADMIN_TOKEN secret on the `pathogen-api` Worker and redeploy. (After the API split, admin endpoints live on the API Worker, not the Pages project.) |
+| `migrate-anonymous-workspaces.ts` | One-off: re-key workspaces from anonymous user IDs to an authenticated user. Reads/writes WORKSPACES KV via wrangler. |
 | `kill-port.ts` | Kill processes on a port (default 3000); used by `kill:wrangler` |
 | `install-git-hooks.ts` | Install git hooks from `scripts/git-hooks/` |
 | `compile-bbwp.ts` | Compile `.pathogen` → SVG → HTML artifact in `website/bbwp/` |

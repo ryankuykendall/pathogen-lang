@@ -5,7 +5,7 @@
 // so the same call site works from inside Shadow DOM components — fragment-only
 // references do not cross shadow boundaries.
 
-const SPRITE_URL = '/pathogen/assets/material-icons-sprite.svg';
+const SPRITE_URL = '/assets/material-icons-sprite.svg';
 
 export type MaterialIconName =
   | 'more-vert'

@@ -132,4 +132,4 @@ The method choice matters most with complex organic contours. The same three sha
 
 ## What Comes Next
 
-This is the sixth gradient type in Pathogen's system — linear, radial, conic, mesh, freeform, and topological. In the [final post](/pathogen/blog/gradient-pipeline) of this series, we step back and look at the infrastructure that makes it all work: `GroupLayer` for scene composition, the CLI's `--render-gpu` flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns `.pathogen` source files into the blog you are reading now.
+This is the sixth gradient type in Pathogen's system — linear, radial, conic, mesh, freeform, and topological. In the [final post](/blog/gradient-pipeline) of this series, we step back and look at the infrastructure that makes it all work: `GroupLayer` for scene composition, the CLI's `--render-gpu` flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns `.pathogen` source files into the blog you are reading now.

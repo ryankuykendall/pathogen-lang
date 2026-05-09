@@ -146,7 +146,7 @@ circle(pt4.x, pt4.y, 5)
 circle(100, 50, 3)`,
 };
 
-export const defaultCode = `// Welcome to svg-path-extended!
+export const defaultCode = `// Welcome to Pathogen!
 // Try editing this code or select an example above.
 
 let cx = 100;

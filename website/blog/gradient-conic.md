@@ -112,4 +112,4 @@ In all three cases, the author writes the same `ConicGradient` code. The renderi
 
 ## What Comes Next
 
-Conic gradients fill a gap in SVG's rendering model. But there are gradient types that no web standard has ever supported: grid-based mesh gradients and scatter-based freeform gradients. In the [next post](/pathogen/blog/gradient-mesh-freeform), we implement both.
+Conic gradients fill a gap in SVG's rendering model. But there are gradient types that no web standard has ever supported: grid-based mesh gradients and scatter-based freeform gradients. In the [next post](/blog/gradient-mesh-freeform), we implement both.

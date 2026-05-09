@@ -1,4 +1,6 @@
-# svg-path-extended
+# pathogen-lang
+
+The compiler, language services, and web playground for **Pathogen** — a typed, expression-first language for SVG paths. Source for the [`svg-path-extended`](https://www.npmjs.com/package/svg-path-extended) npm package and [pathogen.studio](https://pathogen.studio).
 
 A TypeScript library that extends SVG path syntax with variables, expressions, control flow, and functions.
 
@@ -11,11 +13,11 @@ A TypeScript library that extends SVG path syntax with variables, expressions, c
 - **Standard library** - Built-in math functions and shape helpers
 - **CLI** - Compile from command line or integrate into build tools
 - **Browser compatible** - Works in Node.js and browsers
-- **[Interactive Playground](https://pedestal.design/svg-path-extended/)** - Try it in your browser
+- **[Interactive Playground](https://pathogen.studio/)** - Try it in your browser
 
 ## Try It
 
-**[Open the Playground](https://pedestal.design/svg-path-extended/)** to experiment with the syntax interactively. Features live preview, built-in examples, and shareable URLs.
+**[Open the Playground](https://pathogen.studio/)** to experiment with the syntax interactively. Features live preview, built-in examples, and shareable URLs.
 
 ## Installation
 

@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Drop the Quotes: Color Literals in Pathogen — Pathogen Studio</title>
   <meta name="description" content="A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/color-literals">
+  <link rel="canonical" href="https://pathogen.studio/blog/color-literals">
   <meta property="og:title" content="Drop the Quotes: Color Literals in Pathogen — Pathogen Studio">
   <meta property="og:description" content="A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/color-literals">
+  <meta property="og:url" content="https://pathogen.studio/blog/color-literals">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Drop the Quotes: Color Literals in Pathogen","description":"A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.","datePublished":"2026-03-14","url":"https://pathogen.studio/pathogen/blog/color-literals","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Drop the Quotes: Color Literals in Pathogen","description":"A UX bug became a language feature — bare hex codes, CSS color functions, and the percent suffix are now first-class expressions in Pathogen.","datePublished":"2026-03-14","url":"https://pathogen.studio/blog/color-literals","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Drop the Quotes: Color Literals in Pathogen</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Drop the Quotes: Color Literals in Pathogen</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -468,7 +468,7 @@ equals.apply {
   text(270, 210)`=`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/before-after.svg" alt="Before and After — Color('#cc0000') vs #cc0000 produce identical output" loading="lazy">
+  <img src="/blog/samples/post10/before-after.svg" alt="Before and After — Color('#cc0000') vs #cc0000 produce identical output" loading="lazy">
 </mini-workspace></p>
 <p>The left panel shows the old way: wrap a string in <code>Color()</code>, call methods with decimal arguments. The right panel shows the new way: bare hex literal, percent suffix. Both produce the same three swatches. The <code>Color()</code> wrapper still works — it now accepts bare hex values as a pass-through — but you no longer need it for hex colors.</p>
 <h2>Hex Literals</h2>
@@ -669,7 +669,7 @@ base_line.apply {
   v calc(row3_y + sh - row1_y)
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/hex-palette.svg" alt="Lightness, hue, and saturation ramps derived from a single hex literal" loading="lazy">
+  <img src="/blog/samples/post10/hex-palette.svg" alt="Lightness, hue, and saturation ramps derived from a single hex literal" loading="lazy">
 </mini-workspace></p>
 <h2>CSS Color Function Literals</h2>
 <p>All major CSS color functions work as bare expressions. You can paste any CSS color value directly into Pathogen code and it will just work — <code>%</code> and <code>/</code> inside function arguments are treated as literal characters, not operators:</p>
@@ -684,7 +684,7 @@ base_line.apply {
 </code></pre><p>Method chaining works directly — no wrapper needed:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
 <span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
-</code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/pathogen/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
+</code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
 <p><mini-workspace code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
   <code>// viewBox="0 0 560 340"
 // Color Spaces — The same red expressed in 7 CSS color function syntaxes
@@ -809,10 +809,10 @@ arrow_line.apply {
   M 100 300 h 360
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/color-spaces.svg" alt="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally" loading="lazy">
+  <img src="/blog/samples/post10/color-spaces.svg" alt="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally" loading="lazy">
 </mini-workspace></p>
 <blockquote>
-<p><strong>Note:</strong> CSS color function names (<code>rgb</code>, <code>rgba</code>, <code>hsl</code>, <code>hsla</code>, <code>oklch</code>, <code>hwb</code>, <code>lab</code>, <code>lch</code>, <code>oklab</code>) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The <code>a</code>-suffixed legacy forms (<code>rgba</code>, <code>hsla</code>) are also supported. See the <a href="/pathogen/docs#syntax-color-literals">syntax reference</a> for the full list.</p>
+<p><strong>Note:</strong> CSS color function names (<code>rgb</code>, <code>rgba</code>, <code>hsl</code>, <code>hsla</code>, <code>oklch</code>, <code>hwb</code>, <code>lab</code>, <code>lch</code>, <code>oklab</code>) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The <code>a</code>-suffixed legacy forms (<code>rgba</code>, <code>hsla</code>) are also supported. See the <a href="/docs#syntax-color-literals">syntax reference</a> for the full list.</p>
 </blockquote>
 <h2>The Percent Suffix</h2>
 <p>The <code>%</code> suffix converts a number to its decimal form: <code>20%</code> becomes <code>0.2</code>, <code>50%</code> becomes <code>0.5</code>. This reads naturally with color methods — &quot;lighten by 20%&quot; instead of &quot;lighten by 0.2&quot;:</p>
@@ -822,7 +822,7 @@ arrow_line.apply {
 <span class="hljs-keyword">let</span> faded = c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);        <span class="hljs-comment">// 50% → 0.5</span>
 <span class="hljs-keyword">let</span> muted = c.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">40</span>%);   <span class="hljs-comment">// 40% → 0.4</span>
 </code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
-<p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/pathogen/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
+<p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
 <p><mini-workspace code-open caption="Tint, shade, and alpha scales using the percent suffix">
   <code>// viewBox="0 0 520 300"
 // Percent Tints — Using % suffix with color methods for tint/shade scales
@@ -1001,10 +1001,10 @@ base_ind.apply {
   text(sx, calc(row1_y - 8))`#e63946`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/percent-tints.svg" alt="Tint, shade, and alpha scales using the percent suffix" loading="lazy">
+  <img src="/blog/samples/post10/percent-tints.svg" alt="Tint, shade, and alpha scales using the percent suffix" loading="lazy">
 </mini-workspace></p>
 <h2>Reactive Colors</h2>
-<p>Color literals compose naturally with Pathogen&#39;s <a href="/pathogen/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
+<p>Color literals compose naturally with Pathogen&#39;s <a href="/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, #0066ff));
 <span class="hljs-keyword">let</span> light = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
 <span class="hljs-keyword">let</span> comp = base.<span class="hljs-title function_">complement</span>();
@@ -1185,7 +1185,7 @@ code_kw.apply {
   text(42, 318)`let`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/reactive-palette.svg" alt="Reactive palette — change --base-color to update all swatches" loading="lazy">
+  <img src="/blog/samples/post10/reactive-palette.svg" alt="Reactive palette — change --base-color to update all swatches" loading="lazy">
 </mini-workspace></p>
 <p>The second demo shows a tint/shade scale — seven lighten steps and seven darken steps from a single reactive base:</p>
 <p><mini-workspace code-open caption="Reactive tint/shade scale — change --tint-color to update every swatch">
@@ -1360,26 +1360,26 @@ code_comment.apply {
   text(274, 259)`// 20% → 0.2`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/reactive-tints.svg" alt="Reactive tint/shade scale — change --tint-color to update every swatch" loading="lazy">
+  <img src="/blog/samples/post10/reactive-tints.svg" alt="Reactive tint/shade scale — change --tint-color to update every swatch" loading="lazy">
 </mini-workspace></p>
 <h2>What Still Needs <code>Color()</code></h2>
 <p>The <code>Color()</code> wrapper isn&#39;t going away. You still need it for:</p>
 <ul>
-<li><strong>Named colors</strong>: <code>Color(&#39;coral&#39;)</code>, <code>Color(&#39;dodgerblue&#39;)</code> — all <a href="/pathogen/docs#stdlib-color">148 CSS named colors</a></li>
+<li><strong>Named colors</strong>: <code>Color(&#39;coral&#39;)</code>, <code>Color(&#39;dodgerblue&#39;)</code> — all <a href="/docs#stdlib-color">148 CSS named colors</a></li>
 <li><strong>Direct OKLCH construction</strong>: <code>Color(0.6, 0.15, 30)</code> — numeric L, C, H values</li>
 <li><strong>String-based input</strong>: <code>Color(&#39;rgb(255, 0, 0)&#39;)</code> — when the color format is in a string variable</li>
 </ul>
 <p>Everything is backwards-compatible. Existing <code>Color(&#39;#cc0000&#39;)</code> calls continue to work — <code>Color()</code> now accepts a bare <code>ColorValue</code> as a pass-through.</p>
 <h2>Try It</h2>
-<p>Open the <a href="/pathogen/">Pathogen playground</a>, start from <code>#0066ff</code>, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the <a href="/pathogen/docs#stdlib-color">Color documentation</a>, and the syntax details are in the <a href="/pathogen/docs#syntax-color-literals">Color Literals</a> and <a href="/pathogen/docs#syntax-percent-suffix">Percent Suffix</a> sections.</p>
+<p>Open the <a href="/">Pathogen playground</a>, start from <code>#0066ff</code>, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the <a href="/docs#stdlib-color">Color documentation</a>, and the syntax details are in the <a href="/docs#syntax-color-literals">Color Literals</a> and <a href="/docs#syntax-percent-suffix">Percent Suffix</a> sections.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

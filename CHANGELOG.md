@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-05-09
+
+A platform release. Pathogen now lives at `pathogen.studio` — its own
+domain, its own brand, its own two-project Cloudflare architecture
+(Pages for the site, Workers for the API). The companion repo was
+renamed to `pathogen-lang` to match. The `/pathogen/` URL prefix that
+used to scope the SPA under `pedestal.design/pathogen/...` is gone;
+URLs are now apex-relative (`pathogen.studio/`, `/workspaces`, `/blog`).
+Old URLs 301 to their new locations.
+
+### Added
+
+#### Auth
+- Passwordless email-OTP accounts via Cloudflare Email Sending + D1 (commit `d4faf4a`).
+- Session cookie is `Domain=.pathogen.studio` so the same login works on `pathogen.studio` (Pages) and `api.pathogen.studio` (API Worker) without a token-auth refactor.
+- SSR seeds `window.__SSR_CURRENT_USER` on every server-rendered page so the account chip renders signed-in on first paint without a client-side fetch.
+- `/auth/start` rate-limit: per-email + per-IP counters in KV.
+- Public profile pages (`/u/:handle`).
+
+#### Marketing site
+- Atmospheric homepage at `pathogen.studio/` — code-and-render hero, three tool cards (GitHub / CLI / VS Code), latest-blog card, six showcase tiles wired to real Pathogen-rendered SVGs from the blog samples directory.
+- "Pathogen Studio" rebrand — Baumans wordmark with lavender-gradient "Studio", DM Serif Display headings, Inconsolata mono code, atmospheric grain + halos backplate. Single-CTA-per-view contract.
+- Top-nav redesign with anti-shift Grid layout, glassy tab pills, Material-icons sprite for overflow menu.
+- Sign-in modal + claim-anonymous-workspaces flow.
+
+#### API Worker (`api/`)
+- New Cloudflare Workers project at `api.pathogen.studio` hosting every `/api/*` endpoint (`/auth/*`, `/me`, `/u/:handle`, `/workspaces`, `/workspace/:id`, `/preferences`, `/thumbnail/*`, `/admin/*`).
+- `[[send_email]]` binding declared in version-controlled `api/wrangler.toml` (Pages projects don't accept this binding — that constraint drove the split).
+- Origin-allowlist CORS with credentials (`pathogen.studio`, `www.pathogen.studio`, `localhost:3000`); wildcard `*` was incompatible with credentialed cookie auth.
+- GitHub Action (`.github/workflows/deploy-api.yml`) auto-deploys the Worker on `git push` when `api/`, `website/api/`, or `website/auth/` change.
+
+#### Tooling
+- `scripts/migrate-anonymous-workspaces.ts` — one-off (now committed) for re-keying workspaces from anonymous browser IDs to an authenticated user.
+- `scripts/build-website.ts` codegens `playground/utils/version.ts` from `package.json` so the displayed `built on Pathogen v{version}` subtitle stays in sync with releases.
+- `scripts/verify-nav-stability.ts` extended to cover the new prefix-less URLs.
+- `npm run dev:stack` runs both wranglers in parallel (Pages :3000, API :8787).
+- `concurrently` dev-dep for the parallel-wrangler script.
+
+### Changed
+
+#### Domain + URL routing
+- **Site moved**: `pedestal.design/pathogen/...` → `pathogen.studio/...`. Pages custom domain attached.
+- **API moved**: `pedestal.design/pathogen/api/...` → `api.pathogen.studio/...`. The Pages worker no longer serves API traffic.
+- **`/pathogen/` URL prefix dropped**. URLs are now apex-relative — `pathogen.studio/workspaces`, `pathogen.studio/blog/clifford-attractor`, `pathogen.studio/docs`. The old prefix path 301-redirects to its new location for backward compatibility with bookmarks and external links.
+- SPA `BASE_PATH` is now `''` (was `/pathogen`). All internal navigation, top-nav tabs, and SSR-emitted hrefs use prefix-less paths. Build output writes directly to `public/` (was `public/pathogen/`).
+- SPA shell renamed to `public/spa.html` so it doesn't collide with the SSR-rendered apex (`/index.html`).
+- SPA `API_BASE` defaults to `https://api.pathogen.studio` at build time; override via `PATHOGEN_API_BASE` env var for local dev. All SPA fetches use `credentials: 'include'`.
+- Canonical URLs, sitemap.xml, robots.txt, schema.org JSON-LD, og:url tags all reference `https://pathogen.studio` (no `/pathogen/` prefix).
+
+#### Cloudflare config
+- Pages `wrangler.toml` shrunk: drops THUMBNAILS R2 binding (only the API Worker reads/writes thumbnails now), drops email-related env vars (live in `api/wrangler.toml` instead). Keeps WORKSPACES (KV, read-only for SSR) and USERS_DB (D1, read-only for `getSsrUser`).
+- All Cloudflare bindings now version-controlled in two `wrangler.toml` files (root for Pages, `/api/wrangler.toml` for Workers). No dashboard-managed config.
+
+#### Repo + branding
+- GitHub repo renamed: `svg-path-extended` → `pathogen-lang`. The npm package, CLI binary, and CF resource names remain `svg-path-extended` (renaming those would break consumers).
+- README title updated to `pathogen-lang` with a description that names the npm package.
+- Visible "built on svg-path-extended v1.0" subtitle in nav header + homepage footer changed to "built on Pathogen v{version}", with `{version}` codegenned from `package.json`.
+- Default playground welcome comment ("Welcome to svg-path-extended!") updated to "Welcome to Pathogen!".
+
+#### Compiler / language services
+(Older changes since the previous CHANGELOG entry — these landed before the API split:)
+- @font directive: surface fetch failures + uncover errors masked by diagnostics (commit `bff7fef`).
+- Color literals: support modern CSS L4 forms (`oklch(L% C H)` etc) with source-located errors (commit `6e9a7b3`).
+- Boolean operations: §2.13–2.16 fixes for shared-edge disambiguation, contour chain ordering, U-bowl notch, RW-l-50 bowl-as-disk (commits `a3d29da` through `220d0fa`).
+- Various boolean-ops audit closes (Class B/C/D, O3–O6, PF-A-60).
+
+### Fixed
+
+- Workspace migration: 50 workspaces stranded under anonymous browser IDs after the auth migration are now re-keyable to an authenticated user via the new migration script.
+- SSR-side cookie reading (`getSsrUser`): correctly extends `SsrUser` with `id` + `email` so the seeded `window.__SSR_CURRENT_USER` matches the SPA's `CurrentUser` type.
+- `wrangler.toml` `[[send_email]]` block was rejected by CF Pages CI — resolved by moving the binding to the new Workers project's `wrangler.toml` (commit `bad0b93`).
+
+### Removed
+
+- Pedestal-Design apex landing page (`website/index.html`) — the Pages worker now SSRs the apex directly via `renderHomepage()`.
+- Pages worker's `apiHandlers` + `handleApiRequest` + wildcard CORS — moved to the API Worker. The Pages worker is now SSR + static-fallback only; old `/pathogen/api/*` URLs return 410 with a hint pointing at `api.pathogen.studio`.
+
 ## [Unreleased] - 2026-04-10
 
 ### Added

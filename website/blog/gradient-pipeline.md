@@ -100,10 +100,10 @@ The gallery below shows all six gradient types in a single Pathogen source file.
 
 Each type is covered in detail in the preceding posts:
 
-- [Linear and Radial](/pathogen/blog/gradient-linear-radial) — native SVG elements with OKLCH interpolation, spread methods, and inheritance
-- [Conic](/pathogen/blog/gradient-conic) — angular sweeps with WebGPU rendering, partial arcs, inner radius, and fill modes
-- [Mesh and Freeform](/pathogen/blog/gradient-mesh-freeform) — grid-based and scatter-based color fields with GPU-accelerated bilinear and IDW blending
-- [Topological](/pathogen/blog/gradient-topological) — contour-based gradients using signed distance fields and Laplace solvers
+- [Linear and Radial](/blog/gradient-linear-radial) — native SVG elements with OKLCH interpolation, spread methods, and inheritance
+- [Conic](/blog/gradient-conic) — angular sweeps with WebGPU rendering, partial arcs, inner radius, and fill modes
+- [Mesh and Freeform](/blog/gradient-mesh-freeform) — grid-based and scatter-based color fields with GPU-accelerated bilinear and IDW blending
+- [Topological](/blog/gradient-topological) — contour-based gradients using signed distance fields and Laplace solvers
 
 ## Closing
 

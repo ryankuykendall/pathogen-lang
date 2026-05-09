@@ -5,13 +5,13 @@ date: 2026-04-10
 description: "From Lezer migration to a full IDE experience — how we built a VS Code extension with live preview, intelligent completions, refactoring, and 16 language server features for the Pathogen SVG language."
 ---
 
-<img src="/pathogen/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
+<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
 
 A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn't help you write it — if completions are wrong, errors are confusing, and there's no way to see what you're building — adoption stalls.
 
-This post documents how we built a complete VS Code extension for the [Pathogen language](/pathogen/docs), from parser migration through a 10-phase developer experience effort. Whether you're writing Pathogen code and want to understand the tools available to you, or you're building your own language server and want to learn from the implementation, here's what we built and what we learned.
+This post documents how we built a complete VS Code extension for the [Pathogen language](/docs), from parser migration through a 10-phase developer experience effort. Whether you're writing Pathogen code and want to understand the tools available to you, or you're building your own language server and want to learn from the implementation, here's what we built and what we learned.
 
-> **Try it now:** The Pathogen playground is available at [pedestal.design/pathogen](/pathogen/) with the same language intelligence described here. The VS Code extension source is in `packages/vscode-pathogen/` in the repository.
+> **Try it now:** The Pathogen playground is available at [pedestal.design/pathogen](/) with the same language intelligence described here. The VS Code extension source is in `packages/vscode-pathogen/` in the repository.
 
 ## The roadmap: 10 phases
 
@@ -19,13 +19,13 @@ We organized the work into phases, each delivering a complete, testable improvem
 
 | Phase | What it delivered |
 |-------|-------------------|
-| **1** | Completion type inference — [Color](/pathogen/blog/color-literals), BoundingBox, layer(), stdlib returns, method chaining |
+| **1** | Completion type inference — [Color](/blog/color-literals), BoundingBox, layer(), stdlib returns, method chaining |
 | **2** | Preview panel — live SVG compilation in a VS Code webview |
-| **3** | Preview panel — pan/zoom, [layer](/pathogen/docs#layers-defining-layers) toggles, CSS variable pickers, color palette |
+| **3** | Preview panel — pan/zoom, [layer](/docs#layers-defining-layers) toggles, CSS variable pickers, color palette |
 | **4** | Completion type flow — assignment propagation, map/loop param types, object properties |
 | **5** | Diagnostic quality — server debouncing, better incomplete-expression messages |
 | **6** | Formatting polish — comment preservation, range formatting, on-type formatting |
-| **7** | Semantic highlighting — constructors, enums, [path commands](/pathogen/docs#syntax-path-commands), enum members |
+| **7** | Semantic highlighting — constructors, enums, [path commands](/docs#syntax-path-commands), enum members |
 | **8** | Workspace integration — build tasks, problem matcher, new file templates |
 | **9** | Advanced refactoring — extract variable, extract function, inline variable |
 | **10** | Inlay hints and code lens — expanded type inference, reference counts |
@@ -40,7 +40,7 @@ We migrated to [Lezer](https://lezer.codemirror.net/), the incremental parser be
 
 - **Error recovery**: A single missing semicolon doesn't break the entire parse. The parser skips the error and continues, producing a usable tree for the rest of the document.
 - **Incremental parsing**: When the user edits line 50 of a 500-line file, Lezer only re-parses the changed region. This makes diagnostics and completions fast enough for real-time feedback.
-- **Shared infrastructure**: The same grammar powers both the [playground's](/pathogen/) CodeMirror editor and the VS Code extension's language server.
+- **Shared infrastructure**: The same grammar powers both the [playground's](/) CodeMirror editor and the VS Code extension's language server.
 
 The migration replaced 1,558 lines of Parsimmon code with a 213-line Lezer grammar plus a CST-to-AST converter. The grammar is the single source of truth for Pathogen syntax.
 
@@ -50,7 +50,7 @@ Rather than building VS Code-specific intelligence, we built a **language servic
 
 <mini-workspace src="samples/post22/architecture.pathogen" caption="The shared language services architecture — one intelligence layer, three consumers."></mini-workspace>
 
-The VS Code extension is a thin adapter: a language server that wraps each function in an LSP handler, and an extension client that starts the server process. The same language intelligence runs in the [playground](/pathogen/) via direct import and in the CLI for batch diagnostics.
+The VS Code extension is a thin adapter: a language server that wraps each function in an LSP handler, and an extension client that starts the server process. The same language intelligence runs in the [playground](/) via direct import and in the CLI for batch diagnostics.
 
 ## Completion intelligence
 
@@ -58,11 +58,11 @@ The completion engine evolved through three phases, each addressing real user fr
 
 ### Type-aware completions
 
-Typing `bg.` after defining a [PathLayer](/pathogen/docs#layers-defining-layers) should show `apply`, `name`, `styles`, and `ctx`. The completion engine uses lightweight regex-based type inference to determine that `bg` is a PathLayer, then looks up the member set from generated completion data.
+Typing `bg.` after defining a [PathLayer](/docs#layers-defining-layers) should show `apply`, `name`, `styles`, and `ctx`. The completion engine uses lightweight regex-based type inference to determine that `bg` is a PathLayer, then looks up the member set from generated completion data.
 
-<img src="/pathogen/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
+<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
 
-This extends to every type in the language. [`Color('#ff0000').`](/pathogen/blog/color-literals) shows 21 methods and properties — `lighten`, `darken`, `alpha`, `hueShift`, `css`, `hex`, and more. Method return types chain correctly: `shape.boundingBox().` shows `x`, `y`, `width`, `height`.
+This extends to every type in the language. [`Color('#ff0000').`](/blog/color-literals) shows 21 methods and properties — `lighten`, `darken`, `alpha`, `hueShift`, `css`, `hex`, and more. Method return types chain correctly: `shape.boundingBox().` shows `x`, `y`, `width`, `height`.
 
 ### Generated completion data
 
@@ -89,17 +89,17 @@ The engine traces the array element type through `for` loops and `.map()` callba
 
 Before the preview panel, Pathogen development required a save-compile-open cycle: edit code in VS Code, run the CLI to generate an SVG, open the file in a browser, and squint at the output to figure out what went wrong. The feedback loop was slow and disjointed.
 
-*What the user sees now:* A live SVG preview that updates as you type, with the same interactive controls as the [playground](/pathogen/).
+*What the user sees now:* A live SVG preview that updates as you type, with the same interactive controls as the [playground](/).
 
 *Under the hood:* The preview panel runs the Pathogen compiler inside a VS Code webview. The extension sends source code via `postMessage`, the webview compiles it using the bundled IIFE compiler (~1.3 MB), renders the SVG via a shared `generateSvg()` function, and injects it into the DOM. A 150ms debounce prevents recompilation on every keystroke. Completions resolve in under 50ms; diagnostics publish within 200ms of the last keystroke.
 
 ### Interactive controls
 
-The preview isn't just a static render — it matches the [playground](/pathogen/) experience:
+The preview isn't just a static render — it matches the [playground](/) experience:
 
 - **Pan and zoom**: Click-drag to pan, Cmd+scroll to zoom (0.25x–10x range), with a navigator minimap
-- **Layer inspector**: Toggle [layer](/pathogen/docs#layers-defining-layers) visibility, see color swatches, navigate GroupLayer hierarchy
-- **CSS variable pickers**: Color picker inputs for every [`CSSVar()`](/pathogen/docs#css-var-cssvar-type) in the source — changes recompile instantly
+- **Layer inspector**: Toggle [layer](/docs#layers-defining-layers) visibility, see color swatches, navigate GroupLayer hierarchy
+- **CSS variable pickers**: Color picker inputs for every [`CSSVar()`](/docs#css-var-cssvar-type) in the source — changes recompile instantly
 - **Recompile button**: Re-rolls `randomRange()` values without editing source
 - **Reset button**: Restores zoom, pan, layer visibility, and CSS variable overrides
 
@@ -128,7 +128,7 @@ let bg = PathLayer('bg') ${
 };
 ```
 
-Arrays, objects, style blocks, enums, [path blocks](/pathogen/blog/pathblock-introduction), and text blocks are always multi-line. One item per line. Trailing commas everywhere.
+Arrays, objects, style blocks, enums, [path blocks](/blog/pathblock-introduction), and text blocks are always multi-line. One item per line. Trailing commas everywhere.
 
 Key formatter features:
 
@@ -140,7 +140,7 @@ Key formatter features:
 
 TextMate grammars provide instant syntax coloring, but semantic tokens make it smarter. The language server classifies:
 
-- **Constructor types** ([Color](/pathogen/blog/color-literals), Point, [LinearGradient](/pathogen/blog/gradient-linear-radial)) — highlighted as types
+- **Constructor types** ([Color](/blog/color-literals), Point, [LinearGradient](/blog/gradient-linear-radial)) — highlighted as types
 - **Enum names and members** (Direction.CW, Easing.Linear) — distinct coloring
 - **SVG path commands** (M, L, C, Z) — highlighted as keywords
 - **Variables vs parameters vs loop variables** — from scope analysis
@@ -157,7 +157,7 @@ Three refactoring code actions, available via the lightbulb menu (Cmd+.):
 
 ## Inlay hints and code lens
 
-**Inlay hints** show parameter names at call sites (`rect(x: 0, y: 0, w: 400, h: 400)`) and inferred types next to variable declarations (`let bg : PathLayer`). Type inference covers constructors, method return types ([`boundingBox()` → BBox](/pathogen/blog/pathblock-introduction)), gradient constructors, and style block literals.
+**Inlay hints** show parameter names at call sites (`rect(x: 0, y: 0, w: 400, h: 400)`) and inferred types next to variable declarations (`let bg : PathLayer`). Type inference covers constructors, method return types ([`boundingBox()` → BBox](/blog/pathblock-introduction)), gradient constructors, and style block literals.
 
 **Code lens** shows reference counts above declarations — "3 references", "no references" — giving you instant visibility into which variables are used and which are dead code.
 
@@ -184,4 +184,4 @@ Where we're heading:
 - **Extension marketplace publishing** — making installation a one-click experience instead of building from source.
 - **Deeper type flow** — tracking types through function returns, complex assignment chains, and generic array element types.
 
-The Pathogen language is available at [pedestal.design/pathogen](/pathogen/), with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in `packages/vscode-pathogen/` — pull requests welcome.
+The Pathogen language is available at [pedestal.design/pathogen](/), with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in `packages/vscode-pathogen/` — pull requests welcome.

@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Data Visualization with Pathogen: Building a Radial Bar Chart — Pathogen Studio</title>
   <meta name="description" content="Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.">
-  <link rel="canonical" href="https://pathogen.studio/pathogen/blog/radial-bar-chart">
+  <link rel="canonical" href="https://pathogen.studio/blog/radial-bar-chart">
   <meta property="og:title" content="Data Visualization with Pathogen: Building a Radial Bar Chart — Pathogen Studio">
   <meta property="og:description" content="Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.">
-  <meta property="og:url" content="https://pathogen.studio/pathogen/blog/radial-bar-chart">
+  <meta property="og:url" content="https://pathogen.studio/blog/radial-bar-chart">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/pathogen/styles/theme.css">
+  <link rel="stylesheet" href="/styles/theme.css">
   <script>
     // Flash prevention — apply saved theme before paint
     (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
   </script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Data Visualization with Pathogen: Building a Radial Bar Chart","description":"Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.","datePublished":"2026-03-29","url":"https://pathogen.studio/pathogen/blog/radial-bar-chart","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Data Visualization with Pathogen: Building a Radial Bar Chart","description":"Build a radial bar chart from scratch — annular sector geometry, data-driven loops, rotated labels, and new stdlib functions for polar data visualization.","datePublished":"2026-03-29","url":"https://pathogen.studio/blog/radial-bar-chart","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
   <style>
     /* Reset */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* body styles (font-family, background, color, atmospheric grain) are
-     * defined globally in /pathogen/styles/theme.css. */
+     * defined globally in /styles/theme.css. */
 
-    /* Site header is shared via /pathogen/styles/site-header.css */
+    /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Breadcrumb */
@@ -220,22 +220,22 @@ code.hljs {
       .blog-content table { display: block; overflow-x: auto; }
     }
   </style>
-  <link rel="stylesheet" href="/pathogen/styles/site-header.css">
+  <link rel="stylesheet" href="/styles/site-header.css">
 </head>
 <body>
   <header class="site-header">
   <div class="site-header-inner">
-    <a class="logo" href="/pathogen/">
+    <a class="logo" href="/">
       <span class="logo-main">Pathogen <em>Studio</em></span>
-      <span class="logo-sub">built on svg-path-extended v1.0</span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
     </a>
     <nav class="tabs-wrap" aria-label="Primary">
-          <a class="nav-link" href="/pathogen/workspaces">Workspaces</a>
-          <a class="nav-link" href="/pathogen/docs">Docs</a>
-          <a class="nav-link" href="/pathogen/explore">Explore</a>
-          <a class="nav-link" href="/pathogen/featured">Featured</a>
-          <a class="nav-link active" href="/pathogen/blog">Blog</a>
-          <a class="nav-link" href="/pathogen/preferences">Preferences</a>
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
     </nav>
     <div class="actions">
       <theme-toggle></theme-toggle>
@@ -243,7 +243,7 @@ code.hljs {
     </div>
   </div>
 </header>
-  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/pathogen/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/pathogen/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Data Visualization with Pathogen: Building a Radial Bar Chart</span></nav></div>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Data Visualization with Pathogen: Building a Radial Bar Chart</span></nav></div>
   <main class="blog-main">
     <article>
       <header class="post-header">
@@ -252,7 +252,7 @@ code.hljs {
       </header>
       <div class="blog-content">
         <blockquote>
-<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>, <a href="/pathogen/blog/textblock-introduction">TextBlocks</a>, <a href="/pathogen/docs#layers-defining-layers">GroupLayers</a>, and <a href="/pathogen/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
+<p><strong>Prerequisites:</strong> This post uses <a href="/blog/pathblock-introduction">PathBlocks</a>, <a href="/blog/textblock-introduction">TextBlocks</a>, <a href="/docs#layers-defining-layers">GroupLayers</a>, and <a href="/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
 </blockquote>
 <p>Radial bar charts arrange categorical data around a central point, encoding values as the length of wedge-shaped bars radiating outward. They&#39;re visually distinctive — the circular layout invites comparison across categories in a way that a standard bar chart can&#39;t — but geometrically demanding. Each bar is an annular sector whose inner and outer arcs, radial edges, and rounded corners all require precise coordinate math.</p>
 <p>This post walks through building a radial bar chart in Pathogen, inspired by <a href="https://observablehq.com/@gitnoise">Patrick Wojda&#39;s</a> BoardGameGeek category visualization on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>. His chart compares how often categories appear across all games versus the top 100 ranked titles — a compelling use of radial layout to reveal patterns in community-assigned board game categories. Along the way, we&#39;ll introduce several new language features that emerged from the needs of this project: a native <code>radialWedge()</code> function, <code>TextBlock.radialProject()</code> for rotated label placement, and the <code>VerticalAnchor</code> enum for font-metric-aware text alignment.</p>
@@ -260,7 +260,7 @@ code.hljs {
 <p>The fundamental shape in a radial bar chart is the <strong>annular sector</strong> — a ring segment defined by an inner radius, outer radius, and two angles. In Pathogen, the new <code>radialWedge()</code> stdlib function generates this shape with a single call:</p>
 <pre><code class="hljs language-pathogen">M cx cy
 <span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
-</code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/pathogen/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
+</code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
 <p><mini-workspace code-open caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations">
   <code>// viewBox="0 0 560 400"
 // radialWedge() — the annular sector with automatic rounded corners
@@ -522,11 +522,11 @@ accentLabels.apply {
   text(0, 124)`cornerR = 0 sharp edges (ghost)`
 }
 </code>
-  <img src="/pathogen/blog/samples/post16/annular-sector.svg" alt="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" loading="lazy">
+  <img src="/blog/samples/post16/annular-sector.svg" alt="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" loading="lazy">
 </mini-workspace></p>
 <p>The ghost shape shows <code>cornerR = 0</code> (sharp edges). The solid shape uses <code>cornerR = 6</code>, which rounds all four corners where radial lines meet circular arcs.</p>
 <h3>Why a stdlib function?</h3>
-<p>We initially built annular sectors using a <a href="/pathogen/blog/pathblock-introduction">PathBlock</a> with <a href="/pathogen/blog/heading-turn"><code>heading</code></a>, <code>tangentArc</code>, <code>turn</code>, and <code>tangentLine</code>:</p>
+<p>We initially built annular sectors using a <a href="/blog/pathblock-introduction">PathBlock</a> with <a href="/blog/heading-turn"><code>heading</code></a>, <code>tangentArc</code>, <code>turn</code>, and <code>tangentLine</code>:</p>
 <pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">makeWedge</span>(<span class="hljs-params">innerR, outerR, sweep, startAngle, cornerR</span>) {
   <span class="hljs-keyword">let</span> w = @{
     <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(startAngle + 90deg))
@@ -541,7 +541,7 @@ accentLabels.apply {
   };
   <span class="hljs-keyword">return</span> w.<span class="hljs-title function_">fillet</span>(cornerR);
 }
-</code></pre><p>This approach taught us the <a href="/pathogen/blog/heading-turn">heading/turn</a> system well, but it hit real problems at chart scale:</p>
+</code></pre><p>This approach taught us the <a href="/blog/heading-turn">heading/turn</a> system well, but it hit real problems at chart scale:</p>
 <ol>
 <li><strong><code>.fillet()</code> didn&#39;t handle arc-line transitions</strong> — it only rounded line-to-line corners, silently skipping the four arc-line junctions in our wedge. We extended the fillet algorithm to compute tangent directions at arc endpoints, but this revealed deeper issues.</li>
 <li><strong>Narrow bars produced degenerate output</strong> — when the inner arc was too short for the requested corner radius, the fillet split produced zero-length commands with <code>undefined</code> SVG parameters.</li>
@@ -770,7 +770,7 @@ noteLabel.apply {
   text(0, 14)`centered within the red bar's slice`
 }
 </code>
-  <img src="/pathogen/blog/samples/post16/radial-bar.svg" alt="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)" loading="lazy">
+  <img src="/blog/samples/post16/radial-bar.svg" alt="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)" loading="lazy">
 </mini-workspace></p>
 <h2>Arranging Categories</h2>
 <p>With <code>radialWedge()</code> handling individual bars, arranging multiple categories is a <code>for</code> loop over a data array. The syntax <code>for ([d, i] in data)</code> destructures each element into the value <code>d</code> and its index <code>i</code> — a pattern you&#39;ll see throughout the rest of this post. Each category gets an angular slice of <code>TAU() / count</code> radians, with a slight overlap between adjacent wedges:</p>
@@ -880,7 +880,7 @@ title.apply {
 let g = GroupLayer('all') ${};
 g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/category-layout.svg" alt="8 categories distributed radially — labels are added in the next section" loading="lazy">
+  <img src="/blog/samples/post16/category-layout.svg" alt="8 categories distributed radially — labels are added in the next section" loading="lazy">
 </mini-workspace></p>
 <p>The background-colored stroke (<code>stroke: bgColor; stroke-width: 0.5</code>) on each wedge creates the thin separation lines between adjacent bars — a subtle detail from the Observable original that gives the chart visual crispness.</p>
 <h2>Rotated Labels with <code>radialProject</code></h2>
@@ -891,7 +891,7 @@ g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 <li><strong>Flipped</strong> on the left hemisphere so text reads left-to-right</li>
 <li><strong>Vertically centered</strong> so the text midline — not baseline — aligns with the bar&#39;s angular center</li>
 </ul>
-<p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/pathogen/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
+<p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">`<span class="hljs-subst">${d.name}</span>`</span> } &lt;&lt; ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; };
 catLabels.<span class="hljs-property">apply</span> {
   label.<span class="hljs-title function_">radialProject</span>(cx, cy, midAngle, labelR,
@@ -1047,7 +1047,7 @@ let g = GroupLayer('all') ${};
 g.append(bg, grid, center, barsAll, barsTop, catLabels,
   swAll, swTop, legLabels, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/radial-labels.svg" alt="radialProject with VerticalAnchor.Midline — one TextLayer, automatic rotation and hemisphere flip" loading="lazy">
+  <img src="/blog/samples/post16/radial-labels.svg" alt="radialProject with VerticalAnchor.Midline — one TextLayer, automatic rotation and hemisphere flip" loading="lazy">
 </mini-workspace></p>
 <h3>The <code>VerticalAnchor</code> Enum</h3>
 <p>Without <code>VerticalAnchor</code>, labels on the lower half of the chart drift away from their bars. The text baseline (where glyphs sit) is below the visual center of the text. When the label is rotated, this offset translates into a radial misalignment.</p>
@@ -1182,7 +1182,7 @@ title.apply {
 let g = GroupLayer('all') ${};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
+  <img src="/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace caption="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs">
   <code>// viewBox="0 0 900 700"
@@ -1312,9 +1312,9 @@ title.apply {
 let g = GroupLayer('all') ${};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/wedge-diag-16.svg" alt="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs" loading="lazy">
+  <img src="/blog/samples/post16/wedge-diag-16.svg" alt="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs" loading="lazy">
 </mini-workspace></p>
-<p>The dark red regions show the <a href="/pathogen/docs#path-blocks-boolean-operations">XOR</a> between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The <code>cornerR = 16</code> matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, <code>radialWedge()</code> analytically computes the largest corner radius that fits each end independently.</p>
+<p>The dark red regions show the <a href="/docs#path-blocks-boolean-operations">XOR</a> between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The <code>cornerR = 16</code> matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, <code>radialWedge()</code> analytically computes the largest corner radius that fits each end independently.</p>
 <p>This matrix-based testing approach — rendering a grid of parameter combinations with geometric overlays — proved invaluable for identifying edge cases during development. The XOR diff layer made it immediately visible when a corner fillet was misaligned or a sweep flag was inverted, issues that would have been nearly impossible to catch by inspecting individual examples.</p>
 <h2>The Complete Chart</h2>
 <p>Bringing everything together: 26 BoardGameGeek categories, overlaid red and dark bars, rotated labels with inline colored percentages via tspan styling, annotation badges, a wedge legend, and a summary bar chart — all driven by a single data array:</p>
@@ -1907,7 +1907,7 @@ sourceNote.apply {
   text(120, 735)`Source: BoardGameGeek (boardgame categories)`
 }
 </code>
-  <img src="/pathogen/blog/samples/post16/radial-chart-complete.svg" alt="Complete radial hierarchical bar chart — BoardGameGeek category comparison" loading="lazy">
+  <img src="/blog/samples/post16/radial-chart-complete.svg" alt="Complete radial hierarchical bar chart — BoardGameGeek category comparison" loading="lazy">
 </mini-workspace></p>
 <p>Key techniques in the complete chart:</p>
 <ul>
@@ -2015,7 +2015,7 @@ foot.apply {
 let g = GroupLayer('all') ${};
 g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 </code>
-  <img src="/pathogen/blog/samples/post16/summary-bars.svg" alt="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left" loading="lazy">
+  <img src="/blog/samples/post16/summary-bars.svg" alt="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left" loading="lazy">
 </mini-workspace></p>
 <h2>New Features Summary</h2>
 <p>This project prompted several additions to the Pathogen language:</p>
@@ -2056,15 +2056,15 @@ g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 </tr>
 </tbody></table>
 <p>The radial bar chart pattern — data array, angular distribution loop, <code>radialWedge()</code> for geometry, <code>radialProject()</code> for labels — is reusable for any categorical comparison that benefits from a circular layout. Try changing the <code>--bar-all</code> and <code>--bar-top</code> color variables in any of the examples above to explore different palettes, or modify the data array to add your own categories.</p>
-<p>For the full function signatures and parameter details, see the <a href="/pathogen/docs#stdlib-path-functions">stdlib reference</a> and <a href="/pathogen/docs#text-block-syntax">TextBlock documentation</a>. The original visualization by <a href="https://observablehq.com/@gitnoise">Patrick Wojda</a> that inspired this chart is available on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>.</p>
+<p>For the full function signatures and parameter details, see the <a href="/docs#stdlib-path-functions">stdlib reference</a> and <a href="/docs#text-block-syntax">TextBlock documentation</a>. The original visualization by <a href="https://observablehq.com/@gitnoise">Patrick Wojda</a> that inspired this chart is available on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>.</p>
 
       </div>
     </article>
   </main>
-  <script src="/pathogen/components/shared/theme-toggle.js" type="module"></script>
-  <script src="/pathogen/components/shared/account-menu.js" type="module"></script>
-  <script src="/pathogen/components/blog/reactive-svg.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-workspace.js" type="module"></script>
-  <script src="/pathogen/components/blog/mini-preview.js" type="module"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
 </body>
 </html>

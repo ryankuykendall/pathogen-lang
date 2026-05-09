@@ -101,4 +101,4 @@ When WebGPU is unavailable, a Canvas 2D fallback renders the gradient at reduced
 
 ## What Comes Next
 
-Linear, radial, conic, mesh, and freeform gradients all share a common pattern: colors are placed at geometric positions (along a line, around a circle, at grid intersections, at scattered points) and interpolated between them. The [next post](/pathogen/blog/gradient-topological) introduces a fundamentally different model — topological gradients, where colors follow the contours of arbitrary path shapes using signed distance fields and Laplace solvers.
+Linear, radial, conic, mesh, and freeform gradients all share a common pattern: colors are placed at geometric positions (along a line, around a circle, at grid intersections, at scattered points) and interpolated between them. The [next post](/blog/gradient-topological) introduces a fundamentally different model — topological gradients, where colors follow the contours of arbitrary path shapes using signed distance fields and Laplace solvers.

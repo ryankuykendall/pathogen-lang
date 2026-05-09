@@ -143,7 +143,7 @@ export const posts = {
 C 115.8 144.9  120 54.5  180 50
 C 233.1 45.9  255 137.5  320 140
 C 367.6 141.7  410.9 72.6  470 70
-</code></pre><p>In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen&#39;s new <a href="/pathogen/docs#stdlib-cubicsplinepoints">spline functions</a> replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:</p>
+</code></pre><p>In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen&#39;s new <a href="/docs#stdlib-cubicsplinepoints">spline functions</a> replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-title function_">cubicSpline</span>([
   { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -20deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span> },
   { <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">angle</span>: 15deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
@@ -344,7 +344,7 @@ layer('legend-text').apply {
   text(20, 68)\`Angle wedge\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/cubic-spline-anatomy.svg" alt="cubicSpline anatomy — waypoints, control points, tangent lines, and angle arcs" loading="lazy">
+  <img src="/blog/samples/post13/cubic-spline-anatomy.svg" alt="cubicSpline anatomy — waypoints, control points, tangent lines, and angle arcs" loading="lazy">
 </mini-workspace></p>
 <h3>Why It&#39;s Smooth: G1 Continuity</h3>
 <p>The smoothness guarantee comes from a simple geometric constraint: at every join point, the exit control point of the outgoing segment and the entry control point of the incoming segment lie on the same line — the tangent line defined by <code>angle</code>. Because both control points are collinear through the join, the curve&#39;s direction doesn&#39;t change abruptly.</p>
@@ -430,7 +430,7 @@ layer('note').apply {
   text(30, 232)\`passes smoothly through the join.\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/g1-continuity.svg" alt="G1 continuity — exit and entry CPs are collinear through the join point" loading="lazy">
+  <img src="/blog/samples/post13/g1-continuity.svg" alt="G1 continuity — exit and entry CPs are collinear through the join point" loading="lazy">
 </mini-workspace></p>
 <h3>Examples</h3>
 <p>Three <code>cubicSpline</code> curves: a two-segment S-curve, a five-point sine wave approximation, and a closed loop where the first and last points coincide.</p>
@@ -509,7 +509,7 @@ layer('loop').apply {
   ]);
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/cubic-spline-demos.svg" alt="cubicSpline examples — S-curve, sine wave, and closed loop" loading="lazy">
+  <img src="/blog/samples/post13/cubic-spline-demos.svg" alt="cubicSpline examples — S-curve, sine wave, and closed loop" loading="lazy">
 </mini-workspace></p>
 <p>A single-point array emits only a move command. Two or more points are needed to produce curve segments.</p>
 <h2>quadSpline: Implicit Angles</h2>
@@ -664,7 +664,7 @@ layer('note').apply {
   text(0, 82)\`Intermediate tangents derived geometrically.\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/quad-spline-anatomy.svg" alt="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension" loading="lazy">
+  <img src="/blog/samples/post13/quad-spline-anatomy.svg" alt="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension" loading="lazy">
 </mini-workspace></p>
 <p>The signature is different from <code>cubicSpline</code>: start and end are separate arguments, with an array of intermediates between them. This reflects the asymmetry — only the start carries an explicit angle.</p>
 <p><mini-workspace code-open caption="quadSpline examples — simple arc, flowing curve, and zigzag">
@@ -746,12 +746,12 @@ layer('zigzag').apply {
   );
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/quad-spline-demos.svg" alt="quadSpline examples — simple arc, flowing curve, and zigzag" loading="lazy">
+  <img src="/blog/samples/post13/quad-spline-demos.svg" alt="quadSpline examples — simple arc, flowing curve, and zigzag" loading="lazy">
 </mini-workspace></p>
 <p><strong>When to choose quadSpline over cubicSpline:</strong> When you want smooth curves but don&#39;t need per-point angle control. <code>quadSpline</code> is less to specify and produces naturally flowing shapes. Because it generates quadratic Bézier segments (which have one control point per segment instead of two), the curves have fewer degrees of freedom — great for organic, flowing lines but less precise for art-directed shapes. Use <code>cubicSpline</code> when you need exact control at every waypoint.</p>
 <h2>clippedQuadSpline: Controlling Eccentricity</h2>
 <p>Quadratic curves can sometimes bulge more than you want — the implicit shared control point sits far from the curve, pulling it outward. <em>Eccentricity</em> here refers to how much the curve deviates from the straight line between waypoints: more eccentric curves bulge further away from the baseline.</p>
-<p><code>clippedQuadSpline</code> solves this by adding <code>exitTime</code> and <code>entryTime</code> parameters that control how far the actual control points are placed along the arm toward the virtual shared CP. The placement uses linear interpolation (<a href="/pathogen/docs#stdlib-math-functions"><code>lerp</code></a>) — <code>lerp(start, sharedCP, t)</code> returns a point partway between the endpoint and the virtual CP, where <code>t</code> is the fraction of the distance to travel.</p>
+<p><code>clippedQuadSpline</code> solves this by adding <code>exitTime</code> and <code>entryTime</code> parameters that control how far the actual control points are placed along the arm toward the virtual shared CP. The placement uses linear interpolation (<a href="/docs#stdlib-math-functions"><code>lerp</code></a>) — <code>lerp(start, sharedCP, t)</code> returns a point partway between the endpoint and the virtual CP, where <code>t</code> is the fraction of the distance to travel.</p>
 <table>
 <thead>
 <tr>
@@ -902,7 +902,7 @@ layer('ref-note').apply {
   text(130, 250)\`dashed gray: quadratic reference (t = 1.0)\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/eccentricity-anatomy.svg" alt="Single segment anatomy — virtual shared CP (diamond) and actual CPs placed via lerp" loading="lazy">
+  <img src="/blog/samples/post13/eccentricity-anatomy.svg" alt="Single segment anatomy — virtual shared CP (diamond) and actual CPs placed via lerp" loading="lazy">
 </mini-workspace></p>
 <p>The effect is dramatic when overlaid. Same waypoints, same angles — only the time values change:</p>
 <p><mini-workspace code-open caption="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)">
@@ -1004,14 +1004,14 @@ layer('note').apply {
   text(60, 231)\`Lower values reduce curve bulge.\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post13/eccentricity-comparison.svg" alt="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)" loading="lazy">
+  <img src="/blog/samples/post13/eccentricity-comparison.svg" alt="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)" loading="lazy">
 </mini-workspace></p>
 <p>Unlike <code>quadSpline</code> (which emits <code>q</code> commands), <code>clippedQuadSpline</code> emits <code>c</code> (cubic) commands because splitting the shared CP into two independent CPs requires cubic Béziers. This is transparent to the user — the output is still a valid SVG path.</p>
 <p><strong>When to choose clippedQuadSpline:</strong> When you want the convenience of implicit angles (like <code>quadSpline</code>) but need to control how much the curve bulges at each segment. It&#39;s particularly useful for decorative borders, data visualization curves, and any shape where uniform curvature matters more than maximum expressiveness.</p>
-<p>All three spline functions emit relative commands, so they compose naturally with <a href="/pathogen/blog/pathblock-introduction">path blocks</a> and <a href="/pathogen/docs#path-blocks-transforms">transforms</a>. They also pair well with <a href="/pathogen/blog/heading-turn"><code>heading()</code> and <code>turn()</code></a> for establishing tangent context before tangent-dependent functions. Try editing any of the examples above in the <a href="/pathogen/">Pathogen playground</a> — adjust angles, handle lengths, and time values to see how the curves respond.</p>
+<p>All three spline functions emit relative commands, so they compose naturally with <a href="/blog/pathblock-introduction">path blocks</a> and <a href="/docs#path-blocks-transforms">transforms</a>. They also pair well with <a href="/blog/heading-turn"><code>heading()</code> and <code>turn()</code></a> for establishing tangent context before tangent-dependent functions. Try editing any of the examples above in the <a href="/">Pathogen playground</a> — adjust angles, handle lengths, and time values to see how the curves respond.</p>
 `,
   'clifford-attractor': `<blockquote>
-<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/docs#syntax-for-loops">for loops</a>, <a href="/pathogen/docs#syntax-functions">user-defined functions</a>, <a href="/pathogen/docs#layers-defining-layers">layers</a>, and <a href="/pathogen/docs#color-colorpalettecolor-n">Color.palette</a>. If you&#39;re new to Pathogen, start with the <a href="/pathogen/docs#getting-started-getting-started">getting started guide</a>.</p>
+<p><strong>Prerequisites:</strong> This post uses <a href="/docs#syntax-for-loops">for loops</a>, <a href="/docs#syntax-functions">user-defined functions</a>, <a href="/docs#layers-defining-layers">layers</a>, and <a href="/docs#color-colorpalettecolor-n">Color.palette</a>. If you&#39;re new to Pathogen, start with the <a href="/docs#getting-started-getting-started">getting started guide</a>.</p>
 </blockquote>
 <p>Every previous blog post on this site has built geometry by design — placing shapes, computing curves, arranging data. This post is different. We&#39;re going to write a tight loop, iterate a pair of equations ten thousand times, and watch structure emerge from arithmetic. The result is a <strong>Clifford attractor</strong>: a strange attractor discovered by <a href="https://en.wikipedia.org/wiki/Clifford_A._Pickover">Clifford Pickover</a> and documented beautifully by <a href="https://paulbourke.net/fractals/clifford/">Paul Bourke</a>.</p>
 <p>Strange attractors are the visual fingerprints of chaotic dynamical systems. You feed a point through a set of equations, and the output becomes the input for the next iteration. The trajectory never repeats, never diverges, but settles into a bounded region of space — tracing intricate, self-similar patterns along the way.</p>
@@ -1126,7 +1126,7 @@ formula.apply {
 let g = GroupLayer('concept') \${};
 g.append(bg, trail, dots, labels, formula);
 </code>
-  <img src="/pathogen/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
+  <img src="/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
 </mini-workspace></p>
 <p>The diagram above shows the first 8 iterations from seed point <code>(0.1, 0.1)</code> with parameters <code>a = -1.4, b = 1.6, c = 1.0, d = 0.7</code>. The points jump unpredictably — that&#39;s the chaos — but they stay bounded roughly within <code>[-3, 3]</code> on both axes. Draw enough points and the attractor&#39;s structure emerges.</p>
 <h2>First Implementation: A Sparse Point Cloud</h2>
@@ -1184,7 +1184,7 @@ for (i in 0..99) {
   y = ny;
 }
 </code>
-  <img src="/pathogen/blog/samples/post23/first-attractor.svg" alt="100 iterations — the attractor's skeleton is just barely visible" loading="lazy">
+  <img src="/blog/samples/post23/first-attractor.svg" alt="100 iterations — the attractor's skeleton is just barely visible" loading="lazy">
 </mini-workspace></p>
 <p>With only 100 points, you can see individual dots scattered across the canvas. Some clustering is visible — the attractor&#39;s structure is already hinting at itself — but the image is sparse. We need more iterations.</p>
 <h2>Scaling Up: 10,000 Points</h2>
@@ -1244,7 +1244,7 @@ for (i in 1..9999) {
   M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
 }
 </code>
-  <img src="/pathogen/blog/samples/post23/full-attractor.svg" alt="10,000 iterations — the full Clifford attractor emerges" loading="lazy">
+  <img src="/blog/samples/post23/full-attractor.svg" alt="10,000 iterations — the full Clifford attractor emerges" loading="lazy">
 </mini-workspace></p>
 <p>At 10,000 points, the attractor&#39;s character is unmistakable. The classic parameter set <code>(a = -1.4, b = 1.6, c = 1.0, d = 0.7)</code> produces a figure that resembles overlapping leaf forms, with dense filaments tracing the trajectories that the system visits most often.</p>
 <h2>Color Mapping with Layers</h2>
@@ -1318,7 +1318,7 @@ for ([colorLayer, chunk] in layers) {
 let g = GroupLayer('all') \${};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
-  <img src="/pathogen/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
+  <img src="/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
 </mini-workspace></p>
 <p>The color reveals something the monochrome version hides: the attractor doesn&#39;t fill uniformly. Early iterations (blue) trace the broad outline. Later iterations (orange) concentrate in the densest filaments, reinforcing the paths the system visits repeatedly. This temporal layering is a rough proxy for the density-based histogram rendering that professional attractor tools use.</p>
 <h2>Parameter Exploration</h2>
@@ -1408,7 +1408,7 @@ params.apply {
 let g = GroupLayer('gallery') \${};
 g.append(p1, p2, p3, names, params);
 </code>
-  <img src="/pathogen/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
+  <img src="/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
 </mini-workspace></p>
 <p>The <strong>Classic</strong> set produces overlapping leaf forms with clearly defined filaments. The <strong>Swirl</strong> set creates an angular, dispersed figure with sharper trajectories. The <strong>Organic</strong> set forms a denser, moon-like structure where the trajectories pack tightly together. All three emerge from the same two equations — only the four parameters differ.</p>
 <p>The implementation extracts the Clifford step into a reusable function:</p>
@@ -1466,13 +1466,13 @@ for ([colorLayer, chunk] in layers) {
 let g = GroupLayer('all') \${};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
-  <img src="/pathogen/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">
+  <img src="/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">
 </mini-workspace></p>
 <p>This works because <code>Color.palette()</code> generates CSS color functions that reference the underlying variables. The geometry stays fixed, but the visual character transforms instantly.</p>
 <h2>Where the Language Could Grow</h2>
 <p>Building this attractor was a satisfying exercise, but it also exposed genuine friction. These aren&#39;t bugs — they&#39;re places where Pathogen&#39;s design, shaped by geometry construction, meets the different demands of iterative generative art.</p>
 <h3>A <code>dot()</code> function</h3>
-<p>The <code>M x y l 0 0</code> idiom for rendering individual points works, but it&#39;s an SVG implementation detail leaking into the language. A <code>dot(x, y)</code> function (optionally <code>dot(x, y, radius)</code>) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to <a href="/pathogen/docs#stdlib-standard-library-reference">stdlib</a> — analogous to how <code>circle()</code> wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.</p>
+<p>The <code>M x y l 0 0</code> idiom for rendering individual points works, but it&#39;s an SVG implementation detail leaking into the language. A <code>dot(x, y)</code> function (optionally <code>dot(x, y, radius)</code>) would express intent clearly and let the compiler choose the most efficient SVG representation. This is a small addition to <a href="/docs#stdlib-standard-library-reference">stdlib</a> — analogous to how <code>circle()</code> wraps two arc commands — but it would make point-cloud rendering feel like a first-class use case rather than a clever workaround.</p>
 <h3>Higher iteration limits</h3>
 <p>The 32,000-iteration cap per loop is sufficient for most attractor visualizations, but generative art routinely wants 50,000 or 100,000 iterations for high-resolution output. A configurable compiler option like <code>--max-iterations=100000</code> would let users opt in to higher limits when they know what they&#39;re doing.</p>
 <p>The nested-loop workaround (outer loop over chunks, inner loop over iteration batches) does get you past the per-loop limit today — <code>x</code>/<code>y</code> persist across the outer scope. But a single loop with a higher cap would be cleaner.</p>
@@ -1489,7 +1489,7 @@ g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </ol>
 <p>The Clifford attractor is a small window into a vast space. Pathogen handles the core workflow — iterate, map coordinates, render — cleanly. The friction points we identified aren&#39;t blockers; they&#39;re signposts for where the language wants to grow as generative art becomes a larger part of its story.</p>
 <h2>Try It Yourself</h2>
-<p>Paste any of the samples above into the <a href="/pathogen/">playground</a> and start changing parameters. Try <code>a = 1.5, b = -1.8, c = 1.6, d = 0.9</code> for a dense spiral, or <code>a = -1.7, b = 1.3, c = -0.1, d = -1.2</code> for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.</p>
+<p>Paste any of the samples above into the <a href="/">playground</a> and start changing parameters. Try <code>a = 1.5, b = -1.8, c = 1.6, d = 0.9</code> for a dense spiral, or <code>a = -1.7, b = 1.3, c = -0.1, d = -1.2</code> for something angular and unexpected. Swap the color palette endpoints. Adjust the scale. The attractor space is vast — most parameter combinations produce something worth looking at.</p>
 `,
   'cloudflare-pages-spa-routing-struggle': `<h1>The CloudFlare Pages SPA Routing Odyssey: A Developer&#39;s Journey Through Documentation Gaps</h1>
 <h2>The Problem</h2>
@@ -1824,7 +1824,7 @@ equals.apply {
   text(270, 210)\`=\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/before-after.svg" alt="Before and After — Color('#cc0000') vs #cc0000 produce identical output" loading="lazy">
+  <img src="/blog/samples/post10/before-after.svg" alt="Before and After — Color('#cc0000') vs #cc0000 produce identical output" loading="lazy">
 </mini-workspace></p>
 <p>The left panel shows the old way: wrap a string in <code>Color()</code>, call methods with decimal arguments. The right panel shows the new way: bare hex literal, percent suffix. Both produce the same three swatches. The <code>Color()</code> wrapper still works — it now accepts bare hex values as a pass-through — but you no longer need it for hex colors.</p>
 <h2>Hex Literals</h2>
@@ -2025,7 +2025,7 @@ base_line.apply {
   v calc(row3_y + sh - row1_y)
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/hex-palette.svg" alt="Lightness, hue, and saturation ramps derived from a single hex literal" loading="lazy">
+  <img src="/blog/samples/post10/hex-palette.svg" alt="Lightness, hue, and saturation ramps derived from a single hex literal" loading="lazy">
 </mini-workspace></p>
 <h2>CSS Color Function Literals</h2>
 <p>All major CSS color functions work as bare expressions. You can paste any CSS color value directly into Pathogen code and it will just work — <code>%</code> and <code>/</code> inside function arguments are treated as literal characters, not operators:</p>
@@ -2040,7 +2040,7 @@ base_line.apply {
 </code></pre><p>Method chaining works directly — no wrapper needed:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
 <span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
-</code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/pathogen/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
+</code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
 <p><mini-workspace code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
   <code>// viewBox="0 0 560 340"
 // Color Spaces — The same red expressed in 7 CSS color function syntaxes
@@ -2165,10 +2165,10 @@ arrow_line.apply {
   M 100 300 h 360
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/color-spaces.svg" alt="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally" loading="lazy">
+  <img src="/blog/samples/post10/color-spaces.svg" alt="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally" loading="lazy">
 </mini-workspace></p>
 <blockquote>
-<p><strong>Note:</strong> CSS color function names (<code>rgb</code>, <code>rgba</code>, <code>hsl</code>, <code>hsla</code>, <code>oklch</code>, <code>hwb</code>, <code>lab</code>, <code>lch</code>, <code>oklab</code>) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The <code>a</code>-suffixed legacy forms (<code>rgba</code>, <code>hsla</code>) are also supported. See the <a href="/pathogen/docs#syntax-color-literals">syntax reference</a> for the full list.</p>
+<p><strong>Note:</strong> CSS color function names (<code>rgb</code>, <code>rgba</code>, <code>hsl</code>, <code>hsla</code>, <code>oklch</code>, <code>hwb</code>, <code>lab</code>, <code>lch</code>, <code>oklab</code>) are effectively reserved — they always produce color literals, even if a user-defined function of the same name exists. The <code>a</code>-suffixed legacy forms (<code>rgba</code>, <code>hsla</code>) are also supported. See the <a href="/docs#syntax-color-literals">syntax reference</a> for the full list.</p>
 </blockquote>
 <h2>The Percent Suffix</h2>
 <p>The <code>%</code> suffix converts a number to its decimal form: <code>20%</code> becomes <code>0.2</code>, <code>50%</code> becomes <code>0.5</code>. This reads naturally with color methods — &quot;lighten by 20%&quot; instead of &quot;lighten by 0.2&quot;:</p>
@@ -2178,7 +2178,7 @@ arrow_line.apply {
 <span class="hljs-keyword">let</span> faded = c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);        <span class="hljs-comment">// 50% → 0.5</span>
 <span class="hljs-keyword">let</span> muted = c.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">40</span>%);   <span class="hljs-comment">// 40% → 0.4</span>
 </code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
-<p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/pathogen/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
+<p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
 <p><mini-workspace code-open caption="Tint, shade, and alpha scales using the percent suffix">
   <code>// viewBox="0 0 520 300"
 // Percent Tints — Using % suffix with color methods for tint/shade scales
@@ -2357,10 +2357,10 @@ base_ind.apply {
   text(sx, calc(row1_y - 8))\`#e63946\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/percent-tints.svg" alt="Tint, shade, and alpha scales using the percent suffix" loading="lazy">
+  <img src="/blog/samples/post10/percent-tints.svg" alt="Tint, shade, and alpha scales using the percent suffix" loading="lazy">
 </mini-workspace></p>
 <h2>Reactive Colors</h2>
-<p>Color literals compose naturally with Pathogen&#39;s <a href="/pathogen/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
+<p>Color literals compose naturally with Pathogen&#39;s <a href="/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, #0066ff));
 <span class="hljs-keyword">let</span> light = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
 <span class="hljs-keyword">let</span> comp = base.<span class="hljs-title function_">complement</span>();
@@ -2541,7 +2541,7 @@ code_kw.apply {
   text(42, 318)\`let\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/reactive-palette.svg" alt="Reactive palette — change --base-color to update all swatches" loading="lazy">
+  <img src="/blog/samples/post10/reactive-palette.svg" alt="Reactive palette — change --base-color to update all swatches" loading="lazy">
 </mini-workspace></p>
 <p>The second demo shows a tint/shade scale — seven lighten steps and seven darken steps from a single reactive base:</p>
 <p><mini-workspace code-open caption="Reactive tint/shade scale — change --tint-color to update every swatch">
@@ -2716,18 +2716,18 @@ code_comment.apply {
   text(274, 259)\`// 20% → 0.2\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post10/reactive-tints.svg" alt="Reactive tint/shade scale — change --tint-color to update every swatch" loading="lazy">
+  <img src="/blog/samples/post10/reactive-tints.svg" alt="Reactive tint/shade scale — change --tint-color to update every swatch" loading="lazy">
 </mini-workspace></p>
 <h2>What Still Needs <code>Color()</code></h2>
 <p>The <code>Color()</code> wrapper isn&#39;t going away. You still need it for:</p>
 <ul>
-<li><strong>Named colors</strong>: <code>Color(&#39;coral&#39;)</code>, <code>Color(&#39;dodgerblue&#39;)</code> — all <a href="/pathogen/docs#stdlib-color">148 CSS named colors</a></li>
+<li><strong>Named colors</strong>: <code>Color(&#39;coral&#39;)</code>, <code>Color(&#39;dodgerblue&#39;)</code> — all <a href="/docs#stdlib-color">148 CSS named colors</a></li>
 <li><strong>Direct OKLCH construction</strong>: <code>Color(0.6, 0.15, 30)</code> — numeric L, C, H values</li>
 <li><strong>String-based input</strong>: <code>Color(&#39;rgb(255, 0, 0)&#39;)</code> — when the color format is in a string variable</li>
 </ul>
 <p>Everything is backwards-compatible. Existing <code>Color(&#39;#cc0000&#39;)</code> calls continue to work — <code>Color()</code> now accepts a bare <code>ColorValue</code> as a pass-through.</p>
 <h2>Try It</h2>
-<p>Open the <a href="/pathogen/">Pathogen playground</a>, start from <code>#0066ff</code>, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the <a href="/pathogen/docs#stdlib-color">Color documentation</a>, and the syntax details are in the <a href="/pathogen/docs#syntax-color-literals">Color Literals</a> and <a href="/pathogen/docs#syntax-percent-suffix">Percent Suffix</a> sections.</p>
+<p>Open the <a href="/">Pathogen playground</a>, start from <code>#0066ff</code>, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the <a href="/docs#stdlib-color">Color documentation</a>, and the syntax details are in the <a href="/docs#syntax-color-literals">Color Literals</a> and <a href="/docs#syntax-percent-suffix">Percent Suffix</a> sections.</p>
 `,
   'gradient-conic': `<p>CSS has <code>conic-gradient()</code>. SVG does not. This is not an oversight — the SVG spec simply never included angular gradients. If you want a color wheel, a gauge, or a pie chart rendered as an SVG gradient, you are out of luck. You can fake it with dozens of wedge-shaped paths, or you can embed a rasterized image and lose the vector benefits.</p>
 <p>Pathogen takes a different approach. <code>ConicGradient</code> is a first-class gradient type that compiles to a base64-encoded <code>&lt;pattern&gt;</code> element. The rasterization happens at compile time via WebGPU (or Canvas 2D as a fallback), producing a pixel-perfect image embedded directly in the SVG. The author writes gradient code. The viewer sees a standard SVG.</p>
@@ -2810,7 +2810,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, ring, disc, frame, inner_frame, title);
 </code>
-  <img src="/pathogen/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
+  <img src="/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
 <h2>Partial Sweeps</h2>
 <p>Not every conic gradient needs to go all the way around. The <code>from</code> and <code>to</code> properties define the angular range of the sweep, in degrees. A gauge that covers 270 degrees (from 135 to 405) leaves a gap at the bottom — a natural fit for speedometers, progress rings, and dial indicators.</p>
@@ -3058,7 +3058,7 @@ fuel_group.append(g3, fuel_ticks);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);
 </code>
-  <img src="/pathogen/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
+  <img src="/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
 </mini-workspace></p>
 <h2>Direction: CW and CCW</h2>
 <p>By default, conic gradients sweep clockwise. Setting <code>.direction = &#39;ccw&#39;</code> reverses the sweep direction. The color stops stay in the same order, but the angular progression runs counter-clockwise. This is useful when mirroring UI elements or creating paired visual effects.</p>
@@ -3162,7 +3162,7 @@ right.append(ccw_circle, ccw_arrow);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left, right, labels, note);
 </code>
-  <img src="/pathogen/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
+  <img src="/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
 </mini-workspace></p>
 <h2>Inner Radius and Fill Modes</h2>
 <p>The <code>innerRadius</code> property carves out a hole in the center of the gradient, creating a donut shape. What fills that hole is controlled by <code>innerFill</code>, which supports four modes:</p>
@@ -3311,7 +3311,7 @@ bottom_row.append(c3, c4);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, top_row, bottom_row, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
+  <img src="/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
 </mini-workspace></p>
 <h2>OKLCH on Conics</h2>
 <p>OKLCH interpolation matters even more on conic gradients than on linear ones. A full-sweep color wheel interpolated in sRGB produces muddy bands wherever complementary colors meet. In OKLCH, the transitions trace a perceptually uniform arc through the hue wheel, maintaining chroma and lightness throughout.</p>
@@ -3433,7 +3433,7 @@ bottom_row.append(rc_s, rc_o);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </code>
-  <img src="/pathogen/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
+  <img src="/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
 </mini-workspace></p>
 <p>Conic gradients also support the same <code>spreadMethod</code> options as linear and radial gradients. When using a partial sweep, <code>reflect</code> and <code>repeat</code> can produce interesting patterns in the gap region. The <code>conic-spread-modes</code> sample explores this.</p>
 <h2>How It Renders</h2>
@@ -3448,7 +3448,7 @@ scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </ol>
 <p>In all three cases, the author writes the same <code>ConicGradient</code> code. The rendering path is an implementation detail — the compiled SVG looks identical regardless of which pipeline produced it.</p>
 <h2>What Comes Next</h2>
-<p>Conic gradients fill a gap in SVG&#39;s rendering model. But there are gradient types that no web standard has ever supported: grid-based mesh gradients and scatter-based freeform gradients. In the <a href="/pathogen/blog/gradient-mesh-freeform">next post</a>, we implement both.</p>
+<p>Conic gradients fill a gap in SVG&#39;s rendering model. But there are gradient types that no web standard has ever supported: grid-based mesh gradients and scatter-based freeform gradients. In the <a href="/blog/gradient-mesh-freeform">next post</a>, we implement both.</p>
 `,
   'gradient-linear-radial': `<p>SVG has had <code>&lt;linearGradient&gt;</code> and <code>&lt;radialGradient&gt;</code> since the 1.1 spec. They work. They are also tedious to write by hand, impossible to compose, and stuck interpolating through sRGB. Pathogen treats gradients as first-class objects — define them with code, inherit from them, assign them to layers, and let the compiler emit the correct SVG elements.</p>
 <p>This post builds up from a single linear gradient to a full themed palette using inheritance and OKLCH color interpolation. Every demo below is interactive — click &quot;Open in Playground&quot; to experiment with the source.</p>
@@ -3533,7 +3533,7 @@ frame.apply { rect(0, 0, 400, 300); }
 let scene = GroupLayer('scene') \${};
 scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 </code>
-  <img src="/pathogen/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
+  <img src="/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
 </mini-workspace></p>
 <h2>Gradient Direction</h2>
 <p>The <code>x1, y1 → x2, y2</code> coordinates control the gradient&#39;s angle. A vertical gradient uses <code>(0, 0, 0, 1)</code>. A horizontal one uses <code>(0, 0, 1, 0)</code>. Diagonals use any combination. Reversing the coordinates reverses the color flow — <code>(1, 0, 0, 0)</code> runs right to left.</p>
@@ -3644,7 +3644,7 @@ connector.apply {
 let fan = GroupLayer('fan') \${};
 fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </code>
-  <img src="/pathogen/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
+  <img src="/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
 </mini-workspace></p>
 <h2>RadialGradient</h2>
 <p><code>RadialGradient</code> works the same way, but radiates outward from a center point. The constructor takes <code>(id, cx, cy, r)</code>, where <code>cx</code> and <code>cy</code> are the center coordinates (again in <code>objectBoundingBox</code> space) and <code>r</code> is the radius as a fraction of the bounding box.</p>
@@ -3746,7 +3746,7 @@ planet.append(planet_body, planet_ring);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, nebula, stars, planet);
 </code>
-  <img src="/pathogen/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
+  <img src="/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
 </mini-workspace></p>
 <h3>Focal Points</h3>
 <p>The basic constructor centers the gradient&#39;s falloff at <code>(cx, cy)</code>. But <code>RadialGradient</code> also accepts two extra arguments — <code>fx</code> and <code>fy</code> — that shift the <em>focal point</em> away from the geometric center. The gradient still fills the same circle, but the highlight moves, creating the illusion of directional light on a 3D surface.</p>
@@ -3826,7 +3826,7 @@ labels.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, s1, s2, s3, labels);
 </code>
-  <img src="/pathogen/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
+  <img src="/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
 </mini-workspace></p>
 <h2>OKLCH Interpolation</h2>
 <p>By default, SVG gradients interpolate in sRGB. This is the web platform default, and it produces muddy midpoints when transitioning between colors that are far apart on the hue wheel. Blue to yellow passes through gray. Red to cyan desaturates through brown.</p>
@@ -3948,7 +3948,7 @@ pair_labels.apply {
 let comparison = GroupLayer('comparison') \${};
 comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
 </code>
-  <img src="/pathogen/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
+  <img src="/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
 </mini-workspace></p>
 <h2>Spread Methods</h2>
 <p>When a gradient covers less than the full bounding box, the <code>spreadMethod</code> property controls what happens outside the defined range. SVG supports three modes:</p>
@@ -4062,7 +4062,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
+  <img src="/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
 </mini-workspace></p>
 <h2>Gradient Inheritance</h2>
 <p>When you need variations of a gradient — reversed, rotated, desaturated — copying and modifying the stop list is fragile. Pathogen&#39;s <code>.inherit()</code> method creates a new gradient that shares the parent&#39;s stop definitions but can override any property.</p>
@@ -4184,10 +4184,10 @@ title.apply {
 let palette = GroupLayer('palette') \${};
 palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
+  <img src="/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
 </mini-workspace></p>
 <h2>CSS Variable Reactivity</h2>
-<p>Pathogen&#39;s gradients compose naturally with the <a href="/pathogen/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
+<p>Pathogen&#39;s gradients compose naturally with the <a href="/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
 <p>The demo below puts three overlapping radial glows on a dark background. Each glow&#39;s center color is bound to a CSS variable (<code>--light-a</code>, <code>--light-b</code>, <code>--light-c</code>) — use the color pickers to remix the scene in real time.</p>
 <p><mini-workspace code-open caption="Drag the color pickers to recolor three overlapping radial lights">
   <code>// viewBox="0 0 400 300"
@@ -4244,11 +4244,11 @@ lc.apply { circle(200, 220, 130); closePath(); }
 let scene = GroupLayer('scene') \${};
 scene.append(bg, la, lb, lc);
 </code>
-  <img src="/pathogen/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
+  <img src="/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
 </mini-workspace></p>
 <p>This is the payoff of treating gradients as first-class objects: they participate in the same variable binding, OKLCH manipulation, and reactive update system as every other part of the language.</p>
 <h2>What Comes Next</h2>
-<p>Linear and radial gradients map directly to SVG elements — the compiler emits <code>&lt;linearGradient&gt;</code> and <code>&lt;radialGradient&gt;</code> and the browser handles rendering. But SVG has no <code>&lt;conicGradient&gt;</code>. In the <a href="/pathogen/blog/gradient-conic">next post</a>, we build one from scratch using WebGPU shaders and rasterized <code>&lt;pattern&gt;</code> elements.</p>
+<p>Linear and radial gradients map directly to SVG elements — the compiler emits <code>&lt;linearGradient&gt;</code> and <code>&lt;radialGradient&gt;</code> and the browser handles rendering. But SVG has no <code>&lt;conicGradient&gt;</code>. In the <a href="/blog/gradient-conic">next post</a>, we build one from scratch using WebGPU shaders and rasterized <code>&lt;pattern&gt;</code> elements.</p>
 `,
   'gradient-mesh-freeform': `<p>The SVG2 draft spec included a <code>&lt;meshGradient&gt;</code> element. It described a grid of color patches with bilinear interpolation — the kind of gradient that tools like Adobe Illustrator have supported for decades. The spec was never finalized. No browser implemented it. The feature was quietly dropped.</p>
 <p>Pathogen brings it back, along with a second model that was never even proposed: freeform gradients where color points are placed at arbitrary positions and blended using inverse-distance weighting. Both types are GPU-rendered at compile time, producing base64-encoded <code>&lt;pattern&gt;</code> elements identical to conic gradients.</p>
@@ -4317,7 +4317,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, patch, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/mesh-basics.svg" alt="2x2 mesh — four corner colors with bilinear OKLCH interpolation" loading="lazy">
+  <img src="/blog/samples/post3/mesh-basics.svg" alt="2x2 mesh — four corner colors with bilinear OKLCH interpolation" loading="lazy">
 </mini-workspace></p>
 <h2>Working with the Grid</h2>
 <p>Larger grids give more control. A 3x3 grid has 9 control points, allowing you to define a center color distinct from the edges. The <code>getPoint(row, col)</code> method returns a point object whose <code>.color</code> property you set.</p>
@@ -4431,7 +4431,7 @@ right_group.append(right);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/mesh-deformation.svg" alt="Uniform grid vs deformed grid — same colors, different point positions" loading="lazy">
+  <img src="/blog/samples/post3/mesh-deformation.svg" alt="Uniform grid vs deformed grid — same colors, different point positions" loading="lazy">
 </mini-workspace></p>
 <p>The <code>getRow(n)</code> method returns all points in a row, useful for applying consistent colors across a horizontal band. For more complex scenes, higher-resolution grids (4x4, 5x5) with translated points can simulate terrain, fabric folds, or atmospheric effects. The <code>mesh-landscape</code> sample demonstrates a 4x3 grid producing a stylized landscape.</p>
 <h2>FreeformGradient: The Scatter Model</h2>
@@ -4519,7 +4519,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, field, dots, point_labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/freeform-scatter.svg" alt="Six color points blended with inverse-distance weighting" loading="lazy">
+  <img src="/blog/samples/post3/freeform-scatter.svg" alt="Six color points blended with inverse-distance weighting" loading="lazy">
 </mini-workspace></p>
 <h2>Controlling Falloff</h2>
 <p>The <code>.falloff</code> property is an exponent that controls how quickly a point&#39;s influence decreases with distance. It defaults to 2.0 (inverse-square), which produces natural-looking blending. Lower values create smoother, more uniform blends. Higher values create tight halos around each point with sharper boundaries.</p>
@@ -4623,7 +4623,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, f1, f2, f3, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/falloff-comparison.svg" alt="Same five points at three falloff exponents: 1.0, 2.0, 4.0" loading="lazy">
+  <img src="/blog/samples/post3/falloff-comparison.svg" alt="Same five points at three falloff exponents: 1.0, 2.0, 4.0" loading="lazy">
 </mini-workspace></p>
 <h2>Mesh vs Freeform</h2>
 <p>The two gradient types serve different design needs. MeshGradient excels at structured, predictable blending — backgrounds, UI surfaces, and any case where you want precise control over the transition boundaries. FreeformGradient is better for organic, painterly effects — glows, nebulae, abstract art.</p>
@@ -4734,7 +4734,7 @@ right_group.append(ff_fill);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post3/mesh-vs-freeform.svg" alt="Same 9 colors — bilinear grid vs inverse-distance scatter" loading="lazy">
+  <img src="/blog/samples/post3/mesh-vs-freeform.svg" alt="Same 9 colors — bilinear grid vs inverse-distance scatter" loading="lazy">
 </mini-workspace></p>
 <p>In practice, the choice depends on the visual you are after. Mesh gradients give you the regularity of a grid with optional deformation for organic touches. Freeform gradients give you complete spatial freedom at the cost of less predictable boundaries. Both are tools in the same system — you can use them in the same Pathogen source file, assign them to different layers, and compose them freely.</p>
 <h2>Rendering Pipeline</h2>
@@ -4746,7 +4746,7 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 <p>Both shaders support OKLCH interpolation natively — the blending happens in OKLCH space when enabled, then converts to sRGB for the final output image. The result is embedded as a base64 PNG in a <code>&lt;pattern&gt;</code> element, identical to the conic gradient output.</p>
 <p>When WebGPU is unavailable, a Canvas 2D fallback renders the gradient at reduced resolution (4x downscale) and upsamples with bilinear filtering. The visual quality is slightly lower but the output is functionally identical.</p>
 <h2>What Comes Next</h2>
-<p>Linear, radial, conic, mesh, and freeform gradients all share a common pattern: colors are placed at geometric positions (along a line, around a circle, at grid intersections, at scattered points) and interpolated between them. The <a href="/pathogen/blog/gradient-topological">next post</a> introduces a fundamentally different model — topological gradients, where colors follow the contours of arbitrary path shapes using signed distance fields and Laplace solvers.</p>
+<p>Linear, radial, conic, mesh, and freeform gradients all share a common pattern: colors are placed at geometric positions (along a line, around a circle, at grid intersections, at scattered points) and interpolated between them. The <a href="/blog/gradient-topological">next post</a> introduces a fundamentally different model — topological gradients, where colors follow the contours of arbitrary path shapes using signed distance fields and Laplace solvers.</p>
 `,
   'gradient-pipeline': `<p>This post is about the posts. Every interactive demo in this gradient series — the color wheels, mesh grids, terrain maps, abstract compositions — follows the same path from source code to your screen. A <code>.pathogen</code> file is compiled to an SVG with embedded base64 images, wrapped in a <code>&lt;mini-workspace&gt;</code> component, and served as part of a static blog that works with or without JavaScript.</p>
 <p>Understanding this pipeline explains why the system works the way it does, and where each layer of abstraction earns its keep.</p>
@@ -4877,7 +4877,7 @@ subtitle.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle);
 </code>
-  <img src="/pathogen/blog/samples/post5/pipeline-flow.svg" alt="Five stages: source, compiler, GPU renderer, SVG output, blog embed" loading="lazy">
+  <img src="/blog/samples/post5/pipeline-flow.svg" alt="Five stages: source, compiler, GPU renderer, SVG output, blog embed" loading="lazy">
 </mini-workspace></p>
 <ol>
 <li><p><strong>.pathogen source</strong>: Variables, expressions, gradient definitions, layer assignments, GroupLayer composition. This is what the author writes.</p>
@@ -5067,7 +5067,7 @@ subtitle.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, card1, card2, card3, title, subtitle);
 </code>
-  <img src="/pathogen/blog/samples/post5/grouplayer-cards.svg" alt="Three cards positioned with GroupLayer translate — mixing native and GPU gradients" loading="lazy">
+  <img src="/blog/samples/post5/grouplayer-cards.svg" alt="Three cards positioned with GroupLayer translate — mixing native and GPU gradients" loading="lazy">
 </mini-workspace></p>
 <p>Notice that the three cards use three different gradient rendering strategies. The <code>LinearGradient</code> card compiles to a native SVG element. The <code>RadialGradient</code> card does the same. The <code>TopoGradient</code> card is GPU-rendered to a base64 image. All three are composed in the same <code>GroupLayer</code> tree — the rendering strategy is transparent to the scene composition layer.</p>
 <h2>CLI --render-gpu</h2>
@@ -5257,14 +5257,14 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);
 </code>
-  <img src="/pathogen/blog/samples/post5/gradient-gallery.svg" alt="The complete Pathogen gradient system — six types, one language" loading="lazy">
+  <img src="/blog/samples/post5/gradient-gallery.svg" alt="The complete Pathogen gradient system — six types, one language" loading="lazy">
 </mini-workspace></p>
 <p>Each type is covered in detail in the preceding posts:</p>
 <ul>
-<li><a href="/pathogen/blog/gradient-linear-radial">Linear and Radial</a> — native SVG elements with OKLCH interpolation, spread methods, and inheritance</li>
-<li><a href="/pathogen/blog/gradient-conic">Conic</a> — angular sweeps with WebGPU rendering, partial arcs, inner radius, and fill modes</li>
-<li><a href="/pathogen/blog/gradient-mesh-freeform">Mesh and Freeform</a> — grid-based and scatter-based color fields with GPU-accelerated bilinear and IDW blending</li>
-<li><a href="/pathogen/blog/gradient-topological">Topological</a> — contour-based gradients using signed distance fields and Laplace solvers</li>
+<li><a href="/blog/gradient-linear-radial">Linear and Radial</a> — native SVG elements with OKLCH interpolation, spread methods, and inheritance</li>
+<li><a href="/blog/gradient-conic">Conic</a> — angular sweeps with WebGPU rendering, partial arcs, inner radius, and fill modes</li>
+<li><a href="/blog/gradient-mesh-freeform">Mesh and Freeform</a> — grid-based and scatter-based color fields with GPU-accelerated bilinear and IDW blending</li>
+<li><a href="/blog/gradient-topological">Topological</a> — contour-based gradients using signed distance fields and Laplace solvers</li>
 </ul>
 <h2>Closing</h2>
 <p>The gradient system is built in layers. At the bottom, <code>Color</code> and OKLCH give us a perceptually uniform foundation. Above that, six gradient types cover the full range from standard SVG primitives to novel GPU-rendered models. <code>GroupLayer</code> and the layer system compose these gradients into scenes. The compiler turns it all into portable SVG. The rendering pipeline ensures every gradient looks the same whether it runs in a WebGPU shader or a headless Chrome instance.</p>
@@ -5361,7 +5361,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
+  <img src="/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
 </mini-workspace></p>
 <h2>Multiple Peaks</h2>
 <p>Contours do not need to be nested. Two separate closed paths at the same elevation create independent features — like two islands in an ocean. The distance field solver treats each contour independently, producing smooth gradients around each shape that merge naturally in the shared base region.</p>
@@ -5439,7 +5439,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, labels, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
+  <img src="/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
 </mini-workspace></p>
 <h2>Distance vs Laplace</h2>
 <p><code>TopoGradient</code> supports two solver methods that control how elevation is computed between contours.</p>
@@ -5544,7 +5544,7 @@ right_group.append(right);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
+  <img src="/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
 </mini-workspace></p>
 <h2>Easing</h2>
 <p>The <code>.easing</code> property controls how elevation values are interpolated between contours. Five modes are available:</p>
@@ -5686,7 +5686,7 @@ note.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 </code>
-  <img src="/pathogen/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
+  <img src="/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
 </mini-workspace></p>
 <p>The <code>easing-organic</code> sample demonstrates these curves on more complex contour shapes, where the visual difference is even more pronounced.</p>
 <h2>Terrain Map</h2>
@@ -5800,7 +5800,7 @@ legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, legend_group, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
+  <img src="/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
 </mini-workspace></p>
 <h2>Artistic Composition</h2>
 <p>TopoGradient is not limited to cartography. When contours overlap, the solver blends their influence regions, creating complex color fields that emerge from simple shape definitions. Overlapping blobs at different elevations produce layered, painterly effects.</p>
@@ -5869,7 +5869,7 @@ title.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
+  <img src="/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
 </mini-workspace></p>
 <h3>Geometric Contours</h3>
 <p>When contour shapes are angular rather than organic, the results change character. Nested rotated rectangles produce sharp ridgelines and faceted valleys — the Laplace solver smooths the transitions between angular boundaries while preserving the geometric feel. The schematic on the right shows each contour outline with its elevation value and color, so you can trace how the gradient follows the shape geometry.</p>
@@ -6019,7 +6019,7 @@ panel_labels.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
+  <img src="/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
 </mini-workspace></p>
 <p>Multi-cluster polygonal contours create crystal-like formations. Three separate shape clusters — a central blue faceted core, a magenta wedge in the lower right, and a green shard in the upper left — compete for influence across the canvas. Where their distance fields overlap, the Laplace solver blends them into smooth transitions that emerge from purely angular geometry.</p>
 <p><mini-workspace caption="Crystal formation — eight polygonal contours across three clusters with annotated contour map">
@@ -6273,7 +6273,7 @@ panel_labels.apply {
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);
 </code>
-  <img src="/pathogen/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
+  <img src="/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
 </mini-workspace></p>
 <h3>Organic Methods Compared</h3>
 <p>The method choice matters most with complex organic contours. The same three shapes — a sweeping coastline curve, a flat-topped mesa, and a sharp triangular spire — produce markedly different results under the two solvers. Distance (SDF) creates concentric bands that follow every curve and corner exactly. The Laplace solver diffuses those boundaries into flowing transitions, softening the mesa&#39;s flat top and the spire&#39;s sharp point into a continuous potential field.</p>
@@ -6467,13 +6467,13 @@ center_group.append(center);
 let scene = GroupLayer('scene') \${};
 scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title);
 </code>
-  <img src="/pathogen/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
+  <img src="/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
 </mini-workspace></p>
 <h2>What Comes Next</h2>
-<p>This is the sixth gradient type in Pathogen&#39;s system — linear, radial, conic, mesh, freeform, and topological. In the <a href="/pathogen/blog/gradient-pipeline">final post</a> of this series, we step back and look at the infrastructure that makes it all work: <code>GroupLayer</code> for scene composition, the CLI&#39;s <code>--render-gpu</code> flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns <code>.pathogen</code> source files into the blog you are reading now.</p>
+<p>This is the sixth gradient type in Pathogen&#39;s system — linear, radial, conic, mesh, freeform, and topological. In the <a href="/blog/gradient-pipeline">final post</a> of this series, we step back and look at the infrastructure that makes it all work: <code>GroupLayer</code> for scene composition, the CLI&#39;s <code>--render-gpu</code> flag for headless GPU rendering, the mini-workspace component that powers these interactive demos, and the build pipeline that turns <code>.pathogen</code> source files into the blog you are reading now.</p>
 `,
   'grid-functions': `<p>Grid patterns show up everywhere — engineering overlays, graph paper, game boards, architectural plans, generative art backgrounds. Building one from scratch means nested loops, coordinate math, and careful edge deduplication for triangles and hexagons. Pathogen&#39;s three new grid functions collapse all of that into a single call.</p>
-<p><code>squareGrid</code>, <code>triangleGrid</code>, and <code>hexagonGrid</code> each generate complete path geometry within a bounding rectangle. A <a href="/pathogen/docs#stdlib-grid-functions"><code>GridPatternType</code></a> enum selects the visual style — <strong>Shape</strong>, <strong>Dot</strong>, <strong>Intersection</strong>, or <strong>Partial</strong> — and all three return <code>PathSegment</code> values, so they compose with <a href="/pathogen/docs#layers-defining-layers">layers</a>, transforms, and clip paths just like <code>circle()</code> or <code>polygon()</code>.</p>
+<p><code>squareGrid</code>, <code>triangleGrid</code>, and <code>hexagonGrid</code> each generate complete path geometry within a bounding rectangle. A <a href="/docs#stdlib-grid-functions"><code>GridPatternType</code></a> enum selects the visual style — <strong>Shape</strong>, <strong>Dot</strong>, <strong>Intersection</strong>, or <strong>Partial</strong> — and all three return <code>PathSegment</code> values, so they compose with <a href="/docs#layers-defining-layers">layers</a>, transforms, and clip paths just like <code>circle()</code> or <code>polygon()</code>.</p>
 <h2>Square Grids</h2>
 <pre><code class="hljs language-pathogen"><span class="hljs-title function_">squareGrid</span>(type, x, y, width, height, cellSize)
 </code></pre><table>
@@ -6562,7 +6562,7 @@ labels.apply {
   text(220, 220 + 8)\`Partial\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post15/square-grid-patterns.svg" alt="squareGrid — four pattern types with reactive colors" loading="lazy">
+  <img src="/blog/samples/post15/square-grid-patterns.svg" alt="squareGrid — four pattern types with reactive colors" loading="lazy">
 </mini-workspace></p>
 <h2>Triangle Grids</h2>
 <pre><code class="hljs language-pathogen"><span class="hljs-title function_">triangleGrid</span>(type, x, y, width, height, cellSize)
@@ -6629,7 +6629,7 @@ labels.apply {
   text(220, 220 + 8)\`Partial\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post15/triangle-grid-patterns.svg" alt="triangleGrid — equilateral triangle tessellation in four pattern types" loading="lazy">
+  <img src="/blog/samples/post15/triangle-grid-patterns.svg" alt="triangleGrid — equilateral triangle tessellation in four pattern types" loading="lazy">
 </mini-workspace></p>
 <h2>Hexagon Grids</h2>
 <pre><code class="hljs language-pathogen"><span class="hljs-title function_">hexagonGrid</span>(type, x, y, width, height, cellSize, orientation?)
@@ -6715,7 +6715,7 @@ labels.apply {
   text(220, 220 + 8)\`Partial\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post15/hexagon-grid-patterns.svg" alt="hexagonGrid — flat-top hexagons in four pattern types" loading="lazy">
+  <img src="/blog/samples/post15/hexagon-grid-patterns.svg" alt="hexagonGrid — flat-top hexagons in four pattern types" loading="lazy">
 </mini-workspace></p>
 <h3>Orientation Comparison</h3>
 <p>The two orientations produce visually distinct tessellations from the same cell size:</p>
@@ -6764,7 +6764,7 @@ labels.apply {
   text(220, pad + 8)\`Pointy-top (Vertex)\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post15/hexagon-orientations.svg" alt="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)" loading="lazy">
+  <img src="/blog/samples/post15/hexagon-orientations.svg" alt="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)" loading="lazy">
 </mini-workspace></p>
 <h2>Four Pattern Types</h2>
 <p>All three grid functions share the same <code>GridPatternType</code> enum:</p>
@@ -6799,7 +6799,7 @@ labels.apply {
 </tbody></table>
 <p>Pattern proportions are relative to <code>cellSize</code>: dot radius is 2.5%, intersection arm length is 7.5%.</p>
 <h2>Putting It Together</h2>
-<p>Grid functions are most useful as background textures layered behind other geometry. Combine them with <a href="/pathogen/docs#layers-defining-layers">layer transforms</a> for rotation, and use <code>Color</code> methods to derive palette variations from a single reactive base color:</p>
+<p>Grid functions are most useful as background textures layered behind other geometry. Combine them with <a href="/docs#layers-defining-layers">layer transforms</a> for rotation, and use <code>Color</code> methods to derive palette variations from a single reactive base color:</p>
 <p><mini-workspace code-open caption="Layered composition — rotated partial grid, hex outline, and triangle intersections">
   <code>// viewBox="0 0 400 400"
 // Practical composition — rotated grid background with foreground geometry
@@ -6843,7 +6843,7 @@ labels.apply {
   text(22, 388)\`Rotated partial grid + hex outlines + triangle intersections\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post15/grid-composition.svg" alt="Layered composition — rotated partial grid, hex outline, and triangle intersections" loading="lazy">
+  <img src="/blog/samples/post15/grid-composition.svg" alt="Layered composition — rotated partial grid, hex outline, and triangle intersections" loading="lazy">
 </mini-workspace></p>
 <p>The composition uses three techniques worth noting:</p>
 <ul>
@@ -6853,22 +6853,22 @@ labels.apply {
 </ul>
 <p>The core pattern is always the same: create a styled <code>PathLayer</code>, optionally set a transform, then call the grid function inside <code>layer.apply {}</code>.</p>
 <p>Three functions, four pattern types, two hexagon orientations — enough to cover graph paper, game boards, engineering overlays, and generative art backgrounds without writing a single loop. Try changing the <code>--grid-color</code> and <code>--bg-color</code> variables in any of the examples above to see how the reactive colors work.</p>
-<p>For the full function signatures and parameter details, see the <a href="/pathogen/docs#stdlib-grid-functions">stdlib reference</a>. For layer management and transforms, see the <a href="/pathogen/docs#layers-defining-layers">layers documentation</a>. For combining grids with reusable path blocks, see the <a href="/pathogen/blog/pathblock-introduction">PathBlock introduction</a>.</p>
+<p>For the full function signatures and parameter details, see the <a href="/docs#stdlib-grid-functions">stdlib reference</a>. For layer management and transforms, see the <a href="/docs#layers-defining-layers">layers documentation</a>. For combining grids with reusable path blocks, see the <a href="/blog/pathblock-introduction">PathBlock introduction</a>.</p>
 `,
-  'heading-turn': `<p>Pathogen&#39;s tangent-dependent functions — <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/pathogen/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
+  'heading-turn': `<p>Pathogen&#39;s tangent-dependent functions — <a href="/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
 <p>The old workaround was a dummy segment:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
 h <span class="hljs-number">0.01</span>            <span class="hljs-comment">// invisible line to set heading rightward</span>
 <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg)
 </code></pre><p>This sets the heading, but the 0.01px offset accumulates. When you close a path with <code>z</code>, it draws a line back to <code>(50.01, 100)</code> instead of <code>(50, 100)</code> — a tiny but visible artifact.</p>
 <h2>heading(angle)</h2>
-<p><a href="/pathogen/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
+<p><a href="/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
 <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)           <span class="hljs-comment">// set heading rightward — nothing drawn</span>
 <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg) <span class="hljs-comment">// works immediately</span>
 </code></pre><p>Angles follow SVG&#39;s coordinate conventions: 0 is rightward, positive angles rotate clockwise (downward in SVG&#39;s y-down coordinate system). Use the <code>deg</code> suffix for degrees.</p>
 <h2>turn(delta)</h2>
-<p><a href="/pathogen/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
+<p><a href="/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
 <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)          <span class="hljs-comment">// start rightward</span>
 <span class="hljs-title function_">turn</span>(90deg)         <span class="hljs-comment">// now downward</span>
@@ -7005,7 +7005,7 @@ for ([shape, idx] in shapes) {
   layer(gName).append(snippet);
 }
 </code>
-  <img src="/pathogen/blog/samples/post14/heading-turn-demo.svg" alt="heading() and turn() — C-shape, S-curve, zigzag, and spiral" loading="lazy">
+  <img src="/blog/samples/post14/heading-turn-demo.svg" alt="heading() and turn() — C-shape, S-curve, zigzag, and spiral" loading="lazy">
 </mini-workspace></p>
 <h2>Building Regular Polygons</h2>
 <p><code>heading</code>, <code>turn</code>, and <code>tangentLine</code> are all you need to draw any regular polygon. Set an initial heading at half the exterior angle (this orients the first edge so the polygon sits upright), then loop: draw a side with <code>tangentLine</code>, turn by the exterior angle. Replace <code>tangentLine</code> with <code>tangentArc</code> on the turns and the corners become rounded:</p>
@@ -7164,10 +7164,10 @@ layer('caption').apply {
   text(20, 382)\`All shapes built with heading(), turn(), tangentLine(), and tangentArc().\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post14/polygon-showcase.svg" alt="Regular polygons from 3 to 10 sides — sharp and rounded corners" loading="lazy">
+  <img src="/blog/samples/post14/polygon-showcase.svg" alt="Regular polygons from 3 to 10 sides — sharp and rounded corners" loading="lazy">
 </mini-workspace></p>
 <h2>Clean PathBlock Closure</h2>
-<p><code>heading()</code> is especially valuable inside <a href="/pathogen/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
+<p><code>heading()</code> is especially valuable inside <a href="/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-comment">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
 <span class="hljs-keyword">let</span> old = @{
   h <span class="hljs-number">0.01</span>
@@ -7191,34 +7191,34 @@ M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
 <span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// undefined (M clears heading)</span>
 </code></pre><p>Any drawing command that establishes a direction — <code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>, and stdlib path functions — sets the heading automatically. <code>heading()</code> and <code>turn()</code> let you set it explicitly when no drawing command has run yet.</p>
 <p>Together, these two functions eliminate the dummy-segment workaround, enable clean <code>z</code> closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with <code>tangentLine</code> and <code>tangentArc</code> to build complex shapes from simple, composable operations.</p>
-<p>For more on tangent-dependent functions, see the <a href="/pathogen/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/pathogen/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/pathogen/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
+<p>For more on tangent-dependent functions, see the <a href="/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
 `,
   'pathblock-boolean-operations': `<p><em>Part 4 of 4 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
-<li><a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
-<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
-<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
 <li><strong>Boolean Operations</strong> (this post)</li>
 </ol>
 </blockquote>
-<p>Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what&#39;s the combined outline? What&#39;s left after subtracting one from the other? Where do they overlap? Pathogen&#39;s <a href="/pathogen/docs#path-blocks-boolean-operations">PathBlock boolean operations</a> bring these capabilities directly into the language.</p>
+<p>Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what&#39;s the combined outline? What&#39;s left after subtracting one from the other? Where do they overlap? Pathogen&#39;s <a href="/docs#path-blocks-boolean-operations">PathBlock boolean operations</a> bring these capabilities directly into the language.</p>
 <h2>The Four Operations</h2>
 <p>All four operations take two closed paths and return a new PathBlock. Both operands must be closed (end with <code>z</code> or have coincident start/end points).</p>
 <h3>Union</h3>
-<p><a href="/pathogen/docs#path-blocks-unionother-pathblock"><code>.union(other)</code></a> combines two paths into their outer boundary — everything covered by either shape:</p>
+<p><a href="/docs#path-blocks-unionother-pathblock"><code>.union(other)</code></a> combines two paths into their outer boundary — everything covered by either shape:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> combined = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">union</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
 </code></pre><h3>Difference</h3>
-<p><a href="/pathogen/docs#path-blocks-differenceother-pathblock"><code>.difference(other)</code></a> subtracts the second shape from the first — everything in <code>a</code> that is not in <code>b</code>:</p>
+<p><a href="/docs#path-blocks-differenceother-pathblock"><code>.difference(other)</code></a> subtracts the second shape from the first — everything in <code>a</code> that is not in <code>b</code>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> result = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">difference</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">55</span>));
 </code></pre><h3>Intersection</h3>
-<p><a href="/pathogen/docs#path-blocks-intersectionother-pathblock"><code>.intersection(other)</code></a> returns only the overlapping region — everything in both shapes:</p>
+<p><a href="/docs#path-blocks-intersectionother-pathblock"><code>.intersection(other)</code></a> returns only the overlapping region — everything in both shapes:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> overlap = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">intersection</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">235</span>));
 </code></pre><h3>XOR</h3>
-<p><a href="/pathogen/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
+<p><a href="/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
 </code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
   <code>// viewBox="0 0 580 480"
@@ -7536,7 +7536,7 @@ subtitle.apply {
   text(30, 46)\`Four set operations on overlapping 50×50 squares\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post9/boolean-basics.svg" alt="Four boolean operations on overlapping squares — union, difference, intersection, xor" loading="lazy">
+  <img src="/blog/samples/post9/boolean-basics.svg" alt="Four boolean operations on overlapping squares — union, difference, intersection, xor" loading="lazy">
 </mini-workspace></p>
 <p>The dashed outlines show the original overlapping squares. The solid blue fills show the boolean result for each operation. Notice how union produces the combined outline, difference cuts out the overlap from the first shape, intersection keeps only the overlap, and xor keeps everything except the overlap.</p>
 <h2>How It Works</h2>
@@ -7575,7 +7575,7 @@ subtitle.apply {
 <p>A key design goal is that boolean operations <strong>preserve original curve types</strong>. If the input contains cubic Béziers, the output contains cubic Béziers — not polyline approximations. The intersection finder works directly on the mathematical curve representations, and the split operation uses De Casteljau subdivision (for Béziers) or angular splitting (for arcs).</p>
 <p>This matters for output quality. Linearized boolean results look jagged at any zoom level. Curve-preserving results stay smooth.</p>
 <h2>Requirements</h2>
-<p>From the <a href="/pathogen/docs#path-blocks-requirements-and-behavior">documentation</a>:</p>
+<p>From the <a href="/docs#path-blocks-requirements-and-behavior">documentation</a>:</p>
 <ul>
 <li><strong>Both paths must be closed.</strong> Open paths throw an error.</li>
 <li><strong>The <code>other</code> argument</strong> can be a PathBlock or ProjectedPath.</li>
@@ -7583,7 +7583,7 @@ subtitle.apply {
 <li><strong>Results are PathBlocks</strong> normalized to <code>(0, 0)</code> origin, so they work with all PathBlock methods.</li>
 </ul>
 <h2>Using with <code>.project()</code></h2>
-<p>Boolean operations need absolute coordinates to compute intersections. Use <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> to position shapes before combining them:</p>
+<p>Boolean operations need absolute coordinates to compute intersections. Use <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> to position shapes before combining them:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> circle = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
 <span class="hljs-keyword">let</span> a = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
 <span class="hljs-keyword">let</span> b = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>);
@@ -7591,7 +7591,7 @@ subtitle.apply {
 result.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
 </code></pre><p>The result is a PathBlock at <code>(0, 0)</code> origin. Use <code>.drawTo(x, y)</code> to place it anywhere.</p>
 <h2>Chaining with Transforms</h2>
-<p>Since boolean operations return PathBlocks, you can chain them with <a href="/pathogen/docs#path-blocks-fillets">fillets</a>, <a href="/pathogen/docs#path-blocks-chamfers">chamfers</a>, <a href="/pathogen/docs#path-blocks-parametric-sampling">parametric sampling</a>, or even more boolean operations:</p>
+<p>Since boolean operations return PathBlocks, you can chain them with <a href="/docs#path-blocks-fillets">fillets</a>, <a href="/docs#path-blocks-chamfers">chamfers</a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or even more boolean operations:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> combined = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
 <span class="hljs-keyword">let</span> rounded = combined.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">5</span>);
@@ -7822,10 +7822,10 @@ subtitle.apply {
   text(260, 28)\`Combine shapes, then round the result\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post9/boolean-chaining.svg" alt="Chaining pipeline — overlapping squares → union → union + fillet(8)" loading="lazy">
+  <img src="/blog/samples/post9/boolean-chaining.svg" alt="Chaining pipeline — overlapping squares → union → union + fillet(8)" loading="lazy">
 </mini-workspace></p>
 <h2>Standard Library Shapes</h2>
-<p>Pathogen&#39;s <a href="/pathogen/docs#stdlib-path-functions">standard library</a> provides PathBlock-returning functions for common shapes — <code>circle()</code>, <code>rect()</code>, <code>polygon()</code>, <code>star()</code>, and more. These work directly with boolean operations:</p>
+<p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides PathBlock-returning functions for common shapes — <code>circle()</code>, <code>rect()</code>, <code>polygon()</code>, <code>star()</code>, and more. These work directly with boolean operations:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">80</span>, <span class="hljs-number">80</span>) };
 <span class="hljs-keyword">let</span> hole = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">10</span>) };
 <span class="hljs-keyword">let</span> d1 = plate.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
@@ -7914,7 +7914,7 @@ badge_desc.apply {
   text(220, 44)\`star(5, 30, 14) ∪ circle(18)\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post9/boolean-stdlib.svg" alt="Standard library shapes — drilled plate and star-circle badge" loading="lazy">
+  <img src="/blog/samples/post9/boolean-stdlib.svg" alt="Standard library shapes — drilled plate and star-circle badge" loading="lazy">
 </mini-workspace></p>
 <h2>Putting It All Together</h2>
 <p>This series covered four layers of PathBlock capability — and since every operation returns a PathBlock, they compose freely. Here&#39;s the full pipeline in one expression: define shapes, combine them with a boolean operation, round the result with a fillet, then sample points along the filleted outline:</p>
@@ -7926,34 +7926,34 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 <span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
   @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">2</span>) }.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>))
 }
-</code></pre><p>Define once (<a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/pathogen/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
-<p>Try it yourself in the <a href="/pathogen/">Pathogen playground</a> — paste any example from this series and experiment.</p>
+</code></pre><p>Define once (<a href="/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
+<p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any example from this series and experiment.</p>
 `,
   'pathblock-fillets-chamfers': `<p><em>Part 3 of 4 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
-<li><a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
-<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
 <li><strong>Fillets and Chamfers</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
 </ol>
 </blockquote>
-<p>Sharp corners are the default in SVG paths. Every junction between two line segments creates a hard vertex. Chamfers and fillets transform these corners — chamfers cut them with straight lines, fillets round them with arcs. Both operations work on <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a> and return new PathBlocks, so you can chain them with other transforms.</p>
+<p>Sharp corners are the default in SVG paths. Every junction between two line segments creates a hard vertex. Chamfers and fillets transform these corners — chamfers cut them with straight lines, fillets round them with arcs. Both operations work on <a href="/blog/pathblock-introduction">PathBlocks</a> and return new PathBlocks, so you can chain them with other transforms.</p>
 <p>When should you reach for a chamfer vs. a fillet? Chamfers produce a machined, technical look — think hardware enclosures, PCB traces, or geometric badges. Fillets produce organic, smooth corners — rounded UI elements, product forms, or anything that needs to feel softer. The choice is aesthetic: same trim-and-replace infrastructure, different visual character.</p>
 <h2>Chamfers</h2>
-<p>A <a href="/pathogen/docs#path-blocks-chamfers">chamfer</a> replaces a corner vertex with a straight line. The incoming and outgoing edges are trimmed by a distance, and a line segment connects the two trim points. The result is a beveled corner.</p>
+<p>A <a href="/docs#path-blocks-chamfers">chamfer</a> replaces a corner vertex with a straight line. The incoming and outgoing edges are trimmed by a distance, and a line segment connects the two trim points. The result is a beveled corner.</p>
 <h3>Symmetric Chamfer</h3>
 <p>The simplest form trims equal amounts from both edges at every corner:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-keyword">let</span> beveled = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">10</span>);
 beveled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Asymmetric Chamfer</h3>
-<p>Pass two distances to trim different amounts on the incoming and outgoing edges — <a href="/pathogen/docs#path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code></a>:</p>
+<p>Pass two distances to trim different amounts on the incoming and outgoing edges — <a href="/docs#path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code></a>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> asym = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">5</span>, <span class="hljs-number">25</span>);
 asym.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Per-Vertex Chamfer</h3>
-<p><a href="/pathogen/docs#path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code></a> targets a single corner. The index comes from the PathBlock&#39;s <code>.vertices</code> array:</p>
+<p><a href="/docs#path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code></a> targets a single corner. The index comes from the PathBlock&#39;s <code>.vertices</code> array:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-comment">// vertices: (0,0), (70,0), (70,70), (0,70)</span>
 <span class="hljs-keyword">let</span> oneCorner = box.<span class="hljs-title function_">chamferAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">15</span>);
@@ -8209,7 +8209,7 @@ subtitle.apply {
   text(30, 44)\`Replace a corner vertex with a straight cut\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/chamfer-anatomy.svg" alt="Chamfer anatomy — geometric construction at a right-angle corner" loading="lazy">
+  <img src="/blog/samples/post8/chamfer-anatomy.svg" alt="Chamfer anatomy — geometric construction at a right-angle corner" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained">
   <code>// viewBox="0 0 560 300"
@@ -8347,21 +8347,21 @@ subtitle.apply {
   text(175, 32)\`Five chamfer modes on a 70×70 square\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/chamfer-gallery.svg" alt="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained" loading="lazy">
+  <img src="/blog/samples/post8/chamfer-gallery.svg" alt="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained" loading="lazy">
 </mini-workspace></p>
 <p>The dashed outlines show the original 70×70 box. Each chamfered version demonstrates a different configuration: small symmetric (8px), large symmetric (20px), asymmetric (5px/25px), single vertex (index 1), and two-vertex chaining.</p>
 <h2>Fillets</h2>
-<p>A <a href="/pathogen/docs#path-blocks-fillets">fillet</a> replaces a corner with a circular arc tangent to both edges. The trim distance is calculated from the radius and the half-angle between the edges:</p>
+<p>A <a href="/docs#path-blocks-fillets">fillet</a> replaces a corner with a circular arc tangent to both edges. The trim distance is calculated from the radius and the half-angle between the edges:</p>
 <pre><code class="hljs">trimDistance = radius / tan(halfAngle)
 </code></pre><p>This ensures the arc is tangent to both edges at the trim points. The sweep direction is determined by the cross product of the edge vectors.</p>
-<p><strong>Important:</strong> Fillets currently work at <strong>line-line junctions only</strong>. At curve junctions (where a curve meets a line, or two curves meet), the fillet is skipped and a warning is logged. This covers the vast majority of practical cases — rectangles, polygons, stars, and polylines are all line-line. See the <a href="/pathogen/docs#path-blocks-fillets">documentation</a> for details.</p>
+<p><strong>Important:</strong> Fillets currently work at <strong>line-line junctions only</strong>. At curve junctions (where a curve meets a line, or two curves meet), the fillet is skipped and a warning is logged. This covers the vast majority of practical cases — rectangles, polygons, stars, and polylines are all line-line. See the <a href="/docs#path-blocks-fillets">documentation</a> for details.</p>
 <h3>All Corners</h3>
-<p><a href="/pathogen/docs#path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code></a> rounds every corner:</p>
+<p><a href="/docs#path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code></a> rounds every corner:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">10</span>);
 rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Per-Vertex</h3>
-<p><a href="/pathogen/docs#path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code></a> rounds a single corner:</p>
+<p><a href="/docs#path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code></a> rounds a single corner:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> oneRound = box.<span class="hljs-title function_">filletAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">20</span>);
 oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><p>The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance <code>r</code> from both edges) and the trim formula <code>trim = r / tan(halfAngle)</code> are labeled. For a right angle, <code>trim = r</code>.</p>
@@ -8630,21 +8630,21 @@ subtitle.apply {
   text(30, 44)\`Replace a corner vertex with a tangent circular arc\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/fillet-anatomy.svg" alt="Fillet anatomy — arc center, trim points, and radius at a 90° corner" loading="lazy">
+  <img src="/blog/samples/post8/fillet-anatomy.svg" alt="Fillet anatomy — arc center, trim points, and radius at a 90° corner" loading="lazy">
 </mini-workspace></p>
 <h2>Elliptical Fillets</h2>
-<p><a href="/pathogen/docs#path-blocks-elliptical-fillets">Elliptical fillets</a> replace corners with elliptical arcs instead of circular ones. If you&#39;ve used CSS <code>border-radius</code> with two values (e.g., <code>border-radius: 15px / 8px</code>), you&#39;ve already seen elliptical fillets in action — they produce the same asymmetric corner rounding. This gives you control over the corner shape&#39;s aspect ratio, useful for UI components, pill shapes, and organic forms where a circular arc is too uniform.</p>
+<p><a href="/docs#path-blocks-elliptical-fillets">Elliptical fillets</a> replace corners with elliptical arcs instead of circular ones. If you&#39;ve used CSS <code>border-radius</code> with two values (e.g., <code>border-radius: 15px / 8px</code>), you&#39;ve already seen elliptical fillets in action — they produce the same asymmetric corner rounding. This gives you control over the corner shape&#39;s aspect ratio, useful for UI components, pill shapes, and organic forms where a circular arc is too uniform.</p>
 <h3>Basic Elliptical</h3>
-<p><a href="/pathogen/docs#path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code></a> uses two radii:</p>
+<p><a href="/docs#path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code></a> uses two radii:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
 <span class="hljs-keyword">let</span> eFilleted = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>);
 eFilleted.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>With Rotation</h3>
-<p><a href="/pathogen/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code></a> adds an ellipse rotation in radians:</p>
+<p><a href="/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code></a> adds an ellipse rotation in radians:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> rotated = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>, <span class="hljs-number">0.3</span>);
 rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><h3>Per-Vertex Variants</h3>
-<p><a href="/pathogen/docs#path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex</code></a> targets individual corners, with an optional rotation parameter.</p>
+<p><a href="/docs#path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex</code></a> targets individual corners, with an optional rotation parameter.</p>
 <h3>Adapting to Corner Angles</h3>
 <p>The elliptical fillet computes separate trim distances for each edge based on the tangent parameters of the ellipse. At a 90° corner with <code>ellipticalFillet(rx, ry)</code>, the horizontal edges are trimmed by <code>rx</code> and the vertical edges by <code>ry</code> — matching CSS <code>border-radius</code> behavior. The diagram below shows two configurations — <code>ellipticalFillet(32, 16)</code> (wider) and <code>ellipticalFillet(24, 48)</code> (taller) — at eight different corner angles.</p>
 <p><mini-workspace caption="Elliptical fillet at various angles — adapts trim distances per-edge">
@@ -8809,7 +8809,7 @@ subtitle.apply {
   text(30, 46)\`ellipticalFillet(rx, ry) adapts to any corner angle\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/elliptical-fillet-angles.svg" alt="Elliptical fillet at various angles — adapts trim distances per-edge" loading="lazy">
+  <img src="/blog/samples/post8/elliptical-fillet-angles.svg" alt="Elliptical fillet at various angles — adapts trim distances per-edge" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical">
   <code>// viewBox="0 0 560 300"
@@ -8949,11 +8949,11 @@ subtitle.apply {
   text(155, 32)\`Circular, elliptical, per-vertex, and rotated on a 70×70 square\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post8/fillet-gallery.svg" alt="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical" loading="lazy">
+  <img src="/blog/samples/post8/fillet-gallery.svg" alt="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical" loading="lazy">
 </mini-workspace></p>
 <p>The gallery shows five variations: small circular (r=5), large circular (r=15), elliptical (15×8), single-vertex circular (r=20 at vertex 1), and rotated elliptical (15×8, 0.3 rad).</p>
 <h2>Edge Cases and Clamping</h2>
-<p>Both chamfers and fillets handle edge cases gracefully. From the <a href="/pathogen/docs#path-blocks-edge-cases">documentation</a>:</p>
+<p>Both chamfers and fillets handle edge cases gracefully. From the <a href="/docs#path-blocks-edge-cases">documentation</a>:</p>
 <ul>
 <li><strong>Radius/distance too large</strong>: If the trim distance exceeds the available edge length, it&#39;s clamped to the edge length and a warning is logged. This prevents the operation from failing on small shapes.</li>
 <li><strong>Out-of-range vertex index</strong>: Throws a descriptive error.</li>
@@ -8961,7 +8961,7 @@ subtitle.apply {
 <li><strong>Open paths</strong>: Corners at both endpoints are skipped (there&#39;s no second edge to trim).</li>
 </ul>
 <h2>Chaining with Other Operations</h2>
-<p>Because chamfers and fillets return PathBlocks, you can chain them with any other PathBlock method — <a href="/pathogen/docs#path-blocks-drawing-a-path-block"><code>.draw()</code></a>, <a href="/pathogen/docs#path-blocks-drawing-a-path-block"><code>.drawTo()</code></a>, <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project()</code></a>, <a href="/pathogen/docs#path-blocks-parametric-sampling">parametric sampling</a>, or <a href="/pathogen/docs#path-blocks-boolean-operations">boolean operations</a>:</p>
+<p>Because chamfers and fillets return PathBlocks, you can chain them with any other PathBlock method — <a href="/docs#path-blocks-drawing-a-path-block"><code>.draw()</code></a>, <a href="/docs#path-blocks-drawing-a-path-block"><code>.drawTo()</code></a>, <a href="/docs#path-blocks-projecting-without-drawing"><code>.project()</code></a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or <a href="/docs#path-blocks-boolean-operations">boolean operations</a>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
 <span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
 <span class="hljs-keyword">let</span> pts = rounded.<span class="hljs-title function_">partition</span>(<span class="hljs-number">20</span>);
@@ -8969,25 +8969,25 @@ subtitle.apply {
   <span class="hljs-comment">// Place dots along the rounded rectangle</span>
 }
 </code></pre><h2>What&#39;s Next</h2>
-<p>The final post in this series covers <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a> — combining two closed paths using union, difference, intersection, and xor. Since everything returns a PathBlock, you&#39;ll see how these operations compose with the fillets and chamfers covered here.</p>
+<p>The final post in this series covers <a href="/blog/pathblock-boolean-operations">boolean operations</a> — combining two closed paths using union, difference, intersection, and xor. Since everything returns a PathBlock, you&#39;ll see how these operations compose with the fillets and chamfers covered here.</p>
 `,
   'pathblock-glyph-extraction': `<p><em>Part 2 of 2 in our series on TextBlock and font integration.</em></p>
 <blockquote>
 <p><strong>Series: TextBlock &amp; Font Integration</strong></p>
 <ol>
-<li><a href="/pathogen/blog/textblock-introduction">TextBlock: Measure-First Text for SVG Diagrams</a></li>
+<li><a href="/blog/textblock-introduction">TextBlock: Measure-First Text for SVG Diagrams</a></li>
 <li><strong>From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</strong> (this post)</li>
 </ol>
 </blockquote>
 <blockquote>
-<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the <code>@{}</code> sigil, <code>.draw()</code>, <code>.project()</code>, and boolean operations. If you&#39;re new to Pathogen, start with <a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a>. For boolean operations, see <a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a>.</p>
+<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the <code>@{}</code> sigil, <code>.draw()</code>, <code>.project()</code>, and boolean operations. If you&#39;re new to Pathogen, start with <a href="/blog/pathblock-introduction">Introduction to PathBlocks</a>. For boolean operations, see <a href="/blog/pathblock-boolean-operations">Boolean Operations</a>.</p>
 </blockquote>
-<p><a href="/pathogen/blog/textblock-introduction">TextBlock</a> gives you a compose-measure-position workflow for SVG text. You build text at relative coordinates, measure its bounding box, place it precisely, and draw it to a TextLayer. That covers most labeling and annotation work. But the result is still an SVG <code>&lt;text&gt;</code> element — a string the browser renders with its own font engine. You can&#39;t sample points along its outline, apply a fillet to its corners, or punch it out of a rectangle with a boolean difference.</p>
+<p><a href="/blog/textblock-introduction">TextBlock</a> gives you a compose-measure-position workflow for SVG text. You build text at relative coordinates, measure its bounding box, place it precisely, and draw it to a TextLayer. That covers most labeling and annotation work. But the result is still an SVG <code>&lt;text&gt;</code> element — a string the browser renders with its own font engine. You can&#39;t sample points along its outline, apply a fillet to its corners, or punch it out of a rectangle with a boolean difference.</p>
 <p>Where Part 1 made text measurable, this post makes it malleable — converting glyphs into path geometry you can transform, decompose, and combine.</p>
 <p>What if you need text <em>as geometry</em> — actual path commands you can transform, combine, and query like any other shape? Think logo construction where letters are punched out of a background plate. Or generative typography where each character follows a different arc. Or a stencil design where glyph outlines need to be offset and duplicated. These tasks require the text&#39;s vector outline, not its rendered pixels.</p>
-<p>That&#39;s what font integration provides. The <code>@font</code> directive loads a font file, and <code>PathBlock.fromGlyph()</code> converts each character into a PathBlock with the glyph&#39;s full vector outline. From there, everything in the <a href="/pathogen/blog/pathblock-introduction">PathBlock series</a> applies: <a href="/pathogen/docs#path-blocks-drawing-a-path-block">drawing and positioning</a>, <a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a>, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a>, <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a>, and all the transforms.</p>
+<p>That&#39;s what font integration provides. The <code>@font</code> directive loads a font file, and <code>PathBlock.fromGlyph()</code> converts each character into a PathBlock with the glyph&#39;s full vector outline. From there, everything in the <a href="/blog/pathblock-introduction">PathBlock series</a> applies: <a href="/docs#path-blocks-drawing-a-path-block">drawing and positioning</a>, <a href="/blog/pathblock-parametric-sampling">parametric sampling</a>, <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>, <a href="/blog/pathblock-boolean-operations">boolean operations</a>, and all the transforms.</p>
 <h2>Loading Fonts with @font</h2>
-<p>Before you can extract glyphs, Pathogen needs access to the font&#39;s vector data. The <a href="/pathogen/docs#path-blocks-font-directive"><code>@font</code> directive</a> declares a font at the top level of your program:</p>
+<p>Before you can extract glyphs, Pathogen needs access to the font&#39;s vector data. The <a href="/docs#path-blocks-font-directive"><code>@font</code> directive</a> declares a font at the top level of your program:</p>
 <pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
 @font <span class="hljs-string">&quot;Roboto Mono&quot;</span> <span class="hljs-number">700</span>;
 @font <span class="hljs-string">&quot;./fonts/CustomFont.ttf&quot;</span>;
@@ -8997,12 +8997,12 @@ subtitle.apply {
 <li><strong>Playground</strong>: Fetches from the Google Fonts CDN automatically. Specify a family name and the playground handles the HTTP request.</li>
 </ul>
 <p>The directive is purely declarative — the host environment loads font data before compilation begins. If a font can&#39;t be found, a warning is logged and compilation continues. This means <code>@font</code> never blocks the build; it just determines whether glyph extraction and precise TextBlock metrics are available.</p>
-<p>A single <code>@font</code> declaration serves double duty: it makes the font available for <code>PathBlock.fromGlyph()</code> glyph extraction <em>and</em> upgrades <a href="/pathogen/blog/textblock-introduction">TextBlock</a> <code>.boundingBox()</code> measurements from estimation tables to exact kerning-aware metrics via opentype.js. You don&#39;t need separate declarations for paths and text — one directive covers both.</p>
+<p>A single <code>@font</code> declaration serves double duty: it makes the font available for <code>PathBlock.fromGlyph()</code> glyph extraction <em>and</em> upgrades <a href="/blog/textblock-introduction">TextBlock</a> <code>.boundingBox()</code> measurements from estimation tables to exact kerning-aware metrics via opentype.js. You don&#39;t need separate declarations for paths and text — one directive covers both.</p>
 <blockquote>
 <p><strong>CLI vs Playground:</strong> In the CLI, <code>@font</code> loads from local file paths or system font directories. In the Playground, fonts are fetched automatically from Google Fonts by family name. Both environments use the same opentype.js parser, so identical font files produce identical geometry.</p>
 </blockquote>
 <h2>Extracting Glyphs with PathBlock.fromGlyph()</h2>
-<p><a href="/pathogen/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph(text, styles)</code></a> is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:</p>
+<p><a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph(text, styles)</code></a> is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:</p>
 <pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
 
 <span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
@@ -9010,7 +9010,7 @@ subtitle.apply {
 
 <span class="hljs-title function_">log</span>(glyphs.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 5 — one PathBlock per character</span>
 </code></pre><p>The style block must include <code>font-family</code> (matching a loaded <code>@font</code> declaration). <code>font-size</code> defaults to 16 and <code>font-weight</code> defaults to 400 if omitted. The function walks each character in the text string, looks up the glyph in the loaded font, extracts its outline as cubic Bezier curves and line segments, scales to the requested font size, and wraps the result as a PathBlock with relative commands starting at <code>(0, 0)</code>.</p>
-<p>Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, <code>.get()</code>, <code>.tangent()</code>, <code>.boundingBox()</code>, <code>.scale()</code>, <code>.fillet()</code>, <code>.union()</code> — everything from the <a href="/pathogen/docs#path-blocks-syntax">PathBlock documentation</a>. The glyph is geometry now, not text.</p>
+<p>Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, <code>.get()</code>, <code>.tangent()</code>, <code>.boundingBox()</code>, <code>.scale()</code>, <code>.fillet()</code>, <code>.union()</code> — everything from the <a href="/docs#path-blocks-syntax">PathBlock documentation</a>. The glyph is geometry now, not text.</p>
 <pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
 
 <span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;A&quot;</span>, \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">72</span>; });
@@ -9024,10 +9024,10 @@ glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">dr
 <span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">vertices</span>.<span class="hljs-property">length</span>);  <span class="hljs-comment">// number of junction points</span>
 </code></pre><p><code>fromGlyph()</code> always returns an array — one PathBlock per character — even for single characters. That&#39;s why we index with <code>glyphs[0]</code> above.</p>
 <p>Space characters are handled correctly: they return an empty PathBlock (no path commands, zero length) but still carry a non-zero <code>.advanceWidth</code> for layout purposes. This means a loop over <code>PathBlock.fromGlyph(&quot;Hello World&quot;, styles)</code> will naturally insert a gap between &quot;Hello&quot; and &quot;World&quot; without special-casing.</p>
-<p>If something goes wrong, the <a href="/pathogen/docs#path-blocks-error-cases">error messages</a> are specific. Wrong argument count, missing <code>font-family</code>, no <code>@font</code> loaded, font not found in the registry — each condition has its own message telling you exactly what to fix.</p>
+<p>If something goes wrong, the <a href="/docs#path-blocks-error-cases">error messages</a> are specific. Wrong argument count, missing <code>font-family</code>, no <code>@font</code> loaded, font not found in the registry — each condition has its own message telling you exactly what to fix.</p>
 <h2>Manual Text Layout with advanceWidth</h2>
 <p>Drawing glyph PathBlocks is straightforward, but you need to position them correctly. In a font, each glyph has an <em>advance width</em> — the horizontal distance the cursor should move after drawing that glyph before drawing the next one. This is how proportional fonts work: a narrow &quot;i&quot; advances less than a wide &quot;M&quot;.</p>
-<p>Every glyph PathBlock from <code>fromGlyph()</code> carries an <a href="/pathogen/docs#path-blocks-advancewidth"><code>.advanceWidth</code></a> property. To lay out a word, accumulate advance widths in a loop:</p>
+<p>Every glyph PathBlock from <code>fromGlyph()</code> carries an <a href="/docs#path-blocks-advancewidth"><code>.advanceWidth</code></a> property. To lay out a word, accumulate advance widths in a loop:</p>
 <pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Bebas Neue&quot;</span>;
 <span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">BebasNeue</span>-<span class="hljs-title class_">Regular</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">64</span>; };
 <span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;PATHOGEN&quot;</span>, styles);
@@ -9190,13 +9190,13 @@ layer('kw').apply {
 
 code_group.append(code, kw);
 </code>
-  <img src="/pathogen/blog/samples/post12/glyph-layout.svg" alt="Advance-width layout — proportional (Bebas Neue) vs monospace (Inconsolata)" loading="lazy">
+  <img src="/blog/samples/post12/glyph-layout.svg" alt="Advance-width layout — proportional (Bebas Neue) vs monospace (Inconsolata)" loading="lazy">
 </mini-workspace></p>
 <p>The yellow baseline and dashed tick marks make the layout mechanics visible. In the top row, the proportional font produces uneven column widths — &quot;A&quot; and &quot;H&quot; are wider than &quot;T&quot; and &quot;O&quot;. In the bottom row, the monospace font produces a uniform grid. Both layouts use the same accumulation loop; the font&#39;s advance widths do all the work.</p>
 <p>Because you&#39;re controlling the cursor directly, you can adjust spacing however you want. Multiply advance widths by a tracking factor to tighten or loosen letter spacing. Add a fixed offset for extra gaps. Skip characters, reverse the order, lay them out vertically — it&#39;s just arithmetic in a loop.</p>
 <h2>Contour Decomposition</h2>
 <p>Most glyphs are made of multiple contours. The letter &quot;O&quot; has an outer ring and an inner hole — two closed paths. The letter &quot;i&quot; has a body and a dot — also two. Some glyphs are more complex: &quot;B&quot; has an outer shape plus two enclosed holes.</p>
-<p>The <a href="/pathogen/docs#path-blocks-contours"><code>.contours</code></a> property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:</p>
+<p>The <a href="/docs#path-blocks-contours"><code>.contours</code></a> property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:</p>
 <pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
 <span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
 <span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;O&quot;</span>, styles);
@@ -9549,12 +9549,12 @@ let divider = PathLayer('divider') \${
 };
 layer('divider').apply { M 345 20 v 370 }
 </code>
-  <img src="/pathogen/blog/samples/post12/contour-decomposition.svg" alt="Contour decomposition — 12 contours across 6 characters of 'Bingo!'" loading="lazy">
+  <img src="/blog/samples/post12/contour-decomposition.svg" alt="Contour decomposition — 12 contours across 6 characters of 'Bingo!'" loading="lazy">
 </mini-workspace></p>
 <p>The top row shows the assembled word rendered normally — solid fill, single color. The decomposed version below separates every contour into its own PathBlock, each with a distinct stroke color and semi-transparent fill. The color key on the right identifies each piece: B&#39;s three parts, i&#39;s body and dot, and so on.</p>
 <p>When would you use contour decomposition? Anytime you need to treat parts of a glyph independently. Color the inside of an &quot;O&quot; differently from its ring. Animate the dot of an &quot;i&quot; separately from its stem. Extract just the outer contour of a &quot;B&quot; for a custom logo mark. Each contour is a full PathBlock, so it composes with everything else in the language.</p>
 <h2>Per-Character Transforms</h2>
-<p>When each character is its own PathBlock, you can transform them individually. The standard PathBlock transform methods — <a href="/pathogen/docs#path-blocks-scalesx-sy-pathblock-projectedpath"><code>.scale()</code></a>, <a href="/pathogen/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath"><code>.rotateAtVertexIndex()</code></a>, <a href="/pathogen/docs#path-blocks-mirrorangle-pathblock-projectedpath"><code>.mirror()</code></a> — work on glyph PathBlocks just like any other shape.</p>
+<p>When each character is its own PathBlock, you can transform them individually. The standard PathBlock transform methods — <a href="/docs#path-blocks-scalesx-sy-pathblock-projectedpath"><code>.scale()</code></a>, <a href="/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath"><code>.rotateAtVertexIndex()</code></a>, <a href="/docs#path-blocks-mirrorangle-pathblock-projectedpath"><code>.mirror()</code></a> — work on glyph PathBlocks just like any other shape.</p>
 <p>These patterns appear frequently in poster design, motion graphics titles, custom lettering, and generative art.</p>
 <p>The interesting part is combining transforms with the advance-width layout loop. Instead of just placing each glyph at the cursor position, you apply a per-character transformation first:</p>
 <h3>Wave Effect</h3>
@@ -9834,15 +9834,15 @@ let title = TextLayer('title') \${
 };
 layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
 </code>
-  <img src="/pathogen/blog/samples/post12/per-char-transforms.svg" alt="Three per-character transform effects — wave, grow, and circular arc text" loading="lazy">
+  <img src="/blog/samples/post12/per-char-transforms.svg" alt="Three per-character transform effects — wave, grow, and circular arc text" loading="lazy">
 </mini-workspace></p>
 <p>The three columns show each effect in isolation. The wave uses <code>sin()</code> to offset characters vertically. The grow effect scales each successive character larger with <code>.scale()</code>. The circular layout places rotated characters along a dashed guide circle. All three use the same advance-width accumulation loop — the only difference is what happens to each glyph before it&#39;s drawn.</p>
-<p>These are building blocks, not finished effects. Combine a wave offset with a scale cascade. Apply a color gradient by assigning each character to a different layer with different fill colors. Use <a href="/pathogen/docs#path-blocks-mirrorangle-pathblock-projectedpath"><code>.mirror()</code></a> to flip alternating characters for a decorative pattern. Apply a rotation to characters along a Bezier curve instead of a circle (using <a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a> from Part 2 of the PathBlock series). The transform methods compose freely because each one returns a new PathBlock.</p>
+<p>These are building blocks, not finished effects. Combine a wave offset with a scale cascade. Apply a color gradient by assigning each character to a different layer with different fill colors. Use <a href="/docs#path-blocks-mirrorangle-pathblock-projectedpath"><code>.mirror()</code></a> to flip alternating characters for a decorative pattern. Apply a rotation to characters along a Bezier curve instead of a circle (using <a href="/blog/pathblock-parametric-sampling">parametric sampling</a> from Part 2 of the PathBlock series). The transform methods compose freely because each one returns a new PathBlock.</p>
 <p>The key insight is that the advance-width loop structure stays the same across all these effects. You always accumulate cursor positions using <code>.advanceWidth</code>. The creative part is what you do to each glyph <em>before</em> drawing it — and since PathBlock transforms return new PathBlocks without modifying the original, you can experiment freely.</p>
 <h2>Text Cutout with Boolean Operations</h2>
 <p>One of the most visually striking uses of glyph extraction is punching text out of geometry. The conceptual pipeline has three stages: extract the glyph paths, combine them into a single outline, then subtract that outline from a background shape.</p>
 <h3>Punching Text from Geometry</h3>
-<p>The approach uses <a href="/pathogen/docs#path-blocks-unionother-pathblock"><code>.union()</code></a> and <a href="/pathogen/docs#path-blocks-differenceother-pathblock"><code>.difference()</code></a> from the <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations post</a>. First, extract and lay out the glyphs, then union them into a single outline and subtract from a plate:</p>
+<p>The approach uses <a href="/docs#path-blocks-unionother-pathblock"><code>.union()</code></a> and <a href="/docs#path-blocks-differenceother-pathblock"><code>.difference()</code></a> from the <a href="/blog/pathblock-boolean-operations">boolean operations post</a>. First, extract and lay out the glyphs, then union them into a single outline and subtract from a plate:</p>
 <pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Bebas Neue&quot;</span>;
 <span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;CUTTING&quot;</span>, styles);
 
@@ -9861,7 +9861,7 @@ layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
   combined = combined.<span class="hljs-title function_">union</span>(projected[i]);
 }
 <span class="hljs-keyword">let</span> cutout = plate.<span class="hljs-title function_">project</span>(px, py).<span class="hljs-title function_">difference</span>(combined);
-</code></pre><p>The chaining works because every boolean operation returns a PathBlock, so the result of <code>.union()</code> feeds directly into the next <code>.union()</code> or <code>.difference()</code> — for any number of glyphs. Because boolean operations <a href="/pathogen/blog/pathblock-boolean-operations">preserve curve types</a>, the glyph outlines stay smooth at any zoom level.</p>
+</code></pre><p>The chaining works because every boolean operation returns a PathBlock, so the result of <code>.union()</code> feeds directly into the next <code>.union()</code> or <code>.difference()</code> — for any number of glyphs. Because boolean operations <a href="/blog/pathblock-boolean-operations">preserve curve types</a>, the glyph outlines stay smooth at any zoom level.</p>
 <p>The demo below shows the full pipeline in five panels: individual glyph outlines, a <code>.union()</code> arrow, the combined path, a <code>.difference()</code> arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using <code>.difference()</code>.</p>
 <p><mini-workspace caption="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle">
   <code>// viewBox="0 0 900 310"
@@ -10045,10 +10045,10 @@ layer('kw').apply {
 
 code_group.append(code_bg, code, kw);
 </code>
-  <img src="/pathogen/blog/samples/post12/text-cutout.svg" alt="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle" loading="lazy">
+  <img src="/blog/samples/post12/text-cutout.svg" alt="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle" loading="lazy">
 </mini-workspace></p>
 <p>Text cutouts are common in logo design, stencil art, and anywhere you need negative-space typography. The pipeline is <code>.union()</code> calls followed by <code>.difference()</code> — a few lines of code instead of manual path editing in a vector graphics tool.</p>
-<p>You can extend the boolean pipeline further. Apply a <a href="/pathogen/blog/pathblock-fillets-chamfers">fillet</a> to the plate&#39;s corners before punching to get a rounded badge. Use <code>.intersection()</code> instead of <code>.difference()</code> to clip text to a circular mask. Chain multiple <code>.difference()</code> calls to punch text at different positions on the same plate. The boolean operations return PathBlocks, so the entire <a href="/pathogen/blog/pathblock-introduction">PathBlock composability model</a> is available at every stage.</p>
+<p>You can extend the boolean pipeline further. Apply a <a href="/blog/pathblock-fillets-chamfers">fillet</a> to the plate&#39;s corners before punching to get a rounded badge. Use <code>.intersection()</code> instead of <code>.difference()</code> to clip text to a circular mask. Chain multiple <code>.difference()</code> calls to punch text at different positions on the same plate. The boolean operations return PathBlocks, so the entire <a href="/blog/pathblock-introduction">PathBlock composability model</a> is available at every stage.</p>
 <h2>Paths vs Text: Why @font Matters</h2>
 <p>Converting text to paths produces more SVG data than <code>&lt;text&gt;</code> elements — a single glyph may contain 20+ Bezier segments. For short words and display text this is negligible; for paragraph-length content, prefer TextBlock. Glyph extraction runs once at compile time — the PathBlock values stored in variables are reused across parameter changes without re-extracting from the font.</p>
 <blockquote>
@@ -10259,7 +10259,7 @@ layer('insight').apply {
   text(30, 332)\`Paths = single source of truth for geometry AND metrics\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post12/metrics-upgrade.svg" alt="Same word, two approaches — fromGlyph() paths with exact metrics vs SVG text with estimated metrics" loading="lazy">
+  <img src="/blog/samples/post12/metrics-upgrade.svg" alt="Same word, two approaches — fromGlyph() paths with exact metrics vs SVG text with estimated metrics" loading="lazy">
 </mini-workspace></p>
 <p>The left side shows &quot;LAYOUT&quot; rendered as glyph PathBlocks with advance-width ticks and a bounding box computed from the actual font geometry. The right side shows the same word as SVG <code>&lt;text&gt;</code> with a bounding box from estimation tables. The green box on the left fits tightly because paths and metrics come from the same font. The amber dashed box on the right may not align as well, because the browser&#39;s font and Pathogen&#39;s estimation table can diverge.</p>
 <p>This doesn&#39;t mean <code>&lt;text&gt;</code> is wrong for all cases — TextBlock with estimation tables works well for most label placement, especially with <code>.intersects()</code> collision avoidance where a few percent of width variation doesn&#39;t matter. But when you need pixel-level precision — logo construction, stencil output, precise baseline alignment — <code>fromGlyph()</code> eliminates the measurement-rendering mismatch entirely.</p>
@@ -10281,19 +10281,19 @@ layer('insight').apply {
 }
 </code></pre><p>That&#39;s three steps: <code>@font</code> declares the font, <code>fromGlyph()</code> converts text to geometry, and an advance-width loop handles layout. From there, every PathBlock operation is available — transforms, sampling, fillets, boolean operations, contour decomposition. The glyph is geometry now, and geometry composes.</p>
 <h2>What&#39;s Next</h2>
-<p>TextBlock and glyph extraction form two sides of the same coin. <a href="/pathogen/blog/textblock-introduction">TextBlock</a> gives you a fast, compose-measure-position workflow for text labels in diagrams — estimation-based measurement is good enough, and the output is semantic SVG <code>&lt;text&gt;</code> that&#39;s accessible and searchable. <code>PathBlock.fromGlyph()</code> gives you text as geometry — exact outlines you can transform, decompose, and combine with any PathBlock operation.</p>
-<p>Together, they cover the full spectrum of text needs in programmatic SVG. Labels that need to avoid overlapping? TextBlock with <code>.intersects()</code>. A logo with text punched out of a shape? <code>fromGlyph()</code> with <code>.difference()</code>. Characters scattered along a curved path? <code>fromGlyph()</code> with <a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a>. A diagram with precisely measured annotations? TextBlock with a loaded <code>@font</code> for exact metrics.</p>
-<p>The font integration features build directly on the PathBlock foundation covered in the <a href="/pathogen/blog/pathblock-introduction">PathBlock series</a> — if you haven&#39;t explored <a href="/pathogen/docs#path-blocks-transforms">transforms</a>, <a href="/pathogen/blog/pathblock-parametric-sampling">sampling</a>, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets</a>, and <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a>, those posts show the full range of what glyph PathBlocks inherit. Every operation that works on a hand-drawn <code>@{ h 50 v 30 z }</code> shape works identically on a glyph extracted from a font.</p>
-<p>Try it yourself in the <a href="/pathogen/">Pathogen playground</a> — load a font with <code>@font</code>, extract some glyphs, and see what happens when typography becomes geometry.</p>
+<p>TextBlock and glyph extraction form two sides of the same coin. <a href="/blog/textblock-introduction">TextBlock</a> gives you a fast, compose-measure-position workflow for text labels in diagrams — estimation-based measurement is good enough, and the output is semantic SVG <code>&lt;text&gt;</code> that&#39;s accessible and searchable. <code>PathBlock.fromGlyph()</code> gives you text as geometry — exact outlines you can transform, decompose, and combine with any PathBlock operation.</p>
+<p>Together, they cover the full spectrum of text needs in programmatic SVG. Labels that need to avoid overlapping? TextBlock with <code>.intersects()</code>. A logo with text punched out of a shape? <code>fromGlyph()</code> with <code>.difference()</code>. Characters scattered along a curved path? <code>fromGlyph()</code> with <a href="/blog/pathblock-parametric-sampling">parametric sampling</a>. A diagram with precisely measured annotations? TextBlock with a loaded <code>@font</code> for exact metrics.</p>
+<p>The font integration features build directly on the PathBlock foundation covered in the <a href="/blog/pathblock-introduction">PathBlock series</a> — if you haven&#39;t explored <a href="/docs#path-blocks-transforms">transforms</a>, <a href="/blog/pathblock-parametric-sampling">sampling</a>, <a href="/blog/pathblock-fillets-chamfers">fillets</a>, and <a href="/blog/pathblock-boolean-operations">boolean operations</a>, those posts show the full range of what glyph PathBlocks inherit. Every operation that works on a hand-drawn <code>@{ h 50 v 30 z }</code> shape works identically on a glyph extracted from a font.</p>
+<p>Try it yourself in the <a href="/">Pathogen playground</a> — load a font with <code>@font</code>, extract some glyphs, and see what happens when typography becomes geometry.</p>
 `,
   'pathblock-introduction': `<p><em>Part 1 of 4 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
 <li><strong>Introduction to PathBlocks</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
-<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
-<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
 </ol>
 </blockquote>
 <p>If you build parametric SVGs, icon systems, or generative art, you&#39;ve felt the friction: repeating the same shapes at different positions means copy-pasting <code>&lt;path&gt;</code> elements, tweaking <code>d</code> attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.</p>
@@ -10309,8 +10309,8 @@ layer('insight').apply {
   l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
   l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
 };
-</code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/pathogen/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
-<p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/pathogen/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/pathogen/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
+</code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
+<p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
 <p><mini-workspace caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
   <code>// viewBox="0 0 600 380"
 // PathBlock Anatomy — visual guide to structure and properties
@@ -10581,7 +10581,7 @@ leg.apply {
   text(132, 356)\`Direction\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/pathblock-anatomy.svg" alt="PathBlock anatomy — origin, vertices, bounds, and path direction" loading="lazy">
+  <img src="/blog/samples/post6/pathblock-anatomy.svg" alt="PathBlock anatomy — origin, vertices, bounds, and path direction" loading="lazy">
 </mini-workspace></p>
 <h2>Drawing and Positioning</h2>
 <p>There are two ways to draw a PathBlock: the manual approach and the convenience method.</p>
@@ -10589,7 +10589,7 @@ leg.apply {
 <p>Position the cursor with an <code>M</code> command, then call <code>.draw()</code> to emit the relative commands:</p>
 <pre><code class="hljs language-pathogen">M <span class="hljs-number">60</span> <span class="hljs-number">70</span>
 arrow.<span class="hljs-title function_">draw</span>()
-</code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/pathogen/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
+</code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
 <h3>Convenience: <code>.drawTo(x, y)</code></h3>
 <p>The <code>drawTo()</code> method combines positioning and drawing in a single call:</p>
 <pre><code class="hljs language-pathogen">arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">70</span>)
@@ -10640,10 +10640,10 @@ drawto.apply {
   }
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/drawto-vs-manual.svg" alt="Manual M+draw() vs drawTo() — same result, less code" loading="lazy">
+  <img src="/blog/samples/post6/drawto-vs-manual.svg" alt="Manual M+draw() vs drawTo() — same result, less code" loading="lazy">
 </mini-workspace></p>
 <h2>Reuse and Repetition</h2>
-<p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/pathogen/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
+<p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> dot = @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> };
 
 <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
@@ -10651,7 +10651,7 @@ drawto.apply {
     dot.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + i * <span class="hljs-number">15</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + j * <span class="hljs-number">15</span>))
   }
 }
-</code></pre><p>PathBlocks are <a href="/pathogen/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
+</code></pre><p>PathBlocks are <a href="/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
 <p>Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.</p>
 <p><mini-workspace caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
   <code>// viewBox="0 0 400 400"
@@ -10816,7 +10816,7 @@ title.apply {
   text(385, 25)\`Define Once, Draw Everywhere\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/pathblock-pattern.svg" alt="Radial pattern — one PathBlock drawn 28 times with trigonometric placement" loading="lazy">
+  <img src="/blog/samples/post6/pathblock-pattern.svg" alt="Radial pattern — one PathBlock drawn 28 times with trigonometric placement" loading="lazy">
 </mini-workspace></p>
 <h2>A Practical Example</h2>
 <p>Here&#39;s a grid built from two simple PathBlocks — a horizontal line and a vertical line — repeated with loops. The PathBlock captures the shape; the loop handles placement.</p>
@@ -10866,10 +10866,10 @@ arrows.apply {
   arrow.drawTo(280, 170);
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
+  <img src="/blog/samples/post6/pathblock-basics.svg" alt="Grid from two PathBlocks — define once, draw in loops" loading="lazy">
 </mini-workspace></p>
 <h2>PathBlock Properties</h2>
-<p>Every PathBlock carries metadata about its geometry. The <a href="/pathogen/docs#path-blocks-properties">Properties</a> section covers all of them:</p>
+<p>Every PathBlock carries metadata about its geometry. The <a href="/docs#path-blocks-properties">Properties</a> section covers all of them:</p>
 <ul>
 <li><code>.startPoint</code> / <code>.endPoint</code> — where the shape begins and ends</li>
 <li><code>.vertices</code> — all junction points as an array of Points</li>
@@ -10878,14 +10878,14 @@ arrows.apply {
 </ul>
 <p>These properties make PathBlocks queryable — you can inspect a shape&#39;s geometry before deciding how to draw or transform it.</p>
 <h2>Projection</h2>
-<p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/pathogen/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
+<p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
 <p><code>.project()</code> returns a <code>ProjectedPath</code> — the same commands, but offset to absolute coordinates at <code>(x, y)</code>. The PathBlock itself stays unchanged; the ProjectedPath is a positioned view of it:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
 <span class="hljs-keyword">let</span> proj = box.<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>);
 <span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>));  <span class="hljs-comment">// Point at midpoint of positioned path</span>
 </code></pre><p>Think of it as &quot;place the shape here, but don&#39;t draw it yet.&quot; ProjectedPaths support all the same operations as PathBlocks — sampling, fillets, chamfers, booleans — but in absolute coordinates. You&#39;ll see <code>.project()</code> used heavily in the rest of this series whenever shapes need to interact with each other spatially.</p>
 <h2>Standard Library Shapes</h2>
-<p>Pathogen&#39;s <a href="/pathogen/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
+<p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
 <span class="hljs-keyword">let</span> r = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) };
 <span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
@@ -11039,39 +11039,39 @@ subtitle.apply {
   text(220, 32)\`Built-in path functions for common geometry\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post6/stdlib-showcase.svg" alt="Standard library shapes — circle, rect, star, polygon, and roundRect" loading="lazy">
+  <img src="/blog/samples/post6/stdlib-showcase.svg" alt="Standard library shapes — circle, rect, star, polygon, and roundRect" loading="lazy">
 </mini-workspace></p>
 <h2>What&#39;s Next</h2>
-<p>PathBlocks are the foundation for everything that follows. In the next post, we&#39;ll explore <a href="/pathogen/blog/pathblock-parametric-sampling">parametric sampling</a> — querying points, tangents, and normals along a path to place elements precisely along curves. After that, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a> show how to round and cut corners, and <a href="/pathogen/blog/pathblock-boolean-operations">boolean operations</a> combine shapes using union, difference, intersection, and xor.</p>
-<p>Try it yourself in the <a href="/pathogen/">Pathogen playground</a> — paste any of the examples above and see the SVG output live.</p>
+<p>PathBlocks are the foundation for everything that follows. In the next post, we&#39;ll explore <a href="/blog/pathblock-parametric-sampling">parametric sampling</a> — querying points, tangents, and normals along a path to place elements precisely along curves. After that, <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a> show how to round and cut corners, and <a href="/blog/pathblock-boolean-operations">boolean operations</a> combine shapes using union, difference, intersection, and xor.</p>
+<p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any of the examples above and see the SVG output live.</p>
 `,
   'pathblock-parametric-sampling': `<p><em>Part 2 of 4 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
-<li><a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
 <li><strong>Exploring Parametric Sampling</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
-<li><a href="/pathogen/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
 </ol>
 </blockquote>
-<p>The <a href="/pathogen/blog/pathblock-introduction">previous post</a> introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path&#39;s geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What&#39;s the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.</p>
+<p>The <a href="/blog/pathblock-introduction">previous post</a> introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path&#39;s geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What&#39;s the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.</p>
 <h2>The Parameter <code>t</code></h2>
 <p>All sampling methods use a parameter <code>t</code> that ranges from 0 (start of path) to 1 (end of path). This isn&#39;t the raw parametric value of the underlying Bézier or arc — it&#39;s measured by <strong>arc length</strong>. That means <code>t = 0.5</code> is always the geometric midpoint of the path, regardless of how the control points are distributed.</p>
 <p>This is a critical distinction. A cubic Bézier with uneven control point spacing has a non-uniform speed along its raw parameter. Arc-length parameterization normalizes this so that equal increments of <code>t</code> correspond to equal distances along the curve.</p>
 <h2>Querying Points</h2>
-<p>The simplest query is <a href="/pathogen/docs#path-blocks-gett-point"><code>.get(t)</code></a>, which returns the <code>Point</code> at arc-length fraction <code>t</code>:</p>
+<p>The simplest query is <a href="/docs#path-blocks-gett-point"><code>.get(t)</code></a>, which returns the <code>Point</code> at arc-length fraction <code>t</code>:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
 <span class="hljs-keyword">let</span> mid = curve.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-title function_">log</span>(mid);  <span class="hljs-comment">// Point near the apex of the curve</span>
-</code></pre><p>This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See <a href="/pathogen/docs#path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</a> for the coordinate behavior.</p>
+</code></pre><p>This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See <a href="/docs#path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</a> for the coordinate behavior.</p>
 <h2>Tangents and Normals</h2>
-<p><a href="/pathogen/docs#path-blocks-tangentt-point-angle"><code>.tangent(t)</code></a> returns both a point and the direction of travel at that point:</p>
+<p><a href="/docs#path-blocks-tangentt-point-angle"><code>.tangent(t)</code></a> returns both a point and the direction of travel at that point:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
 <span class="hljs-keyword">let</span> tan = curve.<span class="hljs-title function_">tangent</span>(<span class="hljs-number">0.0</span>);
 <span class="hljs-title function_">log</span>(tan.<span class="hljs-property">point</span>);   <span class="hljs-comment">// Point(0, 0) — start of curve</span>
 <span class="hljs-title function_">log</span>(tan.<span class="hljs-property">angle</span>);   <span class="hljs-comment">// angle in radians — direction of travel</span>
-</code></pre><p><a href="/pathogen/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
+</code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> n = curve.<span class="hljs-title function_">normal</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-comment">// n.angle is tangent angle - π/2</span>
 <span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
@@ -11320,7 +11320,7 @@ subtitle.apply {
   text(30, 344)\`Query any point along a path by arc-length fraction t\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/sampling-anatomy.svg" alt="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4" loading="lazy">
+  <img src="/blog/samples/post7/sampling-anatomy.svg" alt="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4" loading="lazy">
 </mini-workspace></p>
 <h2>Sampling Multiple Points</h2>
 <p>You can sample any number of points by calling <code>.get(t)</code> at specific values. Here&#39;s a curve with four markers at the quarter marks:</p>
@@ -11389,11 +11389,11 @@ tangents.apply {
   }
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/sampling-points.svg" alt="Points and tangent lines sampled along a cubic Bézier curve" loading="lazy">
+  <img src="/blog/samples/post7/sampling-points.svg" alt="Points and tangent lines sampled along a cubic Bézier curve" loading="lazy">
 </mini-workspace></p>
-<p>The red dots use <a href="/pathogen/docs#path-blocks-partitionn-orientedpoint"><code>partition(8)</code></a> to divide the curve into 8 equal segments. Each partition point includes <code>.point</code>, <code>.angle</code>, and <code>.t</code> properties. The green tangent lines use <code>tangent(t)</code> at each eighth to show the direction of travel.</p>
+<p>The red dots use <a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(8)</code></a> to divide the curve into 8 equal segments. Each partition point includes <code>.point</code>, <code>.angle</code>, and <code>.t</code> properties. The green tangent lines use <code>tangent(t)</code> at each eighth to show the direction of travel.</p>
 <h2>Even Distribution with <code>partition(n)</code></h2>
-<p><a href="/pathogen/docs#path-blocks-partitionn-orientedpoint"><code>partition(n)</code></a> is the workhorse for distributing elements along a path. It returns <code>n + 1</code> oriented points (both endpoints included), evenly spaced by arc length:</p>
+<p><a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(n)</code></a> is the workhorse for distributing elements along a path. It returns <code>n + 1</code> oriented points (both endpoints included), evenly spaced by arc length:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> path = @{ h <span class="hljs-number">100</span> };
 <span class="hljs-keyword">let</span> pts = path.<span class="hljs-title function_">partition</span>(<span class="hljs-number">4</span>);
 <span class="hljs-comment">// 5 points at t = 0, 0.25, 0.5, 0.75, 1.0</span>
@@ -11541,7 +11541,7 @@ subtitle.apply {
   text(295, 28)\`n + 1 points at equal arc-length intervals\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/sampling-tvalues.svg" alt="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve" loading="lazy">
+  <img src="/blog/samples/post7/sampling-tvalues.svg" alt="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve" loading="lazy">
 </mini-workspace></p>
 <h2>Building a Fence Along a Curve</h2>
 <p>Here&#39;s a practical example: fence posts distributed evenly along a winding road. The posts are placed using <code>partition(16)</code>, then oriented perpendicular to the road using <code>normal()</code>. Rails connect adjacent posts at 1/3 and 2/3 height.</p>
@@ -11698,21 +11698,21 @@ subtitle.apply {
   text(30, 42)\`partition() + normal() for perpendicular placement\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post7/partition-fence.svg" alt="Fence posts and rails distributed along a curved road" loading="lazy">
+  <img src="/blog/samples/post7/partition-fence.svg" alt="Fence posts and rails distributed along a curved road" loading="lazy">
 </mini-workspace></p>
 <p>The key pattern is:</p>
 <ol>
 <li>Define the base curve (the road)</li>
-<li>Use <code>.project(x, y)</code> to get a <a href="/pathogen/docs#path-blocks-projecting-without-drawing">ProjectedPath</a> with absolute coordinates</li>
+<li>Use <code>.project(x, y)</code> to get a <a href="/docs#path-blocks-projecting-without-drawing">ProjectedPath</a> with absolute coordinates</li>
 <li>Call <code>.partition(n)</code> to get evenly-spaced points</li>
 <li>Use <code>.normal(t)</code> to find the perpendicular direction at each point</li>
 <li>Place elements using <code>cos(angle)</code> and <code>sin(angle)</code> offsets</li>
 </ol>
 <p>This pattern works for any curve — Béziers, arcs, polylines, or combinations. The arc-length parameterization ensures even spacing regardless of the curve&#39;s complexity.</p>
 <h2>Curve Support</h2>
-<p>Sampling works uniformly on every SVG path command type — lines, cubic and quadratic Béziers, and arcs. A path that mixes segment types (say, a line into a cubic into an arc) samples seamlessly across segment boundaries. The arc-length lookup table is built once per path and cached, so repeated sampling calls are efficient. See the <a href="/pathogen/docs#path-blocks-curve-support">Curve Support</a> documentation for implementation details.</p>
+<p>Sampling works uniformly on every SVG path command type — lines, cubic and quadratic Béziers, and arcs. A path that mixes segment types (say, a line into a cubic into an arc) samples seamlessly across segment boundaries. The arc-length lookup table is built once per path and cached, so repeated sampling calls are efficient. See the <a href="/docs#path-blocks-curve-support">Curve Support</a> documentation for implementation details.</p>
 <h2>What&#39;s Next</h2>
-<p>Sampling tells you about a path&#39;s geometry. The next post covers <a href="/pathogen/blog/pathblock-fillets-chamfers">fillets and chamfers</a> — operations that modify the geometry itself by rounding or cutting corners. These use the same trim-and-split infrastructure under the hood: arc-length parameterization to find exact split points along edges.</p>
+<p>Sampling tells you about a path&#39;s geometry. The next post covers <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a> — operations that modify the geometry itself by rounding or cutting corners. These use the same trim-and-split infrastructure under the hood: arc-length parameterization to find exact split points along edges.</p>
 `,
   'reactive-color-svg': `<p>SVG is the web&#39;s vector format. It lives in the DOM, responds to CSS, and can be styled with custom properties. Yet most tools treat SVG as a static export — a snapshot frozen at build time. Colors baked in. Themes impossible without regeneration.</p>
 <p>Pathogen&#39;s Color system changes this. By combining a first-class <code>Color</code> type with CSS custom properties, Pathogen compiles SVG illustrations that are <em>reactive</em> — change a CSS variable at runtime and every derived color updates instantly. No JavaScript. No recompilation. Just CSS doing what CSS does best.</p>
@@ -11881,7 +11881,7 @@ for ([m, i] in methods) {
 layer('labels').append(layer('label'));
 layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
 </code>
-  <img src="/pathogen/blog/samples/post24/methods-radial.svg" alt="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice." loading="lazy">
+  <img src="/blog/samples/post24/methods-radial.svg" alt="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice." loading="lazy">
 </mini-workspace></p>
 <p>What makes this reactive? The SVG above was compiled <em>once</em>. There is no JavaScript updating colors. The fill values use CSS relative color syntax:</p>
 <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)&quot;</span>
@@ -12175,7 +12175,7 @@ legend.apply { text(15, legend_y)\`CHORDS:  ANA  TRI  TET  SPLIT-COMP  —  VERT
 layer('strips').append(layer('strip-label'), layer('strip-sub'), layer('legend'));
 layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
 </code>
-  <img src="/pathogen/blog/samples/post24/harmonies-wheel.svg" alt="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex." loading="lazy">
+  <img src="/blog/samples/post24/harmonies-wheel.svg" alt="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex." loading="lazy">
 </mini-workspace></p>
 <p>Notice the palette rows. The lightness ramp uses CSS relative color syntax to override the <code>l</code> component at fixed steps:</p>
 <pre><code class="hljs">fill=<span class="hljs-string">&quot;oklch(from var(--harmony-color) 0.35 c h)&quot;</span>
@@ -12497,7 +12497,7 @@ layer('stage').append(
 
 layer('diagram').append(layer('bg'), layer('sys'), layer('seam'), layer('stage'));
 </code>
-  <img src="/pathogen/blog/samples/post24/theme-combined.svg" alt="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych." loading="lazy">
+  <img src="/blog/samples/post24/theme-combined.svg" alt="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych." loading="lazy">
 </mini-workspace></p>
 <p>This composition has two halves. The top half is a geometric system — a central star (primary), orbiting circles (secondary), corner diamonds plus linking arcs and a halo (accent), all sitting on a dashed reference ring. The bottom half is the same theme as a presentational triptych: primary, secondary, and accent as first-class design elements. The star fill uses <code>oklch(from var(--primary) calc(l + 0.15) c h)</code> for a lighter shade, the corner diamonds use <code>oklch(from var(--accent) l c calc(h + 60))</code> for a hue-shifted variation, and each triptych card carries auto-contrasting ink against its own fill. One source file, infinite themes.</p>
 <h2>@property: Enabling Transitions</h2>
@@ -12732,7 +12732,7 @@ layer('labels').append(
 
 layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), layer('labels'));
 </code>
-  <img src="/pathogen/blog/samples/post24/lightdark-conic.svg" alt="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once." loading="lazy">
+  <img src="/blog/samples/post24/lightdark-conic.svg" alt="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once." loading="lazy">
 </mini-workspace></p>
 <p>The gradient places each chip in a different angular slice of the bg. Chips near the top sit on the light plateau, chips near the bottom on the dark plateau, and every chip crosses the transition band at its middle — a single-color wedge visibly rendered against the full spectrum. Move the <code>--base-color</code> picker and every chip recomputes; move a bg picker and the whole gradient re-interpolates.</p>
 <p>Three CSS variables. One gradient. Seven method derivations, each visible against the full light/dark spectrum. Compiled once, reactive forever.</p>
@@ -12742,7 +12742,7 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
 <p>SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to express what it was designed for.</p>
 `,
   'radial-bar-chart': `<blockquote>
-<p><strong>Prerequisites:</strong> This post uses <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>, <a href="/pathogen/blog/textblock-introduction">TextBlocks</a>, <a href="/pathogen/docs#layers-defining-layers">GroupLayers</a>, and <a href="/pathogen/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
+<p><strong>Prerequisites:</strong> This post uses <a href="/blog/pathblock-introduction">PathBlocks</a>, <a href="/blog/textblock-introduction">TextBlocks</a>, <a href="/docs#layers-defining-layers">GroupLayers</a>, and <a href="/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
 </blockquote>
 <p>Radial bar charts arrange categorical data around a central point, encoding values as the length of wedge-shaped bars radiating outward. They&#39;re visually distinctive — the circular layout invites comparison across categories in a way that a standard bar chart can&#39;t — but geometrically demanding. Each bar is an annular sector whose inner and outer arcs, radial edges, and rounded corners all require precise coordinate math.</p>
 <p>This post walks through building a radial bar chart in Pathogen, inspired by <a href="https://observablehq.com/@gitnoise">Patrick Wojda&#39;s</a> BoardGameGeek category visualization on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>. His chart compares how often categories appear across all games versus the top 100 ranked titles — a compelling use of radial layout to reveal patterns in community-assigned board game categories. Along the way, we&#39;ll introduce several new language features that emerged from the needs of this project: a native <code>radialWedge()</code> function, <code>TextBlock.radialProject()</code> for rotated label placement, and the <code>VerticalAnchor</code> enum for font-metric-aware text alignment.</p>
@@ -12750,7 +12750,7 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
 <p>The fundamental shape in a radial bar chart is the <strong>annular sector</strong> — a ring segment defined by an inner radius, outer radius, and two angles. In Pathogen, the new <code>radialWedge()</code> stdlib function generates this shape with a single call:</p>
 <pre><code class="hljs language-pathogen">M cx cy
 <span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
-</code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/pathogen/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/pathogen/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
+</code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
 <p><mini-workspace code-open caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations">
   <code>// viewBox="0 0 560 400"
 // radialWedge() — the annular sector with automatic rounded corners
@@ -13012,11 +13012,11 @@ accentLabels.apply {
   text(0, 124)\`cornerR = 0 sharp edges (ghost)\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post16/annular-sector.svg" alt="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" loading="lazy">
+  <img src="/blog/samples/post16/annular-sector.svg" alt="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations" loading="lazy">
 </mini-workspace></p>
 <p>The ghost shape shows <code>cornerR = 0</code> (sharp edges). The solid shape uses <code>cornerR = 6</code>, which rounds all four corners where radial lines meet circular arcs.</p>
 <h3>Why a stdlib function?</h3>
-<p>We initially built annular sectors using a <a href="/pathogen/blog/pathblock-introduction">PathBlock</a> with <a href="/pathogen/blog/heading-turn"><code>heading</code></a>, <code>tangentArc</code>, <code>turn</code>, and <code>tangentLine</code>:</p>
+<p>We initially built annular sectors using a <a href="/blog/pathblock-introduction">PathBlock</a> with <a href="/blog/heading-turn"><code>heading</code></a>, <code>tangentArc</code>, <code>turn</code>, and <code>tangentLine</code>:</p>
 <pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">makeWedge</span>(<span class="hljs-params">innerR, outerR, sweep, startAngle, cornerR</span>) {
   <span class="hljs-keyword">let</span> w = @{
     <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(startAngle + 90deg))
@@ -13031,7 +13031,7 @@ accentLabels.apply {
   };
   <span class="hljs-keyword">return</span> w.<span class="hljs-title function_">fillet</span>(cornerR);
 }
-</code></pre><p>This approach taught us the <a href="/pathogen/blog/heading-turn">heading/turn</a> system well, but it hit real problems at chart scale:</p>
+</code></pre><p>This approach taught us the <a href="/blog/heading-turn">heading/turn</a> system well, but it hit real problems at chart scale:</p>
 <ol>
 <li><strong><code>.fillet()</code> didn&#39;t handle arc-line transitions</strong> — it only rounded line-to-line corners, silently skipping the four arc-line junctions in our wedge. We extended the fillet algorithm to compute tangent directions at arc endpoints, but this revealed deeper issues.</li>
 <li><strong>Narrow bars produced degenerate output</strong> — when the inner arc was too short for the requested corner radius, the fillet split produced zero-length commands with <code>undefined</code> SVG parameters.</li>
@@ -13260,7 +13260,7 @@ noteLabel.apply {
   text(0, 14)\`centered within the red bar's slice\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post16/radial-bar.svg" alt="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)" loading="lazy">
+  <img src="/blog/samples/post16/radial-bar.svg" alt="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)" loading="lazy">
 </mini-workspace></p>
 <h2>Arranging Categories</h2>
 <p>With <code>radialWedge()</code> handling individual bars, arranging multiple categories is a <code>for</code> loop over a data array. The syntax <code>for ([d, i] in data)</code> destructures each element into the value <code>d</code> and its index <code>i</code> — a pattern you&#39;ll see throughout the rest of this post. Each category gets an angular slice of <code>TAU() / count</code> radians, with a slight overlap between adjacent wedges:</p>
@@ -13370,7 +13370,7 @@ title.apply {
 let g = GroupLayer('all') \${};
 g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/category-layout.svg" alt="8 categories distributed radially — labels are added in the next section" loading="lazy">
+  <img src="/blog/samples/post16/category-layout.svg" alt="8 categories distributed radially — labels are added in the next section" loading="lazy">
 </mini-workspace></p>
 <p>The background-colored stroke (<code>stroke: bgColor; stroke-width: 0.5</code>) on each wedge creates the thin separation lines between adjacent bars — a subtle detail from the Observable original that gives the chart visual crispness.</p>
 <h2>Rotated Labels with <code>radialProject</code></h2>
@@ -13381,7 +13381,7 @@ g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 <li><strong>Flipped</strong> on the left hemisphere so text reads left-to-right</li>
 <li><strong>Vertically centered</strong> so the text midline — not baseline — aligns with the bar&#39;s angular center</li>
 </ul>
-<p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/pathogen/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
+<p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">\`<span class="hljs-subst">\${d.name}</span>\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; };
 catLabels.<span class="hljs-property">apply</span> {
   label.<span class="hljs-title function_">radialProject</span>(cx, cy, midAngle, labelR,
@@ -13537,7 +13537,7 @@ let g = GroupLayer('all') \${};
 g.append(bg, grid, center, barsAll, barsTop, catLabels,
   swAll, swTop, legLabels, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/radial-labels.svg" alt="radialProject with VerticalAnchor.Midline — one TextLayer, automatic rotation and hemisphere flip" loading="lazy">
+  <img src="/blog/samples/post16/radial-labels.svg" alt="radialProject with VerticalAnchor.Midline — one TextLayer, automatic rotation and hemisphere flip" loading="lazy">
 </mini-workspace></p>
 <h3>The <code>VerticalAnchor</code> Enum</h3>
 <p>Without <code>VerticalAnchor</code>, labels on the lower half of the chart drift away from their bars. The text baseline (where glyphs sit) is below the visual center of the text. When the label is rotated, this offset translates into a radial misalignment.</p>
@@ -13672,7 +13672,7 @@ title.apply {
 let g = GroupLayer('all') \${};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
+  <img src="/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace caption="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs">
   <code>// viewBox="0 0 900 700"
@@ -13802,9 +13802,9 @@ title.apply {
 let g = GroupLayer('all') \${};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);
 </code>
-  <img src="/pathogen/blog/samples/post16/wedge-diag-16.svg" alt="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs" loading="lazy">
+  <img src="/blog/samples/post16/wedge-diag-16.svg" alt="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs" loading="lazy">
 </mini-workspace></p>
-<p>The dark red regions show the <a href="/pathogen/docs#path-blocks-boolean-operations">XOR</a> between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The <code>cornerR = 16</code> matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, <code>radialWedge()</code> analytically computes the largest corner radius that fits each end independently.</p>
+<p>The dark red regions show the <a href="/docs#path-blocks-boolean-operations">XOR</a> between the sharp-cornered and rounded-cornered wedges. In a correct implementation, these should appear only at the four corners where rounding removes material. The <code>cornerR = 16</code> matrix demonstrates the graceful degradation: when the inner arc is too narrow for full-radius corners, <code>radialWedge()</code> analytically computes the largest corner radius that fits each end independently.</p>
 <p>This matrix-based testing approach — rendering a grid of parameter combinations with geometric overlays — proved invaluable for identifying edge cases during development. The XOR diff layer made it immediately visible when a corner fillet was misaligned or a sweep flag was inverted, issues that would have been nearly impossible to catch by inspecting individual examples.</p>
 <h2>The Complete Chart</h2>
 <p>Bringing everything together: 26 BoardGameGeek categories, overlaid red and dark bars, rotated labels with inline colored percentages via tspan styling, annotation badges, a wedge legend, and a summary bar chart — all driven by a single data array:</p>
@@ -14397,7 +14397,7 @@ sourceNote.apply {
   text(120, 735)\`Source: BoardGameGeek (boardgame categories)\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post16/radial-chart-complete.svg" alt="Complete radial hierarchical bar chart — BoardGameGeek category comparison" loading="lazy">
+  <img src="/blog/samples/post16/radial-chart-complete.svg" alt="Complete radial hierarchical bar chart — BoardGameGeek category comparison" loading="lazy">
 </mini-workspace></p>
 <p>Key techniques in the complete chart:</p>
 <ul>
@@ -14505,7 +14505,7 @@ foot.apply {
 let g = GroupLayer('all') \${};
 g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 </code>
-  <img src="/pathogen/blog/samples/post16/summary-bars.svg" alt="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left" loading="lazy">
+  <img src="/blog/samples/post16/summary-bars.svg" alt="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left" loading="lazy">
 </mini-workspace></p>
 <h2>New Features Summary</h2>
 <p>This project prompted several additions to the Pathogen language:</p>
@@ -14546,7 +14546,7 @@ g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 </tr>
 </tbody></table>
 <p>The radial bar chart pattern — data array, angular distribution loop, <code>radialWedge()</code> for geometry, <code>radialProject()</code> for labels — is reusable for any categorical comparison that benefits from a circular layout. Try changing the <code>--bar-all</code> and <code>--bar-top</code> color variables in any of the examples above to explore different palettes, or modify the data array to add your own categories.</p>
-<p>For the full function signatures and parameter details, see the <a href="/pathogen/docs#stdlib-path-functions">stdlib reference</a> and <a href="/pathogen/docs#text-block-syntax">TextBlock documentation</a>. The original visualization by <a href="https://observablehq.com/@gitnoise">Patrick Wojda</a> that inspired this chart is available on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>.</p>
+<p>For the full function signatures and parameter details, see the <a href="/docs#stdlib-path-functions">stdlib reference</a> and <a href="/docs#text-block-syntax">TextBlock documentation</a>. The original visualization by <a href="https://observablehq.com/@gitnoise">Patrick Wojda</a> that inspired this chart is available on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>.</p>
 `,
   'seo-pages-cloudflare-workers-routing': `<h1>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h1>
 <h2>The Goal</h2>
@@ -14749,16 +14749,16 @@ img.<span class="hljs-property">src</span> = url;
 <p><strong>Series: TextBlock &amp; Font Integration</strong></p>
 <ol>
 <li><strong>TextBlock: Measure-First Text for SVG Diagrams</strong> (this post)</li>
-<li><a href="/pathogen/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a></li>
+<li><a href="/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a></li>
 </ol>
 </blockquote>
 <blockquote>
-<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the <code>@{}</code> sigil, <code>.draw()</code>, and <code>.project()</code>. If you&#39;re new to Pathogen, start with <a href="/pathogen/blog/pathblock-introduction">Introduction to PathBlocks</a>.</p>
+<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the <code>@{}</code> sigil, <code>.draw()</code>, and <code>.project()</code>. If you&#39;re new to Pathogen, start with <a href="/blog/pathblock-introduction">Introduction to PathBlocks</a>.</p>
 </blockquote>
 <p>Labels on parametric diagrams have a coordination problem. The geometry is computed — points, curves, bounding boxes are all known values — but the text that annotates that geometry gets hard-coded at pixel offsets, with no way to ask &quot;how wide is this string?&quot; before placing it. When the font size changes, the data changes, or the viewport scales, those hard-coded offsets break silently, producing overlapping labels or text that drifts away from the thing it&#39;s supposed to annotate.</p>
-<p>TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that <a href="/pathogen/blog/pathblock-introduction">PathBlock</a> brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.</p>
+<p>TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that <a href="/blog/pathblock-introduction">PathBlock</a> brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.</p>
 <h2>What Is a TextBlock?</h2>
-<p>A TextBlock is a composition of text elements at relative coordinates. You create one with the <code>&amp;{ }</code> sigil — the text counterpart to PathBlock&#39;s <code>@{ }</code> — and the elements inside are positioned relative to an implicit <code>(0, 0)</code> origin. Like a PathBlock, the TextBlock doesn&#39;t draw anything on its own. It&#39;s a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full <a href="/pathogen/docs#text-block-syntax">TextBlock syntax</a> documentation for details.</p>
+<p>A TextBlock is a composition of text elements at relative coordinates. You create one with the <code>&amp;{ }</code> sigil — the text counterpart to PathBlock&#39;s <code>@{ }</code> — and the elements inside are positioned relative to an implicit <code>(0, 0)</code> origin. Like a PathBlock, the TextBlock doesn&#39;t draw anything on its own. It&#39;s a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full <a href="/docs#text-block-syntax">TextBlock syntax</a> documentation for details.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Server Node\`</span>
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`Status: online\`</span>
@@ -14985,10 +14985,10 @@ leg.apply {
 
 legend_group.append(leg_o, leg_b, leg);
 </code>
-  <img src="/pathogen/blog/samples/post11/textblock-anatomy.svg" alt="TextBlock anatomy — compose once, place anywhere with bounding box overlay" loading="lazy">
+  <img src="/blog/samples/post11/textblock-anatomy.svg" alt="TextBlock anatomy — compose once, place anywhere with bounding box overlay" loading="lazy">
 </mini-workspace></p>
 <p>The coordinate model mirrors SVG&#39;s <code>&lt;text&gt;</code> element: <code>y</code> is the baseline position, so <code>text(0, 14)</code> places the first baseline 14 units below the origin. This means the text&#39;s visible pixels extend <em>above</em> that y coordinate, not below it.</p>
-<p>TextBlocks also support <a href="/pathogen/docs#text-block-syntax">control flow</a> — <code>let</code>, <code>for</code>, and <code>if</code> work inside the block just as they do elsewhere in Pathogen:</p>
+<p>TextBlocks also support <a href="/docs#text-block-syntax">control flow</a> — <code>let</code>, <code>for</code>, and <code>if</code> work inside the block just as they do elsewhere in Pathogen:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> items = [<span class="hljs-string">&quot;CPU: 42%&quot;</span>, <span class="hljs-string">&quot;MEM: 1.2G&quot;</span>, <span class="hljs-string">&quot;NET: 88Mb/s&quot;</span>];
 <span class="hljs-keyword">let</span> card = &amp;{
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Dashboard\`</span>
@@ -14998,10 +14998,10 @@ legend_group.append(leg_o, leg_b, leg);
 };
 </code></pre><p>Notice the parallel with PathBlock: <code>@{ h 40 v 20 h -40 z }</code> captures relative path commands, while <code>&amp;{ text(0, 14)\\</code>Hello\` }\` captures relative text elements. Both are inert values until you project or draw them. Both carry metadata (bounds, element count) you can query before committing to a position.</p>
 <h2>Drawing and Positioning</h2>
-<p>Once you have a TextBlock, you need to place it. There are three positioning methods, each returning a <a href="/pathogen/docs#text-block-types">ProjectedTextValue</a> — text with absolute coordinates:</p>
+<p>Once you have a TextBlock, you need to place it. There are three positioning methods, each returning a <a href="/docs#text-block-types">ProjectedTextValue</a> — text with absolute coordinates:</p>
 <ul>
 <li><strong><code>.project(x, y)</code></strong> — offset all elements to absolute coordinates without drawing. Useful when you need to measure or test collisions before committing.</li>
-<li><strong><code>.drawTo(x, y)</code></strong> — project and immediately emit to the active <a href="/pathogen/docs#text-block-syntax">TextLayer</a>. This is the most common method.</li>
+<li><strong><code>.drawTo(x, y)</code></strong> — project and immediately emit to the active <a href="/docs#text-block-syntax">TextLayer</a>. This is the most common method.</li>
 <li><strong><code>.polarProject(cx, cy, angle, distance, anchor)</code></strong> — project along a polar vector with anchor alignment. We&#39;ll cover this in detail below.</li>
 </ul>
 <p>TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with <code>define TextLayer(&#39;name&#39;) \${ styles }</code> and activate it with <code>layer(&#39;name&#39;).apply { ... }</code>:</p>
@@ -15012,7 +15012,7 @@ legend_group.append(leg_o, leg_b, leg);
 }
 </code></pre><p>This layer model keeps text and path geometry in separate SVG elements, which matters for rendering order, styling, and accessibility.</p>
 <h2>Style Merge with &lt;&lt;</h2>
-<p>A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The <code>&lt;&lt;</code> operator merges a <a href="/pathogen/docs#text-block-style-merging">style block</a> into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:</p>
+<p>A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The <code>&lt;&lt;</code> operator merges a <a href="/docs#text-block-style-merging">style block</a> into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> info = &amp;{
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Node Status\`</span>
   <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`CPU: 42%\`</span>
@@ -15209,18 +15209,18 @@ dims.apply {
   text(420, 175)\`\${round(bb3.width)}x\${round(bb3.height)}\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post11/style-merge.svg" alt="One TextBlock, three styles — bounding box adapts to each font configuration" loading="lazy">
+  <img src="/blog/samples/post11/style-merge.svg" alt="One TextBlock, three styles — bounding box adapts to each font configuration" loading="lazy">
 </mini-workspace></p>
 <p>The dimension annotations at the bottom of each variant confirm what the code reports: same content, different measurements. A monospace 10px version is compact; monospace 14px is proportionally larger; sans-serif 12px has different character widths entirely. The <code>&lt;&lt;</code> operator and <code>.boundingBox()</code> handle all of this transparently.</p>
 <h2>Measuring Before You Place</h2>
-<p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/pathogen/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
+<p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Hello World\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
 <span class="hljs-keyword">let</span> bb = label.<span class="hljs-title function_">boundingBox</span>();
 <span class="hljs-title function_">log</span>(bb.<span class="hljs-property">width</span>);   <span class="hljs-comment">// estimated pixel width</span>
 <span class="hljs-title function_">log</span>(bb.<span class="hljs-property">height</span>);  <span class="hljs-comment">// fontSize * 1.2 (line height)</span>
 </code></pre><p>This measurement drives layout decisions. Need to center a label above a shape? Subtract half the width. Need to check whether two labels overlap? Compare their bounding boxes. Need to draw a background rectangle behind text? Use the bbox dimensions directly. Need to verify that a label fits inside a container? Compare bbox width to the container&#39;s width.</p>
 <p>The measurement works on both TextBlockValues (relative coordinates) and ProjectedTextValues (absolute coordinates). On a TextBlockValue, the bbox is relative to the origin — just like measuring a PathBlock&#39;s <code>.bounds</code> before drawing. On a ProjectedTextValue, the bbox reflects the absolute position.</p>
-<p>TextBlock computes these estimates using built-in <a href="/pathogen/docs#text-block-font-metrics">character width tables</a> that cover three font categories:</p>
+<p>TextBlock computes these estimates using built-in <a href="/docs#text-block-font-metrics">character width tables</a> that cover three font categories:</p>
 <ul>
 <li><strong>Sans-serif</strong> (default): per-character widths approximating Arial/Helvetica</li>
 <li><strong>Serif</strong>: per-character widths approximating Times New Roman</li>
@@ -15235,7 +15235,7 @@ dims.apply {
 <li><strong>tspan <code>dx</code>/<code>dy</code> offsets</strong> — accounted for in multi-span text elements</li>
 </ul>
 <blockquote>
-<p><strong>Accuracy: 85-90% for Latin text.</strong> A label that measures 87px might actually render at 100px — a gap of roughly one character width at typical font sizes. This is sufficient for collision avoidance, anchor-based layout, and background rectangle sizing, where a few pixels of margin are invisible. It is <em>not</em> sufficient for pixel-perfect alignment, tight kerning, or text that must match an exact grid. For those cases, Part 2 of this series covers the <a href="/pathogen/blog/pathblock-glyph-extraction"><code>@font</code> directive</a>, which loads OpenType font files for exact glyph measurement.</p>
+<p><strong>Accuracy: 85-90% for Latin text.</strong> A label that measures 87px might actually render at 100px — a gap of roughly one character width at typical font sizes. This is sufficient for collision avoidance, anchor-based layout, and background rectangle sizing, where a few pixels of margin are invisible. It is <em>not</em> sufficient for pixel-perfect alignment, tight kerning, or text that must match an exact grid. For those cases, Part 2 of this series covers the <a href="/blog/pathblock-glyph-extraction"><code>@font</code> directive</a>, which loads OpenType font files for exact glyph measurement.</p>
 </blockquote>
 <p>The demo below shows <code>.boundingBox()</code> at three different font sizes. Each row renders the same text, measures it, and draws width/height dimension lines. Notice how the bounding box scales with font size — the measurement adapts automatically.</p>
 <p><mini-workspace caption="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text">
@@ -15396,16 +15396,16 @@ title.apply { text(30, 30)\`Measure Before You Place\` }
 let subtitle = TextLayer('subtitle') \${ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
 subtitle.apply { text(30, 44)\`.boundingBox() returns { x, y, width, height }\` }
 </code>
-  <img src="/pathogen/blog/samples/post11/bbox-measurement.svg" alt="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text" loading="lazy">
+  <img src="/blog/samples/post11/bbox-measurement.svg" alt="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text" loading="lazy">
 </mini-workspace></p>
 <h2>Polar Projection with BBoxAnchor</h2>
 <p>Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute <code>x</code> and <code>y</code> offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs <code>x = centerX + radius + gap</code>; a label above needs <code>y = centerY - radius - textHeight</code>. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.</p>
-<p><a href="/pathogen/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
+<p><a href="/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Node A\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
 
 <span class="hljs-comment">// Place 80px from center at 45 degrees, anchored at center-left</span>
 <span class="hljs-keyword">let</span> placed = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, 45deg, <span class="hljs-number">80</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
-</code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/pathogen/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
+</code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
 <p>The nine anchor positions form a grid over the bounding box:</p>
 <pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
 BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
@@ -15593,7 +15593,7 @@ kw.apply {
 
 code_group.append(code, kw);
 </code>
-  <img src="/pathogen/blog/samples/post11/polar-compass.svg" alt="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment" loading="lazy">
+  <img src="/blog/samples/post11/polar-compass.svg" alt="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment" loading="lazy">
 </mini-workspace></p>
 <p>The code for each label is minimal — a one-line TextBlock, a <code>polarProject()</code> call, and a <code>draw()</code>. The loop at the center of the demo iterates through names and anchors in parallel:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
@@ -15606,7 +15606,7 @@ code_group.append(code, kw);
 <p>This matters because label placement around shapes is combinatorial. A hexagon with 6 vertex labels, 6 edge labels, and a center label requires 13 placements. Doing those with manual offsets means 26 magic numbers (x and y for each). With <code>polarProject()</code>, it&#39;s 13 calls with angles, one shared radius, and the appropriate anchors. When you add a seventh vertex to the polygon, the labels redistribute automatically.</p>
 <h2>Collision Avoidance</h2>
 <p>Placing labels one at a time works until two of them end up on top of each other. Scatter plots, node graphs, and dense diagrams inevitably produce clusters where data points are close together and naive placement causes overlaps. A label that&#39;s perfectly clear in one dataset collides with its neighbor when the data changes. This is the label placement problem — well-studied in cartography and information visualization — and TextBlock brings a pragmatic solution directly into the language.</p>
-<p>TextBlock&#39;s <a href="/pathogen/docs#text-block-intersection-detection"><code>.intersects()</code></a> method detects collisions using axis-aligned bounding box (AABB) overlap testing.</p>
+<p>TextBlock&#39;s <a href="/docs#text-block-intersection-detection"><code>.intersects()</code></a> method detects collisions using axis-aligned bounding box (AABB) overlap testing.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label1 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`First\`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
 <span class="hljs-keyword">let</span> label2 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Second\`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>);
 
@@ -15984,7 +15984,7 @@ leg.apply {
   text(120, 375)\`Data point\`
 }
 </code>
-  <img src="/pathogen/blog/samples/post11/collision-avoidance.svg" alt="Before and after — naive fixed-offset placement vs smart 8-angle collision avoidance" loading="lazy">
+  <img src="/blog/samples/post11/collision-avoidance.svg" alt="Before and after — naive fixed-offset placement vs smart 8-angle collision avoidance" loading="lazy">
 </mini-workspace></p>
 <p>Unlike force-directed label placement (as in D3), TextBlock&#39;s collision avoidance is deterministic and runs at compile time — the same input always produces the same layout.</p>
 <p>This is a greedy algorithm — it doesn&#39;t guarantee a globally optimal layout, but it&#39;s fast and produces good results for the cluster sizes typical in diagrams. The search is O(N^2) in the number of labels — fast for typical diagrams with 2-20 labels, but worth noting at larger scales. You could customize the preference order, increase the number of angles for finer-grained search, or adjust the distance for denser layouts. For truly dense point clouds, you might combine this with <code>.translate()</code> as a fallback — nudging a label incrementally until it clears.</p>
@@ -16239,7 +16239,7 @@ if (left_proj.intersects(r_left_anno)) { log("WARN: right Left label intersects 
 
 right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno);
 </code>
-  <img src="/pathogen/blog/samples/post11/before-after.svg" alt="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)" loading="lazy">
+  <img src="/blog/samples/post11/before-after.svg" alt="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)" loading="lazy">
 </mini-workspace></p>
 <p>The right panel adapts to any text content, font size, or font family without changing a single coordinate. Swap &quot;Top&quot; for &quot;North&quot; and the anchor still centers the text correctly above the shape. Double the font size and the label still clears the hexagon&#39;s edge. This is the fundamental value proposition of TextBlock: text becomes a measurable, composable value that participates in the same spatial reasoning as paths and shapes.</p>
 <p>The manual approach isn&#39;t just more work — it&#39;s more <em>fragile</em> work. Every time the diagram&#39;s parameters change (and in parametric SVGs, that&#39;s the whole point), the magic numbers need manual recalculation. <code>polarProject()</code> makes the positioning logic parameter-free with respect to text content.</p>
@@ -16266,18 +16266,18 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
   placed.<span class="hljs-title function_">draw</span>();
 }
 </code></pre><p>Each step is a pure value transformation until <code>.draw()</code>. You can inspect, branch on, and iterate over the intermediate results. This pipeline means text is no longer an afterthought bolted onto a diagram. It&#39;s a first-class participant in the layout — queryable, testable, and automatically adaptive. Labels can respond to the geometry they annotate instead of being hard-coded beside it.</p>
-<p>The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the <a href="/pathogen/docs#text-block-syntax">TextBlock documentation</a>, which covers all <a href="/pathogen/docs#text-block-methods">methods</a>, <a href="/pathogen/docs#text-block-properties">properties</a>, <a href="/pathogen/docs#text-block-style-merging">style merging</a>, <a href="/pathogen/docs#text-block-bboxanchor-enum">BBoxAnchor</a>, <a href="/pathogen/docs#text-block-font-metrics">font metrics</a>, <a href="/pathogen/docs#text-block-polar-projection">polar projection</a>, and <a href="/pathogen/docs#text-block-intersection-detection">intersection detection</a>.</p>
+<p>The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the <a href="/docs#text-block-syntax">TextBlock documentation</a>, which covers all <a href="/docs#text-block-methods">methods</a>, <a href="/docs#text-block-properties">properties</a>, <a href="/docs#text-block-style-merging">style merging</a>, <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a>, <a href="/docs#text-block-font-metrics">font metrics</a>, <a href="/docs#text-block-polar-projection">polar projection</a>, and <a href="/docs#text-block-intersection-detection">intersection detection</a>.</p>
 <h2>What&#39;s Next</h2>
-<p>The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, <a href="/pathogen/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a>, covers the <code>@font</code> directive that loads OpenType font files for exact measurement, and <code>PathBlock.fromGlyph()</code> that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, <a href="/pathogen/blog/pathblock-parametric-sampling">sample</a>, <a href="/pathogen/blog/pathblock-fillets-chamfers">fillet</a>, and <a href="/pathogen/blog/pathblock-boolean-operations">boolean-combine</a> just like any other shape.</p>
+<p>The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, <a href="/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a>, covers the <code>@font</code> directive that loads OpenType font files for exact measurement, and <code>PathBlock.fromGlyph()</code> that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, <a href="/blog/pathblock-parametric-sampling">sample</a>, <a href="/blog/pathblock-fillets-chamfers">fillet</a>, and <a href="/blog/pathblock-boolean-operations">boolean-combine</a> just like any other shape.</p>
 <p>Text as geometry. That&#39;s where this is headed.</p>
-<p>Paste the collision-avoidance snippet into the <a href="/pathogen/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
+<p>Paste the collision-avoidance snippet into the <a href="/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
 `,
-  'vscode-developer-experience': `<img src="/pathogen/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
+  'vscode-developer-experience': `<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
 
 <p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
-<p>This post documents how we built a complete VS Code extension for the <a href="/pathogen/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
+<p>This post documents how we built a complete VS Code extension for the <a href="/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
 <blockquote>
-<p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/pathogen/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
+<p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
 </blockquote>
 <h2>The roadmap: 10 phases</h2>
 <p>We organized the work into phases, each delivering a complete, testable improvement. Here&#39;s the full arc:</p>
@@ -16290,7 +16290,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 </thead>
 <tbody><tr>
 <td><strong>1</strong></td>
-<td>Completion type inference — <a href="/pathogen/blog/color-literals">Color</a>, BoundingBox, layer(), stdlib returns, method chaining</td>
+<td>Completion type inference — <a href="/blog/color-literals">Color</a>, BoundingBox, layer(), stdlib returns, method chaining</td>
 </tr>
 <tr>
 <td><strong>2</strong></td>
@@ -16298,7 +16298,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 </tr>
 <tr>
 <td><strong>3</strong></td>
-<td>Preview panel — pan/zoom, <a href="/pathogen/docs#layers-defining-layers">layer</a> toggles, CSS variable pickers, color palette</td>
+<td>Preview panel — pan/zoom, <a href="/docs#layers-defining-layers">layer</a> toggles, CSS variable pickers, color palette</td>
 </tr>
 <tr>
 <td><strong>4</strong></td>
@@ -16314,7 +16314,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 </tr>
 <tr>
 <td><strong>7</strong></td>
-<td>Semantic highlighting — constructors, enums, <a href="/pathogen/docs#syntax-path-commands">path commands</a>, enum members</td>
+<td>Semantic highlighting — constructors, enums, <a href="/docs#syntax-path-commands">path commands</a>, enum members</td>
 </tr>
 <tr>
 <td><strong>8</strong></td>
@@ -16336,7 +16336,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <ul>
 <li><strong>Error recovery</strong>: A single missing semicolon doesn&#39;t break the entire parse. The parser skips the error and continues, producing a usable tree for the rest of the document.</li>
 <li><strong>Incremental parsing</strong>: When the user edits line 50 of a 500-line file, Lezer only re-parses the changed region. This makes diagnostics and completions fast enough for real-time feedback.</li>
-<li><strong>Shared infrastructure</strong>: The same grammar powers both the <a href="/pathogen/">playground&#39;s</a> CodeMirror editor and the VS Code extension&#39;s language server.</li>
+<li><strong>Shared infrastructure</strong>: The same grammar powers both the <a href="/">playground&#39;s</a> CodeMirror editor and the VS Code extension&#39;s language server.</li>
 </ul>
 <p>The migration replaced 1,558 lines of Parsimmon code with a 213-line Lezer grammar plus a CST-to-AST converter. The grammar is the single source of truth for Pathogen syntax.</p>
 <h2>Architecture: Language services as a shared layer</h2>
@@ -16496,16 +16496,16 @@ consumerSubs.apply {
   text(452, 270)\`(batch)\`;
 }
 </code>
-  <img src="/pathogen/blog/samples/post22/architecture.svg" alt="The shared language services architecture — one intelligence layer, three consumers." loading="lazy">
+  <img src="/blog/samples/post22/architecture.svg" alt="The shared language services architecture — one intelligence layer, three consumers." loading="lazy">
 </mini-workspace></p>
-<p>The VS Code extension is a thin adapter: a language server that wraps each function in an LSP handler, and an extension client that starts the server process. The same language intelligence runs in the <a href="/pathogen/">playground</a> via direct import and in the CLI for batch diagnostics.</p>
+<p>The VS Code extension is a thin adapter: a language server that wraps each function in an LSP handler, and an extension client that starts the server process. The same language intelligence runs in the <a href="/">playground</a> via direct import and in the CLI for batch diagnostics.</p>
 <h2>Completion intelligence</h2>
 <p>The completion engine evolved through three phases, each addressing real user frustrations.</p>
 <h3>Type-aware completions</h3>
-<p>Typing <code>bg.</code> after defining a <a href="/pathogen/docs#layers-defining-layers">PathLayer</a> should show <code>apply</code>, <code>name</code>, <code>styles</code>, and <code>ctx</code>. The completion engine uses lightweight regex-based type inference to determine that <code>bg</code> is a PathLayer, then looks up the member set from generated completion data.</p>
-<img src="/pathogen/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
+<p>Typing <code>bg.</code> after defining a <a href="/docs#layers-defining-layers">PathLayer</a> should show <code>apply</code>, <code>name</code>, <code>styles</code>, and <code>ctx</code>. The completion engine uses lightweight regex-based type inference to determine that <code>bg</code> is a PathLayer, then looks up the member set from generated completion data.</p>
+<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
 
-<p>This extends to every type in the language. <a href="/pathogen/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
+<p>This extends to every type in the language. <a href="/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
 <h3>Generated completion data</h3>
 <p>Rather than manually maintaining lists of stdlib functions and their signatures, we use <code>ts-morph</code> to extract completion data from TypeScript interface declarations in <code>src/pathogen-api.ts</code>. A generation script produces <code>completion-data.generated.ts</code> with every function signature, type member set, and enum value. When the language API changes, we regenerate with <code>npm run generate:completions</code> — no manual synchronization, and a CI check catches drift.</p>
 <h3>Type flow analysis</h3>
@@ -16521,14 +16521,14 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 </code></pre><p>The engine traces the array element type through <code>for</code> loops and <code>.map()</code> callbacks, then extracts property names from the first object literal in the array initializer.</p>
 <h2>The preview panel</h2>
 <p>Before the preview panel, Pathogen development required a save-compile-open cycle: edit code in VS Code, run the CLI to generate an SVG, open the file in a browser, and squint at the output to figure out what went wrong. The feedback loop was slow and disjointed.</p>
-<p><em>What the user sees now:</em> A live SVG preview that updates as you type, with the same interactive controls as the <a href="/pathogen/">playground</a>.</p>
+<p><em>What the user sees now:</em> A live SVG preview that updates as you type, with the same interactive controls as the <a href="/">playground</a>.</p>
 <p><em>Under the hood:</em> The preview panel runs the Pathogen compiler inside a VS Code webview. The extension sends source code via <code>postMessage</code>, the webview compiles it using the bundled IIFE compiler (~1.3 MB), renders the SVG via a shared <code>generateSvg()</code> function, and injects it into the DOM. A 150ms debounce prevents recompilation on every keystroke. Completions resolve in under 50ms; diagnostics publish within 200ms of the last keystroke.</p>
 <h3>Interactive controls</h3>
-<p>The preview isn&#39;t just a static render — it matches the <a href="/pathogen/">playground</a> experience:</p>
+<p>The preview isn&#39;t just a static render — it matches the <a href="/">playground</a> experience:</p>
 <ul>
 <li><strong>Pan and zoom</strong>: Click-drag to pan, Cmd+scroll to zoom (0.25x–10x range), with a navigator minimap</li>
-<li><strong>Layer inspector</strong>: Toggle <a href="/pathogen/docs#layers-defining-layers">layer</a> visibility, see color swatches, navigate GroupLayer hierarchy</li>
-<li><strong>CSS variable pickers</strong>: Color picker inputs for every <a href="/pathogen/docs#css-var-cssvar-type"><code>CSSVar()</code></a> in the source — changes recompile instantly</li>
+<li><strong>Layer inspector</strong>: Toggle <a href="/docs#layers-defining-layers">layer</a> visibility, see color swatches, navigate GroupLayer hierarchy</li>
+<li><strong>CSS variable pickers</strong>: Color picker inputs for every <a href="/docs#css-var-cssvar-type"><code>CSSVar()</code></a> in the source — changes recompile instantly</li>
 <li><strong>Recompile button</strong>: Re-rolls <code>randomRange()</code> values without editing source</li>
 <li><strong>Reset button</strong>: Restores zoom, pan, layer visibility, and CSS variable overrides</li>
 </ul>
@@ -16547,7 +16547,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
   <span class="hljs-attr">fill</span>: #0f172a;
   <span class="hljs-attr">stroke</span>: none;
 };
-</code></pre><p>Arrays, objects, style blocks, enums, <a href="/pathogen/blog/pathblock-introduction">path blocks</a>, and text blocks are always multi-line. One item per line. Trailing commas everywhere.</p>
+</code></pre><p>Arrays, objects, style blocks, enums, <a href="/blog/pathblock-introduction">path blocks</a>, and text blocks are always multi-line. One item per line. Trailing commas everywhere.</p>
 <p>Key formatter features:</p>
 <ul>
 <li><strong>Comment preservation</strong>: Comments survive formatting round-trips — they&#39;re preserved in the AST and properly re-indented</li>
@@ -16557,7 +16557,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <h2>Semantic highlighting</h2>
 <p>TextMate grammars provide instant syntax coloring, but semantic tokens make it smarter. The language server classifies:</p>
 <ul>
-<li><strong>Constructor types</strong> (<a href="/pathogen/blog/color-literals">Color</a>, Point, <a href="/pathogen/blog/gradient-linear-radial">LinearGradient</a>) — highlighted as types</li>
+<li><strong>Constructor types</strong> (<a href="/blog/color-literals">Color</a>, Point, <a href="/blog/gradient-linear-radial">LinearGradient</a>) — highlighted as types</li>
 <li><strong>Enum names and members</strong> (Direction.CW, Easing.Linear) — distinct coloring</li>
 <li><strong>SVG path commands</strong> (M, L, C, Z) — highlighted as keywords</li>
 <li><strong>Variables vs parameters vs loop variables</strong> — from scope analysis</li>
@@ -16571,7 +16571,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <li><strong>Inline variable</strong>: Select a variable name → replaces all references with the value and removes the declaration</li>
 </ul>
 <h2>Inlay hints and code lens</h2>
-<p><strong>Inlay hints</strong> show parameter names at call sites (<code>rect(x: 0, y: 0, w: 400, h: 400)</code>) and inferred types next to variable declarations (<code>let bg : PathLayer</code>). Type inference covers constructors, method return types (<a href="/pathogen/blog/pathblock-introduction"><code>boundingBox()</code> → BBox</a>), gradient constructors, and style block literals.</p>
+<p><strong>Inlay hints</strong> show parameter names at call sites (<code>rect(x: 0, y: 0, w: 400, h: 400)</code>) and inferred types next to variable declarations (<code>let bg : PathLayer</code>). Type inference covers constructors, method return types (<a href="/blog/pathblock-introduction"><code>boundingBox()</code> → BBox</a>), gradient constructors, and style block literals.</p>
 <p><strong>Code lens</strong> shows reference counts above declarations — &quot;3 references&quot;, &quot;no references&quot; — giving you instant visibility into which variables are used and which are dead code.</p>
 <h2>The build pipeline</h2>
 <p>The extension packages into a single <code>.vsix</code> file via <code>npm run build:vscode:install</code>. The build script chains six steps: root library → language server → extension → bundle server with all dependencies → bundle compiler IIFE for the preview webview → package with <code>vsce</code>. The final artifact is ~1.5 MB with all transitive dependencies resolved (Lezer, vscode-languageclient, semver, minimatch, and more).</p>
@@ -16588,6 +16588,6 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <li><strong>Extension marketplace publishing</strong> — making installation a one-click experience instead of building from source.</li>
 <li><strong>Deeper type flow</strong> — tracking types through function returns, complex assignment chains, and generic array element types.</li>
 </ul>
-<p>The Pathogen language is available at <a href="/pathogen/">pedestal.design/pathogen</a>, with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in <code>packages/vscode-pathogen/</code> — pull requests welcome.</p>
+<p>The Pathogen language is available at <a href="/">pedestal.design/pathogen</a>, with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in <code>packages/vscode-pathogen/</code> — pull requests welcome.</p>
 `,
 };
