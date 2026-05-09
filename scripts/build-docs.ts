@@ -355,7 +355,14 @@ async function buildDocs(): Promise<void> {
 
     /* Content area */
     .content-area { flex: 1; overflow-y: auto; min-width: 0; }
-    .content-inner { max-width: 800px; margin: 0 auto; padding: 2rem; }
+    /* overflow-inline:hidden caps horizontal overflow inside this column.
+     * The body-level overflow-x:hidden doesn't catch this because
+     * .content-area creates its own scrolling context (overflow-y:auto),
+     * so a wide inline child (long word, narrow viewport, etc.) was
+     * letting content-inner grow past its parent's clip box. Wide
+     * <pre>/<table> children still scroll horizontally via their own
+     * overflow-x:auto rules. */
+    .content-inner { max-width: 800px; margin: 0 auto; padding: 2rem; overflow-inline: hidden; }
     section { margin-bottom: 3rem; }
     section h1 { margin: 0 0 1rem; font-size: 1.5rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent-color, #10b981); }
     section h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
@@ -367,7 +374,12 @@ async function buildDocs(): Promise<void> {
     pre code { background: none; padding: 1rem; display: block; font-size: inherit; }
     ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
     li { margin-bottom: 0.5rem; line-height: 1.5; }
-    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    /* display:block + overflow-x:auto so wide tables scroll inside their
+     * own container instead of pushing the whole content column wide.
+     * Without this, table cells with long unbroken strings (e.g. error
+     * messages, function signatures) were forcing .content-inner past
+     * its 800px max-width on desktop. */
+    table { display: block; overflow-x: auto; width: 100%; max-width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
     th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
     th { font-weight: 600; background: var(--bg-secondary, #fff); }
     td code { white-space: nowrap; }
@@ -406,7 +418,6 @@ async function buildDocs(): Promise<void> {
       .docs-layout { height: calc(100vh - 52px); }
       .content-inner { padding: 1.5rem 1rem; }
       pre { font-size: 0.8125rem; }
-      table { display: block; overflow-x: auto; }
     }
     @media (max-width: 600px) {
       .site-nav { display: none; }
