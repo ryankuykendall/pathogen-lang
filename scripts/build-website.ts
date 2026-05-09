@@ -121,7 +121,7 @@ Disallow: /pathogen/workspace/
 Disallow: /pathogen/preferences
 Disallow: /pathogen/admin/
 Disallow: /pathogen/storybook
-Sitemap: https://pedestal.design/sitemap.xml
+Sitemap: https://pathogen.studio/sitemap.xml
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 `;
   await fs.writeFile(join(DIST, 'robots.txt'), robotsTxt);
@@ -142,7 +142,7 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
 
   const blogUrls = [
     `  <url>
-    <loc>https://pedestal.design/pathogen/blog</loc>
+    <loc>https://pathogen.studio/pathogen/blog</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -150,7 +150,7 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
     ...blogSlugs.map(
       (slug) =>
         `  <url>
-    <loc>https://pedestal.design/pathogen/blog/${slug}</loc>
+    <loc>https://pathogen.studio/pathogen/blog/${slug}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -161,25 +161,25 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://pedestal.design/pathogen/docs</loc>
+    <loc>https://pathogen.studio/pathogen/docs</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pedestal.design/pathogen/docs/docs.md</loc>
+    <loc>https://pathogen.studio/pathogen/docs/docs.md</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pedestal.design/pathogen/explore</loc>
+    <loc>https://pathogen.studio/pathogen/explore</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://pedestal.design/pathogen/featured</loc>
+    <loc>https://pathogen.studio/pathogen/featured</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

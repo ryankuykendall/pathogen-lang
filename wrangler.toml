@@ -1,49 +1,35 @@
-# CloudFlare Pages configuration
+# Cloudflare Pages configuration — Pathogen Studio site.
+#
+# After the API split (commit ?), this Pages project only renders SSR HTML
+# (homepage, /explore, /featured, /u/:handle) and serves SPA + static
+# assets. Every /api/* endpoint moved to the pathogen-api Worker at
+# api.pathogen.studio. See api/wrangler.toml for the API project's config.
+
 name = "svg-path-extended"
 compatibility_date = "2026-04-30"
 pages_build_output_dir = "public"
 
-# KV Namespace binding for workspace persistence
-# After creating the namespace, replace the placeholder IDs:
-#   wrangler kv:namespace create WORKSPACES
-#   wrangler kv:namespace create WORKSPACES --preview
+# KV — public workspace index reads (explore, featured, profile pages).
+# Pages does not write to KV; the API Worker owns mutations.
 [[kv_namespaces]]
 binding = "WORKSPACES"
 id = "fdaa643f894a4a118329961dcd0e8d0e"
 preview_id = "19a9d6b448604bca927cc6a198f4a96a"
 
-[[r2_buckets]]
-binding = "THUMBNAILS"
-bucket_name = "svg-path-extended-thumbnails"
-preview_bucket_name = "svg-path-extended-thumbnails-preview"
-
-# D1 — users + sessions for email-OTP accounts.
-# See migrations/0001_users.sql and project-docs/auth/design.md.
+# D1 — getSsrUser() reads the session cookie and looks up the user for
+# first-paint account-menu hydration. Pages does not write to USERS_DB.
 [[d1_databases]]
 binding = "USERS_DB"
 database_name = "svg-path-extended-users"
 database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
 
-# Cloudflare Email Sending binding ("EMAIL")
+# THUMBNAILS R2 binding REMOVED — only the pathogen-api Worker reads/writes
+# thumbnails. SSR pages reference thumbnails via cross-origin <img src> at
+# https://api.pathogen.studio/thumbnail/...
 #
-# Cloudflare Pages does not accept [[send_email]] in wrangler.toml — the
-# Pages build pipeline rejects the field as unsupported. Configure the
-# binding via the Cloudflare dashboard instead:
-#   Pages project → Settings → Functions → Bindings → Send Email
-#   - Name: EMAIL
-#   - Sending domain: pedestal.design (verified in Email Service)
+# Email-related bindings/vars (EMAIL, AUTH_FROM_EMAIL, AUTH_PRODUCT_NAME,
+# AUTH_RESEND_API_KEY) REMOVED — the API Worker handles all email sending.
 #
-# website/auth/email.ts gracefully degrades when env.EMAIL is undefined —
-# it falls back to Resend (AUTH_RESEND_API_KEY) or returns a delivery
-# error. Local `wrangler pages dev` runs simulate via .dev.vars
-# (AUTH_DEV_LOG_OTP=1 prints codes to the console).
-
-[vars]
-AUTH_FROM_EMAIL   = "hello@pedestal.design"
-AUTH_PRODUCT_NAME = "Pathogen Studio"   # email-only brand; in-app UI stays "Pathogen"
-PRODUCTION        = "1"
-# AUTH_DEV_LOG_OTP and PRODUCTION="" are set in .dev.vars (gitignored) so
-# local `wrangler pages dev` logs OTP codes to the console and serves a
-# non-Secure cookie over plain HTTP, while production gets real email and
-# Secure cookies.
-# AUTH_RESEND_API_KEY = "..."  # backup transport — set if CF Email Sending breaks
+# COOKIE_DOMAIN / PRODUCTION are NOT needed here — Pages only reads the
+# session cookie via getSsrUser(); it never writes or clears it. Both vars
+# live in api/wrangler.toml where the cookie is issued.

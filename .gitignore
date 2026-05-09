@@ -12,6 +12,8 @@ playground/utils/docs-content.js
 # Wrangler
 .wrangler/
 .dev.vars
+api/.dev.vars
+api/dist/
 
 # IDE
 .idea/

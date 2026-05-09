@@ -276,10 +276,10 @@ async function buildDocs(): Promise<void> {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Documentation — Pathogen</title>
   <meta name="description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
-  <link rel="canonical" href="https://pedestal.design/pathogen/docs">
+  <link rel="canonical" href="https://pathogen.studio/pathogen/docs">
   <meta property="og:title" content="Documentation — Pathogen">
   <meta property="og:description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
-  <meta property="og:url" content="https://pedestal.design/pathogen/docs">
+  <meta property="og:url" content="https://pathogen.studio/pathogen/docs">
   <meta property="og:type" content="website">
   <script type="application/ld+json">
   {
@@ -287,8 +287,8 @@ async function buildDocs(): Promise<void> {
     "@type": "TechArticle",
     "name": "Pathogen Documentation",
     "description": "Complete language reference for svg-path-extended",
-    "url": "https://pedestal.design/pathogen/docs",
-    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+    "url": "https://pathogen.studio/pathogen/docs",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">

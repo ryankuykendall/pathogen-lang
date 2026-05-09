@@ -306,7 +306,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
 
   await fs.mkdir(STATIC_BLOG_DIR, { recursive: true });
 
-  const SITE_URL = 'https://pedestal.design';
+  const SITE_URL = 'https://pathogen.studio';
 
   function escapeHtmlAttr(str: string): string {
     return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

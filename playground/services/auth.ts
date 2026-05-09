@@ -1,18 +1,19 @@
 // Client-side auth API.
-// Talks to /pathogen/api/auth/* and /pathogen/api/me. The session cookie is
-// set/cleared by the server; we just need to send credentials on each request
-// (same-origin includes cookies by default; we set credentials anyway for
-// clarity and to be robust to future cross-origin previews).
+// Talks to /auth/* and /me on the API origin (substituted at build time
+// via the __PATHOGEN_API_BASE__ esbuild define). The session cookie is
+// set/cleared by the server. credentials: 'include' is required so the
+// cookie rides along on cross-origin requests once the API moves to
+// api.pathogen.studio (Phase E).
 
 import { store } from '../state/store.js';
-import { BASE_PATH } from '../utils/router.js';
 import {
   clearAuthenticatedUserId,
   markEverSignedIn,
   setAuthenticatedUserId,
 } from './user-id.js';
 
-const API_BASE = `${BASE_PATH}/api`;
+declare const __PATHOGEN_API_BASE__: string;
+const API_BASE = __PATHOGEN_API_BASE__;
 
 export interface CurrentUser {
   id: string;
@@ -49,7 +50,7 @@ class AuthError extends Error {
 async function authFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(init.headers || {}),

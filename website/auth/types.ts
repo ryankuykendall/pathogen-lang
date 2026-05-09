@@ -52,11 +52,16 @@ export interface AuthEnv {
   // which case we expect AUTH_DEV_LOG_OTP or AUTH_RESEND_API_KEY to fill in.
   EMAIL?: EmailBinding;
   // Optional knobs read from [vars] in wrangler.toml
-  AUTH_FROM_EMAIL?: string;     // e.g. "noreply@pedestal.design"
-  AUTH_PRODUCT_NAME?: string;   // e.g. "Pathogen"
+  AUTH_FROM_EMAIL?: string;     // e.g. "hello@pathogen.studio"
+  AUTH_PRODUCT_NAME?: string;   // e.g. "Pathogen Studio"
   AUTH_DEV_LOG_OTP?: string;    // truthy in dev: log codes to console instead of (or in addition to) sending
   AUTH_RESEND_API_KEY?: string; // alternative transport while CF Email Sending beta rolls out
   PRODUCTION?: string;          // truthy in production deploys (controls cookie Secure flag)
+  // Set in production wrangler.toml [vars] (".pathogen.studio") so the
+  // session cookie is shared between the Pages site at pathogen.studio
+  // and the API Worker at api.pathogen.studio. Unset in dev (.dev.vars
+  // empty) so localhost cookies stay scoped to the request host.
+  COOKIE_DOMAIN?: string;
 }
 
 export interface UserRow {

@@ -64,6 +64,13 @@ export function readSessionTokenFromRequest(request: Request): string | null {
   return null;
 }
 
+function cookieDomainAttr(env: AuthEnv): string {
+  // Set in production so the cookie spans pathogen.studio (Pages) and
+  // api.pathogen.studio (Workers); unset in dev so localhost ports share
+  // cookies without a Domain attribute.
+  return env.COOKIE_DOMAIN ? `; Domain=${env.COOKIE_DOMAIN}` : '';
+}
+
 export function buildSetSessionCookie(token: string, env: AuthEnv): string {
   const secure = env.PRODUCTION ? '; Secure' : '';
   return [
@@ -72,7 +79,7 @@ export function buildSetSessionCookie(token: string, env: AuthEnv): string {
     'SameSite=Lax',
     'Path=/',
     `Max-Age=${SESSION_TTL_SECONDS}`,
-  ].join('; ') + secure;
+  ].join('; ') + cookieDomainAttr(env) + secure;
 }
 
 export function buildClearSessionCookie(env: AuthEnv): string {
@@ -83,7 +90,7 @@ export function buildClearSessionCookie(env: AuthEnv): string {
     'SameSite=Lax',
     'Path=/',
     'Max-Age=0',
-  ].join('; ') + secure;
+  ].join('; ') + cookieDomainAttr(env) + secure;
 }
 
 export type { SessionRow };

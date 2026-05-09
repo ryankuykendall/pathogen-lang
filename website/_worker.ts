@@ -1,189 +1,29 @@
 /**
- * CloudFlare Pages Worker - SPA routing + API endpoints
+ * CloudFlare Pages Worker — Pathogen Studio site at pathogen.studio.
  *
- * Routes under /pathogen/* that don't match static files
- * are served the SPA index.html for client-side routing.
+ * Renders SSR HTML for the marketing homepage, /explore, /featured,
+ * /u/:handle, and serves the SPA shell + static blog/docs assets.
  *
- * API routes under /pathogen/api/* are handled by the worker.
+ * API endpoints (/api/*) live on the dedicated pathogen-api Worker at
+ * api.pathogen.studio (see api/wrangler.toml). The session cookie is
+ * scoped to .pathogen.studio so getSsrUser() here reads the same session
+ * the API issued.
  */
 
-import { getEffectiveUserId } from './auth/effective-id.js';
-import {
-  handleAuthClaim,
-  handleAuthLogout,
-  handleAuthStart,
-  handleAuthVerify,
-  handleMe,
-  handlePublicProfile,
-} from './auth/handlers.js';
 import { getSessionUserId, readSessionTokenFromRequest } from './auth/session.js';
 import { findUserById, findUserByHandle } from './auth/users.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
+import type {
+  Env,
+  PublicIndexEntry,
+  SsrUser,
+  Workspace,
+} from './api/types.js';
 import { latestBlogPost } from './generated/blog-data.js';
-
-// ─── Type Definitions ─────────────────────────────────────────────────
-
-interface KVNamespace {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
-  delete(key: string): Promise<void>;
-  list(options?: {
-    prefix?: string;
-    cursor?: string;
-  }): Promise<{ keys: { name: string }[]; list_complete: boolean; cursor?: string }>;
-}
-
-interface R2Bucket {
-  get(key: string): Promise<R2Object | null>;
-  put(
-    key: string,
-    value: ReadableStream | ArrayBuffer | string,
-    options?: { httpMetadata?: { contentType?: string } },
-  ): Promise<void>;
-  delete(key: string): Promise<void>;
-}
-
-interface R2Object {
-  body: ReadableStream;
-}
-
-interface D1PreparedStatement {
-  bind(...values: unknown[]): D1PreparedStatement;
-  first<T = Record<string, unknown>>(): Promise<T | null>;
-  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
-  run(): Promise<{ success: boolean; meta: { changes: number } }>;
-}
-
-interface D1Database {
-  prepare(query: string): D1PreparedStatement;
-  exec(query: string): Promise<unknown>;
-}
-
-interface EmailBinding {
-  send(message: { from: string; to: string; subject: string; text?: string; html?: string }): Promise<{ messageId: string }>;
-}
-
-interface Env {
-  ASSETS: { fetch(input: RequestInfo): Promise<Response> };
-  WORKSPACES: KVNamespace;
-  THUMBNAILS: R2Bucket;
-  USERS_DB: D1Database;
-  EMAIL?: EmailBinding;
-  ADMIN_TOKEN?: string;
-  AUTH_FROM_EMAIL?: string;
-  AUTH_PRODUCT_NAME?: string;
-  AUTH_DEV_LOG_OTP?: string;
-  AUTH_RESEND_API_KEY?: string;
-  PRODUCTION?: string;
-}
-
-interface WorkspaceListing {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  isPublic: boolean;
-  createdAt: string;
-  updatedAt: string;
-  thumbnailAt: string | null;
-}
-
-interface Workspace extends WorkspaceListing {
-  userId: string;
-  code: string;
-  preferences: Record<string, unknown>;
-  contentHash: string;
-}
-
-interface PublicIndexEntry {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  userId: string;
-  updatedAt: string;
-  thumbnailAt: string | null;
-}
-
-// ─── Utilities ────────────────────────────────────────────────────────
-
-// Nano ID implementation (URL-safe, 21 chars)
-const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_~';
-function generateNanoId(size: number = 21): string {
-  let id = '';
-  const bytes = crypto.getRandomValues(new Uint8Array(size));
-  for (let i = 0; i < size; i++) {
-    id += ALPHABET[bytes[i] & 63];
-  }
-  return id;
-}
-
-// Simple content hash using Web Crypto API
-async function hashContent(content: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(content);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray
-    .slice(0, 8)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-// Create URL-friendly slug from name
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 50)
-    .replace(/-+$/, '');
-}
-
-// CORS headers for API responses
-const corsHeaders: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
-  'Access-Control-Max-Age': '86400',
-};
-
-// JSON response helper
-function jsonResponse(data: unknown, status: number = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...corsHeaders,
-    },
-  });
-}
-
-// Merge corsHeaders into a Response that didn't include them (e.g. responses
-// constructed by the auth handler module, which is shared and CORS-agnostic).
-function withCors(response: Response): Response {
-  const headers = new Headers(response.headers);
-  for (const [k, v] of Object.entries(corsHeaders)) headers.set(k, v);
-  return new Response(response.body, { status: response.status, headers });
-}
-
-// Error response helper
-function errorResponse(message: string, status: number = 400): Response {
-  return jsonResponse({ error: message }, status);
-}
 
 // ─── SEO Page Rendering ───────────────────────────────────────────────
 
-const SITE_URL = 'https://pedestal.design';
-
-interface SsrUser {
-  id: string;
-  email: string;
-  displayName: string;
-  handle: string;
-}
+const SITE_URL = 'https://pathogen.studio';
 
 async function getSsrUser(request: Request, env: Env): Promise<SsrUser | null> {
   if (!env.USERS_DB) return null;
@@ -288,608 +128,6 @@ function renderPage({
 </html>`;
 }
 
-// API route handlers
-const apiHandlers: Record<string, (request: Request, env: Env, ...args: string[]) => Promise<Response>> = {
-  // GET /api/workspaces - List user's workspaces
-  async listWorkspaces(request: Request, env: Env): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    // Check if KV binding exists
-    if (!env.WORKSPACES) {
-      return errorResponse('KV namespace WORKSPACES not bound. Check Cloudflare Pages settings.', 500);
-    }
-
-    try {
-      // Get user's workspace IDs
-      const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
-      const workspaceIds: string[] = workspaceIdsJson ? JSON.parse(workspaceIdsJson) : [];
-
-      // Fetch all workspace metadata
-      const workspaces = await Promise.all(
-        workspaceIds.map(async (id: string) => {
-          const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-          if (!wsJson) return null;
-          const ws: Workspace = JSON.parse(wsJson);
-          // Return minimal data for listing
-          const listing: WorkspaceListing = {
-            id: ws.id,
-            slug: ws.slug,
-            name: ws.name,
-            description: ws.description,
-            isPublic: ws.isPublic,
-            createdAt: ws.createdAt,
-            updatedAt: ws.updatedAt,
-            thumbnailAt: ws.thumbnailAt || null,
-          };
-          return listing;
-        }),
-      );
-
-      // Filter out null values (deleted workspaces)
-      return jsonResponse(workspaces.filter(Boolean));
-    } catch (err) {
-      return errorResponse('Failed to list workspaces: ' + (err as Error).message, 500);
-    }
-  },
-
-  // POST /api/workspace - Create new workspace
-  async createWorkspace(request: Request, env: Env): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const body = await request.json() as Record<string, unknown>;
-      const { name, description, code, isPublic, preferences } = body as {
-        name?: string;
-        description?: string;
-        code?: string;
-        isPublic?: boolean;
-        preferences?: Record<string, unknown>;
-      };
-
-      if (!name?.trim()) {
-        return errorResponse('Workspace name is required');
-      }
-
-      const id = generateNanoId();
-      const slug = slugify(name);
-      const now = new Date().toISOString();
-      const contentHash = await hashContent(code || '');
-
-      const workspace: Workspace = {
-        id,
-        slug,
-        userId,
-        name: name.trim(),
-        description: (description as string | undefined)?.trim() || '',
-        code: code || '',
-        isPublic: Boolean(isPublic),
-        preferences: preferences || {},
-        createdAt: now,
-        updatedAt: now,
-        contentHash,
-        thumbnailAt: null,
-      };
-
-      // Save workspace
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
-
-      // Update user's workspace list
-      const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
-      const workspaceIds: string[] = workspaceIdsJson ? JSON.parse(workspaceIdsJson) : [];
-      workspaceIds.unshift(id); // Add to beginning
-      await env.WORKSPACES.put(`user:${userId}:workspaces`, JSON.stringify(workspaceIds));
-
-      // Update public index if workspace is public
-      if (workspace.isPublic) {
-        await addToPublicIndex(env, workspace);
-      }
-
-      return jsonResponse(workspace, 201);
-    } catch (err) {
-      return errorResponse('Failed to create workspace: ' + (err as Error).message, 500);
-    }
-  },
-
-  // GET /api/workspace/:id - Load workspace
-  async getWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) {
-        return errorResponse('Workspace not found', 404);
-      }
-
-      const workspace: Workspace = JSON.parse(wsJson);
-      const userId = await getEffectiveUserId(request, env);
-      const url = new URL(request.url);
-      const adminToken = url.searchParams.get('token');
-      const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
-
-      // Check access - allow if public, owned by user, or admin
-      if (!isAdmin && !workspace.isPublic && workspace.userId !== userId) {
-        return errorResponse('Access denied', 403);
-      }
-
-      return jsonResponse(workspace);
-    } catch (err) {
-      return errorResponse('Failed to load workspace: ' + (err as Error).message, 500);
-    }
-  },
-
-  // PUT /api/workspace/:id - Update workspace (autosave)
-  async updateWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) {
-        return errorResponse('Workspace not found', 404);
-      }
-
-      const workspace: Workspace = JSON.parse(wsJson);
-
-      // Check ownership
-      if (workspace.userId !== userId) {
-        return errorResponse('Access denied', 403);
-      }
-
-      const body = await request.json() as Record<string, unknown>;
-      const { name, description, code, isPublic, preferences } = body as {
-        name?: string;
-        description?: string;
-        code?: string;
-        isPublic?: boolean;
-        preferences?: Record<string, unknown>;
-        contentHash?: string;
-      };
-
-      // Check if content actually changed (dirty checking)
-      if (code !== undefined) {
-        const newHash = await hashContent(code);
-        if (newHash === workspace.contentHash) {
-          // Content unchanged, skip update
-          return jsonResponse({ ...workspace, skipped: true });
-        }
-        workspace.code = code;
-        workspace.contentHash = newHash;
-      }
-
-      // Update other fields if provided
-      if (name !== undefined) {
-        workspace.name = name.trim();
-        workspace.slug = slugify(name);
-      }
-      if (description !== undefined) workspace.description = description.trim();
-      if (isPublic !== undefined) workspace.isPublic = Boolean(isPublic);
-      if (preferences !== undefined) {
-        workspace.preferences = { ...(workspace.preferences || {}), ...preferences };
-      }
-
-      workspace.updatedAt = new Date().toISOString();
-
-      // Save updated workspace
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
-
-      // Update public index (add/remove based on visibility)
-      await updatePublicIndex(env, workspace);
-
-      return jsonResponse(workspace);
-    } catch (err) {
-      return errorResponse('Failed to update workspace: ' + (err as Error).message, 500);
-    }
-  },
-
-  // DELETE /api/workspace/:id - Delete workspace
-  async deleteWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) {
-        return errorResponse('Workspace not found', 404);
-      }
-
-      const workspace: Workspace = JSON.parse(wsJson);
-
-      // Check ownership
-      if (workspace.userId !== userId) {
-        return errorResponse('Access denied', 403);
-      }
-
-      // Delete workspace
-      await env.WORKSPACES.delete(`workspace:${id}`);
-
-      // Remove from user's workspace list
-      const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
-      const workspaceIds: string[] = workspaceIdsJson ? JSON.parse(workspaceIdsJson) : [];
-      const updatedIds = workspaceIds.filter((wsId: string) => wsId !== id);
-      await env.WORKSPACES.put(`user:${userId}:workspaces`, JSON.stringify(updatedIds));
-
-      // Remove from public index if it was public
-      if (workspace.isPublic) {
-        await removeFromPublicIndex(env, id);
-      }
-
-      return jsonResponse({ success: true });
-    } catch (err) {
-      return errorResponse('Failed to delete workspace: ' + (err as Error).message, 500);
-    }
-  },
-
-  // POST /api/workspace/:id/copy - Duplicate workspace
-  async copyWorkspace(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) {
-        return errorResponse('Workspace not found', 404);
-      }
-
-      const original: Workspace = JSON.parse(wsJson);
-
-      // Check access - allow if public or owned by user
-      if (!original.isPublic && original.userId !== userId) {
-        return errorResponse('Access denied', 403);
-      }
-
-      const body = await request.json().catch(() => ({})) as Record<string, unknown>;
-      const newName = (body.name as string) || `${original.name} (Copy)`;
-
-      const newId = generateNanoId();
-      const now = new Date().toISOString();
-
-      const newWorkspace: Workspace = {
-        ...original,
-        id: newId,
-        slug: slugify(newName),
-        userId, // New owner
-        name: newName,
-        isPublic: false, // Copies are private by default
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      // Save new workspace
-      await env.WORKSPACES.put(`workspace:${newId}`, JSON.stringify(newWorkspace));
-
-      // Update user's workspace list
-      const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
-      const workspaceIds: string[] = workspaceIdsJson ? JSON.parse(workspaceIdsJson) : [];
-      workspaceIds.unshift(newId);
-      await env.WORKSPACES.put(`user:${userId}:workspaces`, JSON.stringify(workspaceIds));
-
-      return jsonResponse(newWorkspace, 201);
-    } catch (err) {
-      return errorResponse('Failed to copy workspace: ' + (err as Error).message, 500);
-    }
-  },
-
-  // GET /api/preferences - Get user preferences
-  async getPreferences(request: Request, env: Env): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const prefsJson = await env.WORKSPACES.get(`user:${userId}:preferences`);
-      const preferences: Record<string, unknown> = prefsJson ? JSON.parse(prefsJson) : null;
-      return jsonResponse(preferences || {});
-    } catch (err) {
-      return errorResponse('Failed to get preferences: ' + (err as Error).message, 500);
-    }
-  },
-
-  // PUT /api/preferences - Save user preferences
-  async savePreferences(request: Request, env: Env): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const preferences = await request.json();
-      await env.WORKSPACES.put(`user:${userId}:preferences`, JSON.stringify(preferences));
-      return jsonResponse(preferences);
-    } catch (err) {
-      return errorResponse('Failed to save preferences: ' + (err as Error).message, 500);
-    }
-  },
-
-  // PUT /api/workspace/:id/thumbnail - Upload thumbnails (3 sizes via FormData)
-  async uploadThumbnail(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    const url = new URL(request.url);
-    const adminToken = url.searchParams.get('token');
-    const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
-
-    if (!userId && !isAdmin) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) return errorResponse('Workspace not found', 404);
-      const workspace: Workspace = JSON.parse(wsJson);
-      if (!isAdmin && workspace.userId !== userId) return errorResponse('Access denied', 403);
-
-      const formData = await request.formData();
-      const sizes = ['1024', '512', '256'];
-
-      for (const size of sizes) {
-        const file = formData.get(size) as File | null;
-        if (!file) return errorResponse(`Missing ${size} thumbnail`, 400);
-        await env.THUMBNAILS.put(`${id}/${size}.png`, file.stream(), {
-          httpMetadata: { contentType: 'image/png' },
-        });
-      }
-
-      // Update workspace metadata with thumbnail timestamp
-      workspace.thumbnailAt = new Date().toISOString();
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
-
-      return jsonResponse({ thumbnailAt: workspace.thumbnailAt });
-    } catch (err) {
-      return errorResponse('Failed to upload thumbnail: ' + (err as Error).message, 500);
-    }
-  },
-
-  // GET /api/thumbnail/:id/:size - Serve thumbnail from R2
-  async getThumbnail(_request: Request, env: Env, id: string, size: string): Promise<Response> {
-    try {
-      const object = await env.THUMBNAILS.get(`${id}/${size}.png`);
-      if (!object) return errorResponse('Thumbnail not found', 404);
-
-      return new Response(object.body, {
-        headers: {
-          'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=3600',
-          ...corsHeaders,
-        },
-      });
-    } catch (err) {
-      return errorResponse('Failed to get thumbnail: ' + (err as Error).message, 500);
-    }
-  },
-
-  // DELETE /api/workspace/:id/thumbnail - Delete thumbnails from R2
-  async deleteThumbnail(request: Request, env: Env, id: string): Promise<Response> {
-    const userId = await getEffectiveUserId(request, env);
-    if (!userId) {
-      return errorResponse('User ID required', 401);
-    }
-
-    try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) return errorResponse('Workspace not found', 404);
-      const workspace: Workspace = JSON.parse(wsJson);
-      if (workspace.userId !== userId) return errorResponse('Access denied', 403);
-
-      const sizes = ['1024', '512', '256'];
-      await Promise.all(sizes.map((s: string) => env.THUMBNAILS.delete(`${id}/${s}.png`)));
-
-      workspace.thumbnailAt = null;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
-
-      return jsonResponse({ success: true });
-    } catch (err) {
-      return errorResponse('Failed to delete thumbnail: ' + (err as Error).message, 500);
-    }
-  },
-
-  // GET /api/admin/workspaces-without-thumbnails - Admin: list workspaces missing thumbnails
-  async adminListWithoutThumbnails(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    const token = url.searchParams.get('token');
-    if (!token || token !== env.ADMIN_TOKEN) {
-      return errorResponse('Unauthorized', 401);
-    }
-
-    try {
-      // List all workspace keys in KV
-      const allKeys: { name: string }[] = [];
-      let cursor: string | undefined = undefined;
-      do {
-        const result = await env.WORKSPACES.list({ prefix: 'workspace:', cursor });
-        allKeys.push(...result.keys);
-        cursor = result.list_complete ? undefined : result.cursor;
-      } while (cursor);
-
-      // Filter to workspace data keys (not user: keys) and check for thumbnailAt
-      const workspaces: { id: string; name: string; slug: string; userId: string; updatedAt: string }[] = [];
-      for (const key of allKeys) {
-        const wsJson = await env.WORKSPACES.get(key.name);
-        if (!wsJson) continue;
-        const ws: Workspace = JSON.parse(wsJson);
-        if (!ws.thumbnailAt) {
-          workspaces.push({
-            id: ws.id,
-            name: ws.name,
-            slug: ws.slug,
-            userId: ws.userId,
-            updatedAt: ws.updatedAt,
-          });
-        }
-      }
-
-      return jsonResponse(workspaces);
-    } catch (err) {
-      return errorResponse('Failed to list workspaces: ' + (err as Error).message, 500);
-    }
-  },
-};
-
-// Route API requests
-async function handleApiRequest(request: Request, env: Env, apiPath: string): Promise<Response> {
-  const url = new URL(request.url);
-  const method = request.method;
-
-  // Handle CORS preflight
-  if (method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
-  // ─── Auth + identity routes ───────────────────────────────────────
-  if (apiPath === '/auth/start' && method === 'POST') {
-    return withCors(await handleAuthStart(request, env));
-  }
-  if (apiPath === '/auth/verify' && method === 'POST') {
-    return withCors(await handleAuthVerify(request, env));
-  }
-  if (apiPath === '/auth/logout' && method === 'POST') {
-    return withCors(await handleAuthLogout(request, env));
-  }
-  if (apiPath === '/auth/claim' && method === 'POST') {
-    return withCors(await handleAuthClaim(request, env));
-  }
-  if (apiPath === '/me' && method === 'GET') {
-    return withCors(await handleMe(request, env));
-  }
-  const profileMatch = apiPath.match(/^\/u\/([a-z0-9-]+)$/);
-  if (profileMatch && method === 'GET') {
-    return withCors(await handlePublicProfile(request, env, profileMatch[1]));
-  }
-
-  // Route matching
-  // GET /api/workspaces
-  if (apiPath === '/workspaces' && method === 'GET') {
-    return apiHandlers.listWorkspaces(request, env);
-  }
-
-  // POST /api/workspace
-  if (apiPath === '/workspace' && method === 'POST') {
-    return apiHandlers.createWorkspace(request, env);
-  }
-
-  // GET /api/preferences
-  if (apiPath === '/preferences' && method === 'GET') {
-    return apiHandlers.getPreferences(request, env);
-  }
-
-  // PUT /api/preferences
-  if (apiPath === '/preferences' && method === 'PUT') {
-    return apiHandlers.savePreferences(request, env);
-  }
-
-  // Match /api/workspace/:id routes
-  const workspaceMatch = apiPath.match(/^\/workspace\/([^\/]+)$/);
-  if (workspaceMatch) {
-    const id = workspaceMatch[1];
-    switch (method) {
-      case 'GET':
-        return apiHandlers.getWorkspace(request, env, id);
-      case 'PUT':
-        return apiHandlers.updateWorkspace(request, env, id);
-      case 'DELETE':
-        return apiHandlers.deleteWorkspace(request, env, id);
-    }
-  }
-
-  // Match /api/workspace/:id/copy
-  const copyMatch = apiPath.match(/^\/workspace\/([^\/]+)\/copy$/);
-  if (copyMatch && method === 'POST') {
-    return apiHandlers.copyWorkspace(request, env, copyMatch[1]);
-  }
-
-  // Match /api/workspace/:id/thumbnail
-  const thumbUploadMatch = apiPath.match(/^\/workspace\/([^\/]+)\/thumbnail$/);
-  if (thumbUploadMatch) {
-    const id = thumbUploadMatch[1];
-    if (method === 'PUT') return apiHandlers.uploadThumbnail(request, env, id);
-    if (method === 'DELETE') return apiHandlers.deleteThumbnail(request, env, id);
-  }
-
-  // Match /api/thumbnail/:id/:size
-  const thumbGetMatch = apiPath.match(/^\/thumbnail\/([^\/]+)\/(\d+)$/);
-  if (thumbGetMatch && method === 'GET') {
-    return apiHandlers.getThumbnail(request, env, thumbGetMatch[1], thumbGetMatch[2]);
-  }
-
-  // GET /api/admin/workspaces-without-thumbnails
-  if (apiPath === '/admin/workspaces-without-thumbnails' && method === 'GET') {
-    return apiHandlers.adminListWithoutThumbnails(request, env);
-  }
-
-  // ─── Admin Featured Endpoints ─────────────────────────────────────
-
-  if (apiPath === '/admin/featured' || apiPath.startsWith('/admin/featured/')) {
-    const token = url.searchParams.get('token');
-    if (!token || token !== env.ADMIN_TOKEN) {
-      return errorResponse('Unauthorized', 401);
-    }
-
-    // GET /api/admin/featured — list featured IDs
-    if (apiPath === '/admin/featured' && method === 'GET') {
-      try {
-        const raw = await env.WORKSPACES.get('featured:workspaces');
-        return jsonResponse(raw ? JSON.parse(raw) : []);
-      } catch {
-        return jsonResponse([]);
-      }
-    }
-
-    // POST /api/admin/featured — add workspace to featured list
-    if (apiPath === '/admin/featured' && method === 'POST') {
-      try {
-        const body = await request.json() as Record<string, unknown>;
-        if (!body.id) return errorResponse('Missing workspace id');
-        const raw = await env.WORKSPACES.get('featured:workspaces');
-        const ids: string[] = raw ? JSON.parse(raw) : [];
-        if (!ids.includes(body.id as string)) {
-          ids.push(body.id as string);
-          await env.WORKSPACES.put('featured:workspaces', JSON.stringify(ids));
-        }
-        return jsonResponse(ids);
-      } catch (err) {
-        return errorResponse('Failed: ' + (err as Error).message, 500);
-      }
-    }
-
-    // PUT /api/admin/featured — reorder featured list
-    if (apiPath === '/admin/featured' && method === 'PUT') {
-      try {
-        const body = await request.json() as Record<string, unknown>;
-        if (!Array.isArray(body.ids)) return errorResponse('Missing ids array');
-        await env.WORKSPACES.put('featured:workspaces', JSON.stringify(body.ids));
-        return jsonResponse(body.ids);
-      } catch (err) {
-        return errorResponse('Failed: ' + (err as Error).message, 500);
-      }
-    }
-
-    // DELETE /api/admin/featured/:id — remove from featured list
-    const featuredDeleteMatch = apiPath.match(/^\/admin\/featured\/([^\/]+)$/);
-    if (featuredDeleteMatch && method === 'DELETE') {
-      try {
-        const removeId = featuredDeleteMatch[1];
-        const raw = await env.WORKSPACES.get('featured:workspaces');
-        const ids: string[] = raw ? JSON.parse(raw) : [];
-        const filtered = ids.filter((id: string) => id !== removeId);
-        await env.WORKSPACES.put('featured:workspaces', JSON.stringify(filtered));
-        return jsonResponse(filtered);
-      } catch (err) {
-        return errorResponse('Failed: ' + (err as Error).message, 500);
-      }
-    }
-  }
-
-  return errorResponse('Not found', 404);
-}
 
 // ─── Explore Page (Worker-Rendered) ───────────────────────────────────
 
@@ -917,7 +155,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
   } else {
     cardsHtml = `<div class="explore-grid">${slice
       .map((ws: PublicIndexEntry) => {
-        const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
+        const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
         const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -958,8 +196,8 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
     "@type": "CollectionPage",
     "name": "Explore Public Workspaces",
     "description": "Browse public workspaces created with svg-path-extended",
-    "url": "https://pedestal.design/pathogen/explore",
-    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+    "url": "https://pathogen.studio/pathogen/explore",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>
   <style>
@@ -1089,7 +327,7 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
   } else {
     cardsHtml = `<div class="explore-grid">${workspaces
       .map((ws: PublicIndexEntry) => {
-        const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
+        const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
         const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -1202,7 +440,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
   } else {
     cardsHtml = `<div class="featured-grid">${workspaces
       .map((ws: Workspace) => {
-        const thumbUrl = ws.thumbnailAt ? `/pathogen/api/thumbnail/${ws.id}/512` : '';
+        const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
         const desc = ws.description ? ws.description.slice(0, 200) + (ws.description.length > 200 ? '...' : '') : '';
         const href = `/pathogen/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
         return `<article class="featured-card-wrap"><a class="featured-card" href="${href}">
@@ -1228,8 +466,8 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
     "@type": "CollectionPage",
     "name": "Featured Workspaces",
     "description": "Hand-picked svg-path-extended workspace showcases",
-    "url": "https://pedestal.design/pathogen/featured",
-    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+    "url": "https://pathogen.studio/pathogen/featured",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>
   <style>
@@ -1284,56 +522,6 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
   });
 }
 
-// ─── Public Workspace Index Helpers ───────────────────────────────────
-
-async function addToPublicIndex(env: Env, workspace: Workspace): Promise<void> {
-  let index: PublicIndexEntry[] = [];
-  try {
-    const raw = await env.WORKSPACES.get('public:workspaces');
-    if (raw) index = JSON.parse(raw);
-  } catch {
-    /* empty */
-  }
-
-  // Remove existing entry if present
-  index = index.filter((entry: PublicIndexEntry) => entry.id !== workspace.id);
-
-  // Prepend new entry
-  index.unshift({
-    id: workspace.id,
-    slug: workspace.slug,
-    name: workspace.name,
-    description: workspace.description || '',
-    userId: workspace.userId,
-    updatedAt: workspace.updatedAt,
-    thumbnailAt: workspace.thumbnailAt || null,
-  });
-
-  await env.WORKSPACES.put('public:workspaces', JSON.stringify(index));
-}
-
-async function removeFromPublicIndex(env: Env, workspaceId: string): Promise<void> {
-  let index: PublicIndexEntry[] = [];
-  try {
-    const raw = await env.WORKSPACES.get('public:workspaces');
-    if (raw) index = JSON.parse(raw);
-  } catch {
-    /* empty */
-  }
-
-  const filtered = index.filter((entry: PublicIndexEntry) => entry.id !== workspaceId);
-  if (filtered.length !== index.length) {
-    await env.WORKSPACES.put('public:workspaces', JSON.stringify(filtered));
-  }
-}
-
-async function updatePublicIndex(env: Env, workspace: Workspace): Promise<void> {
-  if (workspace.isPublic) {
-    await addToPublicIndex(env, workspace);
-  } else {
-    await removeFromPublicIndex(env, workspace.id);
-  }
-}
 
 // ─── Marketing Homepage (Worker-Rendered) ─────────────────────────────
 
@@ -1508,8 +696,8 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
     "@type": "WebSite",
     "name": "Pathogen Studio",
     "description": "A typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.",
-    "url": "https://pedestal.design/pathogen/",
-    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pedestal.design" }
+    "url": "https://pathogen.studio/pathogen/",
+    "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
   </script>`;
 
@@ -1536,10 +724,21 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // API routes under /pathogen/api/
+    // /pathogen/api/* used to be served here — moved to the dedicated
+    // pathogen-api Worker at api.pathogen.studio. Any lingering callers
+    // (cached SPA bundles, scripted clients) get a 410 with a hint to
+    // re-bundle, instead of falling through to the SPA shell.
     if (path.startsWith('/pathogen/api/')) {
-      const apiPath = path.replace('/pathogen/api', '');
-      return handleApiRequest(request, env, apiPath);
+      return new Response(
+        JSON.stringify({
+          error: 'Moved Permanently',
+          message: 'API endpoints now live at https://api.pathogen.studio. Reload the SPA to pick up the new bundle.',
+        }),
+        {
+          status: 410,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     // Marketing homepage at /pathogen/ and /pathogen/index.html — server-rendered

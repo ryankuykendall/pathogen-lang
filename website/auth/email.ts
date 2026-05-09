@@ -178,7 +178,7 @@ function renderHtml(product: string, code: string, context: SendOtpContext): str
     <p style="margin:0 0 24px;color:#475569;">Use the 6-digit code below to finish signing in. It expires in 10 minutes.</p>
     <div style="font-family: 'Inconsolata', ui-monospace, monospace; font-size:2rem; letter-spacing:0.4em; font-weight:600; text-align:center; padding:16px; border-radius:8px; background:#f1f5f9; user-select:all;">${escapeHtml(code)}</div>
     ${ctxHtml}
-    <p style="margin:8px 0 0;color:#64748b;font-size:0.875rem;">If this wasn't you, ignore this email — no action is needed. <a href="mailto:hello@pedestal.design" style="color:#10b981;text-decoration:none;">Reply</a> to report abuse.</p>
+    <p style="margin:8px 0 0;color:#64748b;font-size:0.875rem;">If this wasn't you, ignore this email — no action is needed. <a href="mailto:hello@pathogen.studio" style="color:#10b981;text-decoration:none;">Reply</a> to report abuse.</p>
     <hr style="margin:28px 0 16px;border:none;border-top:1px solid #e2e8f0;">
     <div style="text-align:center;">
       <img src="cid:${WORDMARK_CID}" alt="${escapeHtml(product)}" width="140" height="28" style="display:inline-block;height:28px;width:auto;opacity:0.85;">

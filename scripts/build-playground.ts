@@ -114,6 +114,12 @@ export async function buildPlayground(options: { watch?: boolean } = {}): Promis
     return;
   }
 
+  // SPA reaches the API at this base. Production default is the dedicated
+  // API Worker at api.pathogen.studio (cutover landed in commit ?). Local
+  // dev overrides via PATHOGEN_API_BASE=http://localhost:8787 to point at
+  // a wrangler-dev API Worker.
+  const apiBase = process.env.PATHOGEN_API_BASE ?? 'https://api.pathogen.studio';
+
   const buildOptions: esbuild.BuildOptions = {
     entryPoints: sourceFiles,
     outdir: OUT,
@@ -122,6 +128,9 @@ export async function buildPlayground(options: { watch?: boolean } = {}): Promis
     platform: 'browser',
     target: 'es2022',
     plugins: [cssTextPlugin()],
+    define: {
+      __PATHOGEN_API_BASE__: JSON.stringify(apiBase),
+    },
     // Rename .ts outputs to .js
     outExtension: { '.js': '.js' },
     // Keep original structure — no bundling

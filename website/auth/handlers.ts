@@ -113,7 +113,7 @@ export async function handleAuthStart(request: Request, env: AuthEnv): Promise<R
       return errorResponse(`Email send failed (${result.via}): ${result.error}`, 500);
     }
     return errorResponse(
-      "Email delivery is having trouble right now. If retrying doesn't work, drop a note to hello@pedestal.design.",
+      "Email delivery is having trouble right now. If retrying doesn't work, drop a note to hello@pathogen.studio.",
       502,
     );
   }

@@ -1,0 +1,51 @@
+# Cloudflare Workers project — Pathogen Studio API.
+#
+# All API endpoints (auth, workspaces, thumbnails, admin, email) live here.
+# This is a separate project from the Pages site; the two share the same KV /
+# R2 / D1 bindings (same IDs) and the auth code module via relative-path
+# imports.
+#
+# Deploy:  cd api && wrangler deploy
+# Local:   cd api && wrangler dev --port 8787
+
+name = "pathogen-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-30"
+
+# Custom domain. The DNS record is auto-managed by Cloudflare when the Worker
+# is deployed, provided pathogen.studio is a verified zone in the same account.
+# Custom Domains take a bare hostname — no path / wildcard.
+routes = [
+  { pattern = "api.pathogen.studio", custom_domain = true }
+]
+
+[[kv_namespaces]]
+binding = "WORKSPACES"
+id = "fdaa643f894a4a118329961dcd0e8d0e"
+preview_id = "19a9d6b448604bca927cc6a198f4a96a"
+
+[[r2_buckets]]
+binding = "THUMBNAILS"
+bucket_name = "svg-path-extended-thumbnails"
+preview_bucket_name = "svg-path-extended-thumbnails-preview"
+
+[[d1_databases]]
+binding = "USERS_DB"
+database_name = "svg-path-extended-users"
+database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
+
+# Workers wrangler.toml accepts [[send_email]] (Pages does not — that is the
+# whole reason this project exists separately). Sending domain
+# (pathogen.studio) must be verified in the CF Email Service dashboard before
+# the binding will deliver mail.
+[[send_email]]
+name = "EMAIL"
+
+[vars]
+AUTH_FROM_EMAIL   = "hello@pathogen.studio"
+AUTH_PRODUCT_NAME = "Pathogen Studio"
+PRODUCTION        = "1"
+COOKIE_DOMAIN     = ".pathogen.studio"
+# AUTH_RESEND_API_KEY is set via `wrangler secret put AUTH_RESEND_API_KEY`
+# only if the CF Email Sending fallback to Resend is needed.
+# ADMIN_TOKEN is set via `wrangler secret put ADMIN_TOKEN`.

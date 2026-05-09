@@ -1,11 +1,15 @@
 // API client for workspace persistence
-// Communicates with CloudFlare Worker endpoints
+// Communicates with CloudFlare Worker endpoints. The base URL is
+// substituted at build time (scripts/build-playground.ts) so dev/prod
+// can target different origins without code changes.
 
 import { getUserId } from './user-id.js';
-import { BASE_PATH } from '../utils/router.js';
 
-// API base URL
-const API_BASE = `${BASE_PATH}/api`;
+// Injected by esbuild's `define` option. Default during dual-running:
+// "/pathogen/api" (current Pages worker). Override with PATHOGEN_API_BASE
+// env var at build time.
+declare const __PATHOGEN_API_BASE__: string;
+const API_BASE = __PATHOGEN_API_BASE__;
 
 interface ApiError extends Error {
   status?: number;
@@ -19,6 +23,10 @@ async function apiRequest(path: string, options: RequestInit = {}): Promise<unkn
 
   const response = await fetch(url, {
     ...options,
+    // Cross-origin auth (when API_BASE points at api.pathogen.studio) needs
+    // explicit credentials mode for the session cookie to ride along. Same
+    // flag is harmless for same-origin calls.
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'X-User-Id': userId,
@@ -119,6 +127,7 @@ export const thumbnailApi = {
     const tokenParam = adminToken ? `?token=${encodeURIComponent(adminToken)}` : '';
     const response = await fetch(`${API_BASE}/workspace/${workspaceId}/thumbnail${tokenParam}`, {
       method: 'PUT',
+      credentials: 'include',
       headers: { 'X-User-Id': userId },
       body: formData,
     });

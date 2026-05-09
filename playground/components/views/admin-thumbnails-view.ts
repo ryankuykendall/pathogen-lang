@@ -5,10 +5,11 @@ import { thumbnailApi, workspaceApi } from '../../services/api.js';
 import compilerWorker from '../../services/compiler-worker.js';
 import thumbnailService from '../../services/thumbnail-service.js';
 import { store } from '../../state/store.js';
-import { BASE_PATH, buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
+import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 import styles from './admin-thumbnails-view.css';
 
-const API_BASE = `${BASE_PATH}/api`;
+declare const __PATHOGEN_API_BASE__: string;
+const API_BASE = __PATHOGEN_API_BASE__;
 
 interface AdminWorkspace {
   id: string;
@@ -85,6 +86,7 @@ class AdminThumbnailsView extends HTMLElement {
     try {
       const response = await fetch(
         `${API_BASE}/admin/workspaces-without-thumbnails?token=${encodeURIComponent(this._token)}`,
+        { credentials: 'include' },
       );
       if (response.status === 401) {
         this._unauthorized = true;
