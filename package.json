@@ -64,7 +64,7 @@
     "dsl"
   ],
   "workspaces": [
-    "packages/*"
+    "packages/pathogen-language-server"
   ],
   "license": "MIT",
   "devDependencies": {
