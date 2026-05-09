@@ -1,5 +1,5 @@
 {
-  "name": "vscode-pathogen",
+  "name": "pathogen-lang",
   "displayName": "Pathogen Language",
   "description": "Language support for the Pathogen SVG path language",
   "version": "0.0.1",

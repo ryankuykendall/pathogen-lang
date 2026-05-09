@@ -626,7 +626,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
     <div class="homepage">
       <section class="dev-hero">
         <div class="dev-hero-text">
-          <p class="hero-eyebrow">SVG-Path-Extended · v1.0</p>
+          <p class="hero-eyebrow">pathogen-lang · v${PATHOGEN_VERSION}</p>
           <h1>From a one-liner to a thousand-line <em>composition.</em></h1>
           <p class="lede">Pathogen Studio is a typed, expression-first language for SVG paths. Compile from the CLI, the playground, or your editor — get the same path output every time.</p>
           <div class="dev-cta-cluster">
@@ -666,7 +666,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
           <p class="tool-eyebrow">${editorIcon}<span>VS Code · Coming soon</span></p>
           <h3 class="tool-title">In the editor.</h3>
           <p class="tool-body">LSP-powered completions, hover docs, diagnostics, and a live preview pane — install the extension when it lands and write Pathogen anywhere you write code.</p>
-          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">code --install-extension</span> pathogen-language</div>
+          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">code --install-extension</span> pedestal-design.pathogen-lang</div>
         </a>
       </section>
 
