@@ -278,6 +278,19 @@ body {
     color var(--transition-slow);
 }
 
+/* Headings — DM Serif Display globally. Every server-rendered page
+ * (homepage, /explore, /featured, /u/:handle, /docs, /blog) inherits
+ * this. DM Serif Display only ships in 400 weight + italic, so we
+ * pin font-weight here too rather than letting page-specific rules
+ * request 600/700 (which would be artificially bolded by the browser).
+ * Per-page rules can override (e.g. tight UI labels staying in
+ * var(--font-body)) by setting font-family on the specific element. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.012em;
+}
+
 /* Grain texture — fixed-position overlay so it stays put as the user scrolls.
  * Pointer-events disabled, blend-mode multiply tints the warm bg subtly. */
 body::before {

@@ -5,6 +5,13 @@
   background: var(--bg-primary, #ffffff);
 }
 
+/* Atmospheric typography — DM Serif Display headings. The site-wide
+ * theme.css rule doesn't cross Shadow DOM, so we replicate it here
+ * for headings declared inside this component. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
 .preferences-container {
   max-width: 600px;
   margin: 0 auto;

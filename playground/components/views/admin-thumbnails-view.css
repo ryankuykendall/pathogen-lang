@@ -5,6 +5,11 @@
   background: var(--bg-primary, #f8f9fa);
 }
 
+/* Atmospheric typography — DM Serif Display headings. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
 h1 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;

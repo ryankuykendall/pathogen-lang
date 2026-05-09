@@ -168,6 +168,11 @@ const styles = `
     padding: 2rem;
   }
 
+  /* Atmospheric typography — DM Serif Display headings. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
   section {
     margin-bottom: 3rem;
   }
