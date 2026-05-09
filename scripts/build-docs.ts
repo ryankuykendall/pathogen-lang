@@ -306,16 +306,23 @@ async function buildDocs(): Promise<void> {
     /* body styles (font-family, background, color, atmospheric grain) are
      * defined globally in /styles/theme.css. */
 
+    /* Lock horizontal scroll at the page level. The docs-layout uses
+     * overflow:hidden to clip its inner content, but a stray inline
+     * element at body scope (wide preformatted block, off-screen
+     * mobile-sidebar transform) was leaking into the body's scroll
+     * container and letting the user pan the whole page sideways. */
+    html, body { overflow-x: hidden; }
+
     /* Site header is shared via /styles/site-header.css */
     .site-header { position: sticky; top: 0; z-index: 50; }
 
     /* Docs layout */
     .docs-layout { display: flex; height: calc(100vh - 56px); overflow: hidden; }
 
-    /* Sidebar */
+    /* Sidebar — no opaque background so the body's atmospheric gradient
+     * shows through. Right-edge hairline divider stays. */
     .sidebar {
       width: 260px; min-width: 260px;
-      background: var(--bg-primary, #f8f9fa);
       border-right: 1px solid var(--border-color, #e2e8f0);
       display: flex; flex-direction: column; overflow: hidden;
     }
@@ -389,6 +396,10 @@ async function buildDocs(): Promise<void> {
         position: fixed; top: 0; left: 0; bottom: 0; z-index: 20;
         transform: translateX(-100%); transition: transform 0.2s ease;
         box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        /* Slide-out overlay needs an opaque background so content behind
+         * it doesn't bleed through. Desktop sidebar stays transparent so
+         * the body's atmospheric gradient shows. */
+        background: var(--bg-primary);
       }
       .sidebar.open { transform: translateX(0); }
       .sidebar-toggle { display: flex; }
