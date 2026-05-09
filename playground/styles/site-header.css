@@ -25,7 +25,12 @@
 
 .site-header-inner {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr);
+  /* minmax(0, 1fr) (not 280) — at narrow-ish desktop widths (~1024px) the
+   * tab row in the middle plus two 280px side tracks exceeded the viewport
+   * and pushed the right-edge actions block past the right edge. The side
+   * tracks naturally widen on real desktop where there's room; the floor
+   * was unnecessary. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   padding: 0 1.5rem;
   height: 52px;
