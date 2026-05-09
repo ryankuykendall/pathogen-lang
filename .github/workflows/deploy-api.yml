@@ -1,0 +1,69 @@
+# Auto-deploy the pathogen-api Worker when its source changes.
+#
+# The Pages site at pathogen.studio auto-deploys via Cloudflare's GitHub
+# integration on every push. This workflow handles the parallel concern
+# for the API Worker, which lives in /api/ and is not covered by Pages CI.
+#
+# Trigger paths cover:
+#   - api/**          (Worker's own source + wrangler.toml)
+#   - website/api/**  (router + handlers + types shared with the Pages worker)
+#   - website/auth/** (auth/session/email modules imported by the API Worker)
+#
+# Setup (one-time):
+#   1. Cloudflare Dashboard → My Profile → API Tokens → Create Token
+#      Use the "Edit Cloudflare Workers" template; expand Zone Resources
+#      to include pathogen.studio (needed for the custom domain attach).
+#   2. GitHub repo → Settings → Secrets and variables → Actions
+#      Add CLOUDFLARE_API_TOKEN with the token value.
+#      (CLOUDFLARE_ACCOUNT_ID is optional — only needed if the token spans
+#      multiple accounts. Add it the same way if you see "account
+#      ambiguous" errors during deploy.)
+
+name: Deploy pathogen-api
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'website/api/**'
+      - 'website/auth/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+# Only one deploy at a time; cancel any in-flight run if a new push lands.
+concurrency:
+  group: deploy-api
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: wrangler deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: api
+          # wrangler-action auto-detects the version from api/package.json's
+          # devDependencies, so we don't pin here. The deploy command reads
+          # api/wrangler.toml for bindings + custom domain.
+          command: deploy
