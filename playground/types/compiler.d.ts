@@ -1,6 +1,6 @@
 /**
  * Re-declarations of compiler output types used by the playground.
- * These mirror the types exported from svg-path-extended (src/index.ts).
+ * These mirror the types exported from pathogen-lang (src/index.ts).
  * We declare them here rather than importing from ../../dist/index.d.ts
  * so the playground can type-check independently of a library build.
  */

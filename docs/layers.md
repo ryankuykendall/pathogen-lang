@@ -243,7 +243,7 @@ define PathLayer('dashed') ${
 When using the JavaScript API, `compile()` returns a structured result:
 
 ```js
-import { compile } from 'svg-path-extended';
+import { compile } from 'pathogen-lang';
 
 const result = compile(`
   define default PathLayer('bg') ${

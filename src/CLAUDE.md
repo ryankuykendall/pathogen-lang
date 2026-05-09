@@ -162,10 +162,10 @@ Context-aware functions receive the current path context and can read pen positi
 ## CLI Options
 
 ```
-svg-path-extended <file>           Compile a file
-svg-path-extended -                Read from stdin
-svg-path-extended -e <code>        Compile inline code
-svg-path-extended --src=<file>     Compile a file (explicit flag)
+pathogen-lang <file>           Compile a file
+pathogen-lang -                Read from stdin
+pathogen-lang -e <code>        Compile inline code
+pathogen-lang --src=<file>     Compile a file (explicit flag)
 
 --annotated                        Output annotated/debug format with comments
 --print-logs                       Print log() output to stderr

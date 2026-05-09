@@ -435,7 +435,7 @@ class ExportLegendModal extends HTMLElement {
     brandSpan2.setAttribute('font-size', String(brandFontSize));
     brandSpan2.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
     brandSpan2.setAttribute('dx', String(brandFontSize * this.CHAR_WIDTH_FACTOR));
-    brandSpan2.textContent = 'built with svg-path-extended';
+    brandSpan2.textContent = 'built with pathogen-lang';
 
     brandText.appendChild(brandSpan1);
     brandText.appendChild(brandSpan2);

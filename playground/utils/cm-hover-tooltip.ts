@@ -1,5 +1,5 @@
 // CodeMirror 6 hover tooltip extension — shows language intelligence on hover
-// Uses the shared getHoverInfo from svg-path-extended language services.
+// Uses the shared getHoverInfo from pathogen-lang language services.
 
 /**
  * Minimal interface for the CodeMirror view module we need.
@@ -36,7 +36,7 @@ interface HoverTooltipResult {
  * @returns An array of CodeMirror extensions to include in the editor state
  */
 export function hoverTooltipExtension(cmView: CmViewModule): unknown[] {
-  const { StringTextDocument, getHoverInfo } = window.SvgPathExtended;
+  const { StringTextDocument, getHoverInfo } = window.PathogenLang;
 
   if (!getHoverInfo || !StringTextDocument) {
     console.warn('Language services not available — hover tooltips disabled');

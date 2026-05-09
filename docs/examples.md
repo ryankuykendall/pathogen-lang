@@ -1,6 +1,6 @@
 # Examples
 
-Practical examples showing how to use svg-path-extended for common tasks.
+Practical examples showing how to use pathogen-lang for common tasks.
 
 ## Basic Shapes
 

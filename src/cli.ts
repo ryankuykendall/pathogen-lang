@@ -27,13 +27,13 @@ interface CliOptions {
 
 function printUsage() {
   console.log(`
-svg-path-extended - Extended SVG path syntax compiler
+pathogen-lang - Extended SVG path syntax compiler
 
 Usage:
-  svg-path-extended <file>       Compile a file
-  svg-path-extended -            Read from stdin
-  svg-path-extended -e <code>    Compile inline code
-  svg-path-extended --src=<file> Compile a file (explicit flag)
+  pathogen-lang <file>       Compile a file
+  pathogen-lang -            Read from stdin
+  pathogen-lang -e <code>    Compile inline code
+  pathogen-lang --src=<file> Compile a file (explicit flag)
 
 Options:
   -h, --help                     Show this help message
@@ -55,11 +55,11 @@ Options:
   --scale=<N>                    GPU render resolution multiplier (1-4, default: 2)
 
 Examples:
-  svg-path-extended input.svgx
-  svg-path-extended --src=input.svgx --output-svg-file=./output.svg
-  echo 'let x = 10; M x 0' | svg-path-extended -
-  svg-path-extended -e 'M 0 0 L calc(10 + 5) 20'
-  svg-path-extended -e 'circle(100, 100, 50)' --output-svg-file=./circle.svg
+  pathogen-lang input.svgx
+  pathogen-lang --src=input.svgx --output-svg-file=./output.svg
+  echo 'let x = 10; M x 0' | pathogen-lang -
+  pathogen-lang -e 'M 0 0 L calc(10 + 5) 20'
+  pathogen-lang -e 'circle(100, 100, 50)' --output-svg-file=./circle.svg
 `);
 }
 
@@ -181,7 +181,7 @@ function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string 
       );
       if ((grad.innerRadius ?? 0) > 0 || (grad.innerFill && grad.innerFill !== 'transparent')) {
         console.warn(
-          '[svg-path-extended] innerRadius/innerFill on conic gradients requires WebGPU (playground only); ignored in CLI output',
+          '[pathogen-lang] innerRadius/innerFill on conic gradients requires WebGPU (playground only); ignored in CLI output',
         );
       }
       continue;
@@ -189,7 +189,7 @@ function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string 
 
     // Mesh/Freeform/Topo gradients: warn + solid-color approximation
     if (grad.type === 'mesh' || grad.type === 'freeform' || grad.type === 'topo') {
-      console.warn(`[svg-path-extended] ${grad.type} gradients require WebGPU; CLI outputs solid color approximation`);
+      console.warn(`[pathogen-lang] ${grad.type} gradients require WebGPU; CLI outputs solid color approximation`);
       let svgW: number;
       let svgH: number;
       if (grad.type === 'mesh') {
@@ -628,7 +628,7 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
     if (isFilePath) {
       const fontPath = resolve(baseDir, fontSource);
       if (!existsSync(fontPath)) {
-        console.warn(`[svg-path-extended] Font file not found: ${fontPath}`);
+        console.warn(`[pathogen-lang] Font file not found: ${fontPath}`);
         continue;
       }
       try {
@@ -638,7 +638,7 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
         const family = fontSource.replace(/^.*[\\/]/, '').replace(/\.(ttf|otf|woff|woff2)$/i, '');
         addFont(registry, family, weight, 'normal', arrayBuffer);
       } catch (err) {
-        console.warn(`[svg-path-extended] Failed to load font: ${fontPath} — ${(err as Error).message}`);
+        console.warn(`[pathogen-lang] Failed to load font: ${fontPath} — ${(err as Error).message}`);
       }
     } else {
       // Named font (e.g., "Inter") — check system font directories
@@ -670,7 +670,7 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
         if (found) break;
       }
       if (!found) {
-        console.warn(`[svg-path-extended] Font '${fontSource}' not found locally. CLI Google Fonts download coming in a future release.`);
+        console.warn(`[pathogen-lang] Font '${fontSource}' not found locally. CLI Google Fonts download coming in a future release.`);
       }
     }
   }

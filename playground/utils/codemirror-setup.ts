@@ -1,4 +1,4 @@
-// CodeMirror 6 configuration and completions for svg-path-extended
+// CodeMirror 6 configuration and completions for pathogen-lang
 
 // CodeMirror types — these objects come from the CodeMirror 6 packages loaded
 // at runtime (not bundled), so we use `any` for CM-specific types.
@@ -258,7 +258,7 @@ const pathSamplingMethods: string[] = [
   'scale',
 ];
 
-// Completion source for svg-path-extended
+// Completion source for pathogen-lang
 export function svgPathCompletions(context: CompletionContext): CompletionResult | null {
   // Check for 4-level property access (e.g., ctx.transform.translate.x)
   const deepProp = context.matchBefore(/(\w+)\.(\w+)\.(\w+)\.(\w*)$/);

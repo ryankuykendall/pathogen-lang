@@ -184,12 +184,12 @@ export class WorkspaceView extends HTMLElement {
   waitForLibrary(maxWait: number = 5000): void {
     const start = Date.now();
     const check = (): void => {
-      if ((window as any).SvgPathExtended) {
+      if ((window as any).PathogenLang) {
         this.initialize();
       } else if (Date.now() - start < maxWait) {
         setTimeout(check, 50);
       } else {
-        this.showError('Failed to load svg-path-extended library');
+        this.showError('Failed to load pathogen-lang library');
       }
     };
     check();
@@ -880,7 +880,7 @@ export class WorkspaceView extends HTMLElement {
 
   showError(message: string): string {
     // Try structured diagnostics via getDiagnostics first
-    const { StringTextDocument, getDiagnostics } = window.SvgPathExtended;
+    const { StringTextDocument, getDiagnostics } = window.PathogenLang;
     if (getDiagnostics && StringTextDocument) {
       try {
         const code = this.editorPane.code;

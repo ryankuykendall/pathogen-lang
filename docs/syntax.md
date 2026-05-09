@@ -1,6 +1,6 @@
 # Syntax Reference
 
-svg-path-extended is a superset of SVG path syntax that adds variables, expressions, control flow, functions, and [path blocks](#path-blocks-path-blocks).
+pathogen-lang is a superset of SVG path syntax that adds variables, expressions, control flow, functions, and [path blocks](#path-blocks-path-blocks).
 
 ## Path Commands
 

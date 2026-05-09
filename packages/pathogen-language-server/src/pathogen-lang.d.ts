@@ -1,10 +1,10 @@
 /**
- * Type declarations for svg-path-extended.
+ * Type declarations for pathogen-lang.
  * This shim exists because the main package's DTS build has a pre-existing
  * failure. Once that's fixed, this file can be deleted and types will come
  * from the package's dist/index.d.ts instead.
  */
-declare module 'svg-path-extended' {
+declare module 'pathogen-lang' {
   export interface Position {
     line: number;
     character: number;

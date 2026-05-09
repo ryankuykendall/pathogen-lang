@@ -1,4 +1,4 @@
-# svg-path-extended: Weekly Executive Summary
+# pathogen-lang: Weekly Executive Summary
 
 **Week of January 13-19, 2026**
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-This week marked the **complete development** of svg-path-extended, a TypeScript module that extends SVG path syntax with programming constructs. The project went from initial concept to a fully functional, documented, and deployed tool in one week.
+This week marked the **complete development** of pathogen-lang, a TypeScript module that extends SVG path syntax with programming constructs. The project went from initial concept to a fully functional, documented, and deployed tool in one week.
 
 ---
 
@@ -24,7 +24,7 @@ This week marked the **complete development** of svg-path-extended, a TypeScript
 - **Styling Controls**: Canvas size, stroke/fill colors, background, grid overlay
 - **URL Sharing**: Encode creations in URL for easy sharing
 - **Integrated Docs**: Tabbed documentation panel (Syntax, Stdlib, CLI)
-- **Deployed**: Live at https://ryankuykendall.github.io/svg-path-extended/
+- **Deployed**: Live at https://ryankuykendall.github.io/pathogen-lang/
 
 ### Annotated Output Mode
 - **Debug Feature**: New `--annotated` flag shows loop iterations and function expansions

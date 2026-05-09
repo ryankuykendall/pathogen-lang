@@ -1,6 +1,6 @@
 # Standard Library Reference
 
-svg-path-extended includes built-in functions for math operations and common SVG shapes.
+pathogen-lang includes built-in functions for math operations and common SVG shapes.
 
 ## Math Functions
 

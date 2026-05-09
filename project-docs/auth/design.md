@@ -55,7 +55,7 @@ mirroring `/pathogen/explore` and `/pathogen/featured`.
 ```toml
 [[d1_databases]]
 binding = "USERS_DB"
-database_name = "svg-path-extended-users"
+database_name = "pathogen-lang-users"
 database_id = "<from `wrangler d1 create`>"
 
 [[send_email]]
@@ -187,7 +187,7 @@ One-time setup:
 npx wrangler login
 
 # 2. Create the D1 database
-npx wrangler d1 create svg-path-extended-users
+npx wrangler d1 create pathogen-lang-users
 #    Append the returned [[d1_databases]] block to wrangler.toml
 
 # 3. Apply schema locally and remotely

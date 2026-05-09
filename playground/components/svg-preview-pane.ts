@@ -17,7 +17,7 @@ import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
 // here so the rest of the file can call `render.buildDefs(...)` etc. without
 // per-call globals gymnastics.
 declare const window: Window & {
-  SvgPathExtended: {
+  PathogenLang: {
     buildDefs: typeof import('../../src/render/index.js').buildDefs;
     buildSingleLayer: typeof import('../../src/render/index.js').buildSingleLayer;
     mountInto: typeof import('../../src/render/index.js').mountInto;
@@ -377,7 +377,7 @@ export class SvgPreviewPane extends HTMLElement {
       // URL. Masks/clipPaths/patterns/markers/linear+radial gradients pass
       // through unchanged.
       if (defsEl) {
-        const defsVNodes = window.SvgPathExtended.buildDefs(
+        const defsVNodes = window.PathogenLang.buildDefs(
           {
             masks: defsData.masks ?? [],
             clipPaths: defsData.clipPaths ?? [],
@@ -404,7 +404,7 @@ export class SvgPreviewPane extends HTMLElement {
           svgW,
           svgH,
         );
-        window.SvgPathExtended.mountInto(defsEl, defsVNodes);
+        window.PathogenLang.mountInto(defsEl, defsVNodes);
       }
 
       // Inject @property CSS declarations into the iframe document. The
@@ -444,8 +444,8 @@ export class SvgPreviewPane extends HTMLElement {
           this._insertFragmentLayer(layer, defsEl, layersGroup, SVG_NS);
           continue;
         }
-        const vnode: VNode = window.SvgPathExtended.buildSingleLayer(layer as unknown as LayerOutput, layerBuildOptions);
-        window.SvgPathExtended.mountInto(layersGroup, vnode);
+        const vnode: VNode = window.PathogenLang.buildSingleLayer(layer as unknown as LayerOutput, layerBuildOptions);
+        window.PathogenLang.mountInto(layersGroup, vnode);
       }
 
       // Hide the single preview-path when using layers group

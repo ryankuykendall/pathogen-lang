@@ -13,7 +13,7 @@ export default defineConfig([
   {
     entry: ['src/index.ts'],
     format: ['iife'],
-    globalName: 'SvgPathExtended',
+    globalName: 'PathogenLang',
     outExtension: () => ({ js: '.global.js' }),
     sourcemap: true,
   },

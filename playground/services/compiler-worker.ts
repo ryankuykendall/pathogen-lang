@@ -4,7 +4,7 @@
 import { extractFontReferences, resolveFontBinaries } from './font-loader.js';
 import type { FontBinaryEntry, FontResolutionResult } from './font-loader.js';
 
-declare const window: Window & { SvgPathExtended?: Record<string, Function> };
+declare const window: Window & { PathogenLang?: Record<string, Function> };
 
 type CompilationType = 'compile' | 'compileAnnotated' | 'compileWithContext';
 
@@ -23,7 +23,7 @@ function initWorker(): Worker | null {
 
   try {
     // Worker path is relative to the document's base URL
-    // The <base href="/svg-path-extended/"> tag in production makes this work correctly
+    // The <base href="/pathogen-lang/"> tag in production makes this work correctly
     // In dev (playground/index.html), we need the ../ prefix
     // In production build, the base tag handles the path
     const isDevPlayground = window.location.pathname.includes('/playground/');
@@ -150,9 +150,9 @@ async function fallbackSync(
   options?: Record<string, unknown>,
   fontBuffers?: FontBinaryEntry[],
 ): Promise<unknown> {
-  const lib = window.SvgPathExtended;
+  const lib = window.PathogenLang;
   if (!lib) {
-    throw new Error('SvgPathExtended library not loaded');
+    throw new Error('PathogenLang library not loaded');
   }
 
   if (!_fallbackWarned) {
@@ -167,7 +167,7 @@ async function fallbackSync(
   if (fontBuffers && fontBuffers.length > 0) {
     if (typeof lib.createFontRegistry !== 'function' || typeof lib.addFont !== 'function') {
       throw new Error(
-        'SvgPathExtended global is missing font registry helpers; rebuild with `npm run build`.',
+        'PathogenLang global is missing font registry helpers; rebuild with `npm run build`.',
       );
     }
     if (typeof lib.ensureOpentype === 'function') {

@@ -72,7 +72,7 @@ function renderPage({
   const fullTitle = title ? `${title} — Pathogen Studio` : 'Pathogen Studio — SVG Path Extended Playground';
   const desc =
     description ||
-    'A visual playground for svg-path-extended — variables, expressions, control flow, functions, and more for SVG paths.';
+    'A visual playground for pathogen-lang — variables, expressions, control flow, functions, and more for SVG paths.';
   const canonical = `${SITE_URL}${path}`;
   const ssrUserScript = currentUser
     ? `<script>window.__SSR_CURRENT_USER=${JSON.stringify(currentUser).replace(/</g, '\\u003c')};</script>`
@@ -186,7 +186,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
 
   const content = `
     <h1>Explore Public Workspaces</h1>
-    <p class="explore-subtitle">Discover what others are creating with svg-path-extended</p>
+    <p class="explore-subtitle">Discover what others are creating with pathogen-lang</p>
     ${cardsHtml}
     ${paginationHtml}
   `;
@@ -196,7 +196,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": "Explore Public Workspaces",
-    "description": "Browse public workspaces created with svg-path-extended",
+    "description": "Browse public workspaces created with pathogen-lang",
     "url": "https://pathogen.studio/explore",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -250,7 +250,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
 
   const html = renderPage({
     title: 'Explore',
-    description: 'Browse public workspaces created with svg-path-extended',
+    description: 'Browse public workspaces created with pathogen-lang',
     path: '/explore',
     content,
     headExtra,
@@ -457,7 +457,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
 
   const content = `
     <h1>Featured Workspaces</h1>
-    <p class="featured-subtitle">Hand-picked examples showcasing what's possible with svg-path-extended</p>
+    <p class="featured-subtitle">Hand-picked examples showcasing what's possible with pathogen-lang</p>
     ${cardsHtml}
   `;
 
@@ -466,7 +466,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": "Featured Workspaces",
-    "description": "Hand-picked svg-path-extended workspace showcases",
+    "description": "Hand-picked pathogen-lang workspace showcases",
     "url": "https://pathogen.studio/featured",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -508,7 +508,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
 
   const html = renderPage({
     title: 'Featured',
-    description: 'Hand-picked svg-path-extended workspace showcases',
+    description: 'Hand-picked pathogen-lang workspace showcases',
     path: '/featured',
     content,
     headExtra,
@@ -634,7 +634,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
               <span>Create new workspace</span>
               ${arrowIcon}
             </a>
-            <a class="cta-mono" href="https://www.npmjs.com/package/svg-path-extended" target="_blank" rel="noopener">$ npm install svg-path-extended</a>
+            <a class="cta-mono" href="https://www.npmjs.com/package/pathogen-lang" target="_blank" rel="noopener">$ npm install pathogen-lang</a>
           </div>
         </div>
 
@@ -655,11 +655,11 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
           <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">git clone</span> ryankuykendall/pathogen-lang</div>
         </a>
 
-        <a class="dev-tool" href="https://www.npmjs.com/package/svg-path-extended" target="_blank" rel="noopener">
+        <a class="dev-tool" href="https://www.npmjs.com/package/pathogen-lang" target="_blank" rel="noopener">
           <p class="tool-eyebrow">${cliIcon}<span>CLI · Node</span></p>
           <h3 class="tool-title">Compile anywhere.</h3>
           <p class="tool-body">Pipe stdin, eval inline, or compile a file. Output as a path string, a full SVG, or an annotated debug view.</p>
-          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">npm install</span> -g svg-path-extended</div>
+          <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">npm install</span> -g pathogen-lang</div>
         </a>
 
         <a class="dev-tool" href="/blog/vscode-developer-experience">
@@ -696,7 +696,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Pathogen Studio",
-    "description": "A typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.",
+    "description": "A typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by pathogen-lang.",
     "url": "https://pathogen.studio/",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -705,7 +705,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
   const html = renderPage({
     title: '',
     description:
-      'Pathogen Studio — a typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by svg-path-extended.',
+      'Pathogen Studio — a typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by pathogen-lang.',
     path: '/',
     content,
     headExtra,

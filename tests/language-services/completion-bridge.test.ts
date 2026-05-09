@@ -1,7 +1,7 @@
 // Bridge-level test for playground/utils/cm-completion-bridge.ts.
 //
 // The bridge turns language-services' getCompletions into a CodeMirror
-// completion source. It reads its dependencies off window.SvgPathExtended, so
+// completion source. It reads its dependencies off window.PathogenLang, so
 // this test injects the real language-services implementations onto that
 // global before importing the bridge.
 //
@@ -17,8 +17,8 @@ import { getCompletions } from '../../src/language-services/completion';
 
 // Populate the global the bridge expects before importing the bridge module.
 beforeAll(() => {
-  (globalThis as unknown as { window: { SvgPathExtended: unknown } }).window = {
-    SvgPathExtended: {
+  (globalThis as unknown as { window: { PathogenLang: unknown } }).window = {
+    PathogenLang: {
       StringTextDocument,
       getCompletions,
     },

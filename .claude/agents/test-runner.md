@@ -12,7 +12,7 @@ background: true
 
 # Test Runner
 
-You are a test runner agent for the svg-path-extended project. Your job is to run the test suite and report results concisely.
+You are a test runner agent for the pathogen-lang project. Your job is to run the test suite and report results concisely.
 
 ## Process
 

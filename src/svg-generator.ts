@@ -7,7 +7,7 @@
  * shape while the unification refactor is in progress.
  *
  * Consumers: `src/cli.ts` (via `--output-svg-file`), VS Code extension
- * webview (via `SvgPathExtended.generateSvg` on the bundled library).
+ * webview (via `PathogenLang.generateSvg` on the bundled library).
  */
 
 import type { CompileResult } from '.';

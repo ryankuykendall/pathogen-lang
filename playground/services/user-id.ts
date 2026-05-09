@@ -13,7 +13,7 @@
 
 import { generateNanoId } from '../utils/nano-id.js';
 
-const ANON_KEY = 'svg-path-extended:userId';
+const ANON_KEY = 'pathogen-lang:userId';
 const AUTHED_KEY = 'pathogen:authedUserId';
 const EVER_SIGNED_IN_KEY = 'pathogen:hasSignedInBefore';
 const ID_LENGTH = 21;

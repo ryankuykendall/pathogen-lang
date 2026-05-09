@@ -529,7 +529,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
     const zoomLevelInput = document.getElementById('zoom-level');
     const sidePanel = document.getElementById('side-panel');
 
-    if (typeof SvgPathExtended === 'undefined') {
+    if (typeof PathogenLang === 'undefined') {
       container.innerHTML = '<div class="error"><div class="error-title">Compiler not loaded</div></div>';
       return;
     }
@@ -749,7 +749,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
         canvasW = parts[2] || 200;
         canvasH = parts[3] || 200;
 
-        const result = SvgPathExtended.compile(modifiedSource);
+        const result = PathogenLang.compile(modifiedSource);
         lastResult = result;
 
         // Build the shared render tree and split its children across the two
@@ -757,7 +757,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
         // everything but not rendered directly); layer elements go into
         // previewContent. Replaces the previous generateSvg() + DOMParser +
         // importNode chain — same DOM shape, one fewer round-trip.
-        const tree = SvgPathExtended.buildSvgTree(result, {
+        const tree = PathogenLang.buildSvgTree(result, {
           viewBox: vb,
           width: String(canvasW),
           height: String(canvasH),
@@ -774,7 +774,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
           if (child.tag === 'defs') {
             const defsEl = document.createElementNS(SVG_NS, 'defs');
             defsEl.classList.add('injected-defs');
-            SvgPathExtended.mountInto(defsEl, child.children);
+            PathogenLang.mountInto(defsEl, child.children);
             preview.insertBefore(defsEl, previewBg);
           } else if (child.tag === 'style') {
             // The shared renderer emits <style> with a RawText CDATA child.
@@ -792,7 +792,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
             // Metadata script — skip in VS Code preview.
             continue;
           } else {
-            SvgPathExtended.mountInto(previewContent, child);
+            PathogenLang.mountInto(previewContent, child);
           }
         }
 

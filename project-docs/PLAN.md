@@ -1,6 +1,6 @@
-# svg-path-extended - Project Plan
+# pathogen-lang - Project Plan
 
-This document captures the design decisions and implementation plan for svg-path-extended.
+This document captures the design decisions and implementation plan for pathogen-lang.
 
 ## Overview
 
@@ -9,7 +9,7 @@ A TypeScript module that extends SVG path syntax with variables, expressions, co
 ## Project Structure
 
 ```
-svg-path-extended/
+pathogen-lang/
 ├── src/
 │   ├── parser/
 │   │   ├── ast.ts       # AST node type definitions

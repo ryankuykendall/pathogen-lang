@@ -140,7 +140,7 @@ export interface CompileOptions {
  *
  * @example
  * ```ts
- * import { compile } from 'svg-path-extended';
+ * import { compile } from 'pathogen-lang';
  *
  * const result = compile(`
  *   let r = 50;
@@ -164,7 +164,7 @@ export function compile(source: string, options?: CompileOptions): CompileResult
  *
  * @example
  * ```ts
- * import { compileAnnotated } from 'svg-path-extended';
+ * import { compileAnnotated } from 'pathogen-lang';
  *
  * const output = compileAnnotated(`
  *   // Draw points
@@ -206,7 +206,7 @@ export interface CompileWithContextOptions {
  *
  * @example
  * ```ts
- * import { compileWithContext } from 'svg-path-extended';
+ * import { compileWithContext } from 'pathogen-lang';
  *
  * const result = compileWithContext(`
  *   M 10 20

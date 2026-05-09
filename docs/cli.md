@@ -1,17 +1,17 @@
 # CLI Reference
 
-The svg-path-extended CLI compiles extended SVG path syntax into standard SVG path strings or complete SVG files.
+The pathogen-lang CLI compiles extended SVG path syntax into standard SVG path strings or complete SVG files.
 
 ## Installation
 
 ```bash
-npm install -g svg-path-extended
+npm install -g pathogen-lang
 ```
 
 Or use with npx:
 
 ```bash
-npx svg-path-extended [options]
+npx pathogen-lang [options]
 ```
 
 ## Basic Usage
@@ -19,29 +19,29 @@ npx svg-path-extended [options]
 ### Compile a File
 
 ```bash
-svg-path-extended input.svgx
+pathogen-lang input.svgx
 ```
 
 Or with the explicit flag:
 
 ```bash
-svg-path-extended --src=input.svgx
+pathogen-lang --src=input.svgx
 ```
 
 ### Compile Inline Code
 
 ```bash
-svg-path-extended -e 'circle(100, 100, 50)'
+pathogen-lang -e 'circle(100, 100, 50)'
 ```
 
 ### Read from Stdin
 
 ```bash
-echo 'let x = 50; circle(x, x, 25)' | svg-path-extended -
+echo 'let x = 50; circle(x, x, 25)' | pathogen-lang -
 ```
 
 ```bash
-cat myfile.svgx | svg-path-extended -
+cat myfile.svgx | pathogen-lang -
 ```
 
 ## Output Options
@@ -49,8 +49,8 @@ cat myfile.svgx | svg-path-extended -
 ### Output Path Data to File
 
 ```bash
-svg-path-extended --src=input.svgx -o output.txt
-svg-path-extended --src=input.svgx --output output.txt
+pathogen-lang --src=input.svgx -o output.txt
+pathogen-lang --src=input.svgx --output output.txt
 ```
 
 ### Output as Complete SVG File
@@ -58,7 +58,7 @@ svg-path-extended --src=input.svgx --output output.txt
 Generate a complete SVG file with the path embedded:
 
 ```bash
-svg-path-extended --src=input.svgx --output-svg-file=output.svg
+pathogen-lang --src=input.svgx --output-svg-file=output.svg
 ```
 
 This creates a ready-to-use SVG file that can be opened in any browser or image viewer.
@@ -70,7 +70,7 @@ Pathogen programs can use `log()` to produce diagnostic output. By default, the 
 ### Print to stderr
 
 ```bash
-svg-path-extended -e 'let x = 42; log(x); M x 0' --print-logs
+pathogen-lang -e 'let x = 42; log(x); M x 0' --print-logs
 ```
 
 Output on stderr:
@@ -81,13 +81,13 @@ Output on stderr:
 The path data still goes to stdout, so logs don't interfere with piping:
 
 ```bash
-svg-path-extended -e 'log("hello"); circle(50, 50, 25)' --print-logs > output.txt
+pathogen-lang -e 'log("hello"); circle(50, 50, 25)' --print-logs > output.txt
 ```
 
 ### Write structured JSON
 
 ```bash
-svg-path-extended --src=input.pathogen --log-file=logs.json
+pathogen-lang --src=input.pathogen --log-file=logs.json
 ```
 
 This writes the full `LogEntry[]` array with line numbers and typed parts:
@@ -106,7 +106,7 @@ This writes the full `LogEntry[]` array with line numbers and typed parts:
 Both flags can be combined:
 
 ```bash
-svg-path-extended --src=debug.pathogen --print-logs --log-file=logs.json --output-svg-file=out.svg
+pathogen-lang --src=debug.pathogen --print-logs --log-file=logs.json --output-svg-file=out.svg
 ```
 
 ## Annotated Output
@@ -122,7 +122,7 @@ This is useful for debugging complex path generation or understanding how your c
 ### Basic Usage
 
 ```bash
-svg-path-extended -e 'for (i in 0..3) { M i 0 }' --annotated
+pathogen-lang -e 'for (i in 0..3) { M i 0 }' --annotated
 ```
 
 Output:
@@ -141,7 +141,7 @@ Output:
 ### With Comments
 
 ```bash
-svg-path-extended -e '// Draw points
+pathogen-lang -e '// Draw points
 for (i in 0..3) { M i 0 }' --annotated
 ```
 
@@ -165,7 +165,7 @@ Output:
 Long loops (>10 iterations) are automatically truncated to show the first 3 and last 3 iterations:
 
 ```bash
-svg-path-extended -e 'for (i in 0..100) { M i 0 }' --annotated
+pathogen-lang -e 'for (i in 0..100) { M i 0 }' --annotated
 ```
 
 Output:
@@ -191,7 +191,7 @@ Output:
 Function calls show their name, arguments, and expanded output:
 
 ```bash
-svg-path-extended -e 'circle(50, 50, 25)' --annotated
+pathogen-lang -e 'circle(50, 50, 25)' --annotated
 ```
 
 Output:
@@ -205,7 +205,7 @@ Output:
 ### Save to File
 
 ```bash
-svg-path-extended --src=complex.svgx --annotated -o debug-output.txt
+pathogen-lang --src=complex.svgx --annotated -o debug-output.txt
 ```
 
 ## SVG Styling Options
@@ -226,7 +226,7 @@ When using `--output-svg-file`, you can customize the appearance:
 Red circle with no fill:
 
 ```bash
-svg-path-extended -e 'circle(100, 100, 50)' \
+pathogen-lang -e 'circle(100, 100, 50)' \
   --output-svg-file=circle.svg \
   --stroke=red \
   --stroke-width=3
@@ -235,7 +235,7 @@ svg-path-extended -e 'circle(100, 100, 50)' \
 Blue filled polygon:
 
 ```bash
-svg-path-extended -e 'polygon(100, 100, 80, 6)' \
+pathogen-lang -e 'polygon(100, 100, 80, 6)' \
   --output-svg-file=hexagon.svg \
   --stroke=navy \
   --fill=lightblue \
@@ -245,7 +245,7 @@ svg-path-extended -e 'polygon(100, 100, 80, 6)' \
 Large canvas with custom viewBox:
 
 ```bash
-svg-path-extended --src=complex.svgx \
+pathogen-lang --src=complex.svgx \
   --output-svg-file=output.svg \
   --viewBox="0 0 800 600" \
   --width=800 \
@@ -255,11 +255,11 @@ svg-path-extended --src=complex.svgx \
 ## Help and Version
 
 ```bash
-svg-path-extended --help
-svg-path-extended -h
+pathogen-lang --help
+pathogen-lang -h
 
-svg-path-extended --version
-svg-path-extended -v
+pathogen-lang --version
+pathogen-lang -v
 ```
 
 ## Exit Codes
@@ -278,7 +278,7 @@ By convention, source files use the `.svgx` extension, but any text file will wo
 ### Generate a Spiral
 
 ```bash
-svg-path-extended -e '
+pathogen-lang -e '
 M 100 100
 for (i in 1..50) {
   L calc(100 + cos(i * 0.3) * i * 1.5) calc(100 + sin(i * 0.3) * i * 1.5)
@@ -290,7 +290,7 @@ for (i in 1..50) {
 
 ```bash
 for file in examples/*.svgx; do
-  svg-path-extended --src="$file" --output-svg-file="${file%.svgx}.svg"
+  pathogen-lang --src="$file" --output-svg-file="${file%.svgx}.svg"
 done
 ```
 
@@ -299,7 +299,7 @@ done
 ```json
 {
   "scripts": {
-    "build:icons": "svg-path-extended --src=src/icons.svgx --output-svg-file=dist/icons.svg"
+    "build:icons": "pathogen-lang --src=src/icons.svgx --output-svg-file=dist/icons.svg"
   }
 }
 ```

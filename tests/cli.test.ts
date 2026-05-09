@@ -51,14 +51,14 @@ describe('CLI', () => {
   describe('help and version', () => {
     it('shows help with -h', () => {
       const result = runCli(['-h']);
-      expect(result.stdout).toContain('svg-path-extended');
+      expect(result.stdout).toContain('pathogen-lang');
       expect(result.stdout).toContain('Usage:');
       expect(result.stdout).toContain('Options:');
     });
 
     it('shows help with --help', () => {
       const result = runCli(['--help']);
-      expect(result.stdout).toContain('svg-path-extended');
+      expect(result.stdout).toContain('pathogen-lang');
     });
 
     it('shows version with -v', () => {

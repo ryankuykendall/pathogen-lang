@@ -35,8 +35,8 @@ import {
   SymbolKind,
   StringTextDocument,
   DiagnosticSeverity,
-} from 'svg-path-extended';
-import type { Diagnostic, DocumentSymbol, CompletionItem, HoverInfo, Location, SignatureHelp, TextEdit, SemanticToken } from 'svg-path-extended';
+} from 'pathogen-lang';
+import type { Diagnostic, DocumentSymbol, CompletionItem, HoverInfo, Location, SignatureHelp, TextEdit, SemanticToken } from 'pathogen-lang';
 
 // Create the LSP connection (stdio transport)
 const connection = createConnection(ProposedFeatures.all);

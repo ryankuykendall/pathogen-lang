@@ -530,7 +530,7 @@ layer('connectors').apply {
 }
 ```
 
-Compile with: `svg-path-extended --output-svg-file=swatches.svg --viewBox="0 0 600 700" --width="600" --height="700"`
+Compile with: `pathogen-lang --output-svg-file=swatches.svg --viewBox="0 0 600 700" --width="600" --height="700"`
 
 ## Static Methods
 

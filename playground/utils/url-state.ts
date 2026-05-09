@@ -1,5 +1,5 @@
 // URL state encoding/decoding for shareable workspace links
-// Uses query params with History API: /svg-path-extended/workspace/:id?state=...
+// Uses query params with History API: /pathogen-lang/workspace/:id?state=...
 
 import { getCurrentRoute, navigateTo, routeUrl } from './router.js';
 

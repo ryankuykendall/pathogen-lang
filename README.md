@@ -1,6 +1,6 @@
 # pathogen-lang
 
-The compiler, language services, and web playground for **Pathogen** — a typed, expression-first language for SVG paths. Source for the [`svg-path-extended`](https://www.npmjs.com/package/svg-path-extended) npm package and [pathogen.studio](https://pathogen.studio).
+The compiler, language services, and web playground for **Pathogen** — a typed, expression-first language for SVG paths. Source for the [`pathogen-lang`](https://www.npmjs.com/package/pathogen-lang) npm package and [pathogen.studio](https://pathogen.studio).
 
 A TypeScript library that extends SVG path syntax with variables, expressions, control flow, and functions.
 
@@ -22,7 +22,7 @@ A TypeScript library that extends SVG path syntax with variables, expressions, c
 ## Installation
 
 ```bash
-npm install svg-path-extended
+npm install pathogen-lang
 ```
 
 ## Quick Start
@@ -31,20 +31,22 @@ npm install svg-path-extended
 
 ```bash
 # Compile inline code
-npx svg-path-extended -e 'circle(100, 100, 50)'
+npx pathogen -e 'circle(100, 100, 50)'
 # Output: M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100
 
 # Compile a file
-npx svg-path-extended --src=input.svgx
+npx pathogen --src=input.svgx
 
 # Output as SVG file
-npx svg-path-extended -e 'circle(100, 100, 50)' --output-svg-file=circle.svg
+npx pathogen -e 'circle(100, 100, 50)' --output-svg-file=circle.svg
 ```
+
+The package also exposes a longer alias `pathogen-lang` if it's clearer in scripts (e.g. `npx pathogen-lang -e ...`).
 
 ### Library Usage
 
 ```typescript
-import { compile } from 'svg-path-extended';
+import { compile } from 'pathogen-lang';
 
 const pathData = compile(`
   let r = 50;
@@ -188,18 +190,20 @@ npx wrangler r2 bucket create svg-path-extended-thumbnails
 npx wrangler r2 bucket create svg-path-extended-thumbnails-preview
 ```
 
-The admin backfill endpoint (`/pathogen/admin/thumbnails`) requires an `ADMIN_TOKEN` secret. To set or rotate it:
+The admin backfill endpoint (`/admin/thumbnails`) requires an `ADMIN_TOKEN` secret on the `pathogen-api` Worker (after the API split, admin endpoints live on the Workers project, not Pages). To set or rotate it:
 
 ```bash
-npx wrangler pages secret put ADMIN_TOKEN --project-name svg-path-extended
+npm run rotate-admin-token   # generates a fresh token, sets it on pathogen-api, redeploys, prints the URL
+# or manually:
+cd api && npx wrangler secret put ADMIN_TOKEN
 ```
 
-To view the current token value, go to **Cloudflare Dashboard → Pages → svg-path-extended → Settings → Environment variables**. Secrets are write-only via CLI, so the dashboard is the only way to retrieve it.
+To view the current token value, go to **Cloudflare Dashboard → Workers & Pages → pathogen-api → Settings → Variables and Secrets**. Secrets are write-only via CLI, so the dashboard is the only way to retrieve it.
 
 Access the admin backfill screen at:
 
 ```
-https://pedestal.design/pathogen/admin/thumbnails?token=<ADMIN_TOKEN>
+https://pathogen.studio/admin/thumbnails?token=<ADMIN_TOKEN>
 ```
 
 ### Blog

@@ -69,13 +69,13 @@ fs.copyFileSync(
 
 // Install language server runtime deps first (vscode-languageserver, vscode-languageserver-textdocument)
 const serverPkg = JSON.parse(fs.readFileSync(path.join(SERVER_DIR, 'package.json'), 'utf-8'));
-const serverDeps = Object.keys(serverPkg.dependencies || {}).filter((d) => d !== 'svg-path-extended');
+const serverDeps = Object.keys(serverPkg.dependencies || {}).filter((d) => d !== 'pathogen-lang');
 if (serverDeps.length > 0) {
   run(`npm install --prefix "${BUNDLED_SERVER_DIR}" ${serverDeps.map((d) => `${d}@latest`).join(' ')} --omit=dev --no-save 2>/dev/null || true`);
 }
 
-// Now replace the svg-path-extended symlink (created by npm workspace) with real files
-const serverNodeModules = path.join(BUNDLED_SERVER_DIR, 'node_modules', 'svg-path-extended');
+// Now replace the pathogen-lang symlink (created by npm workspace) with real files
+const serverNodeModules = path.join(BUNDLED_SERVER_DIR, 'node_modules', 'pathogen-lang');
 // Remove symlink or existing directory
 if (fs.existsSync(serverNodeModules)) {
   fs.rmSync(serverNodeModules, { recursive: true, force: true });
@@ -89,7 +89,7 @@ fs.copyFileSync(path.join(ROOT, 'dist', 'index.cjs'), path.join(sveDistDir, 'ind
 
 // Write minimal package.json pointing to CJS entry
 fs.writeFileSync(path.join(serverNodeModules, 'package.json'), JSON.stringify({
-  name: 'svg-path-extended',
+  name: 'pathogen-lang',
   main: './dist/index.cjs',
 }, null, 2));
 

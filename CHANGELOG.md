@@ -59,7 +59,10 @@ Old URLs 301 to their new locations.
 - All Cloudflare bindings now version-controlled in two `wrangler.toml` files (root for Pages, `/api/wrangler.toml` for Workers). No dashboard-managed config.
 
 #### Repo + branding
-- GitHub repo renamed: `svg-path-extended` → `pathogen-lang`. The npm package, CLI binary, and CF resource names remain `svg-path-extended` (renaming those would break consumers).
+- GitHub repo renamed `svg-path-extended` → `pathogen-lang`.
+- npm package renamed `svg-path-extended` → `pathogen-lang`. Verified unpublished (`npm view` returned 404 for both names) so no consumers were affected. CLI binary now exposes both `pathogen` (short, daily ergonomics) and `pathogen-lang` (full, matches package name) as aliases — the legacy `svg-path-extended` binary entry was removed.
+- Browser global `window.SvgPathExtended` renamed `window.PathogenLang`. Internal-only — set via `tsup.config.ts` `globalName`; no external consumers.
+- CF resource names (`svg-path-extended` Pages project, `svg-path-extended-thumbnails` R2 buckets, `svg-path-extended-users` D1 database) intentionally **kept** — those are independent identifiers and renaming would require resource recreation + data migration.
 - README title updated to `pathogen-lang` with a description that names the npm package.
 - Visible "built on svg-path-extended v1.0" subtitle in nav header + homepage footer changed to "built on Pathogen v{version}", with `{version}` codegenned from `package.json`.
 - Default playground welcome comment ("Welcome to svg-path-extended!") updated to "Welcome to Pathogen!".

@@ -56,7 +56,7 @@ class BlogView extends HTMLElement {
 
       <div class="blog-container">
         <h1>Blog</h1>
-        <p class="subtitle">Thoughts, tutorials, and updates about svg-path-extended</p>
+        <p class="subtitle">Thoughts, tutorials, and updates about pathogen-lang</p>
 
         ${
           posts.length === 0

@@ -1,6 +1,6 @@
 # Known Issues and Limitations
 
-This document tracks known issues, limitations, and technical debt in svg-path-extended. Each entry includes when it was discovered, its severity, impact, and potential solutions for future planning.
+This document tracks known issues, limitations, and technical debt in pathogen-lang. Each entry includes when it was discovered, its severity, impact, and potential solutions for future planning.
 
 ---
 
@@ -239,7 +239,7 @@ Option 1 (user-provided API key in preferences) is the cleanest approach. It res
 
 **Description:**
 
-The Playground uses CodeMirror 6 (loaded from esm.sh CDN) to edit svg-path-extended code. There is no code formatting beyond CodeMirror's built-in `indentOnInput()`. The goal is to add a "format code" capability similar to Prettier, but **Prettier cannot format this language out of the box** — its built-in parsers (babel, typescript, etc.) would fail on SVG path commands like `M 0 0 L 100 100`. Any solution must understand the svg-path-extended syntax.
+The Playground uses CodeMirror 6 (loaded from esm.sh CDN) to edit pathogen-lang code. There is no code formatting beyond CodeMirror's built-in `indentOnInput()`. The goal is to add a "format code" capability similar to Prettier, but **Prettier cannot format this language out of the box** — its built-in parsers (babel, typescript, etc.) would fail on SVG path commands like `M 0 0 L 100 100`. Any solution must understand the pathogen-lang syntax.
 
 **Options Investigated:**
 

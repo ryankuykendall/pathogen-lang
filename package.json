@@ -1,5 +1,5 @@
 {
-  "name": "svg-path-extended",
+  "name": "pathogen-lang",
   "version": "0.7.0",
   "description": "Extended SVG path syntax with variables, expressions, control flow, and functions",
   "type": "module",
@@ -15,7 +15,8 @@
     }
   },
   "bin": {
-    "svg-path-extended": "./dist/cli.js"
+    "pathogen": "./dist/cli.js",
+    "pathogen-lang": "./dist/cli.js"
   },
   "files": [
     "dist"

@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-The svg-path-extended codebase has grown rapidly: 18 TypeScript files (~14,300 LOC) in the compiler, 69 JavaScript files (~34,700 LOC) in the playground, 14 TypeScript scripts, and a Cloudflare Worker. There is no linting, no formatting enforcement, and no stricter-than-baseline tsconfig flags. This document details the audit findings and recommendations for hardening the TypeScript configuration, adding ESLint with eslint-config-airbnb-extended, and enforcing Prettier formatting.
+The pathogen-lang codebase has grown rapidly: 18 TypeScript files (~14,300 LOC) in the compiler, 69 JavaScript files (~34,700 LOC) in the playground, 14 TypeScript scripts, and a Cloudflare Worker. There is no linting, no formatting enforcement, and no stricter-than-baseline tsconfig flags. This document details the audit findings and recommendations for hardening the TypeScript configuration, adding ESLint with eslint-config-airbnb-extended, and enforcing Prettier formatting.
 
 ---
 

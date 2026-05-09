@@ -10,7 +10,7 @@ Playground (browser)                      VS Code
   cm-hover-tooltip.ts                         ↓
   workspace-view.ts (diagnostics)           LSP adapter (type conversion only)
         ↓                                       ↓
-  window.SvgPathExtended.*                import from 'svg-path-extended'
+  window.SvgPathExtended.*                import from 'pathogen-lang'
         ↓                                       ↓
         └────────── src/language-services/ ─────┘
                     (this directory)

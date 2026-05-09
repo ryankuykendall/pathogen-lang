@@ -2,7 +2,7 @@
 
 The compiler, language services, and web playground for **Pathogen** — a
 typed, expression-first language for SVG paths. Source for the
-[`svg-path-extended`](https://www.npmjs.com/package/svg-path-extended) npm
+[`pathogen-lang`](https://www.npmjs.com/package/pathogen-lang) npm
 package and [pathogen.studio](https://pathogen.studio).
 
 ## Quick Reference
@@ -80,7 +80,7 @@ Pathogen has **three user-facing surfaces** where every language feature must wo
 
 | Surface | Location | How the user invokes | Render path |
 |---------|----------|----------------------|-------------|
-| **CLI** | `src/cli.ts` + `src/svg-generator.ts` | `svg-path-extended <file>`, `--output-svg-file` | Compiles to complete SVG string |
+| **CLI** | `src/cli.ts` + `src/svg-generator.ts` | `pathogen-lang <file>`, `--output-svg-file` | Compiles to complete SVG string |
 | **Playground** | `playground/` (consumes `dist/index.global.js`) | Browser at `/pathogen` | `svg-preview-pane.ts` renders live DOM |
 | **VS Code** | `packages/vscode-pathogen` + `packages/pathogen-language-server` (consumes `file:../../`) | Editor via LSP + preview command | LSP handlers + preview webview |
 

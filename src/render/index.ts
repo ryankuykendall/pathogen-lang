@@ -1,5 +1,5 @@
 /**
- * Shared SVG renderer for the svg-path-extended project.
+ * Shared SVG renderer for the pathogen-lang project.
  *
  * Produces a minimal `VNode` tree from a `CompileResult`, then hands it to
  * one of two adapters:

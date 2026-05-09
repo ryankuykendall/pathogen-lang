@@ -176,7 +176,7 @@ function wireDiagnostics(cm: CmModulesForLanguageServices): ErrorHighlightHandle
  * Wired features: getSignatureHelp.
  */
 function wireSignatureHelp(cm: CmModulesForLanguageServices): unknown[] {
-  const services = window.SvgPathExtended;
+  const services = window.PathogenLang;
   if (!services || !services.getSignatureHelp || !services.StringTextDocument) {
     console.warn('Language services not available — signature help disabled');
     return [];
@@ -295,7 +295,7 @@ function renderSignature(
  * Exported so the editor pane can bind it to a keymap entry.
  */
 export function runRename(editorView: unknown): boolean {
-  const services = window.SvgPathExtended;
+  const services = window.PathogenLang;
   if (!services || !services.prepareRename || !services.getRenameEdits || !services.StringTextDocument) {
     console.warn('Language services not available — rename disabled');
     return false;
@@ -363,7 +363,7 @@ export function runRename(editorView: unknown): boolean {
  * Exported so the editor pane can bind it to a keymap entry.
  */
 export function runFindReferences(editorView: unknown): boolean {
-  const services = window.SvgPathExtended;
+  const services = window.PathogenLang;
   if (!services || !services.getReferences || !services.StringTextDocument) {
     console.warn('Language services not available — find references disabled');
     return false;
@@ -420,7 +420,7 @@ export function runFindReferences(editorView: unknown): boolean {
  * Wired features: getDefinition.
  */
 function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
-  const services = window.SvgPathExtended;
+  const services = window.PathogenLang;
   if (!services || !services.getDefinition || !services.StringTextDocument) {
     console.warn('Language services not available — go-to-definition disabled');
     return [];
@@ -472,7 +472,7 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
  * playground-header.ts (menu button).
  */
 export function runFormatDocument(editorView: unknown): boolean {
-  const services = window.SvgPathExtended;
+  const services = window.PathogenLang;
   if (!services || !services.formatDocument || !services.StringTextDocument) {
     console.warn('Language services not available — format disabled');
     return false;

@@ -1,4 +1,4 @@
-// AST Node Types for svg-path-extended
+// AST Node Types for pathogen-lang
 
 // Source location for annotated output
 export interface SourceLocation {

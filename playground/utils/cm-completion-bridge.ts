@@ -35,7 +35,7 @@ interface CompletionResult {
  * the shared engine.
  */
 export function sharedCompletionSource(context: CompletionContext): CompletionResult | null {
-  const { StringTextDocument, getCompletions } = window.SvgPathExtended;
+  const { StringTextDocument, getCompletions } = window.PathogenLang;
 
   if (!getCompletions || !StringTextDocument) {
     return null;

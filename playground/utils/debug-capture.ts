@@ -109,7 +109,7 @@ ${calledFunctions}
 
 ## Diagnostic Prompt
 
-You are analyzing a debug capture from svg-path-extended, a TypeScript
+You are analyzing a debug capture from pathogen-lang, a TypeScript
 compiler that extends SVG path syntax with variables, expressions, control
 flow, functions, multi-layer output, and text elements.
 

@@ -275,10 +275,10 @@ async function buildDocs(): Promise<void> {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Documentation — Pathogen</title>
-  <meta name="description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
+  <meta name="description" content="Complete language reference for pathogen-lang — variables, expressions, control flow, functions, layers, and more.">
   <link rel="canonical" href="https://pathogen.studio/docs">
   <meta property="og:title" content="Documentation — Pathogen">
-  <meta property="og:description" content="Complete language reference for svg-path-extended — variables, expressions, control flow, functions, layers, and more.">
+  <meta property="og:description" content="Complete language reference for pathogen-lang — variables, expressions, control flow, functions, layers, and more.">
   <meta property="og:url" content="https://pathogen.studio/docs">
   <meta property="og:type" content="website">
   <script type="application/ld+json">
@@ -286,7 +286,7 @@ async function buildDocs(): Promise<void> {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "name": "Pathogen Documentation",
-    "description": "Complete language reference for svg-path-extended",
+    "description": "Complete language reference for pathogen-lang",
     "url": "https://pathogen.studio/docs",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -411,7 +411,7 @@ async function buildDocs(): Promise<void> {
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>Documentation</h1>
-        <p class="subtitle">svg-path-extended</p>
+        <p class="subtitle">pathogen-lang</p>
         <a href="/docs/docs.md" class="markdown-link">View as Markdown</a>
       </div>
       <nav class="sidebar-nav">${sidebarHtml}
@@ -543,9 +543,9 @@ async function buildDocs(): Promise<void> {
   console.log('\nGenerating single-page markdown docs...');
 
   const mdParts: string[] = [
-    `# svg-path-extended Documentation`,
+    `# pathogen-lang Documentation`,
     '',
-    `> This is the complete documentation for svg-path-extended in a single page.`,
+    `> This is the complete documentation for pathogen-lang in a single page.`,
     `> For the formatted version with navigation, see [the HTML docs](/docs).`,
     '',
     '---',

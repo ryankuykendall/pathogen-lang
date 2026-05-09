@@ -430,7 +430,7 @@ class DocsView extends HTMLElement {
       <aside class="sidebar">
         <div class="sidebar-header">
           <h1>Documentation</h1>
-          <p class="subtitle">svg-path-extended</p>
+          <p class="subtitle">pathogen-lang</p>
         </div>
         <nav class="sidebar-nav">
           ${(tocData as TocSection[])

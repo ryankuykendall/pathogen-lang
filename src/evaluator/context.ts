@@ -1,4 +1,4 @@
-// Path context tracking for svg-path-extended
+// Path context tracking for pathogen-lang
 // Tracks current position, subpath start, and command history during evaluation
 
 import { arcEndpointToCenter, arcTangentFromCenter } from './sampling';

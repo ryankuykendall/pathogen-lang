@@ -12,11 +12,11 @@ packages/vscode-pathogen/             packages/pathogen-language-server/
   (stdio transport)                     Wraps language-services functions
     ↓                                   in LSP type converters
   Registers preview command                ↓
-  (src/preview.ts — functional)         import from 'svg-path-extended'
+  (src/preview.ts — functional)         import from 'pathogen-lang'
                                         (file:../../ dependency)
 ```
 
-The extension spawns the language server as a child process. The server imports all language-service functions from the `svg-path-extended` library (symlinked via `"file:../../"` in package.json) and wraps each one in an LSP handler that converts between VS Code LSP types and internal types.
+The extension spawns the language server as a child process. The server imports all language-service functions from the `pathogen-lang` library (symlinked via `"file:../../"` in package.json) and wraps each one in an LSP handler that converts between VS Code LSP types and internal types.
 
 ## Package Layout
 
@@ -37,7 +37,7 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/server.ts` | LSP adapter — each `connection.on*` handler wraps a language-services function |
-| `src/svg-path-extended.d.ts` | Type shim (workaround for DTS build issue in main package) |
+| `src/pathogen-lang.d.ts` | Type shim (workaround for DTS build issue in main package) |
 
 ## LSP Capabilities
 
@@ -107,7 +107,7 @@ For the full cross-system checklist, see `project-docs/developer-experience/cros
 
 ## Readiness Status
 
-The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `svg-path-extended` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (`src/preview.ts` lines ~711–755, as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator.
+The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `pathogen-lang` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (`src/preview.ts` lines ~711–755, as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator.
 
 Other items below are still open.
 

@@ -1,5 +1,5 @@
 // Pathogen language support for CodeMirror 6
-// Uses the Lezer parser from svg-path-extended for accurate syntax highlighting.
+// Uses the Lezer parser from pathogen-lang for accurate syntax highlighting.
 
 /**
  * Minimal interface for the CodeMirror language module.
@@ -24,7 +24,7 @@ interface CmLanguageModule {
  * @returns A CodeMirror LanguageSupport extension
  */
 export function pathogenLanguage(cmLanguage: CmLanguageModule): unknown {
-  const { lezerParser } = window.SvgPathExtended;
+  const { lezerParser } = window.PathogenLang;
 
   if (!lezerParser) {
     console.warn('Lezer parser not available — falling back to no language support');

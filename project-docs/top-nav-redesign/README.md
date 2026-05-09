@@ -53,7 +53,7 @@ When inspecting the mockups, count primary-color (warm/saturated CTA) elements p
 ## Decisions already locked (don't re-explore in Phase 2)
 
 - **Icon delivery**: local SVG files in `playground/assets/icons/material/` (no Google Fonts CDN runtime dependency). Each Phase 1 exploration inlines the same SVG paths it would use in Phase 2.
-- **Rename scope**: logo + page title only. The `built on svg-path-extended v1.0` subtitle is preserved verbatim across all directions.
+- **Rename scope**: logo + page title only. The `built on pathogen-lang v1.0` subtitle is preserved verbatim across all directions.
 - **Exploration count**: 5 — full slate.
 
 ## Overflow menu contents (consistent across all 5)

@@ -1,6 +1,6 @@
 # Getting Started
 
-svg-path-extended is a language that extends SVG path syntax with variables, expressions, control flow, and functions. It compiles to standard SVG path data that works in any browser or graphics application.
+pathogen-lang is a language that extends SVG path syntax with variables, expressions, control flow, and functions. It compiles to standard SVG path data that works in any browser or graphics application.
 
 ## Your First Path
 
@@ -26,7 +26,7 @@ This creates a rectangle by:
 4. Drawing a horizontal line back
 5. Closing the path
 
-## Why svg-path-extended?
+## Why pathogen-lang?
 
 SVG paths are powerful but writing them by hand is tedious:
 
@@ -37,10 +37,10 @@ M 100 20 L 160 20 L 160 80 L 100 80 Z
 M 180 20 L 240 20 L 240 80 L 180 80 Z
 ```
 
-With svg-path-extended, you can use variables and loops:
+With pathogen-lang, you can use variables and loops:
 
 ```
-// svg-path-extended - DRY and readable
+// pathogen-lang - DRY and readable
 let size = 60
 for (i in 0..3) {
   rect(calc(20 + i * 80), 20, size, size)

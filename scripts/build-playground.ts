@@ -184,7 +184,7 @@ async function copyAssets(): Promise<void> {
   await fs.writeFile(join(OUT, '404.html'), indexHtml);
 
   // Copy library bundle + worker bundle from dist/ → public/pathogen/dist/.
-  // The playground loads `dist/index.global.js` (window.SvgPathExtended) and
+  // The playground loads `dist/index.global.js` (window.PathogenLang) and
   // spawns `dist/worker.worker.js` for async compilation. If we don't stage
   // them here, a dev who runs `npm run build` + `npm run build:playground`
   // ends up with a fresh playground pointing at stale lib/worker bundles —

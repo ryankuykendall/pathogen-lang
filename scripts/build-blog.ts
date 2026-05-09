@@ -478,7 +478,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
     '@context': 'https://schema.org',
     '@type': 'Blog',
     name: 'Pathogen Blog',
-    description: 'Thoughts, tutorials, and updates about svg-path-extended',
+    description: 'Thoughts, tutorials, and updates about pathogen-lang',
     url: `${SITE_URL}/blog`,
     publisher: { '@type': 'Organization', name: 'Pedestal Design', url: SITE_URL },
     blogPost: blogPostingsJsonLd,
@@ -503,12 +503,12 @@ export const latestBlogPost: BlogPostMeta | null = null;
 
   const indexPage = renderBlogShell({
     title: 'Blog',
-    description: 'Thoughts, tutorials, and updates about svg-path-extended',
+    description: 'Thoughts, tutorials, and updates about pathogen-lang',
     path: '/blog',
     breadcrumbs: [{ label: 'Home', href: '/' }, { label: 'Blog' }],
     content: `
     <h1>Blog</h1>
-    <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about svg-path-extended</p>
+    <p style="color:var(--text-secondary);margin-bottom:2rem;">Thoughts, tutorials, and updates about pathogen-lang</p>
     <div class="blog-cards">
 ${indexCards}
     </div>`,
