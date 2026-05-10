@@ -1,0 +1,31 @@
+// Side-by-side comparison of monochrome vs color noise on the same shape.
+// Left circle uses monochrome:true (default for Grain); right uses
+// monochrome:false to keep color variance in the noise itself.
+
+let mono = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.7;
+  f.monochrome = true;
+  f.seed = 17;
+};
+
+let color = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.7;
+  f.monochrome = false;
+  f.seed = 17;
+};
+
+define PathLayer('left') ${
+  fill: oklch(60% 0.18 30);
+  stroke: none;
+  filter: mono;
+}
+layer('left').apply { circle(60, 100, 40); }
+
+define PathLayer('right') ${
+  fill: oklch(60% 0.18 30);
+  stroke: none;
+  filter: color;
+}
+layer('right').apply { circle(140, 100, 40); }

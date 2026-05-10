@@ -12,9 +12,11 @@ import { renderConicToWedges } from '../conic-renderer';
 import { validateCSSIdent } from '../evaluator/sanitize';
 import type {
   CompileResult,
+  FilterOutput,
   GradientOutput,
   MarkerOutput,
   MaskOutput,
+  NoiseFilterOutput,
   PatternOutput,
 } from '../evaluator/types';
 import type { ClipPathOutput } from '../evaluator/types';
@@ -86,6 +88,9 @@ export function buildDefs(result: CompileResult, options: BuildDefsOptions = {})
   }
   for (const marker of result.markers ?? []) {
     defs.push(buildMarker(marker, emitData));
+  }
+  for (const filter of result.filters ?? []) {
+    defs.push(buildFilter(filter, emitData));
   }
 
   return defs;
@@ -279,4 +284,102 @@ function buildMarker(marker: MarkerOutput, emitData: boolean): VNode {
     h('path', { d: el.pathData, ...el.styles }),
   );
   return h('marker', attrs, children);
+}
+
+// ---------------------------------------------------------------------------
+// Custom filter recipes
+// ---------------------------------------------------------------------------
+//
+// A filter wraps a primitive chain inside <filter id="...">. Dispatch is by
+// `kind`; additional filter kinds can slot in next to `buildNoisePrimitives`
+// without changes to wrapper attrs or dispatch shape.
+//
+// All recipes use a -10%..+120% region so grain extends slightly beyond strokes
+// and dropshadow-style spread fits without clipping (matches the convention
+// other defs producers use).
+
+function buildFilter(filter: FilterOutput, emitData: boolean): VNode {
+  const attrs: Record<string, string> = { id: filter.id };
+  if (emitData) attrs['data-filter-def'] = filter.id;
+  attrs.x = '-10%';
+  attrs.y = '-10%';
+  attrs.width = '120%';
+  attrs.height = '120%';
+  let children: VNode[];
+  switch (filter.kind) {
+    case 'noise':
+      children = buildNoisePrimitives(filter);
+      break;
+    default: {
+      // Exhaustiveness guard — narrows to never if all kinds are handled.
+      const _exhaustive: never = filter.kind;
+      throw new Error(`Unsupported filter kind: ${String(_exhaustive)}`);
+    }
+  }
+  return h('filter', attrs, children);
+}
+
+function turbulenceAttrs(filter: NoiseFilterOutput): Record<string, string> {
+  const attrs: Record<string, string> = {
+    type: filter.style === 'speckle' ? 'turbulence' : 'fractalNoise',
+    baseFrequency: String(filter.scale),
+    numOctaves: String(filter.octaves),
+    seed: String(filter.seed),
+    result: 'turb',
+  };
+  if (filter.stitch) attrs.stitchTiles = 'stitch';
+  return attrs;
+}
+
+/** Linear alpha ramp via feComponentTransfer — modulates noise intensity uniformly across presets. */
+function amountTransferNode(amount: number, inResult: string, outResult: string): VNode {
+  return h('feComponentTransfer', { in: inResult, result: outResult }, [
+    h('feFuncA', { type: 'linear', slope: String(amount) }),
+  ]);
+}
+
+/** Symmetric contrast pump on RGB channels — used by the Gradient style and any preset with contrast > 1. */
+function contrastPumpNode(contrast: number, inResult: string, outResult: string): VNode {
+  // y = clamp(contrast * (x - 0.5) + 0.5, 0..1) — implemented as linear with intercept.
+  const slope = String(contrast);
+  const intercept = String(0.5 - 0.5 * contrast);
+  return h('feComponentTransfer', { in: inResult, result: outResult }, [
+    h('feFuncR', { type: 'linear', slope, intercept }),
+    h('feFuncG', { type: 'linear', slope, intercept }),
+    h('feFuncB', { type: 'linear', slope, intercept }),
+  ]);
+}
+
+/**
+ * All current noise presets share the same primitive chain shape:
+ *   turbulence → optional contrast pump → composite-in SourceAlpha →
+ *   optional luminance-to-alpha (monochrome) → amount transfer → blend.
+ *
+ * Per-preset visual character flows entirely through:
+ *   - `turbulenceAttrs(filter)`: Speckle picks `type: 'turbulence'`; others
+ *     `'fractalNoise'`. `stitchTiles` is set when `filter.stitch === true`.
+ *   - Default parameter values baked in at construction (scale/octaves/blend
+ *     /contrast/monochrome — see `noiseFilterDefaults` in the evaluator).
+ *
+ * Keeping a single chain function means every user property — `contrast`,
+ * `monochrome`, `amount`, `blend` — affects every preset uniformly. The
+ * earlier per-preset builders silently dropped `contrast` on four of five
+ * styles and forced `monochrome` on Static.
+ */
+function buildNoisePrimitives(filter: NoiseFilterOutput): VNode[] {
+  const nodes: VNode[] = [h('feTurbulence', turbulenceAttrs(filter))];
+  let last = 'turb';
+  if (filter.contrast !== 1) {
+    nodes.push(contrastPumpNode(filter.contrast, last, 'pumped'));
+    last = 'pumped';
+  }
+  nodes.push(h('feComposite', { in: last, in2: 'SourceAlpha', operator: 'in', result: 'masked' }));
+  last = 'masked';
+  if (filter.monochrome) {
+    nodes.push(h('feColorMatrix', { in: last, type: 'luminanceToAlpha', result: 'mono' }));
+    last = 'mono';
+  }
+  nodes.push(amountTransferNode(filter.amount, last, 'noise'));
+  nodes.push(h('feBlend', { in: 'SourceGraphic', in2: 'noise', mode: filter.blend }));
+  return nodes;
 }

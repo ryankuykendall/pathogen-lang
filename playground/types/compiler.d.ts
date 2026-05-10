@@ -92,6 +92,24 @@ export interface MarkerOutput {
   elements: { pathData: string; styles: Record<string, string> }[];
 }
 
+export type NoiseFilterStyleName = 'grain' | 'paper' | 'speckle' | 'static' | 'gradient';
+
+export interface NoiseFilterOutput {
+  kind: 'noise';
+  id: string;
+  style: NoiseFilterStyleName;
+  scale: number;
+  octaves: number;
+  amount: number;
+  monochrome: boolean;
+  seed: number;
+  blend: string;
+  contrast: number;
+  stitch: boolean;
+}
+
+export type FilterOutput = NoiseFilterOutput;
+
 export interface GradientStop {
   offset: number;
   color: string;
@@ -166,6 +184,7 @@ export interface CompileResult {
   gradients: GradientOutput[];
   patterns: PatternOutput[];
   markers: MarkerOutput[];
+  filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
@@ -205,5 +224,6 @@ export interface EvaluateWithContextResult {
   gradients: GradientOutput[];
   patterns: PatternOutput[];
   markers: MarkerOutput[];
+  filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
 }

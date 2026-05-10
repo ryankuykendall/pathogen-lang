@@ -1,0 +1,23 @@
+// TV static (NoiseFilterStyle.Static) — high-frequency, high-octave
+// fractal noise blended hard-light over a dark background panel.
+
+let snow = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Static;
+  f.amount = 0.85;
+};
+
+// Dark background
+define PathLayer('bg') ${
+  fill: oklch(18% 0.02 270);
+  stroke: none;
+  filter: snow;
+}
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+// Glow rectangle over the static
+define PathLayer('crt') ${
+  fill: oklch(70% 0.20 150);
+  fill-opacity: 0.15;
+  stroke: none;
+}
+layer('crt').apply { rect(20, 60, 160, 80); }

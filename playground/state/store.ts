@@ -117,6 +117,7 @@ export const store = createStore({
   gradients: [], // Array of GradientOutput from last compilation
   patterns: [], // Array of PatternOutput from last compilation
   markers: [], // Array of MarkerOutput from last compilation
+  filters: [], // Array of FilterOutput from last compilation
   cssProperties: [], // Array of CSSPropertyDeclaration from last compilation
   layerVisibility: {}, // { [layerName]: boolean } — true = visible (default)
   defsVisibility: {}, // { ['mask:id'|'clip-path:id']: boolean } — true = visible (default)

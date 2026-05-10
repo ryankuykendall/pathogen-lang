@@ -1,0 +1,41 @@
+// Paper texture (NoiseFilterStyle.Paper) across a poster composition.
+// Multiplicative blend gives a printed-on-rough-paper feel.
+
+let paper = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Paper;
+  f.amount = 0.6;
+};
+
+// Background panel
+define PathLayer('bg') ${
+  fill: oklch(92% 0.05 80);
+  stroke: none;
+  filter: paper;
+}
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+// Title bar
+define PathLayer('bar') ${
+  fill: oklch(35% 0.18 30);
+  stroke: none;
+  filter: paper;
+}
+layer('bar').apply { rect(0, 20, 200, 40); }
+
+// Sun
+define PathLayer('sun') ${
+  fill: oklch(80% 0.18 80);
+  stroke: none;
+  filter: paper;
+}
+layer('sun').apply { circle(140, 120, 30); }
+
+// Mountain
+define PathLayer('mountain') ${
+  fill: oklch(40% 0.10 150);
+  stroke: none;
+  filter: paper;
+}
+layer('mountain').apply {
+  M 10 180 L 70 100 L 110 140 L 160 80 L 200 180 Z
+}

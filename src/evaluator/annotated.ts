@@ -169,6 +169,7 @@ export type Value =
   | GradientValue
   | PatternValue
   | MarkerValue
+  | AnnotatedFilterValue
   | ColorValue
   | ColorNamespace
   | CSSVarValue
@@ -241,6 +242,16 @@ export interface MarkerValue {
 
 function isMarkerValue(value: Value): value is MarkerValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MarkerValue';
+}
+
+export interface AnnotatedFilterValue {
+  type: 'FilterValue';
+  kind: 'noise';
+  id: string;
+}
+
+function isFilterValue(value: Value): value is AnnotatedFilterValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'FilterValue';
 }
 
 export interface ColorValue {
@@ -1010,6 +1021,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           resolvedValue = `url(#${evaluated.id})`;
           trusted = true;
         } else if (isMarkerValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
+        } else if (isFilterValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
           trusted = true;
         }

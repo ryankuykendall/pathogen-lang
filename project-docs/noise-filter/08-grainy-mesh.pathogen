@@ -1,0 +1,28 @@
+// Grainy mesh gradient — MeshGradient + NoiseFilterStyle.Gradient.
+// 400x400 canvas with high-contrast corner colors so the grain reads
+// distinctly against each region of the mesh.
+
+let dusk = MeshGradient('dusk', 400, 400, 3, 3) {|grad|
+  grad.colorAll(oklch(60% 0.20 30));
+  // Corner extremes — pull strongly toward different hues
+  let tl = grad.getPoint(0, 0); tl.color = oklch(90% 0.18 90);   // pale gold
+  let tr = grad.getPoint(0, 2); tr.color = oklch(60% 0.25 25);   // saturated coral
+  let bl = grad.getPoint(2, 0); bl.color = oklch(45% 0.20 230);  // deep teal
+  let br = grad.getPoint(2, 2); br.color = oklch(25% 0.18 290);  // dark plum
+  // Middle row — push center toward an electric mid-tone
+  let mc = grad.getPoint(1, 1); mc.color = oklch(70% 0.28 320);  // hot magenta
+};
+dusk.interpolation = 'oklch';
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.7;
+  f.contrast = 1.9;
+};
+
+define PathLayer('panel') ${
+  fill: dusk;
+  stroke: none;
+  filter: grainy;
+}
+layer('panel').apply { rect(0, 0, 400, 400); }

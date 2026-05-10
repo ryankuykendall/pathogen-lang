@@ -1,0 +1,6 @@
+// Source of truth for the "Generated SVG Output" code block in
+// docs/filters.md. If you change this file, update the doc accordingly.
+let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
+
+define PathLayer('disc') ${ fill: oklch(70% 0.18 30); filter: grain; }
+layer('disc').apply { circle(100, 100, 80); }

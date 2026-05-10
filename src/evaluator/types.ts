@@ -46,6 +46,7 @@ export type Value =
   | PatternValue
   | MarkerValue
   | GradientValue
+  | FilterValue
   | MeshPointValue
   | ColorValue
   | ColorNamespace
@@ -259,6 +260,33 @@ export interface GradientValue {
   topoBlend?: number; // Laplace diffusion spread (0-1, default 1.0)
   topoBaseColor?: OKLCH;
   topoBaseColorCSS?: string;
+}
+
+/**
+ * Custom filter recipe — synthesizes a `<filter>` definition.
+ *
+ * Modelled as a tagged union (currently single-variant) so additional filter
+ * kinds can be added as new `kind` arms without disturbing the defs-producer
+ * pipeline (style-block url(#id) conversion, CompileResult emission,
+ * render/build-defs dispatch, playground 5-file chain).
+ */
+export type FilterValue = NoiseFilterValue;
+
+export type NoiseFilterStyleName = 'grain' | 'paper' | 'speckle' | 'static' | 'gradient';
+
+export interface NoiseFilterValue {
+  type: 'FilterValue';
+  kind: 'noise';
+  id: string;
+  style: NoiseFilterStyleName;
+  scale: number; // baseFrequency
+  octaves: number;
+  amount: number; // 0..1
+  monochrome: boolean;
+  seed: number;
+  blend: string; // CSS blend-mode keyword
+  contrast: number; // 1.0 = no pump
+  stitch: boolean;
 }
 
 /**
@@ -602,6 +630,26 @@ export interface GradientOutput {
   topoBaseColorOklch?: OKLCH;
 }
 
+/**
+ * Renderer-facing shape for a custom filter. Mirrors NoiseFilterValue minus
+ * the `type` tag — future filter kinds extend this discriminated union.
+ */
+export type FilterOutput = NoiseFilterOutput;
+
+export interface NoiseFilterOutput {
+  kind: 'noise';
+  id: string;
+  style: NoiseFilterStyleName;
+  scale: number;
+  octaves: number;
+  amount: number;
+  monochrome: boolean;
+  seed: number;
+  blend: string;
+  contrast: number;
+  stitch: boolean;
+}
+
 export interface CompileResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
@@ -609,6 +657,7 @@ export interface CompileResult {
   gradients: GradientOutput[];
   patterns: PatternOutput[];
   markers: MarkerOutput[];
+  filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
@@ -669,6 +718,7 @@ export interface EvaluationState {
   gradients: Map<string, GradientValue>; // Gradient definitions by ID
   patterns: Map<string, PatternValue>; // Pattern definitions by ID
   markers: Map<string, MarkerValue>; // Marker definitions by ID
+  filters: Map<string, FilterValue>; // Filter definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
   fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
 }

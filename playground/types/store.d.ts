@@ -1,6 +1,7 @@
 import type {
   ClipPathOutput,
   CSSPropertyDeclaration,
+  FilterOutput,
   GradientOutput,
   LayerOutput,
   LogEntry,
@@ -61,6 +62,7 @@ export interface StoreState {
   gradients: GradientOutput[];
   patterns: PatternOutput[];
   markers: MarkerOutput[];
+  filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
   layerVisibility: Record<string, boolean>;
   defsVisibility: Record<string, boolean>;

@@ -1,0 +1,23 @@
+// Coarse speckle (NoiseFilterStyle.Speckle) on a vector icon — gives a
+// risograph / screen-print feel without losing the icon's silhouette.
+
+let riso = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.8;
+  f.monochrome = true;
+};
+
+// Backdrop
+define PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+}
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+// Star icon
+define PathLayer('star') ${
+  fill: oklch(60% 0.20 30);
+  stroke: none;
+  filter: riso;
+}
+layer('star').apply { star(100, 100, 60, 24, 5); }

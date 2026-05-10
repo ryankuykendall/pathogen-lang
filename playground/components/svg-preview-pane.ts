@@ -2,6 +2,7 @@
 
 import type {
   CompileResult,
+  FilterOutput,
   GradientOutput,
   LayerOutput,
   MarkerOutput,
@@ -65,9 +66,12 @@ interface DefsData {
   gradients?: GradientDef[];
   patterns?: PatternDef[];
   markers?: MarkerDef[];
+  filters?: FilterDef[];
   cssProperties?: CssPropertyDef[];
   gpuGradientUrls?: Map<string, string>;
 }
+
+type FilterDef = FilterOutput;
 
 interface MaskDef {
   id: string;
@@ -384,6 +388,7 @@ export class SvgPreviewPane extends HTMLElement {
             gradients: (defsData.gradients ?? []) as GradientOutput[],
             patterns: defsData.patterns ?? [],
             markers: (defsData.markers ?? []) as MarkerOutput[],
+            filters: (defsData.filters ?? []) as FilterOutput[],
             // Unused by buildDefs but required by the CompileResult shape:
             layers: [],
             cssProperties: [],

@@ -38,6 +38,12 @@ export interface BuildTreeOptions extends BuildLayersOptions {
    * tag is structurally inert; the default-off keeps the contract narrow.
    */
   includeMetadata?: boolean;
+  /** Forward to buildDefs — render conic/mesh/freeform/topo as <pattern><image>. */
+  useImageGradients?: boolean;
+  /** Forward to buildDefs — pre-rendered GPU gradient data URLs by id. */
+  gpuGradientUrls?: Map<string, string>;
+  /** Forward to buildDefs — emit playground-only data-*-def attributes on defs. */
+  emitPlaygroundDataAttrs?: boolean;
 }
 
 export function buildSvgTree(result: CompileResult, options: BuildTreeOptions = {}): VNode {
@@ -49,6 +55,9 @@ export function buildSvgTree(result: CompileResult, options: BuildTreeOptions = 
   const defsOptions: BuildDefsOptions = {
     width: viewBoxParts[2] || parseInt(width, 10) || 200,
     height: viewBoxParts[3] || parseInt(height, 10) || 200,
+    useImageGradients: options.useImageGradients,
+    gpuGradientUrls: options.gpuGradientUrls,
+    emitPlaygroundDataAttrs: options.emitPlaygroundDataAttrs,
   };
 
   const children: VNode[] = [];

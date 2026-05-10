@@ -1,0 +1,24 @@
+// Grainy conic gradient — ConicGradient + NoiseFilterStyle.Gradient.
+// The conic sweeps hue around the center; the grain adds atmospheric
+// texture without flattening the angular gradient.
+
+let wheel = ConicGradient('wheel', 100, 100) {|g|
+  g.stop(0, oklch(70% 0.20 0));
+  g.stop(0.25, oklch(70% 0.20 90));
+  g.stop(0.5, oklch(70% 0.20 180));
+  g.stop(0.75, oklch(70% 0.20 270));
+  g.stop(1, oklch(70% 0.20 360));
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.5;
+  f.contrast = 1.4;
+};
+
+define PathLayer('wheel') ${
+  fill: wheel;
+  stroke: none;
+  filter: grainy;
+}
+layer('wheel').apply { circle(100, 100, 90); }

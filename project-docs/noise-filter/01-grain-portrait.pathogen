@@ -1,0 +1,52 @@
+// Filmic grain (NoiseFilterStyle.Grain) on a stylized portrait.
+// Grain is fine, color-burned over the painted shapes — keeps the
+// colors readable but adds photographic texture.
+
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.5;
+};
+
+// Face
+define PathLayer('face') ${
+  fill: oklch(78% 0.10 60);
+  stroke: none;
+  filter: grain;
+}
+layer('face').apply { circle(100, 110, 60); }
+
+// Cheeks
+define PathLayer('cheeks') ${
+  fill: oklch(68% 0.18 30);
+  stroke: none;
+  filter: grain;
+}
+layer('cheeks').apply {
+  circle(78, 125, 10);
+  circle(122, 125, 10);
+}
+
+// Eyes
+define PathLayer('eyes') ${
+  fill: oklch(20% 0.02 250);
+  stroke: none;
+  filter: grain;
+}
+layer('eyes').apply {
+  circle(85, 100, 4);
+  circle(115, 100, 4);
+}
+
+// Hair
+define PathLayer('hair') ${
+  fill: oklch(25% 0.07 30);
+  stroke: none;
+  filter: grain;
+}
+layer('hair').apply {
+  M 40 110
+  C 45 50 155 50 160 110
+  L 155 70
+  C 130 50 70 50 45 70
+  Z
+}

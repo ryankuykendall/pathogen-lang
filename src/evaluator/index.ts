@@ -73,6 +73,8 @@ import type {
   CSSVarValue,
   CyclerValue,
   EvaluationState,
+  FilterOutput,
+  FilterValue,
   FontRegistry,
   FragmentLayerState,
   GradientOutput,
@@ -90,6 +92,8 @@ import type {
   MaskOutput,
   MaskValue,
   MeshPointValue,
+  NoiseFilterStyleName,
+  NoiseFilterValue,
   ObjectNamespace,
   ObjectValue,
   PathBlockCommand,
@@ -168,6 +172,10 @@ export type {
   MaskPathEntry,
   MaskValue,
   MeshPointValue,
+  FilterValue,
+  FilterOutput,
+  NoiseFilterValue,
+  NoiseFilterStyleName,
   ObjectNamespace,
   ObjectValue,
   PathBlockCommand,
@@ -234,6 +242,21 @@ export function isPatternValue(value: Value): value is PatternValue {
 
 export function isMarkerValue(value: Value): value is MarkerValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MarkerValue';
+}
+
+export function isFilterValue(value: Value): value is FilterValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'FilterValue';
+}
+
+export function isNoiseFilterValue(value: Value): value is NoiseFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'noise'
+  );
 }
 
 export function isMeshPointValue(value: Value): value is MeshPointValue {
@@ -309,6 +332,27 @@ export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   MarkerOrient: { Auto: 'auto', AutoStartReverse: 'auto-start-reverse' },
   MarkerRefX: { Left: 'left', Center: 'center', Right: 'right' },
   MarkerRefY: { Top: 'top', Center: 'center', Bottom: 'bottom' },
+  NoiseFilterStyle: {
+    Grain: 'grain',
+    Paper: 'paper',
+    Speckle: 'speckle',
+    Static: 'static',
+    Gradient: 'gradient',
+  },
+  BlendMode: {
+    Normal: 'normal',
+    Multiply: 'multiply',
+    Screen: 'screen',
+    Overlay: 'overlay',
+    ColorBurn: 'color-burn',
+    ColorDodge: 'color-dodge',
+    HardLight: 'hard-light',
+    SoftLight: 'soft-light',
+    Darken: 'darken',
+    Lighten: 'lighten',
+    Difference: 'difference',
+    Exclusion: 'exclusion',
+  },
   MarkerPreserveAspectRatio: {
     None: 'none',
     XMinYMinMeet: 'xMinYMin meet',
@@ -378,6 +422,83 @@ function expressionToSource(expr: Expression): string {
     default:
       return '?';
   }
+}
+
+/**
+ * Deterministic 32-bit hash for filter id → seed derivation. djb2 variant —
+ * cheap and stable across compiles, so the same source produces the same
+ * noise unless the user assigns f.seed explicitly.
+ */
+function hashFilterId(id: string): number {
+  let h = 5381;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) + h + id.charCodeAt(i)) | 0;
+  return Math.abs(h) % 65536;
+}
+
+/** Allocate a fresh, conflict-free auto-id for an inline NoiseFilter() call. */
+function nextAutoFilterId(state: EvaluationState): string {
+  let n = state.filters.size + 1;
+  // Bump until we land on a free id across all defs maps (auto-ids only ever collide with each other in practice).
+  // Termination: the id space is unbounded — we walk until we find a gap.
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const id = `pathogen-noise-${n}`;
+    if (
+      !state.masks.has(id) &&
+      !state.clipPaths.has(id) &&
+      !state.gradients.has(id) &&
+      !state.patterns.has(id) &&
+      !state.markers.has(id) &&
+      !state.filters.has(id)
+    ) {
+      return id;
+    }
+    n++;
+  }
+}
+
+interface NoiseFilterStyleDefaults {
+  scale: number;
+  octaves: number;
+  amount: number;
+  monochrome: boolean;
+  blend: string;
+  contrast: number;
+  stitch: boolean;
+}
+
+/** Per-style baselines. Keep these in sync with docs/filters.md and the renderer. */
+function noiseFilterDefaults(style: NoiseFilterStyleName): NoiseFilterStyleDefaults {
+  switch (style) {
+    case 'grain':
+      return { scale: 5.0, octaves: 6, amount: 0.4, monochrome: true, blend: 'color-burn', contrast: 1.0, stitch: false };
+    case 'paper':
+      return { scale: 1.0, octaves: 3, amount: 0.5, monochrome: true, blend: 'multiply', contrast: 1.0, stitch: false };
+    case 'speckle':
+      return { scale: 0.3, octaves: 2, amount: 0.6, monochrome: false, blend: 'multiply', contrast: 1.0, stitch: false };
+    case 'static':
+      return { scale: 5.0, octaves: 8, amount: 0.7, monochrome: true, blend: 'hard-light', contrast: 1.0, stitch: false };
+    case 'gradient':
+      return { scale: 1.0, octaves: 3, amount: 0.6, monochrome: false, blend: 'overlay', contrast: 1.7, stitch: true };
+  }
+}
+
+function makeDefaultNoiseFilter(id: string, style: NoiseFilterStyleName): NoiseFilterValue {
+  const d = noiseFilterDefaults(style);
+  return {
+    type: 'FilterValue',
+    kind: 'noise',
+    id,
+    style,
+    scale: d.scale,
+    octaves: d.octaves,
+    amount: d.amount,
+    monochrome: d.monochrome,
+    seed: hashFilterId(id),
+    blend: d.blend,
+    contrast: d.contrast,
+    stitch: d.stitch,
+  };
 }
 
 /**
@@ -971,6 +1092,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (isMarkerValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
           trusted = true;
+        } else if (isFilterValue(evaluated)) {
+          resolvedValue = `url(#${evaluated.id})`;
+          trusted = true;
         }
         // For other types, keep raw string (untrusted)
       }
@@ -1453,6 +1577,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     gradients: scope.evalState?.gradients ?? new Map(),
     patterns: scope.evalState?.patterns ?? new Map(),
     markers: scope.evalState?.markers ?? new Map(),
+    filters: scope.evalState?.filters ?? new Map(),
     cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insidePathBlock: true,
   };
@@ -1544,6 +1669,7 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
     gradients: scope.evalState?.gradients ?? new Map(),
     patterns: scope.evalState?.patterns ?? new Map(),
     markers: scope.evalState?.markers ?? new Map(),
+    filters: scope.evalState?.filters ?? new Map(),
     cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insideTextBlock: true,
   };
@@ -3648,10 +3774,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           scope.evalState.clipPaths.has(newId) ||
           scope.evalState.gradients.has(newId) ||
           scope.evalState.patterns.has(newId) ||
-          scope.evalState.markers.has(newId)
+          scope.evalState.markers.has(newId) ||
+          scope.evalState.filters.has(newId)
         ) {
           throw new Error(
-            `Duplicate defs ID '${newId}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`,
+            `Duplicate defs ID '${newId}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`,
           );
         }
         const child: GradientValue = {
@@ -4638,6 +4765,34 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  // Handle NoiseFilterValue property access
+  if (isNoiseFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'style':
+        return obj.style;
+      case 'scale':
+        return obj.scale;
+      case 'octaves':
+        return obj.octaves;
+      case 'amount':
+        return obj.amount;
+      case 'monochrome':
+        return boolVal(obj.monochrome);
+      case 'seed':
+        return obj.seed;
+      case 'blend':
+        return obj.blend;
+      case 'contrast':
+        return obj.contrast;
+      case 'stitch':
+        return boolVal(obj.stitch);
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on NoiseFilter`);
+    }
+  }
+
   // Handle MeshPointValue property access
   if (isMeshPointValue(obj)) {
     switch (expr.property) {
@@ -5038,9 +5193,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
     scope.evalState.masks.set(id, mask);
@@ -5061,9 +5217,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
     scope.evalState.clipPaths.set(id, clipPath);
@@ -5100,9 +5257,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -5165,9 +5323,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -5216,9 +5375,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const pattern: PatternValue = {
       type: 'PatternValue',
@@ -5269,9 +5429,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const marker: MarkerValue = {
       type: 'MarkerValue',
@@ -5296,6 +5457,31 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       }
     }
     return marker;
+  }
+
+  // Handle NoiseFilter() constructor
+  if (call.name === 'NoiseFilter') {
+    if (call.args.length !== 0) {
+      throw new Error(
+        formatError(
+          `NoiseFilter() takes no positional arguments — configure via the trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('NoiseFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState);
+    const filter: NoiseFilterValue = makeDefaultNoiseFilter(id, 'grain');
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
   }
 
   // Handle ConicGradient() constructor
@@ -5324,9 +5510,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -5393,9 +5580,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     // Build grid: rows × cols MeshPointValue objects, evenly spaced
     const meshGrid: MeshPointValue[][] = [];
@@ -5464,9 +5652,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -5517,9 +5706,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.clipPaths.has(id) ||
       scope.evalState.gradients.has(id) ||
       scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id)
+      scope.evalState.markers.has(id) ||
+      scope.evalState.filters.has(id)
     ) {
-      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, or Marker with this ID already exists`);
+      throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
       type: 'GradientValue',
@@ -6942,6 +7132,126 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             throw new Error(formatError(`Cannot assign to Marker property '${stmt.property}'`, getLine(stmt)));
         }
       }
+      if (isNoiseFilterValue(obj)) {
+        switch (stmt.property) {
+          case 'style': {
+            if (typeof value !== 'string')
+              throw new Error(
+                formatError(
+                  `NoiseFilter.style must be a NoiseFilterStyle enum value`,
+                  getLine(stmt),
+                ),
+              );
+            const valid = Object.values(BUILTIN_ENUMS.NoiseFilterStyle);
+            if (!valid.includes(value))
+              throw new Error(
+                formatError(
+                  `Invalid value '${value}' for NoiseFilter.style. Valid values: ${valid.join(', ')}`,
+                  getLine(stmt),
+                ),
+              );
+            // Re-baseline parameters from the new preset's defaults, but
+            // preserve the seed (it's keyed off the id, not the style).
+            const seed = obj.seed;
+            const reset = makeDefaultNoiseFilter(obj.id, value as NoiseFilterStyleName);
+            obj.style = reset.style;
+            obj.scale = reset.scale;
+            obj.octaves = reset.octaves;
+            obj.amount = reset.amount;
+            obj.monochrome = reset.monochrome;
+            obj.blend = reset.blend;
+            obj.contrast = reset.contrast;
+            obj.stitch = reset.stitch;
+            obj.seed = seed;
+            return;
+          }
+          case 'scale': {
+            if (typeof value === 'number') {
+              if (!Number.isFinite(value) || value <= 0)
+                throw new Error(formatError(`NoiseFilter.scale must be a finite positive number`, getLine(stmt)));
+              obj.scale = value;
+            } else if (value === 'fine') {
+              obj.scale = 5.0;
+            } else if (value === 'medium') {
+              obj.scale = 1.0;
+            } else if (value === 'coarse') {
+              obj.scale = 0.3;
+            } else {
+              throw new Error(
+                formatError(
+                  `NoiseFilter.scale must be a positive number or one of 'fine' | 'medium' | 'coarse'`,
+                  getLine(stmt),
+                ),
+              );
+            }
+            return;
+          }
+          case 'octaves': {
+            if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 10)
+              throw new Error(
+                formatError(`NoiseFilter.octaves must be an integer between 1 and 10`, getLine(stmt)),
+              );
+            obj.octaves = value;
+            return;
+          }
+          case 'amount': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1)
+              throw new Error(formatError(`NoiseFilter.amount must be a number between 0 and 1`, getLine(stmt)));
+            obj.amount = value;
+            return;
+          }
+          case 'monochrome': {
+            if (isBooleanValue(value)) {
+              obj.monochrome = value.value === 1;
+            } else if (typeof value === 'number') {
+              obj.monochrome = value !== 0;
+            } else {
+              throw new Error(formatError(`NoiseFilter.monochrome must be a boolean`, getLine(stmt)));
+            }
+            return;
+          }
+          case 'seed': {
+            if (typeof value !== 'number' || !Number.isFinite(value))
+              throw new Error(formatError(`NoiseFilter.seed must be a finite number`, getLine(stmt)));
+            obj.seed = value;
+            return;
+          }
+          case 'blend': {
+            if (typeof value !== 'string')
+              throw new Error(formatError(`NoiseFilter.blend must be a BlendMode enum value`, getLine(stmt)));
+            const valid = Object.values(BUILTIN_ENUMS.BlendMode);
+            if (!valid.includes(value))
+              throw new Error(
+                formatError(
+                  `Invalid value '${value}' for NoiseFilter.blend. Valid values: ${valid.join(', ')}`,
+                  getLine(stmt),
+                ),
+              );
+            obj.blend = value;
+            return;
+          }
+          case 'contrast': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
+              throw new Error(formatError(`NoiseFilter.contrast must be a finite non-negative number`, getLine(stmt)));
+            obj.contrast = value;
+            return;
+          }
+          case 'stitch': {
+            if (isBooleanValue(value)) {
+              obj.stitch = value.value === 1;
+            } else if (typeof value === 'number') {
+              obj.stitch = value !== 0;
+            } else {
+              throw new Error(formatError(`NoiseFilter.stitch must be a boolean`, getLine(stmt)));
+            }
+            return;
+          }
+          default:
+            throw new Error(
+              formatError(`Cannot assign to NoiseFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
       if (isMeshPointValue(obj)) {
         switch (stmt.property) {
           case 'color': {
@@ -7613,6 +7923,26 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     markers.push(output);
   }
 
+  // Build filters output
+  const filters: FilterOutput[] = [];
+  for (const [, filter] of evalState.filters) {
+    if (filter.kind === 'noise') {
+      filters.push({
+        kind: 'noise',
+        id: filter.id,
+        style: filter.style,
+        scale: filter.scale,
+        octaves: filter.octaves,
+        amount: filter.amount,
+        monochrome: filter.monochrome,
+        seed: filter.seed,
+        blend: filter.blend,
+        contrast: filter.contrast,
+        stitch: filter.stitch,
+      });
+    }
+  }
+
   // Build cssProperties output
   const cssProperties: CSSPropertyDeclaration[] = Array.from(evalState.cssProperties.values());
 
@@ -7623,6 +7953,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     gradients,
     patterns,
     markers,
+    filters,
     cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
@@ -7649,6 +7980,7 @@ export function evaluate(program: Program, options?: { toFixed?: number; fonts?:
       gradients: new Map(),
       patterns: new Map(),
       markers: new Map(),
+      filters: new Map(),
       cssProperties: new Map(),
       fontRegistry: options?.fonts,
     };
@@ -7685,6 +8017,7 @@ export interface EvaluateWithContextResult {
   gradients: GradientOutput[];
   patterns: PatternOutput[];
   markers: MarkerOutput[];
+  filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
 }
 
@@ -7728,6 +8061,7 @@ export function evaluateWithContext(
       gradients: new Map(),
       patterns: new Map(),
       markers: new Map(),
+      filters: new Map(),
       cssProperties: new Map(),
       fontRegistry: options.fonts,
     };
@@ -7769,6 +8103,7 @@ export function evaluateWithContext(
       gradients: compileResult.gradients,
       patterns: compileResult.patterns,
       markers: compileResult.markers,
+      filters: compileResult.filters,
       cssProperties: compileResult.cssProperties,
     };
   } finally {

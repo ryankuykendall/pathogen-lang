@@ -12,6 +12,7 @@ import type {
   ClipPathOutput,
   CompileResult,
   CSSPropertyDeclaration,
+  FilterOutput,
   GradientOutput,
   LayerOutput,
   MarkerOutput,
@@ -27,6 +28,7 @@ interface BuildSvgParams {
   gradients?: GradientOutput[];
   patterns?: PatternOutput[];
   markers?: MarkerOutput[];
+  filters?: FilterOutput[];
   cssProperties?: CSSPropertyDeclaration[];
   /** Pre-rendered GPU gradient data URLs, keyed by gradient id. */
   gpuGradientUrls?: Map<string, string>;
@@ -60,6 +62,7 @@ export function buildSvg(params: BuildSvgParams, svgOptions: SvgOptions = {}): s
       gradients: params.gradients ?? [],
       patterns: params.patterns ?? [],
       markers: params.markers ?? [],
+      filters: params.filters ?? [],
       cssProperties: params.cssProperties ?? [],
       logs: [],
       calledStdlibFunctions: [],

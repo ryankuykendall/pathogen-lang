@@ -490,8 +490,10 @@ async function startBBWPServer(
   return new Promise((resolve, reject) => {
     const server = createServer(async (req, res) => {
       const url = new URL(req.url || '/', 'http://localhost');
-      let filePath = join(projectRoot, url.pathname);
-      if (filePath.endsWith('/')) filePath += 'index.html';
+      const pathname = url.pathname;
+      let filePath = join(projectRoot, pathname);
+      const wantsDirectory = pathname.endsWith('/');
+      if (wantsDirectory) filePath += 'index.html';
 
       try {
         const content = readFileSync(filePath);
@@ -499,23 +501,62 @@ async function startBBWPServer(
         res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
         res.end(content);
       } catch {
-        // Fallback: if .js not found, try transpiling the .ts counterpart on the fly.
-        // After the playground TS migration, source files are .ts but imports use .js extensions.
-        if (filePath.endsWith('.js')) {
-          const tsPath = filePath.replace(/\.js$/, '.ts');
+        // Fallback chain — accommodate the playground's TypeScript module graph:
+        //   1. .js miss → look for the .ts source and transpile on the fly
+        //      (playground source uses .ts but imports declare .js extensions)
+        //   2. Extensionless miss with a co-located .ts/.js file → transpile
+        //      and serve that file at the requested URL.
+        //   3. Extensionless miss pointing at a directory with an index → 308
+        //      redirect to `${pathname}/` so the browser uses the directory as
+        //      the resolution base for relative imports inside the served
+        //      module (this is what makes `import '../../src/render'` work
+        //      when src/render/index.ts imports './build-defs').
+        //   4. Trailing-slash request → serve `<dir>/index.ts` /
+        //      `<dir>/index.js` (after the redirect from step 3 lands here).
+        const tryServe = async (p: string): Promise<boolean> => {
           try {
-            const tsSource = readFileSync(tsPath, 'utf-8');
-            const { transformSync } = await import('esbuild');
-            const result = transformSync(tsSource, {
-              loader: 'ts',
-              format: 'esm',
-              target: 'es2022',
-            });
-            res.writeHead(200, { 'Content-Type': 'application/javascript' });
-            res.end(result.code);
-            return;
+            const source = readFileSync(p);
+            if (p.endsWith('.ts')) {
+              const { transformSync } = await import('esbuild');
+              const result = transformSync(source.toString('utf-8'), {
+                loader: 'ts',
+                format: 'esm',
+                target: 'es2022',
+              });
+              res.writeHead(200, { 'Content-Type': 'application/javascript' });
+              res.end(result.code);
+            } else {
+              const ext = extname(p);
+              res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+              res.end(source);
+            }
+            return true;
           } catch {
-            // .ts file doesn't exist either — fall through to 404
+            return false;
+          }
+        };
+
+        if (filePath.endsWith('.js')) {
+          if (await tryServe(filePath.replace(/\.js$/, '.ts'))) return;
+        } else if (wantsDirectory) {
+          // After a redirect from step 3, filePath ends in 'index.html' but we
+          // also want to try index.ts / index.js for module directories.
+          const dir = filePath.slice(0, -'index.html'.length);
+          if (await tryServe(join(dir, 'index.ts'))) return;
+          if (await tryServe(join(dir, 'index.js'))) return;
+        } else if (!extname(filePath)) {
+          // Could be `<path>.ts`, `<path>.js`, or a directory `<path>/`.
+          if (await tryServe(`${filePath}.ts`)) return;
+          if (await tryServe(`${filePath}.js`)) return;
+          try {
+            const stat = (await import('node:fs')).statSync(filePath);
+            if (stat.isDirectory()) {
+              res.writeHead(308, { Location: `${pathname}/` });
+              res.end();
+              return;
+            }
+          } catch {
+            // Path doesn't exist — fall through to 404.
           }
         }
         res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -567,8 +608,9 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
       waitUntil: 'networkidle0',
     });
 
-    // Wait for BBWP to signal ready
-    await page.waitForFunction(() => (window as any).__BBWP_READY__ === true, { timeout: 10000 });
+    // Wait for BBWP to signal ready. 30s allows for cold-start on-the-fly
+    // TS→JS transpilation of the playground module chain on the first compile.
+    await page.waitForFunction(() => (window as any).__BBWP_READY__ === true, { timeout: 30000 });
 
     const svgOptions = {
       viewBox: options.viewBox || '0 0 200 200',

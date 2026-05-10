@@ -7,6 +7,7 @@ import type { CompletionEntry, MemberCompletionSet } from './completion-data-sta
 /** Top-level enum name completions (GridPatternType, Easing, etc.) */
 export const ENUM_COMPLETIONS: CompletionEntry[] = [
   { label: 'BBoxAnchor', kind: 'variable', detail: 'Bounding box anchor position', boost: 8 },
+  { label: 'BlendMode', kind: 'variable', detail: 'CSS blend-mode keyword', boost: 6 },
   { label: 'ConicSpread', kind: 'variable', detail: 'Conic gradient edge behavior', boost: 6 },
   { label: 'Direction', kind: 'variable', detail: 'Rotation direction (CW/CCW)', boost: 8 },
   { label: 'Easing', kind: 'variable', detail: 'Easing function for interpolation', boost: 10 },
@@ -20,6 +21,7 @@ export const ENUM_COMPLETIONS: CompletionEntry[] = [
   { label: 'MarkerRefX', kind: 'variable', detail: 'Marker refX keyword position', boost: 6 },
   { label: 'MarkerRefY', kind: 'variable', detail: 'Marker refY keyword position', boost: 6 },
   { label: 'MarkerUnits', kind: 'variable', detail: 'Marker coordinate system', boost: 6 },
+  { label: 'NoiseFilterStyle', kind: 'variable', detail: 'NoiseFilter primitive-chain preset', boost: 8 },
   { label: 'SpreadMethod', kind: 'variable', detail: 'Gradient spread method', boost: 8 },
   { label: 'TopoMethod', kind: 'variable', detail: 'Topological gradient method', boost: 6 },
   { label: 'VerticalAnchor', kind: 'variable', detail: 'Text vertical alignment anchor', boost: 8 },
@@ -37,6 +39,20 @@ export const ENUM_MEMBER_MAP: Record<string, CompletionEntry[]> = {
     { label: 'BottomLeft', kind: 'constant', detail: 'BBoxAnchor.BottomLeft → "bottom-left"', boost: 8 },
     { label: 'Left', kind: 'constant', detail: 'BBoxAnchor.Left → "left"', boost: 8 },
     { label: 'Center', kind: 'constant', detail: 'BBoxAnchor.Center → "center"', boost: 8 },
+  ],
+  BlendMode: [
+    { label: 'Normal', kind: 'constant', detail: 'BlendMode.Normal → "normal"', boost: 8 },
+    { label: 'Multiply', kind: 'constant', detail: 'BlendMode.Multiply → "multiply"', boost: 8 },
+    { label: 'Screen', kind: 'constant', detail: 'BlendMode.Screen → "screen"', boost: 8 },
+    { label: 'Overlay', kind: 'constant', detail: 'BlendMode.Overlay → "overlay"', boost: 8 },
+    { label: 'ColorBurn', kind: 'constant', detail: 'BlendMode.ColorBurn → "color-burn"', boost: 8 },
+    { label: 'ColorDodge', kind: 'constant', detail: 'BlendMode.ColorDodge → "color-dodge"', boost: 8 },
+    { label: 'HardLight', kind: 'constant', detail: 'BlendMode.HardLight → "hard-light"', boost: 8 },
+    { label: 'SoftLight', kind: 'constant', detail: 'BlendMode.SoftLight → "soft-light"', boost: 8 },
+    { label: 'Darken', kind: 'constant', detail: 'BlendMode.Darken → "darken"', boost: 8 },
+    { label: 'Lighten', kind: 'constant', detail: 'BlendMode.Lighten → "lighten"', boost: 8 },
+    { label: 'Difference', kind: 'constant', detail: 'BlendMode.Difference → "difference"', boost: 8 },
+    { label: 'Exclusion', kind: 'constant', detail: 'BlendMode.Exclusion → "exclusion"', boost: 8 },
   ],
   ConicSpread: [
     { label: 'Clamp', kind: 'constant', detail: 'ConicSpread.Clamp → "clamp"', boost: 8 },
@@ -116,6 +132,13 @@ export const ENUM_MEMBER_MAP: Record<string, CompletionEntry[]> = {
   MarkerUnits: [
     { label: 'StrokeWidth', kind: 'constant', detail: 'MarkerUnits.StrokeWidth → "strokeWidth"', boost: 8 },
     { label: 'UserSpaceOnUse', kind: 'constant', detail: 'MarkerUnits.UserSpaceOnUse → "userSpaceOnUse"', boost: 8 },
+  ],
+  NoiseFilterStyle: [
+    { label: 'Grain', kind: 'constant', detail: 'NoiseFilterStyle.Grain → "grain"', boost: 8 },
+    { label: 'Paper', kind: 'constant', detail: 'NoiseFilterStyle.Paper → "paper"', boost: 8 },
+    { label: 'Speckle', kind: 'constant', detail: 'NoiseFilterStyle.Speckle → "speckle"', boost: 8 },
+    { label: 'Static', kind: 'constant', detail: 'NoiseFilterStyle.Static → "static"', boost: 8 },
+    { label: 'Gradient', kind: 'constant', detail: 'NoiseFilterStyle.Gradient → "gradient"', boost: 8 },
   ],
   SpreadMethod: [
     { label: 'Pad', kind: 'constant', detail: 'SpreadMethod.Pad → "pad"', boost: 8 },

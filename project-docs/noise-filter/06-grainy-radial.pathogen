@@ -1,0 +1,21 @@
+// Grainy radial gradient — RadialGradient + NoiseFilterStyle.Gradient.
+// The grain rides the radial falloff so the center sparkles and the
+// outer ring softens gracefully.
+
+let glow = RadialGradient('glow', 0.5, 0.5, 0.5) {|g|
+  g.stop(0, oklch(92% 0.18 80));   // bright center
+  g.stop(0.5, oklch(60% 0.20 40)); // warm mid
+  g.stop(1, oklch(20% 0.05 280));  // dark edge
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.55;
+};
+
+define PathLayer('orb') ${
+  fill: glow;
+  stroke: none;
+  filter: grainy;
+}
+layer('orb').apply { rect(0, 0, 200, 200); }

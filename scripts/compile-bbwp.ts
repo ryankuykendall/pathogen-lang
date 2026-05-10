@@ -155,8 +155,8 @@ function wrapMiniWorkspaceHtml(
     .workspace-container { flex: 1; min-height: 0; padding: 0.75rem 1rem; }
     mini-workspace { width: 100%; height: 100%; min-height: 0; max-height: none; margin: 0; }
   </style>
-  <script type="module" src="../../public/pathogen/components/blog/mini-workspace.js"></script>
-  <script type="module" src="../../public/pathogen/components/shared/theme-toggle.js"></script>
+  <script type="module" src="../../public/components/blog/mini-workspace.js"></script>
+  <script type="module" src="../../public/components/shared/theme-toggle.js"></script>
 </head>
 <body>
   <div class="header">

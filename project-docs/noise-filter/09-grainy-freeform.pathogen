@@ -1,0 +1,25 @@
+// Grainy freeform gradient — FreeformGradient + NoiseFilterStyle.Gradient.
+// 400x400 canvas with five high-contrast color anchors so the grain has
+// real color variation to ride across.
+
+let blob = FreeformGradient('blob', 400, 400) {|g|
+  g.point(80, 80, oklch(92% 0.18 90));      // pale gold (top-left)
+  g.point(320, 80, oklch(60% 0.25 25));     // coral (top-right)
+  g.point(80, 320, oklch(45% 0.22 230));    // deep teal (bottom-left)
+  g.point(320, 320, oklch(30% 0.18 290));   // dark plum (bottom-right)
+  g.point(200, 200, oklch(70% 0.28 320));   // hot magenta (center)
+  g.falloff = 1.6;
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.7;
+  f.contrast = 1.9;
+};
+
+define PathLayer('panel') ${
+  fill: blob;
+  stroke: none;
+  filter: grainy;
+}
+layer('panel').apply { rect(0, 0, 400, 400); }

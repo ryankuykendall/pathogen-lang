@@ -1,0 +1,21 @@
+// Grainy linear gradient — NoiseFilterStyle.Gradient paired with a
+// LinearGradient fill. The preset pumps contrast on the noise before
+// blending, so the gradient stops still read clearly through the grain.
+
+let sunset = LinearGradient('sunset', 0, 0, 1, 1) {|g|
+  g.stop(0, oklch(70% 0.20 70));   // warm top-left
+  g.stop(0.5, oklch(55% 0.22 30)); // mid coral
+  g.stop(1, oklch(30% 0.18 280));  // cool bottom-right
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.6;
+};
+
+define PathLayer('sky') ${
+  fill: sunset;
+  stroke: none;
+  filter: grainy;
+}
+layer('sky').apply { rect(0, 0, 200, 200); }
