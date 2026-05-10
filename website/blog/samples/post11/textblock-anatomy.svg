@@ -1,48 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" width="600" height="340">
 
-  <path id="bg" d="M 0 0 L 600 0 L 600 340 L 0 340 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path id="grid" d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 320 h 600 M 0 340 h 600 M 0 0 v 340 M 20 0 v 340 M 40 0 v 340 M 60 0 v 340 M 80 0 v 340 M 100 0 v 340 M 120 0 v 340 M 140 0 v 340 M 160 0 v 340 M 180 0 v 340 M 200 0 v 340 M 220 0 v 340 M 240 0 v 340 M 260 0 v 340 M 280 0 v 340 M 300 0 v 340 M 320 0 v 340 M 340 0 v 340 M 360 0 v 340 M 380 0 v 340 M 400 0 v 340 M 420 0 v 340 M 440 0 v 340 M 460 0 v 340 M 480 0 v 340 M 500 0 v 340 M 520 0 v 340 M 540 0 v 340 M 560 0 v 340 M 580 0 v 340 M 600 0 v 340" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-  <g id="card1" transform="translate(80, 100)">
-    <text id="demo1" x="0" y="14" font-family="monospace" font-size="11" fill="#e2e8f0">Server Node</text>
-    <text x="0" y="32" font-family="monospace" font-size="11" fill="#e2e8f0">Status: online</text>
-    <text x="0" y="48" font-family="monospace" font-size="11" fill="#e2e8f0">Latency: 12ms</text>
-    <path id="bb1" d="M 0 3 L 92.4 3 L 92.4 50.2 L 0 50.2 Z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>
-    <path id="cross1" d="M -7 0 h 14 M 0 -7 v 14" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 600 0 l 0 340 l -600 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="grid" id="grid" d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 320 h 600 M 0 340 h 600 M 0 0 v 340 M 20 0 v 340 M 40 0 v 340 M 60 0 v 340 M 80 0 v 340 M 100 0 v 340 M 120 0 v 340 M 140 0 v 340 M 160 0 v 340 M 180 0 v 340 M 200 0 v 340 M 220 0 v 340 M 240 0 v 340 M 260 0 v 340 M 280 0 v 340 M 300 0 v 340 M 320 0 v 340 M 340 0 v 340 M 360 0 v 340 M 380 0 v 340 M 400 0 v 340 M 420 0 v 340 M 440 0 v 340 M 460 0 v 340 M 480 0 v 340 M 500 0 v 340 M 520 0 v 340 M 540 0 v 340 M 560 0 v 340 M 580 0 v 340 M 600 0 v 340" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g data-layer-name="card1" id="card1" transform="translate(80, 100)">
+    <text data-layer-name="demo1" id="demo1" x="0" y="14" font-family="monospace" font-size="11" fill="#e2e8f0">Server Node</text>
+    <text data-layer-name="demo1" x="0" y="32" font-family="monospace" font-size="11" fill="#e2e8f0">Status: online</text>
+    <text data-layer-name="demo1" x="0" y="48" font-family="monospace" font-size="11" fill="#e2e8f0">Latency: 12ms</text>
+    <path data-layer-name="bb1" id="bb1" d="M 0 3 l 92.4 0 l 0 47.2 l -92.4 0 z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>
+    <path data-layer-name="cross1" id="cross1" d="M -7 0 h 14 M 0 -7 v 14" fill="none" stroke="#22c55e" stroke-width="1.5"/>
   </g>
-  <g id="card2" transform="translate(360, 180)">
-    <text id="demo2" x="0" y="14" font-family="monospace" font-size="11" fill="#e2e8f0">Server Node</text>
-    <text x="0" y="32" font-family="monospace" font-size="11" fill="#e2e8f0">Status: online</text>
-    <text x="0" y="48" font-family="monospace" font-size="11" fill="#e2e8f0">Latency: 12ms</text>
-    <path id="bb2" d="M 0 3 L 92.4 3 L 92.4 50.2 L 0 50.2 Z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>
-    <path id="cross2" d="M -7 0 h 14 M 0 -7 v 14" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+  <g data-layer-name="card2" id="card2" transform="translate(360, 180)">
+    <text data-layer-name="demo2" id="demo2" x="0" y="14" font-family="monospace" font-size="11" fill="#e2e8f0">Server Node</text>
+    <text data-layer-name="demo2" x="0" y="32" font-family="monospace" font-size="11" fill="#e2e8f0">Status: online</text>
+    <text data-layer-name="demo2" x="0" y="48" font-family="monospace" font-size="11" fill="#e2e8f0">Latency: 12ms</text>
+    <path data-layer-name="bb2" id="bb2" d="M 0 3 l 92.4 0 l 0 47.2 l -92.4 0 z" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>
+    <path data-layer-name="cross2" id="cross2" d="M -7 0 h 14 M 0 -7 v 14" fill="none" stroke="#22c55e" stroke-width="1.5"/>
   </g>
-  <g id="leaders-group">
-    <path id="leaders" d="M 80 100 L 40 60 M 360 180 L 320 260 M 200 120 L 340 180" fill="none" stroke="#475569" stroke-width="0.5"/>
-    <path id="arrow" d="M 332 176 l 10 4 l -10 4 z" fill="#818cf8" stroke="none" stroke-width="2"/>
+  <g data-layer-name="leaders-group" id="leaders-group">
+    <path data-layer-name="leaders" id="leaders" d="M 80 100 L 40 60 M 360 180 L 320 260 M 200 120 L 340 180" fill="none" stroke="#475569" stroke-width="0.5"/>
+    <path data-layer-name="arrow" id="arrow" d="M 332 176 l 10 4 l -10 4 z" fill="#818cf8" stroke="none" stroke-width="2"/>
   </g>
-  <g id="anno-group">
-    <text id="anno" x="15" y="55" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">origin (80, 100)</text>
-    <text x="175" y="170" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">same block, different position</text>
-    <text x="295" y="270" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">origin (360, 180)</text>
+  <g data-layer-name="anno-group" id="anno-group">
+    <text data-layer-name="anno" id="anno" x="15" y="55" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">origin (80, 100)</text>
+    <text data-layer-name="anno" x="175" y="170" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">same block, different position</text>
+    <text data-layer-name="anno" x="295" y="270" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">origin (360, 180)</text>
   </g>
-  <g id="code-block" transform="translate(400, 22)">
-    <text id="code" x="0" y="12" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let card = &amp;{</text>
-    <text x="12" y="24" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 14)`Server Node`</text>
-    <text x="12" y="36" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 32)`Status: online`</text>
-    <text x="12" y="48" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 48)`Latency: 12ms`</text>
-    <text x="0" y="60" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">} &lt;&lt; monospace styles;</text>
-    <text x="0" y="80" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">card.drawTo(80, 100)</text>
-    <text x="0" y="92" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">card.drawTo(360, 180)</text>
-    <text id="kw" x="0" y="12" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <g data-layer-name="code-block" id="code-block" transform="translate(400, 22)">
+    <text data-layer-name="code" id="code" x="0" y="12" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let card = &amp;{</text>
+    <text data-layer-name="code" x="12" y="24" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 14)`Server Node`</text>
+    <text data-layer-name="code" x="12" y="36" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 32)`Status: online`</text>
+    <text data-layer-name="code" x="12" y="48" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">text(0, 48)`Latency: 12ms`</text>
+    <text data-layer-name="code" x="0" y="60" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">} &lt;&lt; monospace styles;</text>
+    <text data-layer-name="code" x="0" y="80" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">card.drawTo(80, 100)</text>
+    <text data-layer-name="code" x="0" y="92" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">card.drawTo(360, 180)</text>
+    <text data-layer-name="kw" id="kw" x="0" y="12" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
   </g>
-  <g id="title-group">
-    <text id="title" x="30" y="310" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">TextBlock — Compose Once, Place Anywhere</text>
+  <g data-layer-name="title-group" id="title-group">
+    <text data-layer-name="title" id="title" x="30" y="310" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">TextBlock — Compose Once, Place Anywhere</text>
   </g>
-  <g id="legend-group" transform="translate(400, 300)">
-    <path id="leg-o" d="M 0 0 L 8 0 L 8 8 L 0 8 Z" fill="#22c55e" stroke="none" stroke-width="2"/>
-    <path id="leg-b" d="M 0 14 L 8 14 L 8 22 L 0 22 Z" fill="#f59e0b" stroke="none" stroke-width="2"/>
-    <text id="legend" x="12" y="7" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Origin</text>
-    <text x="12" y="21" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Bounding box</text>
+  <g data-layer-name="legend-group" id="legend-group" transform="translate(400, 300)">
+    <path data-layer-name="leg-o" id="leg-o" d="M 0 0 l 8 0 l 0 8 l -8 0 z" fill="#22c55e" stroke="none" stroke-width="2"/>
+    <path data-layer-name="leg-b" id="leg-b" d="M 0 14 l 8 0 l 0 8 l -8 0 z" fill="#f59e0b" stroke="none" stroke-width="2"/>
+    <text data-layer-name="legend" id="legend" x="12" y="7" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Origin</text>
+    <text data-layer-name="legend" x="12" y="21" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Bounding box</text>
   </g>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"grid","type":"path","styles":{"stroke":"#1e293b","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"card1","type":"group","styles":{},"isDefault":false,"transform":"translate(80, 100)","children":[{"name":"demo1","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0"},"isDefault":false},{"name":"bb1","type":"path","styles":{"fill":"none","stroke":"#f59e0b","stroke-width":"1","stroke-dasharray":"4 3"},"isDefault":false},{"name":"cross1","type":"path","styles":{"stroke":"#22c55e","stroke-width":"1.5","fill":"none"},"isDefault":false}]},{"name":"card2","type":"group","styles":{},"isDefault":false,"transform":"translate(360, 180)","children":[{"name":"demo2","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0"},"isDefault":false},{"name":"bb2","type":"path","styles":{"fill":"none","stroke":"#f59e0b","stroke-width":"1","stroke-dasharray":"4 3"},"isDefault":false},{"name":"cross2","type":"path","styles":{"stroke":"#22c55e","stroke-width":"1.5","fill":"none"},"isDefault":false}]},{"name":"leaders-group","type":"group","styles":{},"isDefault":false,"children":[{"name":"leaders","type":"path","styles":{"fill":"none","stroke":"#475569","stroke-width":"0.5"},"isDefault":false},{"name":"arrow","type":"path","styles":{"fill":"#818cf8","stroke":"none"},"isDefault":false}]},{"name":"anno-group","type":"group","styles":{},"isDefault":false,"children":[{"name":"anno","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false}]},{"name":"code-block","type":"group","styles":{},"isDefault":false,"transform":"translate(400, 22)","children":[{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#c084fc","text-anchor":"start"},"isDefault":false}]},{"name":"title-group","type":"group","styles":{},"isDefault":false,"children":[{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false}]},{"name":"legend-group","type":"group","styles":{},"isDefault":false,"transform":"translate(400, 300)","children":[{"name":"leg-o","type":"path","styles":{"fill":"#22c55e","stroke":"none"},"isDefault":false},{"name":"leg-b","type":"path","styles":{"fill":"#f59e0b","stroke":"none"},"isDefault":false},{"name":"legend","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

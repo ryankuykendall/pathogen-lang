@@ -1,39 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" width="600" height="300">
 
-  <path id="bg" d="M 0 0 L 600 0 L 600 300 L 0 300 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path id="grid" d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 0 v 300 M 20 0 v 300 M 40 0 v 300 M 60 0 v 300 M 80 0 v 300 M 100 0 v 300 M 120 0 v 300 M 140 0 v 300 M 160 0 v 300 M 180 0 v 300 M 200 0 v 300 M 220 0 v 300 M 240 0 v 300 M 260 0 v 300 M 280 0 v 300 M 300 0 v 300 M 320 0 v 300 M 340 0 v 300 M 360 0 v 300 M 380 0 v 300 M 400 0 v 300 M 420 0 v 300 M 440 0 v 300 M 460 0 v 300 M 480 0 v 300 M 500 0 v 300 M 520 0 v 300 M 540 0 v 300 M 560 0 v 300 M 580 0 v 300 M 600 0 v 300" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-  <g id="variant1" transform="translate(30, 70)">
-    <text id="v1-text" x="0" y="14" font-family="monospace" font-size="10" fill="#22c55e">Node Status</text>
-    <text x="0" y="30" font-family="monospace" font-size="10" fill="#22c55e">CPU: 42%</text>
-    <text x="0" y="44" font-family="monospace" font-size="10" fill="#22c55e">MEM: 1.2G</text>
-    <path id="v1-bbox" d="M 0 4 L 66 4 L 66 46 L 0 46 Z" fill="none" stroke="rgba(34, 197, 94, 0.251)" stroke-width="0.75" stroke-dasharray="3 2"/>
-    <text id="v1-label" x="0" y="-10" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">mono 10px</text>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 600 0 l 0 300 l -600 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="grid" id="grid" d="M 0 0 h 600 M 0 20 h 600 M 0 40 h 600 M 0 60 h 600 M 0 80 h 600 M 0 100 h 600 M 0 120 h 600 M 0 140 h 600 M 0 160 h 600 M 0 180 h 600 M 0 200 h 600 M 0 220 h 600 M 0 240 h 600 M 0 260 h 600 M 0 280 h 600 M 0 300 h 600 M 0 0 v 300 M 20 0 v 300 M 40 0 v 300 M 60 0 v 300 M 80 0 v 300 M 100 0 v 300 M 120 0 v 300 M 140 0 v 300 M 160 0 v 300 M 180 0 v 300 M 200 0 v 300 M 220 0 v 300 M 240 0 v 300 M 260 0 v 300 M 280 0 v 300 M 300 0 v 300 M 320 0 v 300 M 340 0 v 300 M 360 0 v 300 M 380 0 v 300 M 400 0 v 300 M 420 0 v 300 M 440 0 v 300 M 460 0 v 300 M 480 0 v 300 M 500 0 v 300 M 520 0 v 300 M 540 0 v 300 M 560 0 v 300 M 580 0 v 300 M 600 0 v 300" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g data-layer-name="variant1" id="variant1" transform="translate(30, 70)">
+    <text data-layer-name="v1-text" id="v1-text" x="0" y="14" font-family="monospace" font-size="10" fill="#22c55e">Node Status</text>
+    <text data-layer-name="v1-text" x="0" y="30" font-family="monospace" font-size="10" fill="#22c55e">CPU: 42%</text>
+    <text data-layer-name="v1-text" x="0" y="44" font-family="monospace" font-size="10" fill="#22c55e">MEM: 1.2G</text>
+    <path data-layer-name="v1-bbox" id="v1-bbox" d="M 0 4 l 66 0 l 0 42 l -66 0 z" fill="none" stroke="rgba(34, 197, 94, 0.251)" stroke-width="0.75" stroke-dasharray="3 2"/>
+    <text data-layer-name="v1-label" id="v1-label" x="0" y="-10" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">mono 10px</text>
   </g>
-  <g id="variant2" transform="translate(210, 70)">
-    <text id="v2-text" x="0" y="14" font-family="monospace" font-size="14" fill="#3b82f6">Node Status</text>
-    <text x="0" y="30" font-family="monospace" font-size="14" fill="#3b82f6">CPU: 42%</text>
-    <text x="0" y="44" font-family="monospace" font-size="14" fill="#3b82f6">MEM: 1.2G</text>
-    <path id="v2-bbox" d="M 0 0 L 92.39999999999999 0 L 92.39999999999999 46.8 L 0 46.8 Z" fill="none" stroke="rgba(59, 130, 246, 0.251)" stroke-width="0.75" stroke-dasharray="3 2"/>
-    <text id="v2-label" x="0" y="-10" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">mono 14px</text>
+  <g data-layer-name="variant2" id="variant2" transform="translate(210, 70)">
+    <text data-layer-name="v2-text" id="v2-text" x="0" y="14" font-family="monospace" font-size="14" fill="#3b82f6">Node Status</text>
+    <text data-layer-name="v2-text" x="0" y="30" font-family="monospace" font-size="14" fill="#3b82f6">CPU: 42%</text>
+    <text data-layer-name="v2-text" x="0" y="44" font-family="monospace" font-size="14" fill="#3b82f6">MEM: 1.2G</text>
+    <path data-layer-name="v2-bbox" id="v2-bbox" d="M 0 0 l 92.39999999999999 0 l 0 46.8 l -92.39999999999999 0 z" fill="none" stroke="rgba(59, 130, 246, 0.251)" stroke-width="0.75" stroke-dasharray="3 2"/>
+    <text data-layer-name="v2-label" id="v2-label" x="0" y="-10" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">mono 14px</text>
   </g>
-  <g id="variant3" transform="translate(420, 70)">
-    <text id="v3-text" x="0" y="14" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">Node Status</text>
-    <text x="0" y="30" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">CPU: 42%</text>
-    <text x="0" y="44" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">MEM: 1.2G</text>
-    <path id="v3-bbox" d="M 0 2 L 66.36000000000001 2 L 66.36000000000001 46.4 L 0 46.4 Z" fill="none" stroke="rgba(245, 158, 11, 0.251)" stroke-width="0.75" stroke-dasharray="3 2"/>
-    <text id="v3-label" x="0" y="-10" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">sans-serif 12px</text>
+  <g data-layer-name="variant3" id="variant3" transform="translate(420, 70)">
+    <text data-layer-name="v3-text" id="v3-text" x="0" y="14" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">Node Status</text>
+    <text data-layer-name="v3-text" x="0" y="30" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">CPU: 42%</text>
+    <text data-layer-name="v3-text" x="0" y="44" font-family="system-ui, sans-serif" font-size="12" fill="#f59e0b">MEM: 1.2G</text>
+    <path data-layer-name="v3-bbox" id="v3-bbox" d="M 0 2 l 66.36000000000001 0 l 0 44.4 l -66.36000000000001 0 z" fill="none" stroke="rgba(245, 158, 11, 0.251)" stroke-width="0.75" stroke-dasharray="3 2"/>
+    <text data-layer-name="v3-label" id="v3-label" x="0" y="-10" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">sans-serif 12px</text>
   </g>
-  <g id="code-block" transform="translate(30, 190)">
-    <text id="code" x="0" y="0" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// One block, three styles</text>
-    <text x="0" y="16" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">(info &lt;&lt; mono_sm).drawTo(50, 100)</text>
-    <text x="0" y="30" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">(info &lt;&lt; mono_lg).drawTo(220, 100)</text>
-    <text x="0" y="44" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">(info &lt;&lt; sans).drawTo(430, 100)</text>
+  <g data-layer-name="code-block" id="code-block" transform="translate(30, 190)">
+    <text data-layer-name="code" id="code" x="0" y="0" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// One block, three styles</text>
+    <text data-layer-name="code" x="0" y="16" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">(info &lt;&lt; mono_sm).drawTo(50, 100)</text>
+    <text data-layer-name="code" x="0" y="30" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">(info &lt;&lt; mono_lg).drawTo(220, 100)</text>
+    <text data-layer-name="code" x="0" y="44" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">(info &lt;&lt; sans).drawTo(430, 100)</text>
   </g>
 
-  <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Style Merge Operator (&lt;&lt;)</text>
-  <text id="subtitle" x="30" y="44" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="start">Same content, different presentation — bbox adapts automatically</text>
-  <text id="dims" x="30" y="175" font-family="monospace" font-size="7" fill="#475569" text-anchor="start">66x42</text>
-  <text x="210" y="175" font-family="monospace" font-size="7" fill="#475569" text-anchor="start">92x47</text>
-  <text x="420" y="175" font-family="monospace" font-size="7" fill="#475569" text-anchor="start">66x44</text>
+  <text data-layer-name="title" id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Style Merge Operator (&lt;&lt;)</text>
+  <text data-layer-name="subtitle" id="subtitle" x="30" y="44" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="start">Same content, different presentation — bbox adapts automatically</text>
+  <text data-layer-name="dims" id="dims" x="30" y="175" font-family="monospace" font-size="7" fill="#475569" text-anchor="start">66x42</text>
+  <text data-layer-name="dims" x="210" y="175" font-family="monospace" font-size="7" fill="#475569" text-anchor="start">92x47</text>
+  <text data-layer-name="dims" x="420" y="175" font-family="monospace" font-size="7" fill="#475569" text-anchor="start">66x44</text>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"grid","type":"path","styles":{"stroke":"#1e293b","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"variant1","type":"group","styles":{},"isDefault":false,"transform":"translate(30, 70)","children":[{"name":"v1-text","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#22c55e"},"isDefault":false},{"name":"v1-bbox","type":"path","styles":{"fill":"none","stroke":"rgba(34, 197, 94, 0.251)","stroke-width":"0.75","stroke-dasharray":"3 2"},"isDefault":false},{"name":"v1-label","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"variant2","type":"group","styles":{},"isDefault":false,"transform":"translate(210, 70)","children":[{"name":"v2-text","type":"text","styles":{"font-family":"monospace","font-size":"14","fill":"#3b82f6"},"isDefault":false},{"name":"v2-bbox","type":"path","styles":{"fill":"none","stroke":"rgba(59, 130, 246, 0.251)","stroke-width":"0.75","stroke-dasharray":"3 2"},"isDefault":false},{"name":"v2-label","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"variant3","type":"group","styles":{},"isDefault":false,"transform":"translate(420, 70)","children":[{"name":"v3-text","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"12","fill":"#f59e0b"},"isDefault":false},{"name":"v3-bbox","type":"path","styles":{"fill":"none","stroke":"rgba(245, 158, 11, 0.251)","stroke-width":"0.75","stroke-dasharray":"3 2"},"isDefault":false},{"name":"v3-label","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"code-block","type":"group","styles":{},"isDefault":false,"transform":"translate(30, 190)","children":[{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false}]},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#c084fc","text-anchor":"start"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"dims","type":"text","styles":{"font-family":"monospace","font-size":"7","fill":"#475569","text-anchor":"start"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

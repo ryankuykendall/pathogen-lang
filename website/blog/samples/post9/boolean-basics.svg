@@ -1,49 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 480" width="580" height="480">
 
-  <path id="bg" d="M 0 0 L 580 0 L 580 480 L 0 480 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <g id="g-union" transform="translate(50, 80)">
-    <path id="u-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
-    <path id="u-result" d="M 0 0 m 25 50 l -25 0 l 0 -50 h 50 l 0 25 l 25 0 v 50 h -50 l 0 -25 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
-    <text id="u-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
-    <text x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
-    <text id="u-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.union(B)</text>
-    <text x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A ∪ B</text>
-    <text id="u-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Combined outline</text>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 580 0 l 0 480 l -580 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="g-union" id="g-union" transform="translate(50, 80)">
+    <path data-layer-name="u-orig" id="u-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
+    <path data-layer-name="u-result" id="u-result" d="M 0 0 m 25 50 l -25 0 l 0 -50 h 50 l 0 25 l 25 0 v 50 h -50 l 0 -25 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
+    <text data-layer-name="u-ab" id="u-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
+    <text data-layer-name="u-ab" x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
+    <text data-layer-name="u-op" id="u-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.union(B)</text>
+    <text data-layer-name="u-op" x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A ∪ B</text>
+    <text data-layer-name="u-desc" id="u-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Combined outline</text>
   </g>
-  <g id="g-diff" transform="translate(320, 80)">
-    <path id="d-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
-    <path id="d-result" d="M 0 0 m 25 50 l -25 0 l 0 -50 h 50 l 0 25 l -25 0 l 0 25 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
-    <text id="d-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
-    <text x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
-    <text id="d-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.difference(B)</text>
-    <text x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A \ B</text>
-    <text id="d-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">A minus overlap</text>
+  <g data-layer-name="g-diff" id="g-diff" transform="translate(320, 80)">
+    <path data-layer-name="d-orig" id="d-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
+    <path data-layer-name="d-result" id="d-result" d="M 0 0 m 25 50 l -25 0 l 0 -50 h 50 l 0 25 l -25 0 l 0 25 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
+    <text data-layer-name="d-ab" id="d-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
+    <text data-layer-name="d-ab" x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
+    <text data-layer-name="d-op" id="d-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.difference(B)</text>
+    <text data-layer-name="d-op" x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A \ B</text>
+    <text data-layer-name="d-desc" id="d-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">A minus overlap</text>
   </g>
-  <g id="g-int" transform="translate(50, 290)">
-    <path id="i-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
-    <path id="i-result" d="M 0 0 m 50 25 l 0 25 l -25 0 l 0 -25 l 25 0 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
-    <text id="i-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
-    <text x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
-    <text id="i-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.intersection(B)</text>
-    <text x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A ∩ B</text>
-    <text id="i-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Only overlap</text>
+  <g data-layer-name="g-int" id="g-int" transform="translate(50, 290)">
+    <path data-layer-name="i-orig" id="i-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
+    <path data-layer-name="i-result" id="i-result" d="M 0 0 m 50 25 l 0 25 l -25 0 l 0 -25 l 25 0 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
+    <text data-layer-name="i-ab" id="i-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
+    <text data-layer-name="i-ab" x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
+    <text data-layer-name="i-op" id="i-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.intersection(B)</text>
+    <text data-layer-name="i-op" x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A ∩ B</text>
+    <text data-layer-name="i-desc" id="i-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Only overlap</text>
   </g>
-  <g id="g-xor" transform="translate(320, 290)">
-    <path id="x-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
-    <path id="x-result" d="M 0 0 m 25 50 l -25 0 l 0 -50 h 50 l 0 25 l -25 0 l 0 25 z m 25 -25 l 25 0 v 50 h -50 l 0 -25 l 25 0 l 0 -25 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
-    <text id="x-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
-    <text x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
-    <text id="x-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.xor(B)</text>
-    <text x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A △ B</text>
-    <text id="x-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Everything except overlap</text>
+  <g data-layer-name="g-xor" id="g-xor" transform="translate(320, 290)">
+    <path data-layer-name="x-orig" id="x-orig" d="M 0 0 h 50 v 50 h -50 z M 25 25 h 50 v 50 h -50 z" fill="none" stroke="rgba(148, 163, 184, 0.251)" stroke-width="1" stroke-dasharray="4 3"/>
+    <path data-layer-name="x-result" id="x-result" d="M 0 0 m 25 50 l -25 0 l 0 -50 h 50 l 0 25 l -25 0 l 0 25 z m 25 -25 l 25 0 v 50 h -50 l 0 -25 l 25 0 l 0 -25 z" fill="rgba(59, 130, 246, 0.094)" stroke="#3b82f6" stroke-width="2"/>
+    <text data-layer-name="x-ab" id="x-ab" x="12" y="15" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A</text>
+    <text data-layer-name="x-ab" x="62" y="60" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">B</text>
+    <text data-layer-name="x-op" id="x-op" x="110" y="35" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">.xor(B)</text>
+    <text data-layer-name="x-op" x="110" y="50" font-family="monospace" font-size="11" fill="#e2e8f0" text-anchor="start">A △ B</text>
+    <text data-layer-name="x-desc" id="x-desc" x="110" y="68" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Everything except overlap</text>
   </g>
-  <path id="dividers" d="M 290 50 v 390 M 20 255 h 545" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="6 4"/>
-  <text id="code" x="30" y="440" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let a = sq.project(0, 0);</text>
-  <text x="30" y="454" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let result = a.union(sq.project(25, 25));</text>
-  <text x="30" y="468" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">result.drawTo(0, 0)</text>
-  <text id="kw" x="30" y="440" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
-  <text x="30" y="454" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
-  <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Boolean Operations</text>
-  <text id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Four set operations on overlapping 50×50 squares</text>
+  <path data-layer-name="dividers" id="dividers" d="M 290 50 v 390 M 20 255 h 545" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="6 4"/>
+  <text data-layer-name="code" id="code" x="30" y="440" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let a = sq.project(0, 0);</text>
+  <text data-layer-name="code" x="30" y="454" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">let result = a.union(sq.project(25, 25));</text>
+  <text data-layer-name="code" x="30" y="468" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">result.drawTo(0, 0)</text>
+  <text data-layer-name="kw" id="kw" x="30" y="440" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <text data-layer-name="kw" x="30" y="454" font-family="monospace" font-size="9" fill="#c084fc" text-anchor="start">let</text>
+  <text data-layer-name="title" id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Boolean Operations</text>
+  <text data-layer-name="subtitle" id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Four set operations on overlapping 50×50 squares</text>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"g-union","type":"group","styles":{},"isDefault":false,"transform":"translate(50, 80)","children":[{"name":"u-orig","type":"path","styles":{"stroke":"rgba(148, 163, 184, 0.251)","stroke-width":"1","stroke-dasharray":"4 3","fill":"none"},"isDefault":false},{"name":"u-result","type":"path","styles":{"stroke":"#3b82f6","stroke-width":"2","fill":"rgba(59, 130, 246, 0.094)"},"isDefault":false},{"name":"u-ab","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false},{"name":"u-op","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"u-desc","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"g-diff","type":"group","styles":{},"isDefault":false,"transform":"translate(320, 80)","children":[{"name":"d-orig","type":"path","styles":{"stroke":"rgba(148, 163, 184, 0.251)","stroke-width":"1","stroke-dasharray":"4 3","fill":"none"},"isDefault":false},{"name":"d-result","type":"path","styles":{"stroke":"#3b82f6","stroke-width":"2","fill":"rgba(59, 130, 246, 0.094)"},"isDefault":false},{"name":"d-ab","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false},{"name":"d-op","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"d-desc","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"g-int","type":"group","styles":{},"isDefault":false,"transform":"translate(50, 290)","children":[{"name":"i-orig","type":"path","styles":{"stroke":"rgba(148, 163, 184, 0.251)","stroke-width":"1","stroke-dasharray":"4 3","fill":"none"},"isDefault":false},{"name":"i-result","type":"path","styles":{"stroke":"#3b82f6","stroke-width":"2","fill":"rgba(59, 130, 246, 0.094)"},"isDefault":false},{"name":"i-ab","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false},{"name":"i-op","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"i-desc","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"g-xor","type":"group","styles":{},"isDefault":false,"transform":"translate(320, 290)","children":[{"name":"x-orig","type":"path","styles":{"stroke":"rgba(148, 163, 184, 0.251)","stroke-width":"1","stroke-dasharray":"4 3","fill":"none"},"isDefault":false},{"name":"x-result","type":"path","styles":{"stroke":"#3b82f6","stroke-width":"2","fill":"rgba(59, 130, 246, 0.094)"},"isDefault":false},{"name":"x-ab","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false},{"name":"x-op","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"x-desc","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false}]},{"name":"dividers","type":"path","styles":{"stroke":"#334155","stroke-width":"1","stroke-dasharray":"6 4","fill":"none"},"isDefault":false},{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#c084fc","text-anchor":"start"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#64748b","text-anchor":"start"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

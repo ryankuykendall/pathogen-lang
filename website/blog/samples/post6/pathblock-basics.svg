@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
 
-  <path d="M 50 50 h 300 M 50 90 h 300 M 50 130 h 300 M 50 170 h 300 M 50 210 h 300 M 50 250 h 300 M 50 290 h 300 M 50 50 v 200 M 90 50 v 200 M 130 50 v 200 M 170 50 v 200 M 210 50 v 200 M 250 50 v 200 M 290 50 v 200 M 330 50 v 200 M 370 50 v 200" fill="none" stroke="#000" stroke-width="2"/>
-  <path id="arrows" d="M 80 90 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8 M 200 130 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8 M 160 210 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8 M 280 170 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8" fill="#3b82f6" stroke="#1e40af" stroke-width="1.5"/>
-  <path id="bg" d="" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>
+  <path data-layer-name="default" d="M 50 50 h 300 M 50 90 h 300 M 50 130 h 300 M 50 170 h 300 M 50 210 h 300 M 50 250 h 300 M 50 290 h 300 M 50 50 v 200 M 90 50 v 200 M 130 50 v 200 M 170 50 v 200 M 210 50 v 200 M 250 50 v 200 M 290 50 v 200 M 330 50 v 200 M 370 50 v 200" fill="none" stroke="#000" stroke-width="2"/>
+  <path data-layer-name="arrows" id="arrows" d="M 80 90 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8 M 200 130 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8 M 160 210 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8 M 280 170 h 40 l -10 -8 l 0 5 h -30 v 6 h 30 l 0 5 l 10 -8" fill="#3b82f6" stroke="#1e40af" stroke-width="1.5"/>
+  <path data-layer-name="bg" id="bg" d="" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"default","type":"path","styles":{},"isDefault":true},{"name":"arrows","type":"path","styles":{"fill":"#3b82f6","stroke":"#1e40af","stroke-width":"1.5"},"isDefault":false},{"name":"bg","type":"path","styles":{"stroke":"#94a3b8","stroke-width":"1","fill":"none","stroke-dasharray":"4 3"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

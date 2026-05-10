@@ -48,14 +48,14 @@
   </radialGradient>
 </defs>
 
-  <g id="scene">
-    <path id="bg" d="M 0 0 L 450 0 L 450 180 L 0 180 Z" fill="#0a0a1a" stroke="none" stroke-width="2"/>
-    <path id="s1" d="M 20 80 A 60 60 0 1 1 140 80 A 60 60 0 1 1 20 80 Z" fill="url(#sphere1)" stroke="none" stroke-width="2"/>
-    <path id="s2" d="M 165 80 A 60 60 0 1 1 285 80 A 60 60 0 1 1 165 80 Z" fill="url(#sphere2)" stroke="none" stroke-width="2"/>
-    <path id="s3" d="M 310 80 A 60 60 0 1 1 430 80 A 60 60 0 1 1 310 80 Z" fill="url(#sphere3)" stroke="none" stroke-width="2"/>
-    <text id="labels" x="80" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.3  fy=0.3</text>
-    <text x="225" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.5  fy=0.5</text>
-    <text x="370" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.7  fy=0.3</text>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="bg" id="bg" d="M 0 0 l 450 0 l 0 180 l -450 0 z" fill="#0a0a1a" stroke="none" stroke-width="2"/>
+    <path data-layer-name="s1" id="s1" d="M 20 80 a 60 60 0 1 1 120 0 a 60 60 0 1 1 -120 0 Z" fill="url(#sphere1)" stroke="none" stroke-width="2"/>
+    <path data-layer-name="s2" id="s2" d="M 165 80 a 60 60 0 1 1 120 0 a 60 60 0 1 1 -120 0 Z" fill="url(#sphere2)" stroke="none" stroke-width="2"/>
+    <path data-layer-name="s3" id="s3" d="M 310 80 a 60 60 0 1 1 120 0 a 60 60 0 1 1 -120 0 Z" fill="url(#sphere3)" stroke="none" stroke-width="2"/>
+    <text data-layer-name="labels" id="labels" x="80" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.3  fy=0.3</text>
+    <text data-layer-name="labels" x="225" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.5  fy=0.5</text>
+    <text data-layer-name="labels" x="370" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#667" text-anchor="middle">fx=0.7  fy=0.3</text>
   </g>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"bg","type":"path","styles":{"fill":"#0a0a1a","stroke":"none"},"isDefault":false},{"name":"s1","type":"path","styles":{"fill":"url(#sphere1)","stroke":"none"},"isDefault":false},{"name":"s2","type":"path","styles":{"fill":"url(#sphere2)","stroke":"none"},"isDefault":false},{"name":"s3","type":"path","styles":{"fill":"url(#sphere3)","stroke":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"11","fill":"#667","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[{"id":"sphere1","type":"radial","attrs":{"cx":"0.5","cy":"0.5","r":"0.5","fx":"0.3","fy":"0.3"},"stops":[{"offset":0,"color":"#ffffff"},{"offset":0.075,"color":"#dbe9f8"},{"offset":0.15,"color":"#b8d4f0"},{"offset":0.225,"color":"#8dbcf0"},{"offset":0.30000000000000004,"color":"#65a1f0"},{"offset":0.375,"color":"#4184ee"},{"offset":0.45,"color":"#2563eb"},{"offset":0.5375,"color":"#2359ca"},{"offset":0.625,"color":"#214faa"},{"offset":0.7125,"color":"#20448c"},{"offset":0.8,"color":"#1e3a6e"},{"offset":0.9,"color":"#14264a"},{"offset":1,"color":"#0a1428"}]},{"id":"sphere2","type":"radial","attrs":{"cx":"0.5","cy":"0.5","r":"0.5","fx":"0.5","fy":"0.5"},"stops":[{"offset":0,"color":"#ffffff"},{"offset":0.075,"color":"#dbe9f8"},{"offset":0.15,"color":"#b8d4f0"},{"offset":0.225,"color":"#8dbcf0"},{"offset":0.30000000000000004,"color":"#65a1f0"},{"offset":0.375,"color":"#4184ee"},{"offset":0.45,"color":"#2563eb"},{"offset":0.5375,"color":"#2359ca"},{"offset":0.625,"color":"#214faa"},{"offset":0.7125,"color":"#20448c"},{"offset":0.8,"color":"#1e3a6e"},{"offset":0.9,"color":"#14264a"},{"offset":1,"color":"#0a1428"}]},{"id":"sphere3","type":"radial","attrs":{"cx":"0.5","cy":"0.5","r":"0.5","fx":"0.7","fy":"0.3"},"stops":[{"offset":0,"color":"#ffffff"},{"offset":0.075,"color":"#dbe9f8"},{"offset":0.15,"color":"#b8d4f0"},{"offset":0.225,"color":"#8dbcf0"},{"offset":0.30000000000000004,"color":"#65a1f0"},{"offset":0.375,"color":"#4184ee"},{"offset":0.45,"color":"#2563eb"},{"offset":0.5375,"color":"#2359ca"},{"offset":0.625,"color":"#214faa"},{"offset":0.7125,"color":"#20448c"},{"offset":0.8,"color":"#1e3a6e"},{"offset":0.9,"color":"#14264a"},{"offset":1,"color":"#0a1428"}]}],"cssProperties":[]}]]></script>
 </svg>

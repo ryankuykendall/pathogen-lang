@@ -17,26 +17,26 @@
     }
   ]]></style>
 
-  <g id="all">
-    <path id="bg" d="M 0 0 L 450 0 L 450 280 L 0 280 Z" fill="var(--bg-color, #f6efe6)" stroke="none" stroke-width="2"/>
-    <path id="bars" d="M 143 60 L 314.83333333333337 60 Q 317.83333333333337 60 317.83333333333337 63 L 317.83333333333337 79 Q 317.83333333333337 82 314.83333333333337 82 L 143 82 Q 140 82 140 79 L 140 63 Q 140 60 143 60 Z M 143 92 L 276.33333333333337 92 Q 279.33333333333337 92 279.33333333333337 95 L 279.33333333333337 111 Q 279.33333333333337 114 276.33333333333337 114 L 143 114 Q 140 114 140 111 L 140 95 Q 140 92 143 92 Z M 143 124 L 241.5 124 Q 244.5 124 244.5 127 L 244.5 143 Q 244.5 146 241.5 146 L 143 146 Q 140 146 140 143 L 140 127 Q 140 124 143 124 Z M 143 156 L 226.83333333333331 156 Q 229.83333333333331 156 229.83333333333331 159 L 229.83333333333331 175 Q 229.83333333333331 178 226.83333333333331 178 L 143 178 Q 140 178 140 175 L 140 159 Q 140 156 143 156 Z M 143 188 L 215.83333333333331 188 Q 218.83333333333331 188 218.83333333333331 191 L 218.83333333333331 207 Q 218.83333333333331 210 215.83333333333331 210 L 143 210 Q 140 210 140 207 L 140 191 Q 140 188 143 188 Z" fill="var(--bar-top, #1a1a2e)" stroke="none" stroke-width="2"/>
-    <text id="labels" x="132" y="75" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Economic</text>
-    <text x="132" y="107" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Fantasy</text>
-    <text x="132" y="139" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Science Fiction</text>
-    <text x="132" y="171" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Adventure</text>
-    <text x="132" y="203" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Exploration</text>
-    <text id="values" x="325.83333333333337" y="75" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">9.7%</text>
-    <text x="287.33333333333337" y="107" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">7.6%</text>
-    <text x="252.5" y="139" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">5.7%</text>
-    <text x="237.83333333333331" y="171" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">4.9%</text>
-    <text x="226.83333333333331" y="203" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">4.3%</text>
-    <text id="ranks" x="45" y="75" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#1</text>
-    <text x="45" y="107" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#2</text>
-    <text x="45" y="139" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#3</text>
-    <text x="45" y="171" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#4</text>
-    <text x="45" y="203" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#5</text>
-    <text id="title" x="30" y="35" font-size="14" fill="#2f2f2f" font-family="Georgia, serif" font-weight="bold" text-anchor="start">Top categories among the 100 highest-ranked board games</text>
-    <text id="footnote" x="30" y="258" font-size="8" fill="#9ca3af" font-family="system-ui, sans-serif" font-style="italic" text-anchor="start">The same reusable functions power both the radial chart and this summary view.</text>
+  <g data-layer-name="all" id="all">
+    <path data-layer-name="bg" id="bg" d="M 0 0 l 450 0 l 0 280 l -450 0 z" fill="var(--bg-color, #f6efe6)" stroke="none" stroke-width="2"/>
+    <path data-layer-name="bars" id="bars" d="M 143 60 l 171.83333333333334 0 q 3 0 3 3 l 0 16 q 0 3 -3 3 l -171.83333333333334 0 q -3 0 -3 -3 l 0 -16 q 0 -3 3 -3 z M 143 92 l 133.33333333333334 0 q 3 0 3 3 l 0 16 q 0 3 -3 3 l -133.33333333333334 0 q -3 0 -3 -3 l 0 -16 q 0 -3 3 -3 z M 143 124 l 98.5 0 q 3 0 3 3 l 0 16 q 0 3 -3 3 l -98.5 0 q -3 0 -3 -3 l 0 -16 q 0 -3 3 -3 z M 143 156 l 83.83333333333333 0 q 3 0 3 3 l 0 16 q 0 3 -3 3 l -83.83333333333333 0 q -3 0 -3 -3 l 0 -16 q 0 -3 3 -3 z M 143 188 l 72.83333333333333 0 q 3 0 3 3 l 0 16 q 0 3 -3 3 l -72.83333333333333 0 q -3 0 -3 -3 l 0 -16 q 0 -3 3 -3 z" fill="var(--bar-top, #1a1a2e)" stroke="none" stroke-width="2"/>
+    <text data-layer-name="labels" id="labels" x="132" y="75" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Economic</text>
+    <text data-layer-name="labels" x="132" y="107" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Fantasy</text>
+    <text data-layer-name="labels" x="132" y="139" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Science Fiction</text>
+    <text data-layer-name="labels" x="132" y="171" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Adventure</text>
+    <text data-layer-name="labels" x="132" y="203" font-size="11" fill="#2f2f2f" font-family="system-ui, sans-serif" text-anchor="end">Exploration</text>
+    <text data-layer-name="values" id="values" x="325.83333333333337" y="75" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">9.7%</text>
+    <text data-layer-name="values" x="287.33333333333337" y="107" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">7.6%</text>
+    <text data-layer-name="values" x="252.5" y="139" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">5.7%</text>
+    <text data-layer-name="values" x="237.83333333333331" y="171" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">4.9%</text>
+    <text data-layer-name="values" x="226.83333333333331" y="203" font-size="10" fill="#9ca3af" font-family="system-ui, sans-serif" text-anchor="start">4.3%</text>
+    <text data-layer-name="ranks" id="ranks" x="45" y="75" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#1</text>
+    <text data-layer-name="ranks" x="45" y="107" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#2</text>
+    <text data-layer-name="ranks" x="45" y="139" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#3</text>
+    <text data-layer-name="ranks" x="45" y="171" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#4</text>
+    <text data-layer-name="ranks" x="45" y="203" font-size="10" fill="var(--bar-all, #cc3333)" font-family="system-ui, sans-serif" font-weight="bold" text-anchor="end">#5</text>
+    <text data-layer-name="title" id="title" x="30" y="35" font-size="14" fill="#2f2f2f" font-family="Georgia, serif" font-weight="bold" text-anchor="start">Top categories among the 100 highest-ranked board games</text>
+    <text data-layer-name="footnote" id="footnote" x="30" y="258" font-size="8" fill="#9ca3af" font-family="system-ui, sans-serif" font-style="italic" text-anchor="start">The same reusable functions power both the radial chart and this summary view.</text>
   </g>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"all","type":"group","styles":{},"isDefault":false,"children":[{"name":"bg","type":"path","styles":{"fill":"var(--bg-color, #f6efe6)","stroke":"none"},"isDefault":false},{"name":"bars","type":"path","styles":{"fill":"var(--bar-top, #1a1a2e)","stroke":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-size":"11","fill":"#2f2f2f","font-family":"system-ui, sans-serif","text-anchor":"end"},"isDefault":false},{"name":"values","type":"text","styles":{"font-size":"10","fill":"#9ca3af","font-family":"system-ui, sans-serif","text-anchor":"start"},"isDefault":false},{"name":"ranks","type":"text","styles":{"font-size":"10","fill":"var(--bar-all, #cc3333)","font-family":"system-ui, sans-serif","font-weight":"bold","text-anchor":"end"},"isDefault":false},{"name":"title","type":"text","styles":{"font-size":"14","fill":"#2f2f2f","font-family":"Georgia, serif","font-weight":"bold","text-anchor":"start"},"isDefault":false},{"name":"footnote","type":"text","styles":{"font-size":"8","fill":"#9ca3af","font-family":"system-ui, sans-serif","font-style":"italic","text-anchor":"start"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg-color","syntax":"<color>","inherits":true,"initialValue":"#f6efe6"},{"name":"--bar-top","syntax":"<color>","inherits":true,"initialValue":"#1a1a2e"},{"name":"--bar-all","syntax":"<color>","inherits":true,"initialValue":"#cc3333"}]}]]></script>
 </svg>

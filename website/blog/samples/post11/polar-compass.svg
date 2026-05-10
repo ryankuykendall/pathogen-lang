@@ -1,35 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
 
-  <path id="bg" d="M 0 0 L 500 0 L 500 500 L 0 500 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <text id="title" x="475" y="30" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="end">Polar Projection with BBoxAnchor</text>
-  <text id="anno" x="30" y="470" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">polarProject(cx, cy, angle, distance, anchor)</text>
-  <text x="30" y="482" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">anchor faces center — text stays outside</text>
-  <g id="compass" transform="translate(250, 250)">
-    <path id="hex" d="M 4.898587196589413e-15 -80 L 69.28203230275508 -40 L 69.2820323027551 39.999999999999986 L 4.898587196589413e-15 80 L -69.28203230275508 40.00000000000003 L -69.28203230275508 -40.00000000000001 Z" fill="rgba(59, 130, 246, 0.082)" stroke="#3b82f6" stroke-width="2"/>
-    <path id="center-dot" d="M -3 0 A 3 3 0 1 1 3 0 A 3 3 0 1 1 -3 0" fill="#22c55e" stroke="none" stroke-width="2"/>
-    <path id="guide" d="M -140 0 A 140 140 0 1 1 140 0 A 140 140 0 1 1 -140 0" fill="none" stroke="#334155" stroke-width="0.5" stroke-dasharray="3 4"/>
-    <path id="radials" d="M -0.0003122224337844588 -84.99999999942656 L -0.0004775166634350546 -129.999999999123 M 60.103966013455086 -60.10418678805525 L 91.92371272646072 -91.92405038173156 M 85 0 L 130 0 M 60.10396601345509 60.10418678805525 L 91.92371272646074 91.92405038173156 M -0.0003122224337844588 84.99999999942656 L -0.0004775166634350546 129.999999999123 M -60.10440756184449 60.10374523804395 L -91.92438803576216 91.92337506994957 M -84.99999999770628 -0.0006244448675269573 L -129.99999999649197 -0.0009550333268059347 M -60.10352446182193 -60.104628334822706 L -91.92303741219824 -91.92472568855237" fill="none" stroke="#475569" stroke-width="0.5"/>
-    <path id="dots" d="M -3.0005142487144685 -139.99999999905552 A 3 3 0 1 1 2.9994857512855315 -139.99999999905552 A 3 3 0 1 1 -3.0005142487144685 -139.99999999905552 M 95.99476755157308 -98.9951311803263 A 3 3 0 1 1 101.99476755157308 -98.9951311803263 A 3 3 0 1 1 95.99476755157308 -98.9951311803263 M 137 0 A 3 3 0 1 1 143 0 A 3 3 0 1 1 137 0 M 95.99476755157309 98.9951311803263 A 3 3 0 1 1 101.99476755157309 98.9951311803263 A 3 3 0 1 1 95.99476755157309 98.9951311803263 M -3.0005142487144685 139.99999999905552 A 3 3 0 1 1 2.9994857512855315 139.99999999905552 A 3 3 0 1 1 -3.0005142487144685 139.99999999905552 M -101.99549480774387 98.99440392148415 A 3 3 0 1 1 -95.99549480774387 98.99440392148415 A 3 3 0 1 1 -101.99549480774387 98.99440392148415 M -142.99999999622213 -0.0010284974288679296 A 3 3 0 1 1 -136.99999999622213 -0.0010284974288679296 A 3 3 0 1 1 -142.99999999622213 -0.0010284974288679296 M -101.99404029005964 -98.99585843382563 A 3 3 0 1 1 -95.99404029005964 -98.99585843382563 A 3 3 0 1 1 -101.99404029005964 -98.99585843382563" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5"/>
-    <text id="labels" x="-16.500587712816536" y="-162.1999999989206" font-family="monospace" font-size="11" fill="#e2e8f0">North</text>
-    <text x="113.1368772017978" y="-115.33729277751577" font-family="monospace" font-size="11" fill="#e2e8f0">NE</text>
-    <text x="160" y="4.4" font-family="monospace" font-size="11" fill="#e2e8f0">East</text>
-    <text x="113.13687720179783" y="124.13729277751577" font-family="monospace" font-size="11" fill="#e2e8f0">SE</text>
-    <text x="-16.500587712816536" y="170.9999999989206" font-family="monospace" font-size="11" fill="#e2e8f0">South</text>
-    <text x="-126.33770835170728" y="124.1364616245533" font-family="monospace" font-size="11" fill="#e2e8f0">SW</text>
-    <text x="-186.39999999568244" y="4.3988245743670085" font-family="monospace" font-size="11" fill="#e2e8f0">West</text>
-    <text x="-126.33604604578245" y="-115.33812392437216" font-family="monospace" font-size="11" fill="#e2e8f0">NW</text>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 500 0 l 0 500 l -500 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <text data-layer-name="title" id="title" x="475" y="30" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="end">Polar Projection with BBoxAnchor</text>
+  <text data-layer-name="anno" id="anno" x="30" y="470" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">polarProject(cx, cy, angle, distance, anchor)</text>
+  <text data-layer-name="anno" x="30" y="482" font-family="monospace" font-size="8" fill="#64748b" text-anchor="start">anchor faces center — text stays outside</text>
+  <g data-layer-name="compass" id="compass" transform="translate(250, 250)">
+    <path data-layer-name="hex" id="hex" d="M 4.898587196589413e-15 -80 l 69.28203230275508 40 l 1.4210854715202004e-14 79.99999999999999 l -69.2820323027551 40.000000000000014 l -69.28203230275508 -39.99999999999997 l 0 -80.00000000000003 z" fill="rgba(59, 130, 246, 0.082)" stroke="#3b82f6" stroke-width="2"/>
+    <path data-layer-name="center-dot" id="center-dot" d="M -3 0 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#22c55e" stroke="none" stroke-width="2"/>
+    <path data-layer-name="guide" id="guide" d="M -140 0 a 140 140 0 1 1 280 0 a 140 140 0 1 1 -280 0" fill="none" stroke="#334155" stroke-width="0.5" stroke-dasharray="3 4"/>
+    <path data-layer-name="radials" id="radials" d="M -0.0003122224337844588 -84.99999999942656 L -0.0004775166634350546 -129.999999999123 M 60.103966013455086 -60.10418678805525 L 91.92371272646072 -91.92405038173156 M 85 0 L 130 0 M 60.10396601345509 60.10418678805525 L 91.92371272646074 91.92405038173156 M -0.0003122224337844588 84.99999999942656 L -0.0004775166634350546 129.999999999123 M -60.10440756184449 60.10374523804395 L -91.92438803576216 91.92337506994957 M -84.99999999770628 -0.0006244448675269573 L -129.99999999649197 -0.0009550333268059347 M -60.10352446182193 -60.104628334822706 L -91.92303741219824 -91.92472568855237" fill="none" stroke="#475569" stroke-width="0.5"/>
+    <path data-layer-name="dots" id="dots" d="M -3.0005142487144685 -139.99999999905552 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 95.99476755157308 -98.9951311803263 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 137 0 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 95.99476755157309 98.9951311803263 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M -3.0005142487144685 139.99999999905552 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M -101.99549480774387 98.99440392148415 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M -142.99999999622213 -0.0010284974288679296 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M -101.99404029005964 -98.99585843382563 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5"/>
+    <text data-layer-name="labels" id="labels" x="-16.500587712816536" y="-162.1999999989206" font-family="monospace" font-size="11" fill="#e2e8f0">North</text>
+    <text data-layer-name="labels" x="113.1368772017978" y="-115.33729277751577" font-family="monospace" font-size="11" fill="#e2e8f0">NE</text>
+    <text data-layer-name="labels" x="160" y="4.4" font-family="monospace" font-size="11" fill="#e2e8f0">East</text>
+    <text data-layer-name="labels" x="113.13687720179783" y="124.13729277751577" font-family="monospace" font-size="11" fill="#e2e8f0">SE</text>
+    <text data-layer-name="labels" x="-16.500587712816536" y="170.9999999989206" font-family="monospace" font-size="11" fill="#e2e8f0">South</text>
+    <text data-layer-name="labels" x="-126.33770835170728" y="124.1364616245533" font-family="monospace" font-size="11" fill="#e2e8f0">SW</text>
+    <text data-layer-name="labels" x="-186.39999999568244" y="4.3988245743670085" font-family="monospace" font-size="11" fill="#e2e8f0">West</text>
+    <text data-layer-name="labels" x="-126.33604604578245" y="-115.33812392437216" font-family="monospace" font-size="11" fill="#e2e8f0">NW</text>
   </g>
-  <g id="code-block" transform="translate(30, 22)">
-    <text id="code" x="0" y="8" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">label.polarProject(</text>
-    <text x="12" y="20" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">250, 250,</text>
-    <text x="12" y="32" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">angle,</text>
-    <text x="12" y="44" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">140,</text>
-    <text x="12" y="56" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">BBoxAnchor.Left</text>
-    <text x="0" y="68" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">)</text>
-    <text id="kw" x="120" y="20" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// center</text>
-    <text x="120" y="32" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// radians</text>
-    <text x="120" y="44" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// distance</text>
-    <text x="120" y="56" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// anchor</text>
+  <g data-layer-name="code-block" id="code-block" transform="translate(30, 22)">
+    <text data-layer-name="code" id="code" x="0" y="8" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">label.polarProject(</text>
+    <text data-layer-name="code" x="12" y="20" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">250, 250,</text>
+    <text data-layer-name="code" x="12" y="32" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">angle,</text>
+    <text data-layer-name="code" x="12" y="44" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">140,</text>
+    <text data-layer-name="code" x="12" y="56" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">BBoxAnchor.Left</text>
+    <text data-layer-name="code" x="0" y="68" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">)</text>
+    <text data-layer-name="kw" id="kw" x="120" y="20" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// center</text>
+    <text data-layer-name="kw" x="120" y="32" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// radians</text>
+    <text data-layer-name="kw" x="120" y="44" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// distance</text>
+    <text data-layer-name="kw" x="120" y="56" font-family="monospace" font-size="9" fill="#64748b" text-anchor="start">// anchor</text>
   </g>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"12","fill":"#e2e8f0","text-anchor":"end"},"isDefault":false},{"name":"anno","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"compass","type":"group","styles":{},"isDefault":false,"transform":"translate(250, 250)","children":[{"name":"hex","type":"path","styles":{"fill":"rgba(59, 130, 246, 0.082)","stroke":"#3b82f6","stroke-width":"2"},"isDefault":false},{"name":"center-dot","type":"path","styles":{"fill":"#22c55e","stroke":"none"},"isDefault":false},{"name":"guide","type":"path","styles":{"stroke":"#334155","stroke-width":"0.5","stroke-dasharray":"3 4","fill":"none"},"isDefault":false},{"name":"radials","type":"path","styles":{"stroke":"#475569","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"dots","type":"path","styles":{"fill":"#f59e0b","stroke":"#0f172a","stroke-width":"1.5"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"11","fill":"#e2e8f0"},"isDefault":false}]},{"name":"code-block","type":"group","styles":{},"isDefault":false,"transform":"translate(30, 22)","children":[{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#64748b","text-anchor":"start"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

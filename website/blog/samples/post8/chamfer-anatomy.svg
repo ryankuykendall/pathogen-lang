@@ -1,37 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 340" width="480" height="340">
 
-  <path id="bg" d="M 0 0 L 480 0 L 480 340 L 0 340 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path id="grid" d="M 0 0 h 480 M 0 20 h 480 M 0 40 h 480 M 0 60 h 480 M 0 80 h 480 M 0 100 h 480 M 0 120 h 480 M 0 140 h 480 M 0 160 h 480 M 0 180 h 480 M 0 200 h 480 M 0 220 h 480 M 0 240 h 480 M 0 260 h 480 M 0 280 h 480 M 0 300 h 480 M 0 320 h 480 M 0 340 h 480 M 0 0 v 340 M 20 0 v 340 M 40 0 v 340 M 60 0 v 340 M 80 0 v 340 M 100 0 v 340 M 120 0 v 340 M 140 0 v 340 M 160 0 v 340 M 180 0 v 340 M 200 0 v 340 M 220 0 v 340 M 240 0 v 340 M 260 0 v 340 M 280 0 v 340 M 300 0 v 340 M 320 0 v 340 M 340 0 v 340 M 360 0 v 340 M 380 0 v 340 M 400 0 v 340 M 420 0 v 340 M 440 0 v 340 M 460 0 v 340 M 480 0 v 340" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-  <path id="original" d="M 100 120 h 100 M 200 120 v 80" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <path id="chamfer" d="M 100 120 L 170 120 L 200 150 L 200 200" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
-  <path id="vertex-dot" d="M 196 120 A 4 4 0 1 1 204 120 A 4 4 0 1 1 196 120" fill="#ef4444" stroke="#0f172a" stroke-width="1.5"/>
-  <path id="trim-dots" d="M 166 120 A 4 4 0 1 1 174 120 A 4 4 0 1 1 166 120 M 196 150 A 4 4 0 1 1 204 150 A 4 4 0 1 1 196 150" fill="#22c55e" stroke="#0f172a" stroke-width="1.5"/>
-  <path id="dims" d="M 170 108 h 30 M 170 105 v 6 M 200 105 v 6 M 212 120 v 30 M 209 120 h 6 M 209 150 h 6" fill="none" stroke="#f59e0b" stroke-width="1"/>
-  <path id="dim-arrows" d="M 172 108 l -4 -3 l 0 6 z M 198 108 l 4 -3 l 0 6 z M 212 122 l -3 -4 l 6 0 z M 212 148 l -3 4 l 6 0 z" fill="#f59e0b" stroke="none" stroke-width="2"/>
-  <path id="removed" d="M 170 120 L 200 120 L 200 150 z" fill="rgba(239, 68, 68, 0.082)" stroke="rgba(239, 68, 68, 0.251)" stroke-width="1"/>
-  <path id="leaders" d="M 200 120 L 260 60 M 170 120 L 120 70 M 200 150 L 260 195 M 185 135 L 310 145" fill="none" stroke="#475569" stroke-width="0.5"/>
-  <text id="labels" x="265" y="57" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">vertex (corner)</text>
-  <text x="265" y="192" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">trim point (outgoing)</text>
-  <text x="315" y="142" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">chamfer line</text>
-  <text id="labels-left" x="30" y="67" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">trim point (incoming)</text>
-  <text id="dim-labels" x="185" y="102" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="middle">d1</text>
-  <text x="222" y="138" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="middle">d2</text>
-  <text id="code" x="30" y="260" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">box.chamfer(d1, d2)</text>
-  <text x="30" y="276" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// d1 trims incoming edge</text>
-  <text x="30" y="290" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// d2 trims outgoing edge</text>
-  <text x="30" y="306" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// If d1 == d2: symmetric chamfer</text>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 340 l -480 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="grid" id="grid" d="M 0 0 h 480 M 0 20 h 480 M 0 40 h 480 M 0 60 h 480 M 0 80 h 480 M 0 100 h 480 M 0 120 h 480 M 0 140 h 480 M 0 160 h 480 M 0 180 h 480 M 0 200 h 480 M 0 220 h 480 M 0 240 h 480 M 0 260 h 480 M 0 280 h 480 M 0 300 h 480 M 0 320 h 480 M 0 340 h 480 M 0 0 v 340 M 20 0 v 340 M 40 0 v 340 M 60 0 v 340 M 80 0 v 340 M 100 0 v 340 M 120 0 v 340 M 140 0 v 340 M 160 0 v 340 M 180 0 v 340 M 200 0 v 340 M 220 0 v 340 M 240 0 v 340 M 260 0 v 340 M 280 0 v 340 M 300 0 v 340 M 320 0 v 340 M 340 0 v 340 M 360 0 v 340 M 380 0 v 340 M 400 0 v 340 M 420 0 v 340 M 440 0 v 340 M 460 0 v 340 M 480 0 v 340" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <path data-layer-name="original" id="original" d="M 100 120 h 100 M 200 120 v 80" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <path data-layer-name="chamfer" id="chamfer" d="M 100 120 L 170 120 L 200 150 L 200 200" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+  <path data-layer-name="vertex-dot" id="vertex-dot" d="M 196 120 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0" fill="#ef4444" stroke="#0f172a" stroke-width="1.5"/>
+  <path data-layer-name="trim-dots" id="trim-dots" d="M 166 120 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0 M 196 150 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0" fill="#22c55e" stroke="#0f172a" stroke-width="1.5"/>
+  <path data-layer-name="dims" id="dims" d="M 170 108 h 30 M 170 105 v 6 M 200 105 v 6 M 212 120 v 30 M 209 120 h 6 M 209 150 h 6" fill="none" stroke="#f59e0b" stroke-width="1"/>
+  <path data-layer-name="dim-arrows" id="dim-arrows" d="M 172 108 l -4 -3 l 0 6 z M 198 108 l 4 -3 l 0 6 z M 212 122 l -3 -4 l 6 0 z M 212 148 l -3 4 l 6 0 z" fill="#f59e0b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="removed" id="removed" d="M 170 120 L 200 120 L 200 150 z" fill="rgba(239, 68, 68, 0.082)" stroke="rgba(239, 68, 68, 0.251)" stroke-width="1"/>
+  <path data-layer-name="leaders" id="leaders" d="M 200 120 L 260 60 M 170 120 L 120 70 M 200 150 L 260 195 M 185 135 L 310 145" fill="none" stroke="#475569" stroke-width="0.5"/>
+  <text data-layer-name="labels" id="labels" x="265" y="57" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">vertex (corner)</text>
+  <text data-layer-name="labels" x="265" y="192" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">trim point (outgoing)</text>
+  <text data-layer-name="labels" x="315" y="142" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">chamfer line</text>
+  <text data-layer-name="labels-left" id="labels-left" x="30" y="67" font-family="monospace" font-size="10" fill="#e2e8f0" text-anchor="start">trim point (incoming)</text>
+  <text data-layer-name="dim-labels" id="dim-labels" x="185" y="102" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="middle">d1</text>
+  <text data-layer-name="dim-labels" x="222" y="138" font-family="monospace" font-size="9" fill="#f59e0b" text-anchor="middle">d2</text>
+  <text data-layer-name="code" id="code" x="30" y="260" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">box.chamfer(d1, d2)</text>
+  <text data-layer-name="code" x="30" y="276" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// d1 trims incoming edge</text>
+  <text data-layer-name="code" x="30" y="290" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// d2 trims outgoing edge</text>
+  <text data-layer-name="code" x="30" y="306" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="start">// If d1 == d2: symmetric chamfer</text>
 
-  <text id="legend" x="322" y="263" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Original</text>
-  <text x="322" y="277" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Chamfer</text>
-  <text x="322" y="291" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Vertex</text>
-  <text x="412" y="263" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Trim points</text>
-  <text x="412" y="277" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Removed area</text>
-  <path id="leg-orig" d="M 310 256 L 318 256 L 318 264 L 310 264 Z" fill="#94a3b8" stroke="none" stroke-width="2"/>
-  <path id="leg-cham" d="M 310 270 L 318 270 L 318 278 L 310 278 Z" fill="#3b82f6" stroke="none" stroke-width="2"/>
-  <path id="leg-vert" d="M 310 284 L 318 284 L 318 292 L 310 292 Z" fill="#ef4444" stroke="none" stroke-width="2"/>
-  <path id="leg-trim" d="M 400 256 L 408 256 L 408 264 L 400 264 Z" fill="#22c55e" stroke="none" stroke-width="2"/>
-  <path id="leg-rem" d="M 400 270 L 408 270 L 408 278 L 400 278 Z" fill="rgba(239, 68, 68, 0.251)" stroke="none" stroke-width="2"/>
-  <text id="title" x="30" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Chamfer Anatomy</text>
-  <text id="subtitle" x="30" y="44" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Replace a corner vertex with a straight cut</text>
+  <text data-layer-name="legend" id="legend" x="322" y="263" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Original</text>
+  <text data-layer-name="legend" x="322" y="277" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Chamfer</text>
+  <text data-layer-name="legend" x="322" y="291" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Vertex</text>
+  <text data-layer-name="legend" x="412" y="263" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Trim points</text>
+  <text data-layer-name="legend" x="412" y="277" font-family="system-ui, sans-serif" font-size="8" fill="#64748b" text-anchor="start">Removed area</text>
+  <path data-layer-name="leg-orig" id="leg-orig" d="M 310 256 l 8 0 l 0 8 l -8 0 z" fill="#94a3b8" stroke="none" stroke-width="2"/>
+  <path data-layer-name="leg-cham" id="leg-cham" d="M 310 270 l 8 0 l 0 8 l -8 0 z" fill="#3b82f6" stroke="none" stroke-width="2"/>
+  <path data-layer-name="leg-vert" id="leg-vert" d="M 310 284 l 8 0 l 0 8 l -8 0 z" fill="#ef4444" stroke="none" stroke-width="2"/>
+  <path data-layer-name="leg-trim" id="leg-trim" d="M 400 256 l 8 0 l 0 8 l -8 0 z" fill="#22c55e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="leg-rem" id="leg-rem" d="M 400 270 l 8 0 l 0 8 l -8 0 z" fill="rgba(239, 68, 68, 0.251)" stroke="none" stroke-width="2"/>
+  <text data-layer-name="title" id="title" x="30" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">Chamfer Anatomy</text>
+  <text data-layer-name="subtitle" id="subtitle" x="30" y="44" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">Replace a corner vertex with a straight cut</text>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"grid","type":"path","styles":{"stroke":"#1e293b","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"original","type":"path","styles":{"stroke":"#94a3b8","stroke-width":"1.5","stroke-dasharray":"6 4","fill":"none"},"isDefault":false},{"name":"chamfer","type":"path","styles":{"stroke":"#3b82f6","stroke-width":"2.5","fill":"none"},"isDefault":false},{"name":"vertex-dot","type":"path","styles":{"fill":"#ef4444","stroke":"#0f172a","stroke-width":"1.5"},"isDefault":false},{"name":"trim-dots","type":"path","styles":{"fill":"#22c55e","stroke":"#0f172a","stroke-width":"1.5"},"isDefault":false},{"name":"dims","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"1","fill":"none"},"isDefault":false},{"name":"dim-arrows","type":"path","styles":{"fill":"#f59e0b","stroke":"none"},"isDefault":false},{"name":"removed","type":"path","styles":{"fill":"rgba(239, 68, 68, 0.082)","stroke":"rgba(239, 68, 68, 0.251)","stroke-width":"1"},"isDefault":false},{"name":"leaders","type":"path","styles":{"stroke":"#475569","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"labels-left","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"dim-labels","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#f59e0b","text-anchor":"middle"},"isDefault":false},{"name":"code","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"kw","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"legend","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"8","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"leg-orig","type":"path","styles":{"fill":"#94a3b8","stroke":"none"},"isDefault":false},{"name":"leg-cham","type":"path","styles":{"fill":"#3b82f6","stroke":"none"},"isDefault":false},{"name":"leg-vert","type":"path","styles":{"fill":"#ef4444","stroke":"none"},"isDefault":false},{"name":"leg-trim","type":"path","styles":{"fill":"#22c55e","stroke":"none"},"isDefault":false},{"name":"leg-rem","type":"path","styles":{"fill":"rgba(239, 68, 68, 0.251)","stroke":"none"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#64748b","text-anchor":"start"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

@@ -1,26 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 250" width="520" height="250">
 
-  <path id="bg" d="M 0 0 L 520 0 L 520 250 L 0 250 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <path id="grid" d="M 0 0 h 520 M 0 20 h 520 M 0 40 h 520 M 0 60 h 520 M 0 80 h 520 M 0 100 h 520 M 0 120 h 520 M 0 140 h 520 M 0 160 h 520 M 0 180 h 520 M 0 200 h 520 M 0 220 h 520 M 0 240 h 520 M 0 0 v 250 M 20 0 v 250 M 40 0 v 250 M 60 0 v 250 M 80 0 v 250 M 100 0 v 250 M 120 0 v 250 M 140 0 v 250 M 160 0 v 250 M 180 0 v 250 M 200 0 v 250 M 220 0 v 250 M 240 0 v 250 M 260 0 v 250 M 280 0 v 250 M 300 0 v 250 M 320 0 v 250 M 340 0 v 250 M 360 0 v 250 M 380 0 v 250 M 400 0 v 250 M 420 0 v 250 M 440 0 v 250 M 460 0 v 250 M 480 0 v 250 M 500 0 v 250 M 520 0 v 250" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-  <g id="diagram" transform="translate(0, 0)">
-    <path id="t100" d="m 60 165 c 61.283555449518246 -51.42300877492315 61.283555449518246 -51.42300877492315 130 -120 c 49.54772528868631 -49.447173010364054 49.54772528868631 -49.447173010364054 130 120" fill="none" stroke="#3b82f6" stroke-width="2"/>
-    <path id="t075" d="m 60 165 c 45.962666587138685 -38.56725658119237 78.4626665871387 -68.56725658119237 130 -120 c 37.160793966514746 -37.08537975777304 69.66079396651475 -7.08537975777304 130 120" fill="none" stroke="#8b5cf6" stroke-width="2"/>
-    <path id="t050" d="m 60 165 c 30.641777724759123 -25.71150438746156 95.64177772475912 -85.71150438746157 130 -120 c 24.773862644343154 -24.723586505182027 89.77386264434313 35.27641349481797 130 120" fill="none" stroke="#ec4899" stroke-width="2"/>
-    <path id="t025" d="m 60 165 c 15.320888862379562 -12.85575219373078 112.82088886237955 -102.85575219373078 130 -120 c 12.386931322171563 -12.361793252591013 109.88693132217156 77.63820674740899 130 120" fill="none" stroke="#f97316" stroke-width="2"/>
-    <path id="pts" d="M 55 165 A 5 5 0 1 1 65 165 A 5 5 0 1 1 55 165 M 185 45 A 5 5 0 1 1 195 45 A 5 5 0 1 1 185 45 M 315 165 A 5 5 0 1 1 325 165 A 5 5 0 1 1 315 165" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 250 l -520 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="grid" id="grid" d="M 0 0 h 520 M 0 20 h 520 M 0 40 h 520 M 0 60 h 520 M 0 80 h 520 M 0 100 h 520 M 0 120 h 520 M 0 140 h 520 M 0 160 h 520 M 0 180 h 520 M 0 200 h 520 M 0 220 h 520 M 0 240 h 520 M 0 0 v 250 M 20 0 v 250 M 40 0 v 250 M 60 0 v 250 M 80 0 v 250 M 100 0 v 250 M 120 0 v 250 M 140 0 v 250 M 160 0 v 250 M 180 0 v 250 M 200 0 v 250 M 220 0 v 250 M 240 0 v 250 M 260 0 v 250 M 280 0 v 250 M 300 0 v 250 M 320 0 v 250 M 340 0 v 250 M 360 0 v 250 M 380 0 v 250 M 400 0 v 250 M 420 0 v 250 M 440 0 v 250 M 460 0 v 250 M 480 0 v 250 M 500 0 v 250 M 520 0 v 250" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+  <g data-layer-name="diagram" id="diagram" transform="translate(0, 0)">
+    <path data-layer-name="t100" id="t100" d="m 60 165 c 61.283555449518246 -51.42300877492315 61.283555449518246 -51.42300877492315 130 -120 c 49.54772528868631 -49.447173010364054 49.54772528868631 -49.447173010364054 130 120" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    <path data-layer-name="t075" id="t075" d="m 60 165 c 45.962666587138685 -38.56725658119237 78.4626665871387 -68.56725658119237 130 -120 c 37.160793966514746 -37.08537975777304 69.66079396651475 -7.08537975777304 130 120" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <path data-layer-name="t050" id="t050" d="m 60 165 c 30.641777724759123 -25.71150438746156 95.64177772475912 -85.71150438746157 130 -120 c 24.773862644343154 -24.723586505182027 89.77386264434313 35.27641349481797 130 120" fill="none" stroke="#ec4899" stroke-width="2"/>
+    <path data-layer-name="t025" id="t025" d="m 60 165 c 15.320888862379562 -12.85575219373078 112.82088886237955 -102.85575219373078 130 -120 c 12.386931322171563 -12.361793252591013 109.88693132217156 77.63820674740899 130 120" fill="none" stroke="#f97316" stroke-width="2"/>
+    <path data-layer-name="pts" id="pts" d="M 55 165 a 5 5 0 1 1 10 0 a 5 5 0 1 1 -10 0 M 185 45 a 5 5 0 1 1 10 0 a 5 5 0 1 1 -10 0 M 315 165 a 5 5 0 1 1 10 0 a 5 5 0 1 1 -10 0" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
   </g>
-  <g id="legend-group" transform="translate(345, 42)">
-    <path id="lg1" d="M 0 0 L 20 0" fill="none" stroke="#3b82f6" stroke-width="2"/>
-    <path id="lg2" d="M 0 18 L 20 18" fill="none" stroke="#8b5cf6" stroke-width="2"/>
-    <path id="lg3" d="M 0 36 L 20 36" fill="none" stroke="#ec4899" stroke-width="2"/>
-    <path id="lg4" d="M 0 54 L 20 54" fill="none" stroke="#f97316" stroke-width="2"/>
-    <text id="legend" x="28" y="4" font-size="10" fill="#cbd5e1">t = 1.0 (quadratic)</text>
-    <text x="28" y="22" font-size="10" fill="#cbd5e1">t = 0.75</text>
-    <text x="28" y="40" font-size="10" fill="#cbd5e1">t = 0.5</text>
-    <text x="28" y="58" font-size="10" fill="#cbd5e1">t = 0.25 (dampened)</text>
+  <g data-layer-name="legend-group" id="legend-group" transform="translate(345, 42)">
+    <path data-layer-name="lg1" id="lg1" d="M 0 0 L 20 0" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    <path data-layer-name="lg2" id="lg2" d="M 0 18 L 20 18" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <path data-layer-name="lg3" id="lg3" d="M 0 36 L 20 36" fill="none" stroke="#ec4899" stroke-width="2"/>
+    <path data-layer-name="lg4" id="lg4" d="M 0 54 L 20 54" fill="none" stroke="#f97316" stroke-width="2"/>
+    <text data-layer-name="legend" id="legend" x="28" y="4" font-size="10" fill="#cbd5e1">t = 1.0 (quadratic)</text>
+    <text data-layer-name="legend" x="28" y="22" font-size="10" fill="#cbd5e1">t = 0.75</text>
+    <text data-layer-name="legend" x="28" y="40" font-size="10" fill="#cbd5e1">t = 0.5</text>
+    <text data-layer-name="legend" x="28" y="58" font-size="10" fill="#cbd5e1">t = 0.25 (dampened)</text>
   </g>
-  <text id="note" x="60" y="203" font-size="10" fill="#94a3b8">Same waypoints, same angles — only</text>
-  <text x="60" y="217" font-size="10" fill="#94a3b8">exitTime / entryTime change.</text>
-  <text x="60" y="231" font-size="10" fill="#94a3b8">Lower values reduce curve bulge.</text>
+  <text data-layer-name="note" id="note" x="60" y="203" font-size="10" fill="#94a3b8">Same waypoints, same angles — only</text>
+  <text data-layer-name="note" x="60" y="217" font-size="10" fill="#94a3b8">exitTime / entryTime change.</text>
+  <text data-layer-name="note" x="60" y="231" font-size="10" fill="#94a3b8">Lower values reduce curve bulge.</text>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"grid","type":"path","styles":{"stroke":"#1e293b","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"diagram","type":"group","styles":{},"isDefault":false,"transform":"translate(0, 0)","children":[{"name":"t100","type":"path","styles":{"fill":"none","stroke":"#3b82f6"},"isDefault":false},{"name":"t075","type":"path","styles":{"fill":"none","stroke":"#8b5cf6"},"isDefault":false},{"name":"t050","type":"path","styles":{"fill":"none","stroke":"#ec4899"},"isDefault":false},{"name":"t025","type":"path","styles":{"fill":"none","stroke":"#f97316"},"isDefault":false},{"name":"pts","type":"path","styles":{"fill":"#e2e8f0","stroke":"#475569"},"isDefault":false}]},{"name":"legend-group","type":"group","styles":{},"isDefault":false,"transform":"translate(345, 42)","children":[{"name":"lg1","type":"path","styles":{"fill":"none","stroke":"#3b82f6"},"isDefault":false},{"name":"lg2","type":"path","styles":{"fill":"none","stroke":"#8b5cf6"},"isDefault":false},{"name":"lg3","type":"path","styles":{"fill":"none","stroke":"#ec4899"},"isDefault":false},{"name":"lg4","type":"path","styles":{"fill":"none","stroke":"#f97316"},"isDefault":false},{"name":"legend","type":"text","styles":{"font-size":"10","fill":"#cbd5e1"},"isDefault":false}]},{"name":"note","type":"text","styles":{"font-size":"10","fill":"#94a3b8"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

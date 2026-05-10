@@ -1,30 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 340" width="560" height="340">
 
-  <path id="bg" d="M 0 0 L 560 0 L 560 340 L 0 340 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">CSS Color Function Literals</text>
-  <text id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">One red, seven ways — all first-class expressions</text>
-  <text id="space-label" x="102" y="96" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">Hex</text>
-  <text x="362" y="96" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">sRGB</text>
-  <text x="102" y="156" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">HSL</text>
-  <text x="362" y="156" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">OKLCH</text>
-  <text x="102" y="216" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">HWB</text>
-  <text x="362" y="216" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">CIE Lab</text>
-  <text x="102" y="276" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">OKLab</text>
-  <text id="code-label" x="102" y="110" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">#cc0000</text>
-  <text x="362" y="110" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">rgb(204, 0, 0)</text>
-  <text x="102" y="170" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">hsl(0, 100%, 40%)</text>
-  <text x="362" y="170" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">oklch(0.5 0.18 27)</text>
-  <text x="102" y="230" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">hwb(0 0% 20%)</text>
-  <text x="362" y="230" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">lab(42 60 50)</text>
-  <text x="102" y="290" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">oklab(0.5 0.13 0.08)</text>
-  <path id="cs_0" d="M 54 80 L 86 80 Q 90 80 90 84 L 90 116 Q 90 120 86 120 L 54 120 Q 50 120 50 116 L 50 84 Q 50 80 54 80 Z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
-  <path id="cs_1" d="M 314 80 L 346 80 Q 350 80 350 84 L 350 116 Q 350 120 346 120 L 314 120 Q 310 120 310 116 L 310 84 Q 310 80 314 80 Z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
-  <path id="cs_2" d="M 54 140 L 86 140 Q 90 140 90 144 L 90 176 Q 90 180 86 180 L 54 180 Q 50 180 50 176 L 50 144 Q 50 140 54 140 Z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
-  <path id="cs_3" d="M 314 140 L 346 140 Q 350 140 350 144 L 350 176 Q 350 180 346 180 L 314 180 Q 310 180 310 176 L 310 144 Q 310 140 314 140 Z" fill="#b32322" stroke="#475569" stroke-width="1"/>
-  <path id="cs_4" d="M 54 200 L 86 200 Q 90 200 90 204 L 90 236 Q 90 240 86 240 L 54 240 Q 50 240 50 236 L 50 204 Q 50 200 54 200 Z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
-  <path id="cs_5" d="M 314 200 L 346 200 Q 350 200 350 204 L 350 236 Q 350 240 346 240 L 314 240 Q 310 240 310 236 L 310 204 Q 310 200 314 200 Z" fill="#c12210" stroke="#475569" stroke-width="1"/>
-  <path id="cs_6" d="M 54 260 L 86 260 Q 90 260 90 264 L 90 296 Q 90 300 86 300 L 54 300 Q 50 300 50 296 L 50 264 Q 50 260 54 260 Z" fill="#a93725" stroke="#475569" stroke-width="1"/>
-  <text id="arrow-label" x="280" y="312" font-family="system-ui, sans-serif" font-size="9" fill="#38bdf8" text-anchor="middle">All converge → OKLCH internally</text>
-  <path id="arrow-line" d="M 100 300 h 360" fill="none" stroke="#38bdf8" stroke-width="1" opacity="0.4"/>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 560 0 l 0 340 l -560 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <text data-layer-name="title" id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">CSS Color Function Literals</text>
+  <text data-layer-name="subtitle" id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">One red, seven ways — all first-class expressions</text>
+  <text data-layer-name="space-label" id="space-label" x="102" y="96" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">Hex</text>
+  <text data-layer-name="space-label" x="362" y="96" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">sRGB</text>
+  <text data-layer-name="space-label" x="102" y="156" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">HSL</text>
+  <text data-layer-name="space-label" x="362" y="156" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">OKLCH</text>
+  <text data-layer-name="space-label" x="102" y="216" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">HWB</text>
+  <text data-layer-name="space-label" x="362" y="216" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">CIE Lab</text>
+  <text data-layer-name="space-label" x="102" y="276" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="start">OKLab</text>
+  <text data-layer-name="code-label" id="code-label" x="102" y="110" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">#cc0000</text>
+  <text data-layer-name="code-label" x="362" y="110" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">rgb(204, 0, 0)</text>
+  <text data-layer-name="code-label" x="102" y="170" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">hsl(0, 100%, 40%)</text>
+  <text data-layer-name="code-label" x="362" y="170" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">oklch(0.5 0.18 27)</text>
+  <text data-layer-name="code-label" x="102" y="230" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">hwb(0 0% 20%)</text>
+  <text data-layer-name="code-label" x="362" y="230" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">lab(42 60 50)</text>
+  <text data-layer-name="code-label" x="102" y="290" font-family="monospace" font-size="8" fill="#94a3b8" text-anchor="start">oklab(0.5 0.13 0.08)</text>
+  <path data-layer-name="cs_0" id="cs_0" d="M 54 80 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="cs_1" id="cs_1" d="M 314 80 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="cs_2" id="cs_2" d="M 54 140 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="cs_3" id="cs_3" d="M 314 140 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#b32322" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="cs_4" id="cs_4" d="M 54 200 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#cc0000" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="cs_5" id="cs_5" d="M 314 200 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#c12210" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="cs_6" id="cs_6" d="M 54 260 l 32 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -32 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#a93725" stroke="#475569" stroke-width="1"/>
+  <text data-layer-name="arrow-label" id="arrow-label" x="280" y="312" font-family="system-ui, sans-serif" font-size="9" fill="#38bdf8" text-anchor="middle">All converge → OKLCH internally</text>
+  <path data-layer-name="arrow-line" id="arrow-line" d="M 100 300 h 360" fill="none" stroke="#38bdf8" stroke-width="1" opacity="0.4"/>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"space-label","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"code-label","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#94a3b8","text-anchor":"start"},"isDefault":false},{"name":"cs_0","type":"path","styles":{"fill":"#cc0000","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"cs_1","type":"path","styles":{"fill":"#cc0000","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"cs_2","type":"path","styles":{"fill":"#cc0000","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"cs_3","type":"path","styles":{"fill":"#b32322","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"cs_4","type":"path","styles":{"fill":"#cc0000","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"cs_5","type":"path","styles":{"fill":"#c12210","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"cs_6","type":"path","styles":{"fill":"#a93725","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"arrow-label","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"9","fill":"#38bdf8","text-anchor":"middle"},"isDefault":false},{"name":"arrow-line","type":"path","styles":{"stroke":"#38bdf8","stroke-width":"1","fill":"none","opacity":"0.4"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>

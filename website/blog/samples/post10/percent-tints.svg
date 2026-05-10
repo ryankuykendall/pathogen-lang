@@ -1,46 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300">
 
-  <path id="bg" d="M 0 0 L 520 0 L 520 300 L 0 300 Z" fill="#0f172a" stroke="none" stroke-width="2"/>
-  <text id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">The Percent Suffix</text>
-  <text id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">20% → 0.2  •  &quot;lighten by 20%&quot; reads naturally</text>
-  <text id="row-label" x="58" y="103" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="end">lighten</text>
-  <text x="58" y="173" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="end">darken</text>
-  <text x="58" y="243" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="end">alpha</text>
-  <text id="sw-label" x="90" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">0%</text>
-  <text x="178" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">10%</text>
-  <text x="266" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">20%</text>
-  <text x="354" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">30%</text>
-  <text x="442" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">40%</text>
-  <text x="90" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">0%</text>
-  <text x="178" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">10%</text>
-  <text x="266" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">20%</text>
-  <text x="354" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">30%</text>
-  <text x="442" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">40%</text>
-  <text x="90" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">100%</text>
-  <text x="178" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">80%</text>
-  <text x="266" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">60%</text>
-  <text x="354" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">40%</text>
-  <text x="442" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">20%</text>
-  <path id="t_0" d="M 67 80 L 113 80 Q 117 80 117 84 L 117 116 Q 117 120 113 120 L 67 120 Q 63 120 63 116 L 63 84 Q 63 80 67 80 Z" fill="#e63946" stroke="#475569" stroke-width="1"/>
-  <path id="t_1" d="M 155 80 L 201 80 Q 205 80 205 84 L 205 116 Q 205 120 201 120 L 155 120 Q 151 120 151 116 L 151 84 Q 151 80 155 80 Z" fill="#ff5e64" stroke="#475569" stroke-width="1"/>
-  <path id="t_2" d="M 243 80 L 289 80 Q 293 80 293 84 L 293 116 Q 293 120 289 120 L 243 120 Q 239 120 239 116 L 239 84 Q 239 80 243 80 Z" fill="#ff8082" stroke="#475569" stroke-width="1"/>
-  <path id="t_3" d="M 331 80 L 377 80 Q 381 80 381 84 L 381 116 Q 381 120 377 120 L 331 120 Q 327 120 327 116 L 327 84 Q 327 80 331 80 Z" fill="#ffa2a1" stroke="#475569" stroke-width="1"/>
-  <path id="t_4" d="M 419 80 L 465 80 Q 469 80 469 84 L 469 116 Q 469 120 465 120 L 419 120 Q 415 120 415 116 L 415 84 Q 415 80 419 80 Z" fill="#ffc0bd" stroke="#475569" stroke-width="1"/>
-  <path id="d_0" d="M 67 150 L 113 150 Q 117 150 117 154 L 117 186 Q 117 190 113 190 L 67 190 Q 63 190 63 186 L 63 154 Q 63 150 67 150 Z" fill="#e63946" stroke="#475569" stroke-width="1"/>
-  <path id="d_1" d="M 155 150 L 201 150 Q 205 150 205 154 L 205 186 Q 205 190 201 190 L 155 190 Q 151 190 151 186 L 151 154 Q 151 150 155 150 Z" fill="#c20029" stroke="#475569" stroke-width="1"/>
-  <path id="d_2" d="M 243 150 L 289 150 Q 293 150 293 154 L 293 186 Q 293 190 289 190 L 243 190 Q 239 190 239 186 L 239 154 Q 239 150 243 150 Z" fill="#9e0006" stroke="#475569" stroke-width="1"/>
-  <path id="d_3" d="M 331 150 L 377 150 Q 381 150 381 154 L 381 186 Q 381 190 377 190 L 331 190 Q 327 190 327 186 L 327 154 Q 327 150 331 150 Z" fill="#7a0000" stroke="#475569" stroke-width="1"/>
-  <path id="d_4" d="M 419 150 L 465 150 Q 469 150 469 154 L 469 186 Q 469 190 465 190 L 419 190 Q 415 190 415 186 L 415 154 Q 415 150 419 150 Z" fill="#570000" stroke="#475569" stroke-width="1"/>
-  <path id="ck_0" d="M 67 220 L 113 220 Q 117 220 117 224 L 117 256 Q 117 260 113 260 L 67 260 Q 63 260 63 256 L 63 224 Q 63 220 67 220 Z" fill="#ffffff" stroke="none" stroke-width="2"/>
-  <path id="ck_1" d="M 155 220 L 201 220 Q 205 220 205 224 L 205 256 Q 205 260 201 260 L 155 260 Q 151 260 151 256 L 151 224 Q 151 220 155 220 Z" fill="#ffffff" stroke="none" stroke-width="2"/>
-  <path id="ck_2" d="M 243 220 L 289 220 Q 293 220 293 224 L 293 256 Q 293 260 289 260 L 243 260 Q 239 260 239 256 L 239 224 Q 239 220 243 220 Z" fill="#ffffff" stroke="none" stroke-width="2"/>
-  <path id="ck_3" d="M 331 220 L 377 220 Q 381 220 381 224 L 381 256 Q 381 260 377 260 L 331 260 Q 327 260 327 256 L 327 224 Q 327 220 331 220 Z" fill="#ffffff" stroke="none" stroke-width="2"/>
-  <path id="ck_4" d="M 419 220 L 465 220 Q 469 220 469 224 L 469 256 Q 469 260 465 260 L 419 260 Q 415 260 415 256 L 415 224 Q 415 220 419 220 Z" fill="#ffffff" stroke="none" stroke-width="2"/>
-  <path id="a_0" d="M 67 220 L 113 220 Q 117 220 117 224 L 117 256 Q 117 260 113 260 L 67 260 Q 63 260 63 256 L 63 224 Q 63 220 67 220 Z" fill="#e63946" stroke="#475569" stroke-width="1"/>
-  <path id="a_1" d="M 155 220 L 201 220 Q 205 220 205 224 L 205 256 Q 205 260 201 260 L 155 260 Q 151 260 151 256 L 151 224 Q 151 220 155 220 Z" fill="rgba(230, 57, 70, 0.8)" stroke="#475569" stroke-width="1"/>
-  <path id="a_2" d="M 243 220 L 289 220 Q 293 220 293 224 L 293 256 Q 293 260 289 260 L 243 260 Q 239 260 239 256 L 239 224 Q 239 220 243 220 Z" fill="rgba(230, 57, 70, 0.6)" stroke="#475569" stroke-width="1"/>
-  <path id="a_3" d="M 331 220 L 377 220 Q 381 220 381 224 L 381 256 Q 381 260 377 260 L 331 260 Q 327 260 327 256 L 327 224 Q 327 220 331 220 Z" fill="rgba(230, 57, 70, 0.4)" stroke="#475569" stroke-width="1"/>
-  <path id="a_4" d="M 419 220 L 465 220 Q 469 220 469 224 L 469 256 Q 469 260 465 260 L 419 260 Q 415 260 415 256 L 415 224 Q 415 220 419 220 Z" fill="rgba(230, 57, 70, 0.2)" stroke="#475569" stroke-width="1"/>
-  <text id="base-ind" x="90" y="72" font-family="monospace" font-size="9" fill="#38bdf8" text-anchor="middle">#e63946</text>
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 300 l -520 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <text data-layer-name="title" id="title" x="30" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#e2e8f0" text-anchor="start">The Percent Suffix</text>
+  <text data-layer-name="subtitle" id="subtitle" x="30" y="46" font-family="system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="start">20% → 0.2  •  &quot;lighten by 20%&quot; reads naturally</text>
+  <text data-layer-name="row-label" id="row-label" x="58" y="103" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="end">lighten</text>
+  <text data-layer-name="row-label" x="58" y="173" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="end">darken</text>
+  <text data-layer-name="row-label" x="58" y="243" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="end">alpha</text>
+  <text data-layer-name="sw-label" id="sw-label" x="90" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">0%</text>
+  <text data-layer-name="sw-label" x="178" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">10%</text>
+  <text data-layer-name="sw-label" x="266" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">20%</text>
+  <text data-layer-name="sw-label" x="354" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">30%</text>
+  <text data-layer-name="sw-label" x="442" y="132" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">40%</text>
+  <text data-layer-name="sw-label" x="90" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">0%</text>
+  <text data-layer-name="sw-label" x="178" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">10%</text>
+  <text data-layer-name="sw-label" x="266" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">20%</text>
+  <text data-layer-name="sw-label" x="354" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">30%</text>
+  <text data-layer-name="sw-label" x="442" y="202" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">40%</text>
+  <text data-layer-name="sw-label" x="90" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">100%</text>
+  <text data-layer-name="sw-label" x="178" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">80%</text>
+  <text data-layer-name="sw-label" x="266" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">60%</text>
+  <text data-layer-name="sw-label" x="354" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">40%</text>
+  <text data-layer-name="sw-label" x="442" y="272" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">20%</text>
+  <path data-layer-name="t_0" id="t_0" d="M 67 80 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#e63946" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="t_1" id="t_1" d="M 155 80 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ff5e64" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="t_2" id="t_2" d="M 243 80 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ff8082" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="t_3" id="t_3" d="M 331 80 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffa2a1" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="t_4" id="t_4" d="M 419 80 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffc0bd" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="d_0" id="d_0" d="M 67 150 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#e63946" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="d_1" id="d_1" d="M 155 150 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#c20029" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="d_2" id="d_2" d="M 243 150 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#9e0006" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="d_3" id="d_3" d="M 331 150 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#7a0000" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="d_4" id="d_4" d="M 419 150 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#570000" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="ck_0" id="ck_0" d="M 67 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffffff" stroke="none" stroke-width="2"/>
+  <path data-layer-name="ck_1" id="ck_1" d="M 155 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffffff" stroke="none" stroke-width="2"/>
+  <path data-layer-name="ck_2" id="ck_2" d="M 243 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffffff" stroke="none" stroke-width="2"/>
+  <path data-layer-name="ck_3" id="ck_3" d="M 331 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffffff" stroke="none" stroke-width="2"/>
+  <path data-layer-name="ck_4" id="ck_4" d="M 419 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#ffffff" stroke="none" stroke-width="2"/>
+  <path data-layer-name="a_0" id="a_0" d="M 67 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="#e63946" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="a_1" id="a_1" d="M 155 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="rgba(230, 57, 70, 0.8)" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="a_2" id="a_2" d="M 243 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="rgba(230, 57, 70, 0.6)" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="a_3" id="a_3" d="M 331 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="rgba(230, 57, 70, 0.4)" stroke="#475569" stroke-width="1"/>
+  <path data-layer-name="a_4" id="a_4" d="M 419 220 l 46 0 q 4 0 4 4 l 0 32 q 0 4 -4 4 l -46 0 q -4 0 -4 -4 l 0 -32 q 0 -4 4 -4 z" fill="rgba(230, 57, 70, 0.2)" stroke="#475569" stroke-width="1"/>
+  <text data-layer-name="base-ind" id="base-ind" x="90" y="72" font-family="monospace" font-size="9" fill="#38bdf8" text-anchor="middle">#e63946</text>
 <script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"title","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"14","fill":"#e2e8f0","text-anchor":"start"},"isDefault":false},{"name":"subtitle","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#64748b","text-anchor":"start"},"isDefault":false},{"name":"row-label","type":"text","styles":{"font-family":"system-ui, sans-serif","font-size":"10","fill":"#94a3b8","text-anchor":"end"},"isDefault":false},{"name":"sw-label","type":"text","styles":{"font-family":"monospace","font-size":"8","fill":"#64748b","text-anchor":"middle"},"isDefault":false},{"name":"t_0","type":"path","styles":{"fill":"#e63946","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"t_1","type":"path","styles":{"fill":"#ff5e64","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"t_2","type":"path","styles":{"fill":"#ff8082","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"t_3","type":"path","styles":{"fill":"#ffa2a1","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"t_4","type":"path","styles":{"fill":"#ffc0bd","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"d_0","type":"path","styles":{"fill":"#e63946","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"d_1","type":"path","styles":{"fill":"#c20029","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"d_2","type":"path","styles":{"fill":"#9e0006","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"d_3","type":"path","styles":{"fill":"#7a0000","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"d_4","type":"path","styles":{"fill":"#570000","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"ck_0","type":"path","styles":{"fill":"#ffffff","stroke":"none"},"isDefault":false},{"name":"ck_1","type":"path","styles":{"fill":"#ffffff","stroke":"none"},"isDefault":false},{"name":"ck_2","type":"path","styles":{"fill":"#ffffff","stroke":"none"},"isDefault":false},{"name":"ck_3","type":"path","styles":{"fill":"#ffffff","stroke":"none"},"isDefault":false},{"name":"ck_4","type":"path","styles":{"fill":"#ffffff","stroke":"none"},"isDefault":false},{"name":"a_0","type":"path","styles":{"fill":"#e63946","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"a_1","type":"path","styles":{"fill":"rgba(230, 57, 70, 0.8)","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"a_2","type":"path","styles":{"fill":"rgba(230, 57, 70, 0.6)","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"a_3","type":"path","styles":{"fill":"rgba(230, 57, 70, 0.4)","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"a_4","type":"path","styles":{"fill":"rgba(230, 57, 70, 0.2)","stroke":"#475569","stroke-width":"1"},"isDefault":false},{"name":"base-ind","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#38bdf8","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
 </svg>
