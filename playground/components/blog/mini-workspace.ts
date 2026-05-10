@@ -438,12 +438,14 @@ export class MiniWorkspace extends HTMLElement {
 
     this._inspectorEl.addEventListener('layer-visibility-change', ((e: CustomEvent) => {
       const { name, visible } = e.detail;
-      const preview = this.shadowRoot!.querySelector('mini-preview') as HTMLElement | null;
-      const contentGroup = preview?.shadowRoot?.querySelector('#preview-content');
-      if (contentGroup) {
-        const layerEl = contentGroup.querySelector(`[id="${name}"]`) as HTMLElement | null;
-        if (layerEl) layerEl.style.display = visible === false ? 'none' : '';
-      }
+      const preview = this.shadowRoot!.querySelector('mini-preview') as
+        | (HTMLElement & { setLayerVisibility?(n: string, v: boolean): void })
+        | null;
+      // The compiled SVG lives inside the iframe document, not the shadow
+      // root — `mini-preview.setLayerVisibility` forwards the toggle across
+      // the iframe boundary. The pre-iframe code path queried the shadow
+      // root directly and silently no-op'd after the security migration.
+      preview?.setLayerVisibility?.(name, visible !== false);
     }) as EventListener);
 
     this._inspectorEl.addEventListener('cssvar-override', ((e: CustomEvent) => {

@@ -7,5 +7,5 @@
   </mask>
 </defs>
 
-  <path id="masked" d="M 0 100 L 200 100 M 100 0 L 100 200" fill="none" stroke="#333333" stroke-width="2" mask="url(#reveal)"/>
+  <path data-layer-name="masked" id="masked" d="M 0 100 L 200 100 M 100 0 L 100 200" fill="none" stroke="#333333" stroke-width="2" mask="url(#reveal)"/>
 </svg>

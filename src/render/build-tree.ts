@@ -28,7 +28,15 @@ export interface BuildTreeOptions extends BuildLayersOptions {
   width?: string;
   /** SVG height attribute. Default "200". */
   height?: string;
-  /** Emit the `<script type="application/json">` metadata block (inspector). */
+  /**
+   * Emit the `<script type="application/json" id="pathogen-metadata">` block
+   * that powers the blog mini-workspace inspector. Off by default — the
+   * security contract in tests/security/compiler-emission.test.ts forbids any
+   * `<script>` in default compiler output. Sample / BBWP build scripts opt in
+   * via `--include-metadata`. Surfaces that consume the metadata (blog
+   * mini-workspace) strip all scripts at the iframe boundary anyway, so the
+   * tag is structurally inert; the default-off keeps the contract narrow.
+   */
   includeMetadata?: boolean;
 }
 

@@ -19,5 +19,5 @@
   </marker>
 </defs>
 
-  <path id="line" d="M 20 100 L 180 100" fill="url(#g1)" stroke="#222222" stroke-width="2" mask="url(#m1)" clip-path="url(#c1)" marker-end="url(#mk1)"/>
+  <path data-layer-name="line" id="line" d="M 20 100 L 180 100" fill="url(#g1)" stroke="#222222" stroke-width="2" mask="url(#m1)" clip-path="url(#c1)" marker-end="url(#mk1)"/>
 </svg>

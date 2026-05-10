@@ -53,6 +53,10 @@ Options:
   --log-file=<file>              Write structured log data as JSON to file
   --render-gpu                   Use headless browser for GPU gradient rendering
   --scale=<N>                    GPU render resolution multiplier (1-4, default: 2)
+  --include-metadata             Emit a <script id="pathogen-metadata"> JSON block
+                                 powering the blog mini-workspace inspector
+                                 (Layers / Palette / CSS Vars). Off by default;
+                                 npm run compile:samples / compile:bbwp pass this.
 
 Examples:
   pathogen-lang input.svgx

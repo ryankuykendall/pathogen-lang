@@ -106,6 +106,11 @@ export class MiniPreview extends HTMLElement {
         doc.documentElement.style.setProperty(name, value);
       }
       this._pendingCssVars.clear();
+      // Replay any layer-visibility toggles deferred during iframe boot.
+      for (const [name, visible] of this._pendingVisibility) {
+        this.setLayerVisibility(name, visible);
+      }
+      this._pendingVisibility.clear();
       this._setupIframeEventListeners(doc);
     });
   }
@@ -203,8 +208,50 @@ export class MiniPreview extends HTMLElement {
     this._iframeDoc.documentElement.style.removeProperty(name);
   }
 
+  /**
+   * Toggle visibility of a layer (or any element by id) inside the compiled
+   * SVG. Same iframe-boundary problem as `setCssVar`: the inspector lives in
+   * the parent shadow root, the SVG lives inside the sandboxed iframe doc, so
+   * a parent-side `querySelector` can't reach it. Forwards into the right
+   * document.
+   */
+  setLayerVisibility(name: string, visible: boolean): void {
+    if (!this._iframeDoc) {
+      this._pendingVisibility.set(name, visible);
+      return;
+    }
+    const contentGroup = this._iframeDoc.getElementById('preview-content');
+    if (!contentGroup) return;
+    const display = visible ? '' : 'none';
+
+    // Modern SVGs (compiled with `--include-metadata` after the data-layer-
+    // name emission landed) tag every layer-rendered element with the
+    // attribute, so a single query catches the whole group.
+    const tagged = contentGroup.querySelectorAll(`[data-layer-name="${name}"]`);
+    if (tagged.length > 0) {
+      for (const el of tagged) (el as HTMLElement).style.display = display;
+      return;
+    }
+
+    // Legacy blog SVGs: only the first sibling of a multi-text TextLayer
+    // carries `id="<name>"`; the other texts are anonymous siblings emerging
+    // from the serializer's `__text-siblings__` unwrap. Walk forward through
+    // same-tag siblings that lack their own id and toggle them too — without
+    // this, hiding `formula` only hides the first formula line.
+    const head = contentGroup.querySelector(`[id="${name}"]`) as HTMLElement | null;
+    if (!head) return;
+    head.style.display = display;
+    let cursor: Element | null = head.nextElementSibling;
+    while (cursor && cursor.tagName === head.tagName && !cursor.hasAttribute('id')) {
+      (cursor as HTMLElement).style.display = display;
+      cursor = cursor.nextElementSibling;
+    }
+  }
+
   /** Pending CSS-var writes buffered while the iframe is still parsing. */
   private _pendingCssVars: Map<string, string> = new Map();
+  /** Pending layer-visibility toggles buffered while the iframe is still parsing. */
+  private _pendingVisibility: Map<string, boolean> = new Map();
 
   setSvgContent(svgString: string): void {
     if (!this._iframeDoc) {

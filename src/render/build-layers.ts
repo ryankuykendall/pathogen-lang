@@ -72,12 +72,17 @@ function buildPath(layer: LayerOutput, options: BuildLayersOptions, defaults: Re
   const emitData = options.emitPlaygroundDataAttrs ?? false;
   const attrs: Record<string, string> = {};
 
-  // Playground uses `data-layer-name` for visibility toggle + inspector; CLI
-  // uses `id` for document-level identification. Mutually exclusive to match
-  // each surface's existing behavior.
-  if (emitData && layer.name) {
+  // `data-layer-name` is emitted on every layer-rendered element in BOTH CLI
+  // and playground modes — the inspector toggle on blog mini-workspaces queries
+  // by this attribute to find every element of a multi-element layer (e.g. a
+  // multi-text TextLayer where only the first sibling carries `id`). Without
+  // it, toggling a TextLayer with N text elements only hides 1 of N.
+  // `id` is additionally emitted in CLI mode for cross-document references
+  // (mask/clipPath/marker resolution by id-fragment).
+  if (layer.name) {
     attrs['data-layer-name'] = layer.name;
-  } else if (layer.name && !layer.isDefault) {
+  }
+  if (!emitData && layer.name && !layer.isDefault) {
     attrs.id = layer.name;
   }
   attrs.d = layer.data ?? '';
@@ -119,9 +124,12 @@ function buildText(layer: LayerOutput, options: BuildLayersOptions): VNode {
     const mergedStyles = te.styles ? { ...layer.styles, ...te.styles } : layer.styles;
 
     const attrs: Record<string, string> = {};
-    // Playground: data-layer-name on every text sibling.
-    // CLI: id only on the first text sibling (byte-identity with pre-refactor).
-    if (emitData && layer.name) {
+    // `data-layer-name` on every text sibling — in both CLI and playground —
+    // so the blog mini-workspace inspector can query `[data-layer-name="X"]`
+    // and toggle every text in a multi-text TextLayer atomically. CLI also
+    // keeps `id` on the first sibling for backward compat with consumers
+    // that referenced the layer by id-fragment.
+    if (layer.name) {
       attrs['data-layer-name'] = layer.name;
     }
     if (!emitData && i === 0 && idName) {
@@ -159,9 +167,12 @@ function buildText(layer: LayerOutput, options: BuildLayersOptions): VNode {
 function buildGroup(layer: LayerOutput, options: BuildLayersOptions, defaults: ResolvedDefaults): VNode {
   const emitData = options.emitPlaygroundDataAttrs ?? false;
   const attrs: Record<string, string> = {};
-  if (emitData && layer.name) {
+  // See buildPath for the rationale: `data-layer-name` everywhere enables
+  // group-aware visibility toggles; `id` in CLI mode preserves cross-doc refs.
+  if (layer.name) {
     attrs['data-layer-name'] = layer.name;
-  } else if (layer.name && !layer.isDefault) {
+  }
+  if (!emitData && layer.name && !layer.isDefault) {
     attrs.id = layer.name;
   }
   for (const [key, value] of Object.entries(layer.styles)) {

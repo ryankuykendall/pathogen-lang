@@ -158,6 +158,16 @@ function serializeInlineChild(child: VNodeChild): string {
 function serializeBlockChild(child: VNodeChild, indent: string): string {
   if (typeof child === 'string') return indent + escapeXml(child);
   if (isRawText(child)) return child.raw;
+  if (UNWRAP_TAGS.has(child.tag)) {
+    // Synthetic wrapper (e.g. multi-text TextLayer): emit its children at
+    // the parent's child indent, never the wrapper itself. Without this,
+    // grouped text layers serialize as literal `<__text-siblings__>` tags
+    // and the browser silently drops the wrapped <text> elements.
+    return child.children
+      .filter((c): c is VNode => isVNode(c))
+      .map((c) => serializeNode(c, indent))
+      .join('\n');
+  }
   return serializeNode(child, indent);
 }
 

@@ -66,5 +66,42 @@ describe('toSvgString', () => {
       ]);
       expect(toSvgString(tree)).toContain('  <path d="M 0 0"/>');
     });
+
+    it('unwraps __text-siblings__ at the top level', () => {
+      // The synthetic wrapper exists so build-layers can return multiple text
+      // children from a single TextLayer. The serializer must never emit it
+      // as a literal tag — browsers treat it as an unknown element and skip
+      // its <text> children, dropping every label and formula on the floor.
+      const tree = h('svg', { xmlns: 'http://www.w3.org/2000/svg' }, [
+        h('__text-siblings__', {}, [
+          h('text', { id: 'a', x: '0', y: '0' }, ['hello']),
+          h('text', { x: '0', y: '10' }, ['world']),
+        ]),
+      ]);
+      const out = toSvgString(tree);
+      expect(out).not.toContain('__text-siblings__');
+      expect(out).toContain('<text id="a" x="0" y="0">hello</text>');
+      expect(out).toContain('<text x="0" y="10">world</text>');
+    });
+
+    it('unwraps __text-siblings__ when nested inside a group', () => {
+      // Regression: when a TextLayer is a child of a GroupLayer (e.g. the
+      // Clifford Attractor blog samples), the wrapper appears one level deep
+      // inside <g>. The serializer's recursive path must unwrap there too,
+      // not only at the top level.
+      const tree = h('svg', { xmlns: 'http://www.w3.org/2000/svg' }, [
+        h('g', { id: 'concept' }, [
+          h('path', { id: 'bg', d: 'M 0 0' }),
+          h('__text-siblings__', {}, [
+            h('text', { id: 'labels', x: '0', y: '0' }, ['x0']),
+            h('text', { x: '0', y: '10' }, ['x1']),
+          ]),
+        ]),
+      ]);
+      const out = toSvgString(tree);
+      expect(out).not.toContain('__text-siblings__');
+      expect(out).toContain('<text id="labels" x="0" y="0">x0</text>');
+      expect(out).toContain('<text x="0" y="10">x1</text>');
+    });
   });
 });
