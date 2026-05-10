@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-05-09
+
+Post-0.7.0 polish. Inspector population is now correct on every blog post; sitewide typography refresh; homepage and docs responsive cleanup.
+
+### Added
+
+#### Compiler / CLI
+- `data-layer-name="<layer>"` attribute on every layer-rendered element (path, group, **and every text sibling of a multi-text TextLayer**) in CLI mode — not just playground. Enables the blog mini-workspace inspector to toggle every element of a multi-text layer in one query (`[data-layer-name="X"]`). CLI also keeps `id` on the first sibling for backward compat with consumers that resolve cross-references by id-fragment.
+
+#### Homepage
+- Dynamic version eyebrow ("built on Pathogen v{version}") that codegens from `package.json` at build time. Aligns the displayed VS Code extension name with the published marketplace handle.
+
+### Changed
+
+#### Typography
+- DM Serif Display headings sitewide (homepage, blog, docs) — replaces the previous mixed heading stack with a single editorial display face.
+
+#### Docs
+- Sidebar background made transparent so the page backplate (grain + halos) reads through.
+- Horizontal page scroll locked; wide content (column text, tables) capped at the column width with internal scroll, so the page no longer drifts sideways on long lines.
+
+#### Tooling
+- `npm` workspaces array scoped to `packages/pathogen-language-server` only (was `packages/*`). The previous glob registered `packages/vscode-pathogen` as a workspace member with the same `"name": "pathogen-lang"` as the root, producing a duplicate-version lock-file entry that failed Cloudflare Pages' `npm ci`. The VS Code extension is now installed via `cd packages/vscode-pathogen && npm install`.
+
+### Fixed
+
+#### Blog mini-workspace inspector
+- **Inspector panels (Layers / Palette / CSS Variables) now populate on every blog post.** Mini-workspaces read inspector data from a `<script id="pathogen-metadata">` block baked into each pre-compiled `.svg`. The block is emitted only when the CLI is invoked with `--include-metadata`, which the canonical `npm run compile:samples` script passes but the manual `npx tsx src/cli.ts …` recipe (previously documented in `website/blog/CLAUDE.md`) did not. Seven blog posts (Clifford Attractor, several gradient and text posts) shipped SVGs without metadata; all newly compiled samples now include it. `website/blog/CLAUDE.md` updated to recommend `npm run compile:samples` and warn against the hand-rolled command.
+- **Toggling a multi-text TextLayer now hides every text element, not just the first.** Pre-fix, only the first sibling carried `id="<layer>"` and the inspector's `[id]` query matched one element of N. Fixed by emitting `data-layer-name` on every sibling (newly compiled SVGs) plus a sibling-walk fallback in `mini-preview.setLayerVisibility` (pre-existing SVGs whose `.pathogen` sources can't currently be re-compiled).
+- **Layer-toggle handler now reaches the compiled SVG.** The post-0.7.0 sandboxed-iframe migration (commit `354c4b9`) moved the SVG into the iframe document, but `mini-workspace.ts` was still querying `preview.shadowRoot` — a path that returned `null` after the migration, so toggles silently no-op'd. New `mini-preview.setLayerVisibility(name, visible)` method forwards the toggle into the iframe document, mirroring the existing `setCssVar` pattern, with a pending-toggle buffer for events that arrive before the iframe finishes parsing.
+
+#### Renderer
+- **Serializer no longer leaks `<__text-siblings__>` into output when a multi-text TextLayer is nested inside a GroupLayer.** The synthetic wrapper was unwrapped at top-level but not in `serializeBlockChild`'s recursive path. Nested TextLayers (e.g. the Clifford Attractor `concept` group containing `labels` and `formula`) serialized with literal `<__text-siblings__>` tags that browsers treated as unknown elements, silently dropping every wrapped `<text>`. Two regression tests added in `tests/render/serialize.test.ts`.
+
+#### Homepage
+- Mobile-responsive pass: nav grid overflow fixed; six showcase tiles, three tool cards, and the latest-blog card all reflow under 768px without horizontal scroll.
+
+### Development
+- `--include-metadata` documented in `pathogen-lang --help`; behavior unchanged (still off by default — the security contract in `tests/security/compiler-emission.test.ts` forbids any `<script>` in default compiler output).
+- `tests/render-snapshots.test.ts` fixtures updated to reflect the new `data-layer-name` attribute (intentional API addition; not a refactor regression).
+- All ~67 blog sample SVGs across post1–post16 + post22–post23 regenerated via `npm run compile:samples -- --force`. GPU-rendered samples in post2/3/4/5/24 still error in local Puppeteer with `Waiting failed: 10000ms exceeded`; their existing committed SVGs work via the inspector's legacy fallback path.
+
 ## [0.7.0] - 2026-05-09
 
 A platform release. Pathogen now lives at `pathogen.studio` — its own

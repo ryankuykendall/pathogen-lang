@@ -47,11 +47,15 @@ Blog posts embed interactive `<mini-workspace>` demos that display Pathogen sour
 #    First line must be a viewBox comment: // viewBox="0 0 W H"
 vim website/blog/samples/post1/my-sample.pathogen
 
-# 2. Compile to SVG (same directory, .svg extension)
-npx tsx src/cli.ts \
-  --src=website/blog/samples/post1/my-sample.pathogen \
-  "--output-svg-file=website/blog/samples/post1/my-sample.svg" \
-  "--viewBox=0 0 W H" --width=W --height=H
+# 2. Compile every sample under website/blog/samples/ to SVG.
+#    Auto-detects viewBox/width/height from source comments, picks the GPU or
+#    CPU pipeline based on gradient types, and emits the inspector metadata
+#    block the mini-workspace inspector needs (Layers / Palette / CSS Vars).
+#    Incremental by default; pass --force to rebuild every SVG, or
+#    --post=N to scope to a single post directory.
+npm run compile:samples
+# npm run compile:samples -- --post=1
+# npm run compile:samples -- --force
 
 # 3. Reference in blog markdown
 #    <mini-workspace src="samples/post1/my-sample.pathogen" caption="..." code-open></mini-workspace>
@@ -60,6 +64,12 @@ npx tsx src/cli.ts \
 npm run build:blog    # processes tags → blog-content.js + blog-static/
 npm run build:website # assembles public/ including samples
 ```
+
+> **Don't bypass `compile:samples`.** Hand-rolled `npx tsx src/cli.ts …` works,
+> but historically authors omitted `--include-metadata` (or `--render-gpu` /
+> `--scale`) from the manual command and shipped SVGs that rendered correctly
+> but produced an empty inspector panel — a silent regression. The script
+> centralizes those flags so every sample stays inspector-compatible.
 
 ### What `build-blog.ts` Does with `<mini-workspace>`
 
@@ -100,10 +110,11 @@ The `<mini-workspace>` component auto-detects `@property` declarations with `syn
 ### Checklist for New Samples
 
 - [ ] `.pathogen` file with `// viewBox="0 0 W H"` comment on line 1
-- [ ] Compiled `.svg` file alongside (same directory, same basename)
+- [ ] Compiled via `npm run compile:samples` (NOT a hand-rolled `npx tsx src/cli.ts …`)
+- [ ] Resulting `.svg` contains `<script id="pathogen-metadata">` — confirms the inspector will populate
 - [ ] `<mini-workspace>` tag in blog markdown with `src` pointing to `.pathogen` file
 - [ ] `npm run build:blog` succeeds without warnings
-- [ ] Visual verify via `npm run dev:website`
+- [ ] Visual verify via `npm run dev:website` — open the inspector toggle on each mini-workspace and confirm Layers / Palette / CSS Vars all populate
 
 ## Blogging Playbook
 
