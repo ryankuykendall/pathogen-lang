@@ -11,15 +11,15 @@ description: "Pathogen's custom filters are first-class language values — defi
 1. **Custom Filters in Pathogen: First-Class Visual Effects** ← you are here
 2. [The Full Filter Family: Glow, Emboss, Shadows, Pixelate](./custom-filters-family)
 
-## The one-line filter
+## Five primitives, one named value
 
-<mini-workspace src="samples/post25/01-hero-grain.pathogen" caption="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name." code-open></mini-workspace>
+<mini-workspace src="samples/post25/01-hero-grain.pathogen" caption="Five SVG filter primitives behind a single named value. A NoiseFilter you can reuse across layers, log, override by name, and pass to any layer's filter: style property." code-open></mini-workspace>
 
 That snippet does three things. It defines a custom filter — `NoiseFilter()` with the `Grain` preset — assigns it to a variable, and applies it to a layer via a style block. The output SVG contains a single `<filter>` element wrapping `feTurbulence` → `feComposite` → `feColorMatrix` → `feComponentTransfer` → `feBlend`, plus a `filter="url(#pathogen-noise-1)"` attribute on the painted `<path>`.
 
-The same effect in vanilla SVG is about twelve lines and three concepts (filter region, primitive subregion, blend mode). In vanilla CSS it doesn't exist — `filter: blur(...) brightness(...)` covers a fixed set of effects and `filter: drop-shadow(...)` covers exactly one shadow style. Anything richer demands you reach for raw `<filter>` markup.
+Doing this in vanilla SVG means hand-authoring the five-primitive chain along with its filter region, primitive subregions, and blend mode — and re-declaring the whole thing inline every time you want to reuse it. In vanilla CSS the option doesn't exist at all: `filter: blur(...) brightness(...)` covers a fixed set of effects and `filter: drop-shadow(...)` covers exactly one shadow style. Anything richer demands raw `<filter>` markup.
 
-Pathogen's custom filters close that gap by making filters **first-class language values**. Define one, name it, use it like any other variable.
+Pathogen's custom filters close that gap by making filters **first-class language values**. Define one, name it, use it like any other variable — the shape of your program stays small, regardless of how rich the effect underneath gets.
 
 ## What native CSS leaves on the table
 

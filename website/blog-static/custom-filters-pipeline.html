@@ -259,8 +259,8 @@ code.hljs {
 <li><strong>Custom Filters in Pathogen: First-Class Visual Effects</strong> ← you are here</li>
 <li><a href="./custom-filters-family">The Full Filter Family: Glow, Emboss, Shadows, Pixelate</a></li>
 </ol>
-<h2>The one-line filter</h2>
-<p><mini-workspace code-open caption="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name.">
+<h2>Five primitives, one named value</h2>
+<p><mini-workspace code-open caption="Five SVG filter primitives behind a single named value. A NoiseFilter you can reuse across layers, log, override by name, and pass to any layer's filter: style property.">
   <code>// viewBox="0 0 400 200"
 // Hero: one line of Pathogen — five SVG filter primitives in the output.
 
@@ -286,11 +286,11 @@ disc.apply {
   circle(200, 100, 70);
 }
 </code>
-  <img src="/blog/samples/post25/01-hero-grain.svg" alt="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name." loading="lazy">
+  <img src="/blog/samples/post25/01-hero-grain.svg" alt="Five SVG filter primitives behind a single named value. A NoiseFilter you can reuse across layers, log, override by name, and pass to any layer's filter: style property." loading="lazy">
 </mini-workspace></p>
 <p>That snippet does three things. It defines a custom filter — <code>NoiseFilter()</code> with the <code>Grain</code> preset — assigns it to a variable, and applies it to a layer via a style block. The output SVG contains a single <code>&lt;filter&gt;</code> element wrapping <code>feTurbulence</code> → <code>feComposite</code> → <code>feColorMatrix</code> → <code>feComponentTransfer</code> → <code>feBlend</code>, plus a <code>filter=&quot;url(#pathogen-noise-1)&quot;</code> attribute on the painted <code>&lt;path&gt;</code>.</p>
-<p>The same effect in vanilla SVG is about twelve lines and three concepts (filter region, primitive subregion, blend mode). In vanilla CSS it doesn&#39;t exist — <code>filter: blur(...) brightness(...)</code> covers a fixed set of effects and <code>filter: drop-shadow(...)</code> covers exactly one shadow style. Anything richer demands you reach for raw <code>&lt;filter&gt;</code> markup.</p>
-<p>Pathogen&#39;s custom filters close that gap by making filters <strong>first-class language values</strong>. Define one, name it, use it like any other variable.</p>
+<p>Doing this in vanilla SVG means hand-authoring the five-primitive chain along with its filter region, primitive subregions, and blend mode — and re-declaring the whole thing inline every time you want to reuse it. In vanilla CSS the option doesn&#39;t exist at all: <code>filter: blur(...) brightness(...)</code> covers a fixed set of effects and <code>filter: drop-shadow(...)</code> covers exactly one shadow style. Anything richer demands raw <code>&lt;filter&gt;</code> markup.</p>
+<p>Pathogen&#39;s custom filters close that gap by making filters <strong>first-class language values</strong>. Define one, name it, use it like any other variable — the shape of your program stays small, regardless of how rich the effect underneath gets.</p>
 <h2>What native CSS leaves on the table</h2>
 <p>The argument for custom filters isn&#39;t that CSS filter functions are bad — <code>filter: blur(2px) brightness(1.2);</code> is fine for what it covers — it&#39;s that the ergonomic ceiling is low. Specifically:</p>
 <ul>
