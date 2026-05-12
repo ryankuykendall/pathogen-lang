@@ -264,47 +264,156 @@ code.hljs {
   <code>// viewBox="0 0 600 400"
 // Six filters, one shape per cell — the family portrait.
 
-let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 600, 400); }
+let bg = PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 600, 400);
+}
 
-let f_grain     = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.amount = 0.45; };
-let f_glow      = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.20 60); f.radius = 8; f.opacity = 0.85; };
-let f_emboss    = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 1.0; };
-let f_elevation = ElevationShadowFilter() {|f| f.elevation = 6; f.color = oklch(20% 0.04 280); };
-let f_inner     = InnerShadowFilter() {|f| f.offsetY = 3; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.5; };
-let f_pixelate  = PixelateFilter(12, 12, 6);
+let f_grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.45;
+};
+let f_glow = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.20 60);
+  f.radius = 8;
+  f.opacity = 0.85;
+};
+let f_emboss = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f_elevation = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.color = oklch(20% 0.04 280);
+};
+let f_inner = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.5;
+};
+let f_pixelate = PixelateFilter(12, 12, 6);
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_grain;     };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_glow;      };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_emboss;    };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_elevation; };
-let d5 = PathLayer('d5') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_inner;     };
-let d6 = PathLayer('d6') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_pixelate;  };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_grain;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_glow;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_emboss;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_elevation;
+};
+let d5 = PathLayer('d5') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_inner;
+};
+let d6 = PathLayer('d6') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_pixelate;
+};
 
-d1.apply { circle(100, 100, 50); }
-d2.apply { circle(300, 100, 50); }
-d3.apply { circle(500, 100, 50); }
-d4.apply { circle(100, 270, 50); }
-d5.apply { circle(300, 270, 50); }
-d6.apply { circle(500, 270, 50); }
+d1.apply {
+  circle(100, 100, 50);
+}
+d2.apply {
+  circle(300, 100, 50);
+}
+d3.apply {
+  circle(500, 100, 50);
+}
+d4.apply {
+  circle(100, 270, 50);
+}
+d5.apply {
+  circle(300, 270, 50);
+}
+d6.apply {
+  circle(500, 270, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text(100, 175)`Grain` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(100, 175)`Grain`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(300, 175)`Glow` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(300, 175)`Glow`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(500, 175)`Emboss` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(500, 175)`Emboss`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(100, 360)`Elevation` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(100, 360)`Elevation`;
+}
 
-let l5 = TextLayer('l5') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l5.apply { text(300, 360)`Inner Shadow` }
+let l5 = TextLayer('l5') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l5.apply {
+  text(300, 360)`Inner Shadow`;
+}
 
-let l6 = TextLayer('l6') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l6.apply { text(500, 360)`Pixelate` }
+let l6 = TextLayer('l6') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l6.apply {
+  text(500, 360)`Pixelate`;
+}
 </code>
   <img src="/blog/samples/post26/01-hero-family.svg" alt="Six filters, one shape per cell. Each is a single language-level value: NoiseFilter, GlowFilter, EmbossFilter, ElevationShadowFilter, InnerShadowFilter, PixelateFilter." loading="lazy">
 </mini-workspace></p>
@@ -316,8 +425,13 @@ l6.apply { text(500, 360)`Pixelate` }
   <code>// viewBox="0 0 400 220"
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
-let bg = PathLayer('bg') ${ fill: oklch(25% 0.04 270); stroke: none; };
-bg.apply { rect(0, 0, 400, 220); }
+let bg = PathLayer('bg') ${
+  fill: oklch(25% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 220);
+}
 
 let f_outer = GlowFilter() {|f|
   f.mode = GlowMode.Outer;
@@ -334,17 +448,45 @@ let f_inner = GlowFilter() {|f|
   f.opacity = 0.85;
 };
 
-let d_outer = PathLayer('outer') ${ fill: oklch(60% 0.20 240); stroke: none; filter: f_outer; };
-let d_inner = PathLayer('inner') ${ fill: oklch(60% 0.20 240); stroke: none; filter: f_inner; };
+let d_outer = PathLayer('outer') ${
+  fill: oklch(60% 0.20 240);
+  stroke: none;
+  filter: f_outer;
+};
+let d_inner = PathLayer('inner') ${
+  fill: oklch(60% 0.20 240);
+  stroke: none;
+  filter: f_inner;
+};
 
-d_outer.apply { circle(110, 90, 50); }
-d_inner.apply { circle(290, 90, 50); }
+d_outer.apply {
+  circle(110, 90, 50);
+}
+d_inner.apply {
+  circle(290, 90, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l1.apply { text(110, 180)`GlowMode.Outer` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(110, 180)`GlowMode.Outer`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l2.apply { text(290, 180)`GlowMode.Inner` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(290, 180)`GlowMode.Inner`;
+}
 </code>
   <img src="/blog/samples/post26/02-glow-modes.svg" alt="Outer halo and inner edge light. Same constructor, same color, same radius — only the mode property differs." loading="lazy">
 </mini-workspace></p>
@@ -354,35 +496,116 @@ l2.apply { text(290, 180)`GlowMode.Inner` }
   <code>// viewBox="0 0 640 240"
 // GlowFilter outer — radius sweep. Larger radius = wider, softer halo.
 
-let bg = PathLayer('bg') ${ fill: oklch(20% 0.04 270); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(20% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius =  2; f.opacity = 0.9; };
-let f2 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius =  6; f.opacity = 0.9; };
-let f3 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius = 12; f.opacity = 0.9; };
-let f4 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius = 20; f.opacity = 0.9; };
+let f1 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 2;
+  f.opacity = 0.9;
+};
+let f2 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 6;
+  f.opacity = 0.9;
+};
+let f3 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 12;
+  f.opacity = 0.9;
+};
+let f4 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 20;
+  f.opacity = 0.9;
+};
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f4; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
 
-d1.apply { circle( 80, 100, 40); }
-d2.apply { circle(240, 100, 40); }
-d3.apply { circle(400, 100, 40); }
-d4.apply { circle(560, 100, 40); }
+d1.apply {
+  circle(80, 100, 40);
+}
+d2.apply {
+  circle(240, 100, 40);
+}
+d3.apply {
+  circle(400, 100, 40);
+}
+d4.apply {
+  circle(560, 100, 40);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l1.apply { text( 80, 200)`radius =  2` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)`radius =  2`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l2.apply { text(240, 200)`radius =  6` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)`radius =  6`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l3.apply { text(400, 200)`radius = 12` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)`radius = 12`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l4.apply { text(560, 200)`radius = 20` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)`radius = 20`;
+}
 </code>
   <img src="/blog/samples/post26/03-glow-radius-sweep.svg" alt="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo." loading="lazy">
 </mini-workspace></p>
@@ -390,35 +613,116 @@ l4.apply { text(560, 200)`radius = 20` }
   <code>// viewBox="0 0 640 240"
 // GlowFilter outer — opacity sweep at constant radius.
 
-let bg = PathLayer('bg') ${ fill: oklch(20% 0.04 270); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(20% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius = 10; f.opacity = 0.3; };
-let f2 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius = 10; f.opacity = 0.5; };
-let f3 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius = 10; f.opacity = 0.7; };
-let f4 = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.22 60); f.radius = 10; f.opacity = 0.9; };
+let f1 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.3;
+};
+let f2 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.5;
+};
+let f3 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.7;
+};
+let f4 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.9;
+};
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f4; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
 
-d1.apply { circle( 80, 100, 40); }
-d2.apply { circle(240, 100, 40); }
-d3.apply { circle(400, 100, 40); }
-d4.apply { circle(560, 100, 40); }
+d1.apply {
+  circle(80, 100, 40);
+}
+d2.apply {
+  circle(240, 100, 40);
+}
+d3.apply {
+  circle(400, 100, 40);
+}
+d4.apply {
+  circle(560, 100, 40);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l1.apply { text( 80, 200)`opacity = 0.3` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)`opacity = 0.3`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l2.apply { text(240, 200)`opacity = 0.5` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)`opacity = 0.5`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l3.apply { text(400, 200)`opacity = 0.7` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)`opacity = 0.7`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l4.apply { text(560, 200)`opacity = 0.9` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)`opacity = 0.9`;
+}
 </code>
   <img src="/blog/samples/post26/04-glow-opacity-sweep.svg" alt="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9." loading="lazy">
 </mini-workspace></p>
@@ -441,47 +745,160 @@ l4.apply { text(560, 200)`opacity = 0.9` }
   <code>// viewBox="0 0 720 240"
 // EmbossFilter — light azimuth sweep. The highlight tracks the light source.
 
-let bg = PathLayer('bg') ${ fill: oklch(90% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 720, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 720, 240);
+}
 
-let f1 = EmbossFilter() {|f| f.angle =  45deg; f.depth = 3; f.strength = 1.0; };
-let f2 = EmbossFilter() {|f| f.angle =  90deg; f.depth = 3; f.strength = 1.0; };
-let f3 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 1.0; };
-let f4 = EmbossFilter() {|f| f.angle = 180deg; f.depth = 3; f.strength = 1.0; };
-let f5 = EmbossFilter() {|f| f.angle = 225deg; f.depth = 3; f.strength = 1.0; };
-let f6 = EmbossFilter() {|f| f.angle = 270deg; f.depth = 3; f.strength = 1.0; };
+let f1 = EmbossFilter() {|f|
+  f.angle = 45deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 90deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 180deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f5 = EmbossFilter() {|f|
+  f.angle = 225deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f6 = EmbossFilter() {|f|
+  f.angle = 270deg;
+  f.depth = 3;
+  f.strength = 1;
+};
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f4; };
-let d5 = PathLayer('d5') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f5; };
-let d6 = PathLayer('d6') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f6; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
+let d5 = PathLayer('d5') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f5;
+};
+let d6 = PathLayer('d6') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f6;
+};
 
-d1.apply { circle( 60, 100, 38); }
-d2.apply { circle(180, 100, 38); }
-d3.apply { circle(300, 100, 38); }
-d4.apply { circle(420, 100, 38); }
-d5.apply { circle(540, 100, 38); }
-d6.apply { circle(660, 100, 38); }
+d1.apply {
+  circle(60, 100, 38);
+}
+d2.apply {
+  circle(180, 100, 38);
+}
+d3.apply {
+  circle(300, 100, 38);
+}
+d4.apply {
+  circle(420, 100, 38);
+}
+d5.apply {
+  circle(540, 100, 38);
+}
+d6.apply {
+  circle(660, 100, 38);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 60, 195)`45°` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(60, 195)`45°`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(180, 195)`90°` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(180, 195)`90°`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(300, 195)`135°` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(300, 195)`135°`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(420, 195)`180°` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(420, 195)`180°`;
+}
 
-let l5 = TextLayer('l5') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l5.apply { text(540, 195)`225°` }
+let l5 = TextLayer('l5') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l5.apply {
+  text(540, 195)`225°`;
+}
 
-let l6 = TextLayer('l6') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l6.apply { text(660, 195)`270°` }
+let l6 = TextLayer('l6') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l6.apply {
+  text(660, 195)`270°`;
+}
 </code>
   <img src="/blog/samples/post26/05-emboss-angle-sweep.svg" alt="Six light azimuths around the clock. The highlight tracks the light source." loading="lazy">
 </mini-workspace></p>
@@ -491,35 +908,112 @@ l6.apply { text(660, 195)`270°` }
   <code>// viewBox="0 0 640 240"
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
-let bg = PathLayer('bg') ${ fill: oklch(90% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 1; f.strength = 1.0; };
-let f2 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 2; f.strength = 1.0; };
-let f3 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 4; f.strength = 1.0; };
-let f4 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 8; f.strength = 1.0; };
+let f1 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 1;
+  f.strength = 1;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 2;
+  f.strength = 1;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 4;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 8;
+  f.strength = 1;
+};
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f4; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
 
-d1.apply { circle( 80, 100, 50); }
-d2.apply { circle(240, 100, 50); }
-d3.apply { circle(400, 100, 50); }
-d4.apply { circle(560, 100, 50); }
+d1.apply {
+  circle(80, 100, 50);
+}
+d2.apply {
+  circle(240, 100, 50);
+}
+d3.apply {
+  circle(400, 100, 50);
+}
+d4.apply {
+  circle(560, 100, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 80, 200)`depth = 1` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)`depth = 1`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(240, 200)`depth = 2` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)`depth = 2`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(400, 200)`depth = 4` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)`depth = 4`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(560, 200)`depth = 8` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)`depth = 8`;
+}
 </code>
   <img src="/blog/samples/post26/06-emboss-depth-sweep.svg" alt="depth = 1 reads as a flat panel with a hint of light. depth = 8 reads as a dramatically raised tile." loading="lazy">
 </mini-workspace></p>
@@ -529,35 +1023,112 @@ l4.apply { text(560, 200)`depth = 8` }
   <code>// viewBox="0 0 640 240"
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
-let bg = PathLayer('bg') ${ fill: oklch(90% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 0.3; };
-let f2 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 0.6; };
-let f3 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 1.0; };
-let f4 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 1.5; };
+let f1 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 0.3;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 0.6;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1.5;
+};
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f4; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
 
-d1.apply { circle( 80, 100, 50); }
-d2.apply { circle(240, 100, 50); }
-d3.apply { circle(400, 100, 50); }
-d4.apply { circle(560, 100, 50); }
+d1.apply {
+  circle(80, 100, 50);
+}
+d2.apply {
+  circle(240, 100, 50);
+}
+d3.apply {
+  circle(400, 100, 50);
+}
+d4.apply {
+  circle(560, 100, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 80, 200)`strength = 0.3` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)`strength = 0.3`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(240, 200)`strength = 0.6` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)`strength = 0.6`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(400, 200)`strength = 1.0` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)`strength = 1.0`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(560, 200)`strength = 1.5` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)`strength = 1.5`;
+}
 </code>
   <img src="/blog/samples/post26/07-emboss-strength-sweep.svg" alt="Same angle and depth. strength = 0.3 is a barely-lit surface; 1.5 is dramatic studio lighting." loading="lazy">
 </mini-workspace></p>
@@ -571,47 +1142,178 @@ l4.apply { text(560, 200)`strength = 1.5` }
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 720, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 720, 240);
+}
 
-let f0  = ElevationShadowFilter() {|f| f.elevation =  0; f.color = oklch(20% 0.04 280); };
-let f2  = ElevationShadowFilter() {|f| f.elevation =  2; f.color = oklch(20% 0.04 280); };
-let f4  = ElevationShadowFilter() {|f| f.elevation =  4; f.color = oklch(20% 0.04 280); };
-let f8  = ElevationShadowFilter() {|f| f.elevation =  8; f.color = oklch(20% 0.04 280); };
-let f16 = ElevationShadowFilter() {|f| f.elevation = 16; f.color = oklch(20% 0.04 280); };
-let f24 = ElevationShadowFilter() {|f| f.elevation = 24; f.color = oklch(20% 0.04 280); };
+let f0 = ElevationShadowFilter() {|f|
+  f.elevation = 0;
+  f.color = oklch(20% 0.04 280);
+};
+let f2 = ElevationShadowFilter() {|f|
+  f.elevation = 2;
+  f.color = oklch(20% 0.04 280);
+};
+let f4 = ElevationShadowFilter() {|f|
+  f.elevation = 4;
+  f.color = oklch(20% 0.04 280);
+};
+let f8 = ElevationShadowFilter() {|f|
+  f.elevation = 8;
+  f.color = oklch(20% 0.04 280);
+};
+let f16 = ElevationShadowFilter() {|f|
+  f.elevation = 16;
+  f.color = oklch(20% 0.04 280);
+};
+let f24 = ElevationShadowFilter() {|f|
+  f.elevation = 24;
+  f.color = oklch(20% 0.04 280);
+};
 
-let c0  = PathLayer('c0')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f0;  };
-let c2  = PathLayer('c2')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f2;  };
-let c4  = PathLayer('c4')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f4;  };
-let c8  = PathLayer('c8')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f8;  };
-let c16 = PathLayer('c16') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f16; };
-let c24 = PathLayer('c24') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f24; };
+let c0 = PathLayer('c0') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f0;
+};
+let c2 = PathLayer('c2') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f2;
+};
+let c4 = PathLayer('c4') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f4;
+};
+let c8 = PathLayer('c8') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f8;
+};
+let c16 = PathLayer('c16') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f16;
+};
+let c24 = PathLayer('c24') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f24;
+};
 
-c0.apply  { roundRect( 25, 60, 75, 60, 8); }
-c2.apply  { roundRect(140, 60, 75, 60, 8); }
-c4.apply  { roundRect(255, 60, 75, 60, 8); }
-c8.apply  { roundRect(370, 60, 75, 60, 8); }
-c16.apply { roundRect(485, 60, 75, 60, 8); }
-c24.apply { roundRect(600, 60, 75, 60, 8); }
+c0.apply {
+  roundRect(25,
+      60,
+      75,
+      60,
+      8);
+}
+c2.apply {
+  roundRect(140,
+      60,
+      75,
+      60,
+      8);
+}
+c4.apply {
+  roundRect(255,
+      60,
+      75,
+      60,
+      8);
+}
+c8.apply {
+  roundRect(370,
+      60,
+      75,
+      60,
+      8);
+}
+c16.apply {
+  roundRect(485,
+      60,
+      75,
+      60,
+      8);
+}
+c24.apply {
+  roundRect(600,
+      60,
+      75,
+      60,
+      8);
+}
 
-let l0 = TextLayer('l0') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l0.apply { text( 62, 200)`elevation = 0` }
+let l0 = TextLayer('l0') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l0.apply {
+  text(62, 200)`elevation = 0`;
+}
 
-let l2t = TextLayer('l2') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2t.apply { text(177, 200)`elevation = 2` }
+let l2t = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2t.apply {
+  text(177, 200)`elevation = 2`;
+}
 
-let l4t = TextLayer('l4') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4t.apply { text(292, 200)`elevation = 4` }
+let l4t = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4t.apply {
+  text(292, 200)`elevation = 4`;
+}
 
-let l8t = TextLayer('l8') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l8t.apply { text(407, 200)`elevation = 8` }
+let l8t = TextLayer('l8') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l8t.apply {
+  text(407, 200)`elevation = 8`;
+}
 
-let l16 = TextLayer('l16') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l16.apply { text(522, 200)`elevation = 16` }
+let l16 = TextLayer('l16') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l16.apply {
+  text(522, 200)`elevation = 16`;
+}
 
-let l24 = TextLayer('l24') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l24.apply { text(637, 200)`elevation = 24` }
+let l24 = TextLayer('l24') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l24.apply {
+  text(637, 200)`elevation = 24`;
+}
 </code>
   <img src="/blog/samples/post26/08-elevation-sweep.svg" alt="One value, six elevations. elevation = 0 emits no shadow; elevation = 24 produces a deeply lifted floating element." loading="lazy">
 </mini-workspace></p>
@@ -623,29 +1325,100 @@ l24.apply { text(637, 200)`elevation = 24` }
 // ElevationShadowFilter — tightness sweep at fixed elevation=6.
 // 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 540, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 540, 240);
+}
 
-let f1 = ElevationShadowFilter() {|f| f.elevation = 6; f.tightness = 0.5; f.color = oklch(20% 0.04 280); };
-let f2 = ElevationShadowFilter() {|f| f.elevation = 6; f.tightness = 1.0; f.color = oklch(20% 0.04 280); };
-let f3 = ElevationShadowFilter() {|f| f.elevation = 6; f.tightness = 2.0; f.color = oklch(20% 0.04 280); };
+let f1 = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.tightness = 0.5;
+  f.color = oklch(20% 0.04 280);
+};
+let f2 = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.tightness = 1;
+  f.color = oklch(20% 0.04 280);
+};
+let f3 = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.tightness = 2;
+  f.color = oklch(20% 0.04 280);
+};
 
-let c1 = PathLayer('c1') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f1; };
-let c2 = PathLayer('c2') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f2; };
-let c3 = PathLayer('c3') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f3; };
+let c1 = PathLayer('c1') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f1;
+};
+let c2 = PathLayer('c2') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f2;
+};
+let c3 = PathLayer('c3') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f3;
+};
 
-c1.apply { roundRect( 50, 70, 80, 60, 8); }
-c2.apply { roundRect(230, 70, 80, 60, 8); }
-c3.apply { roundRect(410, 70, 80, 60, 8); }
+c1.apply {
+  roundRect(50,
+      70,
+      80,
+      60,
+      8);
+}
+c2.apply {
+  roundRect(230,
+      70,
+      80,
+      60,
+      8);
+}
+c3.apply {
+  roundRect(410,
+      70,
+      80,
+      60,
+      8);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 90, 200)`tightness = 0.5` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 200)`tightness = 0.5`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(270, 200)`tightness = 1.0` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(270, 200)`tightness = 1.0`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(450, 200)`tightness = 2.0` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(450, 200)`tightness = 2.0`;
+}
 </code>
   <img src="/blog/samples/post26/09-elevation-tightness-sweep.svg" alt="Same elevation (6), three tightness values. The shadow widens and softens as tightness grows." loading="lazy">
 </mini-workspace></p>
@@ -657,8 +1430,13 @@ l3.apply { text(450, 200)`tightness = 2.0` }
 // Left: native CSS `drop-shadow(0 6px 12px black)` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 400, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 240);
+}
 
 let elev = ElevationShadowFilter() {|f|
   f.elevation = 6;
@@ -670,26 +1448,70 @@ let c_native = PathLayer('native') ${
   stroke: none;
   filter: drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4));
 };
-c_native.apply { roundRect(40, 70, 100, 70, 10); }
+c_native.apply {
+  roundRect(40,
+      70,
+      100,
+      70,
+      10);
+}
 
 let c_pathogen = PathLayer('pathogen') ${
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: elev;
 };
-c_pathogen.apply { roundRect(260, 70, 100, 70, 10); }
+c_pathogen.apply {
+  roundRect(260,
+      70,
+      100,
+      70,
+      10);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text(90, 200)`drop-shadow()` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 200)`drop-shadow()`;
+}
 
-let l1b = TextLayer('l1b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l1b.apply { text(90, 215)`single layer` }
+let l1b = TextLayer('l1b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l1b.apply {
+  text(90, 215)`single layer`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(310, 200)`ElevationShadowFilter` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(310, 200)`ElevationShadowFilter`;
+}
 
-let l2b = TextLayer('l2b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l2b.apply { text(310, 215)`three layers, one knob` }
+let l2b = TextLayer('l2b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l2b.apply {
+  text(310, 215)`three layers, one knob`;
+}
 </code>
   <img src="/blog/samples/post26/10-elevation-vs-drop-shadow.svg" alt="Single CSS drop-shadow on the left; three-layer ElevationShadowFilter on the right. The contact zone, falloff, and outer haze tell different stories." loading="lazy">
 </mini-workspace></p>
@@ -701,35 +1523,132 @@ l2b.apply { text(310, 215)`three layers, one knob` }
   <code>// viewBox="0 0 640 240"
 // InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur =  2; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
-let f2 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur =  4; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
-let f3 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur =  8; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
-let f4 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur = 16; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
+let f1 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 2;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+let f2 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 4;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+let f3 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 8;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+let f4 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 16;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
 
-let c1 = PathLayer('c1') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f1; };
-let c2 = PathLayer('c2') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f2; };
-let c3 = PathLayer('c3') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f3; };
-let c4 = PathLayer('c4') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f4; };
+let c1 = PathLayer('c1') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f1;
+};
+let c2 = PathLayer('c2') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f2;
+};
+let c3 = PathLayer('c3') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f3;
+};
+let c4 = PathLayer('c4') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f4;
+};
 
-c1.apply { roundRect( 30, 60, 110, 80, 10); }
-c2.apply { roundRect(190, 60, 110, 80, 10); }
-c3.apply { roundRect(350, 60, 110, 80, 10); }
-c4.apply { roundRect(510, 60, 110, 80, 10); }
+c1.apply {
+  roundRect(30,
+      60,
+      110,
+      80,
+      10);
+}
+c2.apply {
+  roundRect(190,
+      60,
+      110,
+      80,
+      10);
+}
+c3.apply {
+  roundRect(350,
+      60,
+      110,
+      80,
+      10);
+}
+c4.apply {
+  roundRect(510,
+      60,
+      110,
+      80,
+      10);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 85, 200)`blur = 2` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(85, 200)`blur = 2`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(245, 200)`blur = 4` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(245, 200)`blur = 4`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(405, 200)`blur = 8` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(405, 200)`blur = 8`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(565, 200)`blur = 16` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(565, 200)`blur = 16`;
+}
 </code>
   <img src="/blog/samples/post26/11-inner-shadow-blur-sweep.svg" alt="Four blur radii. blur = 2 reads as a hard-edged debossed groove; blur = 16 reads as a soft recessed well." loading="lazy">
 </mini-workspace></p>
@@ -741,63 +1660,236 @@ l4.apply { text(565, 200)`blur = 16` }
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 480, 480); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 480);
+}
 
 // Center coordinates for the 3×3 grid (skipping the middle cell)
-let f_n  = InnerShadowFilter() {|f| f.offsetX =  0; f.offsetY = -5; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_ne = InnerShadowFilter() {|f| f.offsetX =  4; f.offsetY = -4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_e  = InnerShadowFilter() {|f| f.offsetX =  5; f.offsetY =  0; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_se = InnerShadowFilter() {|f| f.offsetX =  4; f.offsetY =  4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_s  = InnerShadowFilter() {|f| f.offsetX =  0; f.offsetY =  5; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_sw = InnerShadowFilter() {|f| f.offsetX = -4; f.offsetY =  4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_w  = InnerShadowFilter() {|f| f.offsetX = -5; f.offsetY =  0; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_nw = InnerShadowFilter() {|f| f.offsetX = -4; f.offsetY = -4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
+let f_n = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = -5;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_ne = InnerShadowFilter() {|f|
+  f.offsetX = 4;
+  f.offsetY = -4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_e = InnerShadowFilter() {|f|
+  f.offsetX = 5;
+  f.offsetY = 0;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_se = InnerShadowFilter() {|f|
+  f.offsetX = 4;
+  f.offsetY = 4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_s = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = 5;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_sw = InnerShadowFilter() {|f|
+  f.offsetX = -4;
+  f.offsetY = 4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_w = InnerShadowFilter() {|f|
+  f.offsetX = -5;
+  f.offsetY = 0;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_nw = InnerShadowFilter() {|f|
+  f.offsetX = -4;
+  f.offsetY = -4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
 
-let mk_n  = PathLayer('n')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_n;  };
-let mk_ne = PathLayer('ne') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_ne; };
-let mk_e  = PathLayer('e')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_e;  };
-let mk_se = PathLayer('se') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_se; };
-let mk_s  = PathLayer('s')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_s;  };
-let mk_sw = PathLayer('sw') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_sw; };
-let mk_w  = PathLayer('w')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_w;  };
-let mk_nw = PathLayer('nw') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_nw; };
+let mk_n = PathLayer('n') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_n;
+};
+let mk_ne = PathLayer('ne') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_ne;
+};
+let mk_e = PathLayer('e') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_e;
+};
+let mk_se = PathLayer('se') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_se;
+};
+let mk_s = PathLayer('s') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_s;
+};
+let mk_sw = PathLayer('sw') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_sw;
+};
+let mk_w = PathLayer('w') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_w;
+};
+let mk_nw = PathLayer('nw') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_nw;
+};
 
-mk_nw.apply { circle(120, 120, 50); }
-mk_n.apply  { circle(240, 120, 50); }
-mk_ne.apply { circle(360, 120, 50); }
-mk_w.apply  { circle(120, 240, 50); }
-mk_e.apply  { circle(360, 240, 50); }
-mk_sw.apply { circle(120, 360, 50); }
-mk_s.apply  { circle(240, 360, 50); }
-mk_se.apply { circle(360, 360, 50); }
+mk_nw.apply {
+  circle(120, 120, 50);
+}
+mk_n.apply {
+  circle(240, 120, 50);
+}
+mk_ne.apply {
+  circle(360, 120, 50);
+}
+mk_w.apply {
+  circle(120, 240, 50);
+}
+mk_e.apply {
+  circle(360, 240, 50);
+}
+mk_sw.apply {
+  circle(120, 360, 50);
+}
+mk_s.apply {
+  circle(240, 360, 50);
+}
+mk_se.apply {
+  circle(360, 360, 50);
+}
 
-let label_nw = TextLayer('lnw') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_nw.apply { text(120, 183)`(-4, -4)` }
+let label_nw = TextLayer('lnw') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_nw.apply {
+  text(120, 183)`(-4, -4)`;
+}
 
-let label_n  = TextLayer('ln') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_n.apply  { text(240, 183)`(0, -5)` }
+let label_n = TextLayer('ln') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_n.apply {
+  text(240, 183)`(0, -5)`;
+}
 
-let label_ne = TextLayer('lne') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_ne.apply { text(360, 183)`(4, -4)` }
+let label_ne = TextLayer('lne') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_ne.apply {
+  text(360, 183)`(4, -4)`;
+}
 
-let label_w  = TextLayer('lw') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_w.apply  { text(120, 303)`(-5, 0)` }
+let label_w = TextLayer('lw') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_w.apply {
+  text(120, 303)`(-5, 0)`;
+}
 
-let label_e  = TextLayer('le') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_e.apply  { text(360, 303)`(5, 0)` }
+let label_e = TextLayer('le') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_e.apply {
+  text(360, 303)`(5, 0)`;
+}
 
-let label_sw = TextLayer('lsw') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_sw.apply { text(120, 435)`(-4, 4)` }
+let label_sw = TextLayer('lsw') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_sw.apply {
+  text(120, 435)`(-4, 4)`;
+}
 
-let label_s  = TextLayer('ls') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_s.apply  { text(240, 435)`(0, 5)` }
+let label_s = TextLayer('ls') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_s.apply {
+  text(240, 435)`(0, 5)`;
+}
 
-let label_se = TextLayer('lse') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_se.apply { text(360, 435)`(4, 4)` }
+let label_se = TextLayer('lse') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_se.apply {
+  text(360, 435)`(4, 4)`;
+}
 
-let caption = TextLayer('caption') ${ font-family: sans-serif; font-size: 12; font-weight: 700; fill: oklch(20% 0.02 270); text-anchor: middle; };
-caption.apply { text(240, 252)`offsetX, offsetY` }
+let caption = TextLayer('caption') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 700;
+  fill: oklch(20% 0.02 270);
+  text-anchor: middle;
+};
+caption.apply {
+  text(240, 252)`offsetX, offsetY`;
+}
 </code>
   <img src="/blog/samples/post26/12-inner-shadow-compass.svg" alt="Eight offset directions on the same disc. Each label is the (offsetX, offsetY) pair; the shadow lands opposite the implied light source." loading="lazy">
 </mini-workspace></p>
@@ -822,38 +1914,107 @@ caption.apply { text(240, 252)`offsetX, offsetY` }
   <code>// viewBox="0 0 640 240"
 // PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
 
-let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = PixelateFilter(4,  4,  2);
-let f2 = PixelateFilter(8,  8,  4);
+let f1 = PixelateFilter(4, 4, 2);
+let f2 = PixelateFilter(8, 8, 4);
 let f3 = PixelateFilter(16, 16, 8);
 let f4 = PixelateFilter(32, 32, 16);
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f4; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
 
-d1.apply { circle( 80, 100, 55); }
-d2.apply { circle(240, 100, 55); }
-d3.apply { circle(400, 100, 55); }
-d4.apply { circle(560, 100, 55); }
+d1.apply {
+  circle(80, 100, 55);
+}
+d2.apply {
+  circle(240, 100, 55);
+}
+d3.apply {
+  circle(400, 100, 55);
+}
+d4.apply {
+  circle(560, 100, 55);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 80, 200)`(4, 4, 2)` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)`(4, 4, 2)`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(240, 200)`(8, 8, 4)` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)`(8, 8, 4)`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(400, 200)`(16, 16, 8)` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)`(16, 16, 8)`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(560, 200)`(32, 32, 16)` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)`(32, 32, 16)`;
+}
 
-let lcap = TextLayer('lcap') ${ font-family: sans-serif; font-size: 11; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-lcap.apply { text(320, 222)`PixelateFilter(width, height, radius)` }
+let lcap = TextLayer('lcap') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+lcap.apply {
+  text(320, 222)`PixelateFilter(width, height, radius)`;
+}
 </code>
   <img src="/blog/samples/post26/13-pixelate-block-sweep.svg" alt="PixelateFilter(4, 4, 2) through PixelateFilter(32, 32, 16). radius = width / 2 keeps blocks touching with no gap or overlap." loading="lazy">
 </mini-workspace></p>
@@ -864,38 +2025,109 @@ lcap.apply { text(320, 222)`PixelateFilter(width, height, radius)` }
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius &lt; 8: gaps between blocks. radius = 8: blocks touch. radius &gt; 8: overlap.
 
-let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 540, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 540, 240);
+}
 
-let f_gap     = PixelateFilter(16, 16, 4);
-let f_touch   = PixelateFilter(16, 16, 8);
+let f_gap = PixelateFilter(16, 16, 4);
+let f_touch = PixelateFilter(16, 16, 8);
 let f_overlap = PixelateFilter(16, 16, 12);
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_gap;     };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_touch;   };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_overlap; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_gap;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_touch;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_overlap;
+};
 
-d1.apply { circle( 90, 100, 55); }
-d2.apply { circle(270, 100, 55); }
-d3.apply { circle(450, 100, 55); }
+d1.apply {
+  circle(90, 100, 55);
+}
+d2.apply {
+  circle(270, 100, 55);
+}
+d3.apply {
+  circle(450, 100, 55);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 90, 195)`radius = 4` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 195)`radius = 4`;
+}
 
-let l1b = TextLayer('l1b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l1b.apply { text( 90, 212)`gaps between blocks` }
+let l1b = TextLayer('l1b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l1b.apply {
+  text(90, 212)`gaps between blocks`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(270, 195)`radius = 8` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(270, 195)`radius = 8`;
+}
 
-let l2b = TextLayer('l2b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l2b.apply { text(270, 212)`blocks just touch (= width / 2)` }
+let l2b = TextLayer('l2b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l2b.apply {
+  text(270, 212)`blocks just touch (= width / 2)`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(450, 195)`radius = 12` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(450, 195)`radius = 12`;
+}
 
-let l3b = TextLayer('l3b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l3b.apply { text(450, 212)`blocks overlap` }
+let l3b = TextLayer('l3b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l3b.apply {
+  text(450, 212)`blocks overlap`;
+}
 </code>
   <img src="/blog/samples/post26/14-pixelate-radius-regime.svg" alt="Width = height = 16 in all three. Radius below width/2 leaves gaps; equal to width/2 makes blocks touch; above width/2 makes them overlap." loading="lazy">
 </mini-workspace></p>
@@ -908,8 +2140,13 @@ l3b.apply { text(450, 212)`blocks overlap` }
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 400, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 240);
+}
 
 let lift = ElevationShadowFilter() {|f|
   f.elevation = 6;
@@ -929,14 +2166,30 @@ let inner = PathLayer('inner') ${
   stroke: none;
   filter: press;
 };
-inner.apply { roundRect(100, 80, 200, 60, 14); }
+inner.apply {
+  roundRect(100,
+      80,
+      200,
+      60,
+      14);
+}
 
 // Outer group carries the elevation shadow.
-let chip = GroupLayer('chip') ${ filter: lift; };
+let chip = GroupLayer('chip') ${
+  filter: lift;
+};
 chip.append(inner);
 
-let label = TextLayer('label') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-label.apply { text(200, 200)`ElevationShadow on GroupLayer  +  InnerShadow on PathLayer` }
+let label = TextLayer('label') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+label.apply {
+  text(200, 200)`ElevationShadow on GroupLayer  +  InnerShadow on PathLayer`;
+}
 </code>
   <img src="/blog/samples/post26/15-composition-card.svg" alt="A card raised above its surface (ElevationShadow on the outer GroupLayer) and visually recessed on its top edge (InnerShadow on the inner PathLayer)." loading="lazy">
 </mini-workspace></p>

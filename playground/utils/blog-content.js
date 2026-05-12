@@ -3,6 +3,18 @@
 
 export const blogIndex = [
   {
+    "slug": "custom-filters-family",
+    "title": "The Full Filter Family: Glow, Emboss, Shadows, Pixelate",
+    "date": "2026-05-12",
+    "description": "Five more custom filters that close the gaps native CSS leaves open: outer/inner glow, embossed surfaces, Material-style elevation shadows, inset shadows, and pixelation — all configured by named parameters, all composable via GroupLayer."
+  },
+  {
+    "slug": "custom-filters-pipeline",
+    "title": "Custom Filters in Pathogen: First-Class Visual Effects",
+    "date": "2026-05-11",
+    "description": "Pathogen's custom filters are first-class language values — defined once, reused, introspected, and composed in ways native CSS filter functions can't match. A walkthrough of the pipeline, anchored by NoiseFilter."
+  },
+  {
     "slug": "clifford-attractor",
     "title": "Strange Attractors: Clifford Attractor Art with Pathogen",
     "date": "2026-04-14",
@@ -2728,6 +2740,2629 @@ code_comment.apply {
 <p>Everything is backwards-compatible. Existing <code>Color(&#39;#cc0000&#39;)</code> calls continue to work — <code>Color()</code> now accepts a bare <code>ColorValue</code> as a pass-through.</p>
 <h2>Try It</h2>
 <p>Open the <a href="/">Pathogen playground</a>, start from <code>#0066ff</code>, and build your own palette — lighten, shift hue, take the complement. The full API reference is in the <a href="/docs#stdlib-color">Color documentation</a>, and the syntax details are in the <a href="/docs#syntax-color-literals">Color Literals</a> and <a href="/docs#syntax-percent-suffix">Percent Suffix</a> sections.</p>
+`,
+  'custom-filters-family': `<blockquote>
+<p><strong>Part 2 of 2</strong> in our series on Pathogen&#39;s custom filter pipeline. <a href="./custom-filters-pipeline">Part 1</a> covered the architecture and ergonomics anchored by <code>NoiseFilter</code>. This post walks through the rest of the family with side-by-side parameter sweeps.</p>
+</blockquote>
+<p><strong>Series:</strong></p>
+<ol>
+<li><a href="./custom-filters-pipeline">Custom Filters in Pathogen: First-Class Visual Effects</a></li>
+<li><strong>The Full Filter Family: Glow, Emboss, Shadows, Pixelate</strong> ← you are here</li>
+</ol>
+<h2>The family at a glance</h2>
+<p><mini-workspace code-open caption="Six filters, one shape per cell. Each is a single language-level value: NoiseFilter, GlowFilter, EmbossFilter, ElevationShadowFilter, InnerShadowFilter, PixelateFilter.">
+  <code>// viewBox="0 0 600 400"
+// Six filters, one shape per cell — the family portrait.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 600, 400);
+}
+
+let f_grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.45;
+};
+let f_glow = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.20 60);
+  f.radius = 8;
+  f.opacity = 0.85;
+};
+let f_emboss = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f_elevation = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.color = oklch(20% 0.04 280);
+};
+let f_inner = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.5;
+};
+let f_pixelate = PixelateFilter(12, 12, 6);
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_grain;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_glow;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_emboss;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_elevation;
+};
+let d5 = PathLayer('d5') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_inner;
+};
+let d6 = PathLayer('d6') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_pixelate;
+};
+
+d1.apply {
+  circle(100, 100, 50);
+}
+d2.apply {
+  circle(300, 100, 50);
+}
+d3.apply {
+  circle(500, 100, 50);
+}
+d4.apply {
+  circle(100, 270, 50);
+}
+d5.apply {
+  circle(300, 270, 50);
+}
+d6.apply {
+  circle(500, 270, 50);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(100, 175)\`Grain\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(300, 175)\`Glow\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(500, 175)\`Emboss\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(100, 360)\`Elevation\`;
+}
+
+let l5 = TextLayer('l5') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l5.apply {
+  text(300, 360)\`Inner Shadow\`;
+}
+
+let l6 = TextLayer('l6') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l6.apply {
+  text(500, 360)\`Pixelate\`;
+}
+</code>
+  <img src="/blog/samples/post26/01-hero-family.svg" alt="Six filters, one shape per cell. Each is a single language-level value: NoiseFilter, GlowFilter, EmbossFilter, ElevationShadowFilter, InnerShadowFilter, PixelateFilter." loading="lazy">
+</mini-workspace></p>
+<p>The same ergonomic story from <a href="./custom-filters-pipeline">Part 1</a> applies to every filter on this page: each is a first-class value, configured by name in a trailing block, accepts the same auto-wrapping <code>filter:</code> assignment in a style block, exposes read-side property access on every configurable knob, and composes with other filters via <a href="/docs/layers"><code>GroupLayer</code></a> stacking.</p>
+<p>What changes filter-to-filter is the <strong>specific capability gap</strong> each one closes against native CSS and the <strong>specific knobs</strong> each one exposes. Let&#39;s walk through them.</p>
+<h2>GlowFilter — two glow modes in one value</h2>
+<p>CSS <code>drop-shadow()</code> gives you one kind of glow: a colored outer halo. Pathogen&#39;s <code>GlowFilter</code> gives you two — <code>GlowMode.Outer</code> and <code>GlowMode.Inner</code> — packed into one filter value that you can flip with a single property write.</p>
+<p><mini-workspace code-open caption="Outer halo and inner edge light. Same constructor, same color, same radius — only the mode property differs.">
+  <code>// viewBox="0 0 400 220"
+// GlowMode.Outer vs GlowMode.Inner on the same disc.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(25% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 220);
+}
+
+let f_outer = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.85;
+};
+
+let f_inner = GlowFilter() {|f|
+  f.mode = GlowMode.Inner;
+  f.color = Color('white');
+  f.radius = 5;
+  f.spread = 1;
+  f.opacity = 0.85;
+};
+
+let d_outer = PathLayer('outer') \${
+  fill: oklch(60% 0.20 240);
+  stroke: none;
+  filter: f_outer;
+};
+let d_inner = PathLayer('inner') \${
+  fill: oklch(60% 0.20 240);
+  stroke: none;
+  filter: f_inner;
+};
+
+d_outer.apply {
+  circle(110, 90, 50);
+}
+d_inner.apply {
+  circle(290, 90, 50);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(110, 180)\`GlowMode.Outer\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(290, 180)\`GlowMode.Inner\`;
+}
+</code>
+  <img src="/blog/samples/post26/02-glow-modes.svg" alt="Outer halo and inner edge light. Same constructor, same color, same radius — only the mode property differs." loading="lazy">
+</mini-workspace></p>
+<p>The two modes share most of their plumbing — both use <code>feGaussianBlur</code> against <code>SourceAlpha</code>, both apply <code>feFlood</code> for the color, both composite into a <code>feMerge</code> at the end. The difference is one composite operator: outer mode merges the blurred silhouette underneath the source; inner mode inverts the blur against the source alpha so the glow rides the inside edge instead.</p>
+<p>A <code>spread</code> parameter is also available in both modes — it dilates the silhouette in Outer mode (fattening the halo before the blur) and erodes it in Inner mode (pushing the inner light further inset). The two knobs that do the most visible work in either mode are <code>radius</code> and <code>opacity</code>.</p>
+<p><mini-workspace code-open caption="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo.">
+  <code>// viewBox="0 0 640 240"
+// GlowFilter outer — radius sweep. Larger radius = wider, softer halo.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(20% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 2;
+  f.opacity = 0.9;
+};
+let f2 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 6;
+  f.opacity = 0.9;
+};
+let f3 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 12;
+  f.opacity = 0.9;
+};
+let f4 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 20;
+  f.opacity = 0.9;
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 40);
+}
+d2.apply {
+  circle(240, 100, 40);
+}
+d3.apply {
+  circle(400, 100, 40);
+}
+d4.apply {
+  circle(560, 100, 40);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`radius =  2\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`radius =  6\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`radius = 12\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`radius = 20\`;
+}
+</code>
+  <img src="/blog/samples/post26/03-glow-radius-sweep.svg" alt="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo." loading="lazy">
+</mini-workspace></p>
+<p><mini-workspace code-open caption="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9.">
+  <code>// viewBox="0 0 640 240"
+// GlowFilter outer — opacity sweep at constant radius.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(20% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.3;
+};
+let f2 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.5;
+};
+let f3 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.7;
+};
+let f4 = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.22 60);
+  f.radius = 10;
+  f.opacity = 0.9;
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 40);
+}
+d2.apply {
+  circle(240, 100, 40);
+}
+d3.apply {
+  circle(400, 100, 40);
+}
+d4.apply {
+  circle(560, 100, 40);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`opacity = 0.3\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`opacity = 0.5\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`opacity = 0.7\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`opacity = 0.9\`;
+}
+</code>
+  <img src="/blog/samples/post26/04-glow-opacity-sweep.svg" alt="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9." loading="lazy">
+</mini-workspace></p>
+<p>For inner glow, an additional <code>spread</code> parameter erodes the silhouette before blurring so the glow has more inset distance — useful for pressed-glass and bezeled-button effects. See <a href="/docs/filters#filters-glowfilter">docs/filters § GlowFilter</a> for the full property reference.</p>
+<h2>EmbossFilter — <code>feSpecularLighting</code> wrapped in named parameters</h2>
+<p>The SVG primitive for embossed surfaces is <code>feSpecularLighting</code> + <code>feDistantLight</code>. It&#39;s powerful and unergonomic: you write XML, you choose which child light type to nest, you spec <code>surfaceScale</code> and <code>specularConstant</code> and <code>specularExponent</code> and <code>lighting-color</code>, you composite the highlight pass back against <code>SourceAlpha</code>, and then you blend it onto <code>SourceGraphic</code>. Five primitives, half a dozen attributes, no semantic shortcuts.</p>
+<p><code>EmbossFilter</code> wraps that whole chain into seven named parameters you can sweep without leaving Pathogen.</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> emboss = <span class="hljs-title class_">EmbossFilter</span>() {|f|
+  f.<span class="hljs-property">angle</span> = 135deg;     <span class="hljs-comment">// light azimuth — top-left</span>
+  f.<span class="hljs-property">elevation</span> = 45deg;  <span class="hljs-comment">// light elevation — overhead-ish</span>
+  f.<span class="hljs-property">depth</span> = <span class="hljs-number">3</span>;          <span class="hljs-comment">// surface scale — bevel depth</span>
+  f.<span class="hljs-property">strength</span> = <span class="hljs-number">1.0</span>;     <span class="hljs-comment">// specular constant — highlight brightness</span>
+  f.<span class="hljs-property">shininess</span> = <span class="hljs-number">20</span>;     <span class="hljs-comment">// specular exponent — highlight tightness</span>
+  f.<span class="hljs-property">lightColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;white&#x27;</span>);
+  f.<span class="hljs-property">smooth</span> = <span class="hljs-number">1</span>;         <span class="hljs-comment">// pre-blur for softer bevel edges</span>
+};
+</code></pre><h3>angle — the light direction</h3>
+<p>The most visible knob. Sweeping <code>angle</code> rotates the simulated light around the surface; the highlight follows.</p>
+<p><mini-workspace code-open caption="Six light azimuths around the clock. The highlight tracks the light source.">
+  <code>// viewBox="0 0 720 240"
+// EmbossFilter — light azimuth sweep. The highlight tracks the light source.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 720, 240);
+}
+
+let f1 = EmbossFilter() {|f|
+  f.angle = 45deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 90deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 180deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f5 = EmbossFilter() {|f|
+  f.angle = 225deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f6 = EmbossFilter() {|f|
+  f.angle = 270deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
+let d5 = PathLayer('d5') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f5;
+};
+let d6 = PathLayer('d6') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f6;
+};
+
+d1.apply {
+  circle(60, 100, 38);
+}
+d2.apply {
+  circle(180, 100, 38);
+}
+d3.apply {
+  circle(300, 100, 38);
+}
+d4.apply {
+  circle(420, 100, 38);
+}
+d5.apply {
+  circle(540, 100, 38);
+}
+d6.apply {
+  circle(660, 100, 38);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(60, 195)\`45°\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(180, 195)\`90°\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(300, 195)\`135°\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(420, 195)\`180°\`;
+}
+
+let l5 = TextLayer('l5') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l5.apply {
+  text(540, 195)\`225°\`;
+}
+
+let l6 = TextLayer('l6') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l6.apply {
+  text(660, 195)\`270°\`;
+}
+</code>
+  <img src="/blog/samples/post26/05-emboss-angle-sweep.svg" alt="Six light azimuths around the clock. The highlight tracks the light source." loading="lazy">
+</mini-workspace></p>
+<h3>depth — the bevel surface scale</h3>
+<p><code>depth</code> maps to <code>surfaceScale</code> on <code>feSpecularLighting</code> — the perceived height of the embossed surface. Higher values produce a more pronounced bevel.</p>
+<p><mini-workspace code-open caption="depth = 1 reads as a flat panel with a hint of light. depth = 8 reads as a dramatically raised tile.">
+  <code>// viewBox="0 0 640 240"
+// EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 1;
+  f.strength = 1;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 2;
+  f.strength = 1;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 4;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 8;
+  f.strength = 1;
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 50);
+}
+d2.apply {
+  circle(240, 100, 50);
+}
+d3.apply {
+  circle(400, 100, 50);
+}
+d4.apply {
+  circle(560, 100, 50);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`depth = 1\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`depth = 2\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`depth = 4\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`depth = 8\`;
+}
+</code>
+  <img src="/blog/samples/post26/06-emboss-depth-sweep.svg" alt="depth = 1 reads as a flat panel with a hint of light. depth = 8 reads as a dramatically raised tile." loading="lazy">
+</mini-workspace></p>
+<h3>strength — the highlight brightness</h3>
+<p><code>strength</code> maps to <code>specularConstant</code>. It controls how much of the simulated light reaches the surface — higher values brighten the highlight, lower values dial it down toward a flat appearance.</p>
+<p><mini-workspace code-open caption="Same angle and depth. strength = 0.3 is a barely-lit surface; 1.5 is dramatic studio lighting.">
+  <code>// viewBox="0 0 640 240"
+// EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 0.3;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 0.6;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1.5;
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 50);
+}
+d2.apply {
+  circle(240, 100, 50);
+}
+d3.apply {
+  circle(400, 100, 50);
+}
+d4.apply {
+  circle(560, 100, 50);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`strength = 0.3\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`strength = 0.6\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`strength = 1.0\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`strength = 1.5\`;
+}
+</code>
+  <img src="/blog/samples/post26/07-emboss-strength-sweep.svg" alt="Same angle and depth. strength = 0.3 is a barely-lit surface; 1.5 is dramatic studio lighting." loading="lazy">
+</mini-workspace></p>
+<p>The ergonomic win here isn&#39;t just that you don&#39;t write the XML — it&#39;s that you can sweep any parameter live and watch the result, because every knob is a property write you can prototype directly. The raw-SVG equivalent is editing <code>&lt;feSpecularLighting&gt;</code> attribute values by hand and reloading.</p>
+<h2>ElevationShadowFilter — Material depth in one knob</h2>
+<p>Material Design&#39;s depth shadows aren&#39;t single drop-shadows. They&#39;re three coordinated drop-shadows stacked under a single elevation concept — a tight shadow for the close-in contact zone, a mid shadow for the bulk of the cast, and a soft shadow for the far falloff. The result reads as physical lift in a way one shadow can&#39;t.</p>
+<p>You can&#39;t express that in CSS as <code>drop-shadow(...)</code> because <code>drop-shadow()</code> is one layer. You&#39;d write three <code>filter: drop-shadow(...) drop-shadow(...) drop-shadow(...)</code> and hand-tune the offset/blur/opacity for each layer. Three times the typing, three times the chance of mistuning the layers, and zero introspection on the result.</p>
+<p><code>ElevationShadowFilter</code> gives you one knob — <code>elevation</code> — and does the layering for you.</p>
+<p><mini-workspace code-open caption="One value, six elevations. elevation = 0 emits no shadow; elevation = 24 produces a deeply lifted floating element.">
+  <code>// viewBox="0 0 720 240"
+// ElevationShadowFilter — one knob, six elevations.
+// 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 720, 240);
+}
+
+let f0 = ElevationShadowFilter() {|f|
+  f.elevation = 0;
+  f.color = oklch(20% 0.04 280);
+};
+let f2 = ElevationShadowFilter() {|f|
+  f.elevation = 2;
+  f.color = oklch(20% 0.04 280);
+};
+let f4 = ElevationShadowFilter() {|f|
+  f.elevation = 4;
+  f.color = oklch(20% 0.04 280);
+};
+let f8 = ElevationShadowFilter() {|f|
+  f.elevation = 8;
+  f.color = oklch(20% 0.04 280);
+};
+let f16 = ElevationShadowFilter() {|f|
+  f.elevation = 16;
+  f.color = oklch(20% 0.04 280);
+};
+let f24 = ElevationShadowFilter() {|f|
+  f.elevation = 24;
+  f.color = oklch(20% 0.04 280);
+};
+
+let c0 = PathLayer('c0') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f0;
+};
+let c2 = PathLayer('c2') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f2;
+};
+let c4 = PathLayer('c4') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f4;
+};
+let c8 = PathLayer('c8') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f8;
+};
+let c16 = PathLayer('c16') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f16;
+};
+let c24 = PathLayer('c24') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f24;
+};
+
+c0.apply {
+  roundRect(25,
+      60,
+      75,
+      60,
+      8);
+}
+c2.apply {
+  roundRect(140,
+      60,
+      75,
+      60,
+      8);
+}
+c4.apply {
+  roundRect(255,
+      60,
+      75,
+      60,
+      8);
+}
+c8.apply {
+  roundRect(370,
+      60,
+      75,
+      60,
+      8);
+}
+c16.apply {
+  roundRect(485,
+      60,
+      75,
+      60,
+      8);
+}
+c24.apply {
+  roundRect(600,
+      60,
+      75,
+      60,
+      8);
+}
+
+let l0 = TextLayer('l0') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l0.apply {
+  text(62, 200)\`elevation = 0\`;
+}
+
+let l2t = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2t.apply {
+  text(177, 200)\`elevation = 2\`;
+}
+
+let l4t = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4t.apply {
+  text(292, 200)\`elevation = 4\`;
+}
+
+let l8t = TextLayer('l8') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l8t.apply {
+  text(407, 200)\`elevation = 8\`;
+}
+
+let l16 = TextLayer('l16') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l16.apply {
+  text(522, 200)\`elevation = 16\`;
+}
+
+let l24 = TextLayer('l24') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l24.apply {
+  text(637, 200)\`elevation = 24\`;
+}
+</code>
+  <img src="/blog/samples/post26/08-elevation-sweep.svg" alt="One value, six elevations. elevation = 0 emits no shadow; elevation = 24 produces a deeply lifted floating element." loading="lazy">
+</mini-workspace></p>
+<p>Internally, <code>elevation</code> parameterizes three sub-shadows with tuned distance, blur, and opacity ratios — <code>0.3 / 0.5 / 0.30</code> for the tight layer, <code>0.6 / 1.0 / 0.18</code> for the mid, <code>1.0 / 2.0 / 0.12</code> for the soft. Multiply each by <code>elevation</code>, project the offset along <code>direction</code> (default <code>90deg</code> = down), and you get a shadow stack that scales coherently from &quot;barely lifted&quot; to &quot;dramatically floating.&quot;</p>
+<h3>tightness — scaling the ratios</h3>
+<p>For finer control over the shadow character at a fixed elevation, the <code>tightness</code> property scales the per-layer distance and blur ratios. <code>0.5</code> reads as a tighter, crisper depth; <code>2.0</code> reads as a wider, hazier cast.</p>
+<p><mini-workspace code-open caption="Same elevation (6), three tightness values. The shadow widens and softens as tightness grows.">
+  <code>// viewBox="0 0 540 240"
+// ElevationShadowFilter — tightness sweep at fixed elevation=6.
+// 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 540, 240);
+}
+
+let f1 = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.tightness = 0.5;
+  f.color = oklch(20% 0.04 280);
+};
+let f2 = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.tightness = 1;
+  f.color = oklch(20% 0.04 280);
+};
+let f3 = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.tightness = 2;
+  f.color = oklch(20% 0.04 280);
+};
+
+let c1 = PathLayer('c1') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f1;
+};
+let c2 = PathLayer('c2') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f2;
+};
+let c3 = PathLayer('c3') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f3;
+};
+
+c1.apply {
+  roundRect(50,
+      70,
+      80,
+      60,
+      8);
+}
+c2.apply {
+  roundRect(230,
+      70,
+      80,
+      60,
+      8);
+}
+c3.apply {
+  roundRect(410,
+      70,
+      80,
+      60,
+      8);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 200)\`tightness = 0.5\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(270, 200)\`tightness = 1.0\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(450, 200)\`tightness = 2.0\`;
+}
+</code>
+  <img src="/blog/samples/post26/09-elevation-tightness-sweep.svg" alt="Same elevation (6), three tightness values. The shadow widens and softens as tightness grows." loading="lazy">
+</mini-workspace></p>
+<h3>Why three layers beats one</h3>
+<p>Side by side: the left card uses a single CSS <code>drop-shadow(0 6px 12px black)</code> at 40% opacity. The right card uses <code>ElevationShadowFilter</code> with <code>elevation = 6</code>. Same approximate &quot;depth budget&quot; — the elevation knob and the drop-shadow params land in the same neighborhood — but the three-layer chain reads as something hovering above the page rather than something with a shadow under it.</p>
+<p><mini-workspace code-open caption="Single CSS drop-shadow on the left; three-layer ElevationShadowFilter on the right. The contact zone, falloff, and outer haze tell different stories.">
+  <code>// viewBox="0 0 400 240"
+// Same depth budget, two ways to spend it.
+// Left: native CSS \`drop-shadow(0 6px 12px black)\` — a single shadow.
+// Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 240);
+}
+
+let elev = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.color = oklch(15% 0.04 280);
+};
+
+let c_native = PathLayer('native') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4));
+};
+c_native.apply {
+  roundRect(40,
+      70,
+      100,
+      70,
+      10);
+}
+
+let c_pathogen = PathLayer('pathogen') \${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: elev;
+};
+c_pathogen.apply {
+  roundRect(260,
+      70,
+      100,
+      70,
+      10);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 200)\`drop-shadow()\`;
+}
+
+let l1b = TextLayer('l1b') \${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l1b.apply {
+  text(90, 215)\`single layer\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(310, 200)\`ElevationShadowFilter\`;
+}
+
+let l2b = TextLayer('l2b') \${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l2b.apply {
+  text(310, 215)\`three layers, one knob\`;
+}
+</code>
+  <img src="/blog/samples/post26/10-elevation-vs-drop-shadow.svg" alt="Single CSS drop-shadow on the left; three-layer ElevationShadowFilter on the right. The contact zone, falloff, and outer haze tell different stories." loading="lazy">
+</mini-workspace></p>
+<p>This isn&#39;t a knock on <code>drop-shadow()</code> — it&#39;s the right tool for a specific job. It&#39;s a demonstration that <em>Material depth</em> is a different visual language than <em>offset shadow</em>, and that having a first-class language value for the former is the difference between expressing it directly and re-inventing the layering by hand each time.</p>
+<h2>InnerShadowFilter — the inset capability CSS can&#39;t reach</h2>
+<p>CSS <code>drop-shadow()</code> is outer-only. There is no <code>drop-shadow(... inset)</code> keyword and no other CSS filter function that produces an inset shadow. Pressed buttons, recessed wells, engraved-text effects, carved-look artwork — all of these reach for <code>box-shadow: inset ...</code>, which works on box backgrounds but not on SVG paths.</p>
+<p><code>InnerShadowFilter</code> is the capability that closes that gap.</p>
+<p><mini-workspace code-open caption="Four blur radii. blur = 2 reads as a hard-edged debossed groove; blur = 16 reads as a soft recessed well.">
+  <code>// viewBox="0 0 640 240"
+// InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 2;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+let f2 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 4;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+let f3 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 8;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+let f4 = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 16;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+
+let c1 = PathLayer('c1') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f1;
+};
+let c2 = PathLayer('c2') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f2;
+};
+let c3 = PathLayer('c3') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f3;
+};
+let c4 = PathLayer('c4') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f4;
+};
+
+c1.apply {
+  roundRect(30,
+      60,
+      110,
+      80,
+      10);
+}
+c2.apply {
+  roundRect(190,
+      60,
+      110,
+      80,
+      10);
+}
+c3.apply {
+  roundRect(350,
+      60,
+      110,
+      80,
+      10);
+}
+c4.apply {
+  roundRect(510,
+      60,
+      110,
+      80,
+      10);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(85, 200)\`blur = 2\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(245, 200)\`blur = 4\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(405, 200)\`blur = 8\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(565, 200)\`blur = 16\`;
+}
+</code>
+  <img src="/blog/samples/post26/11-inner-shadow-blur-sweep.svg" alt="Four blur radii. blur = 2 reads as a hard-edged debossed groove; blur = 16 reads as a soft recessed well." loading="lazy">
+</mini-workspace></p>
+<p>The primitive chain is the inverse of an outer shadow: blur <code>SourceAlpha</code>, offset it, composite against the original silhouette using <code>operator=&quot;out&quot;</code> (which keeps only the part NOT covered by the offset blur), color-fill, clip to the source, then merge under the source graphic.</p>
+<h3>The offset compass</h3>
+<p><code>offsetX</code> and <code>offsetY</code> together control where the shadow falls <em>inside</em> the shape — and therefore where the perceived light source sits <em>outside</em> it. A positive <code>offsetY</code> (the default of <code>2</code>) pushes the shadow down, which reads as light coming from above. Negative <code>offsetY</code> flips that. Diagonal offsets simulate raking light.</p>
+<p><mini-workspace code-open caption="Eight offset directions on the same disc. Each label is the (offsetX, offsetY) pair; the shadow lands opposite the implied light source.">
+  <code>// viewBox="0 0 480 480"
+// InnerShadowFilter — 8 offset directions around a clock face.
+// The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 480);
+}
+
+// Center coordinates for the 3×3 grid (skipping the middle cell)
+let f_n = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = -5;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_ne = InnerShadowFilter() {|f|
+  f.offsetX = 4;
+  f.offsetY = -4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_e = InnerShadowFilter() {|f|
+  f.offsetX = 5;
+  f.offsetY = 0;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_se = InnerShadowFilter() {|f|
+  f.offsetX = 4;
+  f.offsetY = 4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_s = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = 5;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_sw = InnerShadowFilter() {|f|
+  f.offsetX = -4;
+  f.offsetY = 4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_w = InnerShadowFilter() {|f|
+  f.offsetX = -5;
+  f.offsetY = 0;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_nw = InnerShadowFilter() {|f|
+  f.offsetX = -4;
+  f.offsetY = -4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+
+let mk_n = PathLayer('n') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_n;
+};
+let mk_ne = PathLayer('ne') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_ne;
+};
+let mk_e = PathLayer('e') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_e;
+};
+let mk_se = PathLayer('se') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_se;
+};
+let mk_s = PathLayer('s') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_s;
+};
+let mk_sw = PathLayer('sw') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_sw;
+};
+let mk_w = PathLayer('w') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_w;
+};
+let mk_nw = PathLayer('nw') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_nw;
+};
+
+mk_nw.apply {
+  circle(120, 120, 50);
+}
+mk_n.apply {
+  circle(240, 120, 50);
+}
+mk_ne.apply {
+  circle(360, 120, 50);
+}
+mk_w.apply {
+  circle(120, 240, 50);
+}
+mk_e.apply {
+  circle(360, 240, 50);
+}
+mk_sw.apply {
+  circle(120, 360, 50);
+}
+mk_s.apply {
+  circle(240, 360, 50);
+}
+mk_se.apply {
+  circle(360, 360, 50);
+}
+
+let label_nw = TextLayer('lnw') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_nw.apply {
+  text(120, 183)\`(-4, -4)\`;
+}
+
+let label_n = TextLayer('ln') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_n.apply {
+  text(240, 183)\`(0, -5)\`;
+}
+
+let label_ne = TextLayer('lne') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_ne.apply {
+  text(360, 183)\`(4, -4)\`;
+}
+
+let label_w = TextLayer('lw') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_w.apply {
+  text(120, 303)\`(-5, 0)\`;
+}
+
+let label_e = TextLayer('le') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_e.apply {
+  text(360, 303)\`(5, 0)\`;
+}
+
+let label_sw = TextLayer('lsw') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_sw.apply {
+  text(120, 435)\`(-4, 4)\`;
+}
+
+let label_s = TextLayer('ls') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_s.apply {
+  text(240, 435)\`(0, 5)\`;
+}
+
+let label_se = TextLayer('lse') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_se.apply {
+  text(360, 435)\`(4, 4)\`;
+}
+
+let caption = TextLayer('caption') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 700;
+  fill: oklch(20% 0.02 270);
+  text-anchor: middle;
+};
+caption.apply {
+  text(240, 252)\`offsetX, offsetY\`;
+}
+</code>
+  <img src="/blog/samples/post26/12-inner-shadow-compass.svg" alt="Eight offset directions on the same disc. Each label is the (offsetX, offsetY) pair; the shadow lands opposite the implied light source." loading="lazy">
+</mini-workspace></p>
+<p>The compass view also illustrates something the other parameter sweeps can&#39;t: the inner shadow technique works on any shape, not just rectangles. Roundrects, circles, stars, freeform paths — <code>InnerShadowFilter</code> clips to whatever silhouette you painted.</p>
+<h2>PixelateFilter — a four-primitive recipe collapsed into one constructor</h2>
+<p>Pixelation in raw SVG is a sample-flood-tile-composite-dilate technique: flood a small region with a sample color, expand the region into one tile cell, tile that cell across the filter region, composite against the source to keep only the pixels at sample positions, then dilate each sample into a block. Four primitives, three intermediate <code>result</code> names to thread together, and a <code>filterUnits</code> attribute you have to get right or the whole thing renders blank.</p>
+<p><code>PixelateFilter</code> collapses all of that into one constructor with three numeric knobs and gives you the choice of positional or block-style configuration:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> pix = <span class="hljs-title class_">PixelateFilter</span>(width, height, radius);
+</code></pre><ul>
+<li><code>width</code> and <code>height</code> are the stride between sampled pixels (and therefore the block size in the output)</li>
+<li><code>radius</code> is the dilation distance — how far each sample expands</li>
+</ul>
+<p>The constructor accepts both positional arguments (as above) and the trailing-block form for consistency with the other filters:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> pix = <span class="hljs-title class_">PixelateFilter</span>() {|f|
+  f.<span class="hljs-property">width</span> = <span class="hljs-number">12</span>;
+  f.<span class="hljs-property">height</span> = <span class="hljs-number">12</span>;
+  f.<span class="hljs-property">radius</span> = <span class="hljs-number">6</span>;
+};
+</code></pre><h3>Block size sweep</h3>
+<p>Three positional values, four block sizes. Larger <code>width</code> produces coarser pixelation.</p>
+<p><mini-workspace code-open caption="PixelateFilter(4, 4, 2) through PixelateFilter(32, 32, 16). radius = width / 2 keeps blocks touching with no gap or overlap.">
+  <code>// viewBox="0 0 640 240"
+// PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = PixelateFilter(4, 4, 2);
+let f2 = PixelateFilter(8, 8, 4);
+let f3 = PixelateFilter(16, 16, 8);
+let f4 = PixelateFilter(32, 32, 16);
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 55);
+}
+d2.apply {
+  circle(240, 100, 55);
+}
+d3.apply {
+  circle(400, 100, 55);
+}
+d4.apply {
+  circle(560, 100, 55);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`(4, 4, 2)\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`(8, 8, 4)\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`(16, 16, 8)\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`(32, 32, 16)\`;
+}
+
+let lcap = TextLayer('lcap') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+lcap.apply {
+  text(320, 222)\`PixelateFilter(width, height, radius)\`;
+}
+</code>
+  <img src="/blog/samples/post26/13-pixelate-block-sweep.svg" alt="PixelateFilter(4, 4, 2) through PixelateFilter(32, 32, 16). radius = width / 2 keeps blocks touching with no gap or overlap." loading="lazy">
+</mini-workspace></p>
+<h3>Radius regime</h3>
+<p>At fixed <code>width</code> and <code>height</code>, <code>radius</code> controls three visually distinct regimes:</p>
+<p><mini-workspace code-open caption="Width = height = 16 in all three. Radius below width/2 leaves gaps; equal to width/2 makes blocks touch; above width/2 makes them overlap.">
+  <code>// viewBox="0 0 540 240"
+// PixelateFilter — three radius regimes at fixed block size width=height=16.
+// radius &lt; 8: gaps between blocks. radius = 8: blocks touch. radius &gt; 8: overlap.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 540, 240);
+}
+
+let f_gap = PixelateFilter(16, 16, 4);
+let f_touch = PixelateFilter(16, 16, 8);
+let f_overlap = PixelateFilter(16, 16, 12);
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_gap;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_touch;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_overlap;
+};
+
+d1.apply {
+  circle(90, 100, 55);
+}
+d2.apply {
+  circle(270, 100, 55);
+}
+d3.apply {
+  circle(450, 100, 55);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 195)\`radius = 4\`;
+}
+
+let l1b = TextLayer('l1b') \${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l1b.apply {
+  text(90, 212)\`gaps between blocks\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(270, 195)\`radius = 8\`;
+}
+
+let l2b = TextLayer('l2b') \${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l2b.apply {
+  text(270, 212)\`blocks just touch (= width / 2)\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(450, 195)\`radius = 12\`;
+}
+
+let l3b = TextLayer('l3b') \${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l3b.apply {
+  text(450, 212)\`blocks overlap\`;
+}
+</code>
+  <img src="/blog/samples/post26/14-pixelate-radius-regime.svg" alt="Width = height = 16 in all three. Radius below width/2 leaves gaps; equal to width/2 makes blocks touch; above width/2 makes them overlap." loading="lazy">
+</mini-workspace></p>
+<p>The gap regime gives you a halftone-print look. The touching regime is the canonical &quot;8-bit pixel&quot; appearance. The overlap regime softens the block edges by letting adjacent samples merge — useful when you want pixelation without the harsh grid.</p>
+<h2>Stacking filters via GroupLayer</h2>
+<p>A single <code>filter:</code> declaration in a Pathogen style block accepts <strong>either</strong> a custom filter value <strong>or</strong> a chain of native CSS filter functions — not both at once. That&#39;s the v1 limit on filter chaining.</p>
+<p>The composition workaround is straightforward and ergonomic: nest the layer in a <a href="/docs/layers"><code>GroupLayer</code></a> carrying one filter, and put the second filter on the inner layer.</p>
+<p><mini-workspace code-open caption="A card raised above its surface (ElevationShadow on the outer GroupLayer) and visually recessed on its top edge (InnerShadow on the inner PathLayer).">
+  <code>// viewBox="0 0 400 240"
+// Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
+// Two filters, one card — raised above its surface, recessed on its top edge.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 240);
+}
+
+let lift = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.color = oklch(20% 0.04 280);
+};
+
+let press = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 4;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.5;
+};
+
+// Inner layer carries the inner shadow.
+let inner = PathLayer('inner') \${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: press;
+};
+inner.apply {
+  roundRect(100,
+      80,
+      200,
+      60,
+      14);
+}
+
+// Outer group carries the elevation shadow.
+let chip = GroupLayer('chip') \${
+  filter: lift;
+};
+chip.append(inner);
+
+let label = TextLayer('label') \${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+label.apply {
+  text(200, 200)\`ElevationShadow on GroupLayer  +  InnerShadow on PathLayer\`;
+}
+</code>
+  <img src="/blog/samples/post26/15-composition-card.svg" alt="A card raised above its surface (ElevationShadow on the outer GroupLayer) and visually recessed on its top edge (InnerShadow on the inner PathLayer)." loading="lazy">
+</mini-workspace></p>
+<p>Two filters, one rectangle. The card reads as physically lifted above its surface AND as having a pressed-in lip along its top edge — a combination you can&#39;t express in a single CSS <code>filter:</code> declaration, and that you wouldn&#39;t want to write by hand as a raw <code>&lt;filter&gt;</code> def either.</p>
+<h2>Ergonomic recap</h2>
+<p>Looking back across both posts, the six custom filters fit the same shape:</p>
+<ul>
+<li><strong>Defined once</strong> with a trailing block of named property assignments.</li>
+<li><strong>Referenced many times</strong> via a single <code>let</code> binding, producing one <code>&lt;filter&gt;</code> def in the output regardless of reference count.</li>
+<li><strong>Configured by preset where presets exist</strong> (NoiseFilter&#39;s <code>style</code>, GlowFilter&#39;s <code>mode</code>) and by named numeric parameters everywhere else (no positional ambiguity).</li>
+<li><strong>Introspectable</strong> — every configurable property is also readable from the value.</li>
+<li><strong>Composable</strong> with gradients (filters apply on top of any fill, including gradients) and with each other (via <code>GroupLayer</code> stacking).</li>
+<li><strong>Cross-surface consistent</strong> — the same source compiles to identical SVG in the CLI, the playground, and the VS Code preview.</li>
+</ul>
+<p>That&#39;s the ergonomic story we wanted to tell. The visual capabilities are real — Material elevation, inset shadows, the full noise family, the rest — but they&#39;re available in raw SVG too. What custom filters add is making those capabilities easy to reach for, easy to reuse, and easy to compose.</p>
+<p>For the full reference, see <a href="/docs/filters">docs/filters</a>. For the architecture story and the NoiseFilter deep-dive, see <a href="./custom-filters-pipeline">Part 1</a>. To experiment with any of these in your browser, open the <a href="/pathogen">playground</a>.</p>
+`,
+  'custom-filters-pipeline': `<blockquote>
+<p><strong>Part 1 of 2</strong> in our series on Pathogen&#39;s custom filter pipeline. In this post we cover the architecture and ergonomics, anchored by <code>NoiseFilter</code>. In <a href="./custom-filters-family">Part 2</a> we walk through the full family — <code>GlowFilter</code>, <code>EmbossFilter</code>, <code>ElevationShadowFilter</code>, <code>InnerShadowFilter</code>, and <code>PixelateFilter</code> — with side-by-side parameter sweeps.</p>
+</blockquote>
+<p><strong>Series:</strong></p>
+<ol>
+<li><strong>Custom Filters in Pathogen: First-Class Visual Effects</strong> ← you are here</li>
+<li><a href="./custom-filters-family">The Full Filter Family: Glow, Emboss, Shadows, Pixelate</a></li>
+</ol>
+<h2>The one-line filter</h2>
+<p><mini-workspace code-open caption="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name.">
+  <code>// viewBox="0 0 400 200"
+// Hero: one line of Pathogen — five SVG filter primitives in the output.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 200);
+}
+
+// The one-liner: define a filter, name it, use it.
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+};
+
+let disc = PathLayer('disc') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: grain;
+};
+disc.apply {
+  circle(200, 100, 70);
+}
+</code>
+  <img src="/blog/samples/post25/01-hero-grain.svg" alt="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name." loading="lazy">
+</mini-workspace></p>
+<p>That snippet does three things. It defines a custom filter — <code>NoiseFilter()</code> with the <code>Grain</code> preset — assigns it to a variable, and applies it to a layer via a style block. The output SVG contains a single <code>&lt;filter&gt;</code> element wrapping <code>feTurbulence</code> → <code>feComposite</code> → <code>feColorMatrix</code> → <code>feComponentTransfer</code> → <code>feBlend</code>, plus a <code>filter=&quot;url(#pathogen-noise-1)&quot;</code> attribute on the painted <code>&lt;path&gt;</code>.</p>
+<p>The same effect in vanilla SVG is about twelve lines and three concepts (filter region, primitive subregion, blend mode). In vanilla CSS it doesn&#39;t exist — <code>filter: blur(...) brightness(...)</code> covers a fixed set of effects and <code>filter: drop-shadow(...)</code> covers exactly one shadow style. Anything richer demands you reach for raw <code>&lt;filter&gt;</code> markup.</p>
+<p>Pathogen&#39;s custom filters close that gap by making filters <strong>first-class language values</strong>. Define one, name it, use it like any other variable.</p>
+<h2>What native CSS leaves on the table</h2>
+<p>The argument for custom filters isn&#39;t that CSS filter functions are bad — <code>filter: blur(2px) brightness(1.2);</code> is fine for what it covers — it&#39;s that the ergonomic ceiling is low. Specifically:</p>
+<ul>
+<li><strong>No reuse.</strong> A CSS filter chain is inline text. To apply the same look across three layers, you copy the string three times. Change your mind, change three places.</li>
+<li><strong>No introspection.</strong> <code>drop-shadow(2px 4px 6px black)</code> is an opaque token. There&#39;s no way to read back the offset, blur, or color from elsewhere in your program.</li>
+<li><strong>No presets.</strong> The blur radius is a number; the color is a color. There&#39;s no <code>BlurStyle.Soft</code> you can swap in.</li>
+<li><strong>No composition with custom recipes.</strong> If you want noise blended with shadow blended with grain, you&#39;re writing a custom <code>&lt;filter&gt;</code> def either way.</li>
+<li><strong>No inset shadows.</strong> <code>drop-shadow()</code> is outer-only. Pressed buttons, recessed wells, and engraved-text effects need a different path entirely.</li>
+<li><strong>No layered depth.</strong> Material Design&#39;s depth shadows are three carefully tuned shadow layers stacked under a single elevation knob. <code>drop-shadow()</code> gives you one.</li>
+</ul>
+<p>Raw SVG <code>&lt;filter&gt;</code> solves all of these, but at a steep verbosity cost — you&#39;re hand-writing primitive chains, naming intermediate results, and matching <code>in=</code>/<code>in2=</code> pipes. The expressive ceiling is high; the ergonomic floor is the ground.</p>
+<h2>Pathogen filters: define once, reuse, override, introspect</h2>
+<p>Here&#39;s a <code>NoiseFilter</code> configured by name, applied to a layer, and asked for its id from elsewhere in the program:</p>
+<pre><code class="hljs"><span class="hljs-built_in">let</span> grain = <span class="hljs-function"><span class="hljs-title">NoiseFilter</span></span>() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.6;
+  f.blend = BlendMode.SoftLight;
+};
+
+<span class="hljs-built_in">log</span>(<span class="hljs-string">&quot;filter id:&quot;</span>, grain.id);     // pathogen-noise-1
+<span class="hljs-built_in">log</span>(<span class="hljs-string">&quot;amount:&quot;</span>,    grain.amount); // 0.6
+
+define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class="hljs-variable">\${ fill: oklch(70% 0.20 30); filter: grain; }</span>
+</code></pre><p>That snippet exercises four ergonomic wins at once:</p>
+<ol>
+<li><strong>Trailing-block named overrides.</strong> Inside <code>{|f| ... }</code> you assign properties by name. Order doesn&#39;t matter, mismatches throw with a clear message, and the IDE knows the property set.</li>
+<li><strong>Preset enums.</strong> <code>NoiseFilterStyle.Speckle</code> is one of five presets — <code>Grain</code>, <code>Paper</code>, <code>Speckle</code>, <code>Static</code>, <code>Gradient</code> — each tuned to a specific look. The compiler validates the choice; the IDE autocompletes it.</li>
+<li><strong>Auto-wrapping <code>filter:</code> style property.</strong> Assigning a <code>FilterValue</code> to <code>filter:</code> inside a style block resolves to <code>filter=&quot;url(#pathogen-noise-1)&quot;</code> in the output SVG. No string interpolation, no manual <code>url(#...)</code> plumbing.</li>
+<li><strong>Read-side property access.</strong> <code>grain.id</code>, <code>grain.amount</code>, <code>grain.blend</code> — every configurable property is also readable. Useful for debug, conditional logic, and downstream computation.</li>
+</ol>
+<p>The runtime cost is the same as raw SVG: one <code>&lt;filter&gt;</code> def in <code>&lt;defs&gt;</code>, one <code>url(#id)</code> reference per layer. The difference is everything around the runtime cost — declarable, nameable, reusable, introspectable.</p>
+<h2>NoiseFilter — five presets, one shape</h2>
+<p><code>NoiseFilter</code> ships with five style presets. The primitive chain is the same across all of them; what changes is which <code>feTurbulence</code> type runs, which blend mode mixes the result back into the source, and where the defaults for <code>scale</code>, <code>octaves</code>, <code>amount</code>, <code>monochrome</code>, <code>contrast</code>, and <code>stitch</code> land.</p>
+<p><mini-workspace code-open caption="The five NoiseFilterStyle presets applied to identical discs. Same shape, same fill. Different chain defaults.">
+  <code>// viewBox="0 0 720 240"
+// All five NoiseFilterStyle presets applied to the same disc, side by side.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 720, 240);
+}
+
+let f_grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+};
+let f_paper = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Paper;
+};
+let f_speckle = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+};
+let f_static = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Static;
+};
+let f_gradient = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+};
+
+let d1 = PathLayer('grain') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_grain;
+};
+let d2 = PathLayer('paper') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_paper;
+};
+let d3 = PathLayer('speckle') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_speckle;
+};
+let d4 = PathLayer('static') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_static;
+};
+let d5 = PathLayer('gradient') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_gradient;
+};
+
+d1.apply {
+  circle(80, 100, 45);
+}
+d2.apply {
+  circle(220, 100, 45);
+}
+d3.apply {
+  circle(360, 100, 45);
+}
+d4.apply {
+  circle(500, 100, 45);
+}
+d5.apply {
+  circle(640, 100, 45);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`Grain\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(220, 200)\`Paper\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(360, 200)\`Speckle\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(500, 200)\`Static\`;
+}
+
+let l5 = TextLayer('l5') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l5.apply {
+  text(640, 200)\`Gradient\`;
+}
+</code>
+  <img src="/blog/samples/post25/02-preset-gallery.svg" alt="The five NoiseFilterStyle presets applied to identical discs. Same shape, same fill. Different chain defaults." loading="lazy">
+</mini-workspace></p>
+<p>Each preset is a starting point you tune. <code>style = NoiseFilterStyle.Grain</code> gives you filmic grain by default; you can then bump <code>amount</code> to make it heavier, set <code>monochrome = false</code> to keep color variance in the noise, or override <code>blend</code> to switch from <code>color-burn</code> to <code>multiply</code>. Read the <a href="/docs/filters">filters reference</a> for the full property list.</p>
+<h3>scale — the noise frequency knob</h3>
+<p><code>scale</code> maps directly to SVG&#39;s <code>baseFrequency</code>. Higher number means a finer, denser pattern; lower number means larger, coarser features. The <code>&#39;fine&#39; | &#39;medium&#39; | &#39;coarse&#39;</code> string aliases give you common values without remembering the numeric mapping (<code>&#39;fine&#39;</code> = 5.0, <code>&#39;medium&#39;</code> = 1.0, <code>&#39;coarse&#39;</code> = 0.3).</p>
+<p><mini-workspace code-open caption="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0.">
+  <code>// viewBox="0 0 640 240"
+// NoiseFilter Grain — scale sweep from coarse to fine.
+// Each disc uses the same preset, only \`scale\` changes.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.scale = 0.3;
+};
+let f2 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.scale = 1;
+};
+let f3 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.scale = 'medium';
+};
+let f4 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.scale = 'fine';
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 55);
+}
+d2.apply {
+  circle(240, 100, 55);
+}
+d3.apply {
+  circle(400, 100, 55);
+}
+d4.apply {
+  circle(560, 100, 55);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`scale = 'coarse' (0.3)\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`scale = 1.0\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`scale = 'medium' (1.0)\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`scale = 'fine' (5.0)\`;
+}
+
+let lh = TextLayer('lh') \${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+lh.apply {
+  text(320, 222)\`smaller scale  →  larger noise features        larger scale  →  finer, denser grain\`;
+}
+</code>
+  <img src="/blog/samples/post25/03-scale-sweep.svg" alt="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0." loading="lazy">
+</mini-workspace></p>
+<h3>amount — visible intensity</h3>
+<p><code>amount</code> is a 0–1 multiplier on the alpha of the noise pass before it blends with the source. 0 disables the effect entirely; 1 hits full strength. It interacts predictably with <code>blend</code>: at <code>amount = 0.5</code> you see roughly half the contribution of the chosen blend mode.</p>
+<p><mini-workspace code-open caption="Grain at four amounts. The chain stays the same; the alpha ramp does the heavy lifting.">
+  <code>// viewBox="0 0 640 240"
+// NoiseFilter Grain — amount sweep. amount = 0 is no effect; 1 is full strength.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
+
+let f1 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.2;
+};
+let f2 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.4;
+};
+let f3 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.6;
+};
+let f4 = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.8;
+};
+
+let d1 = PathLayer('d1') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f4;
+};
+
+d1.apply {
+  circle(80, 100, 55);
+}
+d2.apply {
+  circle(240, 100, 55);
+}
+d3.apply {
+  circle(400, 100, 55);
+}
+d4.apply {
+  circle(560, 100, 55);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)\`amount = 0.2\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)\`amount = 0.4\`;
+}
+
+let l3 = TextLayer('l3') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)\`amount = 0.6\`;
+}
+
+let l4 = TextLayer('l4') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)\`amount = 0.8\`;
+}
+</code>
+  <img src="/blog/samples/post25/04-amount-sweep.svg" alt="Grain at four amounts. The chain stays the same; the alpha ramp does the heavy lifting." loading="lazy">
+</mini-workspace></p>
+<p>A note on cost: <code>octaves</code> is the number of layered noise frequencies. The presets stay between 2 and 8; values above 8 compound <code>feTurbulence</code>&#39;s render cost noticeably on lower-end devices, so reach for that ceiling deliberately.</p>
+<h3>monochrome — strip color variance</h3>
+<p>The <code>feTurbulence</code> primitive produces RGB-valued noise by default — different intensities per channel, which reads as faintly colored static. Setting <code>monochrome = true</code> inserts an <code>feColorMatrix</code> step that maps the noise to a single luminance channel, so the grain reads as pure light-and-dark texture independent of the source fill.</p>
+<p><mini-workspace code-open caption="Same Speckle preset, same seed. monochrome = true (left) reads as flat texture; false (right) preserves the per-channel color variance.">
+  <code>// viewBox="0 0 400 220"
+// NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 220);
+}
+
+let f_mono = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.8;
+  f.monochrome = true;
+  f.seed = 17;
+};
+let f_color = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.8;
+  f.monochrome = false;
+  f.seed = 17;
+};
+
+let d_mono = PathLayer('mono') \${
+  fill: oklch(60% 0.20 30);
+  stroke: none;
+  filter: f_mono;
+};
+let d_color = PathLayer('color') \${
+  fill: oklch(60% 0.20 30);
+  stroke: none;
+  filter: f_color;
+};
+
+d_mono.apply {
+  circle(110, 90, 55);
+}
+d_color.apply {
+  circle(290, 90, 55);
+}
+
+let l1 = TextLayer('l1') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(110, 180)\`monochrome = true\`;
+}
+
+let l2 = TextLayer('l2') \${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(290, 180)\`monochrome = false\`;
+}
+</code>
+  <img src="/blog/samples/post25/05-monochrome-comparison.svg" alt="Same Speckle preset, same seed. monochrome = true (left) reads as flat texture; false (right) preserves the per-channel color variance." loading="lazy">
+</mini-workspace></p>
+<h2>Pairing filters with gradients</h2>
+<p>Filters apply on top of whatever the layer&#39;s <code>fill</code> resolved to. That includes Pathogen&#39;s gradient values, which means a noisy gradient is just a layer with a gradient fill and a <code>NoiseFilter</code> filter — no separate plumbing.</p>
+<p><mini-workspace code-open caption="LinearGradient fill plus Grain filter. The grain rides the gradient — and the Gradient preset is tuned for exactly this case, pumping contrast on the noise so it reads through saturated stops.">
+  <code>// viewBox="0 0 400 240"
+// LinearGradient fill + Grain filter on the same layer.
+// One declarative pairing — the grain rides the gradient.
+
+let sky = LinearGradient('sky',
+    0,
+    0,
+    1,
+    1) {|g|
+  g.stop(0   , oklch(78% 0.20 70));
+  g.stop(0.55, oklch(58% 0.22 30));
+  g.stop(1   , oklch(30% 0.18 280));
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.65;
+};
+
+let panel = PathLayer('panel') \${
+  fill: sky;
+  stroke: none;
+  filter: grainy;
+};
+panel.apply {
+  rect(0, 0, 400, 240);
+}
+</code>
+  <img src="/blog/samples/post25/06-gradient-pairing.svg" alt="LinearGradient fill plus Grain filter. The grain rides the gradient — and the Gradient preset is tuned for exactly this case, pumping contrast on the noise so it reads through saturated stops." loading="lazy">
+</mini-workspace></p>
+<p>The <code>Gradient</code> preset pumps contrast on the noise before the final blend so the grain reads cleanly against saturated gradient stops — without that, the noise would muddy out against the brightest mid-tones. You can apply the same pattern with <code>Linear</code>, <code>Radial</code>, <code>Conic</code>, <code>Mesh</code>, or <code>Freeform</code> gradients; see the <a href="/docs/gradients">gradients reference</a> for the full set.</p>
+<h2>One filter, many layers — one <code>&lt;filter&gt;</code> def</h2>
+<p>Because a <code>NoiseFilter</code> is a value, you can assign it to a <code>let</code> once and reference it from as many layers as you want. The output SVG contains exactly one <code>&lt;filter&gt;</code> element regardless of reference count — every layer points at the same <code>url(#pathogen-noise-1)</code>.</p>
+<p><mini-workspace >
+  <code>// viewBox="0 0 600 200"
+// One filter, six shapes — one &lt;filter&gt; def in the output SVG.
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 600, 200);
+}
+
+// Define the filter once. The output SVG will contain exactly one &lt;filter&gt;
+// element regardless of how many layers reference it below.
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.5;
+};
+
+let c1 = PathLayer('c1') \${
+  fill: oklch(70% 0.20  30);
+  stroke: none;
+  filter: grain;
+};
+let c2 = PathLayer('c2') \${
+  fill: oklch(70% 0.20  80);
+  stroke: none;
+  filter: grain;
+};
+let c3 = PathLayer('c3') \${
+  fill: oklch(70% 0.20 150);
+  stroke: none;
+  filter: grain;
+};
+let c4 = PathLayer('c4') \${
+  fill: oklch(70% 0.20 220);
+  stroke: none;
+  filter: grain;
+};
+let c5 = PathLayer('c5') \${
+  fill: oklch(70% 0.20 290);
+  stroke: none;
+  filter: grain;
+};
+let c6 = PathLayer('c6') \${
+  fill: oklch(70% 0.20 340);
+  stroke: none;
+  filter: grain;
+};
+
+c1.apply {
+  circle(60, 100, 38);
+}
+c2.apply {
+  circle(150, 100, 38);
+}
+c3.apply {
+  circle(240, 100, 38);
+}
+c4.apply {
+  circle(330, 100, 38);
+}
+c5.apply {
+  circle(420, 100, 38);
+}
+c6.apply {
+  circle(510, 100, 38);
+}
+</code>
+  <img src="/blog/samples/post25/07-reuse-pattern.svg" alt="SVG preview" loading="lazy">
+</mini-workspace></p>
+<p>This is the kind of thing that&#39;s tedious to do by hand in raw SVG — you&#39;d be copy-pasting <code>&lt;filter&gt;</code> markup, or hand-managing ids, or referencing the wrong one and getting confused output. Pathogen&#39;s auto-id machinery generates <code>pathogen-noise-N</code> for each call site, and the style-block evaluator wraps the value to <code>url(#pathogen-noise-N)</code> at the point of use.</p>
+<h2>Introspection: filter values you can log and pass around</h2>
+<p>Read-side property access is a small thing on the surface and a big thing in practice. You can <code>log()</code> a filter&#39;s id and seed for debugging, branch on its style in downstream logic, or compose a filter value into another expression.</p>
+<p><mini-workspace code-open caption="Open the console panel: every configurable property is also readable. The seed is auto-derived from the filter's id; set it explicitly to lock the noise pattern across edits.">
+  <code>// viewBox="0 0 400 200"
+// Filter values support read-side property access — useful for debug,
+// computation, and conditional logic. Open the console to see the logs.
+
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.6;
+};
+
+log('id:    ', grain.id);
+log('style: ', grain.style);
+log('amount:', grain.amount);
+log('blend: ', grain.blend);
+log('seed:  ', grain.seed);
+
+let bg = PathLayer('bg') \${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 200);
+}
+
+let disc = PathLayer('disc') \${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: grain;
+};
+disc.apply {
+  circle(200, 100, 70);
+}
+</code>
+  <img src="/blog/samples/post25/08-introspection.svg" alt="Open the console panel: every configurable property is also readable. The seed is auto-derived from the filter's id; set it explicitly to lock the noise pattern across edits." loading="lazy">
+</mini-workspace></p>
+<p>The auto-derived <code>seed</code> is one place where introspection pays off immediately. <code>NoiseFilter</code> hashes the filter&#39;s id (<code>pathogen-noise-1</code>, etc.) into a deterministic seed so the same source program produces the same noise across compiles. Reordering filter declarations shifts the auto-ids — which shifts the seeds — which visibly changes the grain pattern. If you want a specific filter&#39;s noise locked down across edits, log the id, then set the seed explicitly:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> signature = <span class="hljs-title class_">NoiseFilter</span>() {|f|
+  f.<span class="hljs-property">style</span> = <span class="hljs-title class_">NoiseFilterStyle</span>.<span class="hljs-property">Grain</span>;
+  f.<span class="hljs-property">seed</span> = <span class="hljs-number">42</span>;   <span class="hljs-comment">// stable across edits regardless of declaration order</span>
+};
+</code></pre><h2>What&#39;s in Part 2</h2>
+<p><code>NoiseFilter</code> is the flagship demonstration of the pipeline, but it&#39;s one of six custom filters that ship. The other five close specific gaps native CSS can&#39;t:</p>
+<ul>
+<li><strong><code>GlowFilter</code></strong> — outer halo or inner edge light, picked by a single <code>mode</code> property.</li>
+<li><strong><code>EmbossFilter</code></strong> — <code>feSpecularLighting</code> wrapped into named parameters you can sweep.</li>
+<li><strong><code>ElevationShadowFilter</code></strong> — Material-style depth as a single <code>elevation</code> knob, layering three shadows for you.</li>
+<li><strong><code>InnerShadowFilter</code></strong> — inset shadow. The capability CSS <code>drop-shadow()</code> cannot express.</li>
+<li><strong><code>PixelateFilter(w, h, r)</code></strong> — mosaic / pixelation; positional or block-style configuration.</li>
+</ul>
+<p><a href="./custom-filters-family">Part 2</a> walks through each one with side-by-side parameter sweeps. The ergonomic story stays the same — first-class values, named overrides, presets, introspection, reuse — applied to five more visual languages.</p>
+<p>For the full reference, see <a href="/docs/filters">docs/filters</a>. To experiment in your browser, open the <a href="/pathogen">playground</a>.</p>
 `,
   'gradient-conic': `<p>CSS has <code>conic-gradient()</code>. SVG does not. This is not an oversight — the SVG spec simply never included angular gradients. If you want a color wheel, a gauge, or a pie chart rendered as an SVG gradient, you are out of luck. You can fake it with dozens of wedge-shaped paths, or you can embed a rasterized image and lose the vector benefits.</p>
 <p>Pathogen takes a different approach. <code>ConicGradient</code> is a first-class gradient type that compiles to a base64-encoded <code>&lt;pattern&gt;</code> element. The rasterization happens at compile time via WebGPU (or Canvas 2D as a fallback), producing a pixel-perfect image embedded directly in the SVG. The author writes gradient code. The viewer sees a standard SVG.</p>

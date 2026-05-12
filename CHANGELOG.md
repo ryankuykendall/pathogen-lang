@@ -5,14 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-05-09
+## [Unreleased] - 2026-05-11
 
-Post-0.7.0 polish. Inspector population is now correct on every blog post; sitewide typography refresh; homepage and docs responsive cleanup.
+Post-0.7.0 polish. Custom filter pipeline added with six constructors (Noise, Glow, Emboss, ElevationShadow, InnerShadow, Pixelate). Inspector population is now correct on every blog post; sitewide typography refresh; homepage and docs responsive cleanup.
 
 ### Added
 
+#### Filters
+- **`NoiseFilter()`** — five-preset (`Grain` / `Paper` / `Speckle` / `Static` / `Gradient`) custom filter with trailing-block configuration, per-property finite-number guards, deterministic seed derivation, and read-side property access for `id` / `style` / `scale` / `octaves` / `amount` / `monochrome` / `seed` / `blend` / `contrast` / `stitch`.
+- **`GlowFilter()`** — outer halo or inner edge light selected via the `GlowMode` enum (`Outer` | `Inner`). Knobs: `color`, `radius`, `spread`, `opacity`.
+- **`EmbossFilter()`** — `feSpecularLighting`-based bevel with named light parameters: `angle`, `elevation`, `depth`, `strength`, `shininess`, `lightColor`, `smooth`.
+- **`ElevationShadowFilter()`** — Material-style three-layer depth shadow tuned by a single `elevation` knob (0–24); `color`, `direction`, `tightness` for fine control.
+- **`InnerShadowFilter()`** — inset shadow (the capability native CSS `drop-shadow()` cannot express); `offsetX`, `offsetY`, `blur`, `color`, `opacity`.
+- **`PixelateFilter(width, height, radius)`** — mosaic via `feFlood` + `feTile` + `feMorphology`. Positional canonical form; trailing-block form also supported.
+- `BlendMode` enum — CSS blend-mode keywords as enum members (`Multiply`, `Screen`, `Overlay`, `ColorBurn`, `ColorDodge`, `HardLight`, `SoftLight`, `Darken`, `Lighten`, `Difference`, `Exclusion`, `Normal`).
+- `GlowMode` enum — `Outer` and `Inner` selectors for `GlowFilter`.
+- Filter values auto-wrap to `url(#id)` when assigned to the `filter` style property in a style block; reused via `let` binding (one `<filter>` def, many references); composable across layers via `GroupLayer` stacking.
+
+#### Documentation
+- New `docs/filters.md` reference page covering all six custom filters, the `BlendMode` and `GlowMode` enums, the per-filter primitive chains, and the auto-wrapping `filter:` style property.
+- New blog series: ["Custom Filters in Pathogen: First-Class Visual Effects"](website/blog/custom-filters-pipeline.md) (Part 1) and ["The Full Filter Family: Glow, Emboss, Shadows, Pixelate"](website/blog/custom-filters-family.md) (Part 2), with 23 side-by-side parameter-sweep samples between them.
+
 #### Compiler / CLI
 - `data-layer-name="<layer>"` attribute on every layer-rendered element (path, group, **and every text sibling of a multi-text TextLayer**) in CLI mode — not just playground. Enables the blog mini-workspace inspector to toggle every element of a multi-text layer in one query (`[data-layer-name="X"]`). CLI also keeps `id` on the first sibling for backward compat with consumers that resolve cross-references by id-fragment.
+- BBWP server (`src/cli.ts`) gained directory-aware import resolution (extensionless paths, 308 redirects to `<path>/` for index files, `.ts → .js` on-the-fly transpilation) so the GPU render pipeline can resolve relative imports without bundling. Closes a latent regression that broke `--render-gpu` for any sample using mesh / freeform / conic / topo gradients.
+- `src/render/build-tree.ts` now forwards `useImageGradients` and `gpuGradientUrls` through to `buildDefs`. Previously dropped silently, so GPU-rendered BBWPs were emitting CLI-fallback flat-color rects for non-linear gradients.
+- `scripts/compile-bbwp.ts` mw.html template now references `public/components/...` (the actual layout) instead of the broken `public/pathogen/components/...` path. Every previously generated BBWP mw.html had 404'd script tags; new BBWPs load mini-workspace + theme-toggle correctly.
 
 #### Homepage
 - Dynamic version eyebrow ("built on Pathogen v{version}") that codegens from `package.json` at build time. Aligns the displayed VS Code extension name with the published marketplace handle.
