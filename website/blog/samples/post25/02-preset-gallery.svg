@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" width="720" height="240">
+
+<defs>
+  <filter id="pathogen-noise-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="5" numOctaves="6" seed="53252" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.4"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+  <filter id="pathogen-noise-2" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="3" seed="53253" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.5"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+  </filter>
+  <filter id="pathogen-noise-3" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="turbulence" baseFrequency="0.3" numOctaves="2" seed="53254" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComponentTransfer in="masked" result="noise">
+      <feFuncA type="linear" slope="0.6"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+  </filter>
+  <filter id="pathogen-noise-4" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="5" numOctaves="8" seed="53255" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.7"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="hard-light"/>
+  </filter>
+  <filter id="pathogen-noise-5" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="3" seed="53256" result="turb" stitchTiles="stitch"/>
+    <feComponentTransfer in="turb" result="pumped">
+      <feFuncR type="linear" slope="1.7" intercept="-0.35"/>
+      <feFuncG type="linear" slope="1.7" intercept="-0.35"/>
+      <feFuncB type="linear" slope="1.7" intercept="-0.35"/>
+    </feComponentTransfer>
+    <feComposite in="pumped" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComponentTransfer in="masked" result="noise">
+      <feFuncA type="linear" slope="0.6"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="overlay"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 720 0 l 0 240 l -720 0 z" fill="oklch(95% 0.02 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="grain" id="grain" d="M 35 100 a 45 45 0 1 1 90 0 a 45 45 0 1 1 -90 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="paper" id="paper" d="M 175 100 a 45 45 0 1 1 90 0 a 45 45 0 1 1 -90 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-2)"/>
+  <path data-layer-name="speckle" id="speckle" d="M 315 100 a 45 45 0 1 1 90 0 a 45 45 0 1 1 -90 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-3)"/>
+  <path data-layer-name="static" id="static" d="M 455 100 a 45 45 0 1 1 90 0 a 45 45 0 1 1 -90 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-4)"/>
+  <path data-layer-name="gradient" id="gradient" d="M 595 100 a 45 45 0 1 1 90 0 a 45 45 0 1 1 -90 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-5)"/>
+  <text data-layer-name="l1" id="l1" x="80" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">Grain</text>
+  <text data-layer-name="l2" id="l2" x="220" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">Paper</text>
+  <text data-layer-name="l3" id="l3" x="360" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">Speckle</text>
+  <text data-layer-name="l4" id="l4" x="500" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">Static</text>
+  <text data-layer-name="l5" id="l5" x="640" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">Gradient</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"grain","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"paper","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-2)"},"isDefault":false},{"name":"speckle","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-3)"},"isDefault":false},{"name":"static","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-4)"},"isDefault":false},{"name":"gradient","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-5)"},"isDefault":false},{"name":"l1","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l3","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l4","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l5","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

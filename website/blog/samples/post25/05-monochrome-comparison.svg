@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" width="400" height="220">
+
+<defs>
+  <filter id="pathogen-noise-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="turbulence" baseFrequency="0.3" numOctaves="2" seed="17" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.8"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+  </filter>
+  <filter id="pathogen-noise-2" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="turbulence" baseFrequency="0.3" numOctaves="2" seed="17" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComponentTransfer in="masked" result="noise">
+      <feFuncA type="linear" slope="0.8"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 400 0 l 0 220 l -400 0 z" fill="oklch(95% 0.02 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="mono" id="mono" d="M 55 90 a 55 55 0 1 1 110 0 a 55 55 0 1 1 -110 0" fill="oklch(60% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="color" id="color" d="M 235 90 a 55 55 0 1 1 110 0 a 55 55 0 1 1 -110 0" fill="oklch(60% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-2)"/>
+  <text data-layer-name="l1" id="l1" x="110" y="180" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">monochrome = true</text>
+  <text data-layer-name="l2" id="l2" x="290" y="180" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">monochrome = false</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"mono","type":"path","styles":{"fill":"oklch(60% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"color","type":"path","styles":{"fill":"oklch(60% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-2)"},"isDefault":false},{"name":"l1","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

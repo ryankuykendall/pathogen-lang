@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" width="640" height="240">
+
+<defs>
+  <filter id="pathogen-emboss-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+    <feSpecularLighting in="blur" surfaceScale="1" specularConstant="1" specularExponent="20" lighting-color="rgb(255, 255, 255)" result="spec">
+      <feDistantLight azimuth="135" elevation="45"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComposite in="SourceGraphic" in2="masked" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+  <filter id="pathogen-emboss-2" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+    <feSpecularLighting in="blur" surfaceScale="2" specularConstant="1" specularExponent="20" lighting-color="rgb(255, 255, 255)" result="spec">
+      <feDistantLight azimuth="135" elevation="45"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComposite in="SourceGraphic" in2="masked" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+  <filter id="pathogen-emboss-3" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+    <feSpecularLighting in="blur" surfaceScale="4" specularConstant="1" specularExponent="20" lighting-color="rgb(255, 255, 255)" result="spec">
+      <feDistantLight azimuth="135" elevation="45"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComposite in="SourceGraphic" in2="masked" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+  <filter id="pathogen-emboss-4" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+    <feSpecularLighting in="blur" surfaceScale="8" specularConstant="1" specularExponent="20" lighting-color="rgb(255, 255, 255)" result="spec">
+      <feDistantLight azimuth="135" elevation="45"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComposite in="SourceGraphic" in2="masked" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 640 0 l 0 240 l -640 0 z" fill="oklch(90% 0.02 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="d1" id="d1" d="M 30 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="oklch(70% 0.18 60)" stroke="none" stroke-width="2" filter="url(#pathogen-emboss-1)"/>
+  <path data-layer-name="d2" id="d2" d="M 190 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="oklch(70% 0.18 60)" stroke="none" stroke-width="2" filter="url(#pathogen-emboss-2)"/>
+  <path data-layer-name="d3" id="d3" d="M 350 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="oklch(70% 0.18 60)" stroke="none" stroke-width="2" filter="url(#pathogen-emboss-3)"/>
+  <path data-layer-name="d4" id="d4" d="M 510 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="oklch(70% 0.18 60)" stroke="none" stroke-width="2" filter="url(#pathogen-emboss-4)"/>
+  <text data-layer-name="l1" id="l1" x="80" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">depth = 1</text>
+  <text data-layer-name="l2" id="l2" x="240" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">depth = 2</text>
+  <text data-layer-name="l3" id="l3" x="400" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">depth = 4</text>
+  <text data-layer-name="l4" id="l4" x="560" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">depth = 8</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(90% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"d1","type":"path","styles":{"fill":"oklch(70% 0.18 60)","stroke":"none","filter":"url(#pathogen-emboss-1)"},"isDefault":false},{"name":"d2","type":"path","styles":{"fill":"oklch(70% 0.18 60)","stroke":"none","filter":"url(#pathogen-emboss-2)"},"isDefault":false},{"name":"d3","type":"path","styles":{"fill":"oklch(70% 0.18 60)","stroke":"none","filter":"url(#pathogen-emboss-3)"},"isDefault":false},{"name":"d4","type":"path","styles":{"fill":"oklch(70% 0.18 60)","stroke":"none","filter":"url(#pathogen-emboss-4)"},"isDefault":false},{"name":"l1","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l3","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l4","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

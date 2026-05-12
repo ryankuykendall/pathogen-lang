@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" width="640" height="240">
+
+<defs>
+  <filter id="pathogen-glow-1" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+    <feFlood flood-color="#ffa300" flood-opacity="0.9" result="flood"/>
+    <feComposite in="flood" in2="blur" operator="in" result="coloredGlow"/>
+    <feMerge>
+      <feMergeNode in="coloredGlow"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-glow-2" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+    <feFlood flood-color="#ffa300" flood-opacity="0.9" result="flood"/>
+    <feComposite in="flood" in2="blur" operator="in" result="coloredGlow"/>
+    <feMerge>
+      <feMergeNode in="coloredGlow"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-glow-3" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="blur"/>
+    <feFlood flood-color="#ffa300" flood-opacity="0.9" result="flood"/>
+    <feComposite in="flood" in2="blur" operator="in" result="coloredGlow"/>
+    <feMerge>
+      <feMergeNode in="coloredGlow"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-glow-4" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="20" result="blur"/>
+    <feFlood flood-color="#ffa300" flood-opacity="0.9" result="flood"/>
+    <feComposite in="flood" in2="blur" operator="in" result="coloredGlow"/>
+    <feMerge>
+      <feMergeNode in="coloredGlow"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 640 0 l 0 240 l -640 0 z" fill="oklch(20% 0.04 270)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="d1" id="d1" d="M 40 100 a 40 40 0 1 1 80 0 a 40 40 0 1 1 -80 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-glow-1)"/>
+  <path data-layer-name="d2" id="d2" d="M 200 100 a 40 40 0 1 1 80 0 a 40 40 0 1 1 -80 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-glow-2)"/>
+  <path data-layer-name="d3" id="d3" d="M 360 100 a 40 40 0 1 1 80 0 a 40 40 0 1 1 -80 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-glow-3)"/>
+  <path data-layer-name="d4" id="d4" d="M 520 100 a 40 40 0 1 1 80 0 a 40 40 0 1 1 -80 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-glow-4)"/>
+  <text data-layer-name="l1" id="l1" x="80" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(90% 0.02 80)" text-anchor="middle">radius =  2</text>
+  <text data-layer-name="l2" id="l2" x="240" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(90% 0.02 80)" text-anchor="middle">radius =  6</text>
+  <text data-layer-name="l3" id="l3" x="400" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(90% 0.02 80)" text-anchor="middle">radius = 12</text>
+  <text data-layer-name="l4" id="l4" x="560" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(90% 0.02 80)" text-anchor="middle">radius = 20</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(20% 0.04 270)","stroke":"none"},"isDefault":false},{"name":"d1","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-glow-1)"},"isDefault":false},{"name":"d2","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-glow-2)"},"isDefault":false},{"name":"d3","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-glow-3)"},"isDefault":false},{"name":"d4","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-glow-4)"},"isDefault":false},{"name":"l1","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(90% 0.02 80)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(90% 0.02 80)","text-anchor":"middle"},"isDefault":false},{"name":"l3","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(90% 0.02 80)","text-anchor":"middle"},"isDefault":false},{"name":"l4","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(90% 0.02 80)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

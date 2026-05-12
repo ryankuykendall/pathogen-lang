@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="400" height="240">
+
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff9a00"/>
+    <stop offset="0.55" stop-color="#df2414"/>
+    <stop offset="1" stop-color="#280183"/>
+  </linearGradient>
+  <filter id="pathogen-noise-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="3" seed="53252" result="turb" stitchTiles="stitch"/>
+    <feComponentTransfer in="turb" result="pumped">
+      <feFuncR type="linear" slope="1.7" intercept="-0.35"/>
+      <feFuncG type="linear" slope="1.7" intercept="-0.35"/>
+      <feFuncB type="linear" slope="1.7" intercept="-0.35"/>
+    </feComponentTransfer>
+    <feComposite in="pumped" in2="SourceAlpha" operator="in" result="masked"/>
+    <feComponentTransfer in="masked" result="noise">
+      <feFuncA type="linear" slope="0.65"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="overlay"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="panel" id="panel" d="M 0 0 l 400 0 l 0 240 l -400 0 z" fill="url(#sky)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"panel","type":"path","styles":{"fill":"url(#sky)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[{"id":"sky","type":"linear","attrs":{"x1":"0","y1":"0","x2":"1","y2":"1"},"stops":[{"offset":0,"color":"#ff9a00"},{"offset":0.55,"color":"#df2414"},{"offset":1,"color":"#280183"}]}],"cssProperties":[]}]]></script>
+</svg>

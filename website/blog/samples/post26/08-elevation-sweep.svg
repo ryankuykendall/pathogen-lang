@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" width="720" height="240">
+
+<defs>
+  <filter id="pathogen-elevation-shadow-1" x="-100%" y="-100%" width="300%" height="300%">
+    <feMerge>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-elevation-shadow-2" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="b1"/>
+    <feOffset in="b1" dx="0" dy="0.6" result="o1"/>
+    <feFlood flood-color="#131428" flood-opacity="0.3" result="f1"/>
+    <feComposite in="f1" in2="o1" operator="in" result="s1"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b2"/>
+    <feOffset in="b2" dx="0" dy="1.2" result="o2"/>
+    <feFlood flood-color="#131428" flood-opacity="0.18" result="f2"/>
+    <feComposite in="f2" in2="o2" operator="in" result="s2"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b3"/>
+    <feOffset in="b3" dx="0" dy="2" result="o3"/>
+    <feFlood flood-color="#131428" flood-opacity="0.12" result="f3"/>
+    <feComposite in="f3" in2="o3" operator="in" result="s3"/>
+    <feMerge>
+      <feMergeNode in="s1"/>
+      <feMergeNode in="s2"/>
+      <feMergeNode in="s3"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-elevation-shadow-3" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b1"/>
+    <feOffset in="b1" dx="0" dy="1.2" result="o1"/>
+    <feFlood flood-color="#131428" flood-opacity="0.3" result="f1"/>
+    <feComposite in="f1" in2="o1" operator="in" result="s1"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b2"/>
+    <feOffset in="b2" dx="0" dy="2.4" result="o2"/>
+    <feFlood flood-color="#131428" flood-opacity="0.18" result="f2"/>
+    <feComposite in="f2" in2="o2" operator="in" result="s2"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="b3"/>
+    <feOffset in="b3" dx="0" dy="4" result="o3"/>
+    <feFlood flood-color="#131428" flood-opacity="0.12" result="f3"/>
+    <feComposite in="f3" in2="o3" operator="in" result="s3"/>
+    <feMerge>
+      <feMergeNode in="s1"/>
+      <feMergeNode in="s2"/>
+      <feMergeNode in="s3"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-elevation-shadow-4" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b1"/>
+    <feOffset in="b1" dx="0" dy="2.4" result="o1"/>
+    <feFlood flood-color="#131428" flood-opacity="0.3" result="f1"/>
+    <feComposite in="f1" in2="o1" operator="in" result="s1"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="b2"/>
+    <feOffset in="b2" dx="0" dy="4.8" result="o2"/>
+    <feFlood flood-color="#131428" flood-opacity="0.18" result="f2"/>
+    <feComposite in="f2" in2="o2" operator="in" result="s2"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="b3"/>
+    <feOffset in="b3" dx="0" dy="8" result="o3"/>
+    <feFlood flood-color="#131428" flood-opacity="0.12" result="f3"/>
+    <feComposite in="f3" in2="o3" operator="in" result="s3"/>
+    <feMerge>
+      <feMergeNode in="s1"/>
+      <feMergeNode in="s2"/>
+      <feMergeNode in="s3"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-elevation-shadow-5" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="b1"/>
+    <feOffset in="b1" dx="0" dy="4.8" result="o1"/>
+    <feFlood flood-color="#131428" flood-opacity="0.3" result="f1"/>
+    <feComposite in="f1" in2="o1" operator="in" result="s1"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="b2"/>
+    <feOffset in="b2" dx="0" dy="9.6" result="o2"/>
+    <feFlood flood-color="#131428" flood-opacity="0.18" result="f2"/>
+    <feComposite in="f2" in2="o2" operator="in" result="s2"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="32" result="b3"/>
+    <feOffset in="b3" dx="0" dy="16" result="o3"/>
+    <feFlood flood-color="#131428" flood-opacity="0.12" result="f3"/>
+    <feComposite in="f3" in2="o3" operator="in" result="s3"/>
+    <feMerge>
+      <feMergeNode in="s1"/>
+      <feMergeNode in="s2"/>
+      <feMergeNode in="s3"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-elevation-shadow-6" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b1"/>
+    <feOffset in="b1" dx="0" dy="7.2" result="o1"/>
+    <feFlood flood-color="#131428" flood-opacity="0.3" result="f1"/>
+    <feComposite in="f1" in2="o1" operator="in" result="s1"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b2"/>
+    <feOffset in="b2" dx="0" dy="14.4" result="o2"/>
+    <feFlood flood-color="#131428" flood-opacity="0.18" result="f2"/>
+    <feComposite in="f2" in2="o2" operator="in" result="s2"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="48" result="b3"/>
+    <feOffset in="b3" dx="0" dy="24" result="o3"/>
+    <feFlood flood-color="#131428" flood-opacity="0.12" result="f3"/>
+    <feComposite in="f3" in2="o3" operator="in" result="s3"/>
+    <feMerge>
+      <feMergeNode in="s1"/>
+      <feMergeNode in="s2"/>
+      <feMergeNode in="s3"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 720 0 l 0 240 l -720 0 z" fill="oklch(94% 0.01 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="c0" id="c0" d="M 33 60 l 59 0 q 8 0 8 8 l 0 44 q 0 8 -8 8 l -59 0 q -8 0 -8 -8 l 0 -44 q 0 -8 8 -8 z" fill="oklch(95% 0.01 80)" stroke="none" stroke-width="2" filter="url(#pathogen-elevation-shadow-1)"/>
+  <path data-layer-name="c2" id="c2" d="M 148 60 l 59 0 q 8 0 8 8 l 0 44 q 0 8 -8 8 l -59 0 q -8 0 -8 -8 l 0 -44 q 0 -8 8 -8 z" fill="oklch(95% 0.01 80)" stroke="none" stroke-width="2" filter="url(#pathogen-elevation-shadow-2)"/>
+  <path data-layer-name="c4" id="c4" d="M 263 60 l 59 0 q 8 0 8 8 l 0 44 q 0 8 -8 8 l -59 0 q -8 0 -8 -8 l 0 -44 q 0 -8 8 -8 z" fill="oklch(95% 0.01 80)" stroke="none" stroke-width="2" filter="url(#pathogen-elevation-shadow-3)"/>
+  <path data-layer-name="c8" id="c8" d="M 378 60 l 59 0 q 8 0 8 8 l 0 44 q 0 8 -8 8 l -59 0 q -8 0 -8 -8 l 0 -44 q 0 -8 8 -8 z" fill="oklch(95% 0.01 80)" stroke="none" stroke-width="2" filter="url(#pathogen-elevation-shadow-4)"/>
+  <path data-layer-name="c16" id="c16" d="M 493 60 l 59 0 q 8 0 8 8 l 0 44 q 0 8 -8 8 l -59 0 q -8 0 -8 -8 l 0 -44 q 0 -8 8 -8 z" fill="oklch(95% 0.01 80)" stroke="none" stroke-width="2" filter="url(#pathogen-elevation-shadow-5)"/>
+  <path data-layer-name="c24" id="c24" d="M 608 60 l 59 0 q 8 0 8 8 l 0 44 q 0 8 -8 8 l -59 0 q -8 0 -8 -8 l 0 -44 q 0 -8 8 -8 z" fill="oklch(95% 0.01 80)" stroke="none" stroke-width="2" filter="url(#pathogen-elevation-shadow-6)"/>
+  <text data-layer-name="l0" id="l0" x="62" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">elevation = 0</text>
+  <text data-layer-name="l2" id="l2" x="177" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">elevation = 2</text>
+  <text data-layer-name="l4" id="l4" x="292" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">elevation = 4</text>
+  <text data-layer-name="l8" id="l8" x="407" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">elevation = 8</text>
+  <text data-layer-name="l16" id="l16" x="522" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">elevation = 16</text>
+  <text data-layer-name="l24" id="l24" x="637" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">elevation = 24</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(94% 0.01 80)","stroke":"none"},"isDefault":false},{"name":"c0","type":"path","styles":{"fill":"oklch(95% 0.01 80)","stroke":"none","filter":"url(#pathogen-elevation-shadow-1)"},"isDefault":false},{"name":"c2","type":"path","styles":{"fill":"oklch(95% 0.01 80)","stroke":"none","filter":"url(#pathogen-elevation-shadow-2)"},"isDefault":false},{"name":"c4","type":"path","styles":{"fill":"oklch(95% 0.01 80)","stroke":"none","filter":"url(#pathogen-elevation-shadow-3)"},"isDefault":false},{"name":"c8","type":"path","styles":{"fill":"oklch(95% 0.01 80)","stroke":"none","filter":"url(#pathogen-elevation-shadow-4)"},"isDefault":false},{"name":"c16","type":"path","styles":{"fill":"oklch(95% 0.01 80)","stroke":"none","filter":"url(#pathogen-elevation-shadow-5)"},"isDefault":false},{"name":"c24","type":"path","styles":{"fill":"oklch(95% 0.01 80)","stroke":"none","filter":"url(#pathogen-elevation-shadow-6)"},"isDefault":false},{"name":"l0","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l4","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l8","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l16","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l24","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

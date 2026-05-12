@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+
+<defs>
+  <filter id="pathogen-noise-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="5" numOctaves="6" seed="53252" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.4"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 400 0 l 0 200 l -400 0 z" fill="oklch(95% 0.02 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="disc" id="disc" d="M 130 100 a 70 70 0 1 1 140 0 a 70 70 0 1 1 -140 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"disc","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

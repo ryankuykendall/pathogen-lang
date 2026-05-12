@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" width="640" height="240">
+
+<defs>
+  <filter id="pathogen-noise-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.3" numOctaves="6" seed="53252" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.4"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+  <filter id="pathogen-noise-2" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="6" seed="53253" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.4"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+  <filter id="pathogen-noise-3" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="6" seed="53254" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.4"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+  <filter id="pathogen-noise-4" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="5" numOctaves="6" seed="53255" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.4"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 640 0 l 0 240 l -640 0 z" fill="oklch(95% 0.02 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="d1" id="d1" d="M 25 100 a 55 55 0 1 1 110 0 a 55 55 0 1 1 -110 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="d2" id="d2" d="M 185 100 a 55 55 0 1 1 110 0 a 55 55 0 1 1 -110 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-2)"/>
+  <path data-layer-name="d3" id="d3" d="M 345 100 a 55 55 0 1 1 110 0 a 55 55 0 1 1 -110 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-3)"/>
+  <path data-layer-name="d4" id="d4" d="M 505 100 a 55 55 0 1 1 110 0 a 55 55 0 1 1 -110 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-4)"/>
+  <text data-layer-name="l1" id="l1" x="80" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">scale = 'coarse' (0.3)</text>
+  <text data-layer-name="l2" id="l2" x="240" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">scale = 1.0</text>
+  <text data-layer-name="l3" id="l3" x="400" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">scale = 'medium' (1.0)</text>
+  <text data-layer-name="l4" id="l4" x="560" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">scale = 'fine' (5.0)</text>
+  <text data-layer-name="lh" id="lh" x="320" y="222" font-family="sans-serif" font-size="11" font-weight="400" fill="oklch(45% 0.02 270)" text-anchor="middle">smaller scale  →  larger noise features        larger scale  →  finer, denser grain</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"d1","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"d2","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-2)"},"isDefault":false},{"name":"d3","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-3)"},"isDefault":false},{"name":"d4","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-4)"},"isDefault":false},{"name":"l1","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l3","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l4","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"lh","type":"text","styles":{"font-family":"sans-serif","font-size":"11","font-weight":"400","fill":"oklch(45% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

@@ -1,0 +1,17 @@
+// viewBox="0 0 400 240"
+// LinearGradient fill + Grain filter on the same layer.
+// One declarative pairing — the grain rides the gradient.
+
+let sky = LinearGradient('sky', 0, 0, 1, 1) {|g|
+  g.stop(0, oklch(78% 0.20 70));
+  g.stop(0.55, oklch(58% 0.22 30));
+  g.stop(1, oklch(30% 0.18 280));
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.65;
+};
+
+let panel = PathLayer('panel') ${ fill: sky; stroke: none; filter: grainy; };
+panel.apply { rect(0, 0, 400, 240); }

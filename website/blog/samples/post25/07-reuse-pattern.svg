@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
+
+<defs>
+  <filter id="pathogen-noise-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="5" numOctaves="6" seed="53252" result="turb"/>
+    <feComposite in="turb" in2="SourceAlpha" operator="in" result="masked"/>
+    <feColorMatrix in="masked" type="luminanceToAlpha" result="mono"/>
+    <feComponentTransfer in="mono" result="noise">
+      <feFuncA type="linear" slope="0.5"/>
+    </feComponentTransfer>
+    <feBlend in="SourceGraphic" in2="noise" mode="color-burn"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 600 0 l 0 200 l -600 0 z" fill="oklch(95% 0.02 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="c1" id="c1" d="M 22 100 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" fill="oklch(70% 0.20  30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="c2" id="c2" d="M 112 100 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" fill="oklch(70% 0.20  80)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="c3" id="c3" d="M 202 100 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" fill="oklch(70% 0.20 150)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="c4" id="c4" d="M 292 100 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" fill="oklch(70% 0.20 220)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="c5" id="c5" d="M 382 100 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" fill="oklch(70% 0.20 290)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+  <path data-layer-name="c6" id="c6" d="M 472 100 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" fill="oklch(70% 0.20 340)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"c1","type":"path","styles":{"fill":"oklch(70% 0.20  30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"c2","type":"path","styles":{"fill":"oklch(70% 0.20  80)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"c3","type":"path","styles":{"fill":"oklch(70% 0.20 150)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"c4","type":"path","styles":{"fill":"oklch(70% 0.20 220)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"c5","type":"path","styles":{"fill":"oklch(70% 0.20 290)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false},{"name":"c6","type":"path","styles":{"fill":"oklch(70% 0.20 340)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

@@ -1,0 +1,32 @@
+// viewBox="0 0 640 240"
+// InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
+
+let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
+bg.apply { rect(0, 0, 640, 240); }
+
+let f1 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur =  2; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
+let f2 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur =  4; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
+let f3 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur =  8; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
+let f4 = InnerShadowFilter() {|f| f.offsetY = 3; f.blur = 16; f.color = oklch(15% 0.02 280); f.opacity = 0.55; };
+
+let c1 = PathLayer('c1') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f1; };
+let c2 = PathLayer('c2') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f2; };
+let c3 = PathLayer('c3') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f3; };
+let c4 = PathLayer('c4') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f4; };
+
+c1.apply { roundRect( 30, 60, 110, 80, 10); }
+c2.apply { roundRect(190, 60, 110, 80, 10); }
+c3.apply { roundRect(350, 60, 110, 80, 10); }
+c4.apply { roundRect(510, 60, 110, 80, 10); }
+
+let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l1.apply { text( 85, 200)`blur = 2` }
+
+let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l2.apply { text(245, 200)`blur = 4` }
+
+let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l3.apply { text(405, 200)`blur = 8` }
+
+let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l4.apply { text(565, 200)`blur = 16` }

@@ -1,0 +1,20 @@
+// viewBox="0 0 400 220"
+// NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 400, 220); }
+
+let f_mono  = NoiseFilter() {|f| f.style = NoiseFilterStyle.Speckle; f.amount = 0.8; f.monochrome = true;  f.seed = 17; };
+let f_color = NoiseFilter() {|f| f.style = NoiseFilterStyle.Speckle; f.amount = 0.8; f.monochrome = false; f.seed = 17; };
+
+let d_mono  = PathLayer('mono')  ${ fill: oklch(60% 0.20 30); stroke: none; filter: f_mono;  };
+let d_color = PathLayer('color') ${ fill: oklch(60% 0.20 30); stroke: none; filter: f_color; };
+
+d_mono.apply  { circle(110, 90, 55); }
+d_color.apply { circle(290, 90, 55); }
+
+let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l1.apply { text(110, 180)`monochrome = true` }
+
+let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l2.apply { text(290, 180)`monochrome = false` }

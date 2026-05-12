@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Custom Filters in Pathogen: First-Class Visual Effects — Pathogen Studio</title>
+  <meta name="description" content="Pathogen's custom filters are first-class language values — defined once, reused, introspected, and composed in ways native CSS filter functions can't match. A walkthrough of the pipeline, anchored by NoiseFilter.">
+  <link rel="canonical" href="https://pathogen.studio/blog/custom-filters-pipeline">
+  <meta property="og:title" content="Custom Filters in Pathogen: First-Class Visual Effects — Pathogen Studio">
+  <meta property="og:description" content="Pathogen's custom filters are first-class language values — defined once, reused, introspected, and composed in ways native CSS filter functions can't match. A walkthrough of the pipeline, anchored by NoiseFilter.">
+  <meta property="og:url" content="https://pathogen.studio/blog/custom-filters-pipeline">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Custom Filters in Pathogen: First-Class Visual Effects","description":"Pathogen's custom filters are first-class language values — defined once, reused, introspected, and composed in ways native CSS filter functions can't match. A walkthrough of the pipeline, anchored by NoiseFilter.","datePublished":"2026-05-11","url":"https://pathogen.studio/blog/custom-filters-pipeline","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Custom Filters in Pathogen: First-Class Visual Effects</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Custom Filters in Pathogen: First-Class Visual Effects</h1>
+        <p class="post-meta"><time datetime="2026-05-11">May 10, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <blockquote>
+<p><strong>Part 1 of 2</strong> in our series on Pathogen&#39;s custom filter pipeline. In this post we cover the architecture and ergonomics, anchored by <code>NoiseFilter</code>. In <a href="./custom-filters-family">Part 2</a> we walk through the full family — <code>GlowFilter</code>, <code>EmbossFilter</code>, <code>ElevationShadowFilter</code>, <code>InnerShadowFilter</code>, and <code>PixelateFilter</code> — with side-by-side parameter sweeps.</p>
+</blockquote>
+<p><strong>Series:</strong></p>
+<ol>
+<li><strong>Custom Filters in Pathogen: First-Class Visual Effects</strong> ← you are here</li>
+<li><a href="./custom-filters-family">The Full Filter Family: Glow, Emboss, Shadows, Pixelate</a></li>
+</ol>
+<h2>The one-line filter</h2>
+<p><mini-workspace code-open caption="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name.">
+  <code>// viewBox="0 0 400 200"
+// Hero: one line of Pathogen — five SVG filter primitives in the output.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 400, 200); }
+
+// The one-liner: define a filter, name it, use it.
+let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
+
+let disc = PathLayer('disc') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: grain;
+};
+disc.apply { circle(200, 100, 70); }
+</code>
+  <img src="/blog/samples/post25/01-hero-grain.svg" alt="One line of Pathogen. Five SVG primitives behind it. A value you can reuse, log, and override by name." loading="lazy">
+</mini-workspace></p>
+<p>That snippet does three things. It defines a custom filter — <code>NoiseFilter()</code> with the <code>Grain</code> preset — assigns it to a variable, and applies it to a layer via a style block. The output SVG contains a single <code>&lt;filter&gt;</code> element wrapping <code>feTurbulence</code> → <code>feComposite</code> → <code>feColorMatrix</code> → <code>feComponentTransfer</code> → <code>feBlend</code>, plus a <code>filter=&quot;url(#pathogen-noise-1)&quot;</code> attribute on the painted <code>&lt;path&gt;</code>.</p>
+<p>The same effect in vanilla SVG is about twelve lines and three concepts (filter region, primitive subregion, blend mode). In vanilla CSS it doesn&#39;t exist — <code>filter: blur(...) brightness(...)</code> covers a fixed set of effects and <code>filter: drop-shadow(...)</code> covers exactly one shadow style. Anything richer demands you reach for raw <code>&lt;filter&gt;</code> markup.</p>
+<p>Pathogen&#39;s custom filters close that gap by making filters <strong>first-class language values</strong>. Define one, name it, use it like any other variable.</p>
+<h2>What native CSS leaves on the table</h2>
+<p>The argument for custom filters isn&#39;t that CSS filter functions are bad — <code>filter: blur(2px) brightness(1.2);</code> is fine for what it covers — it&#39;s that the ergonomic ceiling is low. Specifically:</p>
+<ul>
+<li><strong>No reuse.</strong> A CSS filter chain is inline text. To apply the same look across three layers, you copy the string three times. Change your mind, change three places.</li>
+<li><strong>No introspection.</strong> <code>drop-shadow(2px 4px 6px black)</code> is an opaque token. There&#39;s no way to read back the offset, blur, or color from elsewhere in your program.</li>
+<li><strong>No presets.</strong> The blur radius is a number; the color is a color. There&#39;s no <code>BlurStyle.Soft</code> you can swap in.</li>
+<li><strong>No composition with custom recipes.</strong> If you want noise blended with shadow blended with grain, you&#39;re writing a custom <code>&lt;filter&gt;</code> def either way.</li>
+<li><strong>No inset shadows.</strong> <code>drop-shadow()</code> is outer-only. Pressed buttons, recessed wells, and engraved-text effects need a different path entirely.</li>
+<li><strong>No layered depth.</strong> Material Design&#39;s depth shadows are three carefully tuned shadow layers stacked under a single elevation knob. <code>drop-shadow()</code> gives you one.</li>
+</ul>
+<p>Raw SVG <code>&lt;filter&gt;</code> solves all of these, but at a steep verbosity cost — you&#39;re hand-writing primitive chains, naming intermediate results, and matching <code>in=</code>/<code>in2=</code> pipes. The expressive ceiling is high; the ergonomic floor is the ground.</p>
+<h2>Pathogen filters: define once, reuse, override, introspect</h2>
+<p>Here&#39;s a <code>NoiseFilter</code> configured by name, applied to a layer, and asked for its id from elsewhere in the program:</p>
+<pre><code class="hljs"><span class="hljs-built_in">let</span> grain = <span class="hljs-function"><span class="hljs-title">NoiseFilter</span></span>() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.6;
+  f.blend = BlendMode.SoftLight;
+};
+
+<span class="hljs-built_in">log</span>(<span class="hljs-string">&quot;filter id:&quot;</span>, grain.id);     // pathogen-noise-1
+<span class="hljs-built_in">log</span>(<span class="hljs-string">&quot;amount:&quot;</span>,    grain.amount); // 0.6
+
+define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class="hljs-variable">${ fill: oklch(70% 0.20 30); filter: grain; }</span>
+</code></pre><p>That snippet exercises four ergonomic wins at once:</p>
+<ol>
+<li><strong>Trailing-block named overrides.</strong> Inside <code>{|f| ... }</code> you assign properties by name. Order doesn&#39;t matter, mismatches throw with a clear message, and the IDE knows the property set.</li>
+<li><strong>Preset enums.</strong> <code>NoiseFilterStyle.Speckle</code> is one of five presets — <code>Grain</code>, <code>Paper</code>, <code>Speckle</code>, <code>Static</code>, <code>Gradient</code> — each tuned to a specific look. The compiler validates the choice; the IDE autocompletes it.</li>
+<li><strong>Auto-wrapping <code>filter:</code> style property.</strong> Assigning a <code>FilterValue</code> to <code>filter:</code> inside a style block resolves to <code>filter=&quot;url(#pathogen-noise-1)&quot;</code> in the output SVG. No string interpolation, no manual <code>url(#...)</code> plumbing.</li>
+<li><strong>Read-side property access.</strong> <code>grain.id</code>, <code>grain.amount</code>, <code>grain.blend</code> — every configurable property is also readable. Useful for debug, conditional logic, and downstream computation.</li>
+</ol>
+<p>The runtime cost is the same as raw SVG: one <code>&lt;filter&gt;</code> def in <code>&lt;defs&gt;</code>, one <code>url(#id)</code> reference per layer. The difference is everything around the runtime cost — declarable, nameable, reusable, introspectable.</p>
+<h2>NoiseFilter — five presets, one shape</h2>
+<p><code>NoiseFilter</code> ships with five style presets. The primitive chain is the same across all of them; what changes is which <code>feTurbulence</code> type runs, which blend mode mixes the result back into the source, and where the defaults for <code>scale</code>, <code>octaves</code>, <code>amount</code>, <code>monochrome</code>, <code>contrast</code>, and <code>stitch</code> land.</p>
+<p><mini-workspace code-open caption="The five NoiseFilterStyle presets applied to identical discs. Same shape, same fill. Different chain defaults.">
+  <code>// viewBox="0 0 720 240"
+// All five NoiseFilterStyle presets applied to the same disc, side by side.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 720, 240); }
+
+let f_grain    = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
+let f_paper    = NoiseFilter() {|f| f.style = NoiseFilterStyle.Paper; };
+let f_speckle  = NoiseFilter() {|f| f.style = NoiseFilterStyle.Speckle; };
+let f_static   = NoiseFilter() {|f| f.style = NoiseFilterStyle.Static; };
+let f_gradient = NoiseFilter() {|f| f.style = NoiseFilterStyle.Gradient; };
+
+let d1 = PathLayer('grain')    ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_grain;    };
+let d2 = PathLayer('paper')    ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_paper;    };
+let d3 = PathLayer('speckle')  ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_speckle;  };
+let d4 = PathLayer('static')   ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_static;   };
+let d5 = PathLayer('gradient') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_gradient; };
+
+d1.apply { circle( 80, 100, 45); }
+d2.apply { circle(220, 100, 45); }
+d3.apply { circle(360, 100, 45); }
+d4.apply { circle(500, 100, 45); }
+d5.apply { circle(640, 100, 45); }
+
+let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l1.apply { text( 80, 200)`Grain` }
+
+let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l2.apply { text(220, 200)`Paper` }
+
+let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l3.apply { text(360, 200)`Speckle` }
+
+let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l4.apply { text(500, 200)`Static` }
+
+let l5 = TextLayer('l5') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l5.apply { text(640, 200)`Gradient` }
+</code>
+  <img src="/blog/samples/post25/02-preset-gallery.svg" alt="The five NoiseFilterStyle presets applied to identical discs. Same shape, same fill. Different chain defaults." loading="lazy">
+</mini-workspace></p>
+<p>Each preset is a starting point you tune. <code>style = NoiseFilterStyle.Grain</code> gives you filmic grain by default; you can then bump <code>amount</code> to make it heavier, set <code>monochrome = false</code> to keep color variance in the noise, or override <code>blend</code> to switch from <code>color-burn</code> to <code>multiply</code>. Read the <a href="/docs/filters">filters reference</a> for the full property list.</p>
+<h3>scale — the noise frequency knob</h3>
+<p><code>scale</code> maps directly to SVG&#39;s <code>baseFrequency</code>. Higher number means a finer, denser pattern; lower number means larger, coarser features. The <code>&#39;fine&#39; | &#39;medium&#39; | &#39;coarse&#39;</code> string aliases give you common values without remembering the numeric mapping (<code>&#39;fine&#39;</code> = 5.0, <code>&#39;medium&#39;</code> = 1.0, <code>&#39;coarse&#39;</code> = 0.3).</p>
+<p><mini-workspace code-open caption="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0.">
+  <code>// viewBox="0 0 640 240"
+// NoiseFilter Grain — scale sweep from coarse to fine.
+// Each disc uses the same preset, only `scale` changes.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 640, 240); }
+
+let f1 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.scale = 0.3; };
+let f2 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.scale = 1.0; };
+let f3 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.scale = 'medium'; };
+let f4 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.scale = 'fine'; };
+
+let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f1; };
+let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f2; };
+let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f3; };
+let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f4; };
+
+d1.apply { circle( 80, 100, 55); }
+d2.apply { circle(240, 100, 55); }
+d3.apply { circle(400, 100, 55); }
+d4.apply { circle(560, 100, 55); }
+
+let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l1.apply { text( 80, 200)`scale = 'coarse' (0.3)` }
+
+let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l2.apply { text(240, 200)`scale = 1.0` }
+
+let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l3.apply { text(400, 200)`scale = 'medium' (1.0)` }
+
+let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l4.apply { text(560, 200)`scale = 'fine' (5.0)` }
+
+let lh = TextLayer('lh') ${ font-family: sans-serif; font-size: 11; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
+lh.apply { text(320, 222)`smaller scale  →  larger noise features        larger scale  →  finer, denser grain` }
+</code>
+  <img src="/blog/samples/post25/03-scale-sweep.svg" alt="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0." loading="lazy">
+</mini-workspace></p>
+<h3>amount — visible intensity</h3>
+<p><code>amount</code> is a 0–1 multiplier on the alpha of the noise pass before it blends with the source. 0 disables the effect entirely; 1 hits full strength. It interacts predictably with <code>blend</code>: at <code>amount = 0.5</code> you see roughly half the contribution of the chosen blend mode.</p>
+<p><mini-workspace code-open caption="Grain at four amounts. The chain stays the same; the alpha ramp does the heavy lifting.">
+  <code>// viewBox="0 0 640 240"
+// NoiseFilter Grain — amount sweep. amount = 0 is no effect; 1 is full strength.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 640, 240); }
+
+let f1 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.amount = 0.2; };
+let f2 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.amount = 0.4; };
+let f3 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.amount = 0.6; };
+let f4 = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.amount = 0.8; };
+
+let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f1; };
+let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f2; };
+let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f3; };
+let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f4; };
+
+d1.apply { circle( 80, 100, 55); }
+d2.apply { circle(240, 100, 55); }
+d3.apply { circle(400, 100, 55); }
+d4.apply { circle(560, 100, 55); }
+
+let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l1.apply { text( 80, 200)`amount = 0.2` }
+
+let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l2.apply { text(240, 200)`amount = 0.4` }
+
+let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l3.apply { text(400, 200)`amount = 0.6` }
+
+let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l4.apply { text(560, 200)`amount = 0.8` }
+</code>
+  <img src="/blog/samples/post25/04-amount-sweep.svg" alt="Grain at four amounts. The chain stays the same; the alpha ramp does the heavy lifting." loading="lazy">
+</mini-workspace></p>
+<p>A note on cost: <code>octaves</code> is the number of layered noise frequencies. The presets stay between 2 and 8; values above 8 compound <code>feTurbulence</code>&#39;s render cost noticeably on lower-end devices, so reach for that ceiling deliberately.</p>
+<h3>monochrome — strip color variance</h3>
+<p>The <code>feTurbulence</code> primitive produces RGB-valued noise by default — different intensities per channel, which reads as faintly colored static. Setting <code>monochrome = true</code> inserts an <code>feColorMatrix</code> step that maps the noise to a single luminance channel, so the grain reads as pure light-and-dark texture independent of the source fill.</p>
+<p><mini-workspace code-open caption="Same Speckle preset, same seed. monochrome = true (left) reads as flat texture; false (right) preserves the per-channel color variance.">
+  <code>// viewBox="0 0 400 220"
+// NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 400, 220); }
+
+let f_mono  = NoiseFilter() {|f| f.style = NoiseFilterStyle.Speckle; f.amount = 0.8; f.monochrome = true;  f.seed = 17; };
+let f_color = NoiseFilter() {|f| f.style = NoiseFilterStyle.Speckle; f.amount = 0.8; f.monochrome = false; f.seed = 17; };
+
+let d_mono  = PathLayer('mono')  ${ fill: oklch(60% 0.20 30); stroke: none; filter: f_mono;  };
+let d_color = PathLayer('color') ${ fill: oklch(60% 0.20 30); stroke: none; filter: f_color; };
+
+d_mono.apply  { circle(110, 90, 55); }
+d_color.apply { circle(290, 90, 55); }
+
+let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l1.apply { text(110, 180)`monochrome = true` }
+
+let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
+l2.apply { text(290, 180)`monochrome = false` }
+</code>
+  <img src="/blog/samples/post25/05-monochrome-comparison.svg" alt="Same Speckle preset, same seed. monochrome = true (left) reads as flat texture; false (right) preserves the per-channel color variance." loading="lazy">
+</mini-workspace></p>
+<h2>Pairing filters with gradients</h2>
+<p>Filters apply on top of whatever the layer&#39;s <code>fill</code> resolved to. That includes Pathogen&#39;s gradient values, which means a noisy gradient is just a layer with a gradient fill and a <code>NoiseFilter</code> filter — no separate plumbing.</p>
+<p><mini-workspace code-open caption="LinearGradient fill plus Grain filter. The grain rides the gradient — and the Gradient preset is tuned for exactly this case, pumping contrast on the noise so it reads through saturated stops.">
+  <code>// viewBox="0 0 400 240"
+// LinearGradient fill + Grain filter on the same layer.
+// One declarative pairing — the grain rides the gradient.
+
+let sky = LinearGradient('sky', 0, 0, 1, 1) {|g|
+  g.stop(0, oklch(78% 0.20 70));
+  g.stop(0.55, oklch(58% 0.22 30));
+  g.stop(1, oklch(30% 0.18 280));
+};
+
+let grainy = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Gradient;
+  f.amount = 0.65;
+};
+
+let panel = PathLayer('panel') ${ fill: sky; stroke: none; filter: grainy; };
+panel.apply { rect(0, 0, 400, 240); }
+</code>
+  <img src="/blog/samples/post25/06-gradient-pairing.svg" alt="LinearGradient fill plus Grain filter. The grain rides the gradient — and the Gradient preset is tuned for exactly this case, pumping contrast on the noise so it reads through saturated stops." loading="lazy">
+</mini-workspace></p>
+<p>The <code>Gradient</code> preset pumps contrast on the noise before the final blend so the grain reads cleanly against saturated gradient stops — without that, the noise would muddy out against the brightest mid-tones. You can apply the same pattern with <code>Linear</code>, <code>Radial</code>, <code>Conic</code>, <code>Mesh</code>, or <code>Freeform</code> gradients; see the <a href="/docs/gradients">gradients reference</a> for the full set.</p>
+<h2>One filter, many layers — one <code>&lt;filter&gt;</code> def</h2>
+<p>Because a <code>NoiseFilter</code> is a value, you can assign it to a <code>let</code> once and reference it from as many layers as you want. The output SVG contains exactly one <code>&lt;filter&gt;</code> element regardless of reference count — every layer points at the same <code>url(#pathogen-noise-1)</code>.</p>
+<p><mini-workspace >
+  <code>// viewBox="0 0 600 200"
+// One filter, six shapes — one &lt;filter&gt; def in the output SVG.
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 600, 200); }
+
+// Define the filter once. The output SVG will contain exactly one &lt;filter&gt;
+// element regardless of how many layers reference it below.
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.5;
+};
+
+let c1 = PathLayer('c1') ${ fill: oklch(70% 0.20  30); stroke: none; filter: grain; };
+let c2 = PathLayer('c2') ${ fill: oklch(70% 0.20  80); stroke: none; filter: grain; };
+let c3 = PathLayer('c3') ${ fill: oklch(70% 0.20 150); stroke: none; filter: grain; };
+let c4 = PathLayer('c4') ${ fill: oklch(70% 0.20 220); stroke: none; filter: grain; };
+let c5 = PathLayer('c5') ${ fill: oklch(70% 0.20 290); stroke: none; filter: grain; };
+let c6 = PathLayer('c6') ${ fill: oklch(70% 0.20 340); stroke: none; filter: grain; };
+
+c1.apply { circle( 60, 100, 38); }
+c2.apply { circle(150, 100, 38); }
+c3.apply { circle(240, 100, 38); }
+c4.apply { circle(330, 100, 38); }
+c5.apply { circle(420, 100, 38); }
+c6.apply { circle(510, 100, 38); }
+</code>
+  <img src="/blog/samples/post25/07-reuse-pattern.svg" alt="SVG preview" loading="lazy">
+</mini-workspace></p>
+<p>This is the kind of thing that&#39;s tedious to do by hand in raw SVG — you&#39;d be copy-pasting <code>&lt;filter&gt;</code> markup, or hand-managing ids, or referencing the wrong one and getting confused output. Pathogen&#39;s auto-id machinery generates <code>pathogen-noise-N</code> for each call site, and the style-block evaluator wraps the value to <code>url(#pathogen-noise-N)</code> at the point of use.</p>
+<h2>Introspection: filter values you can log and pass around</h2>
+<p>Read-side property access is a small thing on the surface and a big thing in practice. You can <code>log()</code> a filter&#39;s id and seed for debugging, branch on its style in downstream logic, or compose a filter value into another expression.</p>
+<p><mini-workspace code-open caption="Open the console panel: every configurable property is also readable. The seed is auto-derived from the filter's id; set it explicitly to lock the noise pattern across edits.">
+  <code>// viewBox="0 0 400 200"
+// Filter values support read-side property access — useful for debug,
+// computation, and conditional logic. Open the console to see the logs.
+
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.6;
+};
+
+log("id:    ", grain.id);
+log("style: ", grain.style);
+log("amount:", grain.amount);
+log("blend: ", grain.blend);
+log("seed:  ", grain.seed);
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 400, 200); }
+
+let disc = PathLayer('disc') ${ fill: oklch(70% 0.20 30); stroke: none; filter: grain; };
+disc.apply { circle(200, 100, 70); }
+</code>
+  <img src="/blog/samples/post25/08-introspection.svg" alt="Open the console panel: every configurable property is also readable. The seed is auto-derived from the filter's id; set it explicitly to lock the noise pattern across edits." loading="lazy">
+</mini-workspace></p>
+<p>The auto-derived <code>seed</code> is one place where introspection pays off immediately. <code>NoiseFilter</code> hashes the filter&#39;s id (<code>pathogen-noise-1</code>, etc.) into a deterministic seed so the same source program produces the same noise across compiles. Reordering filter declarations shifts the auto-ids — which shifts the seeds — which visibly changes the grain pattern. If you want a specific filter&#39;s noise locked down across edits, log the id, then set the seed explicitly:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> signature = <span class="hljs-title class_">NoiseFilter</span>() {|f|
+  f.<span class="hljs-property">style</span> = <span class="hljs-title class_">NoiseFilterStyle</span>.<span class="hljs-property">Grain</span>;
+  f.<span class="hljs-property">seed</span> = <span class="hljs-number">42</span>;   <span class="hljs-comment">// stable across edits regardless of declaration order</span>
+};
+</code></pre><h2>What&#39;s in Part 2</h2>
+<p><code>NoiseFilter</code> is the flagship demonstration of the pipeline, but it&#39;s one of six custom filters that ship. The other five close specific gaps native CSS can&#39;t:</p>
+<ul>
+<li><strong><code>GlowFilter</code></strong> — outer halo or inner edge light, picked by a single <code>mode</code> property.</li>
+<li><strong><code>EmbossFilter</code></strong> — <code>feSpecularLighting</code> wrapped into named parameters you can sweep.</li>
+<li><strong><code>ElevationShadowFilter</code></strong> — Material-style depth as a single <code>elevation</code> knob, layering three shadows for you.</li>
+<li><strong><code>InnerShadowFilter</code></strong> — inset shadow. The capability CSS <code>drop-shadow()</code> cannot express.</li>
+<li><strong><code>PixelateFilter(w, h, r)</code></strong> — mosaic / pixelation; positional or block-style configuration.</li>
+</ul>
+<p><a href="./custom-filters-family">Part 2</a> walks through each one with side-by-side parameter sweeps. The ergonomic story stays the same — first-class values, named overrides, presets, introspection, reuse — applied to five more visual languages.</p>
+<p>For the full reference, see <a href="/docs/filters">docs/filters</a>. To experiment in your browser, open the <a href="/pathogen">playground</a>.</p>
+
+      </div>
+    </article>
+  </main>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

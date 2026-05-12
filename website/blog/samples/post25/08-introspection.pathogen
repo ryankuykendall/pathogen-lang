@@ -1,0 +1,20 @@
+// viewBox="0 0 400 200"
+// Filter values support read-side property access — useful for debug,
+// computation, and conditional logic. Open the console to see the logs.
+
+let grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Speckle;
+  f.amount = 0.6;
+};
+
+log("id:    ", grain.id);
+log("style: ", grain.style);
+log("amount:", grain.amount);
+log("blend: ", grain.blend);
+log("seed:  ", grain.seed);
+
+let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
+bg.apply { rect(0, 0, 400, 200); }
+
+let disc = PathLayer('disc') ${ fill: oklch(70% 0.20 30); stroke: none; filter: grain; };
+disc.apply { circle(200, 100, 70); }

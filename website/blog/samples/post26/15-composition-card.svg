@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="400" height="240">
+
+<defs>
+  <filter id="pathogen-elevation-shadow-1" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="b1"/>
+    <feOffset in="b1" dx="0" dy="1.8" result="o1"/>
+    <feFlood flood-color="#131428" flood-opacity="0.3" result="f1"/>
+    <feComposite in="f1" in2="o1" operator="in" result="s1"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="b2"/>
+    <feOffset in="b2" dx="0" dy="3.6" result="o2"/>
+    <feFlood flood-color="#131428" flood-opacity="0.18" result="f2"/>
+    <feComposite in="f2" in2="o2" operator="in" result="s2"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b3"/>
+    <feOffset in="b3" dx="0" dy="6" result="o3"/>
+    <feFlood flood-color="#131428" flood-opacity="0.12" result="f3"/>
+    <feComposite in="f3" in2="o3" operator="in" result="s3"/>
+    <feMerge>
+      <feMergeNode in="s1"/>
+      <feMergeNode in="s2"/>
+      <feMergeNode in="s3"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-inner-shadow-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+    <feOffset in="blur" dx="0" dy="3" result="offset"/>
+    <feComposite in="SourceAlpha" in2="offset" operator="out" result="inverted"/>
+    <feFlood flood-color="#090a13" flood-opacity="0.5" result="flood"/>
+    <feComposite in="flood" in2="inverted" operator="in" result="innerShadow"/>
+    <feComposite in="innerShadow" in2="SourceAlpha" operator="in" result="clipped"/>
+    <feMerge>
+      <feMergeNode in="SourceGraphic"/>
+      <feMergeNode in="clipped"/>
+    </feMerge>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 400 0 l 0 240 l -400 0 z" fill="oklch(94% 0.01 80)" stroke="none" stroke-width="2"/>
+  <g data-layer-name="chip" id="chip" filter="url(#pathogen-elevation-shadow-1)">
+    <path data-layer-name="inner" id="inner" d="M 114 80 l 172 0 q 14 0 14 14 l 0 32 q 0 14 -14 14 l -172 0 q -14 0 -14 -14 l 0 -32 q 0 -14 14 -14 z" fill="oklch(80% 0.06 230)" stroke="none" stroke-width="2" filter="url(#pathogen-inner-shadow-1)"/>
+  </g>
+  <text data-layer-name="label" id="label" x="200" y="200" font-family="sans-serif" font-size="12" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">ElevationShadow on GroupLayer  +  InnerShadow on PathLayer</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(94% 0.01 80)","stroke":"none"},"isDefault":false},{"name":"chip","type":"group","styles":{"filter":"url(#pathogen-elevation-shadow-1)"},"isDefault":false,"children":[{"name":"inner","type":"path","styles":{"fill":"oklch(80% 0.06 230)","stroke":"none","filter":"url(#pathogen-inner-shadow-1)"},"isDefault":false}]},{"name":"label","type":"text","styles":{"font-family":"sans-serif","font-size":"12","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>

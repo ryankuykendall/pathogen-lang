@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" width="640" height="240">
+
+<defs>
+  <filter id="pathogen-inner-shadow-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+    <feOffset in="blur" dx="0" dy="3" result="offset"/>
+    <feComposite in="SourceAlpha" in2="offset" operator="out" result="inverted"/>
+    <feFlood flood-color="#090a13" flood-opacity="0.55" result="flood"/>
+    <feComposite in="flood" in2="inverted" operator="in" result="innerShadow"/>
+    <feComposite in="innerShadow" in2="SourceAlpha" operator="in" result="clipped"/>
+    <feMerge>
+      <feMergeNode in="SourceGraphic"/>
+      <feMergeNode in="clipped"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-inner-shadow-2" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+    <feOffset in="blur" dx="0" dy="3" result="offset"/>
+    <feComposite in="SourceAlpha" in2="offset" operator="out" result="inverted"/>
+    <feFlood flood-color="#090a13" flood-opacity="0.55" result="flood"/>
+    <feComposite in="flood" in2="inverted" operator="in" result="innerShadow"/>
+    <feComposite in="innerShadow" in2="SourceAlpha" operator="in" result="clipped"/>
+    <feMerge>
+      <feMergeNode in="SourceGraphic"/>
+      <feMergeNode in="clipped"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-inner-shadow-3" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>
+    <feOffset in="blur" dx="0" dy="3" result="offset"/>
+    <feComposite in="SourceAlpha" in2="offset" operator="out" result="inverted"/>
+    <feFlood flood-color="#090a13" flood-opacity="0.55" result="flood"/>
+    <feComposite in="flood" in2="inverted" operator="in" result="innerShadow"/>
+    <feComposite in="innerShadow" in2="SourceAlpha" operator="in" result="clipped"/>
+    <feMerge>
+      <feMergeNode in="SourceGraphic"/>
+      <feMergeNode in="clipped"/>
+    </feMerge>
+  </filter>
+  <filter id="pathogen-inner-shadow-4" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="blur"/>
+    <feOffset in="blur" dx="0" dy="3" result="offset"/>
+    <feComposite in="SourceAlpha" in2="offset" operator="out" result="inverted"/>
+    <feFlood flood-color="#090a13" flood-opacity="0.55" result="flood"/>
+    <feComposite in="flood" in2="inverted" operator="in" result="innerShadow"/>
+    <feComposite in="innerShadow" in2="SourceAlpha" operator="in" result="clipped"/>
+    <feMerge>
+      <feMergeNode in="SourceGraphic"/>
+      <feMergeNode in="clipped"/>
+    </feMerge>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 640 0 l 0 240 l -640 0 z" fill="oklch(94% 0.01 80)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="c1" id="c1" d="M 40 60 l 90 0 q 10 0 10 10 l 0 60 q 0 10 -10 10 l -90 0 q -10 0 -10 -10 l 0 -60 q 0 -10 10 -10 z" fill="oklch(80% 0.06 230)" stroke="none" stroke-width="2" filter="url(#pathogen-inner-shadow-1)"/>
+  <path data-layer-name="c2" id="c2" d="M 200 60 l 90 0 q 10 0 10 10 l 0 60 q 0 10 -10 10 l -90 0 q -10 0 -10 -10 l 0 -60 q 0 -10 10 -10 z" fill="oklch(80% 0.06 230)" stroke="none" stroke-width="2" filter="url(#pathogen-inner-shadow-2)"/>
+  <path data-layer-name="c3" id="c3" d="M 360 60 l 90 0 q 10 0 10 10 l 0 60 q 0 10 -10 10 l -90 0 q -10 0 -10 -10 l 0 -60 q 0 -10 10 -10 z" fill="oklch(80% 0.06 230)" stroke="none" stroke-width="2" filter="url(#pathogen-inner-shadow-3)"/>
+  <path data-layer-name="c4" id="c4" d="M 520 60 l 90 0 q 10 0 10 10 l 0 60 q 0 10 -10 10 l -90 0 q -10 0 -10 -10 l 0 -60 q 0 -10 10 -10 z" fill="oklch(80% 0.06 230)" stroke="none" stroke-width="2" filter="url(#pathogen-inner-shadow-4)"/>
+  <text data-layer-name="l1" id="l1" x="85" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">blur = 2</text>
+  <text data-layer-name="l2" id="l2" x="245" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">blur = 4</text>
+  <text data-layer-name="l3" id="l3" x="405" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">blur = 8</text>
+  <text data-layer-name="l4" id="l4" x="565" y="200" font-family="sans-serif" font-size="13" font-weight="600" fill="oklch(25% 0.02 270)" text-anchor="middle">blur = 16</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(94% 0.01 80)","stroke":"none"},"isDefault":false},{"name":"c1","type":"path","styles":{"fill":"oklch(80% 0.06 230)","stroke":"none","filter":"url(#pathogen-inner-shadow-1)"},"isDefault":false},{"name":"c2","type":"path","styles":{"fill":"oklch(80% 0.06 230)","stroke":"none","filter":"url(#pathogen-inner-shadow-2)"},"isDefault":false},{"name":"c3","type":"path","styles":{"fill":"oklch(80% 0.06 230)","stroke":"none","filter":"url(#pathogen-inner-shadow-3)"},"isDefault":false},{"name":"c4","type":"path","styles":{"fill":"oklch(80% 0.06 230)","stroke":"none","filter":"url(#pathogen-inner-shadow-4)"},"isDefault":false},{"name":"l1","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l2","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l3","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false},{"name":"l4","type":"text","styles":{"font-family":"sans-serif","font-size":"13","font-weight":"600","fill":"oklch(25% 0.02 270)","text-anchor":"middle"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+</svg>
