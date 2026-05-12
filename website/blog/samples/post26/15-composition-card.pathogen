@@ -2,8 +2,13 @@
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 400, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 240);
+}
 
 let lift = ElevationShadowFilter() {|f|
   f.elevation = 6;
@@ -23,11 +28,27 @@ let inner = PathLayer('inner') ${
   stroke: none;
   filter: press;
 };
-inner.apply { roundRect(100, 80, 200, 60, 14); }
+inner.apply {
+  roundRect(100,
+      80,
+      200,
+      60,
+      14);
+}
 
 // Outer group carries the elevation shadow.
-let chip = GroupLayer('chip') ${ filter: lift; };
+let chip = GroupLayer('chip') ${
+  filter: lift;
+};
 chip.append(inner);
 
-let label = TextLayer('label') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-label.apply { text(200, 200)`ElevationShadow on GroupLayer  +  InnerShadow on PathLayer` }
+let label = TextLayer('label') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+label.apply {
+  text(200, 200)`ElevationShadow on GroupLayer  +  InnerShadow on PathLayer`;
+}

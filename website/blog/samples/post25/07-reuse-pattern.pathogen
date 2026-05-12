@@ -1,8 +1,13 @@
 // viewBox="0 0 600 200"
 // One filter, six shapes — one <filter> def in the output SVG.
 
-let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 600, 200); }
+let bg = PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 600, 200);
+}
 
 // Define the filter once. The output SVG will contain exactly one <filter>
 // element regardless of how many layers reference it below.
@@ -11,16 +16,52 @@ let grain = NoiseFilter() {|f|
   f.amount = 0.5;
 };
 
-let c1 = PathLayer('c1') ${ fill: oklch(70% 0.20  30); stroke: none; filter: grain; };
-let c2 = PathLayer('c2') ${ fill: oklch(70% 0.20  80); stroke: none; filter: grain; };
-let c3 = PathLayer('c3') ${ fill: oklch(70% 0.20 150); stroke: none; filter: grain; };
-let c4 = PathLayer('c4') ${ fill: oklch(70% 0.20 220); stroke: none; filter: grain; };
-let c5 = PathLayer('c5') ${ fill: oklch(70% 0.20 290); stroke: none; filter: grain; };
-let c6 = PathLayer('c6') ${ fill: oklch(70% 0.20 340); stroke: none; filter: grain; };
+let c1 = PathLayer('c1') ${
+  fill: oklch(70% 0.20  30);
+  stroke: none;
+  filter: grain;
+};
+let c2 = PathLayer('c2') ${
+  fill: oklch(70% 0.20  80);
+  stroke: none;
+  filter: grain;
+};
+let c3 = PathLayer('c3') ${
+  fill: oklch(70% 0.20 150);
+  stroke: none;
+  filter: grain;
+};
+let c4 = PathLayer('c4') ${
+  fill: oklch(70% 0.20 220);
+  stroke: none;
+  filter: grain;
+};
+let c5 = PathLayer('c5') ${
+  fill: oklch(70% 0.20 290);
+  stroke: none;
+  filter: grain;
+};
+let c6 = PathLayer('c6') ${
+  fill: oklch(70% 0.20 340);
+  stroke: none;
+  filter: grain;
+};
 
-c1.apply { circle( 60, 100, 38); }
-c2.apply { circle(150, 100, 38); }
-c3.apply { circle(240, 100, 38); }
-c4.apply { circle(330, 100, 38); }
-c5.apply { circle(420, 100, 38); }
-c6.apply { circle(510, 100, 38); }
+c1.apply {
+  circle(60, 100, 38);
+}
+c2.apply {
+  circle(150, 100, 38);
+}
+c3.apply {
+  circle(240, 100, 38);
+}
+c4.apply {
+  circle(330, 100, 38);
+}
+c5.apply {
+  circle(420, 100, 38);
+}
+c6.apply {
+  circle(510, 100, 38);
+}

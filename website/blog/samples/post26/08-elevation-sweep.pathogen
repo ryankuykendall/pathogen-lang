@@ -2,44 +2,175 @@
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 720, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 720, 240);
+}
 
-let f0  = ElevationShadowFilter() {|f| f.elevation =  0; f.color = oklch(20% 0.04 280); };
-let f2  = ElevationShadowFilter() {|f| f.elevation =  2; f.color = oklch(20% 0.04 280); };
-let f4  = ElevationShadowFilter() {|f| f.elevation =  4; f.color = oklch(20% 0.04 280); };
-let f8  = ElevationShadowFilter() {|f| f.elevation =  8; f.color = oklch(20% 0.04 280); };
-let f16 = ElevationShadowFilter() {|f| f.elevation = 16; f.color = oklch(20% 0.04 280); };
-let f24 = ElevationShadowFilter() {|f| f.elevation = 24; f.color = oklch(20% 0.04 280); };
+let f0 = ElevationShadowFilter() {|f|
+  f.elevation = 0;
+  f.color = oklch(20% 0.04 280);
+};
+let f2 = ElevationShadowFilter() {|f|
+  f.elevation = 2;
+  f.color = oklch(20% 0.04 280);
+};
+let f4 = ElevationShadowFilter() {|f|
+  f.elevation = 4;
+  f.color = oklch(20% 0.04 280);
+};
+let f8 = ElevationShadowFilter() {|f|
+  f.elevation = 8;
+  f.color = oklch(20% 0.04 280);
+};
+let f16 = ElevationShadowFilter() {|f|
+  f.elevation = 16;
+  f.color = oklch(20% 0.04 280);
+};
+let f24 = ElevationShadowFilter() {|f|
+  f.elevation = 24;
+  f.color = oklch(20% 0.04 280);
+};
 
-let c0  = PathLayer('c0')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f0;  };
-let c2  = PathLayer('c2')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f2;  };
-let c4  = PathLayer('c4')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f4;  };
-let c8  = PathLayer('c8')  ${ fill: oklch(95% 0.01 80); stroke: none; filter: f8;  };
-let c16 = PathLayer('c16') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f16; };
-let c24 = PathLayer('c24') ${ fill: oklch(95% 0.01 80); stroke: none; filter: f24; };
+let c0 = PathLayer('c0') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f0;
+};
+let c2 = PathLayer('c2') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f2;
+};
+let c4 = PathLayer('c4') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f4;
+};
+let c8 = PathLayer('c8') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f8;
+};
+let c16 = PathLayer('c16') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f16;
+};
+let c24 = PathLayer('c24') ${
+  fill: oklch(95% 0.01 80);
+  stroke: none;
+  filter: f24;
+};
 
-c0.apply  { roundRect( 25, 60, 75, 60, 8); }
-c2.apply  { roundRect(140, 60, 75, 60, 8); }
-c4.apply  { roundRect(255, 60, 75, 60, 8); }
-c8.apply  { roundRect(370, 60, 75, 60, 8); }
-c16.apply { roundRect(485, 60, 75, 60, 8); }
-c24.apply { roundRect(600, 60, 75, 60, 8); }
+c0.apply {
+  roundRect(25,
+      60,
+      75,
+      60,
+      8);
+}
+c2.apply {
+  roundRect(140,
+      60,
+      75,
+      60,
+      8);
+}
+c4.apply {
+  roundRect(255,
+      60,
+      75,
+      60,
+      8);
+}
+c8.apply {
+  roundRect(370,
+      60,
+      75,
+      60,
+      8);
+}
+c16.apply {
+  roundRect(485,
+      60,
+      75,
+      60,
+      8);
+}
+c24.apply {
+  roundRect(600,
+      60,
+      75,
+      60,
+      8);
+}
 
-let l0 = TextLayer('l0') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l0.apply { text( 62, 200)`elevation = 0` }
+let l0 = TextLayer('l0') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l0.apply {
+  text(62, 200)`elevation = 0`;
+}
 
-let l2t = TextLayer('l2') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2t.apply { text(177, 200)`elevation = 2` }
+let l2t = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2t.apply {
+  text(177, 200)`elevation = 2`;
+}
 
-let l4t = TextLayer('l4') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4t.apply { text(292, 200)`elevation = 4` }
+let l4t = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4t.apply {
+  text(292, 200)`elevation = 4`;
+}
 
-let l8t = TextLayer('l8') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l8t.apply { text(407, 200)`elevation = 8` }
+let l8t = TextLayer('l8') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l8t.apply {
+  text(407, 200)`elevation = 8`;
+}
 
-let l16 = TextLayer('l16') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l16.apply { text(522, 200)`elevation = 16` }
+let l16 = TextLayer('l16') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l16.apply {
+  text(522, 200)`elevation = 16`;
+}
 
-let l24 = TextLayer('l24') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l24.apply { text(637, 200)`elevation = 24` }
+let l24 = TextLayer('l24') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l24.apply {
+  text(637, 200)`elevation = 24`;
+}

@@ -1,32 +1,109 @@
 // viewBox="0 0 640 240"
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
-let bg = PathLayer('bg') ${ fill: oklch(90% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 640, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(90% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 640, 240);
+}
 
-let f1 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 1; f.strength = 1.0; };
-let f2 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 2; f.strength = 1.0; };
-let f3 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 4; f.strength = 1.0; };
-let f4 = EmbossFilter() {|f| f.angle = 135deg; f.depth = 8; f.strength = 1.0; };
+let f1 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 1;
+  f.strength = 1;
+};
+let f2 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 2;
+  f.strength = 1;
+};
+let f3 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 4;
+  f.strength = 1;
+};
+let f4 = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 8;
+  f.strength = 1;
+};
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f1; };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f2; };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f3; };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.18 60); stroke: none; filter: f4; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f1;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f2;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f3;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.18 60);
+  stroke: none;
+  filter: f4;
+};
 
-d1.apply { circle( 80, 100, 50); }
-d2.apply { circle(240, 100, 50); }
-d3.apply { circle(400, 100, 50); }
-d4.apply { circle(560, 100, 50); }
+d1.apply {
+  circle(80, 100, 50);
+}
+d2.apply {
+  circle(240, 100, 50);
+}
+d3.apply {
+  circle(400, 100, 50);
+}
+d4.apply {
+  circle(560, 100, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 80, 200)`depth = 1` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(80, 200)`depth = 1`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(240, 200)`depth = 2` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(240, 200)`depth = 2`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(400, 200)`depth = 4` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(400, 200)`depth = 4`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(560, 200)`depth = 8` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(560, 200)`depth = 8`;
+}

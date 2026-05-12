@@ -2,60 +2,233 @@
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
-let bg = PathLayer('bg') ${ fill: oklch(94% 0.01 80); stroke: none; };
-bg.apply { rect(0, 0, 480, 480); }
+let bg = PathLayer('bg') ${
+  fill: oklch(94% 0.01 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 480);
+}
 
 // Center coordinates for the 3×3 grid (skipping the middle cell)
-let f_n  = InnerShadowFilter() {|f| f.offsetX =  0; f.offsetY = -5; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_ne = InnerShadowFilter() {|f| f.offsetX =  4; f.offsetY = -4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_e  = InnerShadowFilter() {|f| f.offsetX =  5; f.offsetY =  0; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_se = InnerShadowFilter() {|f| f.offsetX =  4; f.offsetY =  4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_s  = InnerShadowFilter() {|f| f.offsetX =  0; f.offsetY =  5; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_sw = InnerShadowFilter() {|f| f.offsetX = -4; f.offsetY =  4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_w  = InnerShadowFilter() {|f| f.offsetX = -5; f.offsetY =  0; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
-let f_nw = InnerShadowFilter() {|f| f.offsetX = -4; f.offsetY = -4; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.6; };
+let f_n = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = -5;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_ne = InnerShadowFilter() {|f|
+  f.offsetX = 4;
+  f.offsetY = -4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_e = InnerShadowFilter() {|f|
+  f.offsetX = 5;
+  f.offsetY = 0;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_se = InnerShadowFilter() {|f|
+  f.offsetX = 4;
+  f.offsetY = 4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_s = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = 5;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_sw = InnerShadowFilter() {|f|
+  f.offsetX = -4;
+  f.offsetY = 4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_w = InnerShadowFilter() {|f|
+  f.offsetX = -5;
+  f.offsetY = 0;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
+let f_nw = InnerShadowFilter() {|f|
+  f.offsetX = -4;
+  f.offsetY = -4;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.6;
+};
 
-let mk_n  = PathLayer('n')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_n;  };
-let mk_ne = PathLayer('ne') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_ne; };
-let mk_e  = PathLayer('e')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_e;  };
-let mk_se = PathLayer('se') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_se; };
-let mk_s  = PathLayer('s')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_s;  };
-let mk_sw = PathLayer('sw') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_sw; };
-let mk_w  = PathLayer('w')  ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_w;  };
-let mk_nw = PathLayer('nw') ${ fill: oklch(80% 0.06 230); stroke: none; filter: f_nw; };
+let mk_n = PathLayer('n') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_n;
+};
+let mk_ne = PathLayer('ne') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_ne;
+};
+let mk_e = PathLayer('e') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_e;
+};
+let mk_se = PathLayer('se') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_se;
+};
+let mk_s = PathLayer('s') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_s;
+};
+let mk_sw = PathLayer('sw') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_sw;
+};
+let mk_w = PathLayer('w') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_w;
+};
+let mk_nw = PathLayer('nw') ${
+  fill: oklch(80% 0.06 230);
+  stroke: none;
+  filter: f_nw;
+};
 
-mk_nw.apply { circle(120, 120, 50); }
-mk_n.apply  { circle(240, 120, 50); }
-mk_ne.apply { circle(360, 120, 50); }
-mk_w.apply  { circle(120, 240, 50); }
-mk_e.apply  { circle(360, 240, 50); }
-mk_sw.apply { circle(120, 360, 50); }
-mk_s.apply  { circle(240, 360, 50); }
-mk_se.apply { circle(360, 360, 50); }
+mk_nw.apply {
+  circle(120, 120, 50);
+}
+mk_n.apply {
+  circle(240, 120, 50);
+}
+mk_ne.apply {
+  circle(360, 120, 50);
+}
+mk_w.apply {
+  circle(120, 240, 50);
+}
+mk_e.apply {
+  circle(360, 240, 50);
+}
+mk_sw.apply {
+  circle(120, 360, 50);
+}
+mk_s.apply {
+  circle(240, 360, 50);
+}
+mk_se.apply {
+  circle(360, 360, 50);
+}
 
-let label_nw = TextLayer('lnw') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_nw.apply { text(120, 183)`(-4, -4)` }
+let label_nw = TextLayer('lnw') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_nw.apply {
+  text(120, 183)`(-4, -4)`;
+}
 
-let label_n  = TextLayer('ln') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_n.apply  { text(240, 183)`(0, -5)` }
+let label_n = TextLayer('ln') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_n.apply {
+  text(240, 183)`(0, -5)`;
+}
 
-let label_ne = TextLayer('lne') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_ne.apply { text(360, 183)`(4, -4)` }
+let label_ne = TextLayer('lne') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_ne.apply {
+  text(360, 183)`(4, -4)`;
+}
 
-let label_w  = TextLayer('lw') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_w.apply  { text(120, 303)`(-5, 0)` }
+let label_w = TextLayer('lw') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_w.apply {
+  text(120, 303)`(-5, 0)`;
+}
 
-let label_e  = TextLayer('le') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_e.apply  { text(360, 303)`(5, 0)` }
+let label_e = TextLayer('le') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_e.apply {
+  text(360, 303)`(5, 0)`;
+}
 
-let label_sw = TextLayer('lsw') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_sw.apply { text(120, 435)`(-4, 4)` }
+let label_sw = TextLayer('lsw') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_sw.apply {
+  text(120, 435)`(-4, 4)`;
+}
 
-let label_s  = TextLayer('ls') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_s.apply  { text(240, 435)`(0, 5)` }
+let label_s = TextLayer('ls') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_s.apply {
+  text(240, 435)`(0, 5)`;
+}
 
-let label_se = TextLayer('lse') ${ font-family: sans-serif; font-size: 11; font-weight: 600; fill: oklch(35% 0.02 270); text-anchor: middle; };
-label_se.apply { text(360, 435)`(4, 4)` }
+let label_se = TextLayer('lse') ${
+  font-family: sans-serif;
+  font-size: 11;
+  font-weight: 600;
+  fill: oklch(35% 0.02 270);
+  text-anchor: middle;
+};
+label_se.apply {
+  text(360, 435)`(4, 4)`;
+}
 
-let caption = TextLayer('caption') ${ font-family: sans-serif; font-size: 12; font-weight: 700; fill: oklch(20% 0.02 270); text-anchor: middle; };
-caption.apply { text(240, 252)`offsetX, offsetY` }
+let caption = TextLayer('caption') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 700;
+  fill: oklch(20% 0.02 270);
+  text-anchor: middle;
+};
+caption.apply {
+  text(240, 252)`offsetX, offsetY`;
+}

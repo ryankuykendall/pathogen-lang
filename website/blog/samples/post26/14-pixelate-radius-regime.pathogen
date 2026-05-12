@@ -2,35 +2,106 @@
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius < 8: gaps between blocks. radius = 8: blocks touch. radius > 8: overlap.
 
-let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 540, 240); }
+let bg = PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 540, 240);
+}
 
-let f_gap     = PixelateFilter(16, 16, 4);
-let f_touch   = PixelateFilter(16, 16, 8);
+let f_gap = PixelateFilter(16, 16, 4);
+let f_touch = PixelateFilter(16, 16, 8);
 let f_overlap = PixelateFilter(16, 16, 12);
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_gap;     };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_touch;   };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_overlap; };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_gap;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_touch;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_overlap;
+};
 
-d1.apply { circle( 90, 100, 55); }
-d2.apply { circle(270, 100, 55); }
-d3.apply { circle(450, 100, 55); }
+d1.apply {
+  circle(90, 100, 55);
+}
+d2.apply {
+  circle(270, 100, 55);
+}
+d3.apply {
+  circle(450, 100, 55);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text( 90, 195)`radius = 4` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(90, 195)`radius = 4`;
+}
 
-let l1b = TextLayer('l1b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l1b.apply { text( 90, 212)`gaps between blocks` }
+let l1b = TextLayer('l1b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l1b.apply {
+  text(90, 212)`gaps between blocks`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(270, 195)`radius = 8` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(270, 195)`radius = 8`;
+}
 
-let l2b = TextLayer('l2b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l2b.apply { text(270, 212)`blocks just touch (= width / 2)` }
+let l2b = TextLayer('l2b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l2b.apply {
+  text(270, 212)`blocks just touch (= width / 2)`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 12; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(450, 195)`radius = 12` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 12;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(450, 195)`radius = 12`;
+}
 
-let l3b = TextLayer('l3b') ${ font-family: sans-serif; font-size: 10; font-weight: 400; fill: oklch(45% 0.02 270); text-anchor: middle; };
-l3b.apply { text(450, 212)`blocks overlap` }
+let l3b = TextLayer('l3b') ${
+  font-family: sans-serif;
+  font-size: 10;
+  font-weight: 400;
+  fill: oklch(45% 0.02 270);
+  text-anchor: middle;
+};
+l3b.apply {
+  text(450, 212)`blocks overlap`;
+}

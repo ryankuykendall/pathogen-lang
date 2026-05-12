@@ -1,44 +1,153 @@
 // viewBox="0 0 600 400"
 // Six filters, one shape per cell — the family portrait.
 
-let bg = PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; };
-bg.apply { rect(0, 0, 600, 400); }
+let bg = PathLayer('bg') ${
+  fill: oklch(95% 0.02 80);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 600, 400);
+}
 
-let f_grain     = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; f.amount = 0.45; };
-let f_glow      = GlowFilter() {|f| f.mode = GlowMode.Outer; f.color = oklch(85% 0.20 60); f.radius = 8; f.opacity = 0.85; };
-let f_emboss    = EmbossFilter() {|f| f.angle = 135deg; f.depth = 3; f.strength = 1.0; };
-let f_elevation = ElevationShadowFilter() {|f| f.elevation = 6; f.color = oklch(20% 0.04 280); };
-let f_inner     = InnerShadowFilter() {|f| f.offsetY = 3; f.blur = 5; f.color = oklch(15% 0.02 280); f.opacity = 0.5; };
-let f_pixelate  = PixelateFilter(12, 12, 6);
+let f_grain = NoiseFilter() {|f|
+  f.style = NoiseFilterStyle.Grain;
+  f.amount = 0.45;
+};
+let f_glow = GlowFilter() {|f|
+  f.mode = GlowMode.Outer;
+  f.color = oklch(85% 0.20 60);
+  f.radius = 8;
+  f.opacity = 0.85;
+};
+let f_emboss = EmbossFilter() {|f|
+  f.angle = 135deg;
+  f.depth = 3;
+  f.strength = 1;
+};
+let f_elevation = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.color = oklch(20% 0.04 280);
+};
+let f_inner = InnerShadowFilter() {|f|
+  f.offsetY = 3;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.5;
+};
+let f_pixelate = PixelateFilter(12, 12, 6);
 
-let d1 = PathLayer('d1') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_grain;     };
-let d2 = PathLayer('d2') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_glow;      };
-let d3 = PathLayer('d3') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_emboss;    };
-let d4 = PathLayer('d4') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_elevation; };
-let d5 = PathLayer('d5') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_inner;     };
-let d6 = PathLayer('d6') ${ fill: oklch(70% 0.20 30); stroke: none; filter: f_pixelate;  };
+let d1 = PathLayer('d1') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_grain;
+};
+let d2 = PathLayer('d2') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_glow;
+};
+let d3 = PathLayer('d3') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_emboss;
+};
+let d4 = PathLayer('d4') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_elevation;
+};
+let d5 = PathLayer('d5') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_inner;
+};
+let d6 = PathLayer('d6') ${
+  fill: oklch(70% 0.20 30);
+  stroke: none;
+  filter: f_pixelate;
+};
 
-d1.apply { circle(100, 100, 50); }
-d2.apply { circle(300, 100, 50); }
-d3.apply { circle(500, 100, 50); }
-d4.apply { circle(100, 270, 50); }
-d5.apply { circle(300, 270, 50); }
-d6.apply { circle(500, 270, 50); }
+d1.apply {
+  circle(100, 100, 50);
+}
+d2.apply {
+  circle(300, 100, 50);
+}
+d3.apply {
+  circle(500, 100, 50);
+}
+d4.apply {
+  circle(100, 270, 50);
+}
+d5.apply {
+  circle(300, 270, 50);
+}
+d6.apply {
+  circle(500, 270, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l1.apply { text(100, 175)`Grain` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l1.apply {
+  text(100, 175)`Grain`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l2.apply { text(300, 175)`Glow` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l2.apply {
+  text(300, 175)`Glow`;
+}
 
-let l3 = TextLayer('l3') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l3.apply { text(500, 175)`Emboss` }
+let l3 = TextLayer('l3') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l3.apply {
+  text(500, 175)`Emboss`;
+}
 
-let l4 = TextLayer('l4') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l4.apply { text(100, 360)`Elevation` }
+let l4 = TextLayer('l4') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l4.apply {
+  text(100, 360)`Elevation`;
+}
 
-let l5 = TextLayer('l5') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l5.apply { text(300, 360)`Inner Shadow` }
+let l5 = TextLayer('l5') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l5.apply {
+  text(300, 360)`Inner Shadow`;
+}
 
-let l6 = TextLayer('l6') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(25% 0.02 270); text-anchor: middle; };
-l6.apply { text(500, 360)`Pixelate` }
+let l6 = TextLayer('l6') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(25% 0.02 270);
+  text-anchor: middle;
+};
+l6.apply {
+  text(500, 360)`Pixelate`;
+}

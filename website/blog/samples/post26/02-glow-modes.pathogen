@@ -1,8 +1,13 @@
 // viewBox="0 0 400 220"
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
-let bg = PathLayer('bg') ${ fill: oklch(25% 0.04 270); stroke: none; };
-bg.apply { rect(0, 0, 400, 220); }
+let bg = PathLayer('bg') ${
+  fill: oklch(25% 0.04 270);
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 400, 220);
+}
 
 let f_outer = GlowFilter() {|f|
   f.mode = GlowMode.Outer;
@@ -19,14 +24,42 @@ let f_inner = GlowFilter() {|f|
   f.opacity = 0.85;
 };
 
-let d_outer = PathLayer('outer') ${ fill: oklch(60% 0.20 240); stroke: none; filter: f_outer; };
-let d_inner = PathLayer('inner') ${ fill: oklch(60% 0.20 240); stroke: none; filter: f_inner; };
+let d_outer = PathLayer('outer') ${
+  fill: oklch(60% 0.20 240);
+  stroke: none;
+  filter: f_outer;
+};
+let d_inner = PathLayer('inner') ${
+  fill: oklch(60% 0.20 240);
+  stroke: none;
+  filter: f_inner;
+};
 
-d_outer.apply { circle(110, 90, 50); }
-d_inner.apply { circle(290, 90, 50); }
+d_outer.apply {
+  circle(110, 90, 50);
+}
+d_inner.apply {
+  circle(290, 90, 50);
+}
 
-let l1 = TextLayer('l1') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l1.apply { text(110, 180)`GlowMode.Outer` }
+let l1 = TextLayer('l1') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l1.apply {
+  text(110, 180)`GlowMode.Outer`;
+}
 
-let l2 = TextLayer('l2') ${ font-family: sans-serif; font-size: 13; font-weight: 600; fill: oklch(90% 0.02 80); text-anchor: middle; };
-l2.apply { text(290, 180)`GlowMode.Inner` }
+let l2 = TextLayer('l2') ${
+  font-family: sans-serif;
+  font-size: 13;
+  font-weight: 600;
+  fill: oklch(90% 0.02 80);
+  text-anchor: middle;
+};
+l2.apply {
+  text(290, 180)`GlowMode.Inner`;
+}
