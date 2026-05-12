@@ -400,6 +400,11 @@ export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
     Static: 'static',
     Gradient: 'gradient',
   },
+  NoiseFilterScale: {
+    Fine: 'fine',
+    Medium: 'medium',
+    Coarse: 'coarse',
+  },
   GlowMode: {
     Outer: 'outer',
     Inner: 'inner',

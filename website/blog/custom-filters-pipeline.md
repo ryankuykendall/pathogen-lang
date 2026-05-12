@@ -70,9 +70,9 @@ Each preset is a starting point you tune. `style = NoiseFilterStyle.Grain` gives
 
 ### scale — the noise frequency knob
 
-`scale` maps directly to SVG's `baseFrequency`. Higher number means a finer, denser pattern; lower number means larger, coarser features. The `'fine' | 'medium' | 'coarse'` string aliases give you common values without remembering the numeric mapping (`'fine'` = 5.0, `'medium'` = 1.0, `'coarse'` = 0.3).
+`scale` maps directly to SVG's `baseFrequency`. Higher number means a finer, denser pattern; lower number means larger, coarser features. The `NoiseFilterScale` enum packages the three common values (`Coarse`, `Medium`, `Fine` → 0.3, 1.0, 5.0) so they're IDE-autocompleted; for anything in between, assign a finite positive number directly.
 
-<mini-workspace src="samples/post25/03-scale-sweep.pathogen" caption="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0." code-open></mini-workspace>
+<mini-workspace src="samples/post25/03-scale-sweep.pathogen" caption="Same disc, same Grain preset. Only scale changes — from a coarse 0.3, through Medium (1.0), to Fine (5.0)." code-open></mini-workspace>
 
 ### amount — visible intensity
 

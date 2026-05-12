@@ -20,11 +20,11 @@ let f2 = NoiseFilter() {|f|
 };
 let f3 = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
-  f.scale = 'medium';
+  f.scale = NoiseFilterScale.Medium;
 };
 let f4 = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
-  f.scale = 'fine';
+  f.scale = NoiseFilterScale.Fine;
 };
 
 let d1 = PathLayer('d1') ${
@@ -69,7 +69,7 @@ let l1 = TextLayer('l1') ${
   text-anchor: middle;
 };
 l1.apply {
-  text(80, 200)`scale = 'coarse' (0.3)`;
+  text(80, 200)`scale = 0.3 (Coarse)`;
 }
 
 let l2 = TextLayer('l2') ${
@@ -91,7 +91,7 @@ let l3 = TextLayer('l3') ${
   text-anchor: middle;
 };
 l3.apply {
-  text(400, 200)`scale = 'medium' (1.0)`;
+  text(400, 200)`scale = NoiseFilterScale.Medium`;
 }
 
 let l4 = TextLayer('l4') ${
@@ -102,7 +102,7 @@ let l4 = TextLayer('l4') ${
   text-anchor: middle;
 };
 l4.apply {
-  text(560, 200)`scale = 'fine' (5.0)`;
+  text(560, 200)`scale = NoiseFilterScale.Fine`;
 }
 
 let lh = TextLayer('lh') ${

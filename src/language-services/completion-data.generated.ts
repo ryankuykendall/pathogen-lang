@@ -22,6 +22,7 @@ export const ENUM_COMPLETIONS: CompletionEntry[] = [
   { label: 'MarkerRefX', kind: 'variable', detail: 'Marker refX keyword position', boost: 6 },
   { label: 'MarkerRefY', kind: 'variable', detail: 'Marker refY keyword position', boost: 6 },
   { label: 'MarkerUnits', kind: 'variable', detail: 'Marker coordinate system', boost: 6 },
+  { label: 'NoiseFilterScale', kind: 'variable', detail: 'NoiseFilter scale preset (fine/medium/coarse)', boost: 7 },
   { label: 'NoiseFilterStyle', kind: 'variable', detail: 'NoiseFilter primitive-chain preset', boost: 8 },
   { label: 'SpreadMethod', kind: 'variable', detail: 'Gradient spread method', boost: 8 },
   { label: 'TopoMethod', kind: 'variable', detail: 'Topological gradient method', boost: 6 },
@@ -137,6 +138,11 @@ export const ENUM_MEMBER_MAP: Record<string, CompletionEntry[]> = {
   MarkerUnits: [
     { label: 'StrokeWidth', kind: 'constant', detail: 'MarkerUnits.StrokeWidth → "strokeWidth"', boost: 8 },
     { label: 'UserSpaceOnUse', kind: 'constant', detail: 'MarkerUnits.UserSpaceOnUse → "userSpaceOnUse"', boost: 8 },
+  ],
+  NoiseFilterScale: [
+    { label: 'Fine', kind: 'constant', detail: 'NoiseFilterScale.Fine → "fine"', boost: 8 },
+    { label: 'Medium', kind: 'constant', detail: 'NoiseFilterScale.Medium → "medium"', boost: 8 },
+    { label: 'Coarse', kind: 'constant', detail: 'NoiseFilterScale.Coarse → "coarse"', boost: 8 },
   ],
   NoiseFilterStyle: [
     { label: 'Grain', kind: 'constant', detail: 'NoiseFilterStyle.Grain → "grain"', boost: 8 },

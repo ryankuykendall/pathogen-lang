@@ -20,6 +20,7 @@ Post-0.7.0 polish. Custom filter pipeline added with six constructors (Noise, Gl
 - **`PixelateFilter(width, height, radius)`** — mosaic via `feFlood` + `feTile` + `feMorphology`. Positional canonical form; trailing-block form also supported.
 - `BlendMode` enum — CSS blend-mode keywords as enum members (`Multiply`, `Screen`, `Overlay`, `ColorBurn`, `ColorDodge`, `HardLight`, `SoftLight`, `Darken`, `Lighten`, `Difference`, `Exclusion`, `Normal`).
 - `GlowMode` enum — `Outer` and `Inner` selectors for `GlowFilter`.
+- `NoiseFilterScale` enum — `Fine` / `Medium` / `Coarse` packaged as discoverable members (each evaluates to the same string value the scale write handler accepts, so the enum form and the bare-string form are equivalent).
 - Filter values auto-wrap to `url(#id)` when assigned to the `filter` style property in a style block; reused via `let` binding (one `<filter>` def, many references); composable across layers via `GroupLayer` stacking.
 
 #### Documentation

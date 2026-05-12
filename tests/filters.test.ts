@@ -129,6 +129,12 @@ describe('NoiseFilter', () => {
       expect(compileFilter("f.scale = 'coarse';").filter.scale).toBeCloseTo(0.3);
     });
 
+    it('scale accepts NoiseFilterScale enum members (equivalent to the bare strings)', () => {
+      expect(compileFilter('f.scale = NoiseFilterScale.Fine;').filter.scale).toBe(5.0);
+      expect(compileFilter('f.scale = NoiseFilterScale.Medium;').filter.scale).toBe(1.0);
+      expect(compileFilter('f.scale = NoiseFilterScale.Coarse;').filter.scale).toBeCloseTo(0.3);
+    });
+
     it('rejects invalid scale strings', () => {
       expect(() => compile(`let f = NoiseFilter() {|f| f.scale = 'wobble'; };`)).toThrow(
         /NoiseFilter\.scale must be a positive number or one of/,

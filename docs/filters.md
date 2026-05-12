@@ -79,7 +79,7 @@ After construction, properties on the bound parameter can be reassigned. Default
 | Property | Type | Default | Effect |
 |---|---|---|---|
 | `style` | `NoiseFilterStyle` | `Grain` | Selects the primitive chain and per-property defaults |
-| `scale` | number, or `'fine' \| 'medium' \| 'coarse'` | per `style` | Grain density. `scale` maps directly to SVG `baseFrequency`: higher number → finer, denser pattern; lower number → larger, coarser features. String aliases: `'fine'` = 5.0, `'medium'` = 1.0, `'coarse'` = 0.3. Numbers must be finite and positive |
+| `scale` | number or `NoiseFilterScale` | per `style` | Grain density. `scale` maps directly to SVG `baseFrequency`: higher number → finer, denser pattern; lower number → larger, coarser features. Use the `NoiseFilterScale` enum for common values (see the table below the property list), or assign a finite positive number directly |
 | `octaves` | integer 1–10 | per `style` | Layered noise frequencies. 1 = single smooth pattern; 8+ = fine fractal detail. Each octave compounds render cost — see [Browser Caveats](#filters-browser-caveats) |
 | `amount` | number 0–1 | per `style` | Visible intensity. `0` = no effect; `1` = full strength. Modulates the alpha of the noise before it blends with the source |
 | `monochrome` | boolean | per `style` | When true, strips color variance via `feColorMatrix luminanceToAlpha` so the grain reads as pure light/dark texture |
@@ -91,12 +91,24 @@ After construction, properties on the bound parameter can be reassigned. Default
 ```
 let pronounced = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
-  f.amount = 0.7;       // stronger
-  f.scale = 'medium';   // coarser than the Grain default
-  f.monochrome = false; // keep some color variance
-  f.seed = 42;          // pin to a specific noise seed
+  f.amount = 0.7;                       // stronger
+  f.scale = NoiseFilterScale.Medium;    // coarser than the Grain default
+  f.monochrome = false;                 // keep some color variance
+  f.seed = 42;                          // pin to a specific noise seed
 };
 ```
+
+### NoiseFilterScale
+
+`NoiseFilterScale` packages the three common `scale` values so they're discoverable through IDE autocompletion. The members evaluate to the same string values the `scale` write handler accepts directly, so `f.scale = NoiseFilterScale.Fine` and `f.scale = 'fine'` are equivalent.
+
+| Member | Underlying value | `baseFrequency` |
+|---|---|---|
+| `NoiseFilterScale.Fine` | `'fine'` | 5.0 |
+| `NoiseFilterScale.Medium` | `'medium'` | 1.0 |
+| `NoiseFilterScale.Coarse` | `'coarse'` | 0.3 |
+
+For values outside these three buckets, assign a finite positive number directly: `f.scale = 2.5;`.
 
 ### Seed Stability
 
@@ -739,7 +751,7 @@ let pix = PixelateFilter(16, 16, 8);
 | `Invalid value '<x>' for NoiseFilter.style. Valid values: grain, paper, speckle, static, gradient` | Assigning a non-enum string to `f.style` |
 | `NoiseFilter.style must be a NoiseFilterStyle enum value` | Assigning a non-string to `f.style` |
 | `NoiseFilter.scale must be a finite positive number` | `f.scale = 0`, negative, `Infinity`, or `NaN` |
-| `NoiseFilter.scale must be a positive number or one of 'fine' \| 'medium' \| 'coarse'` | Assigning an unrecognized string or invalid type to `f.scale` |
+| `NoiseFilter.scale must be a positive number or one of 'fine' \| 'medium' \| 'coarse'` | Assigning an unrecognized string or invalid type to `f.scale` (use the `NoiseFilterScale` enum to avoid typos) |
 | `NoiseFilter.octaves must be an integer between 1 and 10` | Non-integer, out of range, or wrong type assignment |
 | `NoiseFilter.amount must be a number between 0 and 1` | Out-of-range, `Infinity`, or `NaN` |
 | `NoiseFilter.monochrome must be a boolean` | Assigning a non-boolean value |

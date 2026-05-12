@@ -453,8 +453,8 @@ l5.apply {
 </mini-workspace></p>
 <p>Each preset is a starting point you tune. <code>style = NoiseFilterStyle.Grain</code> gives you filmic grain by default; you can then bump <code>amount</code> to make it heavier, set <code>monochrome = false</code> to keep color variance in the noise, or override <code>blend</code> to switch from <code>color-burn</code> to <code>multiply</code>. Read the <a href="/docs/filters">filters reference</a> for the full property list.</p>
 <h3>scale — the noise frequency knob</h3>
-<p><code>scale</code> maps directly to SVG&#39;s <code>baseFrequency</code>. Higher number means a finer, denser pattern; lower number means larger, coarser features. The <code>&#39;fine&#39; | &#39;medium&#39; | &#39;coarse&#39;</code> string aliases give you common values without remembering the numeric mapping (<code>&#39;fine&#39;</code> = 5.0, <code>&#39;medium&#39;</code> = 1.0, <code>&#39;coarse&#39;</code> = 0.3).</p>
-<p><mini-workspace code-open caption="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0.">
+<p><code>scale</code> maps directly to SVG&#39;s <code>baseFrequency</code>. Higher number means a finer, denser pattern; lower number means larger, coarser features. The <code>NoiseFilterScale</code> enum packages the three common values (<code>Coarse</code>, <code>Medium</code>, <code>Fine</code> → 0.3, 1.0, 5.0) so they&#39;re IDE-autocompleted; for anything in between, assign a finite positive number directly.</p>
+<p><mini-workspace code-open caption="Same disc, same Grain preset. Only scale changes — from a coarse 0.3, through Medium (1.0), to Fine (5.0).">
   <code>// viewBox="0 0 640 240"
 // NoiseFilter Grain — scale sweep from coarse to fine.
 // Each disc uses the same preset, only `scale` changes.
@@ -477,11 +477,11 @@ let f2 = NoiseFilter() {|f|
 };
 let f3 = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
-  f.scale = 'medium';
+  f.scale = NoiseFilterScale.Medium;
 };
 let f4 = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
-  f.scale = 'fine';
+  f.scale = NoiseFilterScale.Fine;
 };
 
 let d1 = PathLayer('d1') ${
@@ -526,7 +526,7 @@ let l1 = TextLayer('l1') ${
   text-anchor: middle;
 };
 l1.apply {
-  text(80, 200)`scale = 'coarse' (0.3)`;
+  text(80, 200)`scale = 0.3 (Coarse)`;
 }
 
 let l2 = TextLayer('l2') ${
@@ -548,7 +548,7 @@ let l3 = TextLayer('l3') ${
   text-anchor: middle;
 };
 l3.apply {
-  text(400, 200)`scale = 'medium' (1.0)`;
+  text(400, 200)`scale = NoiseFilterScale.Medium`;
 }
 
 let l4 = TextLayer('l4') ${
@@ -559,7 +559,7 @@ let l4 = TextLayer('l4') ${
   text-anchor: middle;
 };
 l4.apply {
-  text(560, 200)`scale = 'fine' (5.0)`;
+  text(560, 200)`scale = NoiseFilterScale.Fine`;
 }
 
 let lh = TextLayer('lh') ${
@@ -573,7 +573,7 @@ lh.apply {
   text(320, 222)`smaller scale  →  larger noise features        larger scale  →  finer, denser grain`;
 }
 </code>
-  <img src="/blog/samples/post25/03-scale-sweep.svg" alt="Same disc, same Grain preset. Only scale changes — from coarse pebbles at 0.3 to fine static at 8.0." loading="lazy">
+  <img src="/blog/samples/post25/03-scale-sweep.svg" alt="Same disc, same Grain preset. Only scale changes — from a coarse 0.3, through Medium (1.0), to Fine (5.0)." loading="lazy">
 </mini-workspace></p>
 <h3>amount — visible intensity</h3>
 <p><code>amount</code> is a 0–1 multiplier on the alpha of the noise pass before it blends with the source. 0 disables the effect entirely; 1 hits full strength. It interacts predictably with <code>blend</code>: at <code>amount = 0.5</code> you see roughly half the contribution of the chosen blend mode.</p>
