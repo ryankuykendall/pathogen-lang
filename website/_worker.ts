@@ -609,24 +609,54 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
   const editorIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.45 1.97l-4.83-2.34a1.5 1.5 0 0 0-1.7.3L1.59 13.07a1 1 0 0 0 0 1.42l1.32 1.32a1 1 0 0 0 1.42 0L20.2 4.86l1.95.93a1.5 1.5 0 0 0 2.13-1.36V3.33a1.5 1.5 0 0 0-.83-1.36z"/></svg>`;
   const arrowIcon = `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>`;
 
-  // 6-petal hero render — matches the Pathogen snippet to the left.
-  const heroSvg = `<svg viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <circle cx="80" cy="0" r="18" fill="oklch(72% 0.18 0)"/>
-              <circle cx="40" cy="-69.28" r="18" fill="oklch(72% 0.18 60)"/>
-              <circle cx="-40" cy="-69.28" r="18" fill="oklch(72% 0.18 120)"/>
-              <circle cx="-80" cy="0" r="18" fill="oklch(72% 0.18 180)"/>
-              <circle cx="-40" cy="69.28" r="18" fill="oklch(72% 0.18 240)"/>
-              <circle cx="40" cy="69.28" r="18" fill="oklch(72% 0.18 300)"/>
-              <circle cx="0" cy="0" r="3" fill="var(--text-tertiary)"/>
+  // 29-petal hero render — actual compiled SVG from the Pathogen snippet to the left.
+  const heroSvg = `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path data-layer-name="layer-0" id="layer-0" d="M 270 200 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff8cff" stroke="#e346db" stroke-width="4"/>
+              <path data-layer-name="layer-1" id="layer-1" d="M 267.19 225.80 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff8dff" stroke="#e947d4" stroke-width="4"/>
+              <path data-layer-name="layer-2" id="layer-2" d="M 258.91 250.39 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff8eff" stroke="#ee48cc" stroke-width="4"/>
+              <path data-layer-name="layer-3" id="layer-3" d="M 245.53 272.62 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff8fff" stroke="#f349c4" stroke-width="4"/>
+              <path data-layer-name="layer-4" id="layer-4" d="M 227.69 291.46 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff90fe" stroke="#f84bbc" stroke-width="4"/>
+              <path data-layer-name="layer-5" id="layer-5" d="M 206.21 306.02 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff92f6" stroke="#fd4db5" stroke-width="4"/>
+              <path data-layer-name="layer-6" id="layer-6" d="M 182.10 315.63 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff94ee" stroke="#ff4fad" stroke-width="4"/>
+              <path data-layer-name="layer-7" id="layer-7" d="M 156.50 319.82 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff96e5" stroke="#ff51a5" stroke-width="4"/>
+              <path data-layer-name="layer-8" id="layer-8" d="M 130.59 318.42 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff99dd" stroke="#ff549d" stroke-width="4"/>
+              <path data-layer-name="layer-9" id="layer-9" d="M 105.58 311.48 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff9cd5" stroke="#ff5796" stroke-width="4"/>
+              <path data-layer-name="layer-10" id="layer-10" d="M 82.66 299.32 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ff9fcd" stroke="#ff5a8e" stroke-width="4"/>
+              <path data-layer-name="layer-11" id="layer-11" d="M 62.88 282.52 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffa2c5" stroke="#ff5e87" stroke-width="4"/>
+              <path data-layer-name="layer-12" id="layer-12" d="M 47.18 261.87 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffa6bd" stroke="#ff627f" stroke-width="4"/>
+              <path data-layer-name="layer-13" id="layer-13" d="M 36.28 238.32 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffaab6" stroke="#ff6678" stroke-width="4"/>
+              <path data-layer-name="layer-14" id="layer-14" d="M 30.70 212.97 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffaeae" stroke="#ff6b70" stroke-width="4"/>
+              <path data-layer-name="layer-15" id="layer-15" d="M 30.70 187.03 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffb2a8" stroke="#ff6f69" stroke-width="4"/>
+              <path data-layer-name="layer-16" id="layer-16" d="M 36.28 161.68 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffb7a1" stroke="#ff7462" stroke-width="4"/>
+              <path data-layer-name="layer-17" id="layer-17" d="M 47.18 138.13 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffbb9b" stroke="#ff795b" stroke-width="4"/>
+              <path data-layer-name="layer-18" id="layer-18" d="M 62.88 117.48 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffc095" stroke="#ff7e55" stroke-width="4"/>
+              <path data-layer-name="layer-19" id="layer-19" d="M 82.66 100.68 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffc590" stroke="#ff834e" stroke-width="4"/>
+              <path data-layer-name="layer-20" id="layer-20" d="M 105.58 88.52 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffca8b" stroke="#ff8848" stroke-width="4"/>
+              <path data-layer-name="layer-21" id="layer-21" d="M 130.59 81.58 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffcf87" stroke="#ff8d42" stroke-width="4"/>
+              <path data-layer-name="layer-22" id="layer-22" d="M 156.50 80.18 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffd484" stroke="#ff923d" stroke-width="4"/>
+              <path data-layer-name="layer-23" id="layer-23" d="M 182.10 84.37 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffd981" stroke="#ff9739" stroke-width="4"/>
+              <path data-layer-name="layer-24" id="layer-24" d="M 206.21 93.98 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffde7f" stroke="#ff9c36" stroke-width="4"/>
+              <path data-layer-name="layer-25" id="layer-25" d="M 227.69 108.54 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffe37e" stroke="#ffa134" stroke-width="4"/>
+              <path data-layer-name="layer-26" id="layer-26" d="M 245.53 127.38 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffe77d" stroke="#ffa633" stroke-width="4"/>
+              <path data-layer-name="layer-27" id="layer-27" d="M 258.91 149.61 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffea7c" stroke="#ffab34" stroke-width="4"/>
+              <path data-layer-name="layer-28" id="layer-28" d="M 267.19 174.20 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="#ffed7c" stroke="#ffb036" stroke-width="4"/>
             </svg>`;
 
-  const codeSnippet = `<span class="line"><span class="cm">// petals around a circle</span></span><span class="line"><span class="kw">let</span> r <span class="pun">=</span> <span class="num">80</span><span class="pun">;</span></span><span class="line"><span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span><span class="pun">..</span><span class="num">6</span> <span class="pun">{</span></span><span class="line">  <span class="fn">circle</span><span class="pun">(</span>r <span class="pun">*</span> <span class="fn">cos</span><span class="pun">(</span>i <span class="pun">*</span> <span class="num">60°</span><span class="pun">),</span></span><span class="line">         r <span class="pun">*</span> <span class="fn">sin</span><span class="pun">(</span>i <span class="pun">*</span> <span class="num">60°</span><span class="pun">),</span> <span class="num">18</span><span class="pun">)</span></span><span class="line">    <span class="pun">.</span><span class="fn">fill</span><span class="pun">(</span><span class="fn">oklch</span><span class="pun">(</span><span class="num">72%</span> <span class="num">0.18</span> <span class="str">\${i * 60}</span><span class="pun">));</span></span><span class="line"><span class="pun">}</span></span>`;
+  const codeSnippet = `<span class="line"><span class="kw">let</span> colors <span class="pun">=</span> Color<span class="pun">.</span><span class="fn">palette</span><span class="pun">(</span><span class="fn">oklch</span><span class="pun">(</span><span class="num">0.6695</span> <span class="num">0.2483</span> <span class="num">330.1</span><span class="pun">),</span></span><span class="line">                           <span class="fn">oklch</span><span class="pun">(</span><span class="num">0.8142</span> <span class="num">0.1571</span> <span class="num">72.9</span><span class="pun">),</span></span><span class="line">                           <span class="num">29</span><span class="pun">);</span></span><span class="line"><span class="kw">let</span> center <span class="pun">=</span> <span class="fn">Point</span><span class="pun">(</span><span class="num">200</span><span class="pun">,</span> <span class="num">200</span><span class="pun">);</span></span><span class="line"><span class="kw">for</span> <span class="pun">([</span>color<span class="pun">,</span> index<span class="pun">]</span> <span class="kw">in</span> colors<span class="pun">) {</span></span><span class="line">  <span class="kw">let</span> petalLayer <span class="pun">=</span> <span class="fn">PathLayer</span><span class="pun">(</span><span class="str">\`layer-\${index}\`</span><span class="pun">)</span> <span class="pun">\${</span></span><span class="line">    fill<span class="pun">:</span> color<span class="pun">.</span><span class="fn">lighten</span><span class="pun">(</span><span class="num">20%</span><span class="pun">);</span></span><span class="line">    stroke<span class="pun">:</span> color<span class="pun">;</span></span><span class="line">    stroke-width<span class="pun">:</span> <span class="num">4</span><span class="pun">;</span></span><span class="line">  <span class="pun">};</span></span><span class="line">  petalLayer<span class="pun">.</span><span class="fn">apply</span> <span class="pun">{</span></span><span class="line">    <span class="kw">let</span> petalCenter <span class="pun">=</span> center<span class="pun">.</span><span class="fn">polarTranslate</span><span class="pun">(</span><span class="fn">calc</span><span class="pun">(</span><span class="num">2pi</span> <span class="pun">*</span> <span class="pun">(</span>index <span class="pun">/</span> colors<span class="pun">.</span>length<span class="pun">)),</span> <span class="num">120</span><span class="pun">);</span></span><span class="line">    <span class="fn">circle</span><span class="pun">(</span>petalCenter<span class="pun">.</span>x<span class="pun">,</span> petalCenter<span class="pun">.</span>y<span class="pun">,</span> <span class="num">50</span><span class="pun">);</span></span><span class="line">  <span class="pun">}</span></span><span class="line"><span class="pun">}</span></span>`;
 
   const content = `
     <div class="homepage">
       <section class="dev-hero">
         <div class="dev-hero-text">
-          <p class="hero-eyebrow">pathogen-lang · v${PATHOGEN_VERSION}</p>
+          <p class="hero-eyebrow">
+            <span>pathogen-lang · v${PATHOGEN_VERSION}</span>
+            <span class="hero-nav-strip" aria-label="Site sections">
+              <a href="/blog">Blog</a>
+              <a href="/docs">Docs</a>
+              <a href="/explore">Explore</a>
+              <a href="/featured">Featured</a>
+            </span>
+          </p>
           <h1>From a one-liner to a thousand-line <em>composition.</em></h1>
           <p class="lede">Pathogen Studio is a typed, expression-first language for SVG paths. Compile from the CLI, the playground, or your editor — get the same path output every time.</p>
           <div class="dev-cta-cluster">
@@ -637,12 +667,14 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
             <a class="cta-mono" href="https://www.npmjs.com/package/pathogen-lang" target="_blank" rel="noopener">$ npm install pathogen-lang</a>
           </div>
         </div>
+      </section>
 
+      <section class="dev-editor-row">
         <div class="dev-editor">
           <pre class="dev-code">${codeSnippet}</pre>
           <div class="dev-render">
             ${heroSvg}
-            <span class="dev-render-caption">→ 6 paths · 0.04s</span>
+            <span class="dev-render-caption">→ 29 paths · 0.04s</span>
           </div>
         </div>
       </section>
