@@ -1,0 +1,16 @@
+// Inner glow — soft white edge light on a colored disc, giving an
+// inset / pressed-glass feel.
+
+define PathLayer('bg') ${ fill: oklch(35% 0.05 240); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+let edge = GlowFilter() {|f|
+  f.mode = GlowMode.Inner;
+  f.color = Color('white');
+  f.radius = 6;
+  f.spread = 2;
+  f.opacity = 0.9;
+};
+
+define PathLayer('disc') ${ fill: oklch(60% 0.20 240); stroke: none; filter: edge; }
+layer('disc').apply { circle(100, 100, 70); }

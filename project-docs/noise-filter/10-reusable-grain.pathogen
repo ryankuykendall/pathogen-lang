@@ -1,6 +1,9 @@
 // One NoiseFilter, many layers — emits a single <filter> def with
 // many filter="url(#...)" references in the final SVG.
 
+define PathLayer('bg') ${ fill: oklch(95% 0.02 80); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
 let grain = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
   f.amount = 0.45;

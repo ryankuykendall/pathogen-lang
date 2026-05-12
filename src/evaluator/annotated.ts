@@ -246,7 +246,7 @@ function isMarkerValue(value: Value): value is MarkerValue {
 
 export interface AnnotatedFilterValue {
   type: 'FilterValue';
-  kind: 'noise';
+  kind: 'noise' | 'glow' | 'emboss' | 'elevation-shadow' | 'inner-shadow' | 'pixelate';
   id: string;
 }
 

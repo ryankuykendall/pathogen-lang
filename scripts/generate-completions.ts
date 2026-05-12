@@ -236,7 +236,14 @@ function crossCheck(declaredFunctions: Set<string>): void {
   }
 
   // Declared functions not in runtime (excluding constructors, namespaces, variables)
-  const runtimeNames = new Set([...stdlibNames, ...contextNames, 'Point', 'PolarVector', 'Cycler', 'CSSVar', 'PathLayer', 'TextLayer', 'GroupLayer']);
+  const runtimeNames = new Set([
+    ...stdlibNames,
+    ...contextNames,
+    'Point', 'PolarVector', 'Cycler', 'CSSVar',
+    'PathLayer', 'TextLayer', 'GroupLayer',
+    // Filter constructors live in the evaluator's call dispatch, not the stdlib registry.
+    'NoiseFilter', 'GlowFilter', 'EmbossFilter', 'ElevationShadowFilter', 'InnerShadowFilter', 'PixelateFilter',
+  ]);
   const extraDecl: string[] = [];
   for (const name of declaredFunctions) {
     if (!runtimeNames.has(name)) extraDecl.push(name);

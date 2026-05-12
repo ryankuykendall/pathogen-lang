@@ -1,0 +1,27 @@
+// Pixelated portrait — coarse 16x16 blocks anonymize a portrait composition.
+
+define PathLayer('bg') ${ fill: oklch(92% 0.03 70); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+let pix = PixelateFilter(16, 16, 8);
+
+// Face
+define PathLayer('face') ${ fill: oklch(78% 0.10 60); stroke: none; filter: pix; }
+layer('face').apply { circle(100, 110, 60); }
+
+// Eyes
+define PathLayer('eyes') ${ fill: oklch(20% 0.02 250); stroke: none; filter: pix; }
+layer('eyes').apply {
+  circle(85, 100, 4);
+  circle(115, 100, 4);
+}
+
+// Hair
+define PathLayer('hair') ${ fill: oklch(25% 0.07 30); stroke: none; filter: pix; }
+layer('hair').apply {
+  M 40 110
+  C 45 50 155 50 160 110
+  L 155 70
+  C 130 50 70 50 45 70
+  Z
+}

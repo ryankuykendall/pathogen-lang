@@ -11,6 +11,7 @@ export const ENUM_COMPLETIONS: CompletionEntry[] = [
   { label: 'ConicSpread', kind: 'variable', detail: 'Conic gradient edge behavior', boost: 6 },
   { label: 'Direction', kind: 'variable', detail: 'Rotation direction (CW/CCW)', boost: 8 },
   { label: 'Easing', kind: 'variable', detail: 'Easing function for interpolation', boost: 10 },
+  { label: 'GlowMode', kind: 'variable', detail: 'GlowFilter outer/inner mode', boost: 8 },
   { label: 'GradientUnits', kind: 'variable', detail: 'Gradient coordinate system', boost: 6 },
   { label: 'GridPatternType', kind: 'variable', detail: 'Grid cell rendering mode', boost: 10 },
   { label: 'HexagonOrientation', kind: 'variable', detail: 'Hexagon grid orientation', boost: 8 },
@@ -69,6 +70,10 @@ export const ENUM_MEMBER_MAP: Record<string, CompletionEntry[]> = {
     { label: 'EaseIn', kind: 'constant', detail: 'Easing.EaseIn → "ease-in"', boost: 8 },
     { label: 'EaseOut', kind: 'constant', detail: 'Easing.EaseOut → "ease-out"', boost: 8 },
     { label: 'EaseInOut', kind: 'constant', detail: 'Easing.EaseInOut → "ease-in-out"', boost: 8 },
+  ],
+  GlowMode: [
+    { label: 'Outer', kind: 'constant', detail: 'GlowMode.Outer → "outer"', boost: 8 },
+    { label: 'Inner', kind: 'constant', detail: 'GlowMode.Inner → "inner"', boost: 8 },
   ],
   GradientUnits: [
     { label: 'ObjectBoundingBox', kind: 'constant', detail: 'GradientUnits.ObjectBoundingBox → "objectBoundingBox"', boost: 8 },
@@ -166,6 +171,12 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
   { label: 'PathLayer', kind: 'function', detail: 'PathLayer(\'name\') — Path layer constructor', boost: 12 },
   { label: 'TextLayer', kind: 'function', detail: 'TextLayer(\'name\') — Text layer constructor', boost: 12 },
   { label: 'GroupLayer', kind: 'function', detail: 'GroupLayer(\'name\') — Group layer constructor', boost: 12 },
+  { label: 'NoiseFilter', kind: 'function', detail: 'NoiseFilter() — Grain/paper/speckle/static/grainy-gradient noise filter', boost: 11 },
+  { label: 'GlowFilter', kind: 'function', detail: 'GlowFilter() — Outer or inner soft glow', boost: 11 },
+  { label: 'EmbossFilter', kind: 'function', detail: 'EmbossFilter() — Light-source-based embossed surface', boost: 11 },
+  { label: 'ElevationShadowFilter', kind: 'function', detail: 'ElevationShadowFilter() — Material-style layered depth shadow', boost: 11 },
+  { label: 'InnerShadowFilter', kind: 'function', detail: 'InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks)', boost: 11 },
+  { label: 'PixelateFilter', kind: 'function', detail: 'PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter', boost: 11 },
   { label: 'polarPoint', kind: 'function', detail: 'polarPoint(angle, distance) — Point at polar offset', boost: 14 },
   { label: 'polarOffset', kind: 'function', detail: 'polarOffset(angle, distance) — Relative polar offset', boost: 14 },
   { label: 'polarMove', kind: 'function', detail: 'polarMove(angle, distance) — Move in polar direction', boost: 14 },
@@ -461,6 +472,87 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
 
     ],
   },
+  'NoiseFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-noise-N)', boost: 8 },
+      { label: 'style', kind: 'property', detail: 'Preset chain + parameter baseline', boost: 8 },
+      { label: 'scale', kind: 'property', detail: 'baseFrequency — \'fine\' | \'medium\' | \'coarse\' | number', boost: 8 },
+      { label: 'octaves', kind: 'property', detail: 'numOctaves — 1..10', boost: 8 },
+      { label: 'amount', kind: 'property', detail: 'Visible intensity 0..1', boost: 8 },
+      { label: 'monochrome', kind: 'property', detail: 'Strip color variance via luminanceToAlpha', boost: 8 },
+      { label: 'seed', kind: 'property', detail: 'feTurbulence seed (auto-derived from id by default)', boost: 8 },
+      { label: 'blend', kind: 'property', detail: 'Final blend mode against SourceGraphic', boost: 8 },
+      { label: 'contrast', kind: 'property', detail: 'Post-noise contrast pump (1 = no pump)', boost: 8 },
+      { label: 'stitch', kind: 'property', detail: 'stitchTiles toggle', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'GlowFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-glow-N)', boost: 8 },
+      { label: 'mode', kind: 'property', detail: 'Outer halo or inner edge light', boost: 8 },
+      { label: 'color', kind: 'property', detail: 'Glow color', boost: 8 },
+      { label: 'radius', kind: 'property', detail: 'Blur stdDeviation', boost: 8 },
+      { label: 'spread', kind: 'property', detail: 'Pre-blur morphology radius (0 = no morphology)', boost: 8 },
+      { label: 'opacity', kind: 'property', detail: 'Glow strength 0..1', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'EmbossFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-emboss-N)', boost: 8 },
+      { label: 'angle', kind: 'property', detail: 'Light azimuth', boost: 8 },
+      { label: 'elevation', kind: 'property', detail: 'Light elevation', boost: 10 },
+      { label: 'depth', kind: 'property', detail: 'surfaceScale — visual depth of the bevel', boost: 8 },
+      { label: 'strength', kind: 'property', detail: 'specularConstant — highlight brightness', boost: 8 },
+      { label: 'shininess', kind: 'property', detail: 'specularExponent — highlight sharpness (>= 1)', boost: 8 },
+      { label: 'lightColor', kind: 'property', detail: 'Simulated light color', boost: 8 },
+      { label: 'smooth', kind: 'property', detail: 'Pre-blur stdDeviation for softer bevel edges', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'ElevationShadowFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-elevation-shadow-N)', boost: 8 },
+      { label: 'elevation', kind: 'property', detail: 'Depth from the surface, 0..24', boost: 8 },
+      { label: 'color', kind: 'property', detail: 'Shadow color', boost: 8 },
+      { label: 'direction', kind: 'property', detail: 'Shadow direction (default 90deg = down)', boost: 8 },
+      { label: 'tightness', kind: 'property', detail: 'Scales the per-layer distance/blur ratios (1.0 = Material defaults)', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'InnerShadowFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-inner-shadow-N)', boost: 8 },
+      { label: 'offsetX', kind: 'property', detail: 'Horizontal offset', boost: 8 },
+      { label: 'offsetY', kind: 'property', detail: 'Vertical offset', boost: 8 },
+      { label: 'blur', kind: 'property', detail: 'Blur stdDeviation', boost: 8 },
+      { label: 'color', kind: 'property', detail: 'Shadow color', boost: 8 },
+      { label: 'opacity', kind: 'property', detail: 'Shadow strength 0..1', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'PixelateFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-pixelate-N)', boost: 8 },
+      { label: 'width', kind: 'property', detail: 'Horizontal stride between samples', boost: 8 },
+      { label: 'height', kind: 'property', detail: 'Vertical stride between samples', boost: 8 },
+      { label: 'radius', kind: 'property', detail: 'Dilation radius', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
 };
 
 /** Namespace member completion sets keyed by namespace name */
@@ -498,6 +590,12 @@ export const SIGNATURE_DATA: Record<string, { label: string; params: string[]; d
   'PathLayer': { label: 'PathLayer(name)', params: ['name'], doc: 'PathLayer(\'name\') — Path layer constructor' },
   'TextLayer': { label: 'TextLayer(name)', params: ['name'], doc: 'TextLayer(\'name\') — Text layer constructor' },
   'GroupLayer': { label: 'GroupLayer(name)', params: ['name'], doc: 'GroupLayer(\'name\') — Group layer constructor' },
+  'NoiseFilter': { label: 'NoiseFilter()', params: [], doc: 'NoiseFilter() — Grain/paper/speckle/static/grainy-gradient noise filter' },
+  'GlowFilter': { label: 'GlowFilter()', params: [], doc: 'GlowFilter() — Outer or inner soft glow' },
+  'EmbossFilter': { label: 'EmbossFilter()', params: [], doc: 'EmbossFilter() — Light-source-based embossed surface' },
+  'ElevationShadowFilter': { label: 'ElevationShadowFilter()', params: [], doc: 'ElevationShadowFilter() — Material-style layered depth shadow' },
+  'InnerShadowFilter': { label: 'InnerShadowFilter()', params: [], doc: 'InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks)' },
+  'PixelateFilter': { label: 'PixelateFilter(width, height, radius)', params: ['width', 'height', 'radius'], doc: 'PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter' },
   'polarPoint': { label: 'polarPoint(angle, distance)', params: ['angle', 'distance'], doc: 'polarPoint(angle, distance) — Point at polar offset' },
   'polarOffset': { label: 'polarOffset(angle, distance)', params: ['angle', 'distance'], doc: 'polarOffset(angle, distance) — Relative polar offset' },
   'polarMove': { label: 'polarMove(angle, distance)', params: ['angle', 'distance'], doc: 'polarMove(angle, distance) — Move in polar direction' },

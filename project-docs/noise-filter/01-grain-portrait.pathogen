@@ -2,6 +2,10 @@
 // Grain is fine, color-burned over the painted shapes — keeps the
 // colors readable but adds photographic texture.
 
+// Background panel so the portrait reads against a chosen color
+define PathLayer('bg') ${ fill: oklch(92% 0.03 70); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
 let grain = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
   f.amount = 0.5;

@@ -709,4 +709,100 @@ describe('getCompletions', () => {
       expect(names).not.toContain('${...}');
     });
   });
+
+  describe('Filter constructors', () => {
+    it('lists all six filter constructors in top-level completions', () => {
+      const items = completeAtEnd('');
+      const names = labels(items);
+      expect(names).toContain('NoiseFilter');
+      expect(names).toContain('GlowFilter');
+      expect(names).toContain('EmbossFilter');
+      expect(names).toContain('ElevationShadowFilter');
+      expect(names).toContain('InnerShadowFilter');
+      expect(names).toContain('PixelateFilter');
+    });
+
+    it('offers NoiseFilter members on the let-bound variable', () => {
+      const items = completeAtEnd('let n = NoiseFilter() {|f| };\nn.');
+      const names = labels(items);
+      expect(names).toContain('id');
+      expect(names).toContain('style');
+      expect(names).toContain('scale');
+      expect(names).toContain('octaves');
+      expect(names).toContain('amount');
+      expect(names).toContain('monochrome');
+      expect(names).toContain('seed');
+      expect(names).toContain('blend');
+      expect(names).toContain('contrast');
+      expect(names).toContain('stitch');
+    });
+
+    it('offers NoiseFilter members on the trailing-block bound parameter', () => {
+      const items = completeAtEnd('let n = NoiseFilter() {|f|\n  f.');
+      const names = labels(items);
+      expect(names).toContain('style');
+      expect(names).toContain('amount');
+      expect(names).toContain('blend');
+    });
+
+    it('offers GlowFilter members on the let-bound variable', () => {
+      const items = completeAtEnd('let g = GlowFilter() {|f| };\ng.');
+      const names = labels(items);
+      expect(names).toContain('mode');
+      expect(names).toContain('color');
+      expect(names).toContain('radius');
+      expect(names).toContain('spread');
+      expect(names).toContain('opacity');
+    });
+
+    it('offers GlowFilter members on the trailing-block bound parameter', () => {
+      const items = completeAtEnd('let g = GlowFilter() {|f|\n  f.');
+      const names = labels(items);
+      expect(names).toContain('mode');
+      expect(names).toContain('radius');
+    });
+
+    it('offers EmbossFilter members', () => {
+      const items = completeAtEnd('let e = EmbossFilter() {|f| };\ne.');
+      const names = labels(items);
+      expect(names).toContain('angle');
+      expect(names).toContain('elevation');
+      expect(names).toContain('depth');
+      expect(names).toContain('strength');
+      expect(names).toContain('shininess');
+      expect(names).toContain('lightColor');
+      expect(names).toContain('smooth');
+    });
+
+    it('offers ElevationShadowFilter members', () => {
+      const items = completeAtEnd('let s = ElevationShadowFilter() {|f| };\ns.');
+      const names = labels(items);
+      expect(names).toContain('elevation');
+      expect(names).toContain('color');
+      expect(names).toContain('direction');
+      expect(names).toContain('tightness');
+    });
+
+    it('offers InnerShadowFilter members', () => {
+      const items = completeAtEnd('let i = InnerShadowFilter() {|f| };\ni.');
+      const names = labels(items);
+      expect(names).toContain('offsetX');
+      expect(names).toContain('offsetY');
+      expect(names).toContain('blur');
+      expect(names).toContain('color');
+      expect(names).toContain('opacity');
+    });
+
+    it('offers PixelateFilter members for both positional and block forms', () => {
+      const positional = labels(completeAtEnd('let p = PixelateFilter(10, 10, 5);\np.'));
+      expect(positional).toContain('width');
+      expect(positional).toContain('height');
+      expect(positional).toContain('radius');
+
+      const block = labels(completeAtEnd('let p = PixelateFilter() {|f| };\np.'));
+      expect(block).toContain('width');
+      expect(block).toContain('height');
+      expect(block).toContain('radius');
+    });
+  });
 });

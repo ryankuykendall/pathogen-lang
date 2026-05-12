@@ -42,6 +42,20 @@ export declare function TextLayer(name: string): PathogenPathLayer | PathogenTex
 /** GroupLayer('name') — Group layer constructor @boost 12 */
 export declare function GroupLayer(name: string): PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer;
 
+// Filter constructors — see docs/filters.md
+/** NoiseFilter() — Grain/paper/speckle/static/grainy-gradient noise filter @boost 11 */
+export declare function NoiseFilter(): PathogenNoiseFilter;
+/** GlowFilter() — Outer or inner soft glow @boost 11 */
+export declare function GlowFilter(): PathogenGlowFilter;
+/** EmbossFilter() — Light-source-based embossed surface @boost 11 */
+export declare function EmbossFilter(): PathogenEmbossFilter;
+/** ElevationShadowFilter() — Material-style layered depth shadow @boost 11 */
+export declare function ElevationShadowFilter(): PathogenElevationShadowFilter;
+/** InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks) @boost 11 */
+export declare function InnerShadowFilter(): PathogenInnerShadowFilter;
+/** PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter @boost 11 */
+export declare function PixelateFilter(width?: number, height?: number, radius?: number): PathogenPixelateFilter;
+
 // =============================================================================
 // Context-Aware Functions (implemented in evaluator, not stdlib)
 // =============================================================================
@@ -607,4 +621,110 @@ export interface PathogenProjectedText {
 /** @type CSSVar */
 export interface PathogenCSSVar {
   // CSSVar values are opaque — no member access
+}
+
+// =============================================================================
+// Filter types — bound-parameter shape inside `FilterCtor() {|f| ... }`
+// =============================================================================
+
+/** @type NoiseFilter */
+export interface PathogenNoiseFilter {
+  /** Filter id (auto-generated as pathogen-noise-N) */
+  readonly id: string;
+  /** Preset chain + parameter baseline */
+  style: Value;
+  /** baseFrequency — 'fine' | 'medium' | 'coarse' | number */
+  scale: Value;
+  /** numOctaves — 1..10 */
+  octaves: number;
+  /** Visible intensity 0..1 */
+  amount: number;
+  /** Strip color variance via luminanceToAlpha */
+  monochrome: boolean;
+  /** feTurbulence seed (auto-derived from id by default) */
+  seed: number;
+  /** Final blend mode against SourceGraphic */
+  blend: Value;
+  /** Post-noise contrast pump (1 = no pump) */
+  contrast: number;
+  /** stitchTiles toggle */
+  stitch: boolean;
+}
+
+/** @type GlowFilter */
+export interface PathogenGlowFilter {
+  /** Filter id (auto-generated as pathogen-glow-N) */
+  readonly id: string;
+  /** Outer halo or inner edge light */
+  mode: Value;
+  /** Glow color */
+  color: ColorValue;
+  /** Blur stdDeviation */
+  radius: number;
+  /** Pre-blur morphology radius (0 = no morphology) */
+  spread: number;
+  /** Glow strength 0..1 */
+  opacity: number;
+}
+
+/** @type EmbossFilter */
+export interface PathogenEmbossFilter {
+  /** Filter id (auto-generated as pathogen-emboss-N) */
+  readonly id: string;
+  /** Light azimuth */
+  angle: AngleValue;
+  /** Light elevation @boost 10 */
+  elevation: AngleValue;
+  /** surfaceScale — visual depth of the bevel */
+  depth: number;
+  /** specularConstant — highlight brightness */
+  strength: number;
+  /** specularExponent — highlight sharpness (>= 1) */
+  shininess: number;
+  /** Simulated light color */
+  lightColor: ColorValue;
+  /** Pre-blur stdDeviation for softer bevel edges */
+  smooth: number;
+}
+
+/** @type ElevationShadowFilter */
+export interface PathogenElevationShadowFilter {
+  /** Filter id (auto-generated as pathogen-elevation-shadow-N) */
+  readonly id: string;
+  /** Depth from the surface, 0..24 */
+  elevation: number;
+  /** Shadow color */
+  color: ColorValue;
+  /** Shadow direction (default 90deg = down) */
+  direction: AngleValue;
+  /** Scales the per-layer distance/blur ratios (1.0 = Material defaults) */
+  tightness: number;
+}
+
+/** @type InnerShadowFilter */
+export interface PathogenInnerShadowFilter {
+  /** Filter id (auto-generated as pathogen-inner-shadow-N) */
+  readonly id: string;
+  /** Horizontal offset */
+  offsetX: number;
+  /** Vertical offset */
+  offsetY: number;
+  /** Blur stdDeviation */
+  blur: number;
+  /** Shadow color */
+  color: ColorValue;
+  /** Shadow strength 0..1 */
+  opacity: number;
+}
+
+/** @type PixelateFilter */
+export interface PathogenPixelateFilter {
+  /** Filter id (auto-generated as pathogen-pixelate-N) */
+  readonly id: string;
+  /** Horizontal stride between samples */
+  width: number;
+  /** Vertical stride between samples */
+  height: number;
+  /** Dilation radius */
+  radius: number;
 }

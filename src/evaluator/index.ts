@@ -72,10 +72,16 @@ import type {
   CSSPropertyDeclaration,
   CSSVarValue,
   CyclerValue,
+  ElevationShadowFilterValue,
+  EmbossFilterValue,
   EvaluationState,
   FilterOutput,
   FilterValue,
   FontRegistry,
+  GlowFilterValue,
+  GlowModeName,
+  InnerShadowFilterValue,
+  PixelateFilterValue,
   FragmentLayerState,
   GradientOutput,
   GradientStop,
@@ -259,6 +265,61 @@ export function isNoiseFilterValue(value: Value): value is NoiseFilterValue {
   );
 }
 
+export function isGlowFilterValue(value: Value): value is GlowFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'glow'
+  );
+}
+
+export function isEmbossFilterValue(value: Value): value is EmbossFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'emboss'
+  );
+}
+
+export function isElevationShadowFilterValue(value: Value): value is ElevationShadowFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'elevation-shadow'
+  );
+}
+
+export function isInnerShadowFilterValue(value: Value): value is InnerShadowFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'inner-shadow'
+  );
+}
+
+export function isPixelateFilterValue(value: Value): value is PixelateFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'pixelate'
+  );
+}
+
 export function isMeshPointValue(value: Value): value is MeshPointValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MeshPointValue';
 }
@@ -338,6 +399,10 @@ export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
     Speckle: 'speckle',
     Static: 'static',
     Gradient: 'gradient',
+  },
+  GlowMode: {
+    Outer: 'outer',
+    Inner: 'inner',
   },
   BlendMode: {
     Normal: 'normal',
@@ -435,14 +500,14 @@ function hashFilterId(id: string): number {
   return Math.abs(h) % 65536;
 }
 
-/** Allocate a fresh, conflict-free auto-id for an inline NoiseFilter() call. */
-function nextAutoFilterId(state: EvaluationState): string {
-  let n = state.filters.size + 1;
+/** Allocate a fresh, conflict-free auto-id for an inline filter constructor. */
+function nextAutoFilterId(state: EvaluationState, kind: string): string {
+  let n = 1;
   // Bump until we land on a free id across all defs maps (auto-ids only ever collide with each other in practice).
   // Termination: the id space is unbounded — we walk until we find a gap.
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const id = `pathogen-noise-${n}`;
+    const id = `pathogen-${kind}-${n}`;
     if (
       !state.masks.has(id) &&
       !state.clipPaths.has(id) &&
@@ -498,6 +563,70 @@ function makeDefaultNoiseFilter(id: string, style: NoiseFilterStyleName): NoiseF
     blend: d.blend,
     contrast: d.contrast,
     stitch: d.stitch,
+  };
+}
+
+function makeDefaultGlowFilter(id: string): GlowFilterValue {
+  return {
+    type: 'FilterValue',
+    kind: 'glow',
+    id,
+    mode: 'outer',
+    color: 'rgb(255, 255, 255)',
+    radius: 4,
+    spread: 0,
+    opacity: 0.8,
+  };
+}
+
+function makeDefaultEmbossFilter(id: string): EmbossFilterValue {
+  return {
+    type: 'FilterValue',
+    kind: 'emboss',
+    id,
+    angle: (135 * Math.PI) / 180,
+    elevation: (45 * Math.PI) / 180,
+    depth: 2,
+    strength: 0.8,
+    shininess: 20,
+    lightColor: 'rgb(255, 255, 255)',
+    smooth: 1,
+  };
+}
+
+function makeDefaultElevationShadowFilter(id: string): ElevationShadowFilterValue {
+  return {
+    type: 'FilterValue',
+    kind: 'elevation-shadow',
+    id,
+    elevation: 4,
+    color: 'rgb(0, 0, 0)',
+    direction: Math.PI / 2,
+    tightness: 1.0,
+  };
+}
+
+function makeDefaultInnerShadowFilter(id: string): InnerShadowFilterValue {
+  return {
+    type: 'FilterValue',
+    kind: 'inner-shadow',
+    id,
+    offsetX: 0,
+    offsetY: 2,
+    blur: 4,
+    color: 'rgb(0, 0, 0)',
+    opacity: 0.5,
+  };
+}
+
+function makeDefaultPixelateFilter(id: string): PixelateFilterValue {
+  return {
+    type: 'FilterValue',
+    kind: 'pixelate',
+    id,
+    width: 10,
+    height: 10,
+    radius: 5,
   };
 }
 
@@ -4793,6 +4922,99 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  if (isGlowFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'mode':
+        return obj.mode;
+      case 'color':
+        return obj.color;
+      case 'radius':
+        return obj.radius;
+      case 'spread':
+        return obj.spread;
+      case 'opacity':
+        return obj.opacity;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on GlowFilter`);
+    }
+  }
+
+  if (isEmbossFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'angle':
+        return obj.angle;
+      case 'elevation':
+        return obj.elevation;
+      case 'depth':
+        return obj.depth;
+      case 'strength':
+        return obj.strength;
+      case 'shininess':
+        return obj.shininess;
+      case 'lightColor':
+        return obj.lightColor;
+      case 'smooth':
+        return obj.smooth;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on EmbossFilter`);
+    }
+  }
+
+  if (isElevationShadowFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'elevation':
+        return obj.elevation;
+      case 'color':
+        return obj.color;
+      case 'direction':
+        return obj.direction;
+      case 'tightness':
+        return obj.tightness;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on ElevationShadowFilter`);
+    }
+  }
+
+  if (isInnerShadowFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'offsetX':
+        return obj.offsetX;
+      case 'offsetY':
+        return obj.offsetY;
+      case 'blur':
+        return obj.blur;
+      case 'color':
+        return obj.color;
+      case 'opacity':
+        return obj.opacity;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on InnerShadowFilter`);
+    }
+  }
+
+  if (isPixelateFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'width':
+        return obj.width;
+      case 'height':
+        return obj.height;
+      case 'radius':
+        return obj.radius;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on PixelateFilter`);
+    }
+  }
+
   // Handle MeshPointValue property access
   if (isMeshPointValue(obj)) {
     switch (expr.property) {
@@ -5471,8 +5693,161 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('NoiseFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState);
+    const id = nextAutoFilterId(scope.evalState, 'noise');
     const filter: NoiseFilterValue = makeDefaultNoiseFilter(id, 'grain');
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
+  }
+
+  // Handle GlowFilter() constructor
+  if (call.name === 'GlowFilter') {
+    if (call.args.length !== 0) {
+      throw new Error(
+        formatError(
+          `GlowFilter() takes no positional arguments — configure via the trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('GlowFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState, 'glow');
+    const filter: GlowFilterValue = makeDefaultGlowFilter(id);
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
+  }
+
+  // Handle EmbossFilter() constructor
+  if (call.name === 'EmbossFilter') {
+    if (call.args.length !== 0) {
+      throw new Error(
+        formatError(
+          `EmbossFilter() takes no positional arguments — configure via the trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('EmbossFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState, 'emboss');
+    const filter: EmbossFilterValue = makeDefaultEmbossFilter(id);
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
+  }
+
+  // Handle ElevationShadowFilter() constructor
+  if (call.name === 'ElevationShadowFilter') {
+    if (call.args.length !== 0) {
+      throw new Error(
+        formatError(
+          `ElevationShadowFilter() takes no positional arguments — configure via the trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('ElevationShadowFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState, 'elevation-shadow');
+    const filter: ElevationShadowFilterValue = makeDefaultElevationShadowFilter(id);
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
+  }
+
+  // Handle InnerShadowFilter() constructor
+  if (call.name === 'InnerShadowFilter') {
+    if (call.args.length !== 0) {
+      throw new Error(
+        formatError(
+          `InnerShadowFilter() takes no positional arguments — configure via the trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('InnerShadowFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState, 'inner-shadow');
+    const filter: InnerShadowFilterValue = makeDefaultInnerShadowFilter(id);
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
+  }
+
+  // Handle PixelateFilter() constructor — accepts 0 args (block-style) or 3 args (positional)
+  if (call.name === 'PixelateFilter') {
+    if (call.args.length !== 0 && call.args.length !== 3) {
+      throw new Error(
+        formatError(
+          `PixelateFilter() expects 0 or 3 arguments (width, height, radius), got ${call.args.length}`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (call.args.length === 3 && call.block) {
+      throw new Error(
+        formatError(
+          `PixelateFilter() cannot combine positional arguments with a trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('PixelateFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState, 'pixelate');
+    const filter: PixelateFilterValue = makeDefaultPixelateFilter(id);
+    if (call.args.length === 3) {
+      const w = evaluateExpression(call.args[0], scope);
+      const h = evaluateExpression(call.args[1], scope);
+      const r = evaluateExpression(call.args[2], scope);
+      for (const [name, v] of [['width', w], ['height', h], ['radius', r]] as const) {
+        if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) {
+          throw new Error(
+            formatError(
+              `PixelateFilter() arguments must be finite positive numbers; ${name} is ${String(v)}`,
+              getLine(call),
+              getCol(call),
+            ),
+          );
+        }
+      }
+      filter.width = w as number;
+      filter.height = h as number;
+      filter.radius = r as number;
+    }
     scope.evalState.filters.set(id, filter);
     if (call.block) {
       const blockScope = createScope(scope);
@@ -7252,6 +7627,223 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             );
         }
       }
+      if (isGlowFilterValue(obj)) {
+        switch (stmt.property) {
+          case 'mode': {
+            if (typeof value !== 'string') {
+              throw new Error(formatError(`GlowFilter.mode must be a GlowMode enum value`, getLine(stmt)));
+            }
+            const valid = Object.values(BUILTIN_ENUMS.GlowMode);
+            if (!valid.includes(value)) {
+              throw new Error(
+                formatError(
+                  `Invalid value '${value}' for GlowFilter.mode. Valid values: ${valid.join(', ')}`,
+                  getLine(stmt),
+                ),
+              );
+            }
+            obj.mode = value as GlowModeName;
+            return;
+          }
+          case 'color': {
+            if (!isColorValue(value)) {
+              throw new Error(formatError(`GlowFilter.color must be a Color value`, getLine(stmt)));
+            }
+            obj.color = colorValueToCSS(value);
+            return;
+          }
+          case 'radius': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(formatError(`GlowFilter.radius must be a finite non-negative number`, getLine(stmt)));
+            }
+            obj.radius = value;
+            return;
+          }
+          case 'spread': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(formatError(`GlowFilter.spread must be a finite non-negative number`, getLine(stmt)));
+            }
+            obj.spread = value;
+            return;
+          }
+          case 'opacity': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
+              throw new Error(formatError(`GlowFilter.opacity must be a number between 0 and 1`, getLine(stmt)));
+            }
+            obj.opacity = value;
+            return;
+          }
+          default:
+            throw new Error(
+              formatError(`Cannot assign to GlowFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
+      if (isEmbossFilterValue(obj)) {
+        switch (stmt.property) {
+          case 'angle': {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+              throw new Error(formatError(`EmbossFilter.angle must be a finite number (with angle unit)`, getLine(stmt)));
+            }
+            obj.angle = value;
+            return;
+          }
+          case 'elevation': {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+              throw new Error(formatError(`EmbossFilter.elevation must be a finite number (with angle unit)`, getLine(stmt)));
+            }
+            obj.elevation = value;
+            return;
+          }
+          case 'depth': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(formatError(`EmbossFilter.depth must be a finite non-negative number`, getLine(stmt)));
+            }
+            obj.depth = value;
+            return;
+          }
+          case 'strength': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(formatError(`EmbossFilter.strength must be a finite non-negative number`, getLine(stmt)));
+            }
+            obj.strength = value;
+            return;
+          }
+          case 'shininess': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 1) {
+              throw new Error(formatError(`EmbossFilter.shininess must be a finite number >= 1`, getLine(stmt)));
+            }
+            obj.shininess = value;
+            return;
+          }
+          case 'lightColor': {
+            if (!isColorValue(value)) {
+              throw new Error(formatError(`EmbossFilter.lightColor must be a Color value`, getLine(stmt)));
+            }
+            obj.lightColor = colorValueToCSS(value);
+            return;
+          }
+          case 'smooth': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(formatError(`EmbossFilter.smooth must be a finite non-negative number`, getLine(stmt)));
+            }
+            obj.smooth = value;
+            return;
+          }
+          default:
+            throw new Error(
+              formatError(`Cannot assign to EmbossFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
+      if (isElevationShadowFilterValue(obj)) {
+        switch (stmt.property) {
+          case 'elevation': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 24) {
+              throw new Error(
+                formatError(`ElevationShadowFilter.elevation must be a finite number between 0 and 24`, getLine(stmt)),
+              );
+            }
+            obj.elevation = value;
+            return;
+          }
+          case 'color': {
+            if (!isColorValue(value)) {
+              throw new Error(formatError(`ElevationShadowFilter.color must be a Color value`, getLine(stmt)));
+            }
+            obj.color = colorValueToCSS(value);
+            return;
+          }
+          case 'direction': {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+              throw new Error(
+                formatError(`ElevationShadowFilter.direction must be a finite number (with angle unit)`, getLine(stmt)),
+              );
+            }
+            obj.direction = value;
+            return;
+          }
+          case 'tightness': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(
+                formatError(`ElevationShadowFilter.tightness must be a finite non-negative number`, getLine(stmt)),
+              );
+            }
+            obj.tightness = value;
+            return;
+          }
+          default:
+            throw new Error(
+              formatError(`Cannot assign to ElevationShadowFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
+      if (isInnerShadowFilterValue(obj)) {
+        switch (stmt.property) {
+          case 'offsetX': {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+              throw new Error(formatError(`InnerShadowFilter.offsetX must be a finite number`, getLine(stmt)));
+            }
+            obj.offsetX = value;
+            return;
+          }
+          case 'offsetY': {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+              throw new Error(formatError(`InnerShadowFilter.offsetY must be a finite number`, getLine(stmt)));
+            }
+            obj.offsetY = value;
+            return;
+          }
+          case 'blur': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error(formatError(`InnerShadowFilter.blur must be a finite non-negative number`, getLine(stmt)));
+            }
+            obj.blur = value;
+            return;
+          }
+          case 'color': {
+            if (!isColorValue(value)) {
+              throw new Error(formatError(`InnerShadowFilter.color must be a Color value`, getLine(stmt)));
+            }
+            obj.color = colorValueToCSS(value);
+            return;
+          }
+          case 'opacity': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
+              throw new Error(formatError(`InnerShadowFilter.opacity must be a number between 0 and 1`, getLine(stmt)));
+            }
+            obj.opacity = value;
+            return;
+          }
+          default:
+            throw new Error(
+              formatError(`Cannot assign to InnerShadowFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
+      if (isPixelateFilterValue(obj)) {
+        const positiveFinite = (v: Value, name: string): number => {
+          if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) {
+            throw new Error(formatError(`PixelateFilter.${name} must be a finite positive number`, getLine(stmt)));
+          }
+          return v;
+        };
+        switch (stmt.property) {
+          case 'width':
+            obj.width = positiveFinite(value, 'width');
+            return;
+          case 'height':
+            obj.height = positiveFinite(value, 'height');
+            return;
+          case 'radius':
+            obj.radius = positiveFinite(value, 'radius');
+            return;
+          default:
+            throw new Error(
+              formatError(`Cannot assign to PixelateFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
       if (isMeshPointValue(obj)) {
         switch (stmt.property) {
           case 'color': {
@@ -7940,6 +8532,61 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
         contrast: filter.contrast,
         stitch: filter.stitch,
       });
+    } else if (filter.kind === 'glow') {
+      filters.push({
+        kind: 'glow',
+        id: filter.id,
+        mode: filter.mode,
+        color: filter.color,
+        radius: filter.radius,
+        spread: filter.spread,
+        opacity: filter.opacity,
+      });
+    } else if (filter.kind === 'emboss') {
+      filters.push({
+        kind: 'emboss',
+        id: filter.id,
+        angle: filter.angle,
+        elevation: filter.elevation,
+        depth: filter.depth,
+        strength: filter.strength,
+        shininess: filter.shininess,
+        lightColor: filter.lightColor,
+        smooth: filter.smooth,
+      });
+    } else if (filter.kind === 'elevation-shadow') {
+      filters.push({
+        kind: 'elevation-shadow',
+        id: filter.id,
+        elevation: filter.elevation,
+        color: filter.color,
+        direction: filter.direction,
+        tightness: filter.tightness,
+      });
+    } else if (filter.kind === 'inner-shadow') {
+      filters.push({
+        kind: 'inner-shadow',
+        id: filter.id,
+        offsetX: filter.offsetX,
+        offsetY: filter.offsetY,
+        blur: filter.blur,
+        color: filter.color,
+        opacity: filter.opacity,
+      });
+    } else if (filter.kind === 'pixelate') {
+      filters.push({
+        kind: 'pixelate',
+        id: filter.id,
+        width: filter.width,
+        height: filter.height,
+        radius: filter.radius,
+      });
+    } else {
+      // Exhaustiveness guard — if a new filter kind is added to FilterValue
+      // without a matching arm above, this fails at compile time and prevents
+      // silent data loss between the evaluator and the renderer.
+      const _exhaustive: never = filter;
+      throw new Error(`Unsupported filter kind: ${String((_exhaustive as { kind: string }).kind)}`);
     }
   }
 

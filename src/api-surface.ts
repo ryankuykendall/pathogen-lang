@@ -32,6 +32,7 @@ export const ENUM_METADATA: Record<string, { detail: string; boost: number }> = 
   MarkerPreserveAspectRatio: { detail: 'Marker viewBox alignment + meet/slice', boost: 4 },
   NoiseFilterStyle: { detail: 'NoiseFilter primitive-chain preset', boost: 8 },
   BlendMode: { detail: 'CSS blend-mode keyword', boost: 6 },
+  GlowMode: { detail: 'GlowFilter outer/inner mode', boost: 8 },
 };
 
 // Re-export for generation script

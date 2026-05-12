@@ -1,0 +1,17 @@
+// Pressed-button effect — inner shadow on the inside, light coming from
+// above. The shadow appears at the top of the shape because positive Y
+// offset pushes the shadow down, leaving the top inset.
+
+let press = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = 3;
+  f.blur = 5;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.55;
+};
+
+define PathLayer('surface') ${ fill: oklch(94% 0.01 80); stroke: none; }
+layer('surface').apply { rect(0, 0, 200, 200); }
+
+define PathLayer('button') ${ fill: oklch(80% 0.06 230); stroke: none; filter: press; }
+layer('button').apply { roundRect(40, 80, 120, 40, 14); }

@@ -390,6 +390,15 @@ function inferType(name: string, source: string): string | null {
   // let name = CSSVar(...)
   if (new RegExp(`let\\s+${esc}\\s*=\\s*CSSVar\\s*\\(`).test(source)) return 'CSSVar';
 
+  // Filter constructors — `let f = FilterCtor(...)` or `let f = FilterCtor(...) {|x| ...}`
+  // (See docs/filters.md and pathogen-api.ts for the six filter type interfaces.)
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*NoiseFilter\\s*\\(`).test(source)) return 'NoiseFilter';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*GlowFilter\\s*\\(`).test(source)) return 'GlowFilter';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*EmbossFilter\\s*\\(`).test(source)) return 'EmbossFilter';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*ElevationShadowFilter\\s*\\(`).test(source)) return 'ElevationShadowFilter';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*InnerShadowFilter\\s*\\(`).test(source)) return 'InnerShadowFilter';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*PixelateFilter\\s*\\(`).test(source)) return 'PixelateFilter';
+
   // let name = [...]  or method returning array
   if (new RegExp(`let\\s+${esc}\\s*=\\s*\\[`).test(source)) return 'array';
 
@@ -439,6 +448,14 @@ function inferBlockParamType(paramName: string, source: string): string | null {
   const reduceItemMatch = new RegExp(`(\\w+)\\.reduce\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*\\w+\\s*,\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\|`).exec(source);
   if (reduceItemMatch) {
     return inferArrayElementType(reduceItemMatch[1], source);
+  }
+
+  // Match: FilterCtor(...) {|paramName| — bound parameter inside a filter trailing block
+  const filterCtorMatch = new RegExp(
+    `(NoiseFilter|GlowFilter|EmbossFilter|ElevationShadowFilter|InnerShadowFilter|PixelateFilter)\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*${esc}\\s*\\|`,
+  ).exec(source);
+  if (filterCtorMatch) {
+    return filterCtorMatch[1];
   }
 
   return null;

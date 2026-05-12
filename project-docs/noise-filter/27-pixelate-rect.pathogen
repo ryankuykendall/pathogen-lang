@@ -1,0 +1,13 @@
+// Pixelated linear gradient — fine 8x8 blocks reveal the gradient's
+// underlying color steps as a pixel-art mosaic.
+
+let sunset = LinearGradient('sunset', 0, 0, 1, 1) {|g|
+  g.stop(0, oklch(80% 0.20 70));
+  g.stop(0.5, oklch(55% 0.22 30));
+  g.stop(1, oklch(30% 0.18 280));
+};
+
+let pix = PixelateFilter(8, 8, 4);
+
+define PathLayer('panel') ${ fill: sunset; stroke: none; filter: pix; }
+layer('panel').apply { rect(0, 0, 200, 200); }

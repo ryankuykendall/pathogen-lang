@@ -1,6 +1,9 @@
 // Explicit seed → deterministic noise. Both filters use seed = 42, so
 // the noise pattern is identical across both circles.
 
+define PathLayer('bg') ${ fill: oklch(20% 0.02 270); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
 let a = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Static;
   f.amount = 0.7;

@@ -391,3 +391,357 @@ describe('NoiseFilter', () => {
     });
   });
 });
+
+// ============================================================================
+// GlowFilter
+// ============================================================================
+
+function wrapInLayer(constructorSource: string) {
+  return `
+    let f = ${constructorSource};
+    define PathLayer('layer') \${ fill: hotpink; filter: f; }
+    layer('layer').apply { M 0 0 L 10 0 L 10 10 L 0 10 Z }
+  `;
+}
+
+describe('GlowFilter', () => {
+  it('creates a filter with sensible defaults', () => {
+    const result = compile(wrapInLayer('GlowFilter() {|f| }'));
+    expect(result.filters).toHaveLength(1);
+    const f = result.filters[0] as { kind: string; mode: string; radius: number; spread: number; opacity: number };
+    expect(f.kind).toBe('glow');
+    expect(f.mode).toBe('outer');
+    expect(f.radius).toBe(4);
+    expect(f.spread).toBe(0);
+    expect(f.opacity).toBeCloseTo(0.8);
+  });
+
+  it('honors property overrides', () => {
+    const result = compile(
+      wrapInLayer(`GlowFilter() {|f|
+        f.mode = GlowMode.Inner;
+        f.color = Color('#ff0000');
+        f.radius = 10;
+        f.spread = 2;
+        f.opacity = 0.5;
+      }`),
+    );
+    const f = result.filters[0] as { mode: string; color: string; radius: number; spread: number; opacity: number };
+    expect(f.mode).toBe('inner');
+    expect(f.color).toBe('#ff0000');
+    expect(f.radius).toBe(10);
+    expect(f.spread).toBe(2);
+    expect(f.opacity).toBe(0.5);
+  });
+
+  it('rejects unknown mode', () => {
+    expect(() =>
+      compile(`let f = GlowFilter() {|f| f.mode = 'wobble'; };`),
+    ).toThrow(/Invalid value 'wobble' for GlowFilter\.mode/);
+  });
+
+  it('rejects negative radius', () => {
+    expect(() =>
+      compile(`let f = GlowFilter() {|f| f.radius = -1; };`),
+    ).toThrow(/GlowFilter\.radius must be a finite non-negative number/);
+  });
+
+  it('rejects out-of-range opacity', () => {
+    expect(() =>
+      compile(`let f = GlowFilter() {|f| f.opacity = 1.5; };`),
+    ).toThrow(/GlowFilter\.opacity must be a number between 0 and 1/);
+  });
+
+  it('exposes read-side property access', () => {
+    const result = compile(`
+      let f = GlowFilter() {|f| f.radius = 7; };
+      log(f.id);
+      log(f.mode);
+      log(f.radius);
+    `);
+    const values = result.logs.map((l) => l.parts.map((p) => p.value).join(''));
+    expect(values[0]).toMatch(/^pathogen-glow-/);
+    expect(values[1]).toBe('outer');
+    expect(values[2]).toBe('7');
+  });
+
+  it('Outer mode emits feGaussianBlur → feFlood → feComposite → feMerge', () => {
+    const primitives = emittedFilterPrimitives(
+      wrapInLayer('GlowFilter() {|f| f.mode = GlowMode.Outer; }'),
+    );
+    const tags = primitives.map((p) => p.tag);
+    expect(tags).toEqual(['feGaussianBlur', 'feFlood', 'feComposite', 'feMerge']);
+  });
+
+  it('Inner mode emits feGaussianBlur → feComposite(out) → feFlood → feComposite(in) → feComposite(in) → feMerge', () => {
+    const primitives = emittedFilterPrimitives(
+      wrapInLayer('GlowFilter() {|f| f.mode = GlowMode.Inner; }'),
+    );
+    const tags = primitives.map((p) => p.tag);
+    expect(tags).toEqual(['feGaussianBlur', 'feComposite', 'feFlood', 'feComposite', 'feComposite', 'feMerge']);
+  });
+
+  it('spread > 0 inserts feMorphology', () => {
+    const primitives = emittedFilterPrimitives(
+      wrapInLayer('GlowFilter() {|f| f.spread = 2; }'),
+    );
+    expect(primitives[0].tag).toBe('feMorphology');
+    expect(primitives[0].attrs.operator).toBe('dilate');
+  });
+});
+
+// ============================================================================
+// EmbossFilter
+// ============================================================================
+
+describe('EmbossFilter', () => {
+  it('creates a filter with sensible defaults', () => {
+    const result = compile(wrapInLayer('EmbossFilter() {|f| }'));
+    const f = result.filters[0] as { kind: string; depth: number; strength: number; shininess: number };
+    expect(f.kind).toBe('emboss');
+    expect(f.depth).toBe(2);
+    expect(f.strength).toBeCloseTo(0.8);
+    expect(f.shininess).toBe(20);
+  });
+
+  it('accepts angle with deg unit', () => {
+    const result = compile(wrapInLayer('EmbossFilter() {|f| f.angle = 90deg; }'));
+    const f = result.filters[0] as { angle: number };
+    expect(f.angle).toBeCloseTo(Math.PI / 2);
+  });
+
+  it('rejects shininess below 1', () => {
+    expect(() =>
+      compile(`let f = EmbossFilter() {|f| f.shininess = 0.5; };`),
+    ).toThrow(/EmbossFilter\.shininess must be a finite number >= 1/);
+  });
+
+  it('emits feSpecularLighting with feDistantLight child', () => {
+    const primitives = emittedFilterPrimitives(wrapInLayer('EmbossFilter() {|f| }'));
+    expect(primitives.find((p) => p.tag === 'feSpecularLighting')).toBeDefined();
+  });
+
+  it('exposes angle and elevation reads in radians', () => {
+    const result = compile(`
+      let f = EmbossFilter() {|f| f.angle = 90deg; f.elevation = 30deg; };
+      log(f.angle);
+      log(f.elevation);
+    `);
+    const values = result.logs.map((l) => l.parts.map((p) => p.value).join(''));
+    expect(parseFloat(values[0])).toBeCloseTo(Math.PI / 2);
+    expect(parseFloat(values[1])).toBeCloseTo(Math.PI / 6);
+  });
+
+  it('emits clean azimuth/elevation degrees without floating-point noise', () => {
+    const primitives = emittedFilterPrimitives(wrapInLayer('EmbossFilter() {|f| f.angle = 30deg; f.elevation = 60deg; }'));
+    const light = primitives.find((p) => p.tag === 'feSpecularLighting')!;
+    // The feDistantLight is the only child; we serialized it under the feSpecularLighting in build-defs.
+    // emittedFilterPrimitives flattens only the top-level filter children, so we read the azimuth from the
+    // VNode tree directly by querying the SVG output instead.
+    expect(light).toBeDefined();
+    // Inspect the rendered SVG string via the compile result to confirm no scientific-notation tails.
+    const source = wrapInLayer('EmbossFilter() {|f| f.angle = 30deg; f.elevation = 60deg; }');
+    const result = compile(source);
+    const defs = buildDefs(result);
+    const filterNode = defs.find((n): n is VNode => typeof n === 'object' && n !== null && 'tag' in n && n.tag === 'filter')!;
+    const spec = filterNode.children!.find((c): c is VNode => typeof c === 'object' && c !== null && 'tag' in c && c.tag === 'feSpecularLighting')!;
+    const distant = spec.children!.find((c): c is VNode => typeof c === 'object' && c !== null && 'tag' in c && c.tag === 'feDistantLight')!;
+    expect(distant.attrs.azimuth).toBe('30');
+    expect(distant.attrs.elevation).toBe('60');
+  });
+
+  it('rejects negative depth, strength, smooth', () => {
+    expect(() => compile(`let f = EmbossFilter() {|f| f.depth = -1; };`)).toThrow(
+      /EmbossFilter\.depth must be a finite non-negative number/,
+    );
+    expect(() => compile(`let f = EmbossFilter() {|f| f.strength = -1; };`)).toThrow(
+      /EmbossFilter\.strength must be a finite non-negative number/,
+    );
+    expect(() => compile(`let f = EmbossFilter() {|f| f.smooth = -1; };`)).toThrow(
+      /EmbossFilter\.smooth must be a finite non-negative number/,
+    );
+  });
+});
+
+// ============================================================================
+// ElevationShadowFilter
+// ============================================================================
+
+describe('ElevationShadowFilter', () => {
+  it('creates a filter with sensible defaults', () => {
+    const result = compile(wrapInLayer('ElevationShadowFilter() {|f| }'));
+    const f = result.filters[0] as { kind: string; elevation: number; tightness: number };
+    expect(f.kind).toBe('elevation-shadow');
+    expect(f.elevation).toBe(4);
+    expect(f.tightness).toBe(1);
+  });
+
+  it('clamps reject when elevation > 24', () => {
+    expect(() =>
+      compile(`let f = ElevationShadowFilter() {|f| f.elevation = 25; };`),
+    ).toThrow(/ElevationShadowFilter\.elevation must be a finite number between 0 and 24/);
+  });
+
+  it('emits three soft-shadow layer sub-chains + feMerge', () => {
+    const primitives = emittedFilterPrimitives(wrapInLayer('ElevationShadowFilter() {|f| f.elevation = 4; }'));
+    const tags = primitives.map((p) => p.tag);
+    const blurCount = tags.filter((t) => t === 'feGaussianBlur').length;
+    const offsetCount = tags.filter((t) => t === 'feOffset').length;
+    const floodCount = tags.filter((t) => t === 'feFlood').length;
+    expect(blurCount).toBe(3);
+    expect(offsetCount).toBe(3);
+    expect(floodCount).toBe(3);
+    expect(tags[tags.length - 1]).toBe('feMerge');
+  });
+
+  it('elevation = 0 emits only a pass-through feMerge', () => {
+    const primitives = emittedFilterPrimitives(wrapInLayer('ElevationShadowFilter() {|f| f.elevation = 0; }'));
+    expect(primitives.map((p) => p.tag)).toEqual(['feMerge']);
+  });
+
+  it('direction projects the offset vector — direction = 0deg means horizontal', () => {
+    const primitives = emittedFilterPrimitives(
+      wrapInLayer('ElevationShadowFilter() {|f| f.elevation = 6; f.direction = 0deg; }'),
+    );
+    const offsets = primitives.filter((p) => p.tag === 'feOffset');
+    expect(offsets).toHaveLength(3);
+    // direction = 0deg → cos = 1, sin = 0 → dx is positive, dy is 0
+    expect(parseFloat(offsets[0].attrs.dx)).toBeGreaterThan(0);
+    expect(offsets[0].attrs.dy).toBe('0');
+  });
+
+  it('tightness scales the per-layer distance and blur ratios', () => {
+    const tight = emittedFilterPrimitives(
+      wrapInLayer('ElevationShadowFilter() {|f| f.elevation = 6; f.tightness = 0.5; }'),
+    );
+    const wide = emittedFilterPrimitives(
+      wrapInLayer('ElevationShadowFilter() {|f| f.elevation = 6; f.tightness = 2.0; }'),
+    );
+    const tightBlurs = tight.filter((p) => p.tag === 'feGaussianBlur').map((p) => parseFloat(p.attrs.stdDeviation));
+    const wideBlurs = wide.filter((p) => p.tag === 'feGaussianBlur').map((p) => parseFloat(p.attrs.stdDeviation));
+    // Wide tightness should produce 4× the blur of tight tightness for each layer
+    for (let i = 0; i < tightBlurs.length; i++) {
+      expect(wideBlurs[i] / tightBlurs[i]).toBeCloseTo(4);
+    }
+  });
+});
+
+// ============================================================================
+// InnerShadowFilter
+// ============================================================================
+
+describe('InnerShadowFilter', () => {
+  it('creates a filter with sensible defaults', () => {
+    const result = compile(wrapInLayer('InnerShadowFilter() {|f| }'));
+    const f = result.filters[0] as { kind: string; offsetX: number; offsetY: number; blur: number; opacity: number };
+    expect(f.kind).toBe('inner-shadow');
+    expect(f.offsetX).toBe(0);
+    expect(f.offsetY).toBe(2);
+    expect(f.blur).toBe(4);
+    expect(f.opacity).toBe(0.5);
+  });
+
+  it('rejects negative blur', () => {
+    expect(() =>
+      compile(`let f = InnerShadowFilter() {|f| f.blur = -1; };`),
+    ).toThrow(/InnerShadowFilter\.blur must be a finite non-negative number/);
+  });
+
+  it('emits the inset primitive chain (blur → offset → composite-out → flood → composite-in → composite-in → merge)', () => {
+    const primitives = emittedFilterPrimitives(wrapInLayer('InnerShadowFilter() {|f| }'));
+    const tags = primitives.map((p) => p.tag);
+    expect(tags).toEqual([
+      'feGaussianBlur',
+      'feOffset',
+      'feComposite',
+      'feFlood',
+      'feComposite',
+      'feComposite',
+      'feMerge',
+    ]);
+    // first composite is the inversion: operator = out
+    expect(primitives[2].attrs.operator).toBe('out');
+  });
+});
+
+// ============================================================================
+// PixelateFilter
+// ============================================================================
+
+describe('PixelateFilter', () => {
+  it('positional form sets width, height, radius', () => {
+    const result = compile(wrapInLayer('PixelateFilter(10, 12, 5)'));
+    const f = result.filters[0] as { kind: string; width: number; height: number; radius: number };
+    expect(f.kind).toBe('pixelate');
+    expect(f.width).toBe(10);
+    expect(f.height).toBe(12);
+    expect(f.radius).toBe(5);
+  });
+
+  it('block form sets the same properties', () => {
+    const result = compile(
+      wrapInLayer(`PixelateFilter() {|f| f.width = 10; f.height = 12; f.radius = 5; }`),
+    );
+    const f = result.filters[0] as { width: number; height: number; radius: number };
+    expect(f.width).toBe(10);
+    expect(f.height).toBe(12);
+    expect(f.radius).toBe(5);
+  });
+
+  it('no-arg form uses defaults', () => {
+    const result = compile(wrapInLayer('PixelateFilter()'));
+    const f = result.filters[0] as { width: number; height: number; radius: number };
+    expect(f.width).toBe(10);
+    expect(f.height).toBe(10);
+    expect(f.radius).toBe(5);
+  });
+
+  it('rejects mixing positional args with a trailing block', () => {
+    expect(() =>
+      compile(`let f = PixelateFilter(10, 10, 5) {|f| f.width = 20; };`),
+    ).toThrow(/cannot combine positional arguments with a trailing block/);
+  });
+
+  it('rejects 1 or 2 positional args', () => {
+    expect(() => compile(`let f = PixelateFilter(10);`)).toThrow(/expects 0 or 3 arguments/);
+    expect(() => compile(`let f = PixelateFilter(10, 10);`)).toThrow(/expects 0 or 3 arguments/);
+  });
+
+  it('rejects non-positive positional values', () => {
+    expect(() => compile(`let f = PixelateFilter(0, 10, 5);`)).toThrow(
+      /PixelateFilter\(\) arguments must be finite positive numbers/,
+    );
+    expect(() => compile(`let f = PixelateFilter(10, -1, 5);`)).toThrow(
+      /PixelateFilter\(\) arguments must be finite positive numbers/,
+    );
+  });
+
+  it('rejects non-positive property writes', () => {
+    expect(() =>
+      compile(`let f = PixelateFilter() {|f| f.radius = 0; };`),
+    ).toThrow(/PixelateFilter\.radius must be a finite positive number/);
+  });
+
+  it('emits feFlood → feComposite → feTile → feComposite → feMorphology', () => {
+    const primitives = emittedFilterPrimitives(wrapInLayer('PixelateFilter(10, 10, 5)'));
+    const tags = primitives.map((p) => p.tag);
+    expect(tags).toEqual(['feFlood', 'feComposite', 'feTile', 'feComposite', 'feMorphology']);
+    expect(primitives[0].attrs.x).toBe('2.5'); // radius / 2
+    expect(primitives[1].attrs.width).toBe('10');
+    expect(primitives[4].attrs.radius).toBe('5');
+  });
+
+  it('emits filterUnits="userSpaceOnUse" on the filter element', () => {
+    // The pixelate technique places feFlood at user-space pixel offsets (e.g.
+    // x=2.5, width=2). Without filterUnits=userSpaceOnUse those coords are
+    // interpreted as fractions of the source bounding box and the flood lands
+    // outside the filter region, producing an empty filter output (a blank
+    // shape). This assertion locks the fix in place.
+    const result = compile(wrapInLayer('PixelateFilter(10, 10, 5)'));
+    const defs = buildDefs(result);
+    const filterNode = defs.find(
+      (n): n is VNode => typeof n === 'object' && n !== null && 'tag' in n && n.tag === 'filter',
+    )!;
+    expect(filterNode.attrs.filterUnits).toBe('userSpaceOnUse');
+  });
+});

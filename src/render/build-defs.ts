@@ -12,12 +12,17 @@ import { renderConicToWedges } from '../conic-renderer';
 import { validateCSSIdent } from '../evaluator/sanitize';
 import type {
   CompileResult,
+  ElevationShadowFilterOutput,
+  EmbossFilterOutput,
   FilterOutput,
+  GlowFilterOutput,
   GradientOutput,
+  InnerShadowFilterOutput,
   MarkerOutput,
   MaskOutput,
   NoiseFilterOutput,
   PatternOutput,
+  PixelateFilterOutput,
 } from '../evaluator/types';
 import type { ClipPathOutput } from '../evaluator/types';
 
@@ -298,22 +303,75 @@ function buildMarker(marker: MarkerOutput, emitData: boolean): VNode {
 // and dropshadow-style spread fits without clipping (matches the convention
 // other defs producers use).
 
+/** Filter region rectangle. Each filter kind picks its own based on how far primitives extend. */
+interface FilterRegion {
+  x: string;
+  y: string;
+  width: string;
+  height: string;
+}
+
+function filterRegion(filter: FilterOutput): FilterRegion {
+  switch (filter.kind) {
+    case 'noise':
+    case 'emboss':
+    case 'inner-shadow':
+      return { x: '-10%', y: '-10%', width: '120%', height: '120%' };
+    case 'glow':
+      // Outer glow extends beyond the painted bounds by ~radius + spread; give it a generous region.
+      return { x: '-50%', y: '-50%', width: '200%', height: '200%' };
+    case 'elevation-shadow':
+      // Soft layer offset + blur can reach ~elevation*6 outside the source.
+      return { x: '-100%', y: '-100%', width: '300%', height: '300%' };
+    case 'pixelate':
+      // Tile + dilate operate inside the source bounds.
+      return { x: '0%', y: '0%', width: '100%', height: '100%' };
+    default: {
+      const _exhaustive: never = filter;
+      throw new Error(`Unsupported filter kind in filterRegion: ${String((_exhaustive as { kind: string }).kind)}`);
+    }
+  }
+}
+
 function buildFilter(filter: FilterOutput, emitData: boolean): VNode {
   const attrs: Record<string, string> = { id: filter.id };
   if (emitData) attrs['data-filter-def'] = filter.id;
-  attrs.x = '-10%';
-  attrs.y = '-10%';
-  attrs.width = '120%';
-  attrs.height = '120%';
+  const region = filterRegion(filter);
+  attrs.x = region.x;
+  attrs.y = region.y;
+  attrs.width = region.width;
+  attrs.height = region.height;
+  // PixelateFilter relies on user-space primitive coordinates (feFlood at
+  // pixel offsets like 3,3 with width=12 etc.). The default filterUnits is
+  // objectBoundingBox, which scales those coords to 0..1 of the source bbox
+  // and produces an empty result. userSpaceOnUse keeps the primitive coords
+  // as literal pixel values.
+  if (filter.kind === 'pixelate') {
+    attrs.filterUnits = 'userSpaceOnUse';
+  }
   let children: VNode[];
   switch (filter.kind) {
     case 'noise':
       children = buildNoisePrimitives(filter);
       break;
+    case 'glow':
+      children = buildGlowPrimitives(filter);
+      break;
+    case 'emboss':
+      children = buildEmbossPrimitives(filter);
+      break;
+    case 'elevation-shadow':
+      children = buildElevationShadowPrimitives(filter);
+      break;
+    case 'inner-shadow':
+      children = buildInnerShadowPrimitives(filter);
+      break;
+    case 'pixelate':
+      children = buildPixelatePrimitives(filter);
+      break;
     default: {
-      // Exhaustiveness guard — narrows to never if all kinds are handled.
-      const _exhaustive: never = filter.kind;
-      throw new Error(`Unsupported filter kind: ${String(_exhaustive)}`);
+      const _exhaustive: never = filter;
+      throw new Error(`Unsupported filter kind: ${String((_exhaustive as { kind: string }).kind)}`);
     }
   }
   return h('filter', attrs, children);
@@ -382,4 +440,206 @@ function buildNoisePrimitives(filter: NoiseFilterOutput): VNode[] {
   nodes.push(amountTransferNode(filter.amount, last, 'noise'));
   nodes.push(h('feBlend', { in: 'SourceGraphic', in2: 'noise', mode: filter.blend }));
   return nodes;
+}
+
+// ---------------------------------------------------------------------------
+// GlowFilter — outer or inner soft glow.
+// ---------------------------------------------------------------------------
+
+function buildGlowPrimitives(filter: GlowFilterOutput): VNode[] {
+  const nodes: VNode[] = [];
+  let blurIn = 'SourceAlpha';
+  if (filter.spread > 0) {
+    nodes.push(
+      h('feMorphology', {
+        in: 'SourceAlpha',
+        operator: filter.mode === 'inner' ? 'erode' : 'dilate',
+        radius: String(filter.spread),
+        result: 'shaped',
+      }),
+    );
+    blurIn = 'shaped';
+  }
+  nodes.push(h('feGaussianBlur', { in: blurIn, stdDeviation: String(filter.radius), result: 'blur' }));
+  if (filter.mode === 'outer') {
+    nodes.push(h('feFlood', { 'flood-color': filter.color, 'flood-opacity': String(filter.opacity), result: 'flood' }));
+    nodes.push(h('feComposite', { in: 'flood', in2: 'blur', operator: 'in', result: 'coloredGlow' }));
+    nodes.push(
+      h('feMerge', {}, [
+        h('feMergeNode', { in: 'coloredGlow' }),
+        h('feMergeNode', { in: 'SourceGraphic' }),
+      ]),
+    );
+  } else {
+    // Inner: invert the blurred shape against the source alpha so glow rides the inside edge.
+    nodes.push(h('feComposite', { in: 'SourceAlpha', in2: 'blur', operator: 'out', result: 'inverted' }));
+    nodes.push(h('feFlood', { 'flood-color': filter.color, 'flood-opacity': String(filter.opacity), result: 'flood' }));
+    nodes.push(h('feComposite', { in: 'flood', in2: 'inverted', operator: 'in', result: 'innerGlow' }));
+    // Clip glow to source so it never leaks outside.
+    nodes.push(h('feComposite', { in: 'innerGlow', in2: 'SourceAlpha', operator: 'in', result: 'clippedGlow' }));
+    nodes.push(
+      h('feMerge', {}, [
+        h('feMergeNode', { in: 'SourceGraphic' }),
+        h('feMergeNode', { in: 'clippedGlow' }),
+      ]),
+    );
+  }
+  return nodes;
+}
+
+// ---------------------------------------------------------------------------
+// EmbossFilter — feSpecularLighting + feDistantLight.
+// ---------------------------------------------------------------------------
+
+function radToDeg(rad: number): number {
+  return (rad * 180) / Math.PI;
+}
+
+function buildEmbossPrimitives(filter: EmbossFilterOutput): VNode[] {
+  const nodes: VNode[] = [];
+  let specIn = 'SourceAlpha';
+  if (filter.smooth > 0) {
+    nodes.push(h('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: String(filter.smooth), result: 'blur' }));
+    specIn = 'blur';
+  }
+  nodes.push(
+    h(
+      'feSpecularLighting',
+      {
+        in: specIn,
+        surfaceScale: String(filter.depth),
+        specularConstant: String(filter.strength),
+        specularExponent: String(filter.shininess),
+        'lighting-color': filter.lightColor,
+        result: 'spec',
+      },
+      [
+        h('feDistantLight', {
+          azimuth: cleanNum(radToDeg(filter.angle)),
+          elevation: cleanNum(radToDeg(filter.elevation)),
+        }),
+      ],
+    ),
+  );
+  nodes.push(h('feComposite', { in: 'spec', in2: 'SourceAlpha', operator: 'in', result: 'masked' }));
+  nodes.push(
+    h('feComposite', {
+      in: 'SourceGraphic',
+      in2: 'masked',
+      operator: 'arithmetic',
+      k1: '0',
+      k2: '1',
+      k3: '1',
+      k4: '0',
+    }),
+  );
+  return nodes;
+}
+
+// ---------------------------------------------------------------------------
+// ElevationShadowFilter — three layered soft shadows.
+// ---------------------------------------------------------------------------
+
+interface ShadowLayer {
+  distanceRatio: number;
+  blurRatio: number;
+  opacity: number;
+}
+
+const ELEVATION_LAYERS: ShadowLayer[] = [
+  { distanceRatio: 0.3, blurRatio: 0.5, opacity: 0.3 },
+  { distanceRatio: 0.6, blurRatio: 1.0, opacity: 0.18 },
+  { distanceRatio: 1.0, blurRatio: 2.0, opacity: 0.12 },
+];
+
+/**
+ * Round near-zero floats to 0 and trim long decimal tails so the emitted SVG
+ * is readable. Without this, `cos(PI/2) * 6` shows up as `3.67e-16` and
+ * `0.3 * 6` as `1.7999999999999998`. Six decimal places is plenty of
+ * resolution for filter-region geometry.
+ */
+function cleanNum(n: number): string {
+  if (!Number.isFinite(n)) return String(n);
+  if (Math.abs(n) < 1e-9) return '0';
+  const rounded = Math.round(n * 1e6) / 1e6;
+  return String(rounded);
+}
+
+function buildSoftShadowLayer(
+  index: number,
+  dx: number,
+  dy: number,
+  blur: number,
+  color: string,
+  opacity: number,
+): VNode[] {
+  const i = index + 1;
+  return [
+    h('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: cleanNum(blur), result: `b${i}` }),
+    h('feOffset', { in: `b${i}`, dx: cleanNum(dx), dy: cleanNum(dy), result: `o${i}` }),
+    h('feFlood', { 'flood-color': color, 'flood-opacity': cleanNum(opacity), result: `f${i}` }),
+    h('feComposite', { in: `f${i}`, in2: `o${i}`, operator: 'in', result: `s${i}` }),
+  ];
+}
+
+function buildElevationShadowPrimitives(filter: ElevationShadowFilterOutput): VNode[] {
+  const nodes: VNode[] = [];
+  if (filter.elevation <= 0) {
+    // Flat — emit a pass-through chain (Identity on SourceGraphic). feMerge with just SourceGraphic.
+    nodes.push(h('feMerge', {}, [h('feMergeNode', { in: 'SourceGraphic' })]));
+    return nodes;
+  }
+  const cosD = Math.cos(filter.direction);
+  const sinD = Math.sin(filter.direction);
+  const mergeChildren: VNode[] = [];
+  for (let i = 0; i < ELEVATION_LAYERS.length; i++) {
+    const layer = ELEVATION_LAYERS[i];
+    const distance = filter.elevation * layer.distanceRatio * filter.tightness;
+    const blur = filter.elevation * layer.blurRatio * filter.tightness;
+    const dx = distance * cosD;
+    const dy = distance * sinD;
+    const sub = buildSoftShadowLayer(i, dx, dy, blur, filter.color, layer.opacity);
+    nodes.push(...sub);
+    mergeChildren.push(h('feMergeNode', { in: `s${i + 1}` }));
+  }
+  mergeChildren.push(h('feMergeNode', { in: 'SourceGraphic' }));
+  nodes.push(h('feMerge', {}, mergeChildren));
+  return nodes;
+}
+
+// ---------------------------------------------------------------------------
+// InnerShadowFilter — inset shadow clipped to source.
+// ---------------------------------------------------------------------------
+
+function buildInnerShadowPrimitives(filter: InnerShadowFilterOutput): VNode[] {
+  return [
+    h('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: String(filter.blur), result: 'blur' }),
+    h('feOffset', { in: 'blur', dx: String(filter.offsetX), dy: String(filter.offsetY), result: 'offset' }),
+    h('feComposite', { in: 'SourceAlpha', in2: 'offset', operator: 'out', result: 'inverted' }),
+    h('feFlood', { 'flood-color': filter.color, 'flood-opacity': String(filter.opacity), result: 'flood' }),
+    h('feComposite', { in: 'flood', in2: 'inverted', operator: 'in', result: 'innerShadow' }),
+    h('feComposite', { in: 'innerShadow', in2: 'SourceAlpha', operator: 'in', result: 'clipped' }),
+    h('feMerge', {}, [h('feMergeNode', { in: 'SourceGraphic' }), h('feMergeNode', { in: 'clipped' })]),
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// PixelateFilter — flood-tile-dilate mosaic.
+// ---------------------------------------------------------------------------
+
+function buildPixelatePrimitives(filter: PixelateFilterOutput): VNode[] {
+  const offset = filter.radius / 2;
+  return [
+    h('feFlood', {
+      x: String(offset),
+      y: String(offset),
+      width: '2',
+      height: '2',
+      'flood-color': '#000',
+    }),
+    h('feComposite', { width: String(filter.width), height: String(filter.height) }),
+    h('feTile', { result: 'a' }),
+    h('feComposite', { in: 'SourceGraphic', in2: 'a', operator: 'in' }),
+    h('feMorphology', { operator: 'dilate', radius: String(filter.radius) }),
+  ];
 }

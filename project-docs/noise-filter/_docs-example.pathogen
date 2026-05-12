@@ -1,5 +1,8 @@
 // Source of truth for the "Generated SVG Output" code block in
 // docs/filters.md. If you change this file, update the doc accordingly.
+define PathLayer('bg') ${ fill: oklch(92% 0.03 70); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
 let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
 
 define PathLayer('disc') ${ fill: oklch(70% 0.18 30); filter: grain; }

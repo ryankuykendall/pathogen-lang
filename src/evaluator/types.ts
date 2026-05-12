@@ -265,14 +265,21 @@ export interface GradientValue {
 /**
  * Custom filter recipe — synthesizes a `<filter>` definition.
  *
- * Modelled as a tagged union (currently single-variant) so additional filter
- * kinds can be added as new `kind` arms without disturbing the defs-producer
- * pipeline (style-block url(#id) conversion, CompileResult emission,
- * render/build-defs dispatch, playground 5-file chain).
+ * Modelled as a tagged union so additional filter kinds can be added as new
+ * `kind` arms without disturbing the defs-producer pipeline (style-block
+ * url(#id) conversion, CompileResult emission, render/build-defs dispatch,
+ * playground 5-file chain).
  */
-export type FilterValue = NoiseFilterValue;
+export type FilterValue =
+  | NoiseFilterValue
+  | GlowFilterValue
+  | EmbossFilterValue
+  | ElevationShadowFilterValue
+  | InnerShadowFilterValue
+  | PixelateFilterValue;
 
 export type NoiseFilterStyleName = 'grain' | 'paper' | 'speckle' | 'static' | 'gradient';
+export type GlowModeName = 'outer' | 'inner';
 
 export interface NoiseFilterValue {
   type: 'FilterValue';
@@ -287,6 +294,67 @@ export interface NoiseFilterValue {
   blend: string; // CSS blend-mode keyword
   contrast: number; // 1.0 = no pump
   stitch: boolean;
+}
+
+/**
+ * Color storage shared by Glow/Emboss/ElevationShadow/InnerShadow. Mirrors the
+ * shape evaluator uses for serialized colors (CSS expression with optional
+ * OKLCH source for re-interpolation). Stored as a string after evaluation so
+ * the renderer can drop it into flood-color / lighting-color directly.
+ */
+
+export interface GlowFilterValue {
+  type: 'FilterValue';
+  kind: 'glow';
+  id: string;
+  mode: GlowModeName;
+  color: string; // CSS color expression
+  radius: number; // feGaussianBlur stdDeviation
+  spread: number; // feMorphology radius (0 = no morphology)
+  opacity: number; // 0..1
+}
+
+export interface EmbossFilterValue {
+  type: 'FilterValue';
+  kind: 'emboss';
+  id: string;
+  angle: number; // radians internally; emitted as degrees on feDistantLight azimuth
+  elevation: number; // radians internally; emitted as degrees on feDistantLight elevation
+  depth: number; // surfaceScale
+  strength: number; // specularConstant
+  shininess: number; // specularExponent
+  lightColor: string; // CSS color expression
+  smooth: number; // pre-blur stdDeviation
+}
+
+export interface ElevationShadowFilterValue {
+  type: 'FilterValue';
+  kind: 'elevation-shadow';
+  id: string;
+  elevation: number; // 0..24
+  color: string; // CSS color expression
+  direction: number; // radians; 0=right, PI/2=down (default)
+  tightness: number; // scales per-layer distance/blur ratios
+}
+
+export interface InnerShadowFilterValue {
+  type: 'FilterValue';
+  kind: 'inner-shadow';
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  blur: number; // stdDeviation
+  color: string; // CSS color expression
+  opacity: number; // 0..1
+}
+
+export interface PixelateFilterValue {
+  type: 'FilterValue';
+  kind: 'pixelate';
+  id: string;
+  width: number; // tile stride x
+  height: number; // tile stride y
+  radius: number; // feMorphology dilate radius
 }
 
 /**
@@ -631,10 +699,16 @@ export interface GradientOutput {
 }
 
 /**
- * Renderer-facing shape for a custom filter. Mirrors NoiseFilterValue minus
- * the `type` tag — future filter kinds extend this discriminated union.
+ * Renderer-facing shape for a custom filter. Mirrors each FilterValue minus
+ * the `type` tag.
  */
-export type FilterOutput = NoiseFilterOutput;
+export type FilterOutput =
+  | NoiseFilterOutput
+  | GlowFilterOutput
+  | EmbossFilterOutput
+  | ElevationShadowFilterOutput
+  | InnerShadowFilterOutput
+  | PixelateFilterOutput;
 
 export interface NoiseFilterOutput {
   kind: 'noise';
@@ -648,6 +722,55 @@ export interface NoiseFilterOutput {
   blend: string;
   contrast: number;
   stitch: boolean;
+}
+
+export interface GlowFilterOutput {
+  kind: 'glow';
+  id: string;
+  mode: GlowModeName;
+  color: string;
+  radius: number;
+  spread: number;
+  opacity: number;
+}
+
+export interface EmbossFilterOutput {
+  kind: 'emboss';
+  id: string;
+  angle: number; // radians
+  elevation: number; // radians
+  depth: number;
+  strength: number;
+  shininess: number;
+  lightColor: string;
+  smooth: number;
+}
+
+export interface ElevationShadowFilterOutput {
+  kind: 'elevation-shadow';
+  id: string;
+  elevation: number;
+  color: string;
+  direction: number; // radians
+  tightness: number;
+}
+
+export interface InnerShadowFilterOutput {
+  kind: 'inner-shadow';
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  blur: number;
+  color: string;
+  opacity: number;
+}
+
+export interface PixelateFilterOutput {
+  kind: 'pixelate';
+  id: string;
+  width: number;
+  height: number;
+  radius: number;
 }
 
 export interface CompileResult {

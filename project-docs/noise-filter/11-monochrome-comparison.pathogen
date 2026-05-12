@@ -2,6 +2,9 @@
 // Left circle uses monochrome:true (default for Grain); right uses
 // monochrome:false to keep color variance in the noise itself.
 
+define PathLayer('bg') ${ fill: oklch(92% 0.03 70); stroke: none; }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
 let mono = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Speckle;
   f.amount = 0.7;

@@ -1,0 +1,25 @@
+// Composition: outer GroupLayer carries an ElevationShadowFilter, inner
+// PathLayer carries an InnerShadowFilter. The result is a card that is
+// both raised above its surface and visually recessed on its top edge.
+
+let lift = ElevationShadowFilter() {|f|
+  f.elevation = 6;
+  f.color = oklch(20% 0.04 280);
+};
+
+let press = InnerShadowFilter() {|f|
+  f.offsetX = 0;
+  f.offsetY = 3;
+  f.blur = 4;
+  f.color = oklch(15% 0.02 280);
+  f.opacity = 0.5;
+};
+
+define PathLayer('surface') ${ fill: oklch(94% 0.01 80); stroke: none; }
+layer('surface').apply { rect(0, 0, 200, 200); }
+
+let inner = PathLayer('inner') ${ fill: oklch(80% 0.06 230); stroke: none; filter: press; };
+layer('inner').apply { roundRect(40, 80, 120, 40, 14); }
+
+let chip = GroupLayer('chip') ${ filter: lift; };
+chip.append(inner);

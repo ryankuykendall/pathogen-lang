@@ -93,6 +93,7 @@ export interface MarkerOutput {
 }
 
 export type NoiseFilterStyleName = 'grain' | 'paper' | 'speckle' | 'static' | 'gradient';
+export type GlowModeName = 'outer' | 'inner';
 
 export interface NoiseFilterOutput {
   kind: 'noise';
@@ -108,7 +109,62 @@ export interface NoiseFilterOutput {
   stitch: boolean;
 }
 
-export type FilterOutput = NoiseFilterOutput;
+export interface GlowFilterOutput {
+  kind: 'glow';
+  id: string;
+  mode: GlowModeName;
+  color: string;
+  radius: number;
+  spread: number;
+  opacity: number;
+}
+
+export interface EmbossFilterOutput {
+  kind: 'emboss';
+  id: string;
+  angle: number;
+  elevation: number;
+  depth: number;
+  strength: number;
+  shininess: number;
+  lightColor: string;
+  smooth: number;
+}
+
+export interface ElevationShadowFilterOutput {
+  kind: 'elevation-shadow';
+  id: string;
+  elevation: number;
+  color: string;
+  direction: number;
+  tightness: number;
+}
+
+export interface InnerShadowFilterOutput {
+  kind: 'inner-shadow';
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  blur: number;
+  color: string;
+  opacity: number;
+}
+
+export interface PixelateFilterOutput {
+  kind: 'pixelate';
+  id: string;
+  width: number;
+  height: number;
+  radius: number;
+}
+
+export type FilterOutput =
+  | NoiseFilterOutput
+  | GlowFilterOutput
+  | EmbossFilterOutput
+  | ElevationShadowFilterOutput
+  | InnerShadowFilterOutput
+  | PixelateFilterOutput;
 
 export interface GradientStop {
   offset: number;
