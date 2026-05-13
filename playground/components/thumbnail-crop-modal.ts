@@ -1,6 +1,7 @@
 // Thumbnail Crop Modal - Full-screen overlay for setting workspace thumbnail
 // Square crop selection with live preview at multiple sizes
 
+import { thumbnailApi } from '../services/api.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
@@ -90,6 +91,21 @@ const styles = `
     background: var(--accent-hover, #059669);
     border-color: var(--accent-hover, #059669);
     color: var(--accent-text, #ffffff);
+  }
+
+  .btn.danger {
+    background: transparent;
+    border-color: var(--error-color, #ef4444);
+    color: var(--error-color, #ef4444);
+  }
+
+  .btn.danger:hover:not(:disabled) {
+    background: var(--error-color, #ef4444);
+    color: #ffffff;
+  }
+
+  .btn[hidden] {
+    display: none;
   }
 
   .close-btn {
@@ -391,9 +407,20 @@ class ThumbnailCropModal extends HTMLElement {
 
     // Update save button state
     this._updateSaveButton(false);
+    this._updateClearButton();
 
     this.classList.add('open');
     this._addDocumentListeners();
+  }
+
+  // Show the Clear button only when a manual thumbnail currently exists. The
+  // store mirrors workspace.manualThumbnailAt at workspace-load time and after
+  // every save/clear so this stays correct without a fresh API round-trip.
+  private _updateClearButton(): void {
+    const btn = this.shadowRoot!.querySelector('.clear-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    const hasManual = Boolean(store.get('workspaceManualThumbnailAt'));
+    btn.hidden = !hasManual;
   }
 
   close(): void {
@@ -746,7 +773,16 @@ class ThumbnailCropModal extends HTMLElement {
         size: this._cropSize,
       };
 
-      await thumbnailService.generateThumbnail(workspaceId, this._svgElement!, this._storeState!, cropRegion);
+      const result = (await thumbnailService.generateThumbnail(
+        workspaceId,
+        this._svgElement!,
+        this._storeState!,
+        cropRegion,
+      )) as { manualThumbnailAt?: string | null } | null;
+
+      // Keep the store in sync so the next open() of this modal correctly
+      // shows the Clear button.
+      store.set('workspaceManualThumbnailAt', result?.manualThumbnailAt ?? new Date().toISOString());
 
       // Dispatch event for landing-view refresh
       document.dispatchEvent(
@@ -757,9 +793,36 @@ class ThumbnailCropModal extends HTMLElement {
         }),
       );
 
+      // Confirmation toast with a preview of the freshly-uploaded thumbnail.
+      // Cache-bust so the browser fetches the new R2 object, not any prior 404.
+      document.dispatchEvent(
+        new CustomEvent('show-toast', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            type: 'success',
+            title: 'Thumbnail set',
+            message: 'It will appear on your workspaces page.',
+            image: `${thumbnailApi.url(workspaceId, 256)}?v=${Date.now()}`,
+          },
+        }),
+      );
+
       this.close();
     } catch (err: unknown) {
       console.error('Thumbnail save failed:', err);
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      document.dispatchEvent(
+        new CustomEvent('show-toast', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            type: 'error',
+            title: 'Could not set thumbnail',
+            message,
+          },
+        }),
+      );
     } finally {
       this._saving = false;
       this._updateSaveButton(false);
@@ -774,6 +837,63 @@ class ThumbnailCropModal extends HTMLElement {
     }
   }
 
+  // Remove the manual layer. The server keeps the auto layer (if any) intact;
+  // GET falls through to it. If neither layer exists after this, the listing
+  // page reverts to the letter avatar.
+  async _clear(): Promise<void> {
+    if (this._saving) return;
+    const workspaceId = store.get('workspaceId') as string | undefined;
+    if (!workspaceId) return;
+
+    const btn = this.shadowRoot!.querySelector('.clear-btn') as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+
+    try {
+      const result = (await thumbnailApi.delete(workspaceId, { kind: 'manual' })) as {
+        thumbnailAt?: string | null;
+        autoThumbnailAt?: string | null;
+      };
+
+      store.set('workspaceManualThumbnailAt', null);
+
+      const hasAuto = Boolean(result?.autoThumbnailAt) || Boolean(result?.thumbnailAt);
+      document.dispatchEvent(
+        new CustomEvent('thumbnail-updated', {
+          bubbles: true,
+          composed: true,
+          detail: { workspaceId },
+        }),
+      );
+      document.dispatchEvent(
+        new CustomEvent('show-toast', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            type: 'success',
+            title: 'Thumbnail cleared',
+            message: hasAuto
+              ? 'The auto-generated thumbnail will now be shown.'
+              : 'Your workspaces page will show the letter avatar until a new thumbnail is set.',
+          },
+        }),
+      );
+
+      this.close();
+    } catch (err: unknown) {
+      console.error('Thumbnail clear failed:', err);
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      document.dispatchEvent(
+        new CustomEvent('show-toast', {
+          bubbles: true,
+          composed: true,
+          detail: { type: 'error', title: 'Could not clear thumbnail', message },
+        }),
+      );
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   // --- Event handling ---
 
   _setupEventListeners(): void {
@@ -782,6 +902,7 @@ class ThumbnailCropModal extends HTMLElement {
     root.querySelector('.close-btn')!.addEventListener('click', () => this.close());
     root.querySelector('.cancel-btn')!.addEventListener('click', () => this.close());
     root.querySelector('.save-btn')!.addEventListener('click', () => this._save());
+    root.querySelector('.clear-btn')!.addEventListener('click', () => this._clear());
     root.querySelector('.reset-btn')!.addEventListener('click', () => {
       this._resetCrop();
       this._updateCropOverlay();
@@ -995,6 +1116,7 @@ class ThumbnailCropModal extends HTMLElement {
         <button class="close-btn" title="Close">&times;</button>
         <h2>Set Thumbnail</h2>
         <div class="top-bar-actions">
+          <button class="btn danger clear-btn" hidden>Clear thumbnail</button>
           <button class="btn cancel-btn">Cancel</button>
           <button class="btn primary save-btn">Save</button>
         </div>

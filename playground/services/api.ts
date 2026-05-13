@@ -141,13 +141,19 @@ export const preferencesApi = {
   },
 };
 
+export type ThumbnailKind = 'manual' | 'auto';
+export type ThumbnailDeleteKind = 'manual' | 'auto' | 'all';
+
 // Thumbnail API
 export const thumbnailApi = {
-  // Upload thumbnail blobs (3 sizes). Pass adminToken to bypass ownership check.
+  // Upload thumbnail blobs (3 sizes). kind=manual (default) stores to the manual
+  // layer that takes precedence on read; kind=auto stores to the legacy/auto layer
+  // that the idle timer + beforeunload generator write to. Pass adminToken to
+  // bypass ownership check.
   async upload(
     workspaceId: string,
     blobs: Record<string, Blob>,
-    { adminToken }: { adminToken?: string } = {},
+    { adminToken, kind = 'manual' }: { adminToken?: string; kind?: ThumbnailKind } = {},
   ): Promise<unknown> {
     const userId = getUserId();
     const formData = new FormData();
@@ -155,8 +161,10 @@ export const thumbnailApi = {
     formData.append('512', blobs['512'], '512.png');
     formData.append('256', blobs['256'], '256.png');
 
-    const tokenParam = adminToken ? `?token=${encodeURIComponent(adminToken)}` : '';
-    const response = await fetch(`${API_BASE}/workspace/${workspaceId}/thumbnail${tokenParam}`, {
+    const params = new URLSearchParams();
+    if (adminToken) params.set('token', adminToken);
+    params.set('kind', kind);
+    const response = await fetch(`${API_BASE}/workspace/${workspaceId}/thumbnail?${params}`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'X-User-Id': userId },
@@ -173,14 +181,15 @@ export const thumbnailApi = {
     return data;
   },
 
-  // Get thumbnail URL for a workspace
+  // Get thumbnail URL for a workspace. The server picks manual over auto.
   url(workspaceId: string, size: number = 256): string {
     return `${API_BASE}/thumbnail/${workspaceId}/${size}`;
   },
 
-  // Delete thumbnails for a workspace
-  async delete(workspaceId: string): Promise<unknown> {
-    return apiRequest(`/workspace/${workspaceId}/thumbnail`, {
+  // Delete thumbnails. kind=manual (default) clears just the manual layer,
+  // revealing the auto layer if one exists. kind=auto or kind=all delete more.
+  async delete(workspaceId: string, { kind = 'manual' }: { kind?: ThumbnailDeleteKind } = {}): Promise<unknown> {
+    return apiRequest(`/workspace/${workspaceId}/thumbnail?kind=${kind}`, {
       method: 'DELETE',
     });
   },

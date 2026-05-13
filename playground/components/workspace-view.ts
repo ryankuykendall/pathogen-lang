@@ -119,7 +119,7 @@ export class WorkspaceView extends HTMLElement {
         const wsId = this._currentWorkspaceId;
         if (wsId) {
           thumbnailService
-            .generateIfDirty(wsId, () => this.previewPane?.shadowRoot?.querySelector('#preview') as SVGElement | null, store.getAll())
+            .generateIfDirty(wsId, () => this.previewPane?.preview ?? null, store.getAll())
             .then((result: unknown) => {
               if (result) {
                 document.dispatchEvent(
@@ -148,7 +148,7 @@ export class WorkspaceView extends HTMLElement {
     updateSvgStyles(): void;
     setLayersWithTiming(layers: unknown[], options: unknown): number;
     setPathDataWithTiming(path: string): number;
-    shadowRoot: ShadowRoot | null;
+    preview: SVGSVGElement | null;
   } {
     return this.shadowRoot!.querySelector('svg-preview-pane') as any;
   }
@@ -212,6 +212,7 @@ export class WorkspaceView extends HTMLElement {
       workspaceIsPublic: false,
       workspaceOwnerId: null,
       workspaceUpdatedAt: null,
+      workspaceManualThumbnailAt: null,
       saveStatus: SaveStatus.IDLE,
       saveError: null,
     });
@@ -299,6 +300,7 @@ export class WorkspaceView extends HTMLElement {
         workspaceIsPublic: workspace.isPublic,
         workspaceOwnerId: workspace.userId,
         workspaceUpdatedAt: workspace.updatedAt,
+        workspaceManualThumbnailAt: workspace.manualThumbnailAt ?? null,
         code: workspace.code,
         currentFileName: workspace.name,
       });
@@ -544,7 +546,7 @@ export class WorkspaceView extends HTMLElement {
     // Export with legend
     this._handleExportLegend = (): void => {
       if (store.get('currentView') === 'workspace') {
-        const svgElement = this.previewPane.shadowRoot?.querySelector('#preview') as SVGElement | null;
+        const svgElement = this.previewPane.preview;
         if (svgElement) {
           this.exportLegendModal.open(svgElement, store.getAll());
         }
@@ -564,7 +566,7 @@ export class WorkspaceView extends HTMLElement {
     // Set thumbnail (crop modal)
     this._handleSetThumbnail = (): void => {
       if (store.get('currentView') === 'workspace') {
-        const svgElement = this.previewPane.shadowRoot?.querySelector('#preview') as SVGElement | null;
+        const svgElement = this.previewPane.preview;
         if (svgElement) {
           this.thumbnailCropModal.open(svgElement, store.getAll());
         }
@@ -596,7 +598,7 @@ export class WorkspaceView extends HTMLElement {
       const { workspaceId } = (e as CustomEvent<{ workspaceId: string }>).detail;
       if (workspaceId !== this._currentWorkspaceId) return;
 
-      const svgElement = this.previewPane?.shadowRoot?.querySelector('#preview') as SVGElement | null;
+      const svgElement = this.previewPane?.preview ?? null;
       if (svgElement) {
         thumbnailService.generateIfDirty(workspaceId, () => svgElement, store.getAll());
       }
@@ -609,7 +611,7 @@ export class WorkspaceView extends HTMLElement {
         autosave.saveNow();
         thumbnailService.generateIfDirty(
           this._currentWorkspaceId,
-          () => this.previewPane?.shadowRoot?.querySelector('#preview') as SVGElement | null,
+          () => this.previewPane?.preview ?? null,
           store.getAll(),
         );
       }
@@ -699,7 +701,7 @@ export class WorkspaceView extends HTMLElement {
   }
 
   copySvg(): void {
-    const svgElement = this.previewPane.shadowRoot?.querySelector('#preview') as SVGElement | null;
+    const svgElement = this.previewPane.preview;
     if (svgElement) {
       const svgString = svgElement.outerHTML;
       navigator.clipboard.writeText(svgString).catch((err: Error) => {

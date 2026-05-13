@@ -85,6 +85,7 @@ export const store = createStore({
   workspaceIsPublic: false, // Visibility
   workspaceOwnerId: null, // Owner user ID
   workspaceUpdatedAt: null, // Last update timestamp
+  workspaceManualThumbnailAt: null, // null = no manual thumbnail; the crop modal uses this to decide whether to show the Clear button
 
   // Save status for autosave
   saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'

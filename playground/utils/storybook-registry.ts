@@ -739,6 +739,60 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
+    id: 'app-toast',
+    name: 'Toast',
+    category: 'Shared',
+    description: 'Global toast notifications (success / error) with optional thumbnail preview',
+    stories: [
+      {
+        name: 'Success with thumbnail',
+        props: {
+          type: 'success',
+          title: 'Thumbnail set',
+          message: 'Your new thumbnail will appear on your workspaces page.',
+          image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" fill="%2310b981"/><circle cx="24" cy="24" r="14" fill="white" opacity="0.85"/></svg>',
+        },
+      },
+      {
+        name: 'Plain success',
+        props: { type: 'success', title: 'Saved', message: 'Your changes have been saved.' },
+      },
+      {
+        name: 'Error',
+        props: { type: 'error', title: 'Save failed', message: 'Network request returned 500.' },
+      },
+    ],
+    controls: [
+      { name: 'title', type: 'text', label: 'Title', default: 'Thumbnail set' },
+      { name: 'message', type: 'text', label: 'Message', default: 'Your new thumbnail will appear on your workspaces page.' },
+    ],
+    render: (container, props, controls) => {
+      const toast = document.createElement('app-toast') as HTMLElement & { show(opts: Record<string, unknown>): void };
+      container.appendChild(toast);
+
+      const show = (): void => {
+        toast.show({
+          type: (props.type as string) || 'success',
+          title: (props.title as string) || 'Thumbnail set',
+          message: props.message as string | undefined,
+          image: props.image as string | undefined,
+          duration: 0,
+        });
+      };
+
+      // Trigger once on initial render and on control changes.
+      queueMicrotask(show);
+      controls.on('title', (value) => {
+        props.title = value;
+        show();
+      });
+      controls.on('message', (value) => {
+        props.message = value;
+        show();
+      });
+    },
+  },
+  {
     id: 'control-group',
     name: 'Control Group',
     category: 'Shared',

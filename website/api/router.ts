@@ -50,6 +50,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             createdAt: ws.createdAt,
             updatedAt: ws.updatedAt,
             thumbnailAt: ws.thumbnailAt || null,
+            manualThumbnailAt: ws.manualThumbnailAt || null,
+            autoThumbnailAt: ws.autoThumbnailAt || null,
           };
           return listing;
         }),
@@ -96,6 +98,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         updatedAt: now,
         contentHash,
         thumbnailAt: null,
+        manualThumbnailAt: null,
+        autoThumbnailAt: null,
       };
 
       await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
@@ -246,6 +250,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         isPublic: false,
         createdAt: now,
         updatedAt: now,
+        // Copies don't inherit R2 thumbnail blobs — reset all three timestamps so
+        // the listing renders the letter fallback until the copy gets its own.
+        thumbnailAt: null,
+        manualThumbnailAt: null,
+        autoThumbnailAt: null,
       };
 
       await env.WORKSPACES.put(`workspace:${newId}`, JSON.stringify(newWorkspace));
@@ -289,12 +298,17 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
-  // PUT /api/workspace/:id/thumbnail — upload three sizes (1024/512/256) via FormData.
+  // PUT /api/workspace/:id/thumbnail?kind=manual|auto — upload three sizes (1024/512/256)
+  // via FormData. kind=manual (default) writes to ${id}/manual-${size}.png and takes
+  // precedence on read. kind=auto writes to ${id}/${size}.png (legacy key) — these are
+  // the ones the idle/beforeunload timer produces. The two layers coexist; clearing
+  // the manual layer reveals the auto one (or the letter fallback if neither exists).
   async uploadThumbnail(request: Request, env: Env, id: string): Promise<Response> {
     const userId = await getEffectiveUserId(request, env);
     const url = new URL(request.url);
     const adminToken = url.searchParams.get('token');
     const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
+    const kind = url.searchParams.get('kind') === 'auto' ? 'auto' : 'manual';
 
     if (!userId && !isAdmin) return errorResponse('User ID required', 401);
 
@@ -310,24 +324,38 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       for (const size of sizes) {
         const file = formData.get(size) as File | null;
         if (!file) return errorResponse(`Missing ${size} thumbnail`, 400);
-        await env.THUMBNAILS.put(`${id}/${size}.png`, file.stream(), {
+        const key = kind === 'manual' ? `${id}/manual-${size}.png` : `${id}/${size}.png`;
+        await env.THUMBNAILS.put(key, file.stream(), {
           httpMetadata: { contentType: 'image/png' },
         });
       }
 
-      workspace.thumbnailAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      if (kind === 'manual') {
+        workspace.manualThumbnailAt = now;
+      } else {
+        workspace.autoThumbnailAt = now;
+      }
+      workspace.thumbnailAt = now;
       await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
 
-      return jsonResponse({ thumbnailAt: workspace.thumbnailAt });
+      return jsonResponse({
+        thumbnailAt: workspace.thumbnailAt,
+        manualThumbnailAt: workspace.manualThumbnailAt || null,
+        autoThumbnailAt: workspace.autoThumbnailAt || null,
+      });
     } catch (err) {
       return errorResponse('Failed to upload thumbnail: ' + (err as Error).message, 500);
     }
   },
 
-  // GET /api/thumbnail/:id/:size — public read from R2.
+  // GET /api/thumbnail/:id/:size — public read from R2. Manual (if present) takes
+  // precedence over the auto/legacy layer. Existing workspaces (uploaded before the
+  // manual/auto split) live at ${id}/${size}.png and fall through automatically.
   async getThumbnail(_request: Request, env: Env, id: string, size: string): Promise<Response> {
     try {
-      const object = await env.THUMBNAILS.get(`${id}/${size}.png`);
+      let object = await env.THUMBNAILS.get(`${id}/manual-${size}.png`);
+      if (!object) object = await env.THUMBNAILS.get(`${id}/${size}.png`);
       if (!object) return errorResponse('Thumbnail not found', 404);
 
       return new Response(object.body, {
@@ -341,10 +369,17 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
-  // DELETE /api/workspace/:id/thumbnail
+  // DELETE /api/workspace/:id/thumbnail?kind=manual|auto|all
+  // kind=manual (default) removes the manual layer only, revealing the auto layer
+  // if one exists. kind=auto removes the auto/legacy layer. kind=all removes both.
   async deleteThumbnail(request: Request, env: Env, id: string): Promise<Response> {
     const userId = await getEffectiveUserId(request, env);
     if (!userId) return errorResponse('User ID required', 401);
+
+    const url = new URL(request.url);
+    const rawKind = url.searchParams.get('kind');
+    const kind: 'manual' | 'auto' | 'all' =
+      rawKind === 'auto' ? 'auto' : rawKind === 'all' ? 'all' : 'manual';
 
     try {
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
@@ -353,12 +388,38 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
       const sizes = ['1024', '512', '256'];
-      await Promise.all(sizes.map((s: string) => env.THUMBNAILS.delete(`${id}/${s}.png`)));
+      const deletes: Promise<void>[] = [];
+      if (kind === 'manual' || kind === 'all') {
+        for (const s of sizes) deletes.push(env.THUMBNAILS.delete(`${id}/manual-${s}.png`));
+        workspace.manualThumbnailAt = null;
+      }
+      if (kind === 'auto' || kind === 'all') {
+        for (const s of sizes) deletes.push(env.THUMBNAILS.delete(`${id}/${s}.png`));
+        workspace.autoThumbnailAt = null;
+      }
+      await Promise.all(deletes);
 
-      workspace.thumbnailAt = null;
+      // Pre-split workspaces have a legacy thumbnail at ${id}/${size}.png but
+      // null autoThumbnailAt in KV (the field didn't exist when they were uploaded).
+      // If we just removed the manual layer and the workspace record claims no
+      // auto exists, probe R2 directly — if the legacy blob is there, surface it
+      // so the frontend toast and the listing card stay honest about what GET
+      // will return.
+      if (kind === 'manual' && !workspace.autoThumbnailAt) {
+        const legacy = await env.THUMBNAILS.get(`${id}/256.png`);
+        if (legacy) workspace.autoThumbnailAt = new Date().toISOString();
+      }
+
+      // thumbnailAt is now whichever layer still has data, or null if none.
+      workspace.thumbnailAt = workspace.manualThumbnailAt || workspace.autoThumbnailAt || null;
       await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
 
-      return jsonResponse({ success: true });
+      return jsonResponse({
+        success: true,
+        thumbnailAt: workspace.thumbnailAt,
+        manualThumbnailAt: workspace.manualThumbnailAt || null,
+        autoThumbnailAt: workspace.autoThumbnailAt || null,
+      });
     } catch (err) {
       return errorResponse('Failed to delete thumbnail: ' + (err as Error).message, 500);
     }

@@ -159,7 +159,7 @@ async function generateThumbnail(
   svgElement: SVGElement,
   storeState: Record<string, unknown>,
   cropRegion?: { x: number; y: number; size: number },
-  options?: { adminToken?: string; svgString?: string },
+  options?: { adminToken?: string; svgString?: string; kind?: 'manual' | 'auto' },
 ): Promise<unknown> {
   // Wait for any in-progress generation to finish (up to 30s)
   if (_generating) {
@@ -242,7 +242,10 @@ async function generateThumbnail(
       }
 
       // 8. Upload via API (returns { thumbnailAt } or null if skipped)
-      const result = await thumbnailApi.upload(workspaceId, blobs, options);
+      const result = await thumbnailApi.upload(workspaceId, blobs, {
+        adminToken: options?.adminToken,
+        kind: options?.kind ?? 'manual',
+      });
 
       // 9. Update tracking
       _thumbnailContentHash = _latestContentHash;
@@ -351,7 +354,10 @@ async function generateIfDirty(
 
   try {
     _lastAutoGenTime = Date.now();
-    return await generateThumbnail(workspaceId, svgElement, storeState);
+    // The idle/beforeunload path writes to the auto layer so it never clobbers
+    // a manually-set thumbnail. Manual sets come through generateThumbnail with
+    // an explicit kind='manual' (or default).
+    return await generateThumbnail(workspaceId, svgElement, storeState, undefined, { kind: 'auto' });
   } catch (err) {
     console.warn('Auto thumbnail generation failed:', err);
   }

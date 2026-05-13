@@ -157,6 +157,10 @@ class AdminThumbnailsView extends HTMLElement {
       const uploadResult = await thumbnailService.generateThumbnail(workspaceId, null as any, wsState, undefined, {
         adminToken: this._token!,
         svgString,
+        // Admin backfill is auto-generation, not a user-chosen manual crop.
+        // Writing to the manual layer here would put backfills in the slot
+        // the Clear button removes — the opposite of intent.
+        kind: 'auto',
       });
       if (!uploadResult) {
         throw new Error('generateThumbnail returned null — generation was blocked or timed out');

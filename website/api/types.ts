@@ -72,7 +72,11 @@ export interface WorkspaceListing {
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
+  // thumbnailAt = max(manualThumbnailAt, autoThumbnailAt); used by the listing
+  // page to decide between <img> and the letter-avatar fallback.
   thumbnailAt: string | null;
+  manualThumbnailAt: string | null;
+  autoThumbnailAt: string | null;
 }
 
 export interface Workspace extends WorkspaceListing {

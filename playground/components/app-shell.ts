@@ -6,6 +6,7 @@ import { store } from '../state/store.js';
 import { initRouter, navigateTo } from '../utils/router.js';
 import './app-header.js';
 import './app-breadcrumb.js';
+import './shared/app-toast.js';
 import './shared/auth-modal.js';
 import './shared/claim-workspaces-prompt.js';
 import './views/admin-thumbnails-view.js';
@@ -174,6 +175,7 @@ class AppShell extends HTMLElement {
 
       <auth-modal></auth-modal>
       <claim-workspaces-prompt></claim-workspaces-prompt>
+      <app-toast></app-toast>
     `;
   }
 }

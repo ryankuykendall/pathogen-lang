@@ -39,6 +39,7 @@ export interface StoreState {
   workspaceIsPublic: boolean;
   workspaceOwnerId: string | null;
   workspaceUpdatedAt: string | null;
+  workspaceManualThumbnailAt: string | null;
 
   // Save status
   saveStatus: 'idle' | 'modified' | 'saving' | 'saved' | 'error';
