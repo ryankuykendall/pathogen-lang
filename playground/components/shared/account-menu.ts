@@ -3,8 +3,9 @@
 // Signed-in: chip with display name; clicking opens a dropdown with
 // "View profile" and "Sign out".
 
-import { signOut, type CurrentUser } from '../../services/auth.js';
+import { bootstrapCurrentUser, signOut, type CurrentUser } from '../../services/auth.js';
 import { store } from '../../state/store.js';
+import { hasEverSignedIn } from '../../services/user-id.js';
 
 class AccountMenu extends HTMLElement {
   private unsubscribe: (() => void) | null = null;
@@ -32,6 +33,18 @@ class AccountMenu extends HTMLElement {
 
     this.render();
     this.unsubscribe = store.subscribe(['currentUser'], () => this.render());
+
+    // SSR-only pages (homepage, /explore, /featured, blog, /u/:handle) don't
+    // run the SPA's app-shell bootstrap, so /me is never called from there.
+    // In dev, the session cookie is scoped to the API host (localhost:8787)
+    // and the Pages worker at localhost:3000 can't read it for SSR seeding,
+    // which leaves the chip stuck on "Sign in" even for signed-in users.
+    // Self-bootstrap from /me when there's no SSR seed AND no store user
+    // AND we have a hint the user has signed in before — that last condition
+    // avoids an /me call for first-time visitors who have never authed.
+    if (!store.get('currentUser') && hasEverSignedIn()) {
+      void bootstrapCurrentUser();
+    }
     this.outsideClick = (e: MouseEvent): void => {
       if (!this.menuOpen) return;
       const path = e.composedPath();

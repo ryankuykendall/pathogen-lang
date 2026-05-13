@@ -40,7 +40,32 @@ export default {
     // prefix that the Pages worker uses; on this Worker the URL already
     // starts with the route segment (no /api prefix because the custom
     // domain is api.pathogen.studio).
-    const response = await handleApiRequest(request, env, path);
-    return applyCors(request, response);
+    //
+    // The dispatcher is wrapped in a try/catch so that any uncaught throw
+    // (e.g. a D1 query against a database without migrations applied locally)
+    // still returns a CORS-wrapped JSON response. Without this, Cloudflare's
+    // built-in 500 page is returned with no Access-Control-Allow-Origin
+    // header, which the browser then surfaces as a confusing CORS error
+    // instead of the underlying server problem.
+    try {
+      const response = await handleApiRequest(request, env, path);
+      return applyCors(request, response);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? `${err.message}${err.stack ? '\n' + err.stack : ''}`
+          : String(err);
+      console.error('Unhandled API error:', message);
+      return applyCors(
+        request,
+        new Response(
+          JSON.stringify({
+            error: 'Internal server error',
+            detail: err instanceof Error ? err.message : String(err),
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+    }
   },
 };

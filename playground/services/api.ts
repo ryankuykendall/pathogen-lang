@@ -12,8 +12,22 @@ declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
 
 interface ApiError extends Error {
+  kind: 'network' | 'http';
   status?: number;
   data?: unknown;
+  apiBase?: string;
+  url?: string;
+}
+
+function isLocalApiBase(base: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\b/i.test(base);
+}
+
+function networkErrorMessage(base: string): string {
+  if (isLocalApiBase(base)) {
+    return `Could not reach the API at ${base}. Is the dev API Worker running? Try \`npm run dev:api\` or \`npm run dev:stack\` to start both Pages and API together.`;
+  }
+  return `Could not reach the API at ${base}. Check your network connection and the browser DevTools Network tab for details.`;
 }
 
 // Make API request with user ID header
@@ -21,27 +35,44 @@ async function apiRequest(path: string, options: RequestInit = {}): Promise<unkn
   const userId = getUserId();
   const url = `${API_BASE}${path}`;
 
-  const response = await fetch(url, {
-    ...options,
-    // Cross-origin auth (when API_BASE points at api.pathogen.studio) needs
-    // explicit credentials mode for the session cookie to ride along. Same
-    // flag is harmless for same-origin calls.
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-User-Id': userId,
-      ...options.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      // Cross-origin auth (when API_BASE points at api.pathogen.studio) needs
+      // explicit credentials mode for the session cookie to ride along. Same
+      // flag is harmless for same-origin calls.
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': userId,
+        ...options.headers,
+      },
+    });
+  } catch (cause) {
+    // `fetch()` throws TypeError before producing a Response when the request
+    // never lands (connection refused, CORS preflight rejected, DNS, etc.).
+    // Tag the error so the UI can render a useful message instead of the
+    // raw "Failed to fetch" string.
+    const error: ApiError = Object.assign(new Error(networkErrorMessage(API_BASE)), {
+      kind: 'network' as const,
+      apiBase: API_BASE,
+      url,
+      cause,
+    });
+    throw error;
+  }
 
   // Parse response
   const data = await response.json();
 
   // Check for errors
   if (!response.ok) {
-    const error: ApiError = new Error(data.error || 'API request failed');
-    error.status = response.status;
-    error.data = data;
+    const error: ApiError = Object.assign(new Error(data.error || 'API request failed'), {
+      kind: 'http' as const,
+      status: response.status,
+      data,
+    });
     throw error;
   }
 

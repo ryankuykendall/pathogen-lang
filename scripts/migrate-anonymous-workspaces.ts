@@ -41,33 +41,52 @@ function wrangler(args: string[]): string {
 }
 
 // Both `id` and `preview_id` are set on the WORKSPACES binding, so
-// wrangler insists on disambiguation for writes (--preview false targets
-// the prod namespace; reads are tolerant without it but we pass it
-// uniformly for clarity).
-const KV_FLAGS = ['--binding=WORKSPACES', '--remote', '--preview', 'false'];
-
-function kvList(): { name: string }[] {
-  // Wrangler can paginate, but we expect <1000 keys for this project.
-  return JSON.parse(wrangler(['kv', 'key', 'list', ...KV_FLAGS]));
+// wrangler insists on disambiguation. The choice depends on mode:
+//
+//   - Remote (production): `--preview false` targets the real prod namespace.
+//     `--remote` makes wrangler talk to the Cloudflare API rather than any
+//     local persistence.
+//
+//   - Local (dev recovery): wrangler dev writes to the PREVIEW namespace's
+//     local mirror by default, so the dev playground's data sits under
+//     `--preview true` in the local store. Without that flag wrangler hits
+//     the prod-side local store, which is empty.
+function buildKvFlags(local: boolean): string[] {
+  if (local) {
+    return ['--binding=WORKSPACES', '--preview', 'true'];
+  }
+  return ['--binding=WORKSPACES', '--remote', '--preview', 'false'];
 }
 
-function kvGet(key: string): string | null {
+function kvList(flags: string[]): { name: string }[] {
+  // Wrangler can paginate, but we expect <1000 keys for this project.
+  return JSON.parse(wrangler(['kv', 'key', 'list', ...flags]));
+}
+
+function kvGet(flags: string[], key: string): string | null {
+  let raw: string;
   try {
-    return wrangler(['kv', 'key', 'get', ...KV_FLAGS, key]);
+    raw = wrangler(['kv', 'key', 'get', ...flags, key]);
   } catch {
     return null;
   }
+  // Wrangler prints "Value not found" on stdout (exit 0) when the key is
+  // absent in local mode, instead of throwing. Detect that and normalize
+  // to null so JSON.parse callers don't choke.
+  const trimmed = raw.trim();
+  if (trimmed === 'Value not found') return null;
+  return raw;
 }
 
-function kvPut(key: string, value: string): void {
-  execFileSync('npx', ['wrangler', 'kv', 'key', 'put', ...KV_FLAGS, key, value], {
+function kvPut(flags: string[], key: string, value: string): void {
+  execFileSync('npx', ['wrangler', 'kv', 'key', 'put', ...flags, key, value], {
     cwd: API_DIR,
     stdio: ['pipe', 'inherit', 'inherit'],
   });
 }
 
-function kvDelete(key: string): void {
-  execFileSync('npx', ['wrangler', 'kv', 'key', 'delete', ...KV_FLAGS, key], {
+function kvDelete(flags: string[], key: string): void {
+  execFileSync('npx', ['wrangler', 'kv', 'key', 'delete', ...flags, key], {
     cwd: API_DIR,
     stdio: ['pipe', 'inherit', 'inherit'],
   });
@@ -88,8 +107,8 @@ interface Plan {
   obsoleteUserKeys: string[];
 }
 
-async function buildPlan(target: string, sources: string[]): Promise<Plan> {
-  const allKeys = kvList().map((k) => k.name);
+async function buildPlan(flags: string[], target: string, sources: string[]): Promise<Plan> {
+  const allKeys = kvList(flags).map((k) => k.name);
   const sourceSet = new Set(sources);
 
   // Read each source user's workspace list and gather workspace records.
@@ -99,14 +118,14 @@ async function buildPlan(target: string, sources: string[]): Promise<Plan> {
 
   for (const source of sources) {
     const indexKey = `user:${source}:workspaces`;
-    const indexJson = kvGet(indexKey);
+    const indexJson = kvGet(flags, indexKey);
     if (!indexJson) {
       console.warn(`  source ${source}: no workspace index — skipping`);
       continue;
     }
     const ids: string[] = JSON.parse(indexJson);
     for (const id of ids) {
-      const wsJson = kvGet(`workspace:${id}`);
+      const wsJson = kvGet(flags, `workspace:${id}`);
       if (!wsJson) {
         console.warn(`  ${source}: workspace ${id} missing from KV — skipping`);
         continue;
@@ -124,7 +143,7 @@ async function buildPlan(target: string, sources: string[]): Promise<Plan> {
   }
 
   const targetIndexKey = `user:${target}:workspaces`;
-  const existingTargetJson = kvGet(targetIndexKey);
+  const existingTargetJson = kvGet(flags, targetIndexKey);
   const existingTargetIds: string[] = existingTargetJson ? JSON.parse(existingTargetJson) : [];
 
   // Final order: keep target's existing workspaces first, then merge sources
@@ -174,14 +193,14 @@ function printPlan(plan: Plan): void {
   }
 }
 
-function applyPlan(plan: Plan): void {
+function applyPlan(flags: string[], plan: Plan): void {
   console.log('\n=== Applying migration ===');
 
   // 1. Rewrite each workspace's userId.
   let n = 0;
   for (const { id, ws } of plan.workspaces) {
     const updated: Workspace = { ...ws, userId: plan.target };
-    kvPut(`workspace:${id}`, JSON.stringify(updated));
+    kvPut(flags, `workspace:${id}`, JSON.stringify(updated));
     n++;
     if (n % 5 === 0 || n === plan.workspaces.length) {
       console.log(`  rewrote ${n}/${plan.workspaces.length} workspaces`);
@@ -189,27 +208,27 @@ function applyPlan(plan: Plan): void {
   }
 
   // 2. Write the merged index on the target user.
-  kvPut(`user:${plan.target}:workspaces`, JSON.stringify(plan.finalIds));
+  kvPut(flags, `user:${plan.target}:workspaces`, JSON.stringify(plan.finalIds));
   console.log(`  wrote target index (${plan.finalIds.length} workspaces)`);
 
   // 3. Move preferences if target doesn't already have one.
   const targetPrefsKey = `user:${plan.target}:preferences`;
-  const existingTargetPrefs = kvGet(targetPrefsKey);
+  const existingTargetPrefs = kvGet(flags, targetPrefsKey);
   for (const { from, to } of plan.preferenceMoves) {
     if (existingTargetPrefs) {
       console.log(`  skipping ${from} → ${to} (target already has preferences)`);
       continue;
     }
-    const value = kvGet(from);
+    const value = kvGet(flags, from);
     if (value) {
-      kvPut(to, value);
+      kvPut(flags, to, value);
       console.log(`  moved preferences ${from} → ${to}`);
     }
   }
 
   // 4. Delete obsolete source-user keys (indices + preferences moved above).
   for (const key of plan.obsoleteUserKeys) {
-    kvDelete(key);
+    kvDelete(flags, key);
     console.log(`  deleted ${key}`);
   }
 
@@ -220,16 +239,21 @@ const program = new Command();
 program
   .name('migrate-anonymous-workspaces')
   .description('Re-key anonymous workspaces to an authenticated user (one-off post-auth migration).')
-  .requiredOption('--target <id>', 'authenticated user ID (workspaces will be re-keyed to this)')
-  .requiredOption('--source <ids>', 'comma-separated list of anonymous user IDs to drain')
+  .requiredOption('--target <id>', 'user ID to re-key workspaces onto (anon or authed)')
+  .requiredOption('--source <ids>', 'comma-separated list of user IDs to drain')
   .option('--apply', 'actually write changes (default: dry-run)')
-  .action(async (opts: { target: string; source: string; apply?: boolean }) => {
+  .option(
+    '--local',
+    "target the local wrangler KV (the namespace wrangler dev persists under .wrangler/state) instead of the remote production KV. Use this when re-keying workspaces in the dev environment served by `npm run dev:stack`.",
+  )
+  .action(async (opts: { target: string; source: string; apply?: boolean; local?: boolean }) => {
     const sources = opts.source.split(',').map((s) => s.trim()).filter(Boolean);
     if (sources.length === 0) throw new Error('--source must list at least one user ID');
     if (sources.includes(opts.target)) throw new Error('target cannot also appear in --source');
 
-    console.log('Reading KV state from production...');
-    const plan = await buildPlan(opts.target, sources);
+    const flags = buildKvFlags(Boolean(opts.local));
+    console.log(`Reading KV state from ${opts.local ? 'local wrangler KV' : 'production'}...`);
+    const plan = await buildPlan(flags, opts.target, sources);
     printPlan(plan);
 
     if (!opts.apply) {
@@ -237,6 +261,6 @@ program
       return;
     }
 
-    applyPlan(plan);
+    applyPlan(flags, plan);
   });
 program.parse();

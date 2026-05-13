@@ -13,7 +13,6 @@ import {
 } from '../../services/auth.js';
 import { hasEverSignedIn, peekAnonymousUserId } from '../../services/user-id.js';
 import { store } from '../../state/store.js';
-import { BASE_PATH } from '../../utils/router.js';
 
 // Brief pause after a 6-digit code lands in the inputs (pasted or typed-out)
 // before we submit, so the user has a moment to see that the code they entered
@@ -156,11 +155,14 @@ class AuthModal extends HTMLElement {
           detail: { currentUser: res.currentUser, firstTime: res.firstTime },
         }),
       );
-      // Hard reload to the workspaces list so it re-fetches as the new user.
+      // Hard reload the current page so workspace lists, autosave state, and
+      // any signed-in-only UI re-fetches as the new user. We deliberately do
+      // NOT navigate to BASE_PATH/ — staying put means a user who signs in
+      // from /workspaces or /workspace/:id lands back where they were.
       // If the claim prompt is about to open, defer the reload — the prompt
       // owns the reload on its own dismiss.
       if (!willShowClaimPrompt) {
-        window.location.href = `${BASE_PATH}/`;
+        window.location.reload();
       }
     } catch (err) {
       this.errorMessage = err instanceof AuthError ? err.message : 'Verification failed. Please try again.';

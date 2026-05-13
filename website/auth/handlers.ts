@@ -202,13 +202,34 @@ export async function handleAuthLogout(request: Request, env: AuthEnv): Promise<
 export async function handleMe(request: Request, env: AuthEnv): Promise<Response> {
   const token = readSessionTokenFromRequest(request);
   if (!token) return jsonResponse({ currentUser: null }, 200);
-  const userId = await getSessionUserId(env.USERS_DB, token);
+
+  // /me is a status probe — clients call it on every page load to find out
+  // whether they're signed in. A 500 here cascades into a noisy red error
+  // for every visitor (signed-in or not) whenever D1 is degraded or, in
+  // local dev, has no migrations applied. Treat any D1 failure the same
+  // as "no valid session" so the client just renders the signed-out UI.
+  let userId: string | null;
+  try {
+    userId = await getSessionUserId(env.USERS_DB, token);
+  } catch {
+    return jsonResponse({ currentUser: null }, 200, {
+      'Set-Cookie': buildClearSessionCookie(env),
+    });
+  }
   if (!userId) {
     return jsonResponse({ currentUser: null }, 200, {
       'Set-Cookie': buildClearSessionCookie(env),
     });
   }
-  const user = await findUserById(env.USERS_DB, userId);
+
+  let user;
+  try {
+    user = await findUserById(env.USERS_DB, userId);
+  } catch {
+    return jsonResponse({ currentUser: null }, 200, {
+      'Set-Cookie': buildClearSessionCookie(env),
+    });
+  }
   if (!user) {
     return jsonResponse({ currentUser: null }, 200, {
       'Set-Cookie': buildClearSessionCookie(env),

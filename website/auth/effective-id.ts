@@ -22,8 +22,14 @@ export async function getEffectiveUserId(
 ): Promise<string | null> {
   const token = readSessionTokenFromRequest(request);
   if (token && env.USERS_DB) {
-    const sessionUserId = await getSessionUserId(env.USERS_DB, token);
-    if (sessionUserId) return sessionUserId;
+    try {
+      const sessionUserId = await getSessionUserId(env.USERS_DB, token);
+      if (sessionUserId) return sessionUserId;
+    } catch {
+      // D1 query failed (commonly: local dev with no migrations applied).
+      // Fall through to the header path so an anonymous user with a stale
+      // session cookie can still use the playground.
+    }
   }
   const headerId = request.headers.get('X-User-Id');
   if (!headerId) return null;

@@ -22,6 +22,7 @@ class LandingView extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
   private _loading: boolean = false;
   private _error: string | null = null;
+  private _errorKind: 'network' | 'http' = 'http';
   private _openMenuId: string | null = null;
   private _handleThumbnailUpdated: ((e: Event) => void) | null = null;
 
@@ -120,7 +121,13 @@ class LandingView extends HTMLElement {
     } catch (err: unknown) {
       console.error('Failed to load workspaces:', err);
       this._loading = false;
-      this._error = (err as Error).message || 'Failed to load workspaces';
+      // Errors thrown by services/api.ts carry a `kind` discriminator. For
+      // network failures the message is already a human-readable hint that
+      // names the API base; for HTTP errors we keep the legacy "Failed to
+      // load workspaces: <server message>" form.
+      const e = err as { kind?: 'network' | 'http'; message?: string };
+      this._error = e?.message || 'Failed to load workspaces';
+      this._errorKind = e?.kind ?? 'http';
       this.render();
     }
   }
@@ -271,9 +278,13 @@ class LandingView extends HTMLElement {
         </div>
       `;
     } else if (this._error) {
+      const messageHtml =
+        this._errorKind === 'network'
+          ? this.escapeHtml(this._error)
+          : `Failed to load workspaces: ${this.escapeHtml(this._error)}`;
       content = `
         <div class="error-state">
-          <p>Failed to load workspaces: ${this.escapeHtml(this._error)}</p>
+          <p>${messageHtml}</p>
           <button class="retry-btn">Retry</button>
         </div>
       `;

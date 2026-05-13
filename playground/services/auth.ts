@@ -6,6 +6,7 @@
 // api.pathogen.studio (Phase E).
 
 import { store } from '../state/store.js';
+import { BASE_PATH } from '../utils/router.js';
 import {
   clearAuthenticatedUserId,
   markEverSignedIn,
