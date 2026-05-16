@@ -183,7 +183,7 @@ export async function handleAuthVerify(request: Request, env: AuthEnv): Promise<
     {
       ok: true,
       firstTime,
-      currentUser: toCurrentUser(user),
+      currentUser: toCurrentUser(user, env),
       claimableWorkspaceCount,
     },
     200,
@@ -235,7 +235,7 @@ export async function handleMe(request: Request, env: AuthEnv): Promise<Response
       'Set-Cookie': buildClearSessionCookie(env),
     });
   }
-  return jsonResponse({ currentUser: toCurrentUser(user) }, 200);
+  return jsonResponse({ currentUser: toCurrentUser(user, env) }, 200);
 }
 
 export async function handleAuthClaim(request: Request, env: AuthEnv): Promise<Response> {

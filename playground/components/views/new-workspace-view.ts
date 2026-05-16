@@ -3,6 +3,10 @@
 
 import { workspaceApi } from '../../services/api.js';
 import { autosave } from '../../services/autosave.js';
+// Visibility is no longer chosen during workspace creation, so the
+// Publishing-feature gate that used to live here is gone. The
+// currentUser subscription below stays — other parts of the form
+// (e.g. the future preferences view) may still need it.
 import { store } from '../../state/store.js';
 import { defaultCode, examples } from '../../utils/examples.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
@@ -45,6 +49,7 @@ interface ImportState {
 
 class NewWorkspaceView extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
+  private _unsubscribeUser: (() => void) | null = null;
   private _isSubmitting: boolean = false;
   private formData: FormData;
   private errors: FormErrors = {};
@@ -89,6 +94,12 @@ class NewWorkspaceView extends HTMLElement {
     }
 
     this.setupEventListeners();
+
+    // Re-render (no form reset) when /me resolves mid-load so the
+    // Visibility section appears once the user's features are known.
+    this._unsubscribeUser = store.subscribe(['currentUser'], () => {
+      if (store.get('currentView') === 'new-workspace') this.render();
+    });
 
     // Subscribe to route changes to reset form when navigating back
     this._unsubscribe = store.subscribe(['currentView', 'routeQuery'], () => {
@@ -135,6 +146,10 @@ class NewWorkspaceView extends HTMLElement {
     this._cleanupImport();
     if (this._unsubscribe) {
       this._unsubscribe();
+    }
+    if (this._unsubscribeUser) {
+      this._unsubscribeUser();
+      this._unsubscribeUser = null;
     }
     if (this._beforeUnloadHandler) {
       window.removeEventListener('beforeunload', this._beforeUnloadHandler);
@@ -305,7 +320,9 @@ class NewWorkspaceView extends HTMLElement {
         name: this.formData.name.trim(),
         description: this.formData.description.trim(),
         code,
-        isPublic: this.formData.isPublic,
+        // Always start private. Publishing happens via the overflow
+        // menu (Make public) after the workspace exists.
+        isPublic: false,
         preferences: {
           width: this.formData.width,
           height: this.formData.height,
@@ -540,22 +557,16 @@ class NewWorkspaceView extends HTMLElement {
               : ''
           }
 
-          <div class="form-section">
-            <h2>Visibility</h2>
-
-            <div class="form-group">
-              <div class="checkbox-group">
-                <input
-                  type="checkbox"
-                  id="isPublic"
-                  name="isPublic"
-                  ${this.formData.isPublic ? 'checked' : ''}
-                >
-                <label for="isPublic">Make this workspace public</label>
-              </div>
-              <span class="hint">Public workspaces can be viewed by anyone with the link</span>
-            </div>
-          </div>
+          ${
+            // Visibility is no longer set during workspace creation —
+            // every new workspace starts private. Users publish later
+            // via the overflow menu on the Workspaces page or in the
+            // workspace breadcrumb (Make public / Make private). This
+            // keeps the create form short and means the publishing
+            // decision happens on a workspace that already has code,
+            // not as a checkbox in the create dialog.
+            ''
+          }
 
           ${
             this.errors.submit

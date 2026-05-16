@@ -1,0 +1,436 @@
+/* Workspace detail page (/u/:handle/:slug) — SSR-only.
+ *
+ * Consumed by website/_worker.ts:renderWorkspaceDetailPage(). Layered on
+ * top of theme.css (atmospheric tokens, body backplate, grain overlay,
+ * global heading reset) and site-header.css (the top nav). This file
+ * adds only the detail-page-specific surfaces: subnav row with primary
+ * CTA, hero plate, meta block, source disclosure, and the "More by"
+ * three-up rail. Plate stamp annotation was intentionally omitted —
+ * decision recorded in project-docs/showcase-pages-review.
+ */
+
+/* The renderPage helper wraps content in <main class="site-main"> which
+ * is constrained to 1200px and adds 2rem horizontal padding. The detail
+ * page's plate + sections are designed for a 1280px container with
+ * their own internal padding, so we release the site-main constraint
+ * for this surface only — same pattern homepage.css uses for the
+ * homepage. See website/_worker.ts:renderPage. */
+body:has(.workspace-detail) main.site-main {
+  max-width: none;
+  /* Generous bottom padding (~3× the 52px header height) so the source
+   * disclosure / more-by rail doesn't sit flush with the viewport bottom
+   * when scrolled to the end. Horizontal/top padding stays at 0 — each
+   * detail section manages its own padding. */
+  padding: 0 0 10rem;
+}
+
+/* ── subnav — breadcrumb on the left, CTA on the right ──── */
+.detail-subnav {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.1rem 2rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.detail-subnav-crumb {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.detail-subnav-crumb a {
+  color: var(--secondary-accent-text);
+  text-decoration: none;
+}
+.detail-subnav-crumb a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.detail-subnav-crumb .sep {
+  display: inline-block;
+  margin: 0 0.45rem;
+  color: var(--text-tertiary);
+  opacity: 0.65;
+}
+.detail-subnav-crumb .here {
+  color: var(--text-secondary);
+}
+
+/* Primary CTA pill (rose gradient — the single accent moment per view).
+ * Sized for the subnav row, not for a hero CTA. Mirrors the homepage
+ * .cta-primary pattern (shadow-glow + shimmer-on-hover) but at a smaller
+ * scale to read as a navigation affordance rather than a hero action. */
+.detail-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--accent-text);
+  background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+  border: 0;
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--shadow-glow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease;
+}
+.detail-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+.detail-cta:hover { transform: translateY(-1px); }
+.detail-cta:hover::after { transform: translateX(100%); }
+.detail-cta .arrow { transition: transform 0.18s; position: relative; z-index: 1; }
+.detail-cta:hover .arrow { transform: translateX(3px); }
+.detail-cta span { position: relative; z-index: 1; }
+
+/* ── plate (hero card) ──────────────────────────────────── */
+.detail-plate {
+  max-width: 1280px;
+  margin: 2rem auto 0;
+  padding: 0 2rem;
+}
+.detail-plate-stage {
+  position: relative;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 12px);
+  padding: 5rem 4rem 4.5rem;
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+    0 16px 40px rgba(var(--shadow-tint-rgb), 0.14),
+    0 36px 72px rgba(var(--shadow-tint-rgb), 0.08);
+  overflow: hidden;
+}
+/* Editorial corner crop marks — small L-brackets in the upper-left and
+ * bottom-left corners of the plate stage. Decorative; no data backing. */
+.detail-plate-stage::before,
+.detail-plate-stage::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border-strong);
+}
+.detail-plate-stage::before {
+  top: 14px;
+  left: 14px;
+  border-right: none;
+  border-bottom: none;
+}
+.detail-plate-stage::after {
+  bottom: 14px;
+  left: 14px;
+  border-right: none;
+  border-top: none;
+}
+
+/* The hero artwork itself — wraps either the inline approval.svg or a
+ * fallback <img>. CSS overrides any width/height attribute the captured
+ * SVG may carry so it always centers and scales correctly. */
+.detail-plate-art {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  height: auto;
+}
+.detail-plate-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+/* Final-resort fallback when neither approval.svg nor a thumbnail exists.
+ * Deterministic palette swatch (set inline by the renderer) with a
+ * monospace caption so it reads as deliberate, not broken. */
+.detail-plate-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 5 / 4;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  border-radius: var(--radius-md, 8px);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-inverse);
+}
+
+/* ── meta block — title, byline, deck ───────────────────── */
+.detail-meta {
+  max-width: 880px;
+  margin: 3rem auto 0;
+  padding: 0 2rem;
+}
+.detail-meta-title {
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  line-height: 1.04;
+  color: var(--text-primary);
+  margin: 0;
+}
+/* The single editorial italic gesture — last word of the title carries
+ * the lavender gradient, matching the wordmark's "Studio" treatment. */
+.detail-meta-title em {
+  font-style: italic;
+  background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.detail-byline {
+  margin: 1rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.detail-byline .avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to));
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), 0.18);
+}
+.detail-byline .handle {
+  color: var(--secondary-accent-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+.detail-byline .handle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.detail-byline .dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  opacity: 0.6;
+}
+.detail-deck {
+  margin: 1.4rem 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.22rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  max-width: 56ch;
+}
+
+/* ── source disclosure (collapsed by default) ───────────── */
+.detail-source {
+  max-width: 1280px;
+  margin: 3.5rem auto 0;
+  padding: 0 2rem;
+}
+.detail-source-disclosure {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-tint-rgb), 0.06),
+    0 8px 24px rgba(var(--shadow-tint-rgb), 0.06);
+  overflow: hidden;
+}
+.detail-source-disclosure summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1.4rem 1.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  user-select: none;
+}
+.detail-source-disclosure summary::-webkit-details-marker { display: none; }
+.detail-source-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--text-primary);
+}
+.detail-source-meta {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.detail-source-disclosure summary::after {
+  content: '＋';
+  margin-left: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--secondary-accent-text);
+  line-height: 1;
+}
+.detail-source-disclosure[open] summary::after { content: '−'; }
+.detail-source-disclosure[open] summary { border-bottom: 1px solid var(--border-subtle); }
+
+.detail-source-code {
+  margin: 0;
+  padding: 1.5rem 1.8rem 1.75rem;
+  background: var(--bg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  color: var(--text-primary);
+  white-space: pre;
+}
+
+/* ── More by @user — three-up rail ──────────────────────── */
+/* Bottom padding lives on body:has(.workspace-detail) main.site-main so
+ * the floor is consistent whether or not this section renders. */
+.detail-moreby {
+  max-width: 1280px;
+  margin: 4rem auto 0;
+  padding: 0 2rem;
+}
+.detail-moreby-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.detail-moreby-head h3 {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0;
+}
+.detail-moreby-head h3 a {
+  color: var(--secondary-accent-text);
+  text-decoration: none;
+}
+.detail-moreby-head .all {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--secondary-accent-text);
+  text-decoration: none;
+}
+.detail-moreby-head .all:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.detail-moreby-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.detail-moreby-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.detail-moreby-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--secondary-accent-subtle);
+  box-shadow:
+    0 4px 8px rgba(var(--shadow-tint-rgb), 0.10),
+    0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+}
+.detail-moreby-art {
+  background: var(--bg-secondary);
+  aspect-ratio: 5 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.detail-moreby-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1rem;
+  display: block;
+}
+.detail-moreby-art .placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-inverse);
+}
+.detail-moreby-meta {
+  padding: 0.95rem 1.1rem 1rem;
+}
+.detail-moreby-meta h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin: 0 0 0.15rem;
+  line-height: 1.2;
+}
+.detail-moreby-meta .sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+.detail-moreby-meta .sub strong {
+  color: var(--secondary-accent-text);
+  font-weight: 600;
+}
+
+/* ── responsive ─────────────────────────────────────────── */
+@media (max-width: 880px) {
+  .detail-plate-stage { padding: 3rem 1.5rem 2.5rem; }
+  .detail-moreby-grid { grid-template-columns: 1fr; }
+  .detail-subnav { padding: 1rem 1.25rem 0; }
+  .detail-plate { padding: 0 1.25rem; }
+  .detail-meta  { padding: 0 1.25rem; }
+  .detail-source  { padding: 0 1.25rem; }
+  .detail-moreby  { padding: 0 1.25rem; }
+}

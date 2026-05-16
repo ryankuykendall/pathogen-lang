@@ -57,6 +57,10 @@ export interface AuthEnv {
   AUTH_DEV_LOG_OTP?: string;    // truthy in dev: log codes to console instead of (or in addition to) sending
   AUTH_RESEND_API_KEY?: string; // alternative transport while CF Email Sending beta rolls out
   PRODUCTION?: string;          // truthy in production deploys (controls cookie Secure flag)
+  // Comma-separated list of admin emails. Source of truth for moderation
+  // gating — never stored in the users table, so admin elevation cannot
+  // be performed by mutating a row.
+  ADMIN_EMAILS?: string;
   // Set in production wrangler.toml [vars] (".pathogen.studio") so the
   // session cookie is shared between the Pages site at pathogen.studio
   // and the API Worker at api.pathogen.studio. Unset in dev (.dev.vars
@@ -72,6 +76,10 @@ export interface UserRow {
   display_name: string;
   created_at: number;
   verified_at: number | null;
+  // Added in migration 0002. Null/missing on rows from before the migration
+  // is applied — treat absent as 0/null.
+  flagged?: number | null;
+  flag_notes?: string | null;
 }
 
 export interface SessionRow {
@@ -81,9 +89,25 @@ export interface SessionRow {
   expires_at: number;
 }
 
+// Capability flags surfaced to clients. UI gates on these instead of raw
+// row fields so policy can change server-side without client churn — and
+// so the deny-list reason (flagged / unverified) never reaches the client.
+//
+// MUST stay in sync with the client-side mirror at
+// `playground/services/auth.ts`. The two files exist because the playground
+// bundle cannot import from the worker bundle. Backstopped by
+// `tests/auth/features.test.ts` (which references this side) and the
+// playground typecheck (which references the other side).
+export const UserFeature = {
+  Publishing: 'publishing',
+  AdminModeration: 'admin-moderation',
+} as const;
+export type UserFeature = (typeof UserFeature)[keyof typeof UserFeature];
+
 export interface CurrentUser {
   id: string;
   email: string;
   handle: string;
   displayName: string;
+  features: UserFeature[];
 }

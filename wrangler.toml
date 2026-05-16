@@ -24,8 +24,9 @@ database_name = "svg-path-extended-users"
 database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
 
 # THUMBNAILS R2 binding REMOVED — only the pathogen-api Worker reads/writes
-# thumbnails. SSR pages reference thumbnails via cross-origin <img src> at
-# https://api.pathogen.studio/thumbnail/...
+# thumbnails. SSR pages reference thumbnails via cross-origin <img src>; the
+# origin is read from env.API_BASE below so localhost dev can point at
+# http://localhost:8787 instead of the production API.
 #
 # Email-related bindings/vars (EMAIL, AUTH_FROM_EMAIL, AUTH_PRODUCT_NAME,
 # AUTH_RESEND_API_KEY) REMOVED — the API Worker handles all email sending.
@@ -33,3 +34,10 @@ database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
 # COOKIE_DOMAIN / PRODUCTION are NOT needed here — Pages only reads the
 # session cookie via getSsrUser(); it never writes or clears it. Both vars
 # live in api/wrangler.toml where the cookie is issued.
+
+[vars]
+# Origin of the pathogen-api Worker. Used by SSR-rendered cards
+# (/explore, /featured, /u/:handle, /u/:handle/:slug) to build
+# cross-origin <img src> URLs for workspace thumbnails. Override in
+# .dev.vars with API_BASE=http://localhost:8787 for local dev.
+API_BASE = "https://api.pathogen.studio"

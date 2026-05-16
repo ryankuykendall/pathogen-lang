@@ -56,12 +56,21 @@ export interface Env {
   USERS_DB: D1Database;
   EMAIL?: EmailBinding;
   ADMIN_TOKEN?: string;
+  // Comma-separated list of admin emails. Membership is recomputed from
+  // env on every request, so admin elevation never traverses the users
+  // table. Set via `wrangler secret put ADMIN_EMAILS` on both projects.
+  ADMIN_EMAILS?: string;
   AUTH_FROM_EMAIL?: string;
   AUTH_PRODUCT_NAME?: string;
   AUTH_DEV_LOG_OTP?: string;
   AUTH_RESEND_API_KEY?: string;
   PRODUCTION?: string;
   COOKIE_DOMAIN?: string;
+  // Origin used by SSR pages to build cross-origin <img src> URLs for
+  // workspace thumbnails. Production reads "https://api.pathogen.studio"
+  // from wrangler.toml [vars]; dev sets http://localhost:8787 in
+  // .dev.vars. Helpers fall back to the production origin when unset.
+  API_BASE?: string;
 }
 
 export interface WorkspaceListing {
@@ -77,6 +86,16 @@ export interface WorkspaceListing {
   thumbnailAt: string | null;
   manualThumbnailAt: string | null;
   autoThumbnailAt: string | null;
+  // The effective moderation state — derived from the latest
+  // workspace_publication_states row, or 'unpublished' when no row exists.
+  // Clients render the Publish/Pending/Published/Re-submit button based on
+  // this value.
+  publicationState?: WorkspacePublicationState;
+  // True when the workspace is approved AND its current code differs from
+  // the approved snapshot (queue:rereview membership). publicationState
+  // stays 'approved' in this case; this flag carries the "needs re-review"
+  // signal so the UI can render "Pending re-review".
+  rereviewPending?: boolean;
 }
 
 export interface Workspace extends WorkspaceListing {
@@ -84,6 +103,10 @@ export interface Workspace extends WorkspaceListing {
   code: string;
   preferences: Record<string, unknown>;
   contentHash: string;
+  // Set by admin moderation (Phase 3). Flagged workspaces are removed from
+  // public + featured indexes immediately and listed in
+  // `queue:flagged-workspaces`.
+  flagged?: boolean;
 }
 
 export interface PublicIndexEntry {
@@ -94,6 +117,13 @@ export interface PublicIndexEntry {
   userId: string;
   updatedAt: string;
   thumbnailAt: string | null;
+  // Set on entries written by the Phase 2 approval flow; absent on
+  // pre-Phase-2 entries (treated as oldest for sort purposes).
+  approvedAt?: string;
+  // Frozen owner handle from the approval record. Lets explore-page cards
+  // build /u/<handle>/<slug> hrefs without a D1 lookup per card. Optional
+  // for back-compat with pre-Phase-4 index entries.
+  ownerHandle?: string;
 }
 
 export interface SsrUser {
@@ -101,4 +131,70 @@ export interface SsrUser {
   email: string;
   displayName: string;
   handle: string;
+  features: string[];
+}
+
+// ─── Moderation types (Phase 2) ──────────────────────────────────────
+
+export type WorkspacePublicationState =
+  | 'unpublished'
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'flagged';
+
+export interface PublicationStateRow {
+  id: number;
+  workspace_id: string;
+  state: WorkspacePublicationState;
+  transitioned_at: number;
+  transitioned_by_user_id: string;
+  code_hash: string | null;
+  internal_notes: string | null;
+}
+
+// Frozen at submission time — admins approve exactly what the user
+// submitted, even if the live workspace is edited in the interim.
+export interface ReviewQueueEntry {
+  workspaceId: string;
+  userId: string;
+  code: string;
+  codeHash: string;
+  name: string;
+  description: string;
+  slug: string;
+  submittedAt: string;
+}
+
+export interface WorkspaceApproval {
+  workspaceId: string;
+  userId: string;
+  code: string;
+  codeHash: string;
+  slug: string;            // frozen at approval time; unique within (userId, slug)
+  name: string;
+  description: string;
+  manualThumbnailAt: string | null;
+  autoThumbnailAt: string | null;
+  approvedAt: string;
+  approvedByUserId: string;
+  featuredAt: string | null;
+  // Frozen handle of the workspace owner at approval time. Lets explore
+  // and featured cards link to /u/<handle>/<slug> without a D1 lookup per
+  // card. Optional only for back-compat with pre-Phase-4 approval records.
+  ownerHandle?: string;
+  // Pre-rendered SVG markup captured by the admin's browser at approval
+  // time. Embedded into the workspace detail page so visitors see a live
+  // <mini-workspace> render rather than just source code. Absent on
+  // legacy approvals (pre-Phase-4) and when the admin's browser failed to
+  // compile — detail page falls back to code-only in those cases. Capped
+  // at 1 MB server-side.
+  svg?: string;
+}
+
+export interface WorkspaceRejection {
+  workspaceId: string;
+  rejectedAt: string;
+  rejectedByUserId: string;
+  internalNotes: string;
 }

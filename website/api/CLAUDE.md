@@ -6,9 +6,11 @@ Worker bundle and the Pages bundle stay in sync.
 
 ```
 website/api/
-├── types.ts          KV / R2 / D1 / Env / Workspace / SsrUser
+├── types.ts          KV / R2 / D1 / Env / Workspace / SsrUser / moderation types
 ├── utils.ts          jsonResponse, errorResponse, generateNanoId, hashContent, slugify
-├── public-index.ts   addToPublicIndex, removeFromPublicIndex, updatePublicIndex
+├── public-index.ts   removeFromPublicIndex (delete-cascade only;
+│                     additions live in moderation.ts since Phase 2)
+├── moderation.ts     state machine + queue + approval/rejection + public/featured indexes
 └── router.ts         apiHandlers + handleApiRequest dispatcher
 ```
 
@@ -18,8 +20,9 @@ The full API moved to the Workers project at `api.pathogen.studio` (see
 [`/api/CLAUDE.md`](../../api/CLAUDE.md)) — that project owns the API
 surface. But the Pages worker still needs:
 - `Env`, `Workspace`, `PublicIndexEntry`, `SsrUser` types — for SSR
-- `addToPublicIndex` family — actually unused on Pages today (only the
-  API Worker mutates the public index)
+- `removeFromPublicIndex` / moderation helpers — currently unused on Pages
+  (only the API Worker mutates the public index and the moderation state),
+  but shared so the surfaces stay structurally identical
 - nothing from `router.ts`
 
 So in practice this directory is consumed almost entirely by the API

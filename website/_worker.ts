@@ -12,6 +12,8 @@
 
 import { getSessionUserId, readSessionTokenFromRequest } from './auth/session.js';
 import { findUserById, findUserByHandle } from './auth/users.js';
+import { computeUserFeatures } from './auth/features.js';
+import { findApprovalForUserAndSlug } from './api/moderation.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import type {
   Env,
@@ -40,6 +42,7 @@ async function getSsrUser(request: Request, env: Env): Promise<SsrUser | null> {
       email: user.email,
       displayName: user.display_name,
       handle: user.handle,
+      features: computeUserFeatures(user, env),
     };
   } catch {
     return null;
@@ -156,12 +159,18 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
   } else {
     cardsHtml = `<div class="explore-grid">${slice
       .map((ws: PublicIndexEntry) => {
-        const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
+        const thumbUrl = ws.thumbnailAt ? thumbnailUrl(env, ws.id, 512) : '';
         const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : '';
-        const href = `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        // Phase 4: link to the frozen-snapshot detail page when ownerHandle
+        // and slug are present; fall back to the legacy SPA editor URL for
+        // pre-Phase-4 index entries.
+        const href =
+          ws.ownerHandle && ws.slug
+            ? `/u/${ws.ownerHandle}/${ws.slug}`
+            : `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
         return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
         <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
         <div class="explore-info">
@@ -269,6 +278,20 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Origin of the pathogen-api Worker — used to build cross-origin
+// thumbnail <img src> URLs. Configured via env.API_BASE
+// (wrangler.toml [vars] in prod, .dev.vars in dev). Falls back to the
+// production origin so any deploy that forgets the var still works.
+function apiBase(env: Env): string {
+  const raw = env.API_BASE?.trim();
+  if (!raw) return 'https://api.pathogen.studio';
+  return raw.replace(/\/+$/, '');
+}
+
+function thumbnailUrl(env: Env, workspaceId: string, size: 256 | 512 | 1024): string {
+  return `${apiBase(env)}/thumbnail/${encodeURIComponent(workspaceId)}/${size}`;
+}
+
 // ─── Public Profile Page (Worker-Rendered) ────────────────────────────
 
 async function renderProfilePage(request: Request, env: Env, url: URL, handle: string): Promise<Response> {
@@ -306,15 +329,19 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
 
   // Stale-index defense: each public:workspaces entry is verified against
   // the underlying workspace:<id> record. Skip entries where the record is
-  // missing (deleted-but-not-deindexed) or where isPublic has flipped to
-  // false. Trades N KV reads per profile-render for correctness.
+  // missing (deleted-but-not-deindexed), where isPublic has flipped to
+  // false, or where the workspace is flagged (the index drop should have
+  // happened, but the check is cheap and avoids leaking flagged content
+  // if any future code path mishandles the cascade). Trades N KV reads
+  // per profile-render for correctness.
   const workspaces: PublicIndexEntry[] = [];
   for (const entry of candidates) {
     try {
       const wsJson = await env.WORKSPACES.get(`workspace:${entry.id}`);
       if (!wsJson) continue;
-      const ws: Workspace = JSON.parse(wsJson);
+      const ws: Workspace & { flagged?: boolean } = JSON.parse(wsJson);
       if (!ws.isPublic) continue;
+      if (ws.flagged) continue;
       if (ws.userId !== user.id) continue;
       workspaces.push(entry);
     } catch {
@@ -328,12 +355,15 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
   } else {
     cardsHtml = `<div class="explore-grid">${workspaces
       .map((ws: PublicIndexEntry) => {
-        const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
+        const thumbUrl = ws.thumbnailAt ? thumbnailUrl(env, ws.id, 512) : '';
         const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : '';
-        const href = `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+        // Profile cards link to the frozen-snapshot detail page when the
+        // workspace has a slug — that's the approved view visitors should
+        // see. Fall back to the legacy slug--id route otherwise.
+        const href = ws.slug ? `/u/${user.handle}/${ws.slug}` : `/workspace/${ws.id}`;
         return `<article class="explore-card-wrap"><a class="explore-card" href="${href}">
         <div class="explore-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="explore-placeholder"></div>`}</div>
         <div class="explore-info">
@@ -406,6 +436,257 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
   });
 }
 
+// ─── Workspace Detail Page (Worker-Rendered) ──────────────────────────
+// /u/:handle/:slug renders the frozen approval snapshot. The workspace's
+// live code can drift after approval (and re-review picks that up) but
+// visitors always see the moderated version.
+
+async function renderWorkspaceDetailPage(
+  request: Request,
+  env: Env,
+  url: URL,
+  handle: string,
+  slug: string,
+): Promise<Response> {
+  if (!env.USERS_DB) {
+    return new Response('Workspace detail pages are not enabled on this deployment.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+
+  const currentUser = await getSsrUser(request, env);
+  const user = await findUserByHandle(env.USERS_DB, handle);
+  if (!user) {
+    const html = renderPage({
+      title: 'Workspace not found',
+      description: 'No Pathogen workspace at that URL.',
+      path: url.pathname,
+      content: `<h1>Workspace not found</h1><p>No user with handle <code>${escapeHtml(handle)}</code>.</p><p><a href="/explore">Browse public workspaces &rarr;</a></p>`,
+      currentUser,
+    });
+    return new Response(html, { status: 404, headers: { 'Content-Type': 'text/html;charset=utf-8' } });
+  }
+
+  const approval = await findApprovalForUserAndSlug(env, user.id, slug);
+  if (!approval) {
+    const html = renderPage({
+      title: 'Workspace not found',
+      description: 'No Pathogen workspace at that URL.',
+      path: url.pathname,
+      content: `<h1>Workspace not found</h1><p>No approved workspace at <code>/u/${escapeHtml(handle)}/${escapeHtml(slug)}</code>.</p><p><a href="/u/${escapeHtml(handle)}">Back to ${escapeHtml(user.display_name)}'s profile &rarr;</a></p>`,
+      currentUser,
+    });
+    return new Response(html, { status: 404, headers: { 'Content-Type': 'text/html;charset=utf-8' } });
+  }
+
+  // Verify the underlying workspace still exists and is still approved.
+  // Flagged or owner-unpublished workspaces should 404 visitors even if
+  // the approval record lingers.
+  const wsRaw = await env.WORKSPACES.get(`workspace:${approval.workspaceId}`);
+  if (wsRaw) {
+    try {
+      const ws: Workspace & { flagged?: boolean } = JSON.parse(wsRaw);
+      if (!ws.isPublic || ws.flagged) {
+        const html = renderPage({
+          title: 'Workspace not available',
+          description: 'This workspace is currently not public.',
+          path: url.pathname,
+          content: `<h1>Workspace not available</h1><p>This workspace is no longer public.</p><p><a href="/u/${escapeHtml(handle)}">Back to ${escapeHtml(user.display_name)}'s profile &rarr;</a></p>`,
+          currentUser,
+        });
+        return new Response(html, { status: 404, headers: { 'Content-Type': 'text/html;charset=utf-8' } });
+      }
+    } catch {
+      /* fall through to render */
+    }
+  }
+
+  const thumbUrl = approval.manualThumbnailAt || approval.autoThumbnailAt
+    ? thumbnailUrl(env, approval.workspaceId, 1024)
+    : '';
+  const ogImage = thumbUrl || `${SITE_URL}/og-default.png`;
+  const approvedDate = new Date(approval.approvedAt).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+  const lineCount = (approval.code ?? '').split('\n').length;
+  const avatarInitial = initialOf(user.display_name).slice(0, 1);
+
+  // Italicize the last word of the title — the editorial accent moment.
+  // The italic <em> picks up the lavender gradient via CSS. Single-word
+  // titles get the whole name italicized; acceptable, matches the
+  // wordmark vocabulary at scale.
+  const renderTitle = (name: string): string => {
+    const trimmed = name.trim();
+    const lastSpace = trimmed.lastIndexOf(' ');
+    if (lastSpace === -1) return `<em>${escapeHtml(trimmed)}</em>`;
+    return `${escapeHtml(trimmed.slice(0, lastSpace))} <em>${escapeHtml(trimmed.slice(lastSpace + 1))}</em>`;
+  };
+
+  // Deterministic palette swatch for the final-fallback hero (neither
+  // approval.svg nor a thumbnail available — theoretical at this point
+  // post-Phase 4, but defensive).
+  const SWATCH_PALETTES: [string, string][] = [
+    ['#e16a8f', '#6d3aa6'],
+    ['#b384e0', '#a83d80'],
+    ['#d97a6e', '#5e3590'],
+    ['#9461c4', '#e16a8f'],
+  ];
+  const hashStr = (s: string): number => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
+    return h;
+  };
+  const swatchFor = (id: string): [string, string] =>
+    SWATCH_PALETTES[hashStr(id) % SWATCH_PALETTES.length] as [string, string];
+
+  // Hero artwork chain: approval.svg → thumbnail <img> → swatch fallback.
+  // In practice (1) is the path for ≥99% of approvals post-Phase 4. The
+  // CSS in workspace-detail.css forces width/height on the inlined SVG
+  // so any width/height attributes the captured SVG carries don't break
+  // sizing.
+  let heroHtml: string;
+  if (approval.svg) {
+    heroHtml = `<div class="detail-plate-art">${approval.svg}</div>`;
+  } else if (thumbUrl) {
+    heroHtml = `<img class="detail-plate-art" src="${thumbUrl}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`;
+  } else {
+    const [from, to] = swatchFor(approval.workspaceId);
+    heroHtml = `<div class="detail-plate-fallback" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
+  }
+
+  // "More by @handle" — same KV pattern + stale-index revalidation as
+  // renderProfilePage (~line 297). Capped at 3 entries; excludes the
+  // current approval. If the owner has no other approved work, the
+  // section is omitted entirely (no empty heading).
+  let moreBy: PublicIndexEntry[] = [];
+  try {
+    const raw = await env.WORKSPACES.get('public:workspaces');
+    if (raw) {
+      const all = JSON.parse(raw) as PublicIndexEntry[];
+      const candidates = all.filter(
+        (e: PublicIndexEntry) => e.userId === user.id && e.id !== approval.workspaceId,
+      );
+      for (const entry of candidates) {
+        if (moreBy.length >= 3) break;
+        try {
+          const wsJson = await env.WORKSPACES.get(`workspace:${entry.id}`);
+          if (!wsJson) continue;
+          const ws: Workspace & { flagged?: boolean } = JSON.parse(wsJson);
+          if (!ws.isPublic || ws.flagged) continue;
+          if (ws.userId !== user.id) continue;
+          moreBy.push(entry);
+        } catch {
+          /* skip malformed */
+        }
+      }
+    }
+  } catch {
+    /* moreBy stays empty */
+  }
+
+  const moreByHtml = moreBy.length === 0
+    ? ''
+    : `
+      <section class="detail-moreby">
+        <div class="detail-moreby-head">
+          <h3>More by <a href="/u/${escapeHtml(handle)}">@${escapeHtml(user.handle)}</a></h3>
+          <a class="all" href="/u/${escapeHtml(handle)}">View all &rarr;</a>
+        </div>
+        <div class="detail-moreby-grid">
+          ${moreBy.map((entry) => {
+            const cardThumb = entry.thumbnailAt ? thumbnailUrl(env, entry.id, 512) : '';
+            const cardDate = new Date(entry.approvedAt || entry.updatedAt).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric',
+            });
+            const cardHref = `/u/${escapeHtml(handle)}/${escapeHtml(entry.slug)}`;
+            const [from, to] = swatchFor(entry.id);
+            const art = cardThumb
+              ? `<img src="${cardThumb}" alt="${escapeHtml(entry.name)}" loading="lazy">`
+              : `<div class="placeholder" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
+            return `
+              <a class="detail-moreby-card" href="${cardHref}">
+                <div class="detail-moreby-art">${art}</div>
+                <div class="detail-moreby-meta">
+                  <h4>${escapeHtml(entry.name || 'Untitled')}</h4>
+                  <div class="sub">Published <strong>${escapeHtml(cardDate)}</strong></div>
+                </div>
+              </a>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+
+  const content = `
+    <div class="workspace-detail">
+    <div class="detail-subnav">
+      <nav class="detail-subnav-crumb" aria-label="Breadcrumb">
+        <a href="/explore">Explore</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <a href="/u/${escapeHtml(handle)}">@${escapeHtml(user.handle)}</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span class="here">${escapeHtml(approval.name)}</span>
+      </nav>
+      <a class="detail-cta" href="/workspace/${escapeHtml(approval.slug)}--${escapeHtml(approval.workspaceId)}">
+        <span>Open in playground</span> <span class="arrow">&rarr;</span>
+      </a>
+    </div>
+
+    <section class="detail-plate">
+      <div class="detail-plate-stage">
+        ${heroHtml}
+      </div>
+    </section>
+
+    <section class="detail-meta">
+      <h1 class="detail-meta-title">${renderTitle(approval.name)}</h1>
+      <p class="detail-byline">
+        <span class="avatar" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+        <span>by</span>
+        <a class="handle" href="/u/${escapeHtml(handle)}">@${escapeHtml(user.handle)}</a>
+        <span class="dot" aria-hidden="true"></span>
+        <span>Published ${escapeHtml(approvedDate)}</span>
+      </p>
+      ${approval.description ? `<p class="detail-deck">${escapeHtml(approval.description)}</p>` : ''}
+    </section>
+
+    <section class="detail-source">
+      <details class="detail-source-disclosure">
+        <summary>
+          <span class="detail-source-title">View source</span>
+          <span class="detail-source-meta">Pathogen &middot; ${lineCount} lines</span>
+        </summary>
+        <pre class="detail-source-code">${escapeHtml(approval.code)}</pre>
+      </details>
+    </section>
+
+    ${moreByHtml}
+    </div>
+  `;
+
+  const headExtra = `
+    <meta property="og:image" content="${ogImage}">
+    <meta property="og:type" content="article">
+    <link rel="stylesheet" href="/styles/workspace-detail.css">
+  `;
+
+  const html = renderPage({
+    title: `${approval.name} — @${user.handle}`,
+    description: approval.description || `A Pathogen workspace by ${user.display_name}.`,
+    path: url.pathname,
+    content,
+    headExtra,
+    currentUser,
+  });
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html;charset=utf-8',
+      'Cache-Control': 'public, s-maxage=60, max-age=30',
+    },
+  });
+}
+
 // ─── Featured Page (Worker-Rendered) ──────────────────────────────────
 
 async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promise<Response> {
@@ -418,36 +699,71 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
     /* empty */
   }
 
-  // Fetch workspace metadata in parallel
-  const workspaces = (
+  // Phase 4: fetch approval records (the frozen, moderated snapshot) and
+  // join against the live workspace to confirm it's still public + not
+  // flagged. The approval record carries ownerHandle + slug frozen at
+  // approval time, which is what the card links to.
+  interface FeaturedCard {
+    workspaceId: string;
+    name: string;
+    description: string;
+    slug: string;
+    ownerHandle: string | null;
+    thumbnailAt: string | null;
+  }
+  const cards = (
     await Promise.all(
-      featuredIds.map(async (id: string) => {
+      featuredIds.map(async (id: string): Promise<FeaturedCard | null> => {
         try {
-          const raw = await env.WORKSPACES.get(`workspace:${id}`);
-          if (!raw) return null;
-          const ws: Workspace = JSON.parse(raw);
-          if (!ws.isPublic) return null;
-          return ws;
+          const apprRaw = await env.WORKSPACES.get(`approval:${id}`);
+          if (!apprRaw) return null;
+          const approval = JSON.parse(apprRaw) as {
+            workspaceId: string;
+            slug: string;
+            name: string;
+            description: string;
+            ownerHandle?: string;
+          };
+          // Stale-index defense: confirm the underlying workspace still
+          // exists and hasn't been flagged or owner-unpublished.
+          const wsRaw = await env.WORKSPACES.get(`workspace:${id}`);
+          if (!wsRaw) return null;
+          const ws = JSON.parse(wsRaw) as Workspace & { flagged?: boolean };
+          if (!ws.isPublic || ws.flagged) return null;
+          return {
+            workspaceId: id,
+            name: approval.name,
+            description: approval.description || '',
+            slug: approval.slug,
+            ownerHandle: approval.ownerHandle ?? null,
+            thumbnailAt: ws.thumbnailAt ?? null,
+          };
         } catch {
           return null;
         }
       }),
     )
-  ).filter(Boolean) as Workspace[];
+  ).filter(Boolean) as FeaturedCard[];
 
   let cardsHtml: string;
-  if (workspaces.length === 0) {
+  if (cards.length === 0) {
     cardsHtml = `<p style="text-align:center;color:var(--text-secondary);padding:3rem 0;">No featured workspaces yet. Check back soon!</p>`;
   } else {
-    cardsHtml = `<div class="featured-grid">${workspaces
-      .map((ws: Workspace) => {
-        const thumbUrl = ws.thumbnailAt ? `https://api.pathogen.studio/thumbnail/${ws.id}/512` : '';
-        const desc = ws.description ? ws.description.slice(0, 200) + (ws.description.length > 200 ? '...' : '') : '';
-        const href = `/workspace/${ws.slug ? ws.slug + '--' + ws.id : ws.id}`;
+    cardsHtml = `<div class="featured-grid">${cards
+      .map((c) => {
+        const thumbUrl = c.thumbnailAt ? thumbnailUrl(env, c.workspaceId, 512) : '';
+        const desc = c.description ? c.description.slice(0, 200) + (c.description.length > 200 ? '...' : '') : '';
+        // Prefer the frozen detail URL when ownerHandle is present.
+        // Pre-Phase-4 approvals without ownerHandle fall back to the
+        // legacy SPA editor route.
+        const href =
+          c.ownerHandle && c.slug
+            ? `/u/${c.ownerHandle}/${c.slug}`
+            : `/workspace/${c.slug ? c.slug + '--' + c.workspaceId : c.workspaceId}`;
         return `<article class="featured-card-wrap"><a class="featured-card" href="${href}">
         <div class="featured-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : `<div class="featured-placeholder"></div>`}</div>
         <div class="featured-info">
-          <h3>${escapeHtml(ws.name || 'Untitled')}</h3>
+          <h3>${escapeHtml(c.name || 'Untitled')}</h3>
           ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
         </div>
       </a></article>`;
@@ -803,6 +1119,10 @@ export default {
     const profilePathMatch = path.match(/^\/u\/([a-z0-9-]+)$/);
     if (profilePathMatch) {
       return renderProfilePage(request, env, url, profilePathMatch[1]);
+    }
+    const detailPathMatch = path.match(/^\/u\/([a-z0-9-]+)\/([a-z0-9-]+)$/);
+    if (detailPathMatch) {
+      return renderWorkspaceDetailPage(request, env, url, detailPathMatch[1], detailPathMatch[2]);
     }
 
     // Blog SEO routes

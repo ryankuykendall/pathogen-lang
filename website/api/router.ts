@@ -16,9 +16,205 @@ import {
   handlePublicProfile,
 } from '../auth/handlers.js';
 import { getEffectiveUserId } from '../auth/effective-id.js';
-import { addToPublicIndex, removeFromPublicIndex, updatePublicIndex } from './public-index.js';
-import type { Env, Workspace, WorkspaceListing } from './types.js';
+import { computeUserFeatures, isAdminUser } from '../auth/features.js';
+import { readSessionTokenFromRequest, getSessionUserId } from '../auth/session.js';
+import { findUserById } from '../auth/users.js';
+import { UserFeature } from '../auth/types.js';
+import { removeFromPublicIndex } from './public-index.js';
+import {
+  addToFeatured,
+  addToFlaggedUsers,
+  addToFlaggedWorkspaces,
+  appendState,
+  getEffectiveState,
+  getRereviewQueueEntry,
+  getReviewQueueEntry,
+  listAllApprovals,
+  listAllRejections,
+  listApprovalsForUser,
+  listFeaturedIds,
+  listFlaggedUsers,
+  listFlaggedWorkspaces,
+  listRereviewQueue,
+  listReviewQueue,
+  makeQueueEntry,
+  pickUniqueSlugForUser,
+  publishApprovalToIndex,
+  pushRereviewQueue,
+  pushReviewQueue,
+  readApproval,
+  readRejection,
+  removeFromFeatured,
+  removeFromFlaggedUsers,
+  removeFromFlaggedWorkspaces,
+  removeFromRereviewQueue,
+  removeFromReviewQueue,
+  unpublishFromIndex,
+  writeApproval,
+  writeRejection,
+} from './moderation.js';
+import { setUserFlag } from '../auth/users.js';
+import type { Env, Workspace, WorkspaceApproval, WorkspaceListing, WorkspaceRejection } from './types.js';
 import { errorResponse, generateNanoId, hashContent, jsonResponse, slugify } from './utils.js';
+
+function publishingError(message: string, code: string): Response {
+  // We include both `error` (for legacy clients) and `code` (machine-readable,
+  // stable across copy changes) so the playground can branch on the reason
+  // without parsing strings. The reason is intentionally generic — the
+  // server knows whether the deny was due to unverified email or a flag,
+  // but the client should not, per the silent-rejection rule.
+  return new Response(JSON.stringify({ error: message, code }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// Resolve whether the request may set isPublic: true on a workspace. Returns
+// null on success; an error Response otherwise. The check is intentionally
+// strict — anonymous (header-only) users are rejected outright, and verified
+// session users without the Publishing feature get a generic 403 so the deny
+// reason (flagged / unverified) is not exposed to the client.
+// Coerce the latest publication-state row into the string clients render.
+// 'unpublished' is returned when no row exists (pre-Phase-2 workspaces) or
+// when D1 throws (e.g. local dev with no migrations applied, or the
+// MemoryD1 used in unit tests). Read paths must never fail just because
+// the moderation table is unavailable.
+async function getEffectiveStateString(env: Env, workspaceId: string): Promise<string> {
+  if (!env.USERS_DB) return 'unpublished';
+  try {
+    const row = await getEffectiveState(env.USERS_DB, workspaceId);
+    return row?.state ?? 'unpublished';
+  } catch {
+    return 'unpublished';
+  }
+}
+
+// True when the workspace has an entry in the re-review queue — i.e. an
+// approved workspace whose live code has drifted from the approval
+// snapshot. Surfaced as a separate flag (rather than a state) so the
+// effective state stays 'approved' and matches what visitors actually
+// see on /explore. UI shows "Pending re-review" when this is set.
+async function isRereviewPending(env: Env, workspaceId: string): Promise<boolean> {
+  try {
+    return (await getRereviewQueueEntry(env, workspaceId)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+// Resolve admin status for /admin/* routes. Accepts either a signed-in
+// session whose user is in ADMIN_EMAILS (preferred — enables the admin UI
+// without threading a token through every link) or the legacy ?token=
+// query parameter (still required by existing automated workflows).
+async function isAdminRequest(request: Request, env: Env): Promise<boolean> {
+  const url = new URL(request.url);
+  const adminToken = url.searchParams.get('token');
+  if (adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN) return true;
+  const token = readSessionTokenFromRequest(request);
+  if (!token || !env.USERS_DB) return false;
+  let sessionUserId: string | null = null;
+  try {
+    sessionUserId = await getSessionUserId(env.USERS_DB, token);
+  } catch {
+    return false;
+  }
+  if (!sessionUserId) return false;
+  const user = await findUserById(env.USERS_DB, sessionUserId);
+  if (!user) return false;
+  return isAdminUser(user, env);
+}
+
+// Resolve owner handles + flagged-status for queue listings. The admin UI
+// renders an "⚑ Flagged user" badge on every card whose owner is flagged,
+// regardless of which queue the workspace appears in. Failures fall back
+// to nulls so the queue still renders when a user row is missing.
+async function resolveQueueOwners(
+  env: Env,
+  entries: Array<{ userId: string }>,
+): Promise<
+  Array<
+    {
+      ownerHandle: string | null;
+      ownerDisplayName: string | null;
+      ownerFlagged: boolean;
+    } & Record<string, unknown>
+  >
+> {
+  return Promise.all(
+    entries.map(async (e) => {
+      let handle: string | null = null;
+      let displayName: string | null = null;
+      let flagged = false;
+      if (env.USERS_DB) {
+        try {
+          const user = await findUserById(env.USERS_DB, e.userId);
+          if (user) {
+            handle = user.handle;
+            displayName = user.display_name;
+            flagged = Boolean(user.flagged);
+          }
+        } catch {
+          /* leave defaults */
+        }
+      }
+      return { ...e, ownerHandle: handle, ownerDisplayName: displayName, ownerFlagged: flagged };
+    }),
+  );
+}
+
+// Single-user lookup helper for the Approved/Featured/Rejected listings,
+// which need ownerFlagged but already resolve handle inline.
+async function resolveOwnerFlagged(env: Env, userId: string | null): Promise<boolean> {
+  if (!userId || !env.USERS_DB) return false;
+  try {
+    const user = await findUserById(env.USERS_DB, userId);
+    return Boolean(user?.flagged);
+  } catch {
+    return false;
+  }
+}
+
+// Identify the admin acting on the request, for audit attribution. Falls
+// back to the literal 'admin-token' when the request is gated by the
+// query-param fallback rather than a session cookie.
+async function resolveAdminUserId(request: Request, env: Env): Promise<string> {
+  const token = readSessionTokenFromRequest(request);
+  if (!token || !env.USERS_DB) return 'admin-token';
+  try {
+    const sessionUserId = await getSessionUserId(env.USERS_DB, token);
+    return sessionUserId ?? 'admin-token';
+  } catch {
+    return 'admin-token';
+  }
+}
+
+async function requirePublishingFeature(request: Request, env: Env): Promise<Response | null> {
+  const token = readSessionTokenFromRequest(request);
+  if (!token || !env.USERS_DB) {
+    return publishingError('Publishing requires a signed-in account', 'publishing-not-available');
+  }
+  let sessionUserId: string | null = null;
+  try {
+    sessionUserId = await getSessionUserId(env.USERS_DB, token);
+  } catch {
+    sessionUserId = null;
+  }
+  if (!sessionUserId) {
+    return publishingError('Publishing requires a signed-in account', 'publishing-not-available');
+  }
+  const user = await findUserById(env.USERS_DB, sessionUserId);
+  if (!user) {
+    return publishingError('Publishing requires a signed-in account', 'publishing-not-available');
+  }
+  const features = computeUserFeatures(user, env);
+  if (!features.includes(UserFeature.Publishing)) {
+    return publishingError(
+      'Publishing is not available for this account',
+      'publishing-not-available',
+    );
+  }
+  return null;
+}
 
 // Each handler signature: (request, env, ...captures) => Promise<Response>.
 // `captures` are the regex capture groups from the route match (e.g. workspace id, thumbnail size).
@@ -41,6 +237,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
           const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
           if (!wsJson) return null;
           const ws: Workspace = JSON.parse(wsJson);
+          const publicationState = await getEffectiveStateString(env, ws.id);
           const listing: WorkspaceListing = {
             id: ws.id,
             slug: ws.slug,
@@ -52,6 +249,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             thumbnailAt: ws.thumbnailAt || null,
             manualThumbnailAt: ws.manualThumbnailAt || null,
             autoThumbnailAt: ws.autoThumbnailAt || null,
+            publicationState: publicationState as WorkspaceListing['publicationState'],
           };
           return listing;
         }),
@@ -80,6 +278,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
       if (!name?.trim()) return errorResponse('Workspace name is required');
 
+      if (isPublic) {
+        const gate = await requirePublishingFeature(request, env);
+        if (gate) return gate;
+      }
+
       const id = generateNanoId();
       const slug = slugify(name);
       const now = new Date().toISOString();
@@ -102,6 +305,13 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         autoThumbnailAt: null,
       };
 
+      // New workspaces never enter the public index directly — even when
+      // the client requests isPublic:true, the workspace is stored private
+      // and a 'pending' review queue entry is pushed for the admin to
+      // approve. The workspace record's isPublic stays false until the
+      // approval flow flips it.
+      const requestedPublic = workspace.isPublic;
+      workspace.isPublic = false;
       await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
 
       const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
@@ -109,11 +319,19 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       workspaceIds.unshift(id);
       await env.WORKSPACES.put(`user:${userId}:workspaces`, JSON.stringify(workspaceIds));
 
-      if (workspace.isPublic) {
-        await addToPublicIndex(env, workspace);
+      if (requestedPublic && env.USERS_DB) {
+        const submittedAt = new Date().toISOString();
+        await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+        await appendState(env.USERS_DB, {
+          workspaceId: id,
+          state: 'pending',
+          byUserId: userId,
+          codeHash: workspace.contentHash,
+        });
       }
 
-      return jsonResponse(workspace, 201);
+      const responseState = await getEffectiveStateString(env, id);
+      return jsonResponse({ ...workspace, publicationState: responseState }, 201);
     } catch (err) {
       return errorResponse('Failed to create workspace: ' + (err as Error).message, 500);
     }
@@ -135,7 +353,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         return errorResponse('Access denied', 403);
       }
 
-      return jsonResponse(workspace);
+      const publicationState = await getEffectiveStateString(env, workspace.id);
+      const rereviewPending = await isRereviewPending(env, workspace.id);
+      return jsonResponse({ ...workspace, publicationState, rereviewPending });
     } catch (err) {
       return errorResponse('Failed to load workspace: ' + (err as Error).message, 500);
     }
@@ -162,10 +382,26 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         preferences?: Record<string, unknown>;
       };
 
+      // isPublic transitions now flow through the moderation state machine.
+      //   false → true  : submission. Push queue entry, append 'pending'
+      //                    state row. workspace.isPublic stays false until
+      //                    the admin approval flow flips it.
+      //   true  → false : owner unpublish. Append 'unpublished' state row,
+      //                    remove from public index. Approval record retained
+      //                    in KV so resubmits don't lose history.
+      const priorState = await getEffectiveStateString(env, id);
+      const submittingForReview = isPublic === true && !workspace.isPublic && priorState !== 'pending';
+      const ownerUnpublish = isPublic === false && workspace.isPublic;
+
+      if (submittingForReview) {
+        const gate = await requirePublishingFeature(request, env);
+        if (gate) return gate;
+      }
+
       if (code !== undefined) {
         const newHash = await hashContent(code);
         if (newHash === workspace.contentHash) {
-          return jsonResponse({ ...workspace, skipped: true });
+          return jsonResponse({ ...workspace, publicationState: priorState, skipped: true });
         }
         workspace.code = code;
         workspace.contentHash = newHash;
@@ -176,17 +412,56 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspace.slug = slugify(name);
       }
       if (description !== undefined) workspace.description = description.trim();
-      if (isPublic !== undefined) workspace.isPublic = Boolean(isPublic);
       if (preferences !== undefined) {
         workspace.preferences = { ...(workspace.preferences || {}), ...preferences };
       }
+      // isPublic on the workspace record is only flipped during the
+      // approval flow (→ true) or the owner-unpublish path (→ false).
+      // The submit-for-review path doesn't change it.
 
       workspace.updatedAt = new Date().toISOString();
 
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
-      await updatePublicIndex(env, workspace);
+      if (ownerUnpublish && env.USERS_DB) {
+        workspace.isPublic = false;
+        await appendState(env.USERS_DB, {
+          workspaceId: id,
+          state: 'unpublished',
+          byUserId: userId,
+          codeHash: workspace.contentHash,
+        });
+        await unpublishFromIndex(env, id);
+      }
 
-      return jsonResponse(workspace);
+      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+
+      if (submittingForReview && env.USERS_DB) {
+        const submittedAt = workspace.updatedAt;
+        await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+        await appendState(env.USERS_DB, {
+          workspaceId: id,
+          state: 'pending',
+          byUserId: userId,
+          codeHash: workspace.contentHash,
+        });
+      }
+
+      // Re-review trigger: a workspace with an approval record whose
+      // code hash now differs from that snapshot enters the re-review
+      // queue. The public index keeps serving the prior snapshot, so
+      // the effective state on the state machine stays 'approved' (no
+      // new row appended) — queue membership alone is the signal that
+      // a re-review is pending. Re-edits during re-review just refresh
+      // the queue entry; pushRereviewQueue dedupes on workspaceId.
+      if (code !== undefined && !ownerUnpublish && !submittingForReview) {
+        const approval = await readApproval(env, id);
+        if (approval && approval.codeHash !== workspace.contentHash) {
+          await pushRereviewQueue(env, makeQueueEntry(workspace, workspace.updatedAt));
+        }
+      }
+
+      const responseState = await getEffectiveStateString(env, id);
+      const rereviewPending = await isRereviewPending(env, id);
+      return jsonResponse({ ...workspace, publicationState: responseState, rereviewPending });
     } catch (err) {
       return errorResponse('Failed to update workspace: ' + (err as Error).message, 500);
     }
@@ -214,6 +489,18 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (workspace.isPublic) {
         await removeFromPublicIndex(env, id);
       }
+
+      // Cascade moderation state so the admin queue and the featured list
+      // don't carry orphans. Approval and rejection records are dropped too
+      // because they only have meaning while the workspace exists. The
+      // append-only state history rows stay in D1 as an audit trail.
+      await Promise.all([
+        env.WORKSPACES.delete(`approval:${id}`),
+        env.WORKSPACES.delete(`rejection:${id}`),
+        removeFromReviewQueue(env, id),
+        unpublishFromIndex(env, id),
+        removeFromFeatured(env, id),
+      ]);
 
       return jsonResponse({ success: true });
     } catch (err) {
@@ -425,6 +712,792 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
+  // POST /workspace/:id/submit-for-review — owner-only, Publishing-gate.
+  // Freezes the current code into a queue entry and appends a 'pending'
+  // state row. Repeated calls overwrite the queue entry (re-submission).
+  async submitWorkspaceForReview(request: Request, env: Env, id: string): Promise<Response> {
+    const userId = await getEffectiveUserId(request, env);
+    if (!userId) return errorResponse('User ID required', 401);
+
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace = JSON.parse(wsJson);
+      if (workspace.userId !== userId) return errorResponse('Access denied', 403);
+
+      const gate = await requirePublishingFeature(request, env);
+      if (gate) return gate;
+
+      if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+
+      // Reject empty submissions. An admin can't meaningfully approve a
+      // workspace with no code, and a blank preview in the moderation UI
+      // would be the only signal something was off.
+      if (!workspace.code || !workspace.code.trim()) {
+        return errorResponse('Workspace has no code to review', 400);
+      }
+
+      const submittedAt = new Date().toISOString();
+      await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+      await appendState(env.USERS_DB, {
+        workspaceId: id,
+        state: 'pending',
+        byUserId: userId,
+        codeHash: workspace.contentHash,
+      });
+
+      const publicationState = await getEffectiveStateString(env, id);
+      return jsonResponse({ ok: true, publicationState, submittedAt });
+    } catch (err) {
+      return errorResponse('Failed to submit workspace: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/review — admin-only. Returns frozen queue entries so
+  // the moderation UI renders exactly what the owner submitted.
+  async adminListReviewQueue(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const entries = await listReviewQueue(env);
+      // Resolve owner handles for display. Failures are swallowed (entry
+      // appears with userId only).
+      const enriched = await Promise.all(
+        entries.map(async (e) => {
+          let handle: string | null = null;
+          let displayName: string | null = null;
+          if (env.USERS_DB) {
+            try {
+              const user = await findUserById(env.USERS_DB, e.userId);
+              if (user) {
+                handle = user.handle;
+                displayName = user.display_name;
+              }
+            } catch {
+              /* leave null */
+            }
+          }
+          return { ...e, ownerHandle: handle, ownerDisplayName: displayName };
+        }),
+      );
+      return jsonResponse({ entries: enriched });
+    } catch (err) {
+      return errorResponse('Failed to read review queue: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/review/:id — admin-only. Body: { decision: 'approve'|'reject',
+  // feature?: bool, internalNotes?: string }.
+  async adminReviewDecision(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    let body: {
+      decision?: unknown;
+      feature?: unknown;
+      internalNotes?: unknown;
+      svg?: unknown;
+    };
+    try {
+      body = (await request.json()) as typeof body;
+    } catch {
+      return errorResponse('Invalid JSON body', 400);
+    }
+    const decision = typeof body.decision === 'string' ? body.decision : '';
+    if (decision !== 'approve' && decision !== 'reject') {
+      return errorResponse("decision must be 'approve' or 'reject'", 400);
+    }
+    const feature = decision === 'approve' && Boolean(body.feature);
+    const internalNotes = typeof body.internalNotes === 'string' ? body.internalNotes : '';
+    // Optional admin-captured SVG snapshot. Capped at 1 MB so a runaway
+    // serialization can't blow out the KV value. Oversized payloads get
+    // silently dropped — detail page falls back to code-only.
+    const SVG_MAX_BYTES = 1024 * 1024;
+    const rawSvg = typeof body.svg === 'string' ? body.svg : null;
+    const svg = rawSvg && rawSvg.length <= SVG_MAX_BYTES ? rawSvg : null;
+
+    try {
+      // Resolve the acting admin's user id for audit attribution. If the
+      // request is token-gated (no session), we attribute to the admin
+      // token literal so the row is still distinguishable.
+      let adminUserId = 'admin-token';
+      const token = readSessionTokenFromRequest(request);
+      if (token && env.USERS_DB) {
+        try {
+          const sessionUserId = await getSessionUserId(env.USERS_DB, token);
+          if (sessionUserId) adminUserId = sessionUserId;
+        } catch {
+          /* keep token literal */
+        }
+      }
+
+      // A workspace may be in either the first-review or re-review queue.
+      // The decision flow is the same for both — approve writes a fresh
+      // approval record, reject preserves the prior one (re-review fail
+      // doesn't unpublish; admin must explicitly flag or owner must
+      // unpublish to remove from /explore).
+      const queueEntry =
+        (await getReviewQueueEntry(env, id)) || (await getRereviewQueueEntry(env, id));
+      if (!queueEntry) return errorResponse('No pending submission for this workspace', 404);
+
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace = JSON.parse(wsJson);
+
+      if (decision === 'reject') {
+        const rejection: WorkspaceRejection = {
+          workspaceId: id,
+          rejectedAt: new Date().toISOString(),
+          rejectedByUserId: adminUserId,
+          internalNotes,
+        };
+        await writeRejection(env, rejection);
+        await appendState(env.USERS_DB, {
+          workspaceId: id,
+          state: 'rejected',
+          byUserId: adminUserId,
+          codeHash: queueEntry.codeHash,
+          internalNotes: internalNotes || null,
+        });
+        await removeFromReviewQueue(env, id);
+        await removeFromRereviewQueue(env, id);
+        return jsonResponse({ ok: true, decision: 'reject' });
+      }
+
+      // Approve. Pick a unique slug, freeze the snapshot from the queue
+      // entry, write the approval record, flip the workspace public flag
+      // so listing pages can read it directly, append the state row, and
+      // add to the public index. Optionally feature.
+      const uniqueSlug = await pickUniqueSlugForUser(env, queueEntry.userId, queueEntry.slug, id);
+      // Freeze the owner's handle at approval time so /u/<handle>/<slug>
+      // URLs stay stable even if the user later renames themselves.
+      let ownerHandle: string | undefined;
+      try {
+        const owner = await findUserById(env.USERS_DB, queueEntry.userId);
+        if (owner) ownerHandle = owner.handle;
+      } catch {
+        /* leave undefined; approval record degrades to legacy shape */
+      }
+      const approval: WorkspaceApproval = {
+        workspaceId: id,
+        userId: queueEntry.userId,
+        code: queueEntry.code,
+        codeHash: queueEntry.codeHash,
+        slug: uniqueSlug,
+        name: queueEntry.name,
+        description: queueEntry.description,
+        manualThumbnailAt: workspace.manualThumbnailAt ?? null,
+        autoThumbnailAt: workspace.autoThumbnailAt ?? null,
+        approvedAt: new Date().toISOString(),
+        approvedByUserId: adminUserId,
+        featuredAt: feature ? new Date().toISOString() : null,
+        ...(ownerHandle ? { ownerHandle } : {}),
+        ...(svg ? { svg } : {}),
+      };
+      await writeApproval(env, approval);
+
+      workspace.isPublic = true;
+      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+
+      await appendState(env.USERS_DB, {
+        workspaceId: id,
+        state: 'approved',
+        byUserId: adminUserId,
+        codeHash: queueEntry.codeHash,
+      });
+
+      await publishApprovalToIndex(env, approval, workspace);
+      if (feature) {
+        await addToFeatured(env, id);
+      }
+      await removeFromReviewQueue(env, id);
+      await removeFromRereviewQueue(env, id);
+
+      return jsonResponse({ ok: true, decision: 'approve', feature, slug: uniqueSlug });
+    } catch (err) {
+      return errorResponse('Failed to record decision: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/rereview — admin-only.
+  async adminListRereviewQueue(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const entries = await listRereviewQueue(env);
+      const enriched = await resolveQueueOwners(env, entries);
+      return jsonResponse({ entries: enriched });
+    } catch (err) {
+      return errorResponse('Failed to read re-review queue: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/approval/:id — admin-only. Returns the frozen approval
+  // record (code, svg, slug, ownerHandle, …) so the moderation UI can
+  // open the review modal against the moderated snapshot rather than
+  // the live workspace. Legacy approvals without `svg` still expose
+  // `code` for client-side compile.
+  async adminGetApproval(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const approval = await readApproval(env, id);
+      if (!approval) return errorResponse('No approval record', 404);
+      return jsonResponse(approval);
+    } catch (err) {
+      return errorResponse('Failed to load approval: ' + (err as Error).message, 500);
+    }
+  },
+
+  // PUT /admin/approval/:id/svg — admin-only. Backfills approval.svg on
+  // an existing approval record. Used by the moderation modal to
+  // silently refresh the rendered SVG for legacy approvals (pre-Phase-4)
+  // that don't have one. Same 1 MB cap as the approve endpoint.
+  async adminPutApprovalSvg(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      let body: { svg?: unknown };
+      try {
+        body = (await request.json()) as typeof body;
+      } catch {
+        return errorResponse('Invalid JSON body', 400);
+      }
+      const raw = typeof body.svg === 'string' ? body.svg : null;
+      const SVG_MAX_BYTES = 1024 * 1024;
+      if (!raw || raw.length > SVG_MAX_BYTES) {
+        return errorResponse('SVG payload missing or oversized', 400);
+      }
+      const approval = await readApproval(env, id);
+      if (!approval) return errorResponse('No approval record', 404);
+      approval.svg = raw;
+      await writeApproval(env, approval);
+      return jsonResponse({ ok: true });
+    } catch (err) {
+      return errorResponse('Failed to update approval svg: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/approved — admin-only. Lists the catalog of approved
+  // workspaces (frozen snapshots from KV) so the admin UI can render them
+  // alongside the pending/re-review queues.
+  async adminListApproved(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const approvals = await listAllApprovals(env);
+      // Newest-first by approvedAt.
+      approvals.sort((a, b) =>
+        (b.approvedAt || '') > (a.approvedAt || '') ? 1 : -1,
+      );
+      // Approved tab = currently public AND not featured AND not
+      // workspace-flagged. Featured workspaces appear on their own tab
+      // (disjoint sets — cleaner action buttons per the simplification
+      // spec). Admin-unpublished workspaces don't appear here either;
+      // their approval record is retained for restoration.
+      const entries = (
+        await Promise.all(
+          approvals.map(async (a) => {
+            let thumbnailAt: string | null = null;
+            let isPublic = false;
+            let flagged = false;
+            try {
+              const wsRaw = await env.WORKSPACES.get(`workspace:${a.workspaceId}`);
+              if (wsRaw) {
+                const ws = JSON.parse(wsRaw) as Workspace & { flagged?: boolean };
+                thumbnailAt = ws.thumbnailAt ?? null;
+                isPublic = Boolean(ws.isPublic);
+                flagged = Boolean(ws.flagged);
+              }
+            } catch {
+              /* leave defaults */
+            }
+            if (!isPublic || flagged) return null;
+            if (a.featuredAt) return null; // Featured tab shows these
+            const ownerFlagged = await resolveOwnerFlagged(env, a.userId);
+            return {
+              workspaceId: a.workspaceId,
+              userId: a.userId,
+              name: a.name,
+              description: a.description,
+              slug: a.slug,
+              ownerHandle: a.ownerHandle ?? null,
+              ownerFlagged,
+              codeHash: a.codeHash,
+              approvedAt: a.approvedAt,
+              featuredAt: a.featuredAt ?? null,
+              thumbnailAt,
+              hasSvg: Boolean(a.svg),
+            };
+          }),
+        )
+      ).filter(Boolean);
+      return jsonResponse({ entries });
+    } catch (err) {
+      return errorResponse('Failed to read approved list: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/featured — admin-only. Lists workspaces currently on
+  // the featured list, hydrated from their approval records.
+  async adminListFeatured(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const ids = await listFeaturedIds(env);
+      const entries = await Promise.all(
+        ids.map(async (id) => {
+          const approval = await readApproval(env, id);
+          if (!approval) return null;
+          let thumbnailAt: string | null = null;
+          try {
+            const wsRaw = await env.WORKSPACES.get(`workspace:${id}`);
+            if (wsRaw) {
+              const ws = JSON.parse(wsRaw) as Workspace;
+              thumbnailAt = ws.thumbnailAt ?? null;
+            }
+          } catch {
+            /* leave null */
+          }
+          const ownerFlagged = await resolveOwnerFlagged(env, approval.userId);
+          return {
+            workspaceId: id,
+            userId: approval.userId,
+            name: approval.name,
+            description: approval.description,
+            slug: approval.slug,
+            ownerHandle: approval.ownerHandle ?? null,
+            ownerFlagged,
+            codeHash: approval.codeHash,
+            featuredAt: approval.featuredAt,
+            thumbnailAt,
+            hasSvg: Boolean(approval.svg),
+          };
+        }),
+      );
+      return jsonResponse({ entries: entries.filter(Boolean) });
+    } catch (err) {
+      return errorResponse('Failed to read featured list: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/rejected — admin-only. Lists rejection records with
+  // internal notes (admin-only field; never returned to owners).
+  async adminListRejected(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const rejections = await listAllRejections(env);
+      rejections.sort((a, b) =>
+        (b.rejectedAt || '') > (a.rejectedAt || '') ? 1 : -1,
+      );
+      const entries = await Promise.all(
+        rejections.map(async (r) => {
+          let name: string | null = null;
+          let ownerHandle: string | null = null;
+          let userId: string | null = null;
+          let thumbnailAt: string | null = null;
+          let codeHash: string | null = null;
+          let workspaceFlagged = false;
+          let ownerFlagged = false;
+          try {
+            const wsRaw = await env.WORKSPACES.get(`workspace:${r.workspaceId}`);
+            if (wsRaw) {
+              const ws = JSON.parse(wsRaw) as Workspace & { flagged?: boolean };
+              name = ws.name;
+              userId = ws.userId;
+              thumbnailAt = ws.thumbnailAt ?? null;
+              codeHash = ws.contentHash;
+              workspaceFlagged = Boolean(ws.flagged);
+            }
+            if (env.USERS_DB && userId) {
+              const user = await findUserById(env.USERS_DB, userId);
+              if (user) {
+                ownerHandle = user.handle;
+                ownerFlagged = Boolean(user.flagged);
+              }
+            }
+          } catch {
+            /* leave defaults */
+          }
+          // Rejected tab shouldn't list workspaces that are CURRENTLY
+          // flagged — those belong in Flagged workspaces.
+          if (workspaceFlagged) return null;
+          return {
+            workspaceId: r.workspaceId,
+            userId,
+            name,
+            ownerHandle,
+            ownerFlagged,
+            thumbnailAt,
+            codeHash,
+            rejectedAt: r.rejectedAt,
+            internalNotes: r.internalNotes,
+          };
+        }),
+      );
+      return jsonResponse({ entries: entries.filter(Boolean) });
+    } catch (err) {
+      return errorResponse('Failed to read rejected list: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/flagged-workspaces — admin-only. Returns workspace
+  // listings (id, name, owner handle, hash) for the flagged queue.
+  async adminListFlaggedWorkspaces(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const ids = await listFlaggedWorkspaces(env);
+      const entries = [];
+      for (const wsId of ids) {
+        const wsJson = await env.WORKSPACES.get(`workspace:${wsId}`);
+        if (!wsJson) continue;
+        const ws: Workspace = JSON.parse(wsJson);
+        let handle: string | null = null;
+        let ownerFlagged = false;
+        if (env.USERS_DB) {
+          try {
+            const user = await findUserById(env.USERS_DB, ws.userId);
+            if (user) {
+              handle = user.handle;
+              ownerFlagged = Boolean(user.flagged);
+            }
+          } catch {
+            /* leave defaults */
+          }
+        }
+        entries.push({
+          workspaceId: wsId,
+          name: ws.name,
+          codeHash: ws.contentHash,
+          ownerHandle: handle,
+          ownerUserId: ws.userId,
+          ownerFlagged,
+          thumbnailAt: ws.thumbnailAt ?? null,
+        });
+      }
+      return jsonResponse({ entries });
+    } catch (err) {
+      return errorResponse('Failed to read flagged workspaces: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/flagged-users — admin-only.
+  async adminListFlaggedUsers(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const ids = await listFlaggedUsers(env);
+      const entries = [];
+      if (env.USERS_DB) {
+        for (const uid of ids) {
+          try {
+            const user = await findUserById(env.USERS_DB, uid);
+            if (user) {
+              entries.push({
+                userId: uid,
+                handle: user.handle,
+                displayName: user.display_name,
+                flagNotes: user.flag_notes ?? null,
+              });
+            }
+          } catch {
+            /* skip */
+          }
+        }
+      }
+      return jsonResponse({ entries });
+    } catch (err) {
+      return errorResponse('Failed to read flagged users: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/unpublish/:id — admin force-unpublish. Removes from the
+  // public + featured indexes and appends an 'unpublished' state row, but
+  // retains the approval record so the action is reversible (admin or
+  // owner can re-submit).
+  async adminUnpublish(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace = JSON.parse(wsJson);
+      workspace.isPublic = false;
+      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      await unpublishFromIndex(env, id);
+      await removeFromFeatured(env, id);
+      const adminId = await resolveAdminUserId(request, env);
+      await appendState(env.USERS_DB, {
+        workspaceId: id,
+        state: 'unpublished',
+        byUserId: adminId,
+        codeHash: workspace.contentHash,
+        internalNotes: 'admin unpublish',
+      });
+      return jsonResponse({ ok: true, isPublic: false });
+    } catch (err) {
+      return errorResponse('Failed to unpublish: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/feature/:id — add an approved workspace to the featured
+  // list and stamp featuredAt on the approval record.
+  async adminFeature(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const approval = await readApproval(env, id);
+      if (!approval) return errorResponse('Workspace is not approved', 404);
+      approval.featuredAt = new Date().toISOString();
+      await writeApproval(env, approval);
+      await addToFeatured(env, id);
+      return jsonResponse({ ok: true, featured: true, featuredAt: approval.featuredAt });
+    } catch (err) {
+      return errorResponse('Failed to feature: ' + (err as Error).message, 500);
+    }
+  },
+
+  // DELETE /admin/feature/:id — remove from featured, keep approved.
+  async adminUnfeature(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const approval = await readApproval(env, id);
+      if (approval) {
+        approval.featuredAt = null;
+        await writeApproval(env, approval);
+      }
+      await removeFromFeatured(env, id);
+      return jsonResponse({ ok: true, featured: false });
+    } catch (err) {
+      return errorResponse('Failed to unfeature: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/flag-workspace/:id — flag a workspace. Drops it from the
+  // public + featured indexes; the approval record is retained so unflag
+  // restores the prior public state. Optional body: { internalNotes }.
+  async adminFlagWorkspace(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace = JSON.parse(wsJson);
+      let body: { internalNotes?: unknown } = {};
+      try {
+        body = (await request.json()) as typeof body;
+      } catch {
+        /* no body is fine */
+      }
+      const notes = typeof body.internalNotes === 'string' ? body.internalNotes : '';
+
+      workspace.flagged = true;
+      workspace.isPublic = false;
+      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      await addToFlaggedWorkspaces(env, id);
+      await unpublishFromIndex(env, id);
+      await removeFromFeatured(env, id);
+      const adminId = await resolveAdminUserId(request, env);
+      await appendState(env.USERS_DB, {
+        workspaceId: id,
+        state: 'flagged',
+        byUserId: adminId,
+        codeHash: workspace.contentHash,
+        internalNotes: notes || null,
+      });
+      return jsonResponse({ ok: true, flagged: true });
+    } catch (err) {
+      return errorResponse('Failed to flag workspace: ' + (err as Error).message, 500);
+    }
+  },
+
+  // DELETE /admin/flag-workspace/:id — clear the flag and (if an approval
+  // record still exists) re-publish to the public index.
+  async adminUnflagWorkspace(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace = JSON.parse(wsJson);
+      workspace.flagged = false;
+      workspace.isPublic = false;
+      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      await removeFromFlaggedWorkspaces(env, id);
+      // Defense-in-depth: ensure no stale public/featured entries.
+      await unpublishFromIndex(env, id);
+      await removeFromFeatured(env, id);
+      // Per the simplified action spec, unflagging a workspace transitions
+      // it to the Rejected tab — admin has to send it through Pending
+      // review again before it can re-enter the approved catalog. Write
+      // a rejection record (carries internal notes) and append a
+      // 'rejected' state row so the Rejected listing surfaces it.
+      const adminId = await resolveAdminUserId(request, env);
+      const rejectedAt = new Date().toISOString();
+      await writeRejection(env, {
+        workspaceId: id,
+        rejectedAt,
+        rejectedByUserId: adminId,
+        internalNotes: 'Unflagged from flagged-workspaces queue.',
+      });
+      await appendState(env.USERS_DB, {
+        workspaceId: id,
+        state: 'rejected',
+        byUserId: adminId,
+        codeHash: workspace.contentHash,
+        internalNotes: 'unflagged → rejected',
+      });
+      return jsonResponse({ ok: true, flagged: false });
+    } catch (err) {
+      return errorResponse('Failed to unflag workspace: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/requeue/:id — admin sends a workspace back into the
+  // pending-review queue. Used from the Approved and Rejected tabs.
+  // Pushes a queue:review entry with the current workspace code as the
+  // frozen snapshot, appends a 'pending' state row, and removes the
+  // workspace from public + featured indexes so visitors don't see it
+  // while it's under review again.
+  async adminRequeue(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace = JSON.parse(wsJson);
+      if (!workspace.code || !workspace.code.trim()) {
+        return errorResponse('Workspace has no code to re-review', 400);
+      }
+      workspace.isPublic = false;
+      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      await unpublishFromIndex(env, id);
+      await removeFromFeatured(env, id);
+      const submittedAt = new Date().toISOString();
+      await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+      const adminId = await resolveAdminUserId(request, env);
+      await appendState(env.USERS_DB, {
+        workspaceId: id,
+        state: 'pending',
+        byUserId: adminId,
+        codeHash: workspace.contentHash,
+        internalNotes: 'admin requeued for review',
+      });
+      return jsonResponse({ ok: true, publicationState: 'pending', submittedAt });
+    } catch (err) {
+      return errorResponse('Failed to requeue: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/flag-user/:id — flag a user. Cascades: all of that user's
+  // approval records are pulled from public + featured. Their workspace
+  // records keep `isPublic` for restoration on unflag.
+  async adminFlagUser(request: Request, env: Env, userId: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    try {
+      let body: { internalNotes?: unknown } = {};
+      try {
+        body = (await request.json()) as typeof body;
+      } catch {
+        /* empty */
+      }
+      const notes = typeof body.internalNotes === 'string' ? body.internalNotes : '';
+      await setUserFlag(env.USERS_DB, userId, true, notes || null);
+      await addToFlaggedUsers(env, userId);
+      // Drop every approval the user owns from the indexes.
+      const approvals = await listApprovalsForUser(env, userId);
+      for (const apr of approvals) {
+        await unpublishFromIndex(env, apr.workspaceId);
+        await removeFromFeatured(env, apr.workspaceId);
+      }
+      return jsonResponse({ ok: true, flagged: true, removedFromIndex: approvals.length });
+    } catch (err) {
+      return errorResponse('Failed to flag user: ' + (err as Error).message, 500);
+    }
+  },
+
+  // DELETE /admin/flag-user/:id — unflag a user; restore their approvals
+  // to public and (for any with `featuredAt`) to the featured list.
+  async adminUnflagUser(request: Request, env: Env, userId: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
+    try {
+      await setUserFlag(env.USERS_DB, userId, false, null);
+      await removeFromFlaggedUsers(env, userId);
+      const approvals = await listApprovalsForUser(env, userId);
+      let restored = 0;
+      for (const apr of approvals) {
+        const wsJson = await env.WORKSPACES.get(`workspace:${apr.workspaceId}`);
+        if (!wsJson) continue;
+        const ws: Workspace = JSON.parse(wsJson);
+        if (ws.flagged) continue; // workspace itself is flagged; skip
+        await publishApprovalToIndex(env, apr, ws);
+        if (apr.featuredAt) await addToFeatured(env, apr.workspaceId);
+        restored++;
+      }
+      return jsonResponse({ ok: true, flagged: false, restored });
+    } catch (err) {
+      return errorResponse('Failed to unflag user: ' + (err as Error).message, 500);
+    }
+  },
+
+  // POST /admin/reconcile-indexes — admin-only. Rebuilds the
+  // public:workspaces and featured:workspaces indexes from the canonical
+  // approval records. Used to recover from drift — e.g. when a sequence
+  // of flag/unflag/unpublish actions over the workspace's lifetime left
+  // the index out of sync with the approval record's "currently public"
+  // state. Safe to call any time; idempotent.
+  async adminReconcileIndexes(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    try {
+      const approvals = await listAllApprovals(env);
+      const entries: PublicIndexEntry[] = [];
+      const featuredIds: string[] = [];
+      for (const a of approvals) {
+        // Re-check the underlying workspace: only currently-public,
+        // non-flagged workspaces belong on the index.
+        const wsRaw = await env.WORKSPACES.get(`workspace:${a.workspaceId}`);
+        if (!wsRaw) continue;
+        let ws: Workspace & { flagged?: boolean };
+        try {
+          ws = JSON.parse(wsRaw);
+        } catch {
+          continue;
+        }
+        if (!ws.isPublic || ws.flagged) continue;
+        // ownerFlagged: the badge propagates here too — but we still
+        // include the entry; admin filters via the user-level flag.
+        const entry: PublicIndexEntry = {
+          id: a.workspaceId,
+          slug: a.slug,
+          name: a.name,
+          description: a.description || '',
+          userId: a.userId,
+          updatedAt: ws.updatedAt,
+          thumbnailAt: ws.thumbnailAt || null,
+          approvedAt: a.approvedAt,
+        };
+        if (a.ownerHandle) entry.ownerHandle = a.ownerHandle;
+        entries.push(entry);
+        if (a.featuredAt) featuredIds.push(a.workspaceId);
+      }
+      entries.sort((a, b) => {
+        const aT = a.approvedAt ? new Date(a.approvedAt).getTime() : 0;
+        const bT = b.approvedAt ? new Date(b.approvedAt).getTime() : 0;
+        return bT - aT;
+      });
+      const capped = entries.slice(0, 100);
+      await env.WORKSPACES.put('public:workspaces', JSON.stringify(capped));
+      // Featured: newest-first by featuredAt, capped at 100.
+      const featuredById = new Map(approvals.map((a) => [a.workspaceId, a]));
+      featuredIds.sort((a, b) => {
+        const aT = new Date(featuredById.get(a)?.featuredAt || '').getTime();
+        const bT = new Date(featuredById.get(b)?.featuredAt || '').getTime();
+        return bT - aT;
+      });
+      await env.WORKSPACES.put('featured:workspaces', JSON.stringify(featuredIds.slice(0, 100)));
+      return jsonResponse({
+        ok: true,
+        publicCount: capped.length,
+        featuredCount: featuredIds.length,
+      });
+    } catch (err) {
+      return errorResponse('Failed to reconcile: ' + (err as Error).message, 500);
+    }
+  },
+
   // GET /api/admin/workspaces-without-thumbnails — admin-token gated.
   async adminListWithoutThumbnails(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -500,6 +1573,11 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   const copyMatch = apiPath.match(/^\/workspace\/([^/]+)\/copy$/);
   if (copyMatch && method === 'POST') return apiHandlers.copyWorkspace(request, env, copyMatch[1]);
 
+  const submitMatch = apiPath.match(/^\/workspace\/([^/]+)\/submit-for-review$/);
+  if (submitMatch && method === 'POST') {
+    return apiHandlers.submitWorkspaceForReview(request, env, submitMatch[1]);
+  }
+
   // ─── Thumbnails ───────────────────────────────────────────────────
   const thumbUploadMatch = apiPath.match(/^\/workspace\/([^/]+)\/thumbnail$/);
   if (thumbUploadMatch) {
@@ -516,6 +1594,74 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   // ─── Admin ────────────────────────────────────────────────────────
   if (apiPath === '/admin/workspaces-without-thumbnails' && method === 'GET') {
     return apiHandlers.adminListWithoutThumbnails(request, env);
+  }
+
+  if (apiPath === '/admin/queue/review' && method === 'GET') {
+    return apiHandlers.adminListReviewQueue(request, env);
+  }
+  if (apiPath === '/admin/reconcile-indexes' && method === 'POST') {
+    return apiHandlers.adminReconcileIndexes(request, env);
+  }
+  if (apiPath === '/admin/queue/rereview' && method === 'GET') {
+    return apiHandlers.adminListRereviewQueue(request, env);
+  }
+  if (apiPath === '/admin/queue/approved' && method === 'GET') {
+    return apiHandlers.adminListApproved(request, env);
+  }
+  if (apiPath === '/admin/queue/featured' && method === 'GET') {
+    return apiHandlers.adminListFeatured(request, env);
+  }
+  if (apiPath === '/admin/queue/rejected' && method === 'GET') {
+    return apiHandlers.adminListRejected(request, env);
+  }
+  if (apiPath === '/admin/queue/flagged-workspaces' && method === 'GET') {
+    return apiHandlers.adminListFlaggedWorkspaces(request, env);
+  }
+  if (apiPath === '/admin/queue/flagged-users' && method === 'GET') {
+    return apiHandlers.adminListFlaggedUsers(request, env);
+  }
+
+  const reviewMatch = apiPath.match(/^\/admin\/review\/([^/]+)$/);
+  if (reviewMatch && method === 'POST') {
+    return apiHandlers.adminReviewDecision(request, env, reviewMatch[1]);
+  }
+
+  const approvalMatch = apiPath.match(/^\/admin\/approval\/([^/]+)$/);
+  if (approvalMatch && method === 'GET') {
+    return apiHandlers.adminGetApproval(request, env, approvalMatch[1]);
+  }
+
+  const approvalSvgMatch = apiPath.match(/^\/admin\/approval\/([^/]+)\/svg$/);
+  if (approvalSvgMatch && method === 'PUT') {
+    return apiHandlers.adminPutApprovalSvg(request, env, approvalSvgMatch[1]);
+  }
+
+  const unpublishMatch = apiPath.match(/^\/admin\/unpublish\/([^/]+)$/);
+  if (unpublishMatch && method === 'POST') {
+    return apiHandlers.adminUnpublish(request, env, unpublishMatch[1]);
+  }
+
+  const requeueMatch = apiPath.match(/^\/admin\/requeue\/([^/]+)$/);
+  if (requeueMatch && method === 'POST') {
+    return apiHandlers.adminRequeue(request, env, requeueMatch[1]);
+  }
+
+  const featureMatch = apiPath.match(/^\/admin\/feature\/([^/]+)$/);
+  if (featureMatch) {
+    if (method === 'POST') return apiHandlers.adminFeature(request, env, featureMatch[1]);
+    if (method === 'DELETE') return apiHandlers.adminUnfeature(request, env, featureMatch[1]);
+  }
+
+  const flagWorkspaceMatch = apiPath.match(/^\/admin\/flag-workspace\/([^/]+)$/);
+  if (flagWorkspaceMatch) {
+    if (method === 'POST') return apiHandlers.adminFlagWorkspace(request, env, flagWorkspaceMatch[1]);
+    if (method === 'DELETE') return apiHandlers.adminUnflagWorkspace(request, env, flagWorkspaceMatch[1]);
+  }
+
+  const flagUserMatch = apiPath.match(/^\/admin\/flag-user\/([^/]+)$/);
+  if (flagUserMatch) {
+    if (method === 'POST') return apiHandlers.adminFlagUser(request, env, flagUserMatch[1]);
+    if (method === 'DELETE') return apiHandlers.adminUnflagUser(request, env, flagUserMatch[1]);
   }
 
   if (apiPath === '/admin/featured' || apiPath.startsWith('/admin/featured/')) {

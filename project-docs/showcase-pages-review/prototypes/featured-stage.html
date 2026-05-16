@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Featured · Pathogen Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-primary:           #f7f0e3;
+    --bg-secondary:         #fdf6ed;
+    --bg-elevated:          #ffffff;
+    --bg-tertiary:          rgba(28, 23, 34, 0.05);
+    --text-primary:         #1c1722;
+    --text-secondary:       #5a4f6a;
+    --text-tertiary:        #9087a0;
+    --text-inverse:         #fffaf2;
+    --border-color:         rgba(28, 23, 34, 0.10);
+    --border-subtle:        rgba(28, 23, 34, 0.06);
+    --border-strong:        rgba(28, 23, 34, 0.18);
+    --accent-from:          #e16a8f;
+    --accent-to:            #a83d80;
+    --accent-text:          #fffaf2;
+    --secondary-accent:     #9461c4;
+    --secondary-accent-text:#5e3590;
+    --secondary-accent-subtle: rgba(148, 97, 196, 0.16);
+    --secondary-from:       #b384e0;
+    --secondary-to:         #6d3aa6;
+    --shadow-tint-rgb:      165, 110, 140;
+    --shadow-glow:          0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+    --bg-atmosphere-1:      rgba(180, 130, 220, 0.18);
+    --bg-atmosphere-2:      rgba(255, 175, 130, 0.20);
+    --font-display:         'DM Serif Display', Georgia, serif;
+    --font-body:            'DM Sans', system-ui, sans-serif;
+    --font-mono:            'Inconsolata', 'SF Mono', monospace;
+    --font-brand:           'Baumans', cursive;
+    --radius-md:            10px;
+    --radius-lg:            14px;
+    --radius-pill:          999px;
+    --transition-base:      0.15s ease;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background:
+      radial-gradient(900px 500px at 0% 0%,   var(--bg-atmosphere-1), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%),
+      var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px; line-height: 1.55;
+    text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
+    min-height: 100vh; position: relative;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px; opacity: 0.45; mix-blend-mode: multiply; pointer-events: none; z-index: -1;
+  }
+  h1, h2, h3, h4, h5 { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.012em; }
+  ::selection { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+
+  /* ── REAL top nav ───────────────────────────────────────── */
+  .site-header { position: sticky; top: 0; z-index: 50; background: transparent; border-bottom: 1px solid var(--border-subtle); }
+  .site-header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; padding: 0 1.5rem; height: 52px; background: transparent; }
+  .site-header .logo { display: grid; text-decoration: none; line-height: 1.1; row-gap: 1px; justify-self: start; }
+  .site-header .logo-main { font-family: var(--font-brand); font-size: 1.5rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; }
+  .site-header .logo-main em { font-style: normal; background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .site-header .logo-sub { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-tertiary); white-space: nowrap; }
+  .site-header .tabs-wrap { display: grid; grid-auto-flow: column; grid-auto-columns: auto; align-items: center; gap: 2px; justify-self: center; padding: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .site-header .nav-link { padding: 6px 13px; border-radius: 8px; text-decoration: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 0.8125rem; font-weight: 500; cursor: pointer; border: none; background: none; white-space: nowrap; transition: background var(--transition-base), color var(--transition-base); }
+  .site-header .nav-link:hover { color: var(--text-primary); }
+  .site-header .nav-link.active { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); box-shadow: inset 0 0 16px rgba(148, 97, 196, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .site-header .actions { display: grid; grid-auto-flow: column; align-items: center; gap: 0.5rem; justify-self: end; }
+  .site-header .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .site-header .icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .site-header .icon-btn svg { width: 16px; height: 16px; }
+  .site-header .avatar-btn { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to)); color: #fff; font-family: var(--font-display); font-size: 0.85rem; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ── eyebrow + masthead ─────────────────────────────────── */
+  .eyebrow {
+    max-width: 1280px;
+    margin: 2.5rem auto 0.6rem;
+    padding: 0 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+  }
+
+  .stage-masthead {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  .stage-masthead h1 {
+    font-size: clamp(3.6rem, 8.5vw, 6.2rem);
+    line-height: 0.95;
+    margin: 0;
+  }
+  .stage-masthead h1 em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ── stage — single hero, full bleed within container ──── */
+  .stage {
+    max-width: 1280px;
+    margin: 2.75rem auto 0;
+    padding: 0 2rem;
+  }
+  .stage-art {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 3.5rem 3rem 3rem;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 24px 48px rgba(var(--shadow-tint-rgb), 0.16),
+      0 48px 96px rgba(var(--shadow-tint-rgb), 0.10);
+  }
+  .stage-art svg { width: 100%; height: 100%; display: block; }
+  .stage-art .stage-tag {
+    position: absolute;
+    top: 1.4rem;
+    left: 1.4rem;
+    padding: 0.35rem 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+    background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(var(--shadow-tint-rgb), 0.18);
+  }
+
+  /* ── stage caption — title, byline, deck, CTA ───────────── */
+  .stage-caption {
+    max-width: 880px;
+    margin: 2.75rem auto 0;
+    padding: 0 2rem;
+  }
+  .stage-caption h2 {
+    font-size: clamp(2.4rem, 5.2vw, 3.6rem);
+    line-height: 1.05;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .stage-caption h2 em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .stage-byline {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+  }
+  .stage-byline .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #e16a8f, #a83d80);
+    color: #fff; font-family: var(--font-display); font-size: 0.85rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), 0.18);
+  }
+  .stage-byline a {
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .stage-byline a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .stage-byline .dot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--text-tertiary); opacity: 0.6; }
+
+  .stage-deck {
+    margin-top: 1.5rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.35rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: 58ch;
+  }
+
+  .stage-cta {
+    margin-top: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.95rem 1.7rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--accent-text);
+    background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+    border: 0;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.12s ease;
+  }
+  .stage-cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+  .stage-cta:hover { transform: translateY(-1px); }
+  .stage-cta:hover::after { transform: translateX(100%); }
+  .stage-cta .arrow { transition: transform 0.18s; position: relative; z-index: 1; }
+  .stage-cta:hover .arrow { transform: translateX(3px); }
+  .stage-cta span { position: relative; z-index: 1; }
+
+  /* ── previously section ─────────────────────────────────── */
+  .previously {
+    max-width: 1280px;
+    margin: 6rem auto 0;
+    padding: 0 2rem 6rem;
+  }
+  .previously-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 0.75rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .previously-head h3 {
+    font-size: 1.75rem;
+    color: var(--text-primary);
+  }
+  .previously-head .lead {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+  }
+  .previously-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+  }
+  .prev-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  }
+  .prev-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--secondary-accent-subtle);
+    box-shadow: 0 4px 8px rgba(var(--shadow-tint-rgb), 0.08), 0 12px 24px rgba(var(--shadow-tint-rgb), 0.12);
+  }
+  .prev-art { background: var(--bg-secondary); aspect-ratio: 1; padding: 1rem; }
+  .prev-art svg { width: 100%; height: 100%; display: block; }
+  .prev-meta { padding: 0.75rem 1rem 0.95rem; }
+  .prev-meta h4 { font-family: var(--font-display); font-size: 1.05rem; line-height: 1.2; color: var(--text-primary); margin-bottom: 0.3rem; }
+  .prev-meta .sub { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; color: var(--text-tertiary); }
+  .prev-meta .sub a { color: var(--secondary-accent-text); text-decoration: none; font-weight: 600; }
+  .prev-meta .sub a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  footer {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 2rem 3rem;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 1080px) { .previously-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 800px) { .previously-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 880px) { .site-header .logo-sub { display: none; } .stage-art { aspect-ratio: 4 / 3; padding: 1.75rem 1.25rem; } }
+  @media (max-width: 600px) { .site-header .tabs-wrap { display: none; } .site-header-inner { grid-template-columns: auto 1fr auto; padding: 0 0.75rem; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.1</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+      <a class="nav-link" href="/workspaces">Workspaces</a>
+      <a class="nav-link" href="/docs">Docs</a>
+      <a class="nav-link" href="/explore">Explore</a>
+      <a class="nav-link active" href="/featured">Featured</a>
+      <a class="nav-link" href="/blog">Blog</a>
+      <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <button class="icon-btn" aria-label="Toggle theme" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button class="avatar-btn" aria-label="Account">R</button>
+    </div>
+  </div>
+</header>
+
+<!-- Exploration A: Stage — one work, full attention. Quiet archive below. -->
+<p class="eyebrow">This week's pick &nbsp;·&nbsp; № 014</p>
+<section class="stage-masthead">
+  <h1><em>Featured</em></h1>
+</section>
+
+<section class="stage">
+  <div class="stage-art">
+    <span class="stage-tag">Now showing</span>
+    <svg viewBox="0 0 1120 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Crown Bloom — twenty-four-petal bezier bloom rendered large for the Featured page hero.">
+      <defs>
+        <linearGradient id="hp-a" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#b384e0"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient>
+        <linearGradient id="hp-b" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e16a8f"/><stop offset="100%" stop-color="#6d3aa6"/></linearGradient>
+        <radialGradient id="hp-glow" cx="50%" cy="50%" r="62%"><stop offset="0%" stop-color="#fffdf9" stop-opacity="0.5"/><stop offset="100%" stop-color="#fffdf9" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g transform="translate(560 315)">
+        <g opacity="0.92">
+          <g transform="rotate(0)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(15)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(30)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(45)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(60)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(75)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(90)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(105)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(120)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(135)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(150)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(165)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(180)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(195)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(210)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(225)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(240)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(255)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(270)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(285)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(300)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(315)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+          <g transform="rotate(330)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-a)" opacity="0.55"/></g>
+          <g transform="rotate(345)"><path d="M 0 0 C 24 -135 70 -190 0 -240 C -70 -190 -24 -135 0 0 Z" fill="url(#hp-b)" opacity="0.55"/></g>
+        </g>
+        <circle r="42" fill="url(#hp-a)" opacity="0.85"/>
+        <circle r="22" fill="#fdf6ed"/>
+        <circle r="8" fill="#6d3aa6"/>
+        <circle r="280" fill="url(#hp-glow)" opacity="0.5"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section class="stage-caption">
+  <h2>Crown <em>Bloom</em></h2>
+  <p class="stage-byline">
+    <span class="avatar">M</span>
+    <span>by</span>
+    <a href="/u/mira-aoki">@mira-aoki</a>
+    <span class="dot"></span>
+    <span>Now showing · Volume I, № 014</span>
+  </p>
+  <p class="stage-deck">
+    Twenty-four petals, one cubic bezier each, arranged at constant-angle intervals. Restraint as composition: the entire piece is a loop, a rotation, and a single curve.
+  </p>
+  <a href="/u/mira-aoki/crown-bloom" class="stage-cta">
+    <span>Read the work</span> <span class="arrow">→</span>
+  </a>
+</section>
+
+<!-- ── previously ─────────────────────────────────────────── -->
+<section class="previously">
+  <div class="previously-head">
+    <h3>Previously on Featured</h3>
+    <span class="lead">From the archive</span>
+  </div>
+
+  <div class="previously-grid">
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#b384e0"/><stop offset="100%" stop-color="#e16a8f"/></linearGradient></defs>
+          <g transform="translate(100 100)" fill="none" stroke="url(#pv1)" stroke-width="1.2">
+            <circle r="80"/><circle r="68"/><circle r="56"/><circle r="44"/><circle r="32"/><circle r="20"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Polychrome Halo</h4>
+        <div class="sub">by <a href="/u/ryan-kuykendall">@ryan-kuykendall</a> · № 013</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv2" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#6d3aa6"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient></defs>
+          <g fill="url(#pv2)" opacity="0.9">
+            <rect x="20" y="120" width="22" height="60"/>
+            <rect x="50" y="100" width="22" height="80"/>
+            <rect x="80" y="80" width="22" height="100"/>
+            <rect x="110" y="60" width="22" height="120"/>
+            <rect x="140" y="40" width="22" height="140"/>
+            <rect x="170" y="20" width="22" height="160"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Six Pillars</h4>
+        <div class="sub">by <a href="/u/dani-okereke">@dani-okereke</a> · № 012</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><radialGradient id="pv3" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#d97a6e"/><stop offset="100%" stop-color="#6d3aa6"/></radialGradient></defs>
+          <g transform="translate(100 100)">
+            <circle r="70" fill="none" stroke="url(#pv3)" stroke-width="14" stroke-dasharray="22 8"/>
+            <circle r="44" fill="none" stroke="url(#pv3)" stroke-width="10" stroke-dasharray="14 6"/>
+            <circle r="22" fill="url(#pv3)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Dot Matrix</h4>
+        <div class="sub">by <a href="/u/ryan-kuykendall">@ryan-kuykendall</a> · № 011</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b384e0"/><stop offset="100%" stop-color="#6d3aa6"/></linearGradient></defs>
+          <g transform="translate(100 100)" fill="none" stroke="url(#pv4)" stroke-width="1.4">
+            <path d="M -70 -20 Q -35 -60 0 -20 T 70 -20"/>
+            <path d="M -70 0 Q -35 -40 0 0 T 70 0"/>
+            <path d="M -70 20 Q -35 -20 0 20 T 70 20"/>
+            <path d="M -70 40 Q -35 0 0 40 T 70 40"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Standing Wave</h4>
+        <div class="sub">by <a href="/u/ryan-kuykendall">@ryan-kuykendall</a> · № 010</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv5" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#e16a8f"/><stop offset="100%" stop-color="#b384e0"/></linearGradient></defs>
+          <g transform="translate(100 100)" fill="url(#pv5)" opacity="0.92">
+            <polygon points="0,-70 41,-22 35,40 -35,40 -41,-22"/>
+            <polygon points="0,-50 28,-15 24,28 -24,28 -28,-15" fill="#fdf6ed" opacity="0.85"/>
+            <polygon points="0,-30 18,-10 15,18 -15,18 -18,-10" fill="url(#pv5)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Pentagon Cycle</h4>
+        <div class="sub">by <a href="/u/jules-fontaine">@jules-fontaine</a> · № 009</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6d3aa6"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient></defs>
+          <g transform="translate(100 100)" fill="none" stroke="url(#pv6)" stroke-width="1.2">
+            <g transform="rotate(0)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(30)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(60)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(90)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(120)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(150)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(180)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(210)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(240)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(270)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(300)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <g transform="rotate(330)"><line x1="0" y1="-70" x2="0" y2="-30"/></g>
+            <circle r="22" fill="url(#pv6)" stroke="none"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Compass Rose</h4>
+        <div class="sub">by <a href="/u/marin-castellanos">@marin-castellanos</a> · № 008</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv7" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d97a6e"/><stop offset="100%" stop-color="#a83d80"/></linearGradient></defs>
+          <g fill="url(#pv7)" opacity="0.9">
+            <rect x="15" y="15" width="50" height="50"/>
+            <rect x="70" y="15" width="50" height="50"/>
+            <rect x="125" y="15" width="50" height="50"/>
+            <rect x="15" y="70" width="50" height="50"/>
+            <rect x="125" y="70" width="50" height="50"/>
+            <rect x="15" y="125" width="50" height="50"/>
+            <rect x="70" y="125" width="50" height="50"/>
+            <rect x="125" y="125" width="50" height="50"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Eight Tiles</h4>
+        <div class="sub">by <a href="/u/ivy-johansson">@ivy-johansson</a> · № 007</div>
+      </div>
+    </a>
+
+    <a class="prev-card" href="#">
+      <div class="prev-art">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pv8" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#b384e0"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient></defs>
+          <g transform="translate(100 100)" fill="none" stroke="url(#pv8)" stroke-width="1.6" stroke-linecap="round">
+            <path d="M -70 -40 C -20 -80 20 -80 70 -40"/>
+            <path d="M -70 -20 C -20 -60 20 -60 70 -20"/>
+            <path d="M -70 0 C -20 -40 20 -40 70 0"/>
+            <path d="M -70 20 C -20 -20 20 -20 70 20"/>
+            <path d="M -70 40 C -20 0 20 0 70 40"/>
+            <path d="M -70 60 C -20 20 20 20 70 60"/>
+          </g>
+        </svg>
+      </div>
+      <div class="prev-meta">
+        <h4>Smile Stack</h4>
+        <div class="sub">by <a href="/u/leon-pak">@leon-pak</a> · № 006</div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<footer>
+  <span>© Pathogen Studio</span>
+  <span>Submit a workspace · About · Contact</span>
+</footer>
+
+</body>
+</html>

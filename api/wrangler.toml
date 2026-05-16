@@ -33,6 +33,10 @@ preview_bucket_name = "svg-path-extended-thumbnails-preview"
 binding = "USERS_DB"
 database_name = "svg-path-extended-users"
 database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
+# Migrations live at the repo root (shared with the Pages worker's
+# wrangler.toml). Without this line wrangler looks for ./migrations/
+# relative to api/, which doesn't exist.
+migrations_dir = "../migrations"
 
 # Workers wrangler.toml accepts [[send_email]] (Pages does not — that is the
 # whole reason this project exists separately). Sending domain

@@ -12,6 +12,13 @@
 // workspace-view.ts has been listening for since the previous implementation.
 
 import { workspaceApi } from '../services/api.js';
+import { hasFeature, UserFeature, type CurrentUser } from '../services/auth.js';
+import {
+  precheckCompile,
+  toastPrivateSuccess,
+  toastPublishBlocked,
+  toastPublishSuccess,
+} from '../services/publish-precheck.js';
 import { store } from '../state/store.js';
 import { navigateTo, parseWorkspaceSlugId } from '../utils/router.js';
 import { copyURL } from '../utils/url-state.js';
@@ -65,6 +72,8 @@ class AppBreadcrumb extends HTMLElement {
         'workspaceName',
         'workspaceId',
         'workspaceIsPublic',
+        'workspacePublicationState',
+        'workspaceRereviewPending',
         'currentUser',
         'annotatedOpen',
         'consoleOpen',
@@ -240,9 +249,10 @@ class AppBreadcrumb extends HTMLElement {
   getOverflowMenuHtml(): string {
     const workspaceId = store.get('workspaceId') as string | null;
     const workspaceIsPublic = store.get('workspaceIsPublic') as boolean;
-    const currentUser = store.get('currentUser');
+    const currentUser = store.get('currentUser') as CurrentUser | null;
     const hasWorkspace = !!workspaceId;
     const isSignedIn = currentUser !== null;
+    const canPublish = hasFeature(currentUser, UserFeature.Publishing);
 
     const menuItems: string[] = [];
     menuItems.push(
@@ -275,12 +285,36 @@ class AppBreadcrumb extends HTMLElement {
         `<button data-action="set-thumbnail">${materialIcon('image', { size: 16, className: 'menu-icon' })}<span>Set Thumbnail</span></button>`,
       );
     }
-    if (isSignedIn && hasWorkspace) {
+    // Publish toggle reflects the moderation state machine. 'rejected' is
+    // shown as 'Submit for review' (silent rejection — owners are never
+    // told why their submission did not become public). rereviewPending
+    // overlays "Pending re-review" on top of the otherwise-approved state.
+    const pubState = (store.get('workspacePublicationState') as string) || 'unpublished';
+    const rereviewPending = Boolean(store.get('workspaceRereviewPending'));
+    if (isSignedIn && hasWorkspace && (canPublish || workspaceIsPublic || pubState === 'pending')) {
       menuItems.push('<div class="menu-divider"></div>');
-      const publishLabel = workspaceIsPublic ? 'Unpublish workspace' : 'Publish workspace';
-      const publishIcon = workspaceIsPublic ? 'lock' : 'public';
+      let publishLabel: string;
+      let publishIcon: 'public' | 'lock';
+      let disabled = false;
+      if (pubState === 'pending') {
+        publishLabel = 'Pending review';
+        publishIcon = 'public';
+        disabled = true;
+      } else if (workspaceIsPublic || pubState === 'approved') {
+        if (rereviewPending) {
+          publishLabel = 'Pending re-review';
+          publishIcon = 'public';
+          disabled = true;
+        } else {
+          publishLabel = 'Make private';
+          publishIcon = 'lock';
+        }
+      } else {
+        publishLabel = 'Make public';
+        publishIcon = 'public';
+      }
       menuItems.push(
-        `<button data-action="toggle-publish" class="publish-item">${materialIcon(publishIcon, { size: 16, className: 'menu-icon' })}<span>${publishLabel}</span></button>`,
+        `<button data-action="toggle-publish" class="publish-item" ${disabled ? 'disabled' : ''}>${materialIcon(publishIcon, { size: 16, className: 'menu-icon' })}<span>${publishLabel}</span></button>`,
       );
     }
 
@@ -464,22 +498,48 @@ class AppBreadcrumb extends HTMLElement {
   async handlePublishToggle(): Promise<void> {
     const workspaceId = store.get('workspaceId') as string | null;
     const currentlyPublic = store.get('workspaceIsPublic') as boolean;
+    const currentState = (store.get('workspacePublicationState') as string) || 'unpublished';
     if (!workspaceId) return;
+    if (currentState === 'pending') return; // disabled in the menu, defensive
+
+    const requestPublic = !(currentlyPublic || currentState === 'approved');
+
+    // Make-public path runs through the compile precheck so broken
+    // workspaces never reach the moderation queue. The API can't
+    // independently enforce this (the compiler bundle doesn't fit in
+    // a Worker), so the client is the authority — and the toast tells
+    // the user exactly why it was blocked.
+    if (requestPublic) {
+      const code = (store.get('code') as string | undefined) ?? '';
+      const precheck = await precheckCompile(code);
+      if (!precheck.ok) {
+        toastPublishBlocked(precheck);
+        return;
+      }
+    }
 
     try {
-      await workspaceApi.update(workspaceId, { isPublic: !currentlyPublic });
-      store.set('workspaceIsPublic', !currentlyPublic);
+      const updated = (await workspaceApi.update(workspaceId, { isPublic: requestPublic })) as {
+        isPublic?: boolean;
+        publicationState?: string;
+      };
+      const newState = updated.publicationState ?? (requestPublic ? 'pending' : 'unpublished');
+      const newIsPublic = Boolean(updated.isPublic);
+      store.update({
+        workspaceIsPublic: newIsPublic,
+        workspacePublicationState: newState,
+      });
 
-      // Also update the workspace entry in the workspaces list, if present,
-      // so /pathogen (landing) reflects the change without a refetch.
-      const workspaces = (store.get('workspaces') || []) as Array<{ id: string; isPublic: boolean }>;
+      const workspaces = (store.get('workspaces') || []) as Array<{ id: string; isPublic: boolean; publicationState?: string }>;
       const workspace = workspaces.find((w) => w.id === workspaceId);
       if (workspace) {
-        workspace.isPublic = !currentlyPublic;
+        workspace.isPublic = newIsPublic;
+        workspace.publicationState = newState;
         store.set('workspaces', [...workspaces]);
       }
 
-      this.showOverflowFeedback(currentlyPublic ? 'Workspace unpublished' : 'Workspace published');
+      if (requestPublic) toastPublishSuccess();
+      else toastPrivateSuccess();
     } catch (err: unknown) {
       console.error('Failed to update workspace visibility:', err);
       this.showOverflowFeedback('Publish failed', true);

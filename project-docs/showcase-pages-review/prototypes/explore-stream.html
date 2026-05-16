@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Explore · Pathogen Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-primary:           #f7f0e3;
+    --bg-secondary:         #fdf6ed;
+    --bg-elevated:          #ffffff;
+    --bg-tertiary:          rgba(28, 23, 34, 0.05);
+    --text-primary:         #1c1722;
+    --text-secondary:       #5a4f6a;
+    --text-tertiary:        #9087a0;
+    --text-inverse:         #fffaf2;
+    --border-color:         rgba(28, 23, 34, 0.10);
+    --border-subtle:        rgba(28, 23, 34, 0.06);
+    --border-strong:        rgba(28, 23, 34, 0.18);
+    --accent-color:         #c0518e;
+    --accent-from:          #e16a8f;
+    --accent-to:            #a83d80;
+    --accent-text:          #fffaf2;
+    --secondary-accent:     #9461c4;
+    --secondary-accent-text:#5e3590;
+    --secondary-accent-subtle: rgba(148, 97, 196, 0.16);
+    --secondary-from:       #b384e0;
+    --secondary-to:         #6d3aa6;
+    --shadow-tint-rgb:      165, 110, 140;
+    --shadow-glow:          0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+    --bg-atmosphere-1:      rgba(180, 130, 220, 0.18);
+    --bg-atmosphere-2:      rgba(255, 175, 130, 0.20);
+    --font-display:         'DM Serif Display', Georgia, serif;
+    --font-body:            'DM Sans', system-ui, sans-serif;
+    --font-mono:            'Inconsolata', 'SF Mono', monospace;
+    --font-brand:           'Baumans', cursive;
+    --radius-sm:            6px;
+    --radius-md:            10px;
+    --radius-lg:            14px;
+    --radius-pill:          999px;
+    --transition-base:      0.15s ease;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background:
+      radial-gradient(900px 500px at 0% 0%,   var(--bg-atmosphere-1), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%),
+      var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.45;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.012em;
+  }
+  ::selection { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+
+  /* ── REAL top nav ───────────────────────────────────────── */
+  .site-header { position: sticky; top: 0; z-index: 50; background: transparent; border-bottom: 1px solid var(--border-subtle); }
+  .site-header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; padding: 0 1.5rem; height: 52px; background: transparent; }
+  .site-header .logo { display: grid; text-decoration: none; line-height: 1.1; row-gap: 1px; justify-self: start; }
+  .site-header .logo-main { font-family: var(--font-brand); font-size: 1.5rem; font-weight: 400; color: var(--text-primary); white-space: nowrap; }
+  .site-header .logo-main em { font-style: normal; background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .site-header .logo-sub { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-tertiary); white-space: nowrap; }
+  .site-header .tabs-wrap { display: grid; grid-auto-flow: column; grid-auto-columns: auto; align-items: center; gap: 2px; justify-self: center; padding: 4px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .site-header .nav-link { padding: 6px 13px; border-radius: 8px; text-decoration: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 0.8125rem; font-weight: 500; cursor: pointer; border: none; background: none; white-space: nowrap; transition: background var(--transition-base), color var(--transition-base); }
+  .site-header .nav-link:hover { color: var(--text-primary); }
+  .site-header .nav-link.active { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); box-shadow: inset 0 0 16px rgba(148, 97, 196, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .site-header .actions { display: grid; grid-auto-flow: column; align-items: center; gap: 0.5rem; justify-self: end; }
+  .site-header .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .site-header .icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .site-header .icon-btn svg { width: 16px; height: 16px; }
+  .site-header .avatar-btn { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to)); color: #fff; font-family: var(--font-display); font-size: 0.85rem; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ── masthead ───────────────────────────────────────────── */
+  .masthead {
+    max-width: 1280px;
+    margin: 2.25rem auto 0;
+    padding: 0 2rem;
+  }
+  .masthead-title {
+    font-size: clamp(3rem, 6.5vw, 4.6rem);
+    line-height: 1.0;
+    margin: 0;
+  }
+  .masthead-title em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .masthead-deck {
+    margin-top: 0.85rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 56ch;
+  }
+  .masthead-stats {
+    margin-top: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .masthead-stats strong {
+    color: var(--secondary-accent-text);
+    font-weight: 700;
+  }
+
+  /* ── controls ───────────────────────────────────────────── */
+  .controls {
+    max-width: 1280px;
+    margin: 2.25rem auto 2rem;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem 0.5rem 1rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .sort .label { color: var(--text-tertiary); letter-spacing: 0.12em; text-transform: uppercase; }
+  .sort select {
+    border: 0; background: transparent; font-family: inherit; font-size: inherit; font-weight: inherit; color: inherit;
+    cursor: pointer; appearance: none; -webkit-appearance: none; padding-right: 1.1rem;
+    background-image: linear-gradient(45deg, transparent 50%, var(--secondary-accent-text) 50%), linear-gradient(135deg, var(--secondary-accent-text) 50%, transparent 50%);
+    background-position: calc(100% - 9px) 50%, calc(100% - 4px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  /* ── STREAM — single-column feed of larger cards ────────── */
+  .stream {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+    display: grid;
+    gap: 2.25rem;
+  }
+  .stream-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: stretch;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  }
+  .stream-card:nth-child(even) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+  .stream-card:nth-child(even) .stream-art { order: 2; }
+  .stream-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--secondary-accent-subtle);
+    box-shadow:
+      0 4px 8px rgba(var(--shadow-tint-rgb), 0.10),
+      0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+  }
+  .stream-art {
+    background: var(--bg-secondary);
+    padding: 2.25rem 1.75rem;
+    aspect-ratio: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stream-art svg { width: 100%; height: auto; max-height: 320px; display: block; }
+  .stream-body {
+    padding: 1.75rem 1.75rem 1.75rem 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stream-card:nth-child(even) .stream-body {
+    padding: 1.75rem 0 1.75rem 1.75rem;
+  }
+  .stream-title {
+    font-size: 1.75rem;
+    line-height: 1.12;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+  }
+  .stream-title em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .stream-desc {
+    font-size: 0.94rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+  .creator-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding-top: 0.95rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .creator-chip .avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-family: var(--font-display); font-size: 0.78rem; line-height: 1;
+  }
+  .creator-chip a { color: var(--secondary-accent-text); text-decoration: none; font-weight: 600; }
+  .creator-chip a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .creator-chip .dot { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--text-tertiary); opacity: 0.6; }
+  .creator-chip .when { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.04em; margin-left: auto; }
+
+  footer {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 2rem 3rem;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 720px) {
+    .stream-card,
+    .stream-card:nth-child(even) { grid-template-columns: 1fr; gap: 0; }
+    .stream-card:nth-child(even) .stream-art { order: 0; }
+    .stream-body, .stream-card:nth-child(even) .stream-body { padding: 1.5rem; }
+    .stream-art { padding: 1.5rem; }
+    .site-header .logo-sub { display: none; }
+  }
+  @media (max-width: 600px) {
+    .site-header .tabs-wrap { display: none; }
+    .site-header-inner { grid-template-columns: auto 1fr auto; padding: 0 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.1</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+      <a class="nav-link" href="/workspaces">Workspaces</a>
+      <a class="nav-link" href="/docs">Docs</a>
+      <a class="nav-link active" href="/explore">Explore</a>
+      <a class="nav-link" href="/featured">Featured</a>
+      <a class="nav-link" href="/blog">Blog</a>
+      <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <button class="icon-btn" aria-label="Toggle theme" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button class="avatar-btn" aria-label="Account">R</button>
+    </div>
+  </div>
+</header>
+
+<!-- Exploration A: Stream — chronological feed of larger cards with alternating image side -->
+<section class="masthead">
+  <h1 class="masthead-title"><em>Explore</em> what's new</h1>
+  <p class="masthead-deck">
+    A continuously updated stream of work from the Pathogen Studio community. Newest first.
+  </p>
+  <div class="masthead-stats">
+    <span><strong>87</strong> Workspaces</span>
+    <span><strong>34</strong> Creators</span>
+    <span>Updated <strong>moments ago</strong></span>
+  </div>
+</section>
+
+<div class="controls">
+  <div class="sort">
+    <span class="label">Sort</span>
+    <select aria-label="Sort order">
+      <option>Newest</option>
+      <option>This week</option>
+      <option>This month</option>
+    </select>
+  </div>
+</div>
+
+<section class="stream">
+
+  <a class="stream-card" href="/u/ryan-kuykendall/polychrome-halo">
+    <div class="stream-art">
+      <svg viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="s1-a" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#b384e0"/><stop offset="100%" stop-color="#e16a8f"/></linearGradient>
+          <linearGradient id="s1-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6d3aa6"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient>
+        </defs>
+        <g transform="translate(240 190)" fill="none">
+          <circle r="160" stroke="url(#s1-a)" stroke-width="1.5" opacity="0.85"/>
+          <circle r="138" stroke="url(#s1-b)" stroke-width="1.5" opacity="0.88"/>
+          <circle r="116" stroke="url(#s1-a)" stroke-width="2" opacity="0.9"/>
+          <circle r="94"  stroke="url(#s1-b)" stroke-width="2" opacity="0.92"/>
+          <circle r="72"  stroke="url(#s1-a)" stroke-width="2.5" opacity="0.94"/>
+          <circle r="50"  stroke="url(#s1-b)" stroke-width="3" opacity="0.95"/>
+          <circle r="28"  stroke="url(#s1-a)" stroke-width="3.5" opacity="0.95"/>
+          <path d="M 0 0 L 165 0 A 165 165 0 0 0 142 -85 Z" fill="#fdf6ed" transform="rotate(-22)" opacity="0.95"/>
+        </g>
+      </svg>
+    </div>
+    <div class="stream-body">
+      <h3 class="stream-title">Polychrome <em>Halo</em></h3>
+      <p class="stream-desc">Twelve concentric rings, each with its own gradient stroke, and a deliberate offset wedge cut from the upper-right — a study in what happens when ConicGradient meets PathBlocks at uneven angular tempo.</p>
+      <div class="creator-chip">
+        <span class="avatar" style="background: linear-gradient(135deg, #b384e0, #6d3aa6);">R</span>
+        <a href="/u/ryan-kuykendall">@ryan-kuykendall</a>
+        <span class="dot"></span>
+        <span>Published May 14</span>
+        <span class="when">2d</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="stream-card" href="/u/mira-aoki/crown-bloom">
+    <div class="stream-art">
+      <svg viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="s2-a" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#b384e0"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient>
+          <linearGradient id="s2-b" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e16a8f"/><stop offset="100%" stop-color="#6d3aa6"/></linearGradient>
+        </defs>
+        <g transform="translate(240 190)">
+          <g transform="rotate(0)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(20)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(40)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(60)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(80)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(100)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(120)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(140)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(160)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(180)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(200)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(220)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(240)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(260)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(280)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(300)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <g transform="rotate(320)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-a)" opacity="0.6"/></g>
+          <g transform="rotate(340)"><path d="M 0 0 C 15 -85 45 -120 0 -150 C -45 -120 -15 -85 0 0 Z" fill="url(#s2-b)" opacity="0.6"/></g>
+          <circle r="22" fill="url(#s2-a)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="stream-body">
+      <h3 class="stream-title">Crown <em>Bloom</em></h3>
+      <p class="stream-desc">Eighteen bezier petals around a central disc — every petal is one cubic curve, the rest is loop and transform. Restraint as composition.</p>
+      <div class="creator-chip">
+        <span class="avatar" style="background: linear-gradient(135deg, #e16a8f, #a83d80);">M</span>
+        <a href="/u/mira-aoki">@mira-aoki</a>
+        <span class="dot"></span>
+        <span>Published May 12</span>
+        <span class="when">4d</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="stream-card" href="#">
+    <div class="stream-art">
+      <svg viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="s3" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#6d3aa6"/><stop offset="50%" stop-color="#d97a6e"/><stop offset="100%" stop-color="#e16a8f"/></linearGradient>
+        </defs>
+        <g fill="none" stroke="url(#s3)" stroke-width="1.8">
+          <path d="M 30 190 Q 100 70 180 190 T 340 190 T 480 190"/>
+          <path d="M 30 220 Q 100 100 180 220 T 340 220 T 480 220"/>
+          <path d="M 30 160 Q 100 40 180 160 T 340 160 T 480 160"/>
+          <path d="M 30 250 Q 100 130 180 250 T 340 250 T 480 250"/>
+          <path d="M 30 130 Q 100 10 180 130 T 340 130 T 480 130"/>
+          <path d="M 30 280 Q 100 160 180 280 T 340 280 T 480 280"/>
+          <path d="M 30 100 Q 100 -20 180 100 T 340 100 T 480 100"/>
+          <path d="M 30 310 Q 100 190 180 310 T 340 310 T 480 310"/>
+        </g>
+      </svg>
+    </div>
+    <div class="stream-body">
+      <h3 class="stream-title">Sine <em>Repeater</em></h3>
+      <p class="stream-desc">Eight stacked sine waves at phase-shifted intervals, each stroked with a single horizontal gradient. The math is the design.</p>
+      <div class="creator-chip">
+        <span class="avatar" style="background: linear-gradient(135deg, #d97a6e, #a83d80);">L</span>
+        <a href="/u/leon-pak">@leon-pak</a>
+        <span class="dot"></span>
+        <span>Published May 10</span>
+        <span class="when">5d</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="stream-card" href="#">
+    <div class="stream-art">
+      <svg viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="s4" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#6d3aa6"/><stop offset="100%" stop-color="#d97a6e"/></linearGradient>
+        </defs>
+        <g fill="url(#s4)" opacity="0.92">
+          <rect x="30" y="230" width="44" height="120"/>
+          <rect x="86" y="200" width="44" height="150"/>
+          <rect x="142" y="170" width="44" height="180"/>
+          <rect x="198" y="130" width="44" height="220"/>
+          <rect x="254" y="90"  width="44" height="260"/>
+          <rect x="310" y="55"  width="44" height="295"/>
+          <rect x="366" y="80"  width="44" height="270"/>
+          <rect x="422" y="120" width="44" height="230"/>
+        </g>
+      </svg>
+    </div>
+    <div class="stream-body">
+      <h3 class="stream-title">Stride <em>Eight</em></h3>
+      <p class="stream-desc">Eight bars, each height a sample of an envelope curve at a phase-shifted offset. A minimal vocabulary turning into a wave.</p>
+      <div class="creator-chip">
+        <span class="avatar" style="background: linear-gradient(135deg, #b384e0, #6d3aa6);">D</span>
+        <a href="/u/dani-okereke">@dani-okereke</a>
+        <span class="dot"></span>
+        <span>Published May 8</span>
+        <span class="when">1w</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="stream-card" href="#">
+    <div class="stream-art">
+      <svg viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
+        <defs><radialGradient id="s5" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#d97a6e"/><stop offset="100%" stop-color="#6d3aa6"/></radialGradient></defs>
+        <g transform="translate(240 190)">
+          <circle r="140" fill="none" stroke="url(#s5)" stroke-width="32" stroke-dasharray="48 16"/>
+          <circle r="88"  fill="none" stroke="url(#s5)" stroke-width="22" stroke-dasharray="28 10"/>
+          <circle r="42"  fill="url(#s5)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="stream-body">
+      <h3 class="stream-title">Dot <em>Matrix</em></h3>
+      <p class="stream-desc">Concentric dashed rings with phase-stepped lengths — a quick study in <code>stroke-dasharray</code> as compositional verb.</p>
+      <div class="creator-chip">
+        <span class="avatar" style="background: linear-gradient(135deg, #b384e0, #6d3aa6);">R</span>
+        <a href="/u/ryan-kuykendall">@ryan-kuykendall</a>
+        <span class="dot"></span>
+        <span>Published Apr 30</span>
+        <span class="when">2w</span>
+      </div>
+    </div>
+  </a>
+
+</section>
+
+<footer>
+  <span>© Pathogen Studio</span>
+  <span>Submit a workspace · About · Contact</span>
+</footer>
+
+</body>
+</html>

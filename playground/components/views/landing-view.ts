@@ -2,6 +2,13 @@
 // Route: /
 
 import { thumbnailApi, workspaceApi } from '../../services/api.js';
+import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
+import {
+  precheckCompile,
+  toastPrivateSuccess,
+  toastPublishBlocked,
+  toastPublishSuccess,
+} from '../../services/publish-precheck.js';
 import { store } from '../../state/store.js';
 import { materialIcon } from '../../utils/material-icons.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
@@ -35,10 +42,14 @@ class LandingView extends HTMLElement {
     this.render();
     this.setupEventListeners();
 
-    // Subscribe to view changes to reload when becoming active
-    this._unsubscribe = store.subscribe(['currentView'], () => {
+    // Subscribe to view changes to reload when becoming active. Also
+    // re-render when currentUser flips (e.g. /me bootstrap completes
+    // after the initial render) so the "Make Public" menu item appears
+    // for users with the Publishing feature without a manual refresh.
+    this._unsubscribe = store.subscribe(['currentView', 'currentUser'], () => {
       if (store.get('currentView') === 'landing') {
         this.loadWorkspaces();
+        this.render();
       }
     });
 
@@ -220,12 +231,28 @@ class LandingView extends HTMLElement {
           if (!workspace) return;
 
           const newIsPublic = !workspace.isPublic;
+
+          // Make-public requires the workspace to compile. The list
+          // payload doesn't include `code` (the listing endpoint omits
+          // it), so we fetch the workspace once before precheck.
+          if (newIsPublic) {
+            const full = (await workspaceApi.get(id)) as { code?: string };
+            const precheck = await precheckCompile(full.code);
+            if (!precheck.ok) {
+              toastPublishBlocked(precheck);
+              return;
+            }
+          }
+
           await workspaceApi.update(id, { isPublic: newIsPublic });
 
           // Update local state
           workspace.isPublic = newIsPublic;
           store.set('workspaces', [...workspaces]);
           this.render();
+
+          if (newIsPublic) toastPublishSuccess();
+          else toastPrivateSuccess();
         } catch (err: unknown) {
           console.error('Failed to update workspace visibility:', err);
           alert(`Failed to update visibility: ${(err as Error).message}`);
@@ -297,6 +324,20 @@ class LandingView extends HTMLElement {
         </div>
       `;
     } else {
+      // "Make Public" is feature-gated like the workspace breadcrumb's
+      // counterpart — only verified, non-flagged users see it. "Make
+      // Private" is always available (opt-out doesn't need the gate).
+      const canPublish = hasFeature(
+        store.get('currentUser') as CurrentUser | null,
+        UserFeature.Publishing,
+      );
+      const publishMenuItem = (ws: Workspace): string => {
+        if (ws.isPublic) {
+          return `<button data-action="toggle-publish">Make Private</button>`;
+        }
+        if (!canPublish) return '';
+        return `<button data-action="toggle-publish">Make Public</button>`;
+      };
       content = `
         <div class="workspace-list ${this.viewMode}">
           ${workspaces
@@ -323,7 +364,7 @@ class LandingView extends HTMLElement {
                   </button>
                   <div class="menu-dropdown ${this._openMenuId === ws.id ? 'open' : ''}">
                     <button data-action="copy">Duplicate</button>
-                    <button data-action="toggle-publish">${ws.isPublic ? 'Make Private' : 'Make Public'}</button>
+                    ${publishMenuItem(ws)}
                     <button data-action="delete" class="danger">Delete</button>
                   </div>
                   <h3>${this.escapeHtml(ws.name)}</h3>
@@ -354,7 +395,7 @@ class LandingView extends HTMLElement {
                   </button>
                   <div class="menu-dropdown ${this._openMenuId === ws.id ? 'open' : ''}">
                     <button data-action="copy">Duplicate</button>
-                    <button data-action="toggle-publish">${ws.isPublic ? 'Make Private' : 'Make Public'}</button>
+                    ${publishMenuItem(ws)}
                     <button data-action="delete" class="danger">Delete</button>
                   </div>
                   <h3>${this.escapeHtml(ws.name)}</h3>

@@ -21,6 +21,13 @@
   position: relative;
   background: transparent;
   border-bottom: 1px solid var(--border-subtle, rgba(28, 23, 34, 0.06));
+  /* Frosted-glass blur for content scrolling underneath the sticky
+   * header (renderPage sets position:sticky on SSR pages; the SPA
+   * shell may or may not). Transparent background lets the
+   * atmospheric backplate + scrolling content show through, while
+   * the blur keeps it from competing with the nav. */
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
 }
 
 .site-header-inner {

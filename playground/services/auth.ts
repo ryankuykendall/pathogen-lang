@@ -16,11 +16,26 @@ import {
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
 
+// Mirror of the server-side enum at `website/auth/types.ts`. The two MUST
+// stay in sync. Splitting them lets the playground bundle stand alone
+// without importing from the worker bundle. Server is the source of truth.
+export const UserFeature = {
+  Publishing: 'publishing',
+  AdminModeration: 'admin-moderation',
+} as const;
+export type UserFeature = (typeof UserFeature)[keyof typeof UserFeature];
+
 export interface CurrentUser {
   id: string;
   email: string;
   handle: string;
   displayName: string;
+  features: UserFeature[];
+}
+
+export function hasFeature(user: CurrentUser | null | undefined, feature: UserFeature): boolean {
+  if (!user || !Array.isArray(user.features)) return false;
+  return user.features.includes(feature);
 }
 
 export interface VerifyResponse {

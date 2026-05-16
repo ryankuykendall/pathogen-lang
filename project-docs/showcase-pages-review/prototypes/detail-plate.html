@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Polychrome Halo — Pathogen Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ─── Atmospheric Layered tokens (mirrors playground/styles/theme.css) ─── */
+  :root {
+    --bg-primary:           #f7f0e3;
+    --bg-secondary:         #fdf6ed;
+    --bg-elevated:          #ffffff;
+    --bg-tertiary:          rgba(28, 23, 34, 0.05);
+
+    --text-primary:         #1c1722;
+    --text-secondary:       #5a4f6a;
+    --text-tertiary:        #9087a0;
+    --text-inverse:         #fffaf2;
+
+    --border-color:         rgba(28, 23, 34, 0.10);
+    --border-subtle:        rgba(28, 23, 34, 0.06);
+    --border-strong:        rgba(28, 23, 34, 0.18);
+
+    --accent-color:         #c0518e;
+    --accent-hover:         #b04680;
+    --accent-from:          #e16a8f;
+    --accent-to:            #a83d80;
+    --accent-text:          #fffaf2;
+
+    --secondary-accent:     #9461c4;
+    --secondary-accent-text:#5e3590;
+    --secondary-accent-subtle: rgba(148, 97, 196, 0.16);
+    --secondary-from:       #b384e0;
+    --secondary-to:         #6d3aa6;
+
+    --shadow-tint-rgb:      165, 110, 140;
+    --shadow-glow:          0 8px 28px rgba(192, 81, 142, 0.30), 0 0 0 1px rgba(192, 81, 142, 0.18);
+
+    --bg-atmosphere-1:      rgba(180, 130, 220, 0.18);
+    --bg-atmosphere-2:      rgba(255, 175, 130, 0.20);
+
+    --font-display:         'DM Serif Display', Georgia, serif;
+    --font-body:            'DM Sans', system-ui, sans-serif;
+    --font-mono:            'Inconsolata', 'SF Mono', monospace;
+    --font-brand:           'Baumans', cursive;
+
+    --radius-sm:            6px;
+    --radius-md:            10px;
+    --radius-lg:            14px;
+    --radius-pill:          999px;
+
+    /* code source tints */
+    --code-keyword:         #6d3aa6;
+    --code-fn:              #a83d80;
+    --code-num:             #d97a6e;
+    --code-str:             #5a8a72;
+    --code-comment:         #9087a0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background:
+      radial-gradient(900px 500px at 0% 0%,   var(--bg-atmosphere-1), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%),
+      var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Atmospheric fractalNoise grain — fixed-position multiply-blend overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.45;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.012em;
+  }
+
+  ::selection { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+
+  /* ── site header ────────────────────────────────────────── */
+  .site-header {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .wordmark {
+    font-family: var(--font-brand);
+    font-size: 1.65rem;
+    letter-spacing: 0.005em;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+  .wordmark .accent {
+    background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .nav { display: flex; gap: 1.5rem; }
+  .nav a {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+    padding-bottom: 2px;
+  }
+  .nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .nav a.active { color: var(--text-primary); border-bottom: 1px solid var(--secondary-accent); }
+
+  /* ── breadcrumb ─────────────────────────────────────────── */
+  .breadcrumb {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .breadcrumb a {
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .breadcrumb .sep {
+    display: inline-block;
+    margin: 0 0.45rem;
+    color: var(--text-tertiary);
+    opacity: 0.65;
+  }
+  .breadcrumb .here { color: var(--text-secondary); }
+
+  /* ── plate (hero card) ──────────────────────────────────── */
+  .plate {
+    max-width: 1280px;
+    margin: 2rem auto 0;
+    padding: 0 2rem;
+  }
+  .plate-stage {
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 5rem 4rem 4.5rem;
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+      0 16px 40px rgba(var(--shadow-tint-rgb), 0.14),
+      0 36px 72px rgba(var(--shadow-tint-rgb), 0.08);
+    overflow: hidden;
+  }
+  /* vertical edition annotation */
+  .plate-edition {
+    position: absolute;
+    top: 1.4rem;
+    right: 1.4rem;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .plate-edition strong {
+    color: var(--secondary-accent-text);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+  }
+  /* corner crop marks */
+  .plate-stage::before,
+  .plate-stage::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--border-strong);
+  }
+  .plate-stage::before { top: 14px; left: 14px; border-right: none; border-bottom: none; }
+  .plate-stage::after  { bottom: 14px; left: 14px; border-right: none; border-top: none; }
+
+  .plate-art {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    height: auto;
+  }
+
+  /* ── metadata block ─────────────────────────────────────── */
+  .meta {
+    max-width: 1280px;
+    margin: 3rem auto 0;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 4rem;
+    align-items: start;
+  }
+  .meta-title {
+    font-size: clamp(2.4rem, 5vw, 3.4rem);
+    line-height: 1.04;
+    color: var(--text-primary);
+  }
+  .meta-title em {
+    font-style: italic;
+    background: linear-gradient(120deg, var(--secondary-from) 0%, var(--secondary-to) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .byline {
+    margin-top: 1rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+  }
+  .byline .avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to));
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), 0.18);
+  }
+  .byline .handle {
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .byline .handle:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .byline .dot {
+    display: inline-block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    opacity: 0.6;
+  }
+  .deck {
+    margin-top: 1.4rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.22rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    max-width: 56ch;
+  }
+
+  .chip-row {
+    margin-top: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.95rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    transition: color 0.18s, border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  }
+  .chip:hover {
+    color: var(--text-primary);
+    background: var(--secondary-accent-subtle);
+    border-color: var(--secondary-accent);
+  }
+  .chip::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to));
+  }
+
+  /* facts column */
+  .facts {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem 1.6rem 1.4rem;
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.06),
+      0 8px 24px rgba(var(--shadow-tint-rgb), 0.08);
+  }
+  .facts h4 {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 1rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .facts dl { display: grid; gap: 0.95rem; }
+  .facts dt {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .facts dd {
+    margin-top: 0.18rem;
+    font-family: var(--font-display);
+    font-size: 1.06rem;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+  .facts dd .small {
+    display: block;
+    margin-top: 0.15rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+  }
+
+  /* ── source disclosure ──────────────────────────────────── */
+  .source {
+    max-width: 1280px;
+    margin: 4.5rem auto 0;
+    padding: 0 2rem;
+  }
+  details.source-disclosure {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-tint-rgb), 0.06),
+      0 8px 24px rgba(var(--shadow-tint-rgb), 0.06);
+    overflow: hidden;
+  }
+  details.source-disclosure summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 1.4rem 1.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    user-select: none;
+  }
+  details.source-disclosure summary::-webkit-details-marker { display: none; }
+  .source-title {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--text-primary);
+  }
+  .source-meta {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  details.source-disclosure summary::after {
+    content: '＋';
+    margin-left: 1rem;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    color: var(--secondary-accent-text);
+    line-height: 1;
+  }
+  details.source-disclosure[open] summary::after { content: '−'; }
+  details.source-disclosure[open] summary { border-bottom: 1px solid var(--border-subtle); }
+
+  pre.source-code {
+    margin: 0;
+    padding: 1.5rem 1.8rem 1.75rem;
+    background: var(--bg-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text-primary);
+    counter-reset: line;
+  }
+  pre.source-code .ln { counter-increment: line; display: block; }
+  pre.source-code .ln::before {
+    content: counter(line);
+    display: inline-block;
+    width: 2rem;
+    text-align: right;
+    margin-right: 1.2rem;
+    color: var(--text-tertiary);
+    opacity: 0.55;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  pre.source-code .kw  { color: var(--code-keyword); font-weight: 600; }
+  pre.source-code .nm  { color: var(--text-primary); }
+  pre.source-code .num { color: var(--code-num); }
+  pre.source-code .cm  { color: var(--code-comment); font-style: italic; }
+  pre.source-code .fn  { color: var(--code-fn); }
+  pre.source-code .pun { color: var(--text-secondary); }
+
+  /* ── action row ─────────────────────────────────────────── */
+  .actions {
+    max-width: 1280px;
+    margin: 2.5rem auto 0;
+    padding: 0 2rem 5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    align-items: center;
+  }
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.85rem 1.5rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--accent-text);
+    background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+    border: 0;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.12s ease;
+  }
+  .cta-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+  .cta-primary:hover { transform: translateY(-1px); }
+  .cta-primary:hover::after { transform: translateX(100%); }
+  .cta-primary .arrow { transition: transform 0.18s; position: relative; z-index: 1; }
+  .cta-primary:hover .arrow { transform: translateX(3px); }
+  .cta-primary span { position: relative; z-index: 1; }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.78rem 1.25rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.18s, background 0.18s, color 0.18s;
+  }
+  .btn-ghost:hover {
+    border-color: var(--secondary-accent);
+    color: var(--secondary-accent-text);
+    background: var(--secondary-accent-subtle);
+  }
+
+  .actions-trailing {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .actions-trailing a {
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+  }
+  .actions-trailing a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── more by ────────────────────────────────────────────── */
+  .more-by {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3.5rem 2rem 6rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .more-by .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-top: 2rem;
+  }
+  .more-by h3 {
+    font-size: 1.65rem;
+    font-weight: 400;
+    color: var(--text-primary);
+  }
+  .more-by h3 a {
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+  }
+  .more-by .head .all {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--secondary-accent-text);
+    text-decoration: none;
+  }
+  .more-by .head .all:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .more-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  .more-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  }
+  .more-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--secondary-accent-subtle);
+    box-shadow:
+      0 4px 8px rgba(var(--shadow-tint-rgb), 0.10),
+      0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+  }
+  .more-art {
+    background: var(--bg-secondary);
+    aspect-ratio: 5/4;
+    padding: 1.25rem;
+  }
+  .more-art svg { width: 100%; height: 100%; display: block; }
+  .more-meta {
+    padding: 0.95rem 1.1rem 1rem;
+  }
+  .more-meta h4 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.15rem;
+  }
+  .more-meta .sub {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+  }
+  .more-meta .sub strong {
+    color: var(--secondary-accent-text);
+    font-weight: 600;
+  }
+
+  footer {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 2rem 3rem;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 880px) {
+    .meta { grid-template-columns: 1fr; gap: 2.5rem; }
+    .plate-stage { padding: 3rem 1.5rem 2.5rem; }
+    .plate-edition { display: none; }
+    .more-grid { grid-template-columns: 1fr; }
+    .actions-trailing { width: 100%; margin-left: 0; margin-top: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">Pathogen<span class="accent">Studio</span></a>
+  <nav class="nav">
+    <a href="/explore">Explore</a>
+    <a href="/featured">Featured</a>
+    <a href="/docs">Docs</a>
+    <a href="/blog">Blog</a>
+    <a href="/playground">Playground</a>
+  </nav>
+</header>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="/">Home</a>
+  <span class="sep" aria-hidden="true">›</span>
+  <a href="/u/ryan-kuykendall">@ryan-kuykendall</a>
+  <span class="sep" aria-hidden="true">›</span>
+  <span class="here">Polychrome Halo</span>
+</nav>
+
+<!-- ── hero plate ─────────────────────────────────────────── -->
+<section class="plate">
+  <div class="plate-stage">
+    <div class="plate-edition" aria-hidden="true">
+      Plate <strong>№ 042</strong> &nbsp;·&nbsp; Edition of one
+    </div>
+
+    <svg class="plate-art" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Polychrome Halo — concentric rings of conic-gradient strokes with an offset wedge cut from the upper right.">
+      <defs>
+        <linearGradient id="ring-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#b384e0"/>
+          <stop offset="100%" stop-color="#e16a8f"/>
+        </linearGradient>
+        <linearGradient id="ring-b" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6d3aa6"/>
+          <stop offset="100%" stop-color="#d97a6e"/>
+        </linearGradient>
+        <linearGradient id="ring-c" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a83d80"/>
+          <stop offset="100%" stop-color="#5e3590"/>
+        </linearGradient>
+        <radialGradient id="halo-glow" cx="50%" cy="50%" r="62%">
+          <stop offset="0%"  stop-color="#fffdf9" stop-opacity="0.55"/>
+          <stop offset="38%" stop-color="#fffdf9" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#fffdf9" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <g transform="translate(396 304)" stroke-linecap="round" fill="none">
+        <circle r="280" stroke="url(#ring-a)" stroke-width="1.5" opacity="0.85"/>
+        <circle r="258" stroke="url(#ring-b)" stroke-width="1.5" opacity="0.88"/>
+        <circle r="236" stroke="url(#ring-c)" stroke-width="1.5" opacity="0.9"/>
+        <circle r="214" stroke="url(#ring-a)" stroke-width="2"   opacity="0.92"/>
+        <circle r="192" stroke="url(#ring-b)" stroke-width="2"   opacity="0.92"/>
+        <circle r="170" stroke="url(#ring-c)" stroke-width="2.5" opacity="0.94"/>
+        <circle r="146" stroke="url(#ring-a)" stroke-width="2.5" opacity="0.94"/>
+        <circle r="122" stroke="url(#ring-b)" stroke-width="3"   opacity="0.95"/>
+        <circle r="98"  stroke="url(#ring-c)" stroke-width="3"   opacity="0.95"/>
+        <circle r="74"  stroke="url(#ring-a)" stroke-width="3.5" opacity="0.96"/>
+        <circle r="50"  stroke="url(#ring-b)" stroke-width="3.5" opacity="0.96"/>
+        <circle r="26"  stroke="url(#ring-c)" stroke-width="4"   opacity="0.96"/>
+      </g>
+
+      <g transform="translate(396 304)">
+        <path d="M 0 0 L 295 0 A 295 295 0 0 0 252 -154 Z"
+              fill="#ffffff"
+              opacity="0.94"
+              transform="rotate(-22)"/>
+        <path d="M 0 0 L 295 0 A 295 295 0 0 0 252 -154 Z"
+              fill="none"
+              stroke="#1c1722"
+              stroke-width="0.6"
+              transform="rotate(-22)"
+              opacity="0.4"/>
+      </g>
+
+      <circle cx="396" cy="304" r="320" fill="url(#halo-glow)" opacity="0.7"/>
+
+      <g transform="translate(396 304)" stroke="#1c1722" stroke-width="0.8" opacity="0.32">
+        <line x1="285"  y1="0"     x2="298"  y2="0"/>
+        <line x1="0"    y1="285"   x2="0"    y2="298"/>
+        <line x1="-285" y1="0"     x2="-298" y2="0"/>
+        <line x1="0"    y1="-285"  x2="0"    y2="-298"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ── meta block ─────────────────────────────────────────── -->
+<section class="meta">
+  <div>
+    <h1 class="meta-title">Polychrome <em>Halo</em></h1>
+
+    <p class="byline">
+      <span class="avatar">R</span>
+      <span>by</span>
+      <a class="handle" href="/u/ryan-kuykendall">@ryan-kuykendall</a>
+      <span class="dot" aria-hidden="true"></span>
+      <span>Published May 14, 2026</span>
+    </p>
+
+    <p class="deck">
+      Twelve concentric rings, each with its own gradient stroke, and a deliberate offset wedge cut from the upper-right — a study in what happens when <em>ConicGradient</em> meets <em>PathBlocks</em> at uneven angular tempo.
+    </p>
+
+    <div class="chip-row">
+      <a class="chip" href="/explore?tag=gradients">ConicGradient</a>
+      <a class="chip" href="/explore?tag=paths">PathBlocks</a>
+      <a class="chip" href="/explore?tag=loops">for-loops</a>
+      <a class="chip" href="/explore?tag=color">oklch palette</a>
+    </div>
+  </div>
+
+  <aside class="facts" aria-label="Workspace facts">
+    <h4>Plate facts</h4>
+    <dl>
+      <dt>Source length</dt>
+      <dd>127 lines<span class="small">3.2 KB</span></dd>
+
+      <dt>Constructs</dt>
+      <dd>4 builtins<span class="small">used in this work</span></dd>
+
+      <dt>Published</dt>
+      <dd>May 14, 2026<span class="small">approved by curator</span></dd>
+
+      <dt>License</dt>
+      <dd>Open<span class="small">free to fork &amp; remix</span></dd>
+    </dl>
+  </aside>
+</section>
+
+<!-- ── source disclosure ──────────────────────────────────── -->
+<section class="source">
+  <details class="source-disclosure">
+    <summary>
+      <span class="source-title">View source</span>
+      <span class="source-meta">Pathogen · 127 lines</span>
+    </summary>
+<pre class="source-code"><span class="ln"><span class="cm">// Polychrome Halo — concentric rings with offset wedge</span></span><span class="ln"></span><span class="ln"><span class="kw">let</span> <span class="nm">radius</span> = <span class="num">280</span>;</span><span class="ln"><span class="kw">let</span> <span class="nm">rings</span>  = <span class="num">12</span>;</span><span class="ln"><span class="kw">let</span> <span class="nm">center</span> = (<span class="num">400</span>, <span class="num">300</span>);</span><span class="ln"></span><span class="ln"><span class="kw">fn</span> <span class="fn">paletteAt</span>(t) {</span><span class="ln">  <span class="kw">let</span> hue    = <span class="num">28</span> + t * <span class="num">240</span>;</span><span class="ln">  <span class="kw">let</span> chroma = <span class="num">0.18</span> - t * <span class="num">0.06</span>;</span><span class="ln">  <span class="kw">return</span> <span class="fn">oklch</span>(<span class="num">0.74</span>, chroma, hue);</span><span class="ln">}</span><span class="ln"></span><span class="ln"><span class="kw">for</span> (i <span class="kw">in</span> <span class="num">0</span>..rings) {</span><span class="ln">  <span class="kw">let</span> t      = i / rings;</span><span class="ln">  <span class="kw">let</span> r      = radius * (<span class="num">1</span> - t * <span class="num">0.92</span>);</span><span class="ln">  <span class="kw">let</span> stroke = <span class="num">1.5</span> + t * <span class="num">2.5</span>;</span><span class="ln">  <span class="fn">circle</span>(center, r)</span><span class="ln">    .<span class="fn">stroke</span>(<span class="fn">paletteAt</span>(t), stroke);</span><span class="ln">}</span><span class="ln"></span><span class="ln"><span class="cm">// the wedge — asymmetric beat</span></span><span class="ln"><span class="fn">wedge</span>(center, radius * <span class="num">1.06</span>, <span class="num">-22°</span>, <span class="num">30°</span>)</span><span class="ln">  .<span class="fn">fill</span>(<span class="fn">oklch</span>(<span class="num">0.99</span>, <span class="num">0</span>, <span class="num">0</span>));</span></pre>
+  </details>
+</section>
+
+<!-- ── action row ─────────────────────────────────────────── -->
+<section class="actions">
+  <a class="cta-primary" href="/workspace/polychrome-halo--abc12345">
+    <span>Open in playground</span> <span class="arrow">→</span>
+  </a>
+  <button class="btn-ghost" type="button">Fork</button>
+  <button class="btn-ghost" type="button">Copy source</button>
+  <div class="actions-trailing">
+    Share <a href="#">Bluesky</a> <a href="#">X</a> <a href="#">Mastodon</a>
+  </div>
+</section>
+
+<!-- ── more by ────────────────────────────────────────────── -->
+<section class="more-by">
+  <div class="head">
+    <h3>More by <a href="/u/ryan-kuykendall">@ryan-kuykendall</a></h3>
+    <a class="all" href="/u/ryan-kuykendall">View all →</a>
+  </div>
+
+  <div class="more-grid">
+    <a class="more-card" href="#">
+      <div class="more-art">
+        <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="m1-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#6d3aa6"/>
+              <stop offset="100%" stop-color="#d97a6e"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(120 100)" fill="none" stroke="url(#m1-a)" stroke-width="1.4">
+            <path d="M -80 -40 Q -40 -80 0 -40 T 80 -40"/>
+            <path d="M -80 -20 Q -40 -60 0 -20 T 80 -20"/>
+            <path d="M -80 0 Q -40 -40 0 0 T 80 0"/>
+            <path d="M -80 20 Q -40 -20 0 20 T 80 20"/>
+            <path d="M -80 40 Q -40 0 0 40 T 80 40"/>
+            <path d="M -80 60 Q -40 20 0 60 T 80 60"/>
+          </g>
+        </svg>
+      </div>
+      <div class="more-meta">
+        <h4>Standing Wave</h4>
+        <div class="sub">Published <strong>May 3</strong></div>
+      </div>
+    </a>
+
+    <a class="more-card" href="#">
+      <div class="more-art">
+        <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="m2-a" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b384e0"/>
+              <stop offset="100%" stop-color="#a83d80"/>
+            </linearGradient>
+          </defs>
+          <g fill="url(#m2-a)" opacity="0.94">
+            <rect x="20" y="40" width="32" height="120"/>
+            <rect x="60" y="30" width="32" height="140"/>
+            <rect x="100" y="20" width="32" height="160"/>
+            <rect x="140" y="50" width="32" height="110"/>
+            <rect x="180" y="80" width="32" height="80"/>
+          </g>
+        </svg>
+      </div>
+      <div class="more-meta">
+        <h4>Stride Five</h4>
+        <div class="sub">Published <strong>Apr 22</strong></div>
+      </div>
+    </a>
+
+    <a class="more-card" href="#">
+      <div class="more-art">
+        <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="m3-a" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#d97a6e"/>
+              <stop offset="100%" stop-color="#6d3aa6"/>
+            </radialGradient>
+          </defs>
+          <g transform="translate(120 100)">
+            <circle r="70" fill="none" stroke="url(#m3-a)" stroke-width="22" stroke-dasharray="40 12"/>
+            <circle r="42" fill="none" stroke="url(#m3-a)" stroke-width="14" stroke-dasharray="20 8"/>
+            <circle r="18" fill="url(#m3-a)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="more-meta">
+        <h4>Dot Matrix</h4>
+        <div class="sub">Published <strong>Apr 10</strong></div>
+      </div>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <span>© Pathogen Studio · Curated work</span>
+  <span>Submit a workspace · About · Contact</span>
+</footer>
+
+</body>
+</html>

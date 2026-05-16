@@ -9,6 +9,7 @@ import './app-breadcrumb.js';
 import './shared/app-toast.js';
 import './shared/auth-modal.js';
 import './shared/claim-workspaces-prompt.js';
+import './views/admin-moderation-view.js';
 import './views/admin-thumbnails-view.js';
 import './views/blog-post-view.js';
 import './views/blog-view.js';
@@ -148,6 +149,7 @@ class AppShell extends HTMLElement {
       'blog-view': 'blog',
       'blog-post-view': 'blog-post',
       'admin-thumbnails-view': 'admin-thumbnails',
+      'admin-moderation-view': 'admin-moderation',
     };
     return mappings[tagName] === currentView;
   }
@@ -171,6 +173,7 @@ class AppShell extends HTMLElement {
         <blog-view></blog-view>
         <blog-post-view></blog-post-view>
         <admin-thumbnails-view></admin-thumbnails-view>
+        <admin-moderation-view></admin-moderation-view>
       </main>
 
       <auth-modal></auth-modal>

@@ -1,14 +1,16 @@
 // CRUD helpers for the users table.
 
-import type { D1Database, UserRow, CurrentUser } from './types.js';
+import type { AuthEnv, D1Database, UserRow, CurrentUser } from './types.js';
+import { computeUserFeatures } from './features.js';
 import { findAvailableHandle } from './handle.js';
 
-export function toCurrentUser(row: UserRow): CurrentUser {
+export function toCurrentUser(row: UserRow, env: AuthEnv): CurrentUser {
   return {
     id: row.id,
     email: row.email,
     handle: row.handle,
     displayName: row.display_name,
+    features: computeUserFeatures(row, env),
   };
 }
 
@@ -56,5 +58,17 @@ export async function markVerified(db: D1Database, userId: string): Promise<void
   await db
     .prepare('UPDATE users SET verified_at = ? WHERE id = ?')
     .bind(Date.now(), userId)
+    .run();
+}
+
+export async function setUserFlag(
+  db: D1Database,
+  userId: string,
+  flagged: boolean,
+  notes: string | null,
+): Promise<void> {
+  await db
+    .prepare('UPDATE users SET flagged = ?, flag_notes = ? WHERE id = ?')
+    .bind(flagged ? 1 : 0, flagged ? notes : null, userId)
     .run();
 }

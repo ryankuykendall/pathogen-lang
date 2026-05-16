@@ -82,7 +82,15 @@ export const store = createStore({
   workspaceId: null, // ID of current workspace (null = unsaved)
   workspaceName: null, // Name of current workspace
   workspaceDescription: null, // Description
-  workspaceIsPublic: false, // Visibility
+  workspaceIsPublic: false, // Visibility (true once approved + on public index)
+  // Effective publication state from the moderation flow. Drives the
+  // Publish/Pending/Published action label in app-breadcrumb. One of:
+  // 'unpublished' | 'pending' | 'approved' | 'rejected' | 'flagged'.
+  workspacePublicationState: 'unpublished',
+  // True for an approved workspace whose live code has drifted from the
+  // approval snapshot — the prior version is still visible on Explore
+  // but the new code awaits re-review.
+  workspaceRereviewPending: false,
   workspaceOwnerId: null, // Owner user ID
   workspaceUpdatedAt: null, // Last update timestamp
   workspaceManualThumbnailAt: null, // null = no manual thumbnail; the crop modal uses this to decide whether to show the Clear button

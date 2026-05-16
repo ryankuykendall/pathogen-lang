@@ -39,6 +39,18 @@ export class MemoryKV implements KVNamespace {
     this.store.delete(key);
   }
 
+  async list(options?: { prefix?: string; cursor?: string }): Promise<{
+    keys: { name: string }[];
+    list_complete: boolean;
+    cursor?: string;
+  }> {
+    const prefix = options?.prefix || '';
+    const keys = Array.from(this.store.keys())
+      .filter((k) => k.startsWith(prefix))
+      .map((name) => ({ name }));
+    return { keys, list_complete: true };
+  }
+
   // Test-only helpers
   rawGet(key: string): string | undefined {
     return this.store.get(key)?.value;
@@ -65,6 +77,8 @@ interface UserRow {
   display_name: string;
   created_at: number;
   verified_at: number | null;
+  flagged?: number;
+  flag_notes?: string | null;
 }
 
 interface SessionRow {
@@ -74,9 +88,21 @@ interface SessionRow {
   expires_at: number;
 }
 
+interface PublicationStateRow {
+  id: number;
+  workspace_id: string;
+  state: string;
+  transitioned_at: number;
+  transitioned_by_user_id: string;
+  code_hash: string | null;
+  internal_notes: string | null;
+}
+
 export class MemoryD1 implements D1Database {
   users: UserRow[] = [];
   sessions: SessionRow[] = [];
+  publicationStates: PublicationStateRow[] = [];
+  private nextStateId = 1;
 
   prepare(query: string): D1PreparedStatement {
     return new MemoryD1Statement(this, query, []);
@@ -84,6 +110,10 @@ export class MemoryD1 implements D1Database {
 
   async exec(_query: string): Promise<unknown> {
     return null;
+  }
+
+  nextPublicationStateId(): number {
+    return this.nextStateId++;
   }
 }
 
@@ -125,10 +155,29 @@ class MemoryD1Statement implements D1PreparedStatement {
       const row = this.db.sessions.find((s) => s.token === token);
       return (row ? ({ user_id: row.user_id, expires_at: row.expires_at } as unknown as T) : null);
     }
+    if (
+      q.startsWith('select id, workspace_id, state, transitioned_at, transitioned_by_user_id, code_hash, internal_notes from workspace_publication_states where workspace_id = ?')
+    ) {
+      const wsId = this.args[0] as string;
+      const rows = this.db.publicationStates
+        .filter((r) => r.workspace_id === wsId)
+        .sort((a, b) => (b.transitioned_at - a.transitioned_at) || (b.id - a.id));
+      return (rows[0] ? (rows[0] as unknown as T) : null);
+    }
     throw new Error(`MemoryD1: unsupported query: ${this.query}`);
   }
 
   async all<T = Record<string, unknown>>(): Promise<{ results: T[] }> {
+    const q = this.normalize();
+    if (
+      q.startsWith('select id, workspace_id, state, transitioned_at, transitioned_by_user_id, code_hash, internal_notes from workspace_publication_states where workspace_id = ?')
+    ) {
+      const wsId = this.args[0] as string;
+      const rows = this.db.publicationStates
+        .filter((r) => r.workspace_id === wsId)
+        .sort((a, b) => (b.transitioned_at - a.transitioned_at) || (b.id - a.id));
+      return { results: rows as unknown as T[] };
+    }
     throw new Error(`MemoryD1: unsupported all() query: ${this.query}`);
   }
 
@@ -148,6 +197,17 @@ class MemoryD1Statement implements D1PreparedStatement {
       if (row) row.verified_at = ts;
       return { success: true, meta: { changes: row ? 1 : 0 } };
     }
+    if (q === 'update users set flagged = ?, flag_notes = ? where id = ?') {
+      const flagged = this.args[0] as number;
+      const notes = this.args[1] as string | null;
+      const id = this.args[2] as string;
+      const row = this.db.users.find((u) => u.id === id);
+      if (row) {
+        row.flagged = flagged;
+        row.flag_notes = notes;
+      }
+      return { success: true, meta: { changes: row ? 1 : 0 } };
+    }
     if (q.startsWith('insert into sessions')) {
       const [token, user_id, created_at, expires_at] = this.args as [string, string, number, number];
       this.db.sessions.push({ token, user_id, created_at, expires_at });
@@ -164,6 +224,21 @@ class MemoryD1Statement implements D1PreparedStatement {
       const before = this.db.sessions.length;
       this.db.sessions = this.db.sessions.filter((s) => s.user_id !== userId);
       return { success: true, meta: { changes: before - this.db.sessions.length } };
+    }
+    if (q.startsWith('insert into workspace_publication_states')) {
+      const [workspace_id, state, transitioned_at, transitioned_by_user_id, code_hash, internal_notes] = this.args as [
+        string, string, number, string, string | null, string | null,
+      ];
+      this.db.publicationStates.push({
+        id: this.db.nextPublicationStateId(),
+        workspace_id,
+        state,
+        transitioned_at,
+        transitioned_by_user_id,
+        code_hash,
+        internal_notes,
+      });
+      return { success: true, meta: { changes: 1 } };
     }
     throw new Error(`MemoryD1: unsupported run() query: ${this.query}`);
   }

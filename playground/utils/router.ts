@@ -44,6 +44,7 @@ export const routes: RouteDefinition[] = [
   { path: '/blog', view: 'blog' },
   { path: '/blog/:slug', view: 'blog-post' },
   { path: '/admin/thumbnails', view: 'admin-thumbnails' },
+  { path: '/admin/moderation', view: 'admin-moderation' },
 ];
 
 // Build workspace URL segment from slug and id
