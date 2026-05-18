@@ -1,24 +1,9 @@
 /* Pathogen Studio homepage — atmospheric direction.
- * Consumed by website/_worker.ts:renderHomepage(). The atmospheric
- * tokens (--bg-primary, --accent-color, --secondary-from, etc.) live in
- * theme.css; this file only declares the homepage-specific code-tint
- * tokens and the layout/component styles for the homepage body. */
-
-:root {
-  --code-keyword: #6d3aa6;
-  --code-fn: #a83d80;
-  --code-num: #d97a6e;
-  --code-str: #5a8a72;
-  --code-comment: #9087a0;
-}
-
-[data-theme='dark'] {
-  --code-keyword: #c4a4e8;
-  --code-fn: #f7b56e;
-  --code-num: #f0a07b;
-  --code-str: #8fc4a1;
-  --code-comment: #7a6f8a;
-}
+ * Consumed by website/_worker.ts:renderHomepage(). All atmospheric
+ * tokens (including the syntax-highlight palette --code-keyword /
+ * --code-fn / --code-num / --code-str / --code-comment / --code-op /
+ * --code-tp) live in theme.css; this file only carries the layout and
+ * component styles for the homepage body. */
 
 /* The homepage uses its own full-bleed main, not the narrow .site-main from
  * renderPage(). Override that container so the hero / showcase grid can

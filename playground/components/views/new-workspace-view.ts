@@ -2,6 +2,7 @@
 // Route: /workspace/new
 
 import { workspaceApi } from '../../services/api.js';
+import { extractSourceDimensions } from '../../utils/source-dimensions.js';
 import { autosave } from '../../services/autosave.js';
 // Visibility is no longer chosen during workspace creation, so the
 // Publishing-feature gate that used to live here is gone. The
@@ -54,6 +55,12 @@ class NewWorkspaceView extends HTMLElement {
   private formData: FormData;
   private errors: FormErrors = {};
   private _copyFromId: string | null = null;
+  // Track the (handle, slug) pair for an approval-source copy. Distinct
+  // from _copyFromId (which is a workspace ID under the current user's
+  // ownership) because the source here is owned by another user — we
+  // can't call workspaceApi.get(id), we hit the public source.json
+  // endpoint instead.
+  private _fromApproval: { handle: string; slug: string } | null = null;
   private _loadingSource: boolean = false;
   private _sourceWorkspace: SourceWorkspace | null = null;
   private _stateCode: string | null = null;
@@ -83,6 +90,9 @@ class NewWorkspaceView extends HTMLElement {
     if (query.copyFrom) {
       this._copyFromId = query.copyFrom;
       this.loadSourceWorkspace(query.copyFrom);
+    } else if (query.fromHandle && query.fromSlug) {
+      this._fromApproval = { handle: query.fromHandle, slug: query.fromSlug };
+      this.loadApprovalSource(query.fromHandle, query.fromSlug);
     } else if (query.import) {
       this._applyImportKey(query.import);
       this.render();
@@ -101,7 +111,14 @@ class NewWorkspaceView extends HTMLElement {
       if (store.get('currentView') === 'new-workspace') this.render();
     });
 
-    // Subscribe to route changes to reset form when navigating back
+    // Subscribe to route changes to reset form when navigating back.
+    // Important: this is also the entry point for cold-loaded copy /
+    // fork modes — app-shell's render() inserts <new-workspace-view>
+    // BEFORE initRouter() populates store.routeQuery, so the
+    // connectedCallback() reads above start with an empty query and
+    // miss the initial fromHandle/fromSlug/copyFrom. The first store
+    // update from initRouter then fires this subscriber, and the
+    // branches below pick up the params.
     this._unsubscribe = store.subscribe(['currentView', 'routeQuery'], () => {
       if (store.get('currentView') === 'new-workspace') {
         // Once import data is applied, don't let route-driven resets overwrite it
@@ -109,6 +126,27 @@ class NewWorkspaceView extends HTMLElement {
 
         const newQuery = (store.get('routeQuery') as Record<string, string> | undefined) || {};
         const newCopyFromId = newQuery.copyFrom || null;
+        const newFromHandle = newQuery.fromHandle || null;
+        const newFromSlug = newQuery.fromSlug || null;
+        const fromApprovalKey = newFromHandle && newFromSlug ? `${newFromHandle}/${newFromSlug}` : null;
+        const currentApprovalKey = this._fromApproval
+          ? `${this._fromApproval.handle}/${this._fromApproval.slug}`
+          : null;
+
+        // Approval-fork mode (visitor opening someone else's workspace
+        // as a new workspace). Handled before copyFrom so the two
+        // modes don't fight if both params somehow land together.
+        if (fromApprovalKey !== currentApprovalKey) {
+          this._fromApproval = newFromHandle && newFromSlug
+            ? { handle: newFromHandle, slug: newFromSlug }
+            : null;
+          this._sourceWorkspace = null;
+
+          if (newFromHandle && newFromSlug) {
+            this.loadApprovalSource(newFromHandle, newFromSlug);
+            return;
+          }
+        }
 
         // Check if we're entering copy mode or the copyFrom ID changed
         if (newCopyFromId !== this._copyFromId) {
@@ -205,6 +243,61 @@ class NewWorkspaceView extends HTMLElement {
       if (state.desc) this.formData.description = state.desc;
     } catch {
       // Invalid state param, ignore
+    }
+  }
+
+  // Fetch a public approval's source via the SSR worker's
+  // /u/:handle/:slug/source.json endpoint. Used when a visitor (or
+  // signed-out user) follows the "Open as new workspace" CTA from the
+  // read-only detail page — they can't call workspaceApi.get() against
+  // another user's workspace, but the SSR endpoint is publicly
+  // readable for any approved workspace.
+  //
+  // On success we hydrate the same _sourceWorkspace state the
+  // owned-copy path uses, so the rest of the form (name prefilled
+  // with "<Name> (Copy)", description preserved, code injected into
+  // the new workspace on submit) behaves identically.
+  async loadApprovalSource(handle: string, slug: string): Promise<void> {
+    this._loadingSource = true;
+    this.render();
+    try {
+      const resp = await fetch(`/u/${encodeURIComponent(handle)}/${encodeURIComponent(slug)}/source.json`);
+      if (!resp.ok) {
+        throw new Error(`Source unavailable (status ${resp.status})`);
+      }
+      const data = (await resp.json()) as {
+        name?: string;
+        description?: string;
+        code?: string;
+      };
+      this._sourceWorkspace = {
+        name: data.name || 'Untitled',
+        description: data.description,
+        code: data.code,
+        isPublic: false,
+      };
+
+      // Pre-populate form. Append "(Copy)" to the original name so
+      // forks don't collide visually with the original in the user's
+      // workspace list.
+      this.formData.name = `${this._sourceWorkspace.name} (Copy)`;
+      this.formData.description = this._sourceWorkspace.description || '';
+
+      // Pull width/height from the source's `// viewBox=` comment so
+      // the canvas matches the original. Falls back to current prefs
+      // when no comment is present.
+      const dims = extractSourceDimensions(data.code || '');
+      if (dims.width) this.formData.width = parseInt(dims.width, 10) || this.formData.width;
+      if (dims.height) this.formData.height = parseInt(dims.height, 10) || this.formData.height;
+
+      this.formData.template = '';
+    } catch (err: unknown) {
+      console.error('Failed to load approval source:', err);
+      this.errors.submit = `Failed to load workspace: ${(err as Error).message}`;
+      this._sourceWorkspace = null;
+    } finally {
+      this._loadingSource = false;
+      this.render();
     }
   }
 

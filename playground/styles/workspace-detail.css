@@ -309,6 +309,52 @@ body:has(.workspace-detail) main.site-main {
   white-space: pre;
 }
 
+/* Syntax token classes emitted by the lightweight fallback path
+ * (src/highlight.ts → highlightPathogen). The primary read path is
+ * the CodeMirror mount in playground/utils/detail-source-mount.ts;
+ * these rules only matter when the editor can't load and we degrade
+ * to the in-place <pre> innerHTML swap. Scoped under .detail-source-
+ * code so they don't collide with any future global classes. */
+.detail-source-code .kw  { color: var(--code-keyword); font-weight: 600; }
+.detail-source-code .fn  { color: var(--code-fn);      font-style: italic; }
+.detail-source-code .num { color: var(--code-num); }
+.detail-source-code .str { color: var(--code-str); }
+.detail-source-code .cm  { color: var(--code-comment); font-style: italic; }
+.detail-source-code .op  { color: var(--code-op); }
+.detail-source-code .tp  { color: var(--code-tp); }
+.detail-source-code .id  { color: var(--text-primary); }
+
+/* Host element for the read-only CodeMirror editor. Replaces the
+ * <pre.detail-source-code> on first <details> open when the CM mount
+ * succeeds. CodeMirror brings its own styles for the gutter, lines,
+ * and selection — we only need to constrain the container and match
+ * the calm cream surface used by the SSR'd <pre>. */
+.detail-source-editor {
+  background: var(--bg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  overflow: hidden;
+}
+/* CodeMirror's default outline on focus is a 2px solid blue; the
+ * editor lives inside an already-bordered card here, so we suppress
+ * the second outline and rely on the card border for chrome. */
+.detail-source-editor .cm-editor.cm-focused {
+  outline: none;
+}
+.detail-source-editor .cm-scroller {
+  font-family: var(--font-mono);
+  padding: 0.5rem 0;
+}
+.detail-source-editor .cm-gutters {
+  background: transparent;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+}
+.detail-source-editor .cm-content {
+  padding: 0.5rem 0;
+}
+
 /* ── More by @user — three-up rail ──────────────────────── */
 /* Bottom padding lives on body:has(.workspace-detail) main.site-main so
  * the floor is consistent whether or not this section renders. */

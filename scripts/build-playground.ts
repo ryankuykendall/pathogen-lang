@@ -198,8 +198,8 @@ async function copyLibArtifacts(): Promise<void> {
   const distDest = join(OUT, 'dist');
   await fs.mkdir(distDest, { recursive: true });
 
-  const required = ['index.global.js', 'worker.worker.js'];
-  const optional = ['index.global.js.map', 'worker.worker.js.map'];
+  const required = ['index.global.js', 'worker.worker.js', 'highlight.global.js'];
+  const optional = ['index.global.js.map', 'worker.worker.js.map', 'highlight.global.js.map'];
 
   let missing = 0;
   for (const name of required) {

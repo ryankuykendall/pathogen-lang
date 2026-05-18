@@ -554,8 +554,10 @@ async function buildDocs(): Promise<void> {
       }
     })();
   </script>
+  <auth-modal></auth-modal>
   <script src="/components/shared/theme-toggle.js" type="module"></script>
   <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
 </body>
 </html>`;
 

@@ -19,21 +19,67 @@ export type PrecheckResult =
 
 let _compilationCounter = 0;
 
+// Minimal structural typing of the evaluator result we care about for
+// the publish gate. LayerOutput in src/evaluator/types.ts has more
+// fields (styles, transform, isDefault, fragmentDefs, etc.) but the
+// gate only needs to know "is there anything visible to render?" —
+// the union over the visible-content fields below.
+interface PrecheckLayer {
+  type?: 'path' | 'text' | 'fragment' | 'group';
+  data?: string;
+  textElements?: unknown[];
+  fragmentVisuals?: string;
+  children?: PrecheckLayer[];
+}
+interface PrecheckResultShape {
+  layers?: PrecheckLayer[];
+  gradients?: unknown[];
+  patterns?: unknown[];
+  markers?: unknown[];
+  masks?: unknown[];
+  clipPaths?: unknown[];
+  filters?: unknown[];
+}
+
+// "Does this layer (or any nested child layer) produce something
+// visible?" Group layers carry empty `data` by design — their content
+// lives in `children`. Fragment layers carry their visible markup in
+// `fragmentVisuals`. Text layers carry their content in `textElements`.
+// Anything that returns true here is enough to clear the publish gate.
+function layerHasContent(layer: PrecheckLayer | null | undefined): boolean {
+  if (!layer) return false;
+  if ((layer.data ?? '').trim().length > 0) return true;
+  if (layer.textElements && layer.textElements.length > 0) return true;
+  if ((layer.fragmentVisuals ?? '').trim().length > 0) return true;
+  if (layer.children && layer.children.some(layerHasContent)) return true;
+  return false;
+}
+
 export async function precheckCompile(code: string | null | undefined): Promise<PrecheckResult> {
   if (!code || !code.trim()) {
     return { ok: false, reason: 'empty', message: 'Workspace is empty.' };
   }
   try {
     const id = ++_compilationCounter;
-    const result = (await compilerWorker.compileWithContext(code, id, undefined)) as {
-      layers?: Array<{ data?: string }>;
-    };
-    // A clean compile produces at least one layer with non-empty path
-    // data. Empty/whitespace-only programs slip through the parser as a
-    // single empty default layer; treat those as a compile failure for
-    // the publish gate so visitors never land on a blank workspace.
-    const hasContent = (result.layers ?? []).some((l) => (l?.data ?? '').trim().length > 0);
-    if (!hasContent) {
+    const result = (await compilerWorker.compileWithContext(code, id, undefined)) as PrecheckResultShape;
+
+    // A workspace renders if any of: a leaf path layer carries data,
+    // a text layer has elements, a fragment has visuals, a group has
+    // any visible descendant, or a defs-only construct (gradient /
+    // pattern / mask / clip-path / marker / filter) exists. The
+    // defs-only branches matter for workspaces that compose entirely
+    // out of, e.g., a single ConicGradient mask — the top-level layer
+    // can read as empty even though the SVG is full.
+    const layerContent = (result.layers ?? []).some(layerHasContent);
+    const defsContent =
+      (result.gradients?.length ?? 0) > 0 ||
+      (result.patterns?.length ?? 0) > 0 ||
+      (result.markers?.length ?? 0) > 0 ||
+      (result.masks?.length ?? 0) > 0 ||
+      (result.clipPaths?.length ?? 0) > 0 ||
+      (result.filters?.length ?? 0) > 0;
+
+    if (!layerContent && !defsContent) {
       return {
         ok: false,
         reason: 'compile-error',

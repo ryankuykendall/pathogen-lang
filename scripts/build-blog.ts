@@ -456,8 +456,10 @@ export const latestBlogPost: BlogPostMeta | null = null;
   <main class="blog-main">
     ${content}
   </main>
+  <auth-modal></auth-modal>
   <script src="/components/shared/theme-toggle.js" type="module"></script>
   <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
   <script src="/components/blog/reactive-svg.js" type="module"></script>
   <script src="/components/blog/mini-workspace.js" type="module"></script>
   <script src="/components/blog/mini-preview.js" type="module"></script>

@@ -24,6 +24,7 @@
 import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
 import compilerWorker from '../../services/compiler-worker.js';
 import { store } from '../../state/store.js';
+import { dimensionsOrDefault } from '../../utils/source-dimensions.js';
 // Side-effect import: register the <mini-workspace> custom element so the
 // review modal can mount one. The component is already loaded for blog
 // pages; pulling it in here keeps the admin route self-sufficient.
@@ -287,7 +288,15 @@ class AdminModerationView extends HTMLElement {
         this._svg.set(key, '');
         return null;
       }
-      const svg = lib.generateSvg(result, { viewBox: '0 0 200 200', width: '200', height: '200' });
+      // Read viewBox / width / height from the workspace source's
+      // `// viewBox="0 0 W H"` comment (same convention the CLI and
+      // BBWP pipeline use). Hardcoding 200x200 here squashed wider
+      // workspaces (e.g. the 600x480 Clifford attractor) into a square
+      // mat at approval time, which then got baked into approval.svg
+      // and displayed wrong on the detail page. dimensionsOrDefault
+      // falls back to 200x200 only when no comment is present.
+      const dims = dimensionsOrDefault(code);
+      const svg = lib.generateSvg(result, dims);
       this._svg.set(key, svg);
       return svg;
     } catch (err) {

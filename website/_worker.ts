@@ -126,8 +126,16 @@ function renderPage({
   <main class="site-main">
     ${content}
   </main>
+  <!--
+    Auth modal lives at the page level on SSR routes. On the SPA route
+    the same element is inserted by app-shell; here we render it
+    directly so account-menu's "Sign in" button (which works by setting
+    store.authModalOpen) has a listener to flip the modal open.
+  -->
+  <auth-modal></auth-modal>
   <script src="/components/shared/theme-toggle.js" type="module"></script>
   <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
 </body>
 </html>`;
 }
@@ -441,6 +449,69 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
 // live code can drift after approval (and re-review picks that up) but
 // visitors always see the moderated version.
 
+// JSON endpoint that exposes an approved workspace's source code, name,
+// and description to the SPA. Powers the "fork into a new workspace"
+// path on the detail page CTA — when a visitor who isn't the owner
+// clicks "Open in playground", the new-workspace-view fetches this URL
+// to pre-fill the form. Visibility rules mirror renderWorkspaceDetail
+// Page exactly: handle must exist, approval must exist for (user, slug),
+// underlying workspace must still be public + not flagged.
+async function renderWorkspaceSourceJson(
+  env: Env,
+  handle: string,
+  slug: string,
+): Promise<Response> {
+  if (!env.USERS_DB) {
+    return new Response(JSON.stringify({ error: 'not-enabled' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const user = await findUserByHandle(env.USERS_DB, handle);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'not-found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const approval = await findApprovalForUserAndSlug(env, user.id, slug);
+  if (!approval) {
+    return new Response(JSON.stringify({ error: 'not-found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const wsRaw = await env.WORKSPACES.get(`workspace:${approval.workspaceId}`);
+  if (wsRaw) {
+    try {
+      const ws: Workspace & { flagged?: boolean } = JSON.parse(wsRaw);
+      if (!ws.isPublic || ws.flagged) {
+        return new Response(JSON.stringify({ error: 'not-available' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  return new Response(
+    JSON.stringify({
+      name: approval.name,
+      description: approval.description || '',
+      code: approval.code,
+      ownerHandle: handle,
+      ownerDisplayName: user.display_name,
+    }),
+    {
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8',
+        'Cache-Control': 'public, s-maxage=60, max-age=30',
+      },
+    },
+  );
+}
+
 async function renderWorkspaceDetailPage(
   request: Request,
   env: Env,
@@ -628,9 +699,22 @@ async function renderWorkspaceDetailPage(
         <span class="sep" aria-hidden="true">›</span>
         <span class="here">${escapeHtml(approval.name)}</span>
       </nav>
-      <a class="detail-cta" href="/workspace/${escapeHtml(approval.slug)}--${escapeHtml(approval.workspaceId)}">
-        <span>Open in playground</span> <span class="arrow">&rarr;</span>
-      </a>
+      ${
+        // Ownership-aware CTA. Owners go straight into their live
+        // workspace at /workspace/<slug>--<id>. Visitors (and signed-
+        // out users) route through /workspace/new with fromHandle +
+        // fromSlug query params; new-workspace-view fetches the
+        // approval source via /u/<handle>/<slug>/source.json and
+        // pre-fills the form so the visitor lands in a fresh editor
+        // pre-populated with this workspace's code.
+        currentUser && currentUser.id === approval.userId
+          ? `<a class="detail-cta" href="/workspace/${escapeHtml(approval.slug)}--${escapeHtml(approval.workspaceId)}">
+              <span>Open in playground</span> <span class="arrow">&rarr;</span>
+            </a>`
+          : `<a class="detail-cta" href="/workspace/new?fromHandle=${escapeHtml(handle)}&fromSlug=${escapeHtml(approval.slug)}">
+              <span>Open as new workspace</span> <span class="arrow">&rarr;</span>
+            </a>`
+      }
     </div>
 
     <section class="detail-plate">
@@ -669,6 +753,47 @@ async function renderWorkspaceDetailPage(
     <meta property="og:image" content="${ogImage}">
     <meta property="og:type" content="article">
     <link rel="stylesheet" href="/styles/workspace-detail.css">
+    <script type="module">
+      // Lazy hydrate the "View source" disclosure. SSR emits the source
+      // as plain escaped text inside <pre class="detail-source-code">
+      // so crawlers index it as-is. On first expand we try to mount a
+      // read-only CodeMirror editor (line numbers, cursor, selection,
+      // playground-parity highlighting via the same Lezer parser); if
+      // any CodeMirror module fails to load — esm.sh outage, blocked,
+      // offline — we fall back to the lightweight in-place span swap
+      // from /dist/highlight.global.js. Either way the plain <pre>
+      // never disappears without something better replacing it.
+      (() => {
+        const details = document.querySelector('details.detail-source-disclosure');
+        if (!details) return;
+        let done = false;
+        details.addEventListener('toggle', async () => {
+          if (done || !details.open) return;
+          done = true;
+          const pre = details.querySelector('pre.detail-source-code');
+          if (!pre) return;
+          const source = pre.textContent || '';
+          // Path 1: CodeMirror read-only editor.
+          try {
+            const mount = await import('/utils/detail-source-mount.js');
+            const result = await mount.mountReadOnlyEditor(pre, source);
+            if (result && result.mounted) return;
+            // Fall through to highlight fallback on mount-reported failure.
+          } catch {
+            // Module load itself failed — fall through.
+          }
+          // Path 2: lightweight token-span swap.
+          try {
+            const mod = await import('/dist/highlight.global.js');
+            if (mod.highlightPathogen) {
+              pre.innerHTML = mod.highlightPathogen(source);
+            }
+          } catch {
+            // Both paths failed — plain <pre> stays.
+          }
+        });
+      })();
+    </script>
   `;
 
   const html = renderPage({
@@ -1119,6 +1244,10 @@ export default {
     const profilePathMatch = path.match(/^\/u\/([a-z0-9-]+)$/);
     if (profilePathMatch) {
       return renderProfilePage(request, env, url, profilePathMatch[1]);
+    }
+    const sourceJsonMatch = path.match(/^\/u\/([a-z0-9-]+)\/([a-z0-9-]+)\/source\.json$/);
+    if (sourceJsonMatch) {
+      return renderWorkspaceSourceJson(env, sourceJsonMatch[1], sourceJsonMatch[2]);
     }
     const detailPathMatch = path.match(/^\/u\/([a-z0-9-]+)\/([a-z0-9-]+)$/);
     if (detailPathMatch) {

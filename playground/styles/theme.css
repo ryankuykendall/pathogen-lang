@@ -100,6 +100,18 @@
   --bg-atmosphere-1: rgba(180, 130, 220, 0.18);
   --bg-atmosphere-2: rgba(255, 175, 130, 0.20);
 
+  /* Syntax-highlight palette — consumed by both the homepage hero code
+   * snippet (.dev-code) and the workspace detail page's lazy-hydrated
+   * source disclosure (.detail-source-code). Keeping them in theme.css
+   * means a single source of truth + automatic dark-mode flip. */
+  --code-keyword: #6d3aa6;
+  --code-fn:      #a83d80;
+  --code-num:     #d97a6e;
+  --code-str:     #5a8a72;
+  --code-comment: #9087a0;
+  --code-op:      #6b5a7a;
+  --code-tp:      #b65a2a;
+
   /* Z-index layers */
   --z-dropdown: 100;
   --z-sticky: 200;
@@ -184,6 +196,16 @@
   /* Dark-mode atmosphere — deeper, cooler halos */
   --bg-atmosphere-1: rgba(140, 100, 200, 0.18);
   --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
+
+  /* Syntax-highlight palette — lighter saturations to read against the
+   * deep-purple backplate without screaming. */
+  --code-keyword: #c4a4e8;
+  --code-fn:      #f7b56e;
+  --code-num:     #f0a07b;
+  --code-str:     #8fc4a1;
+  --code-comment: #7a6f8a;
+  --code-op:      #a8a0b8;
+  --code-tp:      #e8b48a;
 }
 
 /* Auto dark mode based on system preference (when no explicit theme set) */
@@ -251,6 +273,14 @@
     --shadow-tint-rgb: 213, 180, 144;
     --bg-atmosphere-1: rgba(140, 100, 200, 0.18);
     --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
+
+    --code-keyword: #c4a4e8;
+    --code-fn:      #f7b56e;
+    --code-num:     #f0a07b;
+    --code-str:     #8fc4a1;
+    --code-comment: #7a6f8a;
+    --code-op:      #a8a0b8;
+    --code-tp:      #e8b48a;
   }
 }
 
