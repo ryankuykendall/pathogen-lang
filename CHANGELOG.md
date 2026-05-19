@@ -38,10 +38,16 @@ The migration runs against KV before deploy. Atomic single-PR rollout: migrate p
 ### Tests
 
 - **`tests/viewbox.test.ts`** — 19 tests covering parsing (basic, expression args, negative origin, coexistence with layers, `ViewBox` reservedness, trailing `;` on layer defs), evaluation (validation, duplicates, zero/negative width/height, non-numeric args, no-viewbox case), and render precedence (source wins / CLI fallback / default).
-- **`tests/migration-viewbox.test.ts`** — 6 tests pinning the AST-walk skip check used by the migration. Verifies that comment-only and template-literal mentions of `define ViewBox` do NOT suppress the migration, and unparseable code falls through to "prepend" mode.
+- **`tests/migration-viewbox.test.ts`** — 9 tests pinning the AST-walk skip check used by the migration. Verifies that comment-only and template-literal mentions of `define ViewBox` do NOT suppress the migration, and unparseable code falls through to "prepend" mode.
 - **`tests/cli.test.ts`** — 2 new tests verify CLI flag precedence (source-defined ViewBox wins over `--viewBox`, falls back to flag when source has no declaration).
 - **`tests/language-services/completion.test.ts`** — 1 new test verifies `ViewBox` appears among keyword completions.
-- Full suite passing: **2993 tests** (up from 2966 pre-feature).
+- Full suite passing: **2997 tests** (up from 2966 pre-feature).
+
+#### Blog sample sweep
+
+- **143 `.pathogen` files under `website/blog/samples/post*/`** updated: line 1 `// viewBox="0 0 W H"` comments replaced with `define ViewBox(0, 0, W, H);` canonical form. 116 SVGs successfully recompiled via `npm run compile:samples`.
+- **27 samples have pre-existing compile errors** unrelated to the viewBox swap (verified by reverting one and reproducing the same error against the original source). Categorized in commit b784152: post16/* (mandatory-semicolons), post24/* (raw `var()` and disallowed font-family tokens under tightened security validator), post7/post11/post13/post14 (evaluator null-checking that surfaced after these samples were last compiled). Tracked as separate sample-rot follow-ups, not blocking.
+- **Inline `svg-path` / `pathogen` code fences** in `website/blog/*.md` (101 fences across 18 posts) intentionally left untouched — they're short illustrative snippets (`arrow.draw()`, `dot.drawTo(...)`), not full programs, and adding `define ViewBox(...)` to each would clutter the teaching context.
 
 ## [Older Unreleased] - 2026-05-13
 
