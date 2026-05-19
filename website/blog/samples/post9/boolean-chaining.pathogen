@@ -1,4 +1,4 @@
-// viewBox="0 0 520 280"
+define ViewBox(0, 0, 520, 280);
 // Boolean + fillet chaining — compose operations
 // Each step uses a GroupLayer with translate to avoid compounding projections
 

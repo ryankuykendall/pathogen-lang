@@ -1,4 +1,4 @@
-// viewBox="0 0 520 520"
+define ViewBox(0, 0, 520, 520);
 // Harmonies & Palettes — Direction 3: Blueprint
 // Engineering-drawing treatment. Subtle fg_faint grid across the
 // canvas; 6 spec panels arranged in a 2×3 grid; each panel names

@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — amount sweep. amount = 0 is no effect; 1 is full strength.
 
 let bg = PathLayer('bg') ${

@@ -1,4 +1,4 @@
-// viewBox="0 0 900 700"
+define ViewBox(0, 0, 900, 700);
 // radialWedge diagnostic matrix: sharp outline + rounded fill + XOR diff
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));

@@ -1,4 +1,4 @@
-// viewBox="0 0 400 200"
+define ViewBox(0, 0, 400, 200);
 // Filter values support read-side property access — useful for debug,
 // computation, and conditional logic. Open the console to see the logs.
 

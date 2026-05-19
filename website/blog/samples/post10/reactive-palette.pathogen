@@ -1,4 +1,4 @@
-// viewBox="0 0 520 340"
+define ViewBox(0, 0, 520, 340);
 // Reactive Palette — CSSVar base color + hex literals + % suffix
 // Change --base-color in the playground to recolor every swatch
 

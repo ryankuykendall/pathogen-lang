@@ -1,4 +1,4 @@
-// viewBox="0 0 660 400"
+define ViewBox(0, 0, 660, 400);
 // Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
 
 @font "../../../../fonts/Raleway/Raleway-Bold.ttf"

@@ -1,4 +1,4 @@
-// viewBox="0 0 540 240"
+define ViewBox(0, 0, 540, 240);
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius < 8: gaps between blocks. radius = 8: blocks touch. radius > 8: overlap.
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 520 300"
+define ViewBox(0, 0, 520, 300);
 // Partition with t-value labels — even arc-length spacing
 
 let curve = @{

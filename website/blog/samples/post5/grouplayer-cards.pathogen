@@ -1,4 +1,4 @@
-// viewBox="0 0 600 320"
+define ViewBox(0, 0, 600, 320);
 // GroupLayer Cards — Organizational Power
 // Three gradient panels positioned with GroupLayer translate convenience property
 

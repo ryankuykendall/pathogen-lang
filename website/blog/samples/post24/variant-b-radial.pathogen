@@ -1,4 +1,4 @@
-// viewBox="0 0 960 720"
+define ViewBox(0, 0, 960, 720);
 // Variant B — "HUE CONSERVATORY"
 // Radial composition: six anchor hues as spokes around a central hub,
 // each spoke a constellation of 9 ramp stops growing outward. Two dashed

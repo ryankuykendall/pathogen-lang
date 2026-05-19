@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Topo Basics — Contour-as-Color-Stop
 // The core concept: closed paths at elevations create terrain-like gradients
 

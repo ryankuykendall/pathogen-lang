@@ -1,4 +1,4 @@
-// viewBox="0 0 400 200"
+define ViewBox(0, 0, 400, 200);
 // drawTo() vs manual M + draw()
 
 let diamond = @{

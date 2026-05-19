@@ -1,4 +1,4 @@
-// viewBox="0 0 400 240"
+define ViewBox(0, 0, 400, 240);
 // LinearGradient fill + Grain filter on the same layer.
 // One declarative pairing — the grain rides the gradient.
 

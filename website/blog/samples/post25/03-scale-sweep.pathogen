@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — scale sweep from coarse to fine.
 // Each disc uses the same preset, only `scale` changes.
 

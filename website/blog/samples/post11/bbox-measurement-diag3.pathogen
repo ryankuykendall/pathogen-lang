@@ -1,4 +1,4 @@
-// viewBox="0 0 600 320"
+define ViewBox(0, 0, 600, 320);
 // DIAGNOSTIC #3: Precisely check the remaining collision in the small row.
 // The screenshot shows the height bracket line and 'h = 12' text
 // overlapping with the '10' at the end of 'font-size: 10'.

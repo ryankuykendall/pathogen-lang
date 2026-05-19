@@ -1,4 +1,4 @@
-// viewBox="0 0 540 400"
+define ViewBox(0, 0, 540, 400);
 // Conic Spread Modes — Clamp / Repeat / Transparent
 // How partial sweeps handle the unfilled arc
 

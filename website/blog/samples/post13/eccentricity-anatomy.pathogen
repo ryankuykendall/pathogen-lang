@@ -1,4 +1,4 @@
-// viewBox="0 0 460 270"
+define ViewBox(0, 0, 460, 270);
 // clippedQuadSpline anatomy — virtual shared CP and lerped actual CPs
 
 // --- Background ---

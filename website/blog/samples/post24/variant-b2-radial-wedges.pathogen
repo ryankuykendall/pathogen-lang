@@ -1,4 +1,4 @@
-// viewBox="0 0 960 720"
+define ViewBox(0, 0, 960, 720);
 // Variant B2 — "HUE CONSERVATORY · ANNULAR"
 // A stronger dialect of Variant B. Instead of dotted constellations, each
 // anchor now claims a full 60° pie-slice of the annulus, and every ramp

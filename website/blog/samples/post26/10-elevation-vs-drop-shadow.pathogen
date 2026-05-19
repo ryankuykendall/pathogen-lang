@@ -1,4 +1,4 @@
-// viewBox="0 0 400 240"
+define ViewBox(0, 0, 400, 240);
 // Same depth budget, two ways to spend it.
 // Left: native CSS `drop-shadow(0 6px 12px black)` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.

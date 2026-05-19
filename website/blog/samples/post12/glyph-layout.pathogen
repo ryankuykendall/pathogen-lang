@@ -1,4 +1,4 @@
-// viewBox="0 0 600 300"
+define ViewBox(0, 0, 600, 300);
 // Hello World glyph layout — advance-width loop placing each letter
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"

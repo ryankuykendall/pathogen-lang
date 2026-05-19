@@ -1,4 +1,4 @@
-// viewBox="0 0 740 370"
+define ViewBox(0, 0, 740, 370);
 // Method Comparison — Organic + Annotated Schematic
 // Left: distance SDF, Center: Laplace solver, Right: contour map
 

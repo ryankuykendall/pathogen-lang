@@ -1,4 +1,4 @@
-// viewBox="0 0 720 240"
+define ViewBox(0, 0, 720, 240);
 // EmbossFilter — light azimuth sweep. The highlight tracks the light source.
 
 let bg = PathLayer('bg') ${

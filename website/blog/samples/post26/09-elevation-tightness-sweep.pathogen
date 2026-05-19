@@ -1,4 +1,4 @@
-// viewBox="0 0 540 240"
+define ViewBox(0, 0, 540, 240);
 // ElevationShadowFilter — tightness sweep at fixed elevation=6.
 // 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
 

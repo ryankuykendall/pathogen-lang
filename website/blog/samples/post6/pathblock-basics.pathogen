@@ -1,4 +1,4 @@
-// viewBox="0 0 400 300"
+define ViewBox(0, 0, 400, 300);
 // PathBlock basics — define, draw, reuse
 
 let arrow = @{

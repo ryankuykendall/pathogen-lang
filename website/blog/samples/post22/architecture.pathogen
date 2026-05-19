@@ -1,5 +1,4 @@
-// viewBox="0 0 560 320"
-
+define ViewBox(0, 0, 560, 320);
 @font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
 
 let bgColor = Color('#f8f9fa');

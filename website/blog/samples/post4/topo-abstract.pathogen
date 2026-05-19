@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Abstract Topo — Artistic Contour Composition
 // Multiple overlapping shapes creating an abstract topographic artwork
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 520 320"
+define ViewBox(0, 0, 520, 320);
 // Hex Palette — Building a color palette from a single hex literal
 // Demonstrates method chaining on hex color literals
 

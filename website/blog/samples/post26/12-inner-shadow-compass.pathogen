@@ -1,4 +1,4 @@
-// viewBox="0 0 480 480"
+define ViewBox(0, 0, 480, 480);
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 

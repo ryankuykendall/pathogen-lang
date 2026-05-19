@@ -1,4 +1,4 @@
-// viewBox="0 0 560 260"
+define ViewBox(0, 0, 560, 260);
 // Iteration concept diagram — shows how points map through the Clifford equations
 
 let a = -1.4;

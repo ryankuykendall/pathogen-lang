@@ -1,4 +1,4 @@
-// viewBox="0 0 520 250"
+define ViewBox(0, 0, 520, 250);
 // clippedQuadSpline eccentricity comparison — same geometry, different time values
 
 // --- Background ---

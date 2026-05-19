@@ -1,4 +1,4 @@
-// viewBox="0 0 520 320"
+define ViewBox(0, 0, 520, 320);
 // Color Methods — Direction 3: Editorial Stack
 // Vertical single-column composition. Eyebrow + thin-weight display
 // title + italic subtitle; then 8 rows (pill swatch | method name |

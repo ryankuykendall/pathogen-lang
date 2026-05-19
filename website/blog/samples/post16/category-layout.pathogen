@@ -1,4 +1,4 @@
-// viewBox="0 0 600 600"
+define ViewBox(0, 0, 600, 600);
 // Category layout — 8 categories arranged radially with radialWedge()
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));

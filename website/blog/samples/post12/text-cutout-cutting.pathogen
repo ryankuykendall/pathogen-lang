@@ -1,4 +1,4 @@
-// viewBox="0 0 900 310"
+define ViewBox(0, 0, 900, 310);
 // Text cutout — seven-glyph pipeline: glyph outlines → union → difference
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"

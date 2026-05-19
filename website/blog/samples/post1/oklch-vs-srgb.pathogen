@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // OKLCH vs sRGB Interpolation — Side-by-Side Comparison
 // Same color stops, dramatically different midpoints
 

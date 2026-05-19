@@ -1,4 +1,4 @@
-// viewBox="0 0 540 320"
+define ViewBox(0, 0, 540, 320);
 // partition() — evenly-spaced fence posts along a curved path
 
 let road = @{

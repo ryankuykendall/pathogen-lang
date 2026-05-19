@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — opacity sweep at constant radius.
 
 let bg = PathLayer('bg') ${

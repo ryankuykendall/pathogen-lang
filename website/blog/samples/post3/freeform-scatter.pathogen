@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Freeform Scatter — Inverse-Distance Blending
 // Color points placed freely; IDW interpolation creates smooth fields
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 700 380"
+define ViewBox(0, 0, 700, 380);
 // Elliptical fillet at various corner angles — before (dashed) and after (solid)
 
 // --- Background ---

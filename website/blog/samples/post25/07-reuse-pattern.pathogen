@@ -1,4 +1,4 @@
-// viewBox="0 0 600 200"
+define ViewBox(0, 0, 600, 200);
 // One filter, six shapes — one <filter> def in the output SVG.
 
 let bg = PathLayer('bg') ${

@@ -1,4 +1,4 @@
-// viewBox="0 0 560 340"
+define ViewBox(0, 0, 560, 340);
 // Color Spaces — The same red expressed in 7 CSS color function syntaxes
 // All produce the same ColorValue internally
 

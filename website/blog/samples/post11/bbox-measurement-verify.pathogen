@@ -1,4 +1,4 @@
-// viewBox="0 0 600 320"
+define ViewBox(0, 0, 600, 320);
 // VERIFICATION: Confirm all collisions resolved after fix
 
 // --- Recreate the FIXED text blocks (with font-family: monospace) ---

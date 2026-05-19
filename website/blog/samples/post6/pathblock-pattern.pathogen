@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // PathBlock reuse — define once, create patterns
 
 // A leaf-like motif

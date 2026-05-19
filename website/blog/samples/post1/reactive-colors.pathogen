@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Reactive Colors — CSSVar-Driven Gradient Palette
 // Change --primary or --accent to recolor the entire composition
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 500 300"
+define ViewBox(0, 0, 500, 300);
 // Direction Comparison — CW vs CCW
 // Same gradient, two directions: showing how direction reverses color flow
 

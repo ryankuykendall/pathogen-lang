@@ -1,4 +1,4 @@
-// viewBox="0 0 520 540"
+define ViewBox(0, 0, 520, 540);
 // Harmonies & Palettes — Direction 1: Matrix
 // Strict 6-row matrix with shared column geometry. 4 harmony rows
 // (analogous / triadic / tetradic / split-comp) stacked above 2

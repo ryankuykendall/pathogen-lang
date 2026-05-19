@@ -1,4 +1,4 @@
-// viewBox="0 0 520 640"
+define ViewBox(0, 0, 520, 640);
 // Theme Demo — Combined: SYSTEM + STAGE
 // Top half is the "theme system" — geometric composition showing how
 // four CSS vars (bg, primary, secondary, accent) and five derived

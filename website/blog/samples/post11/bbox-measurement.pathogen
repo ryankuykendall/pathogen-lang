@@ -1,4 +1,4 @@
-// viewBox="0 0 600 360"
+define ViewBox(0, 0, 600, 360);
 // Bounding box measurement — .boundingBox() returns {x, y, width, height}
 
 // --- Background ---

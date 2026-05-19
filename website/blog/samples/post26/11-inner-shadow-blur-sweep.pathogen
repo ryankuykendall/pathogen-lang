@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
 
 let bg = PathLayer('bg') ${

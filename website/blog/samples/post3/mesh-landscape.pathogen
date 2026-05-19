@@ -1,4 +1,4 @@
-// viewBox="0 0 500 300"
+define ViewBox(0, 0, 500, 300);
 // Mesh Landscape — Sunset Scene with Row Coloring
 // Using getRow() and colorAll() for layered color bands
 

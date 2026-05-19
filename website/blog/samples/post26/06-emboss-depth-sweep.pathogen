@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
 let bg = PathLayer('bg') ${

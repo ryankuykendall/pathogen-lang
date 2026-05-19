@@ -1,4 +1,4 @@
-// viewBox="0 0 520 340"
+define ViewBox(0, 0, 520, 340);
 // drawTo() vs manual positioning — side-by-side comparison
 
 let pent = @{

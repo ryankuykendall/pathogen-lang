@@ -1,4 +1,4 @@
-// viewBox="0 0 600 320"
+define ViewBox(0, 0, 600, 320);
 // DIAGNOSTIC: bbox-measurement overlap detection
 // Uses .boundingBox() and .intersects() to find collisions
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 560 300"
+define ViewBox(0, 0, 560, 300);
 // Chamfer gallery — symmetric, asymmetric, per-vertex
 
 let box = @{ h 70 v 70 h -70 z };

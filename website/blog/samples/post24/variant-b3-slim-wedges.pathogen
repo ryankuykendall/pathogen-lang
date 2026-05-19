@@ -1,4 +1,4 @@
-// viewBox="0 0 960 720"
+define ViewBox(0, 0, 960, 720);
 // Variant B3 — "HUE CONSERVATORY · LOZENGE"
 // A slimmer dialect of Variant B. Each anchor now claims only a 30° slice
 // of the annulus (half its former width), each ramp stop is lifted away

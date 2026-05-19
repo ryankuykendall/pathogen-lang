@@ -1,4 +1,4 @@
-// viewBox="0 0 660 340"
+define ViewBox(0, 0, 660, 340);
 // Gauge Dashboard — Partial Sweeps + innerRadius
 // Three gauges using conic gradients as speedometer-style UI
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 500 350"
+define ViewBox(0, 0, 500, 350);
 // Twin Peaks — Non-Nested Contours
 // Separate contours at the same elevation create independent features
 

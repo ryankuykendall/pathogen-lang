@@ -1,4 +1,4 @@
-// viewBox="0 0 600 480"
+define ViewBox(0, 0, 600, 480);
 // Color-mapped Clifford Attractor — 10,000 points across 5 temporal layers
 
 let a = -1.4;

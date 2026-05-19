@@ -1,4 +1,4 @@
-// viewBox="0 0 500 300"
+define ViewBox(0, 0, 500, 300);
 // Method Comparison — Distance (SDF) vs Laplace Solver
 // Same contours, two solver algorithms: different blending behavior
 

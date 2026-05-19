@@ -1,4 +1,4 @@
-// viewBox="0 0 900 370"
+define ViewBox(0, 0, 900, 370);
 // Parameter Gallery — three Clifford attractors with different parameters
 
 // Reusable attractor function

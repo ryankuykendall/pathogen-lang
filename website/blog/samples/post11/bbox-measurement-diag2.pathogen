@@ -1,4 +1,4 @@
-// viewBox="0 0 600 320"
+define ViewBox(0, 0, 600, 320);
 // DIAGNOSTIC #2: Mirror the ORIGINAL sample's exact styles to catch mismatches.
 // The original uses ${ font-size: N; } without font-family in <<,
 // but renders via TextLayer('labels') ${ font-family: monospace; }.

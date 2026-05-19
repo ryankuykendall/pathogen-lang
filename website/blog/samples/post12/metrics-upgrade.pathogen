@@ -1,4 +1,4 @@
-// viewBox="0 0 600 340"
+define ViewBox(0, 0, 600, 340);
 // @font precision — fromGlyph() uses the exact same font for both paths and metrics
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"

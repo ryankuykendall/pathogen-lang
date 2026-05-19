@@ -1,4 +1,4 @@
-// viewBox="0 0 400 340"
+define ViewBox(0, 0, 400, 340);
 // First Clifford Attractor — 100 iterations, circle() dots
 
 let a = -1.4;

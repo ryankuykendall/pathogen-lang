@@ -1,4 +1,4 @@
-// viewBox="0 0 600 340"
+define ViewBox(0, 0, 600, 340);
 // TextBlock Anatomy — compose text at relative coordinates, then position
 
 // ─── Background ─────────────────────────────────────────────────────

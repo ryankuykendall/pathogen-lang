@@ -1,4 +1,4 @@
-// viewBox="0 0 840 420"
+define ViewBox(0, 0, 840, 420);
 // Nested Rectangles — Annotated Schematic
 // Left: rendered gradient, Right: contour map with paint chips + elevation labels
 

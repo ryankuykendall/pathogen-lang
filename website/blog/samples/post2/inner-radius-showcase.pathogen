@@ -1,4 +1,4 @@
-// viewBox="0 0 520 530"
+define ViewBox(0, 0, 520, 530);
 // Inner Radius & Fill Modes — 2×2 Grid
 // The 4 innerFill modes with the same base gradient
 

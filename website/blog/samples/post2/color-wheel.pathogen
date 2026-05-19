@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Color Wheel — Classic 360° Conic Gradient
 // The "hello world" of conic gradients: a full rainbow sweep
 

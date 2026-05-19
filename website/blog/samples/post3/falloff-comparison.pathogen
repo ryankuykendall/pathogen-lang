@@ -1,4 +1,4 @@
-// viewBox="0 0 500 400"
+define ViewBox(0, 0, 500, 400);
 // Falloff Comparison — Same Points, Different Exponents
 // How the falloff parameter controls color blending sharpness
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 500 350"
+define ViewBox(0, 0, 500, 350);
 // Method Comparison — Organic Geometry
 // Distance vs Laplace with irregular contour shapes
 

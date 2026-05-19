@@ -1,4 +1,4 @@
-// viewBox="0 0 520 280"
+define ViewBox(0, 0, 520, 280);
 // Color Methods — Direction 1: Grid
 // A 4×2 grid of method cards. Each card carries a method-name label, a
 // rectangular swatch with a hairline border, and a small formula string.

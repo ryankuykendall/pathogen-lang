@@ -1,4 +1,4 @@
-// viewBox="0 0 520 560"
+define ViewBox(0, 0, 520, 560);
 // Harmonies & Palettes — Direction 2: Hue Wheel
 // A 12-sector static hue wheel with harmony-chord overlays (analogous
 // arc, triadic triangle, tetradic square, split-comp Y). Harmony

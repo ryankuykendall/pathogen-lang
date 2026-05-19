@@ -1,4 +1,4 @@
-// viewBox="0 0 400 220"
+define ViewBox(0, 0, 400, 220);
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
 let bg = PathLayer('bg') ${

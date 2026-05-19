@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Angle Fan — Linear Gradient Direction Showcase
 // Same gradient stops at 6 different angles, arranged in a fan
 

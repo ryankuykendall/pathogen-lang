@@ -1,4 +1,4 @@
-// viewBox="0 0 550 350"
+define ViewBox(0, 0, 550, 350);
 // Easing Modes — Organic Geometry Edition
 // Same 5 easing curves, but with irregular blob contours instead of circles
 

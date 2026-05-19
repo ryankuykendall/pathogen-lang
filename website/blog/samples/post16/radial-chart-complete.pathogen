@@ -1,4 +1,4 @@
-// viewBox="0 0 1000 750"
+define ViewBox(0, 0, 1000, 750);
 // Complete radial hierarchical bar chart — BoardGameGeek categories
 
 // === Theme colors (CSSVar for interactive switching) ===

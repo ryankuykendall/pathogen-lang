@@ -1,4 +1,4 @@
-// viewBox="0 0 400 300"
+define ViewBox(0, 0, 400, 300);
 // Spread Modes — Pad / Reflect / Repeat
 // Same narrow gradient, three different spread behaviors
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Practical composition — rotated grid background with foreground geometry
 
 let gridColor = Color(CSSVar('--grid-color', #5577aa));

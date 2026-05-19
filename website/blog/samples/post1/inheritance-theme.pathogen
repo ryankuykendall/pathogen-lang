@@ -1,4 +1,4 @@
-// viewBox="0 0 400 300"
+define ViewBox(0, 0, 400, 300);
 // Gradient Inheritance — Themed UI Palette
 // One base gradient spawns variants via inherit()
 

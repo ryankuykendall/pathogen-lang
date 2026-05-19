@@ -1,4 +1,4 @@
-// viewBox="0 0 720 240"
+define ViewBox(0, 0, 720, 240);
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 

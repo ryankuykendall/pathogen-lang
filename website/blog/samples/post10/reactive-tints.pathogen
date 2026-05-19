@@ -1,4 +1,4 @@
-// viewBox="0 0 520 280"
+define ViewBox(0, 0, 520, 280);
 // Reactive Tints — CSSVar + percent suffix for tint/shade scales
 // Change --tint-color to update every row
 

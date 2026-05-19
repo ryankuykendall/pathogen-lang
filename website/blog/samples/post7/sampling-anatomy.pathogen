@@ -1,4 +1,4 @@
-// viewBox="0 0 560 360"
+define ViewBox(0, 0, 560, 360);
 // Parametric Sampling Anatomy — .get(), .tangent(), .normal() visualized
 
 let curve = @{

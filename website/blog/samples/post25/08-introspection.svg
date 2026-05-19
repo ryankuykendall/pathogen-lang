@@ -13,5 +13,5 @@
 
   <path data-layer-name="bg" id="bg" d="M 0 0 l 400 0 l 0 200 l -400 0 z" fill="oklch(95% 0.02 80)" stroke="none" stroke-width="2"/>
   <path data-layer-name="disc" id="disc" d="M 130 100 a 70 70 0 1 1 140 0 a 70 70 0 1 1 -140 0" fill="oklch(70% 0.20 30)" stroke="none" stroke-width="2" filter="url(#pathogen-noise-1)"/>
-<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"disc","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"oklch(95% 0.02 80)","stroke":"none"},"isDefault":false},{"name":"disc","type":"path","styles":{"fill":"oklch(70% 0.20 30)","stroke":"none","filter":"url(#pathogen-noise-1)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":400,"height":200}}]]></script>
 </svg>

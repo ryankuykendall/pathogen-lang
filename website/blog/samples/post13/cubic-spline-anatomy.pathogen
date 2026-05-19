@@ -1,4 +1,4 @@
-// viewBox="0 0 540 330"
+define ViewBox(0, 0, 540, 330);
 // cubicSpline anatomy — control points, tangent lines, angle arcs
 
 // --- Background ---

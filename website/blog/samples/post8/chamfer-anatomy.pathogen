@@ -1,4 +1,4 @@
-// viewBox="0 0 480 340"
+define ViewBox(0, 0, 480, 340);
 // Chamfer anatomy — geometric construction at a single corner
 
 // A right-angle corner

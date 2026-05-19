@@ -1,4 +1,4 @@
-// viewBox="0 0 400 300"
+define ViewBox(0, 0, 400, 300);
 // Reactive Radial Lights — CSSVar-driven overlapping glows
 // Drag the color pickers to recolor three radial light sources
 

@@ -1,4 +1,4 @@
-// viewBox="0 0 400 200"
+define ViewBox(0, 0, 400, 200);
 // Hexagon orientations — flat-top (Edge) vs pointy-top (Vertex)
 
 let gridColor = Color(CSSVar('--grid-color', #cc88ff));

@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Radial Gradient Glow — Cosmic Scene
 // Demonstrates radial gradients for light sources, glows, and shading
 

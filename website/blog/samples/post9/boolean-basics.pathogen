@@ -1,4 +1,4 @@
-// viewBox="0 0 580 480"
+define ViewBox(0, 0, 580, 480);
 // Boolean operations — union, difference, intersection, xor
 // Each quadrant uses a GroupLayer with translate to avoid compounding projections
 

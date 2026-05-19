@@ -1,4 +1,4 @@
-// viewBox="0 0 500 400"
+define ViewBox(0, 0, 500, 400);
 // Mesh vs Freeform — Side-by-Side Comparison
 // Same palette, two interpolation models: grid vs scatter
 

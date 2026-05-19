@@ -1,4 +1,4 @@
-// viewBox="0 0 520 300"
+define ViewBox(0, 0, 520, 300);
 // Percent Tints — Using % suffix with color methods for tint/shade scales
 // 20% becomes 0.2, reads naturally: "lighten by 20%"
 

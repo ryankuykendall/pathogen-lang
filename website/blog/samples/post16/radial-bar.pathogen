@@ -1,4 +1,4 @@
-// viewBox="0 0 520 400"
+define ViewBox(0, 0, 520, 400);
 // Radial bar — mapping data values to bar length with radialWedge()
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));

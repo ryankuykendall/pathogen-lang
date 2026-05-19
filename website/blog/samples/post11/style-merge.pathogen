@@ -1,4 +1,4 @@
-// viewBox="0 0 600 300"
+define ViewBox(0, 0, 600, 300);
 // Style merging — << operator sets block-level styles
 
 // --- Background ---

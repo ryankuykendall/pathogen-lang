@@ -1,4 +1,4 @@
-// viewBox="0 0 540 280"
+define ViewBox(0, 0, 540, 280);
 // Before/After — Color('#cc0000') vs #cc0000
 // Shows that both produce identical output, but the literal is cleaner
 

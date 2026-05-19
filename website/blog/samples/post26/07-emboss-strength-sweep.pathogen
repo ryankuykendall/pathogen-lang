@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
 let bg = PathLayer('bg') ${

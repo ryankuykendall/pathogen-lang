@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
 
   <path data-layer-name="default" d="" fill="none" stroke="#000" stroke-width="2"/>
-<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"default","type":"path","styles":{},"isDefault":true}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[]}]]></script>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"default","type":"path","styles":{},"isDefault":true}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":600,"height":320}}]]></script>
 </svg>

@@ -1,4 +1,4 @@
-// viewBox="0 0 480 340"
+define ViewBox(0, 0, 480, 340);
 // Fillet anatomy — circular arc construction at a corner
 
 // --- Background ---

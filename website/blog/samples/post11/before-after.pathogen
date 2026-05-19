@@ -1,4 +1,4 @@
-// viewBox="0 0 600 400"
+define ViewBox(0, 0, 600, 400);
 // Before/After — manual offset math vs .polarProject()
 // Uses GroupLayers per Code Example Guideline §9
 

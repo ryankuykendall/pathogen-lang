@@ -1,4 +1,4 @@
-// viewBox="0 0 600 380"
+define ViewBox(0, 0, 600, 380);
 // PathBlock Anatomy — visual guide to structure and properties
 
 let arrow = @{

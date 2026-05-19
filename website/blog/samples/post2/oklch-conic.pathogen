@@ -1,4 +1,4 @@
-// viewBox="0 0 600 540"
+define ViewBox(0, 0, 600, 540);
 // OKLCH vs sRGB Interpolation on Conic Gradients
 // Perceptual difference: muddy sRGB midpoints vs vibrant OKLCH transitions
 

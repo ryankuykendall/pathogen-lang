@@ -1,4 +1,4 @@
-// viewBox="0 0 960 720"
+define ViewBox(0, 0, 960, 720);
 // Variant C — "SPECIFICATION SHEET"
 // Technical-drafting aesthetic: hairline 40px grid, monospace throughout,
 // dimension lines with tick marks, bracketed section labels, OKLCH

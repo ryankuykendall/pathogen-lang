@@ -1,4 +1,4 @@
-// viewBox="0 0 600 220"
+define ViewBox(0, 0, 600, 220);
 // Per-character transforms — wave, scale, and arc effects on individual glyphs
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"

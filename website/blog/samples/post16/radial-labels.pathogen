@@ -1,4 +1,4 @@
-// viewBox="0 0 700 700"
+define ViewBox(0, 0, 700, 700);
 // Radial labels — radialProject with VerticalAnchor.Midline
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));

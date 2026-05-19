@@ -1,4 +1,4 @@
-// viewBox="0 0 460 145"
+define ViewBox(0, 0, 460, 145);
 // Three cubicSpline examples: S-curve, sine wave, closed loop
 
 // --- Background ---

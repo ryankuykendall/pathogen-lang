@@ -1,4 +1,4 @@
-// viewBox="0 0 600 480"
+define ViewBox(0, 0, 600, 480);
 // Interactive Clifford Attractor — CSS variable colors
 
 let a = -1.4;

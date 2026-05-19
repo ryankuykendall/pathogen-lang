@@ -1,4 +1,4 @@
-// viewBox="0 0 450 180"
+define ViewBox(0, 0, 450, 180);
 // Focal Point Spheres — Same stops, different fx/fy positions
 // Demonstrates how RadialGradient's focal point shifts the highlight
 

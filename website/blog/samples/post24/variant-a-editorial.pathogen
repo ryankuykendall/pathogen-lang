@@ -1,4 +1,4 @@
-// viewBox="0 0 960 720"
+define ViewBox(0, 0, 960, 720);
 // Variant A — "THE COLOR CALENDAR"
 // Editorial magazine composition. Oversized serif display type, rotated
 // ramp axis (anchors as columns, stops as rows), L-thresholds as annotated

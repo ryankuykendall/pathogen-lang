@@ -1,4 +1,4 @@
-// viewBox="0 0 700 250"
+define ViewBox(0, 0, 700, 250);
 // Pipeline Flow — Source to Blog
 // Visual flowchart showing the Pathogen gradient compilation pipeline
 

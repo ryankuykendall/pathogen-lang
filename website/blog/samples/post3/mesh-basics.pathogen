@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Mesh Basics — 2×2 Corner Colors
 // The simplest mesh gradient: four corners, bilinear interpolation
 

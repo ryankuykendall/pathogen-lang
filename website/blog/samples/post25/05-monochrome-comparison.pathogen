@@ -1,4 +1,4 @@
-// viewBox="0 0 400 220"
+define ViewBox(0, 0, 400, 220);
 // NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
 
 let bg = PathLayer('bg') ${

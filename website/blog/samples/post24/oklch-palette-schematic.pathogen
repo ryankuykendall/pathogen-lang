@@ -1,4 +1,4 @@
-// viewBox="0 0 960 720"
+define ViewBox(0, 0, 960, 720);
 // OKLCH Palette-Building Schematic
 //
 // A reactive companion figure to a process for building accessible UI

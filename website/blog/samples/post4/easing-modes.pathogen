@@ -1,4 +1,4 @@
-// viewBox="0 0 550 350"
+define ViewBox(0, 0, 550, 350);
 // Easing Modes — 5 Elevation Interpolation Curves
 // How easing changes the visual transition between contours
 

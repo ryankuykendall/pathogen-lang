@@ -1,4 +1,4 @@
-// viewBox="0 0 450 280"
+define ViewBox(0, 0, 450, 280);
 // Summary bar chart — reusing the same data in a horizontal layout
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));

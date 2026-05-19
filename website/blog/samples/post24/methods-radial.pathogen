@@ -1,4 +1,4 @@
-// viewBox="0 0 520 400"
+define ViewBox(0, 0, 520, 400);
 // Color Methods — Direction 2: Radial Wheel
 // Eight slim 30° sectors arranged around a central base-color hub.
 // Each sector fills with one OKLCH method derivation; labels sit

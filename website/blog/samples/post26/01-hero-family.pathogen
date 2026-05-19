@@ -1,4 +1,4 @@
-// viewBox="0 0 600 400"
+define ViewBox(0, 0, 600, 400);
 // Six filters, one shape per cell — the family portrait.
 
 let bg = PathLayer('bg') ${

@@ -1,4 +1,4 @@
-// viewBox="0 0 400 300"
+define ViewBox(0, 0, 400, 300);
 // Linear Gradient Basics — Layered Landscape
 // Demonstrates vertical, diagonal, and horizontal linear gradients
 

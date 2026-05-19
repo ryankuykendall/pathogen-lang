@@ -1,4 +1,4 @@
-// viewBox="0 0 580 400"
+define ViewBox(0, 0, 580, 400);
 // Gradient Gallery — All Six Types
 // A complete overview of every gradient type in the Pathogen language
 

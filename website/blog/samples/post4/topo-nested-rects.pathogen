@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Nested Rectangles — Rotated Rectangular Contours
 // Using rotateAtVertexIndex() to create angular topographic geometry
 

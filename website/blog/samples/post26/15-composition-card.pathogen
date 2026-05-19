@@ -1,4 +1,4 @@
-// viewBox="0 0 400 240"
+define ViewBox(0, 0, 400, 240);
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 

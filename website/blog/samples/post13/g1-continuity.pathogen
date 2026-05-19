@@ -1,4 +1,4 @@
-// viewBox="0 0 420 255"
+define ViewBox(0, 0, 420, 255);
 // G1 continuity at a join point — collinear control points
 
 // --- Background ---

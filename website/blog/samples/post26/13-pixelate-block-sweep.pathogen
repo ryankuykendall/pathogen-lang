@@ -1,4 +1,4 @@
-// viewBox="0 0 640 240"
+define ViewBox(0, 0, 640, 240);
 // PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
 
 let bg = PathLayer('bg') ${

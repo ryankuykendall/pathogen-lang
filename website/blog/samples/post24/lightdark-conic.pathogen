@@ -1,4 +1,4 @@
-// viewBox="0 0 520 520"
+define ViewBox(0, 0, 520, 520);
 // Light/Dark — Conic (off-canvas center, fanned chips)
 // Gradient origin sits at x = −260 (−50% of canvas width). The conic
 // gradient runs from −90° (north of center = bg_light) to +90°

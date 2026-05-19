@@ -1,4 +1,4 @@
-// viewBox="0 0 400 400"
+define ViewBox(0, 0, 400, 400);
 // Triangle grid — all four pattern types
 
 let gridColor = Color(CSSVar('--grid-color', #44cc88));

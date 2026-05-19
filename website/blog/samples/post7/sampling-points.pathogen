@@ -1,4 +1,4 @@
-// viewBox="0 0 400 300"
+define ViewBox(0, 0, 400, 300);
 // Parametric sampling — placing dots along a curve
 
 let curve = @{

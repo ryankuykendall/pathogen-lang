@@ -1,4 +1,4 @@
-// viewBox="0 0 500 500"
+define ViewBox(0, 0, 500, 500);
 // Polar projection — labels placed at compass positions around a shape
 // Uses GroupLayers per Code Example Guideline §9
 

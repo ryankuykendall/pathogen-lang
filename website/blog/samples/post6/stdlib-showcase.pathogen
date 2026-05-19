@@ -1,4 +1,4 @@
-// viewBox="0 0 600 260"
+define ViewBox(0, 0, 600, 260);
 // Standard library shape gallery
 
 // --- Background ---
