@@ -5,7 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-05-13
+## [Unreleased] - 2026-05-19
+
+### Added
+
+#### `define ViewBox(...)` — viewBox in source
+
+- **New language statement.** `define ViewBox(originX, originY, width, height);` declares the SVG viewBox in Pathogen source. Arguments are full expressions (`calc(...)`, variables, negative origins are all supported). One ViewBox per program; duplicates are a compile error.
+- **Render precedence.** Source `define ViewBox` wins over the CLI's `--viewBox`/`--width`/`--height` flags; flags continue to apply for inline `-e` snippets that don't declare one. Default remains `0 0 200 200`.
+- **Strict validation.** Zero or negative `width`/`height` rejected at compile time. Negative `originX`/`originY` are allowed (valid SVG, useful for centering around 0,0). Non-numeric arguments produce a clear "must evaluate to a finite number" diagnostic. `define ViewBox` inside a layer apply / path / text block is rejected ("ViewBox must appear at top level").
+- **CompileResult carries the resolved viewBox.** `CompileResult.viewBox = { originX, originY, width, height } | undefined`. `compileWithContext` exposes the same field. `--include-metadata` emits it inside the metadata `<script>` block.
+- **`docs/viewbox.md`** is the new user-facing page (registered in `scripts/build-docs.ts` `DOC_FILES`). `docs/cli.md`, `docs/layers.md`, and `docs/getting-started.md` cross-link to it; `getting-started.md` now opens its first example with the canonical boilerplate.
+- **Completion + hover.** `define V…` completes to `define ViewBox(${1:0}, ${2:0}, ${3:200}, ${4:200});`. Hovering `ViewBox` shows the syntax and precedence rules. The `define` hover documents all three variants (PathLayer / TextLayer / ViewBox).
+- **VS Code.** TextMate grammar adds `ViewBox` to the keyword token list. The `viewbox` and `newfile` snippets emit the `define ViewBox(...)` form instead of the old `// viewBox=...` comment header.
+- **`scripts/migrate-viewbox.ts`** + `npm run migrate:viewbox:dev` / `migrate:viewbox:prod`. Idempotent migration: iterates every `workspace:*` KV record, parses the code with `parseLezer` to detect any existing `ViewBoxDefinition` (AST-walked, not regex'd, so comment / template-literal mentions don't fool the skip check), and prepends `define ViewBox(0, 0, ${w}, ${h});` using `preferences.width`/`height` (default 200/200) when absent. Sets a `_viewboxMigratedAt` marker. Re-reads before write to skip concurrent autosaves. Supports `--dry-run`; requires `--confirm` for `--env=prod`.
+
+### Changed
+
+- **Workspace canvas size is no longer user-editable in the playground.** The W/H number inputs are gone from the workspace footer (replaced with a read-only viewBox display), the new-workspace dialog (no longer asks for canvas size on create), and the preferences page (`Canvas Size` section removed). `store.preferences` no longer carries `width`/`height`; the new-workspace boilerplate is `define ViewBox(0, 0, 200, 200);` followed by a `define default PathLayer('main-path-layer') ${ ... };` block. The footer's viewBox display updates live from `result.viewBox` after each compile.
+- **API stops persisting `preferences.width`/`height`.** POST `/api/workspace`, PUT `/api/workspace/:id`, and PUT `/api/preferences` strip those keys from incoming payloads (via `stripDimensions`). Existing KV records keep their legacy values until the migration script runs; old values are inert because the new client never reads them.
+- **Optional trailing `;` on `define <LayerType>(...) ${ ... }`.** Previously a trailing `;` was a parse error; now it's accepted (matching the user-facing boilerplate style and `define ViewBox(...);`'s mandatory `;`). Existing layer definitions without `;` continue to parse unchanged.
+- **`scripts/compile-bbwp.ts` + `compile-samples.ts`** prefer the canonical `define ViewBox(...)` statement when auto-detecting dimensions, falling back to the legacy `// viewBox=...` / `// Set viewBox: ...` comment forms for unmigrated source files.
+
+### Breaking
+
+- **`ViewBox` is now a reserved keyword.** Variable or layer names matching `ViewBox` will no longer parse. The keyword is contextual at the AST level (specialized only inside `define ViewBox(...)`) but, like other keywords (`let`, `for`, `define`), it is specialized at tokenization and cannot appear as an identifier. No examples in the codebase used it.
+
+### Migration Path
+
+The migration runs against KV before deploy. Atomic single-PR rollout: migrate prod KV → merge → auto-deploy. Old workers can still serve unmigrated workspaces because `preferences.width`/`height` are retained alongside the new `define ViewBox` statement during the transition window. Storage cleanup (removing the legacy `width`/`height` keys from KV entirely) is a no-op follow-up done at our convenience.
+
+### Tests
+
+- **`tests/viewbox.test.ts`** — 19 tests covering parsing (basic, expression args, negative origin, coexistence with layers, `ViewBox` reservedness, trailing `;` on layer defs), evaluation (validation, duplicates, zero/negative width/height, non-numeric args, no-viewbox case), and render precedence (source wins / CLI fallback / default).
+- **`tests/migration-viewbox.test.ts`** — 6 tests pinning the AST-walk skip check used by the migration. Verifies that comment-only and template-literal mentions of `define ViewBox` do NOT suppress the migration, and unparseable code falls through to "prepend" mode.
+- **`tests/cli.test.ts`** — 2 new tests verify CLI flag precedence (source-defined ViewBox wins over `--viewBox`, falls back to flag when source has no declaration).
+- **`tests/language-services/completion.test.ts`** — 1 new test verifies `ViewBox` appears among keyword completions.
+- Full suite passing: **2993 tests** (up from 2966 pre-feature).
+
+## [Older Unreleased] - 2026-05-13
 
 ### Added
 

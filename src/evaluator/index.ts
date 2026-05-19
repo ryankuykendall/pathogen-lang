@@ -7250,6 +7250,39 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       return;
     }
 
+    case 'ViewBoxDefinition': {
+      if (!scope.evalState) {
+        throw new Error(formatError('ViewBox definitions require evaluation context', getLine(stmt)));
+      }
+      if (scope.evalState.activeLayerName !== null) {
+        throw new Error(formatError('ViewBox must appear at top level', getLine(stmt)));
+      }
+      if (scope.evalState.viewBox) {
+        const prev = scope.evalState.viewBox.loc?.line;
+        const where = prev ? ` (first defined at line ${prev})` : '';
+        throw new Error(formatError(`Duplicate ViewBox definition${where}`, getLine(stmt)));
+      }
+      const evalArg = (label: string, expr: typeof stmt.originX): number => {
+        const v = evaluateExpression(expr, scope);
+        if (typeof v !== 'number' || !Number.isFinite(v)) {
+          throw new Error(formatError(`ViewBox ${label} must evaluate to a finite number`, getLine(stmt)));
+        }
+        return v;
+      };
+      const originX = evalArg('originX', stmt.originX);
+      const originY = evalArg('originY', stmt.originY);
+      const width = evalArg('width', stmt.width);
+      const height = evalArg('height', stmt.height);
+      if (width <= 0) {
+        throw new Error(formatError(`ViewBox width must be greater than 0 (got ${width})`, getLine(stmt)));
+      }
+      if (height <= 0) {
+        throw new Error(formatError(`ViewBox height must be greater than 0 (got ${height})`, getLine(stmt)));
+      }
+      scope.evalState.viewBox = { originX, originY, width, height, loc: stmt.loc };
+      return;
+    }
+
     case 'LayerDefinition': {
       if (!scope.evalState) {
         throw new Error(formatError('Layer definitions require evaluation context', getLine(stmt)));
@@ -8609,6 +8642,14 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
+    viewBox: evalState.viewBox
+      ? {
+          originX: evalState.viewBox.originX,
+          originY: evalState.viewBox.originY,
+          width: evalState.viewBox.width,
+          height: evalState.viewBox.height,
+        }
+      : undefined,
   };
 }
 
@@ -8671,6 +8712,7 @@ export interface EvaluateWithContextResult {
   markers: MarkerOutput[];
   filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
+  viewBox?: import('./types').ViewBoxValue;
 }
 
 /**
@@ -8757,6 +8799,7 @@ export function evaluateWithContext(
       markers: compileResult.markers,
       filters: compileResult.filters,
       cssProperties: compileResult.cssProperties,
+      viewBox: compileResult.viewBox,
     };
   } finally {
     resetNumberFormat();

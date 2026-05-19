@@ -2,6 +2,8 @@
 
 Layers let you output multiple `<path>` elements from a single program, each with its own styles and independent pen tracking.
 
+See also [`define ViewBox`](#viewbox) for declaring the SVG viewBox — a sibling `define`-family statement that controls the canvas dimensions.
+
 ## Defining Layers
 
 Use `define` to create a named layer with a style block:

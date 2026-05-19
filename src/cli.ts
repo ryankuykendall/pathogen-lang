@@ -42,9 +42,13 @@ Options:
   -o, --output <file>            Write path output to file
   --output-svg-file=<file>       Output as complete SVG file
   --annotated                    Output annotated/debug format with comments
-  --viewBox=<box>                SVG viewBox (default: "0 0 200 200")
-  --width=<w>                    SVG width (default: "200")
-  --height=<h>                   SVG height (default: "200")
+  --viewBox=<box>                SVG viewBox (default: "0 0 200 200").
+                                 Overridden when the source has a
+                                 'define ViewBox(...)' statement.
+  --width=<w>                    SVG width (default: "200"). Overridden
+                                 when the source has 'define ViewBox'.
+  --height=<h>                   SVG height (default: "200"). Overridden
+                                 when the source has 'define ViewBox'.
   --stroke=<color>               Path stroke color (default: "#000")
   --fill=<color>                 Path fill color (default: "none")
   --stroke-width=<w>             Path stroke width (default: "2")

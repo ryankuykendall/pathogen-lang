@@ -7,6 +7,13 @@ pathogen-lang is a language that extends SVG path syntax with variables, express
 Try this simple example in the playground:
 
 ```
+define ViewBox(0, 0, 200, 200);
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
 // A simple rectangle using variables
 let size = 50
 let x = 10
@@ -18,6 +25,8 @@ v size
 h calc(-size)
 Z
 ```
+
+Every Pathogen program starts with a [`define ViewBox`](#viewbox) declaring the canvas, and typically one or more [layer definitions](#layers) describing how strokes and fills should look.
 
 This creates a rectangle by:
 1. Moving to position (10, 10)

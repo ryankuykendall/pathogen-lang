@@ -248,6 +248,8 @@ export class SvgPreviewPane extends HTMLElement {
       [
         'width',
         'height',
+        'viewBoxOriginX',
+        'viewBoxOriginY',
         'background',
         'gridEnabled',
         'gridColor',
@@ -598,6 +600,8 @@ export class SvgPreviewPane extends HTMLElement {
   updateViewBox(): void {
     const width = store.get('width') as number;
     const height = store.get('height') as number;
+    const originX = (store.get('viewBoxOriginX') as number) ?? 0;
+    const originY = (store.get('viewBoxOriginY') as number) ?? 0;
     const zoomLevel = store.get('zoomLevel') as number;
     let panX = store.get('panX') as number;
     let panY = store.get('panY') as number;
@@ -605,7 +609,8 @@ export class SvgPreviewPane extends HTMLElement {
     const viewWidth = width / zoomLevel;
     const viewHeight = height / zoomLevel;
 
-    // Clamp pan values; center canvas when zoomed out below 50%
+    // Clamp pan values; center canvas when zoomed out below 50%.
+    // panX/panY are offsets relative to the source viewBox origin.
     if (zoomLevel < 0.5) {
       panX = -(viewWidth - width) / 2;
       panY = -(viewHeight - height) / 2;
@@ -623,7 +628,7 @@ export class SvgPreviewPane extends HTMLElement {
     // Update store with clamped values
     store.update({ panX, panY });
 
-    if (this.preview) this.preview.setAttribute('viewBox', `${panX} ${panY} ${viewWidth} ${viewHeight}`);
+    if (this.preview) this.preview.setAttribute('viewBox', `${originX + panX} ${originY + panY} ${viewWidth} ${viewHeight}`);
 
     // Update zoom level display
     const zoomDisplay = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement | null;
@@ -964,8 +969,8 @@ export class SvgPreviewPane extends HTMLElement {
     const previewBg = this._iframeDoc.getElementById('preview-bg') as unknown as SVGRectElement | null;
     if (previewBg) {
       previewBg.setAttribute('fill', state.background as string);
-      previewBg.setAttribute('x', '0');
-      previewBg.setAttribute('y', '0');
+      previewBg.setAttribute('x', String((state.viewBoxOriginX as number) ?? 0));
+      previewBg.setAttribute('y', String((state.viewBoxOriginY as number) ?? 0));
       previewBg.setAttribute('width', String(state.width));
       previewBg.setAttribute('height', String(state.height));
     }
@@ -981,8 +986,8 @@ export class SvgPreviewPane extends HTMLElement {
       gridPath.setAttribute('d', `M ${state.gridSize} 0 L 0 0 0 ${state.gridSize}`);
       gridPath.setAttribute('stroke', state.gridColor as string);
       previewGrid.style.display = state.gridEnabled ? 'block' : 'none';
-      previewGrid.setAttribute('x', '0');
-      previewGrid.setAttribute('y', '0');
+      previewGrid.setAttribute('x', String((state.viewBoxOriginX as number) ?? 0));
+      previewGrid.setAttribute('y', String((state.viewBoxOriginY as number) ?? 0));
       previewGrid.setAttribute('width', String(state.width));
       previewGrid.setAttribute('height', String(state.height));
     }

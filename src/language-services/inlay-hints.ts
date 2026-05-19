@@ -115,6 +115,12 @@ function walkStatement(stmt: Statement, source: string, range: Range, hints: Inl
       walkExpr(stmt.name, source, range, hints);
       walkExpr(stmt.styleExpr, source, range, hints);
       break;
+    case 'ViewBoxDefinition':
+      walkExpr(stmt.originX, source, range, hints);
+      walkExpr(stmt.originY, source, range, hints);
+      walkExpr(stmt.width, source, range, hints);
+      walkExpr(stmt.height, source, range, hints);
+      break;
     case 'TextStatement':
       walkExpr(stmt.x, source, range, hints);
       walkExpr(stmt.y, source, range, hints);

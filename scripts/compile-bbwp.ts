@@ -11,10 +11,12 @@ const PROJECT_ROOT = join(__dirname, '..');
 const BBWP_DIR = join(PROJECT_ROOT, 'website', 'bbwp');
 
 /**
- * Auto-detect viewBox/width/height from pathogen source comments.
- * Looks for patterns like:
- *   // Set viewBox: 2200 x 11200, width: 2200, height: 11200
- *   // viewBox="0 0 400 400"
+ * Auto-detect viewBox/width/height from pathogen source.
+ *
+ * Recognizes the canonical `define ViewBox(originX, originY, width, height);`
+ * statement and the two legacy comment forms (`// Set viewBox: ...`,
+ * `// viewBox="..."`) for backwards compatibility with older `.pathogen`
+ * fixtures that have not yet been migrated.
  */
 function autoDetectDimensions(source: string): {
   viewBox?: string;
@@ -23,7 +25,19 @@ function autoDetectDimensions(source: string): {
 } {
   const result: { viewBox?: string; width?: string; height?: string } = {};
 
-  // Pattern 1: "Set viewBox: W x H, width: W, height: H"
+  // Canonical: `define ViewBox(originX, originY, width, height);`
+  const defineMatch =
+    /define\s+ViewBox\s*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)/.exec(
+      source,
+    );
+  if (defineMatch) {
+    result.viewBox = `${defineMatch[1]} ${defineMatch[2]} ${defineMatch[3]} ${defineMatch[4]}`;
+    result.width = defineMatch[3];
+    result.height = defineMatch[4];
+    return result;
+  }
+
+  // Legacy comment: `// Set viewBox: W x H, width: W, height: H`
   const setMatch = /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i.exec(source);
   if (setMatch) {
     result.viewBox = `0 0 ${setMatch[1]} ${setMatch[2]}`;
@@ -32,7 +46,7 @@ function autoDetectDimensions(source: string): {
     return result;
   }
 
-  // Pattern 2: viewBox="x y w h"
+  // Legacy comment: viewBox="x y w h"
   const vbMatch = /viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i.exec(source);
   if (vbMatch) {
     result.viewBox = vbMatch[1];
@@ -41,7 +55,7 @@ function autoDetectDimensions(source: string): {
     result.height = parts[3];
   }
 
-  // Pattern 3: width: N, height: N (standalone)
+  // Legacy standalone comments: width: N, height: N
   const wMatch = /\/\/.*width[=:]\s*(\d+)/i.exec(source);
   const hMatch = /\/\/.*height[=:]\s*(\d+)/i.exec(source);
   if (wMatch && !result.width) result.width = wMatch[1];

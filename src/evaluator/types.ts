@@ -8,7 +8,7 @@
 
 import type { OKLCH } from '../color';
 import type { PathContext, Point, TransformState } from './context';
-import type { Statement } from '../parser/ast';
+import type { SourceLocation, Statement } from '../parser/ast';
 
 // Re-export imported types that are part of the public API
 export type { OKLCH } from '../color';
@@ -773,6 +773,13 @@ export interface PixelateFilterOutput {
   radius: number;
 }
 
+export interface ViewBoxValue {
+  originX: number;
+  originY: number;
+  width: number;
+  height: number;
+}
+
 export interface CompileResult {
   layers: LayerOutput[];
   masks: MaskOutput[];
@@ -784,6 +791,7 @@ export interface CompileResult {
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
+  viewBox?: ViewBoxValue;
 }
 
 // ---------------------------------------------------------------------------
@@ -844,6 +852,7 @@ export interface EvaluationState {
   filters: Map<string, FilterValue>; // Filter definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
   fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
+  viewBox?: ViewBoxValue & { loc?: SourceLocation }; // Resolved viewBox from `define ViewBox(...)`
 }
 
 export interface Scope {

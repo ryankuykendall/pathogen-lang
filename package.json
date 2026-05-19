@@ -42,6 +42,8 @@
     "seed:dev": "tsx scripts/seed-dev-users.ts",
     "backfill:publication-state": "tsx scripts/backfill-publication-state.ts",
     "backfill:owner-handle": "tsx scripts/backfill-owner-handle.ts",
+    "migrate:viewbox:dev": "tsx scripts/migrate-viewbox.ts --env=dev",
+    "migrate:viewbox:prod": "tsx scripts/migrate-viewbox.ts --env=prod",
     "merge:wrangler-state": "tsx scripts/merge-wrangler-state.ts",
     "website:admin-token": "npm run build:website && tsx scripts/rotate-admin-token.ts",
     "test": "vitest",

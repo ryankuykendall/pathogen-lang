@@ -10,14 +10,30 @@ const PROJECT_ROOT = join(__dirname, '..');
 const SAMPLES_DIR = join(PROJECT_ROOT, 'website', 'blog', 'samples');
 
 /**
- * Auto-detect viewBox/width/height from pathogen source comments.
+ * Auto-detect viewBox/width/height from pathogen source.
+ *
+ * Recognizes the canonical `define ViewBox(originX, originY, width, height);`
+ * statement and the two legacy comment forms for backwards compatibility.
  */
 function autoDetectDimensions(source: string): {
   viewBox: string;
   width: string;
   height: string;
 } {
-  // Pattern 1: "Set viewBox: W x H, width: W, height: H"
+  // Canonical: `define ViewBox(originX, originY, width, height);`
+  const defineMatch =
+    /define\s+ViewBox\s*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)/.exec(
+      source,
+    );
+  if (defineMatch) {
+    return {
+      viewBox: `${defineMatch[1]} ${defineMatch[2]} ${defineMatch[3]} ${defineMatch[4]}`,
+      width: defineMatch[3],
+      height: defineMatch[4],
+    };
+  }
+
+  // Legacy comment: "Set viewBox: W x H, width: W, height: H"
   const setMatch = /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i.exec(source);
   if (setMatch) {
     return {
@@ -27,7 +43,7 @@ function autoDetectDimensions(source: string): {
     };
   }
 
-  // Pattern 2: viewBox="x y w h"
+  // Legacy comment: viewBox="x y w h"
   const vbMatch = /viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i.exec(source);
   if (vbMatch) {
     const parts = vbMatch[1].split(/\s+/);

@@ -221,6 +221,8 @@ When using `--output-svg-file`, you can customize the appearance:
 | `--width=<w>` | `200` | SVG width |
 | `--height=<h>` | `200` | SVG height |
 
+**ViewBox precedence:** if the source program contains a [`define ViewBox`](#viewbox) statement, the source value wins and the `--viewBox`/`--width`/`--height` flags are ignored. The flags apply only when the source has no `define ViewBox`.
+
 ### Examples
 
 Red circle with no fill:

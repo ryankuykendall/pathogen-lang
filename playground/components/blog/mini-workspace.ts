@@ -119,10 +119,22 @@ export class MiniWorkspace extends HTMLElement {
     if (codeEl) this._sourceCode = codeEl.textContent || '';
 
     if (this._sourceCode) {
-      const vbMatch = this._sourceCode.match(/\/\/\s*viewBox\s*=\s*"(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
-      if (vbMatch) {
-        this._width = parseInt(vbMatch[3], 10);
-        this._height = parseInt(vbMatch[4], 10);
+      // Prefer `define ViewBox(originX, originY, width, height);` — the
+      // canonical source-of-truth introduced when viewBox moved out of
+      // workspace storage. Falls back to the legacy `// viewBox=` comment
+      // for older pre-rendered blog snippets that still carry it.
+      const defineMatch = this._sourceCode.match(
+        /define\s+ViewBox\s*\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)/,
+      );
+      if (defineMatch) {
+        this._width = parseFloat(defineMatch[1]);
+        this._height = parseFloat(defineMatch[2]);
+      } else {
+        const vbMatch = this._sourceCode.match(/\/\/\s*viewBox\s*=\s*"(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
+        if (vbMatch) {
+          this._width = parseInt(vbMatch[3], 10);
+          this._height = parseInt(vbMatch[4], 10);
+        }
       }
     }
 

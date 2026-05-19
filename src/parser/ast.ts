@@ -28,6 +28,7 @@ export type Node =
   | FunctionDefinition
   | EnumDefinition
   | PathCommand
+  | ViewBoxDefinition
   | LayerDefinition
   | LayerApplyBlock
   | TextStatement
@@ -74,6 +75,7 @@ export type Statement =
   | EnumDefinition
   | ReturnStatement
   | PathCommand
+  | ViewBoxDefinition
   | LayerDefinition
   | LayerApplyBlock
   | TextStatement
@@ -358,6 +360,16 @@ export interface LayerDefinition {
   name: Expression;
   isDefault: boolean;
   styleExpr: Expression;
+  loc?: SourceLocation;
+}
+
+// define ViewBox(originX, originY, width, height);
+export interface ViewBoxDefinition {
+  type: 'ViewBoxDefinition';
+  originX: Expression;
+  originY: Expression;
+  width: Expression;
+  height: Expression;
   loc?: SourceLocation;
 }
 

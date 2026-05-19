@@ -24,6 +24,7 @@
 statement {
   Comment |
   FontDirective |
+  ViewBoxDefinition |
   LayerDefinition |
   LayerApplyBlock |
   TextStatement |
@@ -83,7 +84,11 @@ EnumMember {
 }
 
 LayerDefinition {
-  kw<"define"> kw<"default">? LayerType "(" expression ")" expression
+  kw<"define"> kw<"default">? LayerType "(" expression ")" expression ";"?
+}
+
+ViewBoxDefinition {
+  kw<"define"> kw<"ViewBox"> "(" expression "," expression "," expression "," expression ")" ";"
 }
 
 LayerApplyBlock {

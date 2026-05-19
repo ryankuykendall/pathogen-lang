@@ -234,17 +234,15 @@ export class WorkspaceView extends HTMLElement {
     // New workspace
     else {
       // Use default code for new workspaces
-      const preferences = store.get('preferences') as { width: number; height: number; background: string; gridEnabled: boolean; gridColor: string; gridSize: number; toFixed: number | null } | null;
+      const preferences = store.get('preferences') as { background: string; gridEnabled: boolean; gridColor: string; gridSize: number; toFixed: number | null } | null;
       this.editorPane.initialCode = defaultCode;
       store.update({
         code: defaultCode,
         currentFileName: null,
       });
-      // Apply user preferences to SVG styles
+      // Apply user preferences to SVG styles (width/height now come from compile result)
       if (preferences) {
         (store as any).update({
-          width: preferences.width,
-          height: preferences.height,
           background: preferences.background,
           gridEnabled: preferences.gridEnabled,
           gridColor: preferences.gridColor,
@@ -309,12 +307,10 @@ export class WorkspaceView extends HTMLElement {
         currentFileName: workspace.name,
       });
 
-      // Apply workspace preferences to SVG styles
+      // Apply workspace preferences to SVG styles (width/height come from compile result)
       if (workspace.preferences) {
         const prefs = workspace.preferences;
         store.update({
-          width: prefs.width ?? (store.get('width') as number),
-          height: prefs.height ?? (store.get('height') as number),
           background: prefs.background ?? (store.get('background') as string),
           gridEnabled: prefs.gridEnabled ?? (store.get('gridEnabled') as boolean),
           gridColor: prefs.gridColor ?? (store.get('gridColor') as string),
@@ -339,8 +335,6 @@ export class WorkspaceView extends HTMLElement {
 
         // Store initial preferences state for change detection
         autosave.setInitialPreferences({
-          width: store.get('width') as number,
-          height: store.get('height') as number,
           background: store.get('background') as string,
           gridEnabled: store.get('gridEnabled') as boolean,
           gridColor: store.get('gridColor') as string,
@@ -402,10 +396,8 @@ export class WorkspaceView extends HTMLElement {
     this.shadowRoot!.addEventListener('style-change', () => {
       this.previewPane.updateSvgStyles();
 
-      // Save preferences to backend
+      // Save preferences to backend (width/height now live in source via define ViewBox)
       const preferences = {
-        width: store.get('width') as number,
-        height: store.get('height') as number,
         background: store.get('background') as string,
         gridEnabled: store.get('gridEnabled') as boolean,
         gridColor: store.get('gridColor') as string,
@@ -420,10 +412,8 @@ export class WorkspaceView extends HTMLElement {
       this.updatePreview();
       this.updateAnnotatedOutput();
 
-      // Save preferences to backend
+      // Save preferences to backend (width/height now live in source via define ViewBox)
       const preferences = {
-        width: store.get('width') as number,
-        height: store.get('height') as number,
         background: store.get('background') as string,
         gridEnabled: store.get('gridEnabled') as boolean,
         gridColor: store.get('gridColor') as string,
@@ -766,6 +756,21 @@ export class WorkspaceView extends HTMLElement {
       // Don't update if stale
       if (isStale(compilationId)) return;
 
+      // Pull viewBox from the compile result (falls back to 200x200 when the
+      // source has no `define ViewBox`).
+      const compiledViewBox = (result.viewBox as { originX: number; originY: number; width: number; height: number } | undefined) ?? {
+        originX: 0,
+        originY: 0,
+        width: 200,
+        height: 200,
+      };
+      store.update({
+        viewBoxOriginX: compiledViewBox.originX,
+        viewBoxOriginY: compiledViewBox.originY,
+        width: compiledViewBox.width,
+        height: compiledViewBox.height,
+      });
+
       // Pre-render GPU-rendered gradients (conic, freeform, mesh)
       const gpuGradientUrls = new Map<string, string>();
       if (
@@ -773,8 +778,8 @@ export class WorkspaceView extends HTMLElement {
           (g: any) => g.type === 'conic' || g.type === 'freeform' || g.type === 'mesh' || g.type === 'topo',
         )
       ) {
-        const svgW = (store.get('width') as number) || 200;
-        const svgH = (store.get('height') as number) || 200;
+        const svgW = compiledViewBox.width;
+        const svgH = compiledViewBox.height;
         const [conicUrls, freeformUrls, meshUrls, topoUrls] = await Promise.all([
           gpuGradientService.renderConicGradients(result.gradients, svgW, svgH),
           gpuGradientService.renderFreeformGradients(result.gradients, svgW, svgH),

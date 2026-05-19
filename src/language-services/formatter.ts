@@ -187,6 +187,13 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       const def = stmt.isDefault ? 'default ' : '';
       return `${prefix}define ${def}${stmt.layerType}(${name}) ${style}`;
     }
+    case 'ViewBoxDefinition': {
+      const ox = formatExpression(stmt.originX, depth, indent, source);
+      const oy = formatExpression(stmt.originY, depth, indent, source);
+      const w = formatExpression(stmt.width, depth, indent, source);
+      const h = formatExpression(stmt.height, depth, indent, source);
+      return `${prefix}define ViewBox(${ox}, ${oy}, ${w}, ${h});`;
+    }
     case 'LayerApplyBlock': {
       const body = formatStatements(stmt.body, depth + 1, indent, source);
       if (stmt.layerName.type === 'Identifier') {

@@ -191,6 +191,12 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       walkExpr(stmt.name, scope, col);
       walkExpr(stmt.styleExpr, scope, col);
       break;
+    case 'ViewBoxDefinition':
+      walkExpr(stmt.originX, scope, col);
+      walkExpr(stmt.originY, scope, col);
+      walkExpr(stmt.width, scope, col);
+      walkExpr(stmt.height, scope, col);
+      break;
     case 'PathCommand':
       for (const arg of stmt.args) walkPathArg(arg, scope, col);
       break;

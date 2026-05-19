@@ -234,6 +234,34 @@ describe('CLI', () => {
       const [path] = extractSVGElements(content, 'path');
       expect(path).toMatchObject({ stroke: 'green', fill: 'yellow', 'stroke-width': '3' });
     });
+
+    it('source `define ViewBox` overrides --viewBox flag', () => {
+      runCli([
+        '-e',
+        'define ViewBox(0, 0, 300, 300); M 0 0',
+        `--output-svg-file=${outputSvg}`,
+        '--viewBox=0 0 100 100',
+        '--width=100',
+        '--height=100',
+      ]);
+      const content = readFileSync(outputSvg, 'utf-8');
+      const [svg] = extractSVGElements(content, 'svg');
+      expect(svg).toMatchObject({ viewBox: '0 0 300 300', width: '300', height: '300' });
+    });
+
+    it('--viewBox flag is used when source has no `define ViewBox`', () => {
+      runCli([
+        '-e',
+        'M 0 0',
+        `--output-svg-file=${outputSvg}`,
+        '--viewBox=0 0 100 100',
+        '--width=100',
+        '--height=100',
+      ]);
+      const content = readFileSync(outputSvg, 'utf-8');
+      const [svg] = extractSVGElements(content, 'svg');
+      expect(svg).toMatchObject({ viewBox: '0 0 100 100', width: '100', height: '100' });
+    });
   });
 
   describe('error handling', () => {

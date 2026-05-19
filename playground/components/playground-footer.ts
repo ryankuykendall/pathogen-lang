@@ -16,18 +16,25 @@ export class PlaygroundFooter extends HTMLElement {
   }
 
   subscribeToStore(): void {
-    // Subscribe to relevant state changes
-    store.subscribe(['width', 'height', 'background', 'gridEnabled', 'gridColor', 'gridSize', 'toFixed'], () => {
-      this.syncFromStore();
-    });
+    // Subscribe to relevant state changes. width/height update the read-only
+    // viewBox display; they are no longer user-editable — the source's
+    // `define ViewBox(...)` statement controls the canvas.
+    store.subscribe(
+      ['width', 'height', 'viewBoxOriginX', 'viewBoxOriginY', 'background', 'gridEnabled', 'gridColor', 'gridSize', 'toFixed'],
+      () => {
+        this.syncFromStore();
+      },
+    );
   }
 
   syncFromStore(): void {
     const state = store.getAll();
     const root = this.shadowRoot!;
 
-    (root.querySelector('#width') as HTMLInputElement).value = String(state.width);
-    (root.querySelector('#height') as HTMLInputElement).value = String(state.height);
+    const vbDisplay = root.querySelector('#viewbox-display') as HTMLElement | null;
+    if (vbDisplay) {
+      vbDisplay.textContent = `${state.viewBoxOriginX ?? 0} ${state.viewBoxOriginY ?? 0} ${state.width} ${state.height}`;
+    }
     (root.querySelector('#bg') as HTMLElement & { value: string }).value = state.background;
     (root.querySelector('#grid-enabled') as HTMLInputElement).checked = state.gridEnabled;
     (root.querySelector('#grid-color') as HTMLElement & { value: string }).value = state.gridColor;
@@ -37,17 +44,6 @@ export class PlaygroundFooter extends HTMLElement {
 
   setupEventListeners(): void {
     const root = this.shadowRoot!;
-
-    // Width/Height
-    root.querySelector('#width')!.addEventListener('input', (e: Event) => {
-      store.set('width', parseInt((e.target as HTMLInputElement).value) || 200);
-      this.dispatchStyleChange();
-    });
-
-    root.querySelector('#height')!.addEventListener('input', (e: Event) => {
-      store.set('height', parseInt((e.target as HTMLInputElement).value) || 200);
-      this.dispatchStyleChange();
-    });
 
     // Background
     root.querySelector('#bg')!.addEventListener('color-change', (e: Event) => {
@@ -156,6 +152,17 @@ export class PlaygroundFooter extends HTMLElement {
           transition: all var(--transition-base, 0.15s ease);
         }
 
+        .viewbox-display {
+          padding: 0.375rem 0.5rem;
+          border-radius: var(--radius-md, 8px);
+          font-family: var(--font-mono, 'Inconsolata', monospace);
+          font-size: 0.8125rem;
+          color: var(--text-secondary, #64748b);
+          background: var(--bg-tertiary, #f0f1f2);
+          white-space: nowrap;
+          cursor: help;
+        }
+
         input[type="number"]:focus {
           outline: none;
           border-color: var(--accent-color, #10b981);
@@ -255,13 +262,9 @@ export class PlaygroundFooter extends HTMLElement {
       </style>
 
       <div class="controls">
-        <div class="control-group">
-          <label for="width">W</label>
-          <input type="number" id="width" value="${state.width}" min="50" max="20000">
-        </div>
-        <div class="control-group">
-          <label for="height">H</label>
-          <input type="number" id="height" value="${state.height}" min="50" max="20000">
+        <div class="control-group" title="ViewBox is set in source via define ViewBox(originX, originY, width, height);">
+          <label>viewBox</label>
+          <span id="viewbox-display" class="viewbox-display">${state.viewBoxOriginX ?? 0} ${state.viewBoxOriginY ?? 0} ${state.width} ${state.height}</span>
         </div>
 
         <div class="separator"></div>

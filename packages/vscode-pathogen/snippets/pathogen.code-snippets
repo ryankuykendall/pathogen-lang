@@ -1,25 +1,22 @@
 {
-  "ViewBox Header": {
+  "ViewBox Definition": {
     "prefix": "viewbox",
-    "body": "// viewBox=\"0 0 ${1:400} ${2:400}\"",
-    "description": "viewBox comment — defines SVG canvas dimensions for preview"
+    "body": "define ViewBox(${1:0}, ${2:0}, ${3:200}, ${4:200});",
+    "description": "define ViewBox — declares the SVG viewBox in source"
   },
   "New File Template": {
     "prefix": "newfile",
     "body": [
-      "// viewBox=\"0 0 ${1:400} ${2:400}\"",
-      "",
-      "let bg = PathLayer('bg') ${",
-      "  fill: ${3:#ffffff};",
-      "  stroke: none;",
+      "define ViewBox(0, 0, ${1:200}, ${2:200});",
+      "define default PathLayer('main-path-layer') \\${",
+      "  fill: ${3:#bbb};",
+      "  stroke: ${4:#222};",
+      "  stroke-width: 1;",
       "};",
-      "bg.apply {",
-      "  rect(0, 0, ${1:400}, ${2:400});",
-      "}",
       "",
       "$0"
     ],
-    "description": "new file template — viewBox, background layer, and canvas"
+    "description": "new file template — viewBox + default path layer"
   },
   "For Loop": {
     "prefix": "for",

@@ -47,9 +47,18 @@ export interface BuildTreeOptions extends BuildLayersOptions {
 }
 
 export function buildSvgTree(result: CompileResult, options: BuildTreeOptions = {}): VNode {
-  const viewBox = options.viewBox ?? '0 0 200 200';
-  const width = options.width ?? '200';
-  const height = options.height ?? '200';
+  // Precedence: source-defined `define ViewBox(...)` wins over caller options,
+  // which win over the default. Width/height attrs default to viewBox w/h.
+  const sourceViewBox = result.viewBox;
+  const viewBox = sourceViewBox
+    ? `${sourceViewBox.originX} ${sourceViewBox.originY} ${sourceViewBox.width} ${sourceViewBox.height}`
+    : options.viewBox ?? '0 0 200 200';
+  const width = sourceViewBox
+    ? String(sourceViewBox.width)
+    : options.width ?? '200';
+  const height = sourceViewBox
+    ? String(sourceViewBox.height)
+    : options.height ?? '200';
 
   const viewBoxParts = viewBox.split(/\s+/).map(Number);
   const defsOptions: BuildDefsOptions = {
@@ -129,6 +138,7 @@ function buildMetadata(result: CompileResult): VNode {
     clipPaths: result.clipPaths,
     gradients: result.gradients,
     cssProperties: result.cssProperties,
+    viewBox: result.viewBox,
   };
   return h(
     'script',

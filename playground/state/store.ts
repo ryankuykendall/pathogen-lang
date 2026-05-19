@@ -102,8 +102,6 @@ export const store = createStore({
 
   // User preferences (defaults for new workspaces)
   preferences: {
-    width: 200,
-    height: 200,
     background: '#f5f5f5',
     gridEnabled: true,
     gridColor: '#cccccc',
@@ -137,9 +135,15 @@ export const store = createStore({
   compilationId: 0, // Tracks current compilation for staleness detection
   calledStdlibFunctions: [], // Stdlib function names invoked during last compilation
 
-  // SVG styles
+  // SVG dimensions — derived from `define ViewBox(...)` in the latest
+  // compile result. Not user-editable; the source declares the canvas.
+  // Fallback 0/0/200/200 when no `define ViewBox` is present.
+  viewBoxOriginX: 0,
+  viewBoxOriginY: 0,
   width: 200,
   height: 200,
+
+  // SVG styles (non-dimension)
   background: '#f5f5f5',
   gridEnabled: true,
   gridColor: '#cccccc',

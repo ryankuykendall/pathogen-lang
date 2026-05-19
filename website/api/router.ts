@@ -57,6 +57,18 @@ import { setUserFlag } from '../auth/users.js';
 import type { Env, Workspace, WorkspaceApproval, WorkspaceListing, WorkspaceRejection } from './types.js';
 import { errorResponse, generateNanoId, hashContent, jsonResponse, slugify } from './utils.js';
 
+// Canvas dimensions now live in source via `define ViewBox(originX, originY,
+// width, height);`. Older clients may still send `width`/`height` in the
+// preferences payload — strip them here so they never get persisted from
+// new writes. Existing KV records that already have these keys are left
+// untouched by this function; the dedicated migration script handles
+// historical cleanup.
+function stripDimensions(prefs: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!prefs) return {};
+  const { width: _w, height: _h, ...rest } = prefs;
+  return rest;
+}
+
 function publishingError(message: string, code: string): Response {
   // We include both `error` (for legacy clients) and `code` (machine-readable,
   // stable across copy changes) so the playground can branch on the reason
@@ -288,6 +300,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const now = new Date().toISOString();
       const contentHash = await hashContent(code || '');
 
+      // Canvas dimensions now live in source via `define ViewBox(...)`.
+      // Strip legacy `width`/`height` from incoming preferences so they
+      // never get re-persisted from new client builds.
+      const sanitizedPrefs = stripDimensions(preferences);
+
       const workspace: Workspace = {
         id,
         slug,
@@ -296,7 +313,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         description: (description as string | undefined)?.trim() || '',
         code: code || '',
         isPublic: Boolean(isPublic),
-        preferences: preferences || {},
+        preferences: sanitizedPrefs,
         createdAt: now,
         updatedAt: now,
         contentHash,
@@ -413,7 +430,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       }
       if (description !== undefined) workspace.description = description.trim();
       if (preferences !== undefined) {
-        workspace.preferences = { ...(workspace.preferences || {}), ...preferences };
+        // Strip width/height — canvas dimensions live in source via define ViewBox.
+        workspace.preferences = { ...(workspace.preferences || {}), ...stripDimensions(preferences) };
       }
       // isPublic on the workspace record is only flipped during the
       // approval flow (→ true) or the owner-unpublish path (→ false).
@@ -577,9 +595,10 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!userId) return errorResponse('User ID required', 401);
 
     try {
-      const preferences = await request.json();
-      await env.WORKSPACES.put(`user:${userId}:preferences`, JSON.stringify(preferences));
-      return jsonResponse(preferences);
+      const preferences = (await request.json()) as Record<string, unknown>;
+      const sanitized = stripDimensions(preferences);
+      await env.WORKSPACES.put(`user:${userId}:preferences`, JSON.stringify(sanitized));
+      return jsonResponse(sanitized);
     } catch (err) {
       return errorResponse('Failed to save preferences: ' + (err as Error).message, 500);
     }

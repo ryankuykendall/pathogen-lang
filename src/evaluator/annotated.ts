@@ -3933,6 +3933,10 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       // Layer definitions are no-ops in annotated mode
       return '';
 
+    case 'ViewBoxDefinition':
+      // ViewBox is a metadata-only declaration; no path output
+      return '';
+
     case 'LayerApplyBlock': {
       // In annotated mode, just evaluate the body normally
       const results: string[] = [];
@@ -4528,6 +4532,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'LayerDefinition':
       // Layer definitions are no-ops in annotated mode
+      break;
+
+    case 'ViewBoxDefinition':
+      // ViewBox is a metadata-only declaration; no path output
       break;
 
     case 'LayerApplyBlock': {

@@ -42,7 +42,7 @@
     },
 
     "keyword": {
-      "match": "\\b(let|for|in|if|else|fn|return|define|default|layer|apply|text|tspan|enum|log)\\b",
+      "match": "\\b(let|for|in|if|else|fn|return|define|default|layer|apply|text|tspan|enum|log|ViewBox)\\b",
       "name": "keyword.control.pathogen"
     },
 

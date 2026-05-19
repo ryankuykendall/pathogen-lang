@@ -37,6 +37,11 @@ describe('getCompletions', () => {
       expect(names).toContain('lerp');
       expect(names).not.toContain('for');
     });
+
+    it('offers ViewBox among keyword completions', () => {
+      const items = completeAtEnd('');
+      expect(labels(items)).toContain('ViewBox');
+    });
   });
 
   describe('stdlib functions', () => {

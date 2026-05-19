@@ -2,14 +2,13 @@
 // Route: /workspace/new
 
 import { workspaceApi } from '../../services/api.js';
-import { extractSourceDimensions } from '../../utils/source-dimensions.js';
 import { autosave } from '../../services/autosave.js';
 // Visibility is no longer chosen during workspace creation, so the
 // Publishing-feature gate that used to live here is gone. The
 // currentUser subscription below stays — other parts of the form
 // (e.g. the future preferences view) may still need it.
 import { store } from '../../state/store.js';
-import { defaultCode, examples } from '../../utils/examples.js';
+import { emptyBoilerplate, examples } from '../../utils/examples.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 import styles from './new-workspace-view.css';
 
@@ -17,8 +16,6 @@ interface FormData {
   [key: string]: unknown;
   name: string;
   description: string;
-  width: number;
-  height: number;
   template: string;
   isPublic: boolean;
 }
@@ -27,8 +24,6 @@ interface FormErrors {
   [key: string]: string | undefined;
   name?: string;
   description?: string;
-  width?: string;
-  height?: string;
   submit?: string;
 }
 
@@ -42,8 +37,6 @@ interface SourceWorkspace {
 
 interface ImportState {
   code?: string;
-  w?: number;
-  h?: number;
   title?: string;
   desc?: string;
 }
@@ -75,8 +68,6 @@ class NewWorkspaceView extends HTMLElement {
     this.formData = {
       name: '',
       description: '',
-      width: 200,
-      height: 200,
       template: '',
       isPublic: false,
     };
@@ -196,9 +187,8 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   loadPreferences(): void {
-    const prefs = (store.get('preferences') as Record<string, unknown> | undefined) || {};
-    this.formData.width = (prefs.width as number) || 200;
-    this.formData.height = (prefs.height as number) || 200;
+    // Canvas dimensions now live in source via `define ViewBox(...)`;
+    // user preferences only carry non-dimensional defaults.
   }
 
   _applyImportKey(key: string): void {
@@ -208,8 +198,6 @@ class NewWorkspaceView extends HTMLElement {
       this._importKey = key; // track for cleanup
       const state = JSON.parse(raw) as ImportState;
       if (state.code) this._stateCode = state.code;
-      if (state.w) this.formData.width = state.w;
-      if (state.h) this.formData.height = state.h;
       if (state.title) this.formData.name = state.title;
       if (state.desc) this.formData.description = state.desc;
 
@@ -237,8 +225,6 @@ class NewWorkspaceView extends HTMLElement {
       const json = decodeURIComponent(atob(encoded));
       const state = JSON.parse(json) as ImportState;
       if (state.code) this._stateCode = state.code;
-      if (state.w) this.formData.width = state.w;
-      if (state.h) this.formData.height = state.h;
       if (state.title) this.formData.name = state.title;
       if (state.desc) this.formData.description = state.desc;
     } catch {
@@ -283,13 +269,6 @@ class NewWorkspaceView extends HTMLElement {
       this.formData.name = `${this._sourceWorkspace.name} (Copy)`;
       this.formData.description = this._sourceWorkspace.description || '';
 
-      // Pull width/height from the source's `// viewBox=` comment so
-      // the canvas matches the original. Falls back to current prefs
-      // when no comment is present.
-      const dims = extractSourceDimensions(data.code || '');
-      if (dims.width) this.formData.width = parseInt(dims.width, 10) || this.formData.width;
-      if (dims.height) this.formData.height = parseInt(dims.height, 10) || this.formData.height;
-
       this.formData.template = '';
     } catch (err: unknown) {
       console.error('Failed to load approval source:', err);
@@ -318,12 +297,6 @@ class NewWorkspaceView extends HTMLElement {
       this.formData.description = workspace.description || '';
       this.formData.isPublic = workspace.isPublic || false;
 
-      // Use source workspace preferences for canvas size
-      if (workspace.preferences) {
-        this.formData.width = (workspace.preferences.width as number) || 200;
-        this.formData.height = (workspace.preferences.height as number) || 200;
-      }
-
       // Clear template since we're copying code from source
       this.formData.template = '';
     } catch (err: unknown) {
@@ -346,8 +319,6 @@ class NewWorkspaceView extends HTMLElement {
     this.formData = {
       name: '',
       description: '',
-      width: this.formData.width,
-      height: this.formData.height,
       template: '',
       isPublic: false,
     };
@@ -370,14 +341,6 @@ class NewWorkspaceView extends HTMLElement {
       this.errors.description = 'Description must be 500 characters or less';
     }
 
-    if (this.formData.width < 50 || this.formData.width > 20000) {
-      this.errors.width = 'Width must be between 50 and 20000';
-    }
-
-    if (this.formData.height < 50 || this.formData.height > 20000) {
-      this.errors.height = 'Height must be between 50 and 20000';
-    }
-
     return Object.keys(this.errors).length === 0;
   }
 
@@ -394,14 +357,18 @@ class NewWorkspaceView extends HTMLElement {
     this.render();
 
     try {
-      // Get code: from state param, source workspace, or template
+      // Get code: from state param, source workspace, picked template, or
+      // fall back to the empty boilerplate (just `define ViewBox` and the
+      // canonical default PathLayer — no demo content).
       let code: string;
       if (this._stateCode) {
         code = this._stateCode;
       } else if (this._sourceWorkspace) {
         code = this._sourceWorkspace.code || '';
+      } else if (this.formData.template) {
+        code = (examples as Record<string, string>)[this.formData.template] || emptyBoilerplate;
       } else {
-        code = this.formData.template ? (examples as Record<string, string>)[this.formData.template] : '';
+        code = emptyBoilerplate;
       }
 
       // Get user preferences for other settings
@@ -417,8 +384,6 @@ class NewWorkspaceView extends HTMLElement {
         // menu (Make public) after the workspace exists.
         isPublic: false,
         preferences: {
-          width: this.formData.width,
-          height: this.formData.height,
           stroke: sourcePrefs.stroke || prefs.stroke || '#000000',
           strokeWidth: sourcePrefs.strokeWidth ?? prefs.strokeWidth ?? 2,
           fillEnabled: sourcePrefs.fillEnabled ?? prefs.fillEnabled ?? false,
@@ -590,40 +555,6 @@ class NewWorkspaceView extends HTMLElement {
               >${this.escapeHtml(this.formData.description)}</textarea>
               <span id="description-error" class="error-message">${this.errors.description || ''}</span>
               <span class="hint">Brief description of what this workspace contains</span>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <h2>Canvas Size</h2>
-
-            <div class="inline-group">
-              <div class="form-group">
-                <label for="width">Width (px)</label>
-                <input
-                  type="number"
-                  id="width"
-                  name="width"
-                  value="${this.formData.width}"
-                  min="50"
-                  max="20000"
-                  class="${this.errors.width ? 'error' : ''}"
-                >
-                <span id="width-error" class="error-message">${this.errors.width || ''}</span>
-              </div>
-
-              <div class="form-group">
-                <label for="height">Height (px)</label>
-                <input
-                  type="number"
-                  id="height"
-                  name="height"
-                  value="${this.formData.height}"
-                  min="50"
-                  max="20000"
-                  class="${this.errors.height ? 'error' : ''}"
-                >
-                <span id="height-error" class="error-message">${this.errors.height || ''}</span>
-              </div>
             </div>
           </div>
 

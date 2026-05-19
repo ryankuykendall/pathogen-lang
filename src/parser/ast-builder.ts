@@ -38,6 +38,7 @@ import type {
   ArrayDestructuringPattern,
   ObjectDestructuringPattern,
   LayerDefinition,
+  ViewBoxDefinition,
   LayerApplyBlock,
   LayerConstructorExpression,
   TextStatement,
@@ -248,6 +249,7 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
     case 'PathCommand': return buildPathCommand(cursor, source);
     case 'TspanStatement': return buildTspanStatement(cursor, source);
     case 'LayerDefinition': return buildLayerDefinition(cursor, source);
+    case 'ViewBoxDefinition': return buildViewBoxDefinition(cursor, source);
     case 'LayerApplyBlock': return buildLayerApplyBlock(cursor, source);
     case 'TextStatement': return buildTextStatement(cursor, source);
     case 'FontDirective': return buildFontDirective(cursor, source);
@@ -916,6 +918,29 @@ function buildLayerDefinition(cursor: TreeCursor, source: string): LayerDefiniti
   cursor.parent();
 
   return { type: 'LayerDefinition', layerType, name, isDefault, styleExpr, loc: nodeLoc };
+}
+
+function buildViewBoxDefinition(cursor: TreeCursor, source: string): ViewBoxDefinition {
+  const nodeLoc = loc(cursor, source);
+  const args: Expression[] = [];
+
+  cursor.firstChild();
+  do {
+    if (isExpressionNode(cursor.name)) {
+      args.push(buildExpression(cursor, source));
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  const zero: Expression = { type: 'NumberLiteral', value: 0 };
+  return {
+    type: 'ViewBoxDefinition',
+    originX: args[0] ?? zero,
+    originY: args[1] ?? zero,
+    width: args[2] ?? zero,
+    height: args[3] ?? zero,
+    loc: nodeLoc,
+  };
 }
 
 function buildLayerApplyBlock(cursor: TreeCursor, source: string): LayerApplyBlock {

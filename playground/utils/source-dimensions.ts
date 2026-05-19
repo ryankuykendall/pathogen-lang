@@ -23,7 +23,19 @@ export interface SourceDimensions {
 export function extractSourceDimensions(source: string): SourceDimensions {
   const result: SourceDimensions = {};
 
-  // Pattern 1: `Set viewBox: W x H, width: W, height: H`
+  // Pattern 0 (canonical): `define ViewBox(originX, originY, width, height);`
+  const defineMatch =
+    /define\s+ViewBox\s*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)/.exec(
+      source,
+    );
+  if (defineMatch) {
+    result.viewBox = `${defineMatch[1]} ${defineMatch[2]} ${defineMatch[3]} ${defineMatch[4]}`;
+    result.width = defineMatch[3];
+    result.height = defineMatch[4];
+    return result;
+  }
+
+  // Pattern 1 (legacy comment): `Set viewBox: W x H, width: W, height: H`
   const setMatch =
     /\/\/\s*Set\s+viewBox:\s*(\d+)\s*x\s*(\d+)\s*,\s*width:\s*(\d+)\s*,\s*height:\s*(\d+)/i.exec(source);
   if (setMatch) {
@@ -33,7 +45,7 @@ export function extractSourceDimensions(source: string): SourceDimensions {
     return result;
   }
 
-  // Pattern 2: `viewBox="x y w h"` or `viewBox=x y w h`
+  // Pattern 2 (legacy comment): `viewBox="x y w h"` or `viewBox=x y w h`
   const vbMatch = /viewBox[=:]\s*"?(\d+\s+\d+\s+\d+\s+\d+)"?/i.exec(source);
   if (vbMatch) {
     result.viewBox = vbMatch[1];

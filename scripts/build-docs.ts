@@ -86,6 +86,7 @@ const DOC_FILES: Record<string, string> = {
   'getting-started.md': 'gettingStarted',
   'syntax.md': 'syntax',
   'stdlib.md': 'stdlib',
+  'viewbox.md': 'viewbox',
   'layers.md': 'layers',
   'path-blocks.md': 'pathBlocks',
   'textblock.md': 'textBlock',

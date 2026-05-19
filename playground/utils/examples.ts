@@ -1,26 +1,48 @@
 // Example code snippets for the playground
 
-export const examples: Record<string, string> = {
-  circle: `// Simple circle
-circle(100, 100, 50)`,
+// Canonical boilerplate for a brand-new empty workspace. Same prefix the
+// migration script uses, kept verbatim so /workspace/new and the
+// migration produce identical starting points. Declared at the top of the
+// file because every template below interpolates it via `${emptyBoilerplate}`.
+export const emptyBoilerplate = `define ViewBox(0, 0, 200, 200);
+define default PathLayer('main-path-layer') \${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+`;
 
-  star: `// 5-pointed star
+// Every template starts with the canonical boilerplate so a fresh
+// template-based workspace has the same starting shape as an empty one.
+// Bare expression statements (function calls in statement position) need
+// trailing semicolons under the current grammar; the body of each
+// template has been updated to include them.
+
+export const examples: Record<string, string> = {
+  circle: `${emptyBoilerplate}
+// Simple circle
+circle(100, 100, 50);`,
+
+  star: `${emptyBoilerplate}
+// 5-pointed star
 let cx = 100;
 let cy = 100;
 let outerR = 60;
 let innerR = 25;
 let points = 5;
 
-star(cx, cy, outerR, innerR, points)`,
+star(cx, cy, outerR, innerR, points);`,
 
-  grid: `// Grid of dots using nested loops (5x5)
+  grid: `${emptyBoilerplate}
+// Grid of dots using nested loops (5x5)
 for (row in 0..4) {
   for (col in 0..4) {
-    circle(calc(20 + col * 40), calc(20 + row * 40), 5)
+    circle(calc(20 + col * 40), calc(20 + row * 40), 5);
   }
 }`,
 
-  spiral: `// Spiral using trigonometry
+  spiral: `${emptyBoilerplate}
+// Spiral using trigonometry
 M 100 100
 for (i in 1..100) {
   let angle = calc(i * 0.2);
@@ -28,7 +50,8 @@ for (i in 1..100) {
   L calc(100 + cos(angle) * r) calc(100 + sin(angle) * r)
 }`,
 
-  flower: `// Flower with petals
+  flower: `${emptyBoilerplate}
+// Flower with petals
 let cx = 100;
 let cy = 100;
 let petalCount = 6;
@@ -40,13 +63,14 @@ for (i in 0..calc(petalCount - 1)) {
   let angle = calc(i / petalCount * TAU());
   let px = calc(cx + cos(angle) * 35);
   let py = calc(cy + sin(angle) * 35);
-  circle(px, py, petalRadius)
+  circle(px, py, petalRadius);
 }
 
 // Center
-circle(cx, cy, centerRadius)`,
+circle(cx, cy, centerRadius);`,
 
-  sineWave: `// Sine wave
+  sineWave: `${emptyBoilerplate}
+// Sine wave
 M 0 100
 for (i in 1..40) {
   let x = calc(i * 5);
@@ -54,7 +78,8 @@ for (i in 1..40) {
   L x y
 }`,
 
-  gear: `// Gear shape
+  gear: `${emptyBoilerplate}
+// Gear shape
 let cx = 100;
 let cy = 100;
 let innerR = 30;
@@ -78,9 +103,10 @@ for (i in 0..calc(teeth - 1)) {
 Z
 
 // Center hole
-circle(cx, cy, 10)`,
+circle(cx, cy, 10);`,
 
-  customFunction: `// Custom function: diamond shape
+  customFunction: `${emptyBoilerplate}
+// Custom function: diamond shape
 fn diamond(cx, cy, size) {
   M cx calc(cy - size)
   L calc(cx + size) cy
@@ -91,17 +117,18 @@ fn diamond(cx, cy, size) {
 
 // Draw diamonds in a row
 for (i in 0..4) {
-  diamond(calc(40 + i * 45), 100, 20)
+  diamond(calc(40 + i * 45), 100, 20);
 }`,
 
-  descending: `// Descending ranges: shrinking circles
+  descending: `${emptyBoilerplate}
+// Descending ranges: shrinking circles
 let cx = 100;
 let cy = 100;
 
 // Circles shrink from radius 80 down to 10
 for (r in 80..10) {
   if (calc(r % 10) == 0) {
-    circle(cx, cy, r)
+    circle(cx, cy, r);
   }
 }
 
@@ -113,52 +140,58 @@ for (i in 8..1) {
 }
 h -20`,
 
-  polarPath: `// Polar coordinates and tangent functions
+  polarPath: `${emptyBoilerplate}
+// Polar coordinates and tangent functions
 // Create an S-curve with smooth arcs
 
 M 20 100
 
 // Start going right
-polarLine(0, 40)
+polarLine(0, 40);
 
 // Smooth 90° turn downward
-tangentArc(25, 90deg)
+tangentArc(25, 90deg);
 
 // Short straight segment
-tangentLine(20)
+tangentLine(20);
 
 // Smooth 90° turn back (negative = opposite curve)
-tangentArc(25, -90deg)
+tangentArc(25, -90deg);
 
 // Finish going right
-tangentLine(40)
+tangentLine(40);
 
 // Draw reference points using polarPoint
 M 100 50
 let pt1 = polarPoint(45deg, 30);
-circle(pt1.x, pt1.y, 5)
+circle(pt1.x, pt1.y, 5);
 let pt2 = polarPoint(135deg, 30);
-circle(pt2.x, pt2.y, 5)
+circle(pt2.x, pt2.y, 5);
 let pt3 = polarPoint(225deg, 30);
-circle(pt3.x, pt3.y, 5)
+circle(pt3.x, pt3.y, 5);
 let pt4 = polarPoint(315deg, 30);
-circle(pt4.x, pt4.y, 5)
-circle(100, 50, 3)`,
+circle(pt4.x, pt4.y, 5);
+circle(100, 50, 3);`,
 };
 
-export const defaultCode = `// Welcome to Pathogen!
+// Boilerplate + a tiny welcome demo. Used as the scratchpad fallback in
+// workspace-view (URL-state import without code, or when the editor mounts
+// without a workspace ID). NOT used for "Empty workspace" creates — those
+// get emptyBoilerplate only.
+export const defaultCode = `${emptyBoilerplate}
+// Welcome to Pathogen!
 // Try editing this code or select an example above.
 
 let cx = 100;
 let cy = 100;
 
 // Draw a circle
-circle(cx, cy, 40)
+circle(cx, cy, 40);
 
 // Draw 8 points around it
 for (i in 0..7) {
   let angle = calc(i / 8 * TAU());
   let x = calc(cx + cos(angle) * 70);
   let y = calc(cy + sin(angle) * 70);
-  circle(x, y, 8)
+  circle(x, y, 8);
 }`;
