@@ -319,7 +319,7 @@ let sharpLayer = PathLayer('sharp') ${ fill: barColor; stroke: none; opacity: 0.
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 0)
+  radialWedge(innerR, outerR, fromA, toA, 0);
 }
 
 // Rounded corners
@@ -327,7 +327,7 @@ let roundLayer = PathLayer('rounded') ${ fill: barColor; stroke: none; };
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 6)
+  radialWedge(innerR, outerR, fromA, toA, 6);
 }
 
 // --- Annotation layers ---
@@ -619,7 +619,7 @@ let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; strok
 layer('diagram').append(barsAll);
 barsAll.apply {
   M cx cy
-  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
 }
 
 // "Top 100" bar overlaid — Fantasy 7.6%, 50% theta, centered
@@ -630,7 +630,7 @@ let barsTop = PathLayer('bars-top') ${ fill: topBarColor; stroke: bgColor; strok
 layer('diagram').append(barsTop);
 barsTop.apply {
   M cx cy
-  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
 }
 
 // Percentage labels — outside each bar tip with dots + leaders
@@ -835,7 +835,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
   }
 
   if (d.top &gt; 0) {
@@ -844,7 +844,7 @@ for ([d, i] in data) {
     let topOffset = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOffset), calc(sliceFrom + topOffset + topSweep), cornerR)
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOffset), calc(sliceFrom + topOffset + topSweep), cornerR);
     }
   }
 }
@@ -967,7 +967,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
   }
 
   if (d.top &gt; 0) {
@@ -976,7 +976,7 @@ for ([d, i] in data) {
     let topOff = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
     }
   }
 }
@@ -1131,7 +1131,7 @@ for ([oR, ri] in outerRs) {
     // 1. Rounded wedge (lightened)
     wedges.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, cornerR)
+      radialWedge(innerR, oR, fromA, toA, cornerR);
     }
 
     // 2. XOR between sharp and rounded
@@ -1143,7 +1143,7 @@ for ([oR, ri] in outerRs) {
     // 3. Sharp outline (dotted green)
     outlines.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, 0)
+      radialWedge(innerR, oR, fromA, toA, 0);
     }
 
     // 4. Guide circles (on top)
@@ -1261,7 +1261,7 @@ for ([oR, ri] in outerRs) {
     // 1. Rounded wedge (lightened)
     wedges.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, cornerR)
+      radialWedge(innerR, oR, fromA, toA, cornerR);
     }
 
     // 2. XOR between sharp and rounded
@@ -1273,7 +1273,7 @@ for ([oR, ri] in outerRs) {
     // 3. Sharp outline (dotted green)
     outlines.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, 0)
+      radialWedge(innerR, oR, fromA, toA, 0);
     }
 
     // 4. Guide circles (on top)
@@ -1452,7 +1452,7 @@ for ([d, i] in data) {
     catGroup.append(barLayer);
     barLayer.apply {
       M cx cy
-      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR)
+      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR);
     }
   }
 
@@ -1465,7 +1465,7 @@ for ([d, i] in data) {
     catGroup.append(topLayer);
     topLayer.apply {
       M cx cy
-      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR)
+      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR);
     }
   }
 
@@ -1633,11 +1633,11 @@ let legRedWedges = PathLayer('leg-red') ${ fill: legRedColor; stroke: bgColor; s
 layer('legend').append(legRedWedges);
 legRedWedges.apply {
   M legOX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for red
@@ -1658,11 +1658,11 @@ let legDarkWedges = PathLayer('leg-dark') ${ fill: legDarkColor; stroke: bgColor
 layer('legend').append(legDarkWedges);
 legDarkWedges.apply {
   M legDarkX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for dark

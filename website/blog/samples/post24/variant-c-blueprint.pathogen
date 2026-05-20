@@ -12,10 +12,10 @@ define ViewBox(0, 0, 960, 720);
 
 let bg_color = Color(CSSVar('--bg', #fbfaf5));
 
-let fg_auto  = 'oklch(from var(--bg, #fbfaf5) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #fbfaf5) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_rule  = 'oklch(from var(--bg, #fbfaf5) calc((0.5 - l) * 1000) 0 0 / 0.35)';
-let fg_grid  = 'oklch(from var(--bg, #fbfaf5) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_rule  = Color('#0d1638').alpha(0.35);
+let fg_grid  = Color('#0d1638').alpha(0.10);
 
 let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
 let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
@@ -74,10 +74,10 @@ layer('diagram').append(layer('grid-bg'));
 // Shared mono style
 // ─────────────────────────────────────────────────────────────────
 
-let mono = "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+let mono = 'monospace';
 
 let section_header = TextLayer('section-header') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
   letter-spacing: 2.5;
@@ -90,7 +90,7 @@ let section_header = TextLayer('section-header') ${
 // ─────────────────────────────────────────────────────────────────
 
 let eyebrow = TextLayer('eyebrow') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 8;
   letter-spacing: 2.5;
   fill: fg_muted;
@@ -99,7 +99,7 @@ let eyebrow = TextLayer('eyebrow') ${
 eyebrow.apply { text(30, 36)`SPEC № 024  //  OKLCH PALETTE  //  REV 01` }
 
 let mast_title = TextLayer('mast-title') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 26;
   font-weight: 700;
   letter-spacing: 1;
@@ -109,7 +109,7 @@ let mast_title = TextLayer('mast-title') ${
 mast_title.apply { text(30, 64)`PALETTE.SPEC` }
 
 let mast_sub = TextLayer('mast-sub') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   fill: fg_muted;
   text-anchor: start;
@@ -118,7 +118,7 @@ mast_sub.apply { text(30, 78)`specimens = 6  /  stops = 9  /  system = oklch` }
 
 // Top-right ruler callout
 let eyebrow_r = TextLayer('eyebrow-r') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 8;
   letter-spacing: 2.5;
   fill: fg_muted;
@@ -127,7 +127,7 @@ let eyebrow_r = TextLayer('eyebrow-r') ${
 eyebrow_r.apply { text(930, 36)`UNIT = PX  /  GRID = 40` }
 
 let eyebrow_r2 = TextLayer('eyebrow-r2') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 8;
   letter-spacing: 2.5;
   fill: fg_muted;
@@ -165,13 +165,13 @@ let specimen_y = calc(section_01_y + 14);
 let specimen_h = 60;
 
 let coord_label = TextLayer('coord-label') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_auto;
   text-anchor: start;
 };
 let anchor_name_lay = TextLayer('anchor-name-lay') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
   letter-spacing: 2;
@@ -218,7 +218,7 @@ dim_line.apply { M 60 calc(dim_y - 5) L 60 calc(dim_y + 5) }
 dim_line.apply { M 900 calc(dim_y - 5) L 900 calc(dim_y + 5) }
 
 let dim_label = TextLayer('dim-label') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   letter-spacing: 1;
   fill: fg_muted;
@@ -234,7 +234,7 @@ layer('diagram').append(layer('section-01'));
 // ─────────────────────────────────────────────────────────────────
 
 let s2_header = TextLayer('s2-header') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
   letter-spacing: 2.5;
@@ -244,7 +244,7 @@ let s2_header = TextLayer('s2-header') ${
 s2_header.apply { text(30, 286)`[ 02 · L=0.55 ]` }
 
 let s2_meta = TextLayer('s2-meta') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
   text-anchor: start;
@@ -270,7 +270,7 @@ layer('diagram').append(layer('section-02'));
 // ─────────────────────────────────────────────────────────────────
 
 let s3_header = TextLayer('s3-header') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
   letter-spacing: 2.5;
@@ -280,7 +280,7 @@ let s3_header = TextLayer('s3-header') ${
 s3_header.apply { text(30, 358)`[ 03 · L=0.75 ]` }
 
 let s3_meta = TextLayer('s3-meta') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
   text-anchor: start;
@@ -304,7 +304,7 @@ layer('diagram').append(layer('section-03'));
 // ─────────────────────────────────────────────────────────────────
 
 let s5_header = TextLayer('s5-header') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
   letter-spacing: 2.5;
@@ -314,7 +314,7 @@ let s5_header = TextLayer('s5-header') ${
 s5_header.apply { text(30, 420)`[ 05 · BUILD RAMPS ]` }
 
 let s5_meta = TextLayer('s5-meta') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
   text-anchor: start;
@@ -331,7 +331,7 @@ let g_row_gap = 2;
 
 let stop_numbers = ['j=0', 'j=1', 'j=2', 'j=3', 'j=4', 'j=5', 'j=6', 'j=7', 'j=8'];
 let g_col_label = TextLayer('g-col-label') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
   text-anchor: middle;
@@ -342,7 +342,7 @@ for ([sn, si] in stop_numbers) {
 }
 
 let g_row_label = TextLayer('g-row-label') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 8;
   fill: fg_auto;
   text-anchor: end;
@@ -383,7 +383,7 @@ g_bracket.apply {
 }
 
 let g_bracket_label = TextLayer('g-bracket-label') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   font-weight: 700;
   letter-spacing: 1;
@@ -407,7 +407,7 @@ layer('diagram').append(layer('section-05'));
 // ─────────────────────────────────────────────────────────────────
 
 let s7_header = TextLayer('s7-header') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
   letter-spacing: 2.5;
@@ -417,7 +417,7 @@ let s7_header = TextLayer('s7-header') ${
 s7_header.apply { text(30, 638)`[ 07 · CONTRAST ASSERTIONS ]` }
 
 let s7_meta = TextLayer('s7-meta') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
   text-anchor: start;
@@ -441,7 +441,7 @@ let pair_w = 210;
 let pair_gap = 10;
 
 let pair_name_lay = TextLayer('pair-name-lay') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 8;
   font-weight: 700;
   letter-spacing: 0.5;
@@ -449,7 +449,7 @@ let pair_name_lay = TextLayer('pair-name-lay') ${
   text-anchor: start;
 };
 let pair_target_lay = TextLayer('pair-target-lay') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
   text-anchor: start;
@@ -488,14 +488,14 @@ tb_frame.apply {
 }
 
 let tb_t1 = TextLayer('tb-t1') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 7;
   letter-spacing: 0.5;
   fill: fg_muted;
   text-anchor: middle;
 };
 let tb_t2 = TextLayer('tb-t2') ${
-  font-family: "'SF Mono', 'Menlo', 'JetBrains Mono', 'Consolas', monospace";
+  font-family: 'monospace';
   font-size: 8;
   font-weight: 700;
   letter-spacing: 0.5;

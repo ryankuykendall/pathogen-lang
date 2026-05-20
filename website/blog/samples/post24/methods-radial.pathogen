@@ -9,25 +9,25 @@ define ViewBox(0, 0, 520, 400);
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
 let base     = Color(CSSVar('--demo-color', #e63946));
 
-let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_hair  = Color('#0d1638').alpha(0.22);
 
 // Auto-contrasting ink against the base color (for hub text)
-let hub_ink       = 'oklch(from var(--demo-color, #e63946) calc((0.5 - l) * 1000) 0 0)';
-let hub_ink_muted = 'oklch(from var(--demo-color, #e63946) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let hub_ink       = Color('#0d1638');
+let hub_ink_muted = Color('#0d1638').alpha(0.60);
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Derived method fills ────────────────────────────────────
-let m_base       = 'var(--demo-color, #e63946)';
-let m_lighten    = 'oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)';
-let m_darken     = 'oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)';
-let m_saturate   = 'oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)';
-let m_desaturate = 'oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)';
-let m_hue        = 'oklch(from var(--demo-color, #e63946) l c calc(h + 90))';
-let m_complement = 'oklch(from var(--demo-color, #e63946) l c calc(h + 180))';
-let m_alpha      = 'oklch(from var(--demo-color, #e63946) l c h / 0.5)';
+let m_base       = Color(CSSVar('--demo-color', #e63946));
+let m_lighten    = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
+let m_darken     = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
+let m_saturate   = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
+let m_desaturate = Color(CSSVar('--demo-color', #e63946)).desaturate(0.4);
+let m_hue        = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
+let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
+let m_alpha      = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') ${}

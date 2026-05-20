@@ -12,28 +12,28 @@ let primary   = Color(CSSVar('--primary',   #e63946));
 let secondary = Color(CSSVar('--secondary', #457b9d));
 let accent    = Color(CSSVar('--accent',    #2a9d8f));
 
-let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
-let fg_faint = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.10);
 
 // Auto-contrasting ink against each theme color (for text on actor cards)
-let primary_ink   = 'oklch(from var(--primary,   #e63946) calc((0.5 - l) * 1000) 0 0)';
-let primary_ink_m = 'oklch(from var(--primary,   #e63946) calc((0.5 - l) * 1000) 0 0 / 0.70)';
-let secondary_ink   = 'oklch(from var(--secondary, #457b9d) calc((0.5 - l) * 1000) 0 0)';
-let secondary_ink_m = 'oklch(from var(--secondary, #457b9d) calc((0.5 - l) * 1000) 0 0 / 0.70)';
-let accent_ink    = 'oklch(from var(--accent,    #2a9d8f) calc((0.5 - l) * 1000) 0 0)';
-let accent_ink_m  = 'oklch(from var(--accent,    #2a9d8f) calc((0.5 - l) * 1000) 0 0 / 0.70)';
+let primary_ink   = Color('#0d1638');
+let primary_ink_m = Color('#0d1638').alpha(0.70);
+let secondary_ink   = Color('#f0e8c8');
+let secondary_ink_m = Color('#f0e8c8').alpha(0.70);
+let accent_ink    = Color('#f0e8c8');
+let accent_ink_m  = Color('#f0e8c8').alpha(0.70);
 
 // Derived theme colors (shown in the system half + bottom spotlights)
-let primary_lighter  = 'oklch(from var(--primary,   #e63946) calc(l + 0.15) c h)';
-let primary_darker   = 'oklch(from var(--primary,   #e63946) calc(l - 0.15) c h)';
-let secondary_muted  = 'oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)';
-let accent_shifted   = 'oklch(from var(--accent,    #2a9d8f) l c calc(h + 60))';
-let accent_raw       = 'var(--accent, #2a9d8f)';
-let primary_raw      = 'var(--primary, #e63946)';
+let primary_lighter  = Color(CSSVar('--primary', #e63946)).lighten(0.15);
+let primary_darker   = Color(CSSVar('--primary', #e63946)).darken(0.15);
+let secondary_muted  = Color(CSSVar('--secondary', #457b9d)).desaturate(0.5);
+let accent_shifted   = Color(CSSVar('--accent', #2a9d8f)).hueShift(60);
+let accent_raw       = Color(CSSVar('--accent', #2a9d8f));
+let primary_raw      = Color(CSSVar('--primary', #e63946));
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') ${}

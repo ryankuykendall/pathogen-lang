@@ -10,32 +10,37 @@ let bg_light   = Color(CSSVar('--bg-light',   #d0d7f0));
 let bg_dark    = Color(CSSVar('--bg-dark',    #12131a));
 let base_color = Color(CSSVar('--base-color', #e63946));
 
-let ink_on_light   = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let ink_on_light_m = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let ink_on_light_h = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let ink_on_light   = Color('#0d1638');
+let ink_on_light_m = Color('#0d1638').alpha(0.60);
+let ink_on_light_h = Color('#0d1638').alpha(0.22);
 
-let ink_on_dark    = 'oklch(from var(--bg-dark, #12131a) calc((0.5 - l) * 1000) 0 0)';
-let ink_on_dark_m  = 'oklch(from var(--bg-dark, #12131a) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let ink_on_dark    = Color('#f0e8c8');
+let ink_on_dark_m  = Color('#f0e8c8').alpha(0.60);
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Seven method fills ──────────────────────────────────────
-let m_base       = 'var(--base-color, #e63946)';
-let m_lighten    = 'oklch(from var(--base-color, #e63946) calc(l + 0.18) c h)';
-let m_darken     = 'oklch(from var(--base-color, #e63946) calc(l - 0.18) c h)';
-let m_saturate   = 'oklch(from var(--base-color, #e63946) l calc(c * 1.5) h)';
-let m_desaturate = 'oklch(from var(--base-color, #e63946) l calc(c * 0.4) h)';
-let m_hue        = 'oklch(from var(--base-color, #e63946) l c calc(h + 90))';
-let m_complement = 'oklch(from var(--base-color, #e63946) l c calc(h + 180))';
+let m_base       = Color(CSSVar('--base-color', #e63946));
+let m_lighten    = Color(CSSVar('--base-color', #e63946)).lighten(0.18);
+let m_darken     = Color(CSSVar('--base-color', #e63946)).darken(0.18);
+let m_saturate   = Color(CSSVar('--base-color', #e63946)).saturate(1.5);
+let m_desaturate = Color(CSSVar('--base-color', #e63946)).desaturate(0.4);
+let m_hue        = Color(CSSVar('--base-color', #e63946)).hueShift(90);
+let m_complement = Color(CSSVar('--base-color', #e63946)).hueShift(180);
 
-// Auto-contrasting ink against each method color
-let ink_base       = 'oklch(from var(--base-color, #e63946) calc((0.5 - l) * 1000) 0 0)';
-let ink_lighten    = 'oklch(from oklch(from var(--base-color, #e63946) calc(l + 0.18) c h) calc((0.5 - l) * 1000) 0 0)';
-let ink_darken     = 'oklch(from oklch(from var(--base-color, #e63946) calc(l - 0.18) c h) calc((0.5 - l) * 1000) 0 0)';
-let ink_saturate   = 'oklch(from oklch(from var(--base-color, #e63946) l calc(c * 1.5) h) calc((0.5 - l) * 1000) 0 0)';
-let ink_desaturate = 'oklch(from oklch(from var(--base-color, #e63946) l calc(c * 0.4) h) calc((0.5 - l) * 1000) 0 0)';
-let ink_hue        = 'oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 90)) calc((0.5 - l) * 1000) 0 0)';
-let ink_complement = 'oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 180)) calc((0.5 - l) * 1000) 0 0)';
+// Auto-contrasting ink against each method color. Originally these
+// computed `oklch(from oklch(from var(--base-color) ...) calc((0.5 - l)
+// * 1000) 0 0)` — a chained auto-contrast on each derived swatch.
+// Pathogen has no autoContrast() method on a derived Color, so each
+// ink is hardcoded to match the canonical dark text against the
+// fallback #e63946 swatches.
+let ink_base       = Color('#0d1638');
+let ink_lighten    = Color('#0d1638');
+let ink_darken     = Color('#f0e8c8');
+let ink_saturate   = Color('#0d1638');
+let ink_desaturate = Color('#0d1638');
+let ink_hue        = Color('#0d1638');
+let ink_complement = Color('#0d1638');
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') ${}

@@ -21,10 +21,10 @@ let bg_color = Color(CSSVar('--bg', #0f172a));
 // from mid-grey (0.5) by 1000x. Browsers clamp L to [0,1], so any L > 0.5
 // yields L=0 (black ink) and any L < 0.5 yields L=1 (white ink). C=0, H=0
 // give a neutral achromatic tone that won't fight the palette colors.
-let fg_auto    = 'oklch(from var(--bg, #0f172a) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted   = 'oklch(from var(--bg, #0f172a) calc((0.5 - l) * 1000) 0 0 / 0.65)';
-let fg_dim     = 'oklch(from var(--bg, #0f172a) calc((0.5 - l) * 1000) 0 0 / 0.45)';
-let stroke_fg  = 'oklch(from var(--bg, #0f172a) calc((0.5 - l) * 1000) 0 0 / 0.25)';
+let fg_auto    = Color('#f0e8c8');
+let fg_muted   = Color('#f0e8c8').alpha(0.65);
+let fg_dim     = Color('#f0e8c8').alpha(0.45);
+let stroke_fg  = Color('#f0e8c8').alpha(0.25);
 
 // ─────────────────────────────────────────────────────────────────
 // Group scaffolding — root diagram + one group per section

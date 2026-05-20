@@ -10,33 +10,33 @@ define ViewBox(0, 0, 520, 520);
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
 let base     = Color(CSSVar('--harmony-color', #e63946));
 
-let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
-let fg_faint = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.10);
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Derived harmony fills ───────────────────────────────────
-let c_base     = 'var(--harmony-color, #e63946)';
-let c_ana_m30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 30))';
-let c_ana_p30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 30))';
-let c_tri_p120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 120))';
-let c_tri_m120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 120))';
-let c_tet_p90  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 90))';
-let c_tet_p180 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 180))';
-let c_tet_p270 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 270))';
-let c_sc_p150  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 150))';
-let c_sc_p210  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 210))';
-let c_l_15  = 'oklch(from var(--harmony-color, #e63946) 0.15 c h)';
-let c_l_35  = 'oklch(from var(--harmony-color, #e63946) 0.35 c h)';
-let c_l_55  = 'oklch(from var(--harmony-color, #e63946) 0.55 c h)';
-let c_l_75  = 'oklch(from var(--harmony-color, #e63946) 0.75 c h)';
-let c_l_95  = 'oklch(from var(--harmony-color, #e63946) 0.95 c h)';
-let c_i_0   = 'var(--harmony-color, #e63946)';
-let c_i_25  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)';
-let c_i_50  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)';
-let c_i_75  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)';
+let c_base     = Color(CSSVar('--harmony-color', #e63946));
+let c_ana_m30  = Color(CSSVar('--harmony-color', #e63946)).hueShift(-30);
+let c_ana_p30  = Color(CSSVar('--harmony-color', #e63946)).hueShift(30);
+let c_tri_p120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(120);
+let c_tri_m120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(-120);
+let c_tet_p90  = Color(CSSVar('--harmony-color', #e63946)).hueShift(90);
+let c_tet_p180 = Color(CSSVar('--harmony-color', #e63946)).hueShift(180);
+let c_tet_p270 = Color(CSSVar('--harmony-color', #e63946)).hueShift(270);
+let c_sc_p150  = Color(CSSVar('--harmony-color', #e63946)).hueShift(150);
+let c_sc_p210  = Color(CSSVar('--harmony-color', #e63946)).hueShift(210);
+let c_l_15  = Color(CSSVar('--harmony-color', #e63946)).darken(0.475);
+let c_l_35  = Color(CSSVar('--harmony-color', #e63946)).darken(0.275);
+let c_l_55  = Color(CSSVar('--harmony-color', #e63946)).darken(0.075);
+let c_l_75  = Color(CSSVar('--harmony-color', #e63946)).lighten(0.125);
+let c_l_95  = Color(CSSVar('--harmony-color', #e63946)).lighten(0.325);
+let c_i_0   = Color(CSSVar('--harmony-color', #e63946));
+let c_i_25  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.25);
+let c_i_50  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.50);
+let c_i_75  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.75);
 let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
@@ -138,7 +138,7 @@ for ([p, pi] in panels_data) {
 
   // Panel frame
   let frame = PathLayer(`p-${pi}-frame`) ${
-    fill: 'oklch(from var(--bg, #d0d7f0) calc(l - 0.015) c h)';
+    fill: Color(CSSVar('--bg', #d0d7f0)).darken(0.015);
     stroke: fg_hair; stroke-width: 0.5;
   };
   frame.apply { rect(x_l, y_t, panel_w, panel_h); }

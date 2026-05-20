@@ -163,7 +163,11 @@ program
       const result = spawnSync('npx', ['tsx', 'src/cli.ts', ...cliArgs], {
         cwd: PROJECT_ROOT,
         encoding: 'utf-8',
-        timeout: 120_000,
+        // Some samples (e.g., post16/wedge-diag-*) do dozens of boolean
+        // XOR ops and legitimately take 2+ minutes; raise from 120s to
+        // 10min so they don't get silently killed and reported as
+        // "Unknown error".
+        timeout: 600_000,
       });
 
       if (result.status !== 0) {

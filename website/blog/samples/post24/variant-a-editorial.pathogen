@@ -11,11 +11,11 @@ define ViewBox(0, 0, 960, 720);
 
 let bg_color = Color(CSSVar('--bg', #f4efe6));
 
-let fg_auto   = 'oklch(from var(--bg, #f4efe6) calc((0.5 - l) * 1000) 0 0)';
-let fg_strong = 'oklch(from var(--bg, #f4efe6) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted  = 'oklch(from var(--bg, #f4efe6) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair   = 'oklch(from var(--bg, #f4efe6) calc((0.5 - l) * 1000) 0 0 / 0.25)';
-let fg_faint  = 'oklch(from var(--bg, #f4efe6) calc((0.5 - l) * 1000) 0 0 / 0.12)';
+let fg_auto   = Color('#0d1638');
+let fg_strong = Color('#0d1638');
+let fg_muted  = Color('#0d1638').alpha(0.60);
+let fg_hair   = Color('#0d1638').alpha(0.25);
+let fg_faint  = Color('#0d1638').alpha(0.12);
 
 let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
 let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
@@ -55,7 +55,7 @@ layer('diagram').append(layer('bg'));
 // ─────────────────────────────────────────────────────────────────
 
 let folio = TextLayer('folio') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 9;
   font-style: italic;
   letter-spacing: 0.3;
@@ -65,7 +65,7 @@ let folio = TextLayer('folio') ${
 folio.apply { text(930, 44)`— a schematic / №&#8239;01` }
 
 let display_title = TextLayer('display-title') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 84;
   font-weight: 400;
   letter-spacing: -2;
@@ -75,7 +75,7 @@ let display_title = TextLayer('display-title') ${
 display_title.apply { text(34, 102)`OKLCH` }
 
 let display_sub = TextLayer('display-sub') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 22;
   font-style: italic;
   fill: fg_muted;
@@ -84,7 +84,7 @@ let display_sub = TextLayer('display-sub') ${
 display_sub.apply { text(34, 146)`the Color Calendar` }
 
 let dek = TextLayer('dek') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 11;
   font-style: italic;
   fill: fg_muted;
@@ -120,7 +120,7 @@ let row_gap = 2;
 
 // Column labels (anchor names) above the grid
 let col_header = TextLayer('col-header') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 13;
   font-style: italic;
   fill: fg_auto;
@@ -134,7 +134,7 @@ layer('grid').append(layer('col-header'));
 
 // Row L-value labels (to the RIGHT of the grid, small caps style)
 let row_l_label = TextLayer('row-l-label') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 9;
   font-style: italic;
   fill: fg_muted;
@@ -187,7 +187,7 @@ crossbar_02.apply { rect(30, row4_gap_y, 900, 0.8); }
 // Oversized chapter numerals floating beside the crossbars, right-aligned.
 // Baseline roughly centered on the row just ABOVE the crossbar.
 let chapter_numeral = TextLayer('chapter-numeral') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 64;
   font-weight: 400;
   letter-spacing: -3;
@@ -195,14 +195,14 @@ let chapter_numeral = TextLayer('chapter-numeral') ${
   text-anchor: start;
 };
 let chapter_bylabel = TextLayer('chapter-bylabel') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 11;
   font-style: italic;
   fill: fg_auto;
   text-anchor: start;
 };
 let chapter_subline = TextLayer('chapter-subline') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 9;
   fill: fg_muted;
   text-anchor: start;
@@ -237,7 +237,7 @@ let frieze_rule = PathLayer('frieze-rule') ${ fill: none; stroke: fg_hair; strok
 frieze_rule.apply { rect(30, frieze_y, 900, 0.5); }
 
 let frieze_num = TextLayer('frieze-num') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 40;
   letter-spacing: -1.5;
   fill: fg_auto;
@@ -246,7 +246,7 @@ let frieze_num = TextLayer('frieze-num') ${
 frieze_num.apply { text(34, calc(frieze_y + 42))`07` }
 
 let frieze_label = TextLayer('frieze-label') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 12;
   font-style: italic;
   fill: fg_auto;
@@ -255,7 +255,7 @@ let frieze_label = TextLayer('frieze-label') ${
 frieze_label.apply { text(34, calc(frieze_y + 62))`Contrasts` }
 
 let frieze_note = TextLayer('frieze-note') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 8;
   fill: fg_muted;
   text-anchor: start;
@@ -281,14 +281,14 @@ let pair_labels = ['green[2]  ·  white', 'blue[0]  ·  blue[7]', 'purple[1]  ·
 let pair_targets = ['target · AA large', 'target · AAA large', 'target · AAA large'];
 
 let pair_label_layer = TextLayer('pair-label') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 11;
   font-style: italic;
   fill: fg_auto;
   text-anchor: start;
 };
 let pair_target_layer = TextLayer('pair-target') ${
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: serif;
   font-size: 8;
   fill: fg_muted;
   text-anchor: start;

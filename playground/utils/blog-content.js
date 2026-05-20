@@ -14394,25 +14394,25 @@ subtitle.apply {
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
 let base     = Color(CSSVar('--demo-color', #e63946));
 
-let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_hair  = Color('#0d1638').alpha(0.22);
 
 // Auto-contrasting ink against the base color (for hub text)
-let hub_ink       = 'oklch(from var(--demo-color, #e63946) calc((0.5 - l) * 1000) 0 0)';
-let hub_ink_muted = 'oklch(from var(--demo-color, #e63946) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let hub_ink       = Color('#0d1638');
+let hub_ink_muted = Color('#0d1638').alpha(0.60);
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Derived method fills ────────────────────────────────────
-let m_base       = 'var(--demo-color, #e63946)';
-let m_lighten    = 'oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)';
-let m_darken     = 'oklch(from var(--demo-color, #e63946) calc(l - 0.18) c h)';
-let m_saturate   = 'oklch(from var(--demo-color, #e63946) l calc(c * 1.5) h)';
-let m_desaturate = 'oklch(from var(--demo-color, #e63946) l calc(c * 0.4) h)';
-let m_hue        = 'oklch(from var(--demo-color, #e63946) l c calc(h + 90))';
-let m_complement = 'oklch(from var(--demo-color, #e63946) l c calc(h + 180))';
-let m_alpha      = 'oklch(from var(--demo-color, #e63946) l c h / 0.5)';
+let m_base       = Color(CSSVar('--demo-color', #e63946));
+let m_lighten    = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
+let m_darken     = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
+let m_saturate   = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
+let m_desaturate = Color(CSSVar('--demo-color', #e63946)).desaturate(0.4);
+let m_hue        = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
+let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
+let m_alpha      = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') \${}
@@ -14551,34 +14551,34 @@ layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
 let base     = Color(CSSVar('--harmony-color', #e63946));
 
-let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_hair  = Color('#0d1638').alpha(0.22);
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Derived harmony fills ───────────────────────────────────
-let c_base     = 'var(--harmony-color, #e63946)';
-let c_ana_m30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 30))';
-let c_ana_p30  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 30))';
-let c_tri_p120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 120))';
-let c_tri_m120 = 'oklch(from var(--harmony-color, #e63946) l c calc(h - 120))';
-let c_tet_p90  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 90))';
-let c_tet_p180 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 180))';
-let c_tet_p270 = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 270))';
-let c_sc_p150  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 150))';
-let c_sc_p210  = 'oklch(from var(--harmony-color, #e63946) l c calc(h + 210))';
+let c_base     = Color(CSSVar('--harmony-color', #e63946));
+let c_ana_m30  = Color(CSSVar('--harmony-color', #e63946)).hueShift(-30);
+let c_ana_p30  = Color(CSSVar('--harmony-color', #e63946)).hueShift(30);
+let c_tri_p120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(120);
+let c_tri_m120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(-120);
+let c_tet_p90  = Color(CSSVar('--harmony-color', #e63946)).hueShift(90);
+let c_tet_p180 = Color(CSSVar('--harmony-color', #e63946)).hueShift(180);
+let c_tet_p270 = Color(CSSVar('--harmony-color', #e63946)).hueShift(270);
+let c_sc_p150  = Color(CSSVar('--harmony-color', #e63946)).hueShift(150);
+let c_sc_p210  = Color(CSSVar('--harmony-color', #e63946)).hueShift(210);
 
-let c_l_15  = 'oklch(from var(--harmony-color, #e63946) 0.15 c h)';
-let c_l_35  = 'oklch(from var(--harmony-color, #e63946) 0.35 c h)';
-let c_l_55  = 'oklch(from var(--harmony-color, #e63946) 0.55 c h)';
-let c_l_75  = 'oklch(from var(--harmony-color, #e63946) 0.75 c h)';
-let c_l_95  = 'oklch(from var(--harmony-color, #e63946) 0.95 c h)';
+let c_l_15  = Color(CSSVar('--harmony-color', #e63946)).darken(0.475);
+let c_l_35  = Color(CSSVar('--harmony-color', #e63946)).darken(0.275);
+let c_l_55  = Color(CSSVar('--harmony-color', #e63946)).darken(0.075);
+let c_l_75  = Color(CSSVar('--harmony-color', #e63946)).lighten(0.125);
+let c_l_95  = Color(CSSVar('--harmony-color', #e63946)).lighten(0.325);
 
-let c_i_0   = 'var(--harmony-color, #e63946)';
-let c_i_25  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 25%)';
-let c_i_50  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 50%)';
-let c_i_75  = 'color-mix(in oklch, var(--harmony-color, #e63946), #457b9d 75%)';
+let c_i_0   = Color(CSSVar('--harmony-color', #e63946));
+let c_i_25  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.25);
+let c_i_50  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.50);
+let c_i_75  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.75);
 let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
@@ -14854,28 +14854,28 @@ let primary   = Color(CSSVar('--primary',   #e63946));
 let secondary = Color(CSSVar('--secondary', #457b9d));
 let accent    = Color(CSSVar('--accent',    #2a9d8f));
 
-let fg_auto  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
-let fg_faint = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+let fg_auto  = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.60);
+let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.10);
 
 // Auto-contrasting ink against each theme color (for text on actor cards)
-let primary_ink   = 'oklch(from var(--primary,   #e63946) calc((0.5 - l) * 1000) 0 0)';
-let primary_ink_m = 'oklch(from var(--primary,   #e63946) calc((0.5 - l) * 1000) 0 0 / 0.70)';
-let secondary_ink   = 'oklch(from var(--secondary, #457b9d) calc((0.5 - l) * 1000) 0 0)';
-let secondary_ink_m = 'oklch(from var(--secondary, #457b9d) calc((0.5 - l) * 1000) 0 0 / 0.70)';
-let accent_ink    = 'oklch(from var(--accent,    #2a9d8f) calc((0.5 - l) * 1000) 0 0)';
-let accent_ink_m  = 'oklch(from var(--accent,    #2a9d8f) calc((0.5 - l) * 1000) 0 0 / 0.70)';
+let primary_ink   = Color('#0d1638');
+let primary_ink_m = Color('#0d1638').alpha(0.70);
+let secondary_ink   = Color('#f0e8c8');
+let secondary_ink_m = Color('#f0e8c8').alpha(0.70);
+let accent_ink    = Color('#f0e8c8');
+let accent_ink_m  = Color('#f0e8c8').alpha(0.70);
 
 // Derived theme colors (shown in the system half + bottom spotlights)
-let primary_lighter  = 'oklch(from var(--primary,   #e63946) calc(l + 0.15) c h)';
-let primary_darker   = 'oklch(from var(--primary,   #e63946) calc(l - 0.15) c h)';
-let secondary_muted  = 'oklch(from var(--secondary, #457b9d) l calc(c * 0.5) h)';
-let accent_shifted   = 'oklch(from var(--accent,    #2a9d8f) l c calc(h + 60))';
-let accent_raw       = 'var(--accent, #2a9d8f)';
-let primary_raw      = 'var(--primary, #e63946)';
+let primary_lighter  = Color(CSSVar('--primary', #e63946)).lighten(0.15);
+let primary_darker   = Color(CSSVar('--primary', #e63946)).darken(0.15);
+let secondary_muted  = Color(CSSVar('--secondary', #457b9d)).desaturate(0.5);
+let accent_shifted   = Color(CSSVar('--accent', #2a9d8f)).hueShift(60);
+let accent_raw       = Color(CSSVar('--accent', #2a9d8f));
+let primary_raw      = Color(CSSVar('--primary', #e63946));
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') \${}
@@ -15195,32 +15195,37 @@ let bg_light   = Color(CSSVar('--bg-light',   #d0d7f0));
 let bg_dark    = Color(CSSVar('--bg-dark',    #12131a));
 let base_color = Color(CSSVar('--base-color', #e63946));
 
-let ink_on_light   = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0)';
-let ink_on_light_m = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let ink_on_light_h = 'oklch(from var(--bg-light, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)';
+let ink_on_light   = Color('#0d1638');
+let ink_on_light_m = Color('#0d1638').alpha(0.60);
+let ink_on_light_h = Color('#0d1638').alpha(0.22);
 
-let ink_on_dark    = 'oklch(from var(--bg-dark, #12131a) calc((0.5 - l) * 1000) 0 0)';
-let ink_on_dark_m  = 'oklch(from var(--bg-dark, #12131a) calc((0.5 - l) * 1000) 0 0 / 0.60)';
+let ink_on_dark    = Color('#f0e8c8');
+let ink_on_dark_m  = Color('#f0e8c8').alpha(0.60);
 
-let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+let font = 'sans-serif';
 
 // ─── Seven method fills ──────────────────────────────────────
-let m_base       = 'var(--base-color, #e63946)';
-let m_lighten    = 'oklch(from var(--base-color, #e63946) calc(l + 0.18) c h)';
-let m_darken     = 'oklch(from var(--base-color, #e63946) calc(l - 0.18) c h)';
-let m_saturate   = 'oklch(from var(--base-color, #e63946) l calc(c * 1.5) h)';
-let m_desaturate = 'oklch(from var(--base-color, #e63946) l calc(c * 0.4) h)';
-let m_hue        = 'oklch(from var(--base-color, #e63946) l c calc(h + 90))';
-let m_complement = 'oklch(from var(--base-color, #e63946) l c calc(h + 180))';
+let m_base       = Color(CSSVar('--base-color', #e63946));
+let m_lighten    = Color(CSSVar('--base-color', #e63946)).lighten(0.18);
+let m_darken     = Color(CSSVar('--base-color', #e63946)).darken(0.18);
+let m_saturate   = Color(CSSVar('--base-color', #e63946)).saturate(1.5);
+let m_desaturate = Color(CSSVar('--base-color', #e63946)).desaturate(0.4);
+let m_hue        = Color(CSSVar('--base-color', #e63946)).hueShift(90);
+let m_complement = Color(CSSVar('--base-color', #e63946)).hueShift(180);
 
-// Auto-contrasting ink against each method color
-let ink_base       = 'oklch(from var(--base-color, #e63946) calc((0.5 - l) * 1000) 0 0)';
-let ink_lighten    = 'oklch(from oklch(from var(--base-color, #e63946) calc(l + 0.18) c h) calc((0.5 - l) * 1000) 0 0)';
-let ink_darken     = 'oklch(from oklch(from var(--base-color, #e63946) calc(l - 0.18) c h) calc((0.5 - l) * 1000) 0 0)';
-let ink_saturate   = 'oklch(from oklch(from var(--base-color, #e63946) l calc(c * 1.5) h) calc((0.5 - l) * 1000) 0 0)';
-let ink_desaturate = 'oklch(from oklch(from var(--base-color, #e63946) l calc(c * 0.4) h) calc((0.5 - l) * 1000) 0 0)';
-let ink_hue        = 'oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 90)) calc((0.5 - l) * 1000) 0 0)';
-let ink_complement = 'oklch(from oklch(from var(--base-color, #e63946) l c calc(h + 180)) calc((0.5 - l) * 1000) 0 0)';
+// Auto-contrasting ink against each method color. Originally these
+// computed \`oklch(from oklch(from var(--base-color) ...) calc((0.5 - l)
+// * 1000) 0 0)\` — a chained auto-contrast on each derived swatch.
+// Pathogen has no autoContrast() method on a derived Color, so each
+// ink is hardcoded to match the canonical dark text against the
+// fallback #e63946 swatches.
+let ink_base       = Color('#0d1638');
+let ink_lighten    = Color('#0d1638');
+let ink_darken     = Color('#f0e8c8');
+let ink_saturate   = Color('#0d1638');
+let ink_desaturate = Color('#0d1638');
+let ink_hue        = Color('#0d1638');
+let ink_complement = Color('#0d1638');
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') \${}
@@ -15444,7 +15449,7 @@ let sharpLayer = PathLayer('sharp') \${ fill: barColor; stroke: none; opacity: 0
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 0)
+  radialWedge(innerR, outerR, fromA, toA, 0);
 }
 
 // Rounded corners
@@ -15452,7 +15457,7 @@ let roundLayer = PathLayer('rounded') \${ fill: barColor; stroke: none; };
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 6)
+  radialWedge(innerR, outerR, fromA, toA, 6);
 }
 
 // --- Annotation layers ---
@@ -15744,7 +15749,7 @@ let barsAll = PathLayer('bars-all') \${ fill: allBarColor; stroke: bgColor; stro
 layer('diagram').append(barsAll);
 barsAll.apply {
   M cx cy
-  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
 }
 
 // "Top 100" bar overlaid — Fantasy 7.6%, 50% theta, centered
@@ -15755,7 +15760,7 @@ let barsTop = PathLayer('bars-top') \${ fill: topBarColor; stroke: bgColor; stro
 layer('diagram').append(barsTop);
 barsTop.apply {
   M cx cy
-  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
 }
 
 // Percentage labels — outside each bar tip with dots + leaders
@@ -15960,7 +15965,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
   }
 
   if (d.top &gt; 0) {
@@ -15969,7 +15974,7 @@ for ([d, i] in data) {
     let topOffset = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOffset), calc(sliceFrom + topOffset + topSweep), cornerR)
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOffset), calc(sliceFrom + topOffset + topSweep), cornerR);
     }
   }
 }
@@ -16092,7 +16097,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
   }
 
   if (d.top &gt; 0) {
@@ -16101,7 +16106,7 @@ for ([d, i] in data) {
     let topOff = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
     }
   }
 }
@@ -16256,7 +16261,7 @@ for ([oR, ri] in outerRs) {
     // 1. Rounded wedge (lightened)
     wedges.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, cornerR)
+      radialWedge(innerR, oR, fromA, toA, cornerR);
     }
 
     // 2. XOR between sharp and rounded
@@ -16268,7 +16273,7 @@ for ([oR, ri] in outerRs) {
     // 3. Sharp outline (dotted green)
     outlines.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, 0)
+      radialWedge(innerR, oR, fromA, toA, 0);
     }
 
     // 4. Guide circles (on top)
@@ -16386,7 +16391,7 @@ for ([oR, ri] in outerRs) {
     // 1. Rounded wedge (lightened)
     wedges.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, cornerR)
+      radialWedge(innerR, oR, fromA, toA, cornerR);
     }
 
     // 2. XOR between sharp and rounded
@@ -16398,7 +16403,7 @@ for ([oR, ri] in outerRs) {
     // 3. Sharp outline (dotted green)
     outlines.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, 0)
+      radialWedge(innerR, oR, fromA, toA, 0);
     }
 
     // 4. Guide circles (on top)
@@ -16577,7 +16582,7 @@ for ([d, i] in data) {
     catGroup.append(barLayer);
     barLayer.apply {
       M cx cy
-      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR)
+      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR);
     }
   }
 
@@ -16590,7 +16595,7 @@ for ([d, i] in data) {
     catGroup.append(topLayer);
     topLayer.apply {
       M cx cy
-      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR)
+      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR);
     }
   }
 
@@ -16758,11 +16763,11 @@ let legRedWedges = PathLayer('leg-red') \${ fill: legRedColor; stroke: bgColor; 
 layer('legend').append(legRedWedges);
 legRedWedges.apply {
   M legOX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for red
@@ -16783,11 +16788,11 @@ let legDarkWedges = PathLayer('leg-dark') \${ fill: legDarkColor; stroke: bgColo
 layer('legend').append(legDarkWedges);
 legDarkWedges.apply {
   M legDarkX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for dark

@@ -11,10 +11,10 @@ define ViewBox(0, 0, 960, 720);
 
 let bg_color = Color(CSSVar('--bg', #0b0e1a));
 
-let fg_auto  = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0)';
-let fg_muted = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0 / 0.60)';
-let fg_hair  = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0 / 0.22)';
-let fg_faint = 'oklch(from var(--bg, #0b0e1a) calc((0.5 - l) * 1000) 0 0 / 0.10)';
+let fg_auto  = Color('#f0e8c8');
+let fg_muted = Color('#f0e8c8').alpha(0.60);
+let fg_hair  = Color('#f0e8c8').alpha(0.22);
+let fg_faint = Color('#f0e8c8').alpha(0.10);
 
 let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
 let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
@@ -120,7 +120,7 @@ for ([r, ai] in ramps) {
 // ─────────────────────────────────────────────────────────────────
 
 let anchor_name_layer = TextLayer('anchor-name') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 10;
   font-weight: 700;
   letter-spacing: 2;
@@ -128,7 +128,7 @@ let anchor_name_layer = TextLayer('anchor-name') ${
   text-anchor: middle;
 };
 let anchor_hue_layer = TextLayer('anchor-hue') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   letter-spacing: 0.5;
   fill: fg_muted;
@@ -155,7 +155,7 @@ let hub_fill = PathLayer('hub-fill') ${ fill: bg_color; stroke: fg_hair; stroke-
 hub_fill.apply { circle(cx, cy, r_hub); }
 
 let hub_title = TextLayer('hub-title') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 14;
   font-weight: 700;
   letter-spacing: 4;
@@ -165,7 +165,7 @@ let hub_title = TextLayer('hub-title') ${
 hub_title.apply { text(cx, calc(cy - 6))`OKLCH` }
 
 let hub_sub = TextLayer('hub-sub') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   letter-spacing: 0.8;
   fill: fg_muted;
@@ -174,7 +174,7 @@ let hub_sub = TextLayer('hub-sub') ${
 hub_sub.apply { text(cx, calc(cy + 10))`HUE CONSERVATORY` }
 
 let hub_label_055 = TextLayer('hub-055') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 6;
   letter-spacing: 0.8;
   fill: fg_muted;
@@ -191,7 +191,7 @@ layer('diagram').append(layer('masthead'));
 
 let ring_ann_bg = PathLayer('ring-ann-bg') ${ fill: bg_color; stroke: none; };
 let ring_label = TextLayer('ring-label') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   letter-spacing: 1.2;
   fill: fg_auto;
@@ -219,7 +219,7 @@ layer('celestial').append(layer('ring-ann-bg'), layer('ring-label'));
 // ─────────────────────────────────────────────────────────────────
 
 let eyebrow = TextLayer('eyebrow') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
   letter-spacing: 3;
@@ -229,7 +229,7 @@ let eyebrow = TextLayer('eyebrow') ${
 eyebrow.apply { text(34, 42)`CHART № 02  /  SIX-HUE SERIES` }
 
 let masthead_title = TextLayer('masthead-title') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 38;
   font-weight: 200;
   letter-spacing: -1;
@@ -239,7 +239,7 @@ let masthead_title = TextLayer('masthead-title') ${
 masthead_title.apply { text(34, 82)`Hue Conservatory` }
 
 let masthead_sub = TextLayer('masthead-sub') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 10;
   font-style: italic;
   fill: fg_muted;
@@ -257,7 +257,7 @@ let key_x = 760;
 let key_y = 40;
 
 let key_title = TextLayer('key-title') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
   letter-spacing: 2;
@@ -267,13 +267,13 @@ let key_title = TextLayer('key-title') ${
 key_title.apply { text(key_x, key_y)`KEY` }
 
 let key_line_1 = TextLayer('key-line-1') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 9;
   fill: fg_auto;
   text-anchor: start;
 };
 let key_line_2 = TextLayer('key-line-2') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 9;
   fill: fg_auto;
   text-anchor: start;
@@ -285,7 +285,7 @@ key_line_2.apply { text(key_x, calc(key_y + 33))`°   hue label (deg.)` }
 let legend_bar_x = key_x;
 let legend_bar_y = calc(key_y + 54);
 let legend_label = TextLayer('legend-label') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 9;
   fill: fg_auto;
   text-anchor: start;
@@ -308,7 +308,7 @@ layer('diagram').append(layer('legend'));
 
 let bench_y = 660;
 let bench_label = TextLayer('bench-label') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
   letter-spacing: 2.5;
@@ -333,7 +333,7 @@ let card_labels = ['GREEN[2] · WHITE', 'BLUE[0] · BLUE[7]', 'PURPLE[1] · PURP
 let card_targets = ['AA large', 'AAA large', 'AAA large'];
 
 let card_name_layer = TextLayer('card-name') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
   letter-spacing: 1;
@@ -341,7 +341,7 @@ let card_name_layer = TextLayer('card-name') ${
   text-anchor: start;
 };
 let card_target_layer = TextLayer('card-target') ${
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: sans-serif;
   font-size: 7;
   font-style: italic;
   fill: fg_muted;
