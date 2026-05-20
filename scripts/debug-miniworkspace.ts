@@ -19,8 +19,9 @@ async function main(): Promise<void> {
     });
 
     const slug = process.argv[2] || 'reactive-color-svg';
-    console.log(`→ Loading /blog/${slug}`);
-    await page.goto(`http://localhost:3000/blog/${slug}`, { waitUntil: 'networkidle2' });
+    const host = process.argv[3] || 'http://localhost:3000';
+    console.log(`→ Loading ${host}/blog/${slug}`);
+    await page.goto(`${host}/blog/${slug}`, { waitUntil: 'networkidle2' });
 
     await new Promise((r) => setTimeout(r, 2500));
 
@@ -49,7 +50,9 @@ async function main(): Promise<void> {
       };
 
       const minis = findAllInShadow('mini-workspace');
-      const firstMini = minis[0];
+      // Find the gradient-gallery mini-workspace by its caption text
+      const targetIdx = Array.from(minis).findIndex(m => (m.getAttribute('caption') || '').includes('six types'));
+      const firstMini = targetIdx >= 0 ? minis[targetIdx] : minis[0];
       if (!firstMini) return { error: 'no mini-workspace on page' };
 
       const out = {
