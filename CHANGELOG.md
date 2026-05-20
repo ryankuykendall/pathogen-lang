@@ -45,9 +45,38 @@ The migration runs against KV before deploy. Atomic single-PR rollout: migrate p
 
 #### Blog sample sweep
 
-- **143 `.pathogen` files under `website/blog/samples/post*/`** updated: line 1 `// viewBox="0 0 W H"` comments replaced with `define ViewBox(0, 0, W, H);` canonical form. 116 SVGs successfully recompiled via `npm run compile:samples`.
-- **27 samples have pre-existing compile errors** unrelated to the viewBox swap (verified by reverting one and reproducing the same error against the original source). Categorized in commit b784152: post16/* (mandatory-semicolons), post24/* (raw `var()` and disallowed font-family tokens under tightened security validator), post7/post11/post13/post14 (evaluator null-checking that surfaced after these samples were last compiled). Tracked as separate sample-rot follow-ups, not blocking.
+- **143 `.pathogen` files under `website/blog/samples/post*/`** updated: line 1 `// viewBox="0 0 W H"` comments replaced with `define ViewBox(0, 0, W, H);` canonical form (commit b784152). All 143 now compile successfully via `npm run compile:samples` (commits 7486f5e, ea02745).
 - **Inline `svg-path` / `pathogen` code fences** in `website/blog/*.md` (101 fences across 18 posts) intentionally left untouched — they're short illustrative snippets (`arrow.draw()`, `dot.drawTo(...)`), not full programs, and adding `define ViewBox(...)` to each would clutter the teaching context.
+
+#### AST builder postfix folding (commit 7486f5e)
+
+The viewBox sweep surfaced a cluster of AST-builder bugs that were
+silently dropping function-call argument lists in five expression
+contexts. Five builders iterated CST children with `buildExpression`
+(which stops at the primary node) and then fell through to
+`buildExpression`'s case `'ArgList'` branch — which returns NullLiteral.
+Effect: `calc(foo(5))` parsed as `CalcExpression { expression: NullLiteral }`
+and `let x = calc(foo(5))` set `x` to `null` instead of the function's
+return value; `text(polarX(...), polarY(...))` parsed as
+`text(polarX, polarY)` (just identifiers).
+
+Fixed builders: `buildCalcExpression`, `buildUnaryExpression`,
+`buildTernaryExpression`, `buildTextStatement`, `buildTspanStatement`.
+All five now use `buildExpressionWithPostfix` which folds ArgList /
+MemberExpression / IndexExpression chains at sibling level.
+
+9 new tests in `tests/ast-builder-postfix.test.ts`.
+
+#### Sample-rot fixes (commits 7486f5e, ea02745)
+
+After commit b784152 surfaced 27 pre-existing compile failures:
+
+- **post16/* (7 files)** — missing trailing semicolons in `apply` blocks. Fixed via diagnostic-driven semicolon insertion (the parser's "Missing ';'" diagnostic points at the exact insertion position).
+- **post7, post11, post13, post14 (8 files)** — runtime `Cannot use null in arithmetic expression` / `text() x must be a number` errors. All resolved by the AST builder postfix fixes above; no per-file changes needed.
+- **post24/* (14 files)** — style values with raw `var()` / `oklch(from var(...) ...)` / `color-mix(in oklch, var(...), ...)` strings, rejected by the security validator. Sweep migrated to Pathogen `Color()` + `CSSVar()` constructors via `scripts/fix-post24.ts`.
+- **post16/wedge-diag-{4,16}** — silent timeout in `compile-samples.ts` (these samples do dozens of XOR ops and take ~2:27 each). Timeout raised from 120s to 600s.
+
+`npm run compile:samples` final state: **143 compiled, 0 errors**.
 
 ## [Older Unreleased] - 2026-05-13
 
