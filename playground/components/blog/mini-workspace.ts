@@ -59,6 +59,12 @@ export class MiniWorkspace extends HTMLElement {
   private _inspectorOpen: boolean = false;
   private _isPreviewFullscreen: boolean = false;
   private _inspectorKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  // Document-level signal that some mini-workspace transitioned fullscreen.
+  // Every instance listens and closes its own inspector on receipt — the
+  // panel has its own `position: fixed` / z-index 10000 so it stays glued
+  // to the viewport when its host shrinks back, and it'd leak between
+  // sibling mini-workspaces in the same blog post otherwise.
+  private _crossInstanceCloseHandler: (() => void) | null = null;
 
   // Lazy CodeMirror state
   private _editor: unknown | null = null;
@@ -108,6 +114,10 @@ export class MiniWorkspace extends HTMLElement {
     if (this._themeUnsubscribe) this._themeUnsubscribe();
     if (this._onThemeChange) document.removeEventListener('theme-change', this._onThemeChange);
     if (this._inspectorOpen) this._closeInspector();
+    if (this._crossInstanceCloseHandler) {
+      document.removeEventListener('mini-workspace-close-inspector', this._crossInstanceCloseHandler);
+      this._crossInstanceCloseHandler = null;
+    }
     if (this._onBarTransitionEnd) {
       const bar = this.shadowRoot?.querySelector('#glass-bar');
       if (bar) bar.removeEventListener('transitionend', this._onBarTransitionEnd as EventListener);
@@ -593,8 +603,28 @@ export class MiniWorkspace extends HTMLElement {
 
       miniPreview.addEventListener('fullscreen-change', ((e: CustomEvent) => {
         this._isPreviewFullscreen = e.detail.fullscreen;
+        // Any fullscreen transition (enter or exit) dismisses the inspector.
+        //   • Exit: the panel is `position: fixed` with z-index 10000, so
+        //     when the mini-preview's host shrinks back from fullscreen the
+        //     panel orphans at viewport top-right. Close it.
+        //   • Enter: ensure we start with a clean state — relevant when
+        //     this instance left the inspector open from a prior fullscreen
+        //     session, and broadcast so sibling mini-workspaces in the same
+        //     blog post also close their inspectors (otherwise a sibling's
+        //     stale panel floats over this fresh fullscreen view).
+        document.dispatchEvent(
+          new CustomEvent('mini-workspace-close-inspector', { bubbles: false }),
+        );
       }) as EventListener);
     }
+
+    // Listen for the broadcast so OTHER instances' fullscreen transitions
+    // close this instance's inspector. Stored on the instance so
+    // disconnectedCallback can remove the listener.
+    this._crossInstanceCloseHandler = (): void => {
+      if (this._inspectorOpen) this._closeInspector();
+    };
+    document.addEventListener('mini-workspace-close-inspector', this._crossInstanceCloseHandler);
 
     // Chip group (present if vars were detected synchronously)
     this._wireChipGroup();
