@@ -70,10 +70,12 @@ class AppBreadcrumb extends HTMLElement {
         'currentFileName',
         'workspaces',
         'workspaceName',
+        'workspaceDescription',
         'workspaceId',
         'workspaceIsPublic',
         'workspacePublicationState',
         'workspaceRereviewPending',
+        'workspaceOwnerId',
         'currentUser',
         'annotatedOpen',
         'consoleOpen',
@@ -249,9 +251,11 @@ class AppBreadcrumb extends HTMLElement {
   getOverflowMenuHtml(): string {
     const workspaceId = store.get('workspaceId') as string | null;
     const workspaceIsPublic = store.get('workspaceIsPublic') as boolean;
+    const workspaceOwnerId = store.get('workspaceOwnerId') as string | null;
     const currentUser = store.get('currentUser') as CurrentUser | null;
     const hasWorkspace = !!workspaceId;
     const isSignedIn = currentUser !== null;
+    const isOwner = isSignedIn && !!workspaceOwnerId && currentUser?.id === workspaceOwnerId;
     const canPublish = hasFeature(currentUser, UserFeature.Publishing);
 
     const menuItems: string[] = [];
@@ -261,6 +265,11 @@ class AppBreadcrumb extends HTMLElement {
     menuItems.push(
       `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`,
     );
+    if (hasWorkspace && isOwner) {
+      menuItems.push(
+        `<button data-action="rename-workspace" title="Edit workspace name and description">${materialIcon('edit', { size: 16, className: 'menu-icon' })}<span>Rename workspace</span></button>`,
+      );
+    }
     menuItems.push('<div class="menu-divider"></div>');
     menuItems.push(
       `<button data-action="copy-url">${materialIcon('link', { size: 16, className: 'menu-icon' })}<span>Copy URL</span></button>`,
@@ -488,6 +497,9 @@ class AppBreadcrumb extends HTMLElement {
         break;
       case 'set-thumbnail':
         this.dispatchEvent(new CustomEvent('set-thumbnail', { bubbles: true, composed: true }));
+        break;
+      case 'rename-workspace':
+        this.dispatchEvent(new CustomEvent('rename-workspace', { bubbles: true, composed: true }));
         break;
       case 'toggle-publish':
         await this.handlePublishToggle();

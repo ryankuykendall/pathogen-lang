@@ -837,6 +837,59 @@ layer('hex').apply { circle(60, 100, 40) }`,
       controls.on('label', (value) => group.setAttribute('label', value as string));
     },
   },
+  {
+    id: 'edit-workspace-metadata-modal',
+    name: 'Edit Workspace Metadata Modal',
+    category: 'Shared',
+    description: 'Centered card dialog for renaming a workspace and editing its description. Triggered from the breadcrumb overflow menu via the "Rename workspace" item.',
+    stories: [
+      {
+        name: 'Default',
+        props: { name: 'My Spirograph', description: 'A nested rotation pattern with adjustable arms.' },
+      },
+      {
+        name: 'Empty fields',
+        props: { name: '', description: '' },
+      },
+      {
+        name: 'Long description',
+        props: {
+          name: 'Layered Marker Demo',
+          description: 'Explores stacked path markers and the interaction between context-stroke, context-fill, and inherited dash patterns across multiple layers.',
+        },
+      },
+    ],
+    controls: [
+      { name: 'name', type: 'text', label: 'Name', default: 'My Spirograph' },
+      { name: 'description', type: 'text', label: 'Description', default: 'A nested rotation pattern with adjustable arms.' },
+    ],
+    notes: 'In storybook the modal is rendered open. In the playground it is hidden by default and shown when the user invokes "Rename workspace" from the overflow menu.',
+    render: (container, props, controls) => {
+      void import('../components/edit-workspace-metadata-modal.js');
+
+      const modal = document.createElement('edit-workspace-metadata-modal') as HTMLElement & {
+        open(opts: { name: string | null; description: string | null }): void;
+      };
+      container.appendChild(modal);
+
+      const reopen = (): void => {
+        modal.open({
+          name: (props.name as string | null) ?? '',
+          description: (props.description as string | null) ?? '',
+        });
+      };
+
+      queueMicrotask(reopen);
+      controls.on('name', (value) => {
+        props.name = value;
+        reopen();
+      });
+      controls.on('description', (value) => {
+        props.description = value;
+        reopen();
+      });
+    },
+  },
 
   // === UI Patterns (migrated from old storybook) ===
   {

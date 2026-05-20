@@ -26,7 +26,8 @@ export type MaterialIconName =
   | 'grid'
   | 'list'
   | 'share'
-  | 'subtitles';
+  | 'subtitles'
+  | 'edit';
 
 export interface MaterialIconOptions {
   className?: string;

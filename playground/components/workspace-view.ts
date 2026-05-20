@@ -15,6 +15,7 @@ import './playground-footer.js';
 import './playground-main.js';
 import './svg-preview-pane.js';
 import './thumbnail-crop-modal.js';
+import './edit-workspace-metadata-modal.js';
 import gpuGradientService from '../gpu/gradient-service.js';
 import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
@@ -22,8 +23,9 @@ import compilerWorker from '../services/compiler-worker.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
-import { BASE_PATH, buildWorkspaceSlugId, parseWorkspaceSlugId } from '../utils/router.js';
+import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
+import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
 
 export class WorkspaceView extends HTMLElement {
@@ -46,6 +48,7 @@ export class WorkspaceView extends HTMLElement {
   private _handleExportLegend: (() => void) | null = null;
   private _handleRefreshPreview: (() => void) | null = null;
   private _handleSetThumbnail: (() => void) | null = null;
+  private _handleRenameWorkspace: (() => void) | null = null;
   private _handleCopyDebugInfo: (() => Promise<void>) | null = null;
   private _handleThumbnailAutoGenerate: ((e: Event) => void) | null = null;
   private _handleBeforeUnload: (() => void) | null = null;
@@ -181,6 +184,10 @@ export class WorkspaceView extends HTMLElement {
     return this.shadowRoot!.querySelector('thumbnail-crop-modal') as any;
   }
 
+  get editMetadataModal(): HTMLElement & { open(opts: { name: string | null; description: string | null }): void } {
+    return this.shadowRoot!.querySelector('edit-workspace-metadata-modal') as any;
+  }
+
   waitForLibrary(maxWait: number = 5000): void {
     const start = Date.now();
     const check = (): void => {
@@ -265,23 +272,7 @@ export class WorkspaceView extends HTMLElement {
   }
 
   updateUrlWithSlug(id: string, slug: string | null): void {
-    // Only update if slug exists and URL doesn't already have it
-    if (!slug) return;
-
-    const routeParams = (store.get('routeParams') || {}) as Record<string, string>;
-    const currentSlugId = routeParams.slugId || '';
-    const expectedSlugId = buildWorkspaceSlugId(slug, id);
-
-    if (currentSlugId === expectedSlugId) return;
-
-    // Build new URL with slug--id format
-    const newPath = `${BASE_PATH}/workspace/${encodeURIComponent(expectedSlugId)}`;
-
-    // Use replaceState to avoid adding to history
-    history.replaceState(null, '', newPath);
-
-    // Update store with new slugId
-    store.set('routeParams', { ...routeParams, slugId: expectedSlugId } as unknown);
+    updateWorkspaceSlugUrl(id, slug);
   }
 
   async loadWorkspace(id: string): Promise<void> {
@@ -568,6 +559,18 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('set-thumbnail', this._handleSetThumbnail);
 
+    // Rename workspace (edit name + description)
+    this._handleRenameWorkspace = (): void => {
+      if (store.get('currentView') !== 'workspace') return;
+      const modal = this.editMetadataModal;
+      if (!modal) return;
+      modal.open({
+        name: store.get('workspaceName') as string | null,
+        description: store.get('workspaceDescription') as string | null,
+      });
+    };
+    document.addEventListener('rename-workspace', this._handleRenameWorkspace);
+
     // Copy debug info
     this._handleCopyDebugInfo = async (): Promise<void> => {
       if (store.get('currentView') === 'workspace') {
@@ -678,6 +681,7 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleRefreshPreview) document.removeEventListener('refresh-preview', this._handleRefreshPreview);
     if (this._handleCopyDebugInfo) document.removeEventListener('copy-debug-info', this._handleCopyDebugInfo);
     if (this._handleSetThumbnail) document.removeEventListener('set-thumbnail', this._handleSetThumbnail);
+    if (this._handleRenameWorkspace) document.removeEventListener('rename-workspace', this._handleRenameWorkspace);
     if (this._handleThumbnailAutoGenerate) document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
     if (this._handleBeforeUnload) window.removeEventListener('beforeunload', this._handleBeforeUnload);
     if (this._handleWorkspaceConflict) document.removeEventListener('workspace-conflict', this._handleWorkspaceConflict);
@@ -1079,6 +1083,8 @@ export class WorkspaceView extends HTMLElement {
       <export-legend-modal></export-legend-modal>
 
       <thumbnail-crop-modal></thumbnail-crop-modal>
+
+      <edit-workspace-metadata-modal></edit-workspace-metadata-modal>
 
       <playground-footer></playground-footer>
     `;
