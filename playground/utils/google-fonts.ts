@@ -183,3 +183,26 @@ export function getAvailableWeights(family: string): number[] {
   const font = fonts.find((f) => f.family === family);
   return font?.variants || [400, 700];
 }
+
+/**
+ * Is this family one the font picker advertises? The check protects the
+ * fetch path: while a user types a font name in the picker the playground
+ * recompiles after each keystroke, and every partial value (e.g. `Joseph`,
+ * `Josephi`, `Josephin`, `Josephin S`, …) would otherwise be sent to the
+ * Google Fonts CDN, racking up 400-CORS errors and risking rate limits.
+ *
+ * Uses the cached fonts list when available (covers fonts fetched via API
+ * key on top of the curated set) and falls back to CURATED_FONTS for the
+ * common case where the API hasn't been called.
+ */
+const CURATED_FAMILY_SET = new Set(CURATED_FONTS.map((f) => f.family));
+
+export function isKnownGoogleFont(family: string): boolean {
+  if (cachedFonts) {
+    for (const f of cachedFonts) {
+      if (f.family === family) return true;
+    }
+    return false;
+  }
+  return CURATED_FAMILY_SET.has(family);
+}

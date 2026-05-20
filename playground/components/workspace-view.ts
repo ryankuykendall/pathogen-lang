@@ -806,6 +806,7 @@ export class WorkspaceView extends HTMLElement {
             markers: result.markers || [],
             filters: result.filters || [],
             cssProperties: result.cssProperties || [],
+            fontBinaries: result.fontBinaries || [],
             gpuGradientUrls,
           })
         : this.previewPane.setPathDataWithTiming(result.path);

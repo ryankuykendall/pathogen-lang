@@ -12,6 +12,8 @@ import { store } from '../state/store.js';
 import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
+import type { FontBinaryEntry } from '../services/font-loader.js';
+import { fontBinariesToCss } from '../services/font-loader.js';
 
 // Runtime access to the render API is via the bundled global (the playground
 // loads `dist/index.global.js` rather than importing `src/` directly). Typed
@@ -68,6 +70,7 @@ interface DefsData {
   markers?: MarkerDef[];
   filters?: FilterDef[];
   cssProperties?: CssPropertyDef[];
+  fontBinaries?: FontBinaryEntry[];
   gpuGradientUrls?: Map<string, string>;
 }
 
@@ -313,6 +316,34 @@ export class SvgPreviewPane extends HTMLElement {
     this._iframeDoc.documentElement.style.removeProperty(name);
   }
 
+  /**
+   * Maintain a `<style id="pathogen-fonts">` element in the iframe's <head>
+   * containing @font-face declarations for every font binary the compiler
+   * worker resolved. Without this, `<text font-family="…">` inside the
+   * iframe falls back to the browser default (Times New Roman) because the
+   * iframe CSP forbids loading fonts from the network and the parent
+   * document's loaded fonts don't cross the iframe boundary.
+   *
+   * Called every compile with the current set of binaries; an empty list
+   * clears prior rules so removed fonts don't linger.
+   */
+  private _updateIframeFonts(binaries: FontBinaryEntry[]): void {
+    if (!this._iframeDoc) return;
+    const head = this._iframeDoc.head;
+    if (!head) return;
+    let styleEl = this._iframeDoc.getElementById('pathogen-fonts') as HTMLStyleElement | null;
+    if (binaries.length === 0) {
+      if (styleEl) styleEl.textContent = '';
+      return;
+    }
+    if (!styleEl) {
+      styleEl = this._iframeDoc.createElement('style');
+      styleEl.id = 'pathogen-fonts';
+      head.appendChild(styleEl);
+    }
+    styleEl.textContent = fontBinariesToCss(binaries);
+  }
+
   set pathData(value: string) {
     store.set('pathData', value || '');
     if (this.previewPath) this.previewPath.setAttribute('d', value || '');
@@ -434,6 +465,13 @@ export class SvgPreviewPane extends HTMLElement {
         styleEl.textContent = rules;
         svgEl.insertBefore(styleEl, svgEl.firstChild);
       }
+
+      // Inject @font-face declarations as inline data URIs into the iframe's
+      // <head>. The iframe CSP is `font-src data:` — external font requests
+      // (Google Fonts) are blocked, so the binaries the compiler worker
+      // already fetched for `PathBlock.fromGlyph()` are reused here to make
+      // `<text font-family="…">` resolve correctly inside the sandbox.
+      this._updateIframeFonts(defsData.fontBinaries ?? []);
 
       const SVG_NS = 'http://www.w3.org/2000/svg';
       const layerBuildOptions = {

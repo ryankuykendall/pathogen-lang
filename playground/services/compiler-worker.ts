@@ -269,7 +269,8 @@ export async function compile(
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
-  return sendRequest('compile', source, compilationId, isStale, options, binaries);
+  const result = await sendRequest('compile', source, compilationId, isStale, options, binaries);
+  return attachFontBinaries(result, binaries);
 }
 
 /**
@@ -305,7 +306,23 @@ export async function compileWithContext(
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
-  return sendRequest('compileWithContext', source, compilationId, isStale, options, binaries);
+  const result = await sendRequest('compileWithContext', source, compilationId, isStale, options, binaries);
+  return attachFontBinaries(result, binaries);
+}
+
+/**
+ * Attach the host-side font binaries to the compile result so the preview
+ * iframe can inject them as `@font-face` data URIs (see
+ * playground/components/svg-preview-pane.ts).
+ *
+ * The binaries here are the cached references (not the transferred copies);
+ * the host always keeps the originals, so reading them post-compile is safe.
+ */
+function attachFontBinaries(result: unknown, binaries: FontBinaryEntry[]): unknown {
+  if (result && typeof result === 'object') {
+    (result as { fontBinaries?: FontBinaryEntry[] }).fontBinaries = binaries;
+  }
+  return result;
 }
 
 /**

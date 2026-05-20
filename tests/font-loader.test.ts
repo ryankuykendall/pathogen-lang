@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   extractFontReferences,
   extractFontUrlFromGoogleFontsCss,
+  fontBinariesToCss,
   resolveFontBinaries,
   fetchFontBinary,
 } from '../playground/services/font-loader';
@@ -73,6 +74,42 @@ describe('extractFontReferences', () => {
   it('quoted family names in style blocks are unquoted', () => {
     const refs = extractFontReferences(`let s = \${ font-family: "Fira Sans"; font-weight: 200; };`);
     expect(refs).toEqual([{ family: 'Fira Sans', weight: 200 }]);
+  });
+
+  it('drops unknown families from style blocks so partial typing does not hit Google Fonts', () => {
+    // Simulates the user typing "Josephin Sans" one character at a time
+    // in the font picker. Each intermediate state must NOT extract — the
+    // playground recompiles per keystroke and unknown fetches accumulate
+    // 400/CORS errors and risk rate-limits. Only the completed name resolves.
+    const partials = ['Joseph', 'Josephi', 'Josephin', 'Josephin S', 'Josephin Sa', 'Josephin San'];
+    for (const partial of partials) {
+      const refs = extractFontReferences(`let s = \${ font-family: ${partial}; };`);
+      expect(refs, `partial "${partial}" should not extract`).toEqual([]);
+    }
+    // Once the user finishes typing, the known family DOES extract.
+    const refs = extractFontReferences(`let s = \${ font-family: "Josefin Sans"; };`);
+    expect(refs).toEqual([{ family: 'Josefin Sans' }]);
+  });
+
+  it('drops unknown families from @font directives — picker is the authoritative source', () => {
+    const refs = extractFontReferences(`@font "TotallyMadeUpFontName" 400;`);
+    expect(refs).toEqual([]);
+  });
+
+  it('keeps known families alongside dropped unknown ones in mixed sources', () => {
+    const refs = extractFontReferences(`
+      @font "Roboto" 400;
+      @font "NotARealFont" 700;
+      let s = \${ font-family: "ImaginaryThing"; };
+      let t = \${ font-family: "Inter"; font-weight: 500; };
+    `);
+    expect(refs).toEqual(
+      expect.arrayContaining([
+        { family: 'Roboto', weight: 400 },
+        { family: 'Inter', weight: 500 },
+      ]),
+    );
+    expect(refs).toHaveLength(2);
   });
 });
 
@@ -248,5 +285,65 @@ describe('resolveFontBinaries partitioning', () => {
     const result = await resolveFontBinaries([]);
     expect(result.binaries).toEqual([]);
     expect(result.failures).toEqual([]);
+  });
+});
+
+describe('fontBinariesToCss', () => {
+  it('returns an empty string for an empty input list', () => {
+    expect(fontBinariesToCss([])).toBe('');
+  });
+
+  it('emits an @font-face block with a data URI for one entry', () => {
+    // 4 bytes "abcd" → base64 "YWJjZA=="
+    const buffer = new Uint8Array([0x61, 0x62, 0x63, 0x64]).buffer;
+    const css = fontBinariesToCss([
+      { family: 'Roboto Condensed', weight: 300, style: 'normal', buffer },
+    ]);
+
+    expect(css).toContain('font-family: "Roboto Condensed"');
+    expect(css).toContain('font-weight: 300');
+    expect(css).toContain('font-style: normal');
+    expect(css).toContain('src: url("data:font/ttf;base64,YWJjZA==") format("truetype")');
+  });
+
+  it('emits one @font-face block per entry, separated by newlines', () => {
+    const buf = new Uint8Array([0x00]).buffer;
+    const css = fontBinariesToCss([
+      { family: 'Inter', weight: 400, style: 'normal', buffer: buf },
+      { family: 'Inter', weight: 700, style: 'normal', buffer: buf },
+    ]);
+
+    const blocks = css.split('@font-face').filter((s) => s.trim().length > 0);
+    expect(blocks).toHaveLength(2);
+    expect(css).toContain('font-weight: 400');
+    expect(css).toContain('font-weight: 700');
+    // Verify the join separator: the first block's closing brace is followed
+    // by a newline and then the next block's @font-face.
+    expect(css).toContain('}\n@font-face');
+  });
+
+  it('escapes embedded quotes in font family names', () => {
+    const buf = new Uint8Array([0x00]).buffer;
+    const css = fontBinariesToCss([
+      { family: 'Quote"Injection', weight: 400, style: 'normal', buffer: buf },
+    ]);
+    expect(css).toContain('font-family: "Quote\\"Injection"');
+  });
+
+  it('handles font buffers larger than the 32KB chunked-base64 boundary', () => {
+    // 64KB of nonzero bytes — exercises the chunked btoa path. A naive
+    // String.fromCharCode(...new Uint8Array(buffer)) would throw "Maximum
+    // call stack size exceeded" on inputs of this size.
+    const bytes = new Uint8Array(64 * 1024);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = i & 0xff;
+    const css = fontBinariesToCss([
+      { family: 'Big', weight: 400, style: 'normal', buffer: bytes.buffer },
+    ]);
+    const b64Match = css.match(/data:font\/ttf;base64,([^"]+)/);
+    expect(b64Match).not.toBeNull();
+    // 64KB binary → 65536 bytes = 21845 full 3-byte groups + 1 tail byte.
+    // 21845 * 4 = 87380 base64 chars for full groups, plus 4 (2 chars + "==")
+    // for the padded tail = 87384 total.
+    expect(b64Match![1].length).toBe(87384);
   });
 });

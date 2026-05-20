@@ -1,6 +1,8 @@
 // Font Loader Service
 // Fetches font binaries from Google Fonts and caches them for compilation
 
+import { isKnownGoogleFont } from '../utils/google-fonts.js';
+
 export interface FontBinaryEntry {
   family: string;
   weight: number;
@@ -200,6 +202,14 @@ export async function resolveFontBinaries(
 /**
  * Extract font families referenced in source code.
  * Scans @font directives and style blocks (`${ font-family: ...; font-weight: ...; }`).
+ *
+ * Unknown families are filtered out (see `isKnownGoogleFont`). The playground
+ * recompiles after every keystroke, so a user typing a font name in the
+ * picker — `Joseph`, `Josephi`, `Josephin`, … — would otherwise send a fetch
+ * per partial value to Google's CDN. The check is applied to both @font
+ * directives and style-block `font-family:` values; legitimate unknown @font
+ * directives are silently dropped rather than fetched, since the picker is
+ * the authoritative font source for users.
  */
 export function extractFontReferences(source: string): { family: string; weight?: number }[] {
   const refs: Map<string, { family: string; weight?: number }> = new Map();
@@ -211,6 +221,7 @@ export function extractFontReferences(source: string): { family: string; weight?
   while ((match = fontDirectiveRe.exec(source)) !== null) {
     const family = match[1];
     if (family.includes('/') || family.includes('\\') || family.endsWith('.ttf') || family.endsWith('.otf') || family.endsWith('.woff') || family.endsWith('.woff2')) continue;
+    if (!isKnownGoogleFont(family)) continue;
     const weight = match[2] ? parseInt(match[2], 10) : undefined;
     const key = `${family}:${weight ?? 400}`;
     if (!refs.has(key)) {
@@ -231,6 +242,7 @@ export function extractFontReferences(source: string): { family: string; weight?
     if (!first) continue;
     if (GENERIC_FONT_FAMILIES.has(first)) continue;
     if (LEGACY_FILENAME_FAMILY.test(first)) continue;
+    if (!isKnownGoogleFont(first)) continue;
 
     const weightMatch = block.match(/font-weight:\s*(\d+)/);
     const weight = weightMatch ? parseInt(weightMatch[1], 10) : undefined;
@@ -249,6 +261,60 @@ export function extractFontReferences(source: string): { family: string; weight?
  */
 export function isFontCached(family: string, weight: number = 400): boolean {
   return fontBinaryCache.has(`${family}:${weight}`);
+}
+
+/**
+ * Serialize font binaries as CSS @font-face declarations with inline
+ * data URIs. The compiled SVG renders inside a sandboxed iframe whose
+ * CSP forbids external font requests (`font-src data:` only); injecting
+ * these rules into the iframe's <head> is the only way for the browser
+ * to resolve `font-family` on rendered <text> elements.
+ *
+ * See playground/components/svg-preview-pane.ts for the injection point.
+ */
+export function fontBinariesToCss(entries: FontBinaryEntry[]): string {
+  return entries
+    .map((e) => {
+      const b64 = arrayBufferToBase64(e.buffer);
+      return `@font-face {
+  font-family: "${escapeFontFamily(e.family)}";
+  font-weight: ${e.weight};
+  font-style: ${e.style};
+  font-display: swap;
+  src: url("data:font/ttf;base64,${b64}") format("truetype");
+}`;
+    })
+    .join('\n');
+}
+
+/**
+ * Escape a font family name for embedding inside a double-quoted CSS string.
+ * Real Google Fonts names use only letters, digits, spaces, and dashes, but
+ * a defensive escape protects against accidental quote injection via
+ * `@font "..." ...` directives or style-block values. Control characters
+ * (\n, \r, \0) would terminate the CSS string literal so they are stripped.
+ */
+function escapeFontFamily(family: string): string {
+  return family
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[\r\n\0]/g, '');
+}
+
+/**
+ * Convert an ArrayBuffer to a base64 string in chunks. A naive
+ * `String.fromCharCode(...new Uint8Array(buffer))` blows the call stack
+ * on font files larger than ~64KB. Process in 32KB chunks instead.
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode.apply(null, Array.from(slice));
+  }
+  return btoa(binary);
 }
 
 /**

@@ -244,6 +244,16 @@ export interface CompileResult {
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
+  // Attached host-side by playground/services/compiler-worker.ts after the
+  // worker returns, so the preview iframe can inject @font-face data URIs
+  // (its CSP forbids external font requests). Not part of the underlying
+  // pathogen-lang CompileResult shape — playground-only extension.
+  fontBinaries?: {
+    family: string;
+    weight: number;
+    style: 'normal' | 'italic';
+    buffer: ArrayBuffer;
+  }[];
 }
 
 export interface FontData {
