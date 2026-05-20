@@ -18,8 +18,9 @@ async function main(): Promise<void> {
       }
     });
 
-    console.log('→ Loading /blog/reactive-color-svg (has known CSS vars)');
-    await page.goto('http://localhost:3000/blog/reactive-color-svg', { waitUntil: 'networkidle2' });
+    const slug = process.argv[2] || 'reactive-color-svg';
+    console.log(`→ Loading /blog/${slug}`);
+    await page.goto(`http://localhost:3000/blog/${slug}`, { waitUntil: 'networkidle2' });
 
     await new Promise((r) => setTimeout(r, 2500));
 

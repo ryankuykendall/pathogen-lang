@@ -76,6 +76,15 @@ export function buildSvg(params: BuildSvgParams, svgOptions: SvgOptions = {}): s
       defaultStrokeWidth: svgOptions.defaultStrokeWidth,
       useImageGradients: true,
       gpuGradientUrls: params.gpuGradientUrls,
+      // Emit the <script id="pathogen-metadata"> JSON block. BBWP is the
+      // GPU render path for compile-samples and blog BBWPs, both of which
+      // need the inspector metadata downstream (mini-workspace reads it
+      // for Layers / Palette / CSSVars panels). Without this, every
+      // GPU-rendered blog sample produced an inspector that said
+      // "No layers / No colors / No CSS variables" — the blog SVG had
+      // gradients and CSS vars, but the metadata script was missing so
+      // the inspector had nothing to populate from.
+      includeMetadata: true,
     },
   );
 
