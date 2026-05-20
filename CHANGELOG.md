@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **VS Code.** TextMate grammar adds `ViewBox` to the keyword token list. The `viewbox` and `newfile` snippets emit the `define ViewBox(...)` form instead of the old `// viewBox=...` comment header.
 - **`scripts/migrate-viewbox.ts`** + `npm run migrate:viewbox:dev` / `migrate:viewbox:prod`. Idempotent migration: iterates every `workspace:*` KV record, parses the code with `parseLezer` to detect any existing `ViewBoxDefinition` (AST-walked, not regex'd, so comment / template-literal mentions don't fool the skip check), and prepends `define ViewBox(0, 0, ${w}, ${h});` using `preferences.width`/`height` (default 200/200) when absent. Sets a `_viewboxMigratedAt` marker. Re-reads before write to skip concurrent autosaves. Supports `--dry-run`; requires `--confirm` for `--env=prod`.
 
+#### Rename workspace from the overflow menu
+
+- **New "Rename workspace" action** in the workspace breadcrumb overflow menu. Owner-only (`currentUser.id === workspaceOwnerId`); appears just under "Format Document". Opens a centered card dialog with Name and Description fields, validation matching the new-workspace form (name required, ≤ 100 chars; description ≤ 500 chars), and inline error display.
+- **Save flow** calls `workspaceApi.update(id, { name, description })`, updates the store (`workspaceName`, `workspaceDescription`, `currentFileName`, `workspaceUpdatedAt`), syncs the matching entry in the workspaces list, refreshes the URL slug via `history.replaceState`, and closes. Errors surface inside the modal without dismissing the entered values.
+- **Shared `updateWorkspaceSlugUrl(id, slug)`** util extracted from `workspace-view.updateUrlWithSlug` so both the workspace loader and the rename modal use the same path.
+- **Storybook entry** for `edit-workspace-metadata-modal` under the Shared category with default, empty, and long-description stories. New `mi-edit` icon added to the material-icons sprite.
+
 ### Changed
 
 - **Workspace canvas size is no longer user-editable in the playground.** The W/H number inputs are gone from the workspace footer (replaced with a read-only viewBox display), the new-workspace dialog (no longer asks for canvas size on create), and the preferences page (`Canvas Size` section removed). `store.preferences` no longer carries `width`/`height`; the new-workspace boilerplate is `define ViewBox(0, 0, 200, 200);` followed by a `define default PathLayer('main-path-layer') ${ ... };` block. The footer's viewBox display updates live from `result.viewBox` after each compile.
