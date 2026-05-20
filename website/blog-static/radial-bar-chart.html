@@ -2062,6 +2062,20 @@ g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
     </article>
   </main>
   <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
   <script src="/components/shared/theme-toggle.js" type="module"></script>
   <script src="/components/shared/account-menu.js" type="module"></script>
   <script src="/components/shared/auth-modal.js" type="module"></script>
