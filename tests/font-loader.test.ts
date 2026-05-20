@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   extractFontReferences,
   extractFontUrlFromGoogleFontsCss,
+  extractUnknownFontDirectiveFamilies,
   fontBinariesToCss,
   resolveFontBinaries,
   fetchFontBinary,
@@ -345,5 +346,66 @@ describe('fontBinariesToCss', () => {
     // 21845 * 4 = 87380 base64 chars for full groups, plus 4 (2 chars + "==")
     // for the padded tail = 87384 total.
     expect(b64Match![1].length).toBe(87384);
+  });
+});
+
+describe('extractUnknownFontDirectiveFamilies', () => {
+  it('returns nothing for a known @font directive', () => {
+    expect(extractUnknownFontDirectiveFamilies(`@font "Roboto" 400;`)).toEqual([]);
+  });
+
+  it('returns the family for an unknown @font directive', () => {
+    expect(extractUnknownFontDirectiveFamilies(`@font "MadeUpName" 400;`)).toEqual([
+      { family: 'MadeUpName', weight: 400 },
+    ]);
+  });
+
+  it('omits weight when the directive has none', () => {
+    expect(extractUnknownFontDirectiveFamilies(`@font "MadeUpName";`)).toEqual([
+      { family: 'MadeUpName' },
+    ]);
+  });
+
+  it('skips file-path @font directives — they are host-loaded, not Google Fonts', () => {
+    expect(
+      extractUnknownFontDirectiveFamilies(`@font "../../../../fonts/Raleway/Raleway-Bold.ttf"`),
+    ).toEqual([]);
+  });
+
+  it('ignores style-block unknowns — only @font is reported to avoid keystroke noise', () => {
+    expect(
+      extractUnknownFontDirectiveFamilies(`let s = \${ font-family: "PartialTypingHere"; };`),
+    ).toEqual([]);
+  });
+
+  it('returns all unknown families when multiple are present', () => {
+    const refs = extractUnknownFontDirectiveFamilies(`
+      @font "FirstFakeFont" 400;
+      @font "SecondFakeFont" 700;
+    `);
+    expect(refs).toEqual(
+      expect.arrayContaining([
+        { family: 'FirstFakeFont', weight: 400 },
+        { family: 'SecondFakeFont', weight: 700 },
+      ]),
+    );
+    expect(refs).toHaveLength(2);
+  });
+
+  it('returns just the unknowns in a mixed known+unknown source', () => {
+    const refs = extractUnknownFontDirectiveFamilies(`
+      @font "Roboto" 400;
+      @font "NotARealFont" 700;
+      let t = \${ font-family: "Inter"; };
+    `);
+    expect(refs).toEqual([{ family: 'NotARealFont', weight: 700 }]);
+  });
+
+  it('deduplicates repeated unknown directives at the same weight', () => {
+    const refs = extractUnknownFontDirectiveFamilies(`
+      @font "MadeUp" 400;
+      @font "MadeUp" 400;
+    `);
+    expect(refs).toEqual([{ family: 'MadeUp', weight: 400 }]);
   });
 });

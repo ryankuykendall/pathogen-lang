@@ -1,7 +1,11 @@
 // Compiler Worker Manager
 // Manages Web Worker for async compilation with fallback to sync
 
-import { extractFontReferences, resolveFontBinaries } from './font-loader.js';
+import {
+  extractFontReferences,
+  extractUnknownFontDirectiveFamilies,
+  resolveFontBinaries,
+} from './font-loader.js';
 import type { FontBinaryEntry, FontResolutionResult } from './font-loader.js';
 
 declare const window: Window & { PathogenLang?: Record<string, Function> };
@@ -203,17 +207,32 @@ async function fallbackSync(
  * surface them — see `compile` / `compileWithContext` below, which
  * promote them to a compilation error.
  *
- * If the source mentions `@font` but `extractFontReferences` finds zero
- * references, we record a synthetic failure so the user gets a clear
- * "your @font directive wasn't recognized" error instead of a much later,
- * misleading "no fonts were loaded" error from the evaluator. This catches
- * cases where a hidden character (NBSP, zero-width space) or otherwise
- * malformed directive prevents the regex from matching.
+ * Three failure modes are detected here without ever hitting the network:
+ *
+ * 1. **Unknown directive family**: `@font "MadeUp"` parses fine but the
+ *    family isn't in the curated Google Fonts list. We surface this as a
+ *    "Unknown Google Font: …" failure so the user sees feedback instead
+ *    of a silent drop.
+ * 2. **Malformed directive**: source mentions `@font` but neither
+ *    `extractFontReferences` nor `extractUnknownFontDirectiveFamilies`
+ *    matched (hidden NBSP / zero-width chars, missing quotes, etc.).
+ *    Surfaced as the legacy "not recognized" failure.
+ * 3. **Fetch failure**: a well-formed known family fails to resolve at
+ *    the CDN — handled inside `resolveFontBinaries`.
  */
 async function resolveFontsForSource(source: string): Promise<FontResolutionResult> {
   const refs = extractFontReferences(source);
+  const unknownDirectives = extractUnknownFontDirectiveFamilies(source);
 
-  if (refs.length === 0) {
+  const unknownFailures = unknownDirectives.map((u) => ({
+    family: u.family,
+    weight: u.weight ?? 0,
+    reason:
+      `Unknown Google Font: "${u.family}"${u.weight !== undefined ? ` ${u.weight}` : ''}. ` +
+      `Open the font picker (click the font-family value in the inspector) for the supported list.`,
+  }));
+
+  if (refs.length === 0 && unknownFailures.length === 0) {
     if (/@font\b/.test(source)) {
       const sample = (source.match(/@font[^\n]{0,80}/) ?? [''])[0].trim();
       return {
@@ -233,7 +252,15 @@ async function resolveFontsForSource(source: string): Promise<FontResolutionResu
     return { binaries: [], failures: [] };
   }
 
-  return resolveFontBinaries(refs);
+  if (refs.length === 0) {
+    return { binaries: [], failures: unknownFailures };
+  }
+
+  const resolved = await resolveFontBinaries(refs);
+  return {
+    binaries: resolved.binaries,
+    failures: [...unknownFailures, ...resolved.failures],
+  };
 }
 
 /**

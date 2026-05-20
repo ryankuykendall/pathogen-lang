@@ -257,6 +257,49 @@ export function extractFontReferences(source: string): { family: string; weight?
 }
 
 /**
+ * Extract families from `@font` directives that look well-formed (proper
+ * quotes, not a file path) but are NOT in the curated Google Fonts list.
+ *
+ * `extractFontReferences` silently drops these to avoid per-keystroke CDN
+ * requests as the font picker types. That's the right call for the fetch
+ * path, but it leaves a user who hand-types `@font "MadeUp" 400;` with no
+ * feedback at all. This helper lets the resolver surface those as compile
+ * failures with a clear message ("Unknown Google Font: …") while preserving
+ * the no-fetch property.
+ *
+ * Style-block `font-family:` values are deliberately excluded — they're the
+ * picker's live-typing target, and reporting each transient partial would
+ * fire an error on every keystroke. The picker is the authoritative source
+ * for style-block fonts; `@font` is the user's explicit assertion that
+ * deserves explicit feedback.
+ */
+export function extractUnknownFontDirectiveFamilies(
+  source: string,
+): { family: string; weight?: number }[] {
+  const seen: Map<string, { family: string; weight?: number }> = new Map();
+  const fontDirectiveRe = /@font\s+["']([^"']+)["']\s*(\d+)?/g;
+  let match;
+  while ((match = fontDirectiveRe.exec(source)) !== null) {
+    const family = match[1];
+    if (
+      family.includes('/') ||
+      family.includes('\\') ||
+      family.endsWith('.ttf') ||
+      family.endsWith('.otf') ||
+      family.endsWith('.woff') ||
+      family.endsWith('.woff2')
+    ) continue;
+    if (isKnownGoogleFont(family)) continue;
+    const weight = match[2] ? parseInt(match[2], 10) : undefined;
+    const key = `${family}:${weight ?? 0}`;
+    if (!seen.has(key)) {
+      seen.set(key, weight !== undefined ? { family, weight } : { family });
+    }
+  }
+  return Array.from(seen.values());
+}
+
+/**
  * Check if a font binary is already cached.
  */
 export function isFontCached(family: string, weight: number = 400): boolean {
