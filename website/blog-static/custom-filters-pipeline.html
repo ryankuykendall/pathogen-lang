@@ -261,7 +261,7 @@ code.hljs {
 </ol>
 <h2>Five primitives, one named value</h2>
 <p><mini-workspace code-open caption="Five SVG filter primitives behind a single named value. A NoiseFilter you can reuse across layers, log, override by name, and pass to any layer's filter: style property.">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Hero: one line of Pathogen — five SVG filter primitives in the output.
 
 let bg = PathLayer('bg') ${
@@ -325,7 +325,7 @@ define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class=
 <h2>NoiseFilter — five presets, one shape</h2>
 <p><code>NoiseFilter</code> ships with five style presets. The primitive chain is the same across all of them; what changes is which <code>feTurbulence</code> type runs, which blend mode mixes the result back into the source, and where the defaults for <code>scale</code>, <code>octaves</code>, <code>amount</code>, <code>monochrome</code>, <code>contrast</code>, and <code>stitch</code> land.</p>
 <p><mini-workspace code-open caption="The five NoiseFilterStyle presets applied to identical discs. Same shape, same fill. Different chain defaults.">
-  <code>// viewBox="0 0 720 240"
+  <code>define ViewBox(0, 0, 720, 240);
 // All five NoiseFilterStyle presets applied to the same disc, side by side.
 
 let bg = PathLayer('bg') ${
@@ -455,7 +455,7 @@ l5.apply {
 <h3>scale — the noise frequency knob</h3>
 <p><code>scale</code> maps directly to SVG&#39;s <code>baseFrequency</code>. Higher number means a finer, denser pattern; lower number means larger, coarser features. The <code>NoiseFilterScale</code> enum packages the three common values (<code>Coarse</code>, <code>Medium</code>, <code>Fine</code> → 0.3, 1.0, 5.0) so they&#39;re IDE-autocompleted; for anything in between, assign a finite positive number directly.</p>
 <p><mini-workspace code-open caption="Same disc, same Grain preset. Only scale changes — from a coarse 0.3, through Medium (1.0), to Fine (5.0).">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — scale sweep from coarse to fine.
 // Each disc uses the same preset, only `scale` changes.
 
@@ -578,7 +578,7 @@ lh.apply {
 <h3>amount — visible intensity</h3>
 <p><code>amount</code> is a 0–1 multiplier on the alpha of the noise pass before it blends with the source. 0 disables the effect entirely; 1 hits full strength. It interacts predictably with <code>blend</code>: at <code>amount = 0.5</code> you see roughly half the contribution of the chosen blend mode.</p>
 <p><mini-workspace code-open caption="Grain at four amounts. The chain stays the same; the alpha ramp does the heavy lifting.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — amount sweep. amount = 0 is no effect; 1 is full strength.
 
 let bg = PathLayer('bg') ${
@@ -690,7 +690,7 @@ l4.apply {
 <h3>monochrome — strip color variance</h3>
 <p>The <code>feTurbulence</code> primitive produces RGB-valued noise by default — different intensities per channel, which reads as faintly colored static. Setting <code>monochrome = true</code> inserts an <code>feColorMatrix</code> step that maps the noise to a single luminance channel, so the grain reads as pure light-and-dark texture independent of the source fill.</p>
 <p><mini-workspace code-open caption="Same Speckle preset, same seed. monochrome = true (left) reads as flat texture; false (right) preserves the per-channel color variance.">
-  <code>// viewBox="0 0 400 220"
+  <code>define ViewBox(0, 0, 400, 220);
 // NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
 
 let bg = PathLayer('bg') ${
@@ -759,7 +759,7 @@ l2.apply {
 <h2>Pairing filters with gradients</h2>
 <p>Filters apply on top of whatever the layer&#39;s <code>fill</code> resolved to. That includes Pathogen&#39;s gradient values, which means a noisy gradient is just a layer with a gradient fill and a <code>NoiseFilter</code> filter — no separate plumbing.</p>
 <p><mini-workspace code-open caption="LinearGradient fill plus Grain filter. The grain rides the gradient — and the Gradient preset is tuned for exactly this case, pumping contrast on the noise so it reads through saturated stops.">
-  <code>// viewBox="0 0 400 240"
+  <code>define ViewBox(0, 0, 400, 240);
 // LinearGradient fill + Grain filter on the same layer.
 // One declarative pairing — the grain rides the gradient.
 
@@ -793,7 +793,7 @@ panel.apply {
 <h2>One filter, many layers — one <code>&lt;filter&gt;</code> def</h2>
 <p>Because a <code>NoiseFilter</code> is a value, you can assign it to a <code>let</code> once and reference it from as many layers as you want. The output SVG contains exactly one <code>&lt;filter&gt;</code> element regardless of reference count — every layer points at the same <code>url(#pathogen-noise-1)</code>.</p>
 <p><mini-workspace >
-  <code>// viewBox="0 0 600 200"
+  <code>define ViewBox(0, 0, 600, 200);
 // One filter, six shapes — one &lt;filter&gt; def in the output SVG.
 
 let bg = PathLayer('bg') ${
@@ -867,7 +867,7 @@ c6.apply {
 <h2>Introspection: filter values you can log and pass around</h2>
 <p>Read-side property access is a small thing on the surface and a big thing in practice. You can <code>log()</code> a filter&#39;s id and seed for debugging, branch on its style in downstream logic, or compose a filter value into another expression.</p>
 <p><mini-workspace code-open caption="Open the console panel: every configurable property is also readable. The seed is auto-derived from the filter's id; set it explicitly to lock the noise pattern across edits.">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Filter values support read-side property access — useful for debug,
 // computation, and conditional logic. Open the console to see the logs.
 

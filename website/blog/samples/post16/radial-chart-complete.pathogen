@@ -131,7 +131,7 @@ for ([d, i] in data) {
     catGroup.append(barLayer);
     barLayer.apply {
       M cx cy
-      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR)
+      radialWedge(barInnerR, outerR, sliceFrom, sliceTo, cornerR);
     }
   }
 
@@ -144,7 +144,7 @@ for ([d, i] in data) {
     catGroup.append(topLayer);
     topLayer.apply {
       M cx cy
-      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR)
+      radialWedge(barInnerR, topOuterR, topFrom, topTo, cornerR);
     }
   }
 
@@ -312,11 +312,11 @@ let legRedWedges = PathLayer('leg-red') ${ fill: legRedColor; stroke: bgColor; s
 layer('legend').append(legRedWedges);
 legRedWedges.apply {
   M legOX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legOX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for red
@@ -337,11 +337,11 @@ let legDarkWedges = PathLayer('leg-dark') ${ fill: legDarkColor; stroke: bgColor
 layer('legend').append(legDarkWedges);
 legDarkWedges.apply {
   M legDarkX legOY
-  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR)
+  radialWedge(legBarStart, 25, legA1, calc(legA1 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR)
+  radialWedge(legBarStart, 38, legA2, calc(legA2 + legSweep), legCR);
   M legDarkX legOY
-  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR)
+  radialWedge(legBarStart, 60, legA3, calc(legA3 + legSweep), legCR);
 }
 
 // Right-half semicircles + center for dark

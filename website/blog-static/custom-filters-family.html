@@ -261,7 +261,7 @@ code.hljs {
 </ol>
 <h2>The family at a glance</h2>
 <p><mini-workspace code-open caption="Six filters, one shape per cell. Each is a single language-level value: NoiseFilter, GlowFilter, EmbossFilter, ElevationShadowFilter, InnerShadowFilter, PixelateFilter.">
-  <code>// viewBox="0 0 600 400"
+  <code>define ViewBox(0, 0, 600, 400);
 // Six filters, one shape per cell — the family portrait.
 
 let bg = PathLayer('bg') ${
@@ -422,7 +422,7 @@ l6.apply {
 <h2>GlowFilter — two glow modes in one value</h2>
 <p>CSS <code>drop-shadow()</code> gives you one kind of glow: a colored outer halo. Pathogen&#39;s <code>GlowFilter</code> gives you two — <code>GlowMode.Outer</code> and <code>GlowMode.Inner</code> — packed into one filter value that you can flip with a single property write.</p>
 <p><mini-workspace code-open caption="Outer halo and inner edge light. Same constructor, same color, same radius — only the mode property differs.">
-  <code>// viewBox="0 0 400 220"
+  <code>define ViewBox(0, 0, 400, 220);
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
 let bg = PathLayer('bg') ${
@@ -493,7 +493,7 @@ l2.apply {
 <p>The two modes share most of their plumbing — both use <code>feGaussianBlur</code> against <code>SourceAlpha</code>, both apply <code>feFlood</code> for the color, both composite into a <code>feMerge</code> at the end. The difference is one composite operator: outer mode merges the blurred silhouette underneath the source; inner mode inverts the blur against the source alpha so the glow rides the inside edge instead.</p>
 <p>A <code>spread</code> parameter is also available in both modes — it dilates the silhouette in Outer mode (fattening the halo before the blur) and erodes it in Inner mode (pushing the inner light further inset). The two knobs that do the most visible work in either mode are <code>radius</code> and <code>opacity</code>.</p>
 <p><mini-workspace code-open caption="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — radius sweep. Larger radius = wider, softer halo.
 
 let bg = PathLayer('bg') ${
@@ -610,7 +610,7 @@ l4.apply {
   <img src="/blog/samples/post26/03-glow-radius-sweep.svg" alt="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo." loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — opacity sweep at constant radius.
 
 let bg = PathLayer('bg') ${
@@ -742,7 +742,7 @@ l4.apply {
 </code></pre><h3>angle — the light direction</h3>
 <p>The most visible knob. Sweeping <code>angle</code> rotates the simulated light around the surface; the highlight follows.</p>
 <p><mini-workspace code-open caption="Six light azimuths around the clock. The highlight tracks the light source.">
-  <code>// viewBox="0 0 720 240"
+  <code>define ViewBox(0, 0, 720, 240);
 // EmbossFilter — light azimuth sweep. The highlight tracks the light source.
 
 let bg = PathLayer('bg') ${
@@ -905,7 +905,7 @@ l6.apply {
 <h3>depth — the bevel surface scale</h3>
 <p><code>depth</code> maps to <code>surfaceScale</code> on <code>feSpecularLighting</code> — the perceived height of the embossed surface. Higher values produce a more pronounced bevel.</p>
 <p><mini-workspace code-open caption="depth = 1 reads as a flat panel with a hint of light. depth = 8 reads as a dramatically raised tile.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
 let bg = PathLayer('bg') ${
@@ -1020,7 +1020,7 @@ l4.apply {
 <h3>strength — the highlight brightness</h3>
 <p><code>strength</code> maps to <code>specularConstant</code>. It controls how much of the simulated light reaches the surface — higher values brighten the highlight, lower values dial it down toward a flat appearance.</p>
 <p><mini-workspace code-open caption="Same angle and depth. strength = 0.3 is a barely-lit surface; 1.5 is dramatic studio lighting.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
 let bg = PathLayer('bg') ${
@@ -1138,7 +1138,7 @@ l4.apply {
 <p>You can&#39;t express that in CSS as <code>drop-shadow(...)</code> because <code>drop-shadow()</code> is one layer. You&#39;d write three <code>filter: drop-shadow(...) drop-shadow(...) drop-shadow(...)</code> and hand-tune the offset/blur/opacity for each layer. Three times the typing, three times the chance of mistuning the layers, and zero introspection on the result.</p>
 <p><code>ElevationShadowFilter</code> gives you one knob — <code>elevation</code> — and does the layering for you.</p>
 <p><mini-workspace code-open caption="One value, six elevations. elevation = 0 emits no shadow; elevation = 24 produces a deeply lifted floating element.">
-  <code>// viewBox="0 0 720 240"
+  <code>define ViewBox(0, 0, 720, 240);
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
@@ -1321,7 +1321,7 @@ l24.apply {
 <h3>tightness — scaling the ratios</h3>
 <p>For finer control over the shadow character at a fixed elevation, the <code>tightness</code> property scales the per-layer distance and blur ratios. <code>0.5</code> reads as a tighter, crisper depth; <code>2.0</code> reads as a wider, hazier cast.</p>
 <p><mini-workspace code-open caption="Same elevation (6), three tightness values. The shadow widens and softens as tightness grows.">
-  <code>// viewBox="0 0 540 240"
+  <code>define ViewBox(0, 0, 540, 240);
 // ElevationShadowFilter — tightness sweep at fixed elevation=6.
 // 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
 
@@ -1425,7 +1425,7 @@ l3.apply {
 <h3>Why three layers beats one</h3>
 <p>Side by side: the left card uses a single CSS <code>drop-shadow(0 6px 12px black)</code> at 40% opacity. The right card uses <code>ElevationShadowFilter</code> with <code>elevation = 6</code>. Same approximate &quot;depth budget&quot; — the elevation knob and the drop-shadow params land in the same neighborhood — but the three-layer chain reads as something hovering above the page rather than something with a shadow under it.</p>
 <p><mini-workspace code-open caption="Single CSS drop-shadow on the left; three-layer ElevationShadowFilter on the right. The contact zone, falloff, and outer haze tell different stories.">
-  <code>// viewBox="0 0 400 240"
+  <code>define ViewBox(0, 0, 400, 240);
 // Same depth budget, two ways to spend it.
 // Left: native CSS `drop-shadow(0 6px 12px black)` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
@@ -1520,7 +1520,7 @@ l2b.apply {
 <p>CSS <code>drop-shadow()</code> is outer-only. There is no <code>drop-shadow(... inset)</code> keyword and no other CSS filter function that produces an inset shadow. Pressed buttons, recessed wells, engraved-text effects, carved-look artwork — all of these reach for <code>box-shadow: inset ...</code>, which works on box backgrounds but not on SVG paths.</p>
 <p><code>InnerShadowFilter</code> is the capability that closes that gap.</p>
 <p><mini-workspace code-open caption="Four blur radii. blur = 2 reads as a hard-edged debossed groove; blur = 16 reads as a soft recessed well.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
 
 let bg = PathLayer('bg') ${
@@ -1656,7 +1656,7 @@ l4.apply {
 <h3>The offset compass</h3>
 <p><code>offsetX</code> and <code>offsetY</code> together control where the shadow falls <em>inside</em> the shape — and therefore where the perceived light source sits <em>outside</em> it. A positive <code>offsetY</code> (the default of <code>2</code>) pushes the shadow down, which reads as light coming from above. Negative <code>offsetY</code> flips that. Diagonal offsets simulate raking light.</p>
 <p><mini-workspace code-open caption="Eight offset directions on the same disc. Each label is the (offsetX, offsetY) pair; the shadow lands opposite the implied light source.">
-  <code>// viewBox="0 0 480 480"
+  <code>define ViewBox(0, 0, 480, 480);
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
@@ -1911,7 +1911,7 @@ caption.apply {
 </code></pre><h3>Block size sweep</h3>
 <p>Three positional values, four block sizes. Larger <code>width</code> produces coarser pixelation.</p>
 <p><mini-workspace code-open caption="PixelateFilter(4, 4, 2) through PixelateFilter(32, 32, 16). radius = width / 2 keeps blocks touching with no gap or overlap.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
 
 let bg = PathLayer('bg') ${
@@ -2021,7 +2021,7 @@ lcap.apply {
 <h3>Radius regime</h3>
 <p>At fixed <code>width</code> and <code>height</code>, <code>radius</code> controls three visually distinct regimes:</p>
 <p><mini-workspace code-open caption="Width = height = 16 in all three. Radius below width/2 leaves gaps; equal to width/2 makes blocks touch; above width/2 makes them overlap.">
-  <code>// viewBox="0 0 540 240"
+  <code>define ViewBox(0, 0, 540, 240);
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius &lt; 8: gaps between blocks. radius = 8: blocks touch. radius &gt; 8: overlap.
 
@@ -2136,7 +2136,7 @@ l3b.apply {
 <p>A single <code>filter:</code> declaration in a Pathogen style block accepts <strong>either</strong> a custom filter value <strong>or</strong> a chain of native CSS filter functions — not both at once. That&#39;s the v1 limit on filter chaining.</p>
 <p>The composition workaround is straightforward and ergonomic: nest the layer in a <a href="/docs/layers"><code>GroupLayer</code></a> carrying one filter, and put the second filter on the inner layer.</p>
 <p><mini-workspace code-open caption="A card raised above its surface (ElevationShadow on the outer GroupLayer) and visually recessed on its top edge (InnerShadow on the inner PathLayer).">
-  <code>// viewBox="0 0 400 240"
+  <code>define ViewBox(0, 0, 400, 240);
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 

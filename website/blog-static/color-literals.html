@@ -255,7 +255,7 @@ code.hljs {
 <p>When users changed colors via the playground&#39;s color picker on <code>Color(&#39;#cc0000&#39;)</code>, the picker stripped the quotes — producing <code>Color(#cc0000)</code>, which failed to compile. Rather than just fixing the quoting, we asked: why require quotes at all?</p>
 <p>The result is <strong>color literals</strong> — bare hex codes and CSS color functions that are first-class expressions. Writing colors now feels like writing CSS, not calling an API. No <code>Color()</code> wrapper, no string quoting — just <code>#cc0000</code> directly in your code. Everything is backwards-compatible; existing <code>Color()</code> calls continue to work unchanged.</p>
 <p><mini-workspace caption="Before and After — Color('#cc0000') vs #cc0000 produce identical output">
-  <code>// viewBox="0 0 540 280"
+  <code>define ViewBox(0, 0, 540, 280);
 // Before/After — Color('#cc0000') vs #cc0000
 // Shows that both produce identical output, but the literal is cleaner
 
@@ -482,7 +482,7 @@ equals.apply {
 <span class="hljs-keyword">let</span> shifted = (#0066ff).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
 </code></pre><p>From a single hex literal you can build full color palettes — lighten, darken, shift hue, adjust saturation, set alpha. The demo below starts from <code>#0066ff</code> and derives an entire palette using method chaining and the percent suffix:</p>
 <p><mini-workspace code-open caption="Lightness, hue, and saturation ramps derived from a single hex literal">
-  <code>// viewBox="0 0 520 320"
+  <code>define ViewBox(0, 0, 520, 320);
 // Hex Palette — Building a color palette from a single hex literal
 // Demonstrates method chaining on hex color literals
 
@@ -686,7 +686,7 @@ base_line.apply {
 <span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
 </code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
 <p><mini-workspace code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
-  <code>// viewBox="0 0 560 340"
+  <code>define ViewBox(0, 0, 560, 340);
 // Color Spaces — The same red expressed in 7 CSS color function syntaxes
 // All produce the same ColorValue internally
 
@@ -824,7 +824,7 @@ arrow_line.apply {
 </code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
 <p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
 <p><mini-workspace code-open caption="Tint, shade, and alpha scales using the percent suffix">
-  <code>// viewBox="0 0 520 300"
+  <code>define ViewBox(0, 0, 520, 300);
 // Percent Tints — Using % suffix with color methods for tint/shade scales
 // 20% becomes 0.2, reads naturally: "lighten by 20%"
 
@@ -1012,7 +1012,7 @@ base_ind.apply {
 </code></pre><p>Change <code>--base-color</code> and every derived value recalculates — lighten, complement, triadic harmony, everything. The compiler emits <code>@property</code> declarations so the browser knows these are interpolatable <code>&lt;color&gt;</code> values.</p>
 <p>The first demo below shows a full reactive palette — lightness ramp, color transformations, and triadic harmony, all driven by a single CSS variable. Use the color picker to change <code>--base-color</code> and watch every swatch update:</p>
 <p><mini-workspace code-open caption="Reactive palette — change --base-color to update all swatches">
-  <code>// viewBox="0 0 520 340"
+  <code>define ViewBox(0, 0, 520, 340);
 // Reactive Palette — CSSVar base color + hex literals + % suffix
 // Change --base-color in the playground to recolor every swatch
 
@@ -1189,7 +1189,7 @@ code_kw.apply {
 </mini-workspace></p>
 <p>The second demo shows a tint/shade scale — seven lighten steps and seven darken steps from a single reactive base:</p>
 <p><mini-workspace code-open caption="Reactive tint/shade scale — change --tint-color to update every swatch">
-  <code>// viewBox="0 0 520 280"
+  <code>define ViewBox(0, 0, 520, 280);
 // Reactive Tints — CSSVar + percent suffix for tint/shade scales
 // Change --tint-color to update every row
 

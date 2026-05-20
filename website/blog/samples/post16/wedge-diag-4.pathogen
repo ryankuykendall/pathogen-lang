@@ -74,7 +74,7 @@ for ([oR, ri] in outerRs) {
     // 1. Rounded wedge (lightened)
     wedges.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, cornerR)
+      radialWedge(innerR, oR, fromA, toA, cornerR);
     }
 
     // 2. XOR between sharp and rounded
@@ -86,7 +86,7 @@ for ([oR, ri] in outerRs) {
     // 3. Sharp outline (dotted green)
     outlines.apply {
       M cx cy
-      radialWedge(innerR, oR, fromA, toA, 0)
+      radialWedge(innerR, oR, fromA, toA, 0);
     }
 
     // 4. Guide circles (on top)

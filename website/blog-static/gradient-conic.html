@@ -268,7 +268,7 @@ wheel.<span class="hljs-property">interpolation</span> = <span class="hljs-strin
 </code></pre><p>Stops at 0 and 1 should match to avoid a hard seam at the join. With OKLCH interpolation enabled, the transitions stay vibrant across the entire hue wheel — no desaturated dead zones between complementary colors.</p>
 <p>The color wheel below uses <code>innerRadius</code> to create a donut effect and <code>.inherit()</code> to create a smaller inner disc with a different fill mode. One gradient definition, two visual treatments.</p>
 <p><mini-workspace code-open caption="Full 360-degree sweep with innerRadius donut and OKLCH interpolation">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Color Wheel — Classic 360° Conic Gradient
 // The "hello world" of conic gradients: a full rainbow sweep
 
@@ -347,7 +347,7 @@ gauge.<span class="hljs-property">innerRadius</span> = <span class="hljs-number"
 gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
 </code></pre><p>The <code>from</code> and <code>to</code> values use degree syntax. Values above 360 are valid — <code>405deg</code> is equivalent to <code>45deg</code> but makes the intent clear: a 270-degree arc that wraps past the top. The dashboard below shows three gauges with different angular ranges and inner radii.</p>
 <p><mini-workspace code-open caption="Three gauges using partial sweeps — 270-degree and 180-degree arcs">
-  <code>// viewBox="0 0 660 340"
+  <code>define ViewBox(0, 0, 660, 340);
 // Gauge Dashboard — Partial Sweeps + innerRadius
 // Three gauges using conic gradients as speedometer-style UI
 
@@ -592,7 +592,7 @@ scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_val
 };
 grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
 </code></pre><p><mini-workspace caption="Same four stops — clockwise vs counter-clockwise">
-  <code>// viewBox="0 0 500 300"
+  <code>define ViewBox(0, 0, 500, 300);
 // Direction Comparison — CW vs CCW
 // Same gradient, two directions: showing how direction reverses color flow
 
@@ -701,7 +701,7 @@ scene.append(bg, left, right, labels, note);
 grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
 grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;
 </code></pre><p><mini-workspace code-open caption="Four innerFill modes: transparent, transparent-blend, center, and custom color">
-  <code>// viewBox="0 0 520 530"
+  <code>define ViewBox(0, 0, 520, 530);
 // Inner Radius &amp; Fill Modes — 2×2 Grid
 // The 4 innerFill modes with the same base gradient
 
@@ -839,7 +839,7 @@ scene.append(bg, top_row, bottom_row, labels, desc, title);
 <p>OKLCH interpolation matters even more on conic gradients than on linear ones. A full-sweep color wheel interpolated in sRGB produces muddy bands wherever complementary colors meet. In OKLCH, the transitions trace a perceptually uniform arc through the hue wheel, maintaining chroma and lightness throughout.</p>
 <p>The comparison below renders the same color pairs as both sRGB and OKLCH conic gradients. The sRGB versions show visible desaturation at the midpoints. The OKLCH versions maintain vivid color throughout the full rotation.</p>
 <p><mini-workspace caption="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs">
-  <code>// viewBox="0 0 600 540"
+  <code>define ViewBox(0, 0, 600, 540);
 // OKLCH vs sRGB Interpolation on Conic Gradients
 // Perceptual difference: muddy sRGB midpoints vs vibrant OKLCH transitions
 

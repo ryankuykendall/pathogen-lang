@@ -62,7 +62,7 @@ let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; strok
 layer('diagram').append(barsAll);
 barsAll.apply {
   M cx cy
-  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+  radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
 }
 
 // "Top 100" bar overlaid — Fantasy 7.6%, 50% theta, centered
@@ -73,7 +73,7 @@ let barsTop = PathLayer('bars-top') ${ fill: topBarColor; stroke: bgColor; strok
 layer('diagram').append(barsTop);
 barsTop.apply {
   M cx cy
-  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+  radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
 }
 
 // Percentage labels — outside each bar tip with dots + leaders

@@ -279,7 +279,7 @@ code.hljs {
 <p><a href="/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
 </code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
-  <code>// viewBox="0 0 580 480"
+  <code>define ViewBox(0, 0, 580, 480);
 // Boolean operations — union, difference, intersection, xor
 // Each quadrant uses a GroupLayer with translate to avoid compounding projections
 
@@ -657,7 +657,7 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 </code></pre><p>This creates a union of two overlapping squares, then rounds all the corners with a 5px fillet. The composability is the whole point — each operation produces a value that feeds into the next.</p>
 <p>The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a PathBlock that feeds into the next.</p>
 <p><mini-workspace caption="Chaining pipeline — overlapping squares → union → union + fillet(8)">
-  <code>// viewBox="0 0 520 280"
+  <code>define ViewBox(0, 0, 520, 280);
 // Boolean + fillet chaining — compose operations
 // Each step uses a GroupLayer with translate to avoid compounding projections
 
@@ -891,7 +891,7 @@ subtitle.apply {
 drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
 </code></pre><p>The demo below shows two practical examples: a plate with four drilled holes (chained <code>.difference()</code> calls), and a badge shape created by unioning a star with a circle.</p>
 <p><mini-workspace code-open caption="Standard library shapes — drilled plate and star-circle badge">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Standard library shapes with boolean operations
 
 let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };

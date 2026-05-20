@@ -281,7 +281,7 @@ code.hljs {
 </tbody></table>
 <p>The grid fills as many complete cells as fit: <code>floor(width / cellSize)</code> columns and <code>floor(height / cellSize)</code> rows. Extra space is ignored.</p>
 <p><mini-workspace code-open caption="squareGrid — four pattern types with reactive colors">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Square grid — all four pattern types
 
 let gridColor = Color(CSSVar('--grid-color', #4488ff));
@@ -348,7 +348,7 @@ labels.apply {
 </code></pre><p>Same parameters as <code>squareGrid</code>, but <code>cellSize</code> is the triangle <strong>height</strong> (altitude of the equilateral triangle). The side length is derived: <code>side = 2 × cellSize / √3</code>. Triangles alternate between point-up and point-down orientations, with odd rows offset by half a side length to form a seamless tessellation.</p>
 <p>The intersection marks on triangle grids are edge-aligned — six arms at 60° intervals (three bidirectional lines), matching the grid&#39;s natural symmetry where six edges meet at each interior vertex.</p>
 <p><mini-workspace code-open caption="triangleGrid — equilateral triangle tessellation in four pattern types">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Triangle grid — all four pattern types
 
 let gridColor = Color(CSSVar('--grid-color', #44cc88));
@@ -434,7 +434,7 @@ labels.apply {
 </tbody></table>
 <p>Intersection marks on hex grids are 3-arm radial marks — matching the three edges that meet at each vertex.</p>
 <p><mini-workspace code-open caption="hexagonGrid — flat-top hexagons in four pattern types">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Hexagon grid — all four pattern types (flat-top)
 
 let gridColor = Color(CSSVar('--grid-color', #ff6688));
@@ -499,7 +499,7 @@ labels.apply {
 <h3>Orientation Comparison</h3>
 <p>The two orientations produce visually distinct tessellations from the same cell size:</p>
 <p><mini-workspace code-open caption="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Hexagon orientations — flat-top (Edge) vs pointy-top (Vertex)
 
 let gridColor = Color(CSSVar('--grid-color', #cc88ff));
@@ -580,7 +580,7 @@ labels.apply {
 <h2>Putting It Together</h2>
 <p>Grid functions are most useful as background textures layered behind other geometry. Combine them with <a href="/docs#layers-defining-layers">layer transforms</a> for rotation, and use <code>Color</code> methods to derive palette variations from a single reactive base color:</p>
 <p><mini-workspace code-open caption="Layered composition — rotated partial grid, hex outline, and triangle intersections">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Practical composition — rotated grid background with foreground geometry
 
 let gridColor = Color(CSSVar('--grid-color', #5577aa));

@@ -321,8 +321,7 @@ code.hljs {
 <h2>Architecture: Language services as a shared layer</h2>
 <p>Rather than building VS Code-specific intelligence, we built a <strong>language services layer</strong> that&#39;s editor-agnostic. It exports pure functions that take a <code>TextDocument</code> interface and return plain objects — no VS Code types, no Node.js dependencies, no editor assumptions:</p>
 <p><mini-workspace caption="The shared language services architecture — one intelligence layer, three consumers.">
-  <code>// viewBox="0 0 560 320"
-
+  <code>define ViewBox(0, 0, 560, 320);
 @font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
 
 let bgColor = Color('#f8f9fa');

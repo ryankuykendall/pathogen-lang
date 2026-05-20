@@ -264,7 +264,7 @@ code.hljs {
 mesh.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>A 2x2 grid is the simplest case — four corners, each a different color, with smooth blending across the surface. The result looks like what you might get from a CSS four-corner gradient, except it is rendered as a high-resolution image embedded in SVG.</p>
 <p><mini-workspace code-open caption="2x2 mesh — four corner colors with bilinear OKLCH interpolation">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Mesh Basics — 2×2 Corner Colors
 // The simplest mesh gradient: four corners, bilinear interpolation
 
@@ -331,7 +331,7 @@ scene.append(bg, patch, labels, title);
   g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">0</span>, <span class="hljs-number">20</span>);    <span class="hljs-comment">// warp top edge</span>
 };
 </code></pre><p><mini-workspace caption="Uniform grid vs deformed grid — same colors, different point positions">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Mesh Deformation — Translated Control Points
 // Side-by-side: uniform grid vs deformed grid with .translate()
 
@@ -449,7 +449,7 @@ nebula.<span class="hljs-property">falloff</span> = <span class="hljs-number">2.
 nebula.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>The <code>g.point(x, y, color)</code> method places a color source at absolute coordinates. Six points with OKLCH interpolation produce a smooth nebula-like color field. The small dots in the demo below mark where each color point is placed.</p>
 <p><mini-workspace code-open caption="Six color points blended with inverse-distance weighting">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Freeform Scatter — Inverse-Distance Blending
 // Color points placed freely; IDW interpolation creates smooth fields
 
@@ -530,7 +530,7 @@ scene.append(bg, field, dots, point_labels, title);
 <li><strong>falloff = 4.0</strong>: Tight halos. Each point&#39;s color is concentrated in a small region, with rapid transitions between adjacent points.</li>
 </ul>
 <p><mini-workspace code-open caption="Same five points at three falloff exponents: 1.0, 2.0, 4.0">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Falloff Comparison — Same Points, Different Exponents
 // How the falloff parameter controls color blending sharpness
 
@@ -630,7 +630,7 @@ scene.append(bg, f1, f2, f3, labels, desc, title);
 <p>The two gradient types serve different design needs. MeshGradient excels at structured, predictable blending — backgrounds, UI surfaces, and any case where you want precise control over the transition boundaries. FreeformGradient is better for organic, painterly effects — glows, nebulae, abstract art.</p>
 <p>The comparison below places the same nine colors using both methods. The mesh version (left) uses a 3x3 grid with bilinear interpolation, producing clean diagonal transitions. The freeform version (right) uses the same colors at similar positions with IDW blending, producing rounder, more diffuse regions.</p>
 <p><mini-workspace code-open caption="Same 9 colors — bilinear grid vs inverse-distance scatter">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Mesh vs Freeform — Side-by-Side Comparison
 // Same palette, two interpolation models: grid vs scatter
 

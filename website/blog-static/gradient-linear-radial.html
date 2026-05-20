@@ -266,7 +266,7 @@ code.hljs {
 sky_layer.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
 <p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Linear Gradient Basics — Layered Landscape
 // Demonstrates vertical, diagonal, and horizontal linear gradients
 
@@ -340,7 +340,7 @@ scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 <p>The <code>x1, y1 → x2, y2</code> coordinates control the gradient&#39;s angle. A vertical gradient uses <code>(0, 0, 0, 1)</code>. A horizontal one uses <code>(0, 0, 1, 0)</code>. Diagonals use any combination. Reversing the coordinates reverses the color flow — <code>(1, 0, 0, 0)</code> runs right to left.</p>
 <p>There is no <code>angle</code> property. The two-point model is more flexible: you can offset the start or end to create gradients that begin or end partway through an element, or run along arbitrary diagonals. The six swatches below show the same three color stops at six different directions.</p>
 <p><mini-workspace caption="Same stops, six directions — the two-point model controls angle">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Angle Fan — Linear Gradient Direction Showcase
 // Same gradient stops at 6 different angles, arranged in a fan
 
@@ -456,7 +456,7 @@ fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 };
 </code></pre><p>Radial gradients are natural fits for glows, spotlights, and vignettes. The scene below composes four radial gradients — a nebula background, two star types, and a planet with an off-center highlight — to build a cosmic scene entirely from radial falloffs and transparent stops.</p>
 <p><mini-workspace code-open caption="Four radial gradients — nebula, stars, and a ringed planet">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Radial Gradient Glow — Cosmic Scene
 // Demonstrates radial gradients for light sources, glows, and shading
 
@@ -559,7 +559,7 @@ scene.append(bg, nebula, stars, planet);
 };
 </code></pre><p>The three spheres below use identical color stops. Only <code>fx</code> and <code>fy</code> differ — the highlight shifts from top-left to center to top-right.</p>
 <p><mini-workspace caption="Same gradient stops, three focal points — the highlight shifts with fx, fy">
-  <code>// viewBox="0 0 450 180"
+  <code>define ViewBox(0, 0, 450, 180);
 // Focal Point Spheres — Same stops, different fx/fy positions
 // Demonstrates how RadialGradient's focal point shifts the highlight
 
@@ -639,7 +639,7 @@ scene.append(bg, s1, s2, s3, labels);
 grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>The comparison below shows three color pairs — blue/yellow, red/cyan, magenta/green — in both sRGB and OKLCH. The difference is dramatic: sRGB midpoints are desaturated and dull, while OKLCH transitions stay vibrant and chromatic.</p>
 <p><mini-workspace code-open caption="sRGB vs OKLCH — same stops, dramatically different midpoints">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // OKLCH vs sRGB Interpolation — Side-by-Side Comparison
 // Same color stops, dramatically different midpoints
 
@@ -767,7 +767,7 @@ comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, m
 grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;reflect&#x27;</span>;
 </code></pre><p>The three strips below use the same gradient that covers only the first 30% of each element. The vertical lines mark the gradient&#39;s defined range. Beyond that boundary, each spread method produces a different visual pattern.</p>
 <p><mini-workspace code-open caption="pad, reflect, repeat — same narrow gradient, three spread behaviors">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Spread Modes — Pad / Reflect / Repeat
 // Same narrow gradient, three different spread behaviors
 
@@ -881,7 +881,7 @@ cool.<span class="hljs-property">gradientTransform</span> = <span class="hljs-st
 vertical.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
 </code></pre><p>One base gradient, three variants. Change the base and all inherited gradients update. This is the foundation of a themeable gradient system — define your palette once, derive everything else.</p>
 <p><mini-workspace code-open caption="One base gradient spawns a family of variants via inherit()">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Gradient Inheritance — Themed UI Palette
 // One base gradient spawns variants via inherit()
 
@@ -991,7 +991,7 @@ palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3,
 <p>Pathogen&#39;s gradients compose naturally with the <a href="/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
 <p>The demo below puts three overlapping radial glows on a dark background. Each glow&#39;s center color is bound to a CSS variable (<code>--light-a</code>, <code>--light-b</code>, <code>--light-c</code>) — use the color pickers to remix the scene in real time.</p>
 <p><mini-workspace code-open caption="Drag the color pickers to recolor three overlapping radial lights">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Reactive Radial Lights — CSSVar-driven overlapping glows
 // Drag the color pickers to recolor three radial light sources
 

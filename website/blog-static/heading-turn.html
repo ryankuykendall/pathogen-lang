@@ -277,7 +277,7 @@ h <span class="hljs-number">0.01</span>            <span class="hljs-comment">//
 </code></pre><h2>Shapes Without Dummy Segments</h2>
 <p>The demo below shows four shapes built entirely with <code>heading</code>, <code>turn</code>, <code>tangentLine</code>, and <code>tangentArc</code> — no dummy segments needed. Each shape includes the code used to construct it.</p>
 <p><mini-workspace code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
-  <code>// viewBox="0 0 540 220"
+  <code>define ViewBox(0, 0, 540, 220);
 // heading() and turn() — tangent context without path commands
 
 // --- Background ---
@@ -425,7 +425,7 @@ fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-param
 }
 </code></pre><p>The showcase below draws triangles through decagons — eight polygons in each row, sharp and rounded. One function, one loop, any number of sides.</p>
 <p><mini-workspace code-open caption="Regular polygons from 3 to 10 sides — sharp and rounded corners">
-  <code>// viewBox="0 0 680 400"
+  <code>define ViewBox(0, 0, 680, 400);
 // Regular polygons via heading + turn + tangentLine/tangentArc
 
 // --- Background ---

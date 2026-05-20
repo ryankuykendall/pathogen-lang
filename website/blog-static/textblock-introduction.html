@@ -274,7 +274,7 @@ code.hljs {
 </code></pre><p>Each <code>text(x, y)</code> statement positions a text element relative to the block&#39;s origin. The backtick-delimited content follows the coordinate pair. You can have as many <code>text()</code> statements as you need — a single-line label, a multi-line card, a table of values.</p>
 <p>The anatomy diagram below shows how this works in practice. A three-line TextBlock is defined once, then drawn at two different positions using <code>.drawTo()</code>. The green crosshairs mark each placement&#39;s origin. The dashed amber rectangles show the bounding box — measured once from the TextBlock value, valid at both locations. The arrow connecting the placements reinforces the key idea: one definition, many positions.</p>
 <p><mini-workspace caption="TextBlock anatomy — compose once, place anywhere with bounding box overlay">
-  <code>// viewBox="0 0 600 340"
+  <code>define ViewBox(0, 0, 600, 340);
 // TextBlock Anatomy — compose text at relative coordinates, then position
 
 // ─── Background ─────────────────────────────────────────────────────
@@ -538,7 +538,7 @@ legend_group.append(leg_o, leg_b, leg);
 </code></pre><p>This separation of content from presentation is what makes TextBlock composable. Define the text structure once, apply different styles for different contexts, measure for layout, then place. The <code>&lt;&lt;</code> operator does not mutate the original — it returns a new value with the styles merged in, leaving the original available for reuse.</p>
 <p>The demo below shows the same three-line TextBlock rendered with three different style blocks. The dashed outlines are the bounding boxes — each one reflects the actual measured dimensions for that style variant.</p>
 <p><mini-workspace caption="One TextBlock, three styles — bounding box adapts to each font configuration">
-  <code>// viewBox="0 0 600 300"
+  <code>define ViewBox(0, 0, 600, 300);
 // Style merging — &lt;&lt; operator sets block-level styles
 
 // --- Background ---
@@ -746,7 +746,7 @@ dims.apply {
 </blockquote>
 <p>The demo below shows <code>.boundingBox()</code> at three different font sizes. Each row renders the same text, measures it, and draws width/height dimension lines. Notice how the bounding box scales with font size — the measurement adapts automatically.</p>
 <p><mini-workspace caption="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text">
-  <code>// viewBox="0 0 600 360"
+  <code>define ViewBox(0, 0, 600, 360);
 // Bounding box measurement — .boundingBox() returns {x, y, width, height}
 
 // --- Background ---
@@ -920,7 +920,7 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 </code></pre><p>The convention is that the <strong>anchor faces the center</strong> — so a label projected to the right of a shape uses <code>BBoxAnchor.Left</code> (the left edge of the text box is closest to the center), while a label above uses <code>BBoxAnchor.Bottom</code>. This keeps text radiating outward naturally.</p>
 <p>The compass demo below shows this in action. Eight labels are placed at 45-degree intervals around a central hexagon, each using the appropriate anchor. The amber dots mark the polar target points on the guide circle; the text stays clear of the shape at every position.</p>
 <p><mini-workspace caption="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment">
-  <code>// viewBox="0 0 500 500"
+  <code>define ViewBox(0, 0, 500, 500);
 // Polar projection — labels placed at compass positions around a shape
 // Uses GroupLayers per Code Example Guideline §9
 
@@ -1152,7 +1152,7 @@ code_group.append(code, kw);
 </code></pre><p>Each angle is paired with an anchor that faces back toward the center point. This means the label always radiates outward, regardless of which direction it ends up. The search stops at the first collision-free candidate, so labels near the top of the list get their preferred direction (right, then bottom-left, then bottom, and so on).</p>
 <p>The demo below shows the full pattern in action: a scatter of 8 data points, labeled in two ways. The left panel uses naive fixed-offset placement — every label is shifted right of its point by 8 pixels. Three clusters produce visible collisions, highlighted with red dashed boxes. The right panel uses the 8-angle search above. Study the demo source to see how the complete loop integrates with the data point geometry checks.</p>
 <p><mini-workspace caption="Before and after — naive fixed-offset placement vs smart 8-angle collision avoidance">
-  <code>// viewBox="0 0 600 400"
+  <code>define ViewBox(0, 0, 600, 400);
 // Collision avoidance — before/after with .polarProject() + .intersects()
 
 // --- Background ---
@@ -1511,7 +1511,7 @@ bottom_label.<span class="hljs-title function_">polarProject</span>(<span class=
 left_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-variable constant_">PI</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Right</span>)
 </code></pre><p>Four calls, four directions, one radius. The text content doesn&#39;t appear in the positioning logic at all — it&#39;s fully decoupled. The demo below makes the contrast visual: red annotations on the left expose the fragile arithmetic; green annotations on the right show the semantic anchor names.</p>
 <p><mini-workspace caption="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)">
-  <code>// viewBox="0 0 600 400"
+  <code>define ViewBox(0, 0, 600, 400);
 // Before/After — manual offset math vs .polarProject()
 // Uses GroupLayers per Code Example Guideline §9
 

@@ -55,7 +55,7 @@ let sharpLayer = PathLayer('sharp') ${ fill: barColor; stroke: none; opacity: 0.
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 0)
+  radialWedge(innerR, outerR, fromA, toA, 0);
 }
 
 // Rounded corners
@@ -63,7 +63,7 @@ let roundLayer = PathLayer('rounded') ${ fill: barColor; stroke: none; };
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
-  radialWedge(innerR, outerR, fromA, toA, 6)
+  radialWedge(innerR, outerR, fromA, toA, 6);
 }
 
 // --- Annotation layers ---

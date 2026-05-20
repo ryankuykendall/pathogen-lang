@@ -282,7 +282,7 @@ asym.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">
 </code></pre><p>You can chain <code>chamferAtVertex</code> calls to selectively bevel specific corners with different distances.</p>
 <p>The anatomy diagram below shows the geometric construction: the red dot is the original vertex, green dots are the trim points at distance <code>d</code> along each edge, and the blue line connects them. The yellow dimension arrows show <code>d1</code> (incoming) and <code>d2</code> (outgoing) trim distances.</p>
 <p><mini-workspace caption="Chamfer anatomy — geometric construction at a right-angle corner">
-  <code>// viewBox="0 0 480 340"
+  <code>define ViewBox(0, 0, 480, 340);
 // Chamfer anatomy — geometric construction at a single corner
 
 // A right-angle corner
@@ -534,7 +534,7 @@ subtitle.apply {
   <img src="/blog/samples/post8/chamfer-anatomy.svg" alt="Chamfer anatomy — geometric construction at a right-angle corner" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained">
-  <code>// viewBox="0 0 560 300"
+  <code>define ViewBox(0, 0, 560, 300);
 // Chamfer gallery — symmetric, asymmetric, per-vertex
 
 let box = @{ h 70 v 70 h -70 z };
@@ -688,7 +688,7 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><p>The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance <code>r</code> from both edges) and the trim formula <code>trim = r / tan(halfAngle)</code> are labeled. For a right angle, <code>trim = r</code>.</p>
 <p><mini-workspace caption="Fillet anatomy — arc center, trim points, and radius at a 90° corner">
-  <code>// viewBox="0 0 480 340"
+  <code>define ViewBox(0, 0, 480, 340);
 // Fillet anatomy — circular arc construction at a corner
 
 // --- Background ---
@@ -970,7 +970,7 @@ rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 <h3>Adapting to Corner Angles</h3>
 <p>The elliptical fillet computes separate trim distances for each edge based on the tangent parameters of the ellipse. At a 90° corner with <code>ellipticalFillet(rx, ry)</code>, the horizontal edges are trimmed by <code>rx</code> and the vertical edges by <code>ry</code> — matching CSS <code>border-radius</code> behavior. The diagram below shows two configurations — <code>ellipticalFillet(32, 16)</code> (wider) and <code>ellipticalFillet(24, 48)</code> (taller) — at eight different corner angles.</p>
 <p><mini-workspace caption="Elliptical fillet at various angles — adapts trim distances per-edge">
-  <code>// viewBox="0 0 700 380"
+  <code>define ViewBox(0, 0, 700, 380);
 // Elliptical fillet at various corner angles — before (dashed) and after (solid)
 
 // --- Background ---
@@ -1134,7 +1134,7 @@ subtitle.apply {
   <img src="/blog/samples/post8/elliptical-fillet-angles.svg" alt="Elliptical fillet at various angles — adapts trim distances per-edge" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical">
-  <code>// viewBox="0 0 560 300"
+  <code>define ViewBox(0, 0, 560, 300);
 // Fillet gallery — circular, elliptical, per-vertex
 
 let box = @{ h 70 v 70 h -70 z };

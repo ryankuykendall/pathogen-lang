@@ -277,7 +277,7 @@ code.hljs {
 </code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
 <p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
 <p><mini-workspace caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
-  <code>// viewBox="0 0 600 380"
+  <code>define ViewBox(0, 0, 600, 380);
 // PathBlock Anatomy — visual guide to structure and properties
 
 let arrow = @{
@@ -561,7 +561,7 @@ arrow.<span class="hljs-title function_">draw</span>()
 </code></pre><p>It emits <code>M 60 70</code> followed by the PathBlock&#39;s commands, and returns a <code>ProjectedPath</code> value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.</p>
 <p>The demo below shows both approaches — manual on top, <code>drawTo</code> on the bottom. Same shapes, same positions, less ceremony with <code>drawTo</code>.</p>
 <p><mini-workspace code-open caption="Manual M+draw() vs drawTo() — same result, less code">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // drawTo() vs manual M + draw()
 
 let diamond = @{
@@ -619,7 +619,7 @@ drawto.apply {
 </code></pre><p>PathBlocks are <a href="/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
 <p>Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.</p>
 <p><mini-workspace caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // PathBlock reuse — define once, create patterns
 
 // A leaf-like motif
@@ -786,7 +786,7 @@ title.apply {
 <h2>A Practical Example</h2>
 <p>Here&#39;s a grid built from two simple PathBlocks — a horizontal line and a vertical line — repeated with loops. The PathBlock captures the shape; the loop handles placement.</p>
 <p><mini-workspace code-open caption="Grid from two PathBlocks — define once, draw in loops">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // PathBlock basics — define, draw, reuse
 
 let arrow = @{
@@ -856,7 +856,7 @@ arrows.apply {
 <span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
 </code></pre><p>These return PathBlocks, so all the same methods — <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, transforms — work on them.</p>
 <p><mini-workspace caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
-  <code>// viewBox="0 0 600 260"
+  <code>define ViewBox(0, 0, 600, 260);
 // Standard library shape gallery
 
 // --- Background ---

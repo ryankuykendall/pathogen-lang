@@ -285,7 +285,7 @@ code.hljs {
 <span class="hljs-keyword">let</span> blended = base.<span class="hljs-title function_">mix</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>), <span class="hljs-number">0.5</span>); <span class="hljs-comment">// interpolate</span>
 </code></pre><p>All of this operates in OKLCH, so a <code>.lighten(0.18)</code> on a deeply saturated red doesn&#39;t accidentally desaturate it — it shifts only lightness while preserving chroma and hue. Try it: pick a color below and watch each method derive its swatch.</p>
 <p><mini-workspace code-open caption="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice.">
-  <code>// viewBox="0 0 520 400"
+  <code>define ViewBox(0, 0, 520, 400);
 // Color Methods — Direction 2: Radial Wheel
 // Eight slim 30° sectors arranged around a central base-color hub.
 // Each sector fills with one OKLCH method derivation; labels sit
@@ -442,7 +442,7 @@ layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
 <span class="hljs-keyword">let</span> blend = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);  <span class="hljs-comment">// 5-step interpolation</span>
 </code></pre><p>The lightness ramp spreads evenly from dark (L=0.15) to light (L=0.95). The interpolation variant uses <code>color-mix()</code> when backed by CSS variables, so the browser handles the blending at render time.</p>
 <p><mini-workspace code-open caption="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex.">
-  <code>// viewBox="0 0 520 560"
+  <code>define ViewBox(0, 0, 520, 560);
 // Harmonies &amp; Palettes — Direction 2: Hue Wheel
 // A 12-sector static hue wheel with harmony-chord overlays (analogous
 // arc, triadic triangle, tetradic square, split-comp Y). Harmony
@@ -742,7 +742,7 @@ layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
 <span class="hljs-keyword">let</span> secondaryMuted = secondary.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-keyword">let</span> accentShift   = accent.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
 </code></pre><p><mini-workspace code-open caption="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych.">
-  <code>// viewBox="0 0 520 640"
+  <code>define ViewBox(0, 0, 520, 640);
 // Theme Demo — Combined: SYSTEM + STAGE
 // Top half is the "theme system" — geometric composition showing how
 // four CSS vars (bg, primary, secondary, accent) and five derived
@@ -1085,7 +1085,7 @@ ld.<span class="hljs-property">interpolation</span> = <span class="hljs-string">
   base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>), base.<span class="hljs-title function_">complement</span>(),
 ];
 </code></pre><p><mini-workspace code-open caption="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once.">
-  <code>// viewBox="0 0 520 520"
+  <code>define ViewBox(0, 0, 520, 520);
 // Light/Dark — Conic (off-canvas center, fanned chips)
 // Gradient origin sits at x = −260 (−50% of canvas width). The conic
 // gradient runs from −90° (north of center = bg_light) to +90°

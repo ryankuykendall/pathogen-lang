@@ -262,7 +262,7 @@ code.hljs {
 <span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
 </code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
 <p><mini-workspace code-open caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations">
-  <code>// viewBox="0 0 560 400"
+  <code>define ViewBox(0, 0, 560, 400);
 // radialWedge() — the annular sector with automatic rounded corners
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -555,7 +555,7 @@ M cx cy
 <span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
 </code></pre><p>To compare two datasets (all games vs top 100), the Observable chart overlays a narrower dark bar on top of each wider red bar. The dark bar uses 50% of the angular width, centered within the slice:</p>
 <p><mini-workspace code-open caption="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)">
-  <code>// viewBox="0 0 520 400"
+  <code>define ViewBox(0, 0, 520, 400);
 // Radial bar — mapping data values to bar length with radialWedge()
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -775,7 +775,7 @@ noteLabel.apply {
 <h2>Arranging Categories</h2>
 <p>With <code>radialWedge()</code> handling individual bars, arranging multiple categories is a <code>for</code> loop over a data array. The syntax <code>for ([d, i] in data)</code> destructures each element into the value <code>d</code> and its index <code>i</code> — a pattern you&#39;ll see throughout the rest of this post. Each category gets an angular slice of <code>TAU() / count</code> radians, with a slight overlap between adjacent wedges:</p>
 <p><mini-workspace code-open caption="8 categories distributed radially — labels are added in the next section">
-  <code>// viewBox="0 0 600 600"
+  <code>define ViewBox(0, 0, 600, 600);
 // Category layout — 8 categories arranged radially with radialWedge()
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -908,7 +908,7 @@ catLabels.<span class="hljs-property">apply</span> {
 <li><code>VerticalAnchor.Midline</code> — which vertical font metric aligns with the projected point</li>
 </ol>
 <p><mini-workspace code-open caption="radialProject with VerticalAnchor.Midline — one TextLayer, automatic rotation and hemisphere flip">
-  <code>// viewBox="0 0 700 700"
+  <code>define ViewBox(0, 0, 700, 700);
 // Radial labels — radialProject with VerticalAnchor.Midline
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -1055,7 +1055,7 @@ g.append(bg, grid, center, barsAll, barsTop, catLabels,
 <h2>Testing with Diagnostic Matrices</h2>
 <p>Building <code>radialWedge()</code> required multiple iterations to get the corner geometry right. To verify correctness across the full parameter space, we built diagnostic matrices — grids of wedges with varying angular width and outer radius, each rendered with guide circles, a dotted sharp-corner reference outline, and an XOR diff layer that highlights any geometric differences between the sharp and rounded versions.</p>
 <p><mini-workspace caption="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry">
-  <code>// viewBox="0 0 900 700"
+  <code>define ViewBox(0, 0, 900, 700);
 // radialWedge diagnostic matrix: sharp outline + rounded fill + XOR diff
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -1185,7 +1185,7 @@ g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, titl
   <img src="/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace caption="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs">
-  <code>// viewBox="0 0 900 700"
+  <code>define ViewBox(0, 0, 900, 700);
 // radialWedge diagnostic matrix: sharp outline + rounded fill + XOR diff
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -1319,7 +1319,7 @@ g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, titl
 <h2>The Complete Chart</h2>
 <p>Bringing everything together: 26 BoardGameGeek categories, overlaid red and dark bars, rotated labels with inline colored percentages via tspan styling, annotation badges, a wedge legend, and a summary bar chart — all driven by a single data array:</p>
 <p><mini-workspace caption="Complete radial hierarchical bar chart — BoardGameGeek category comparison">
-  <code>// viewBox="0 0 1000 750"
+  <code>define ViewBox(0, 0, 1000, 750);
 // Complete radial hierarchical bar chart — BoardGameGeek categories
 
 // === Theme colors (CSSVar for interactive switching) ===
@@ -1920,7 +1920,7 @@ sourceNote.apply {
 <h2>Summary Bar Chart</h2>
 <p>The radial chart excels at showing the overall distribution pattern, but a linear layout makes precise value comparison easier. The companion horizontal bar chart below the main visualization shows the top 5 categories among the highest-ranked games, making the ranking immediately scannable:</p>
 <p><mini-workspace code-open caption="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left">
-  <code>// viewBox="0 0 450 280"
+  <code>define ViewBox(0, 0, 450, 280);
 // Summary bar chart — reusing the same data in a horizontal layout
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));

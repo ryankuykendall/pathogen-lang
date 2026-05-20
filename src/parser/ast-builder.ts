@@ -972,8 +972,11 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
   let content: TemplateLiteral | undefined;
   let body: TextBodyItem[] | undefined;
 
-  // Extract expressions between parens (with member-chain support), then template or block.
-  // Flat CST tokens like `p . point . x` must be assembled into MemberExpression chains.
+  // Extract expressions between parens, then template or block. Each argument
+  // can be any expression — including function calls like `polarX(...)`,
+  // method calls like `pt.x`, and member-chains like `p.point.x` — so we
+  // delegate to buildExpressionWithPostfix which walks the postfix chain
+  // (ArgList, ".", "[") at sibling level.
   cursor.firstChild();
   const exprs: Expression[] = [];
   let inParens = false;
@@ -982,24 +985,12 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
     if (cursor.name === ')') { inParens = false; continue; }
     if (inParens && cursor.name === ',') continue;
     if (inParens && isExpressionNode(cursor.name)) {
-      let expr = buildExpression(cursor, source);
-      // Consume postfix `.property` chains within the paren region
-      while (cursor.nextSibling()) {
-        if (cursor.name === '.' && cursor.nextSibling() && isExpressionNode(cursor.name)) {
-          const propName = text(cursor, source);
-          expr = {
-            type: 'MemberExpression',
-            object: expr,
-            property: propName,
-            loc: (expr as { loc?: SourceLocation }).loc,
-          } as MemberExpression;
-        } else {
-          // Hit comma or closing paren — let the outer loop handle this token
-          if (cursor.name === ')') inParens = false;
-          break;
-        }
-      }
+      const expr = buildExpressionWithPostfix(cursor, source);
+      // buildExpressionWithPostfix leaves the cursor on the last token
+      // consumed; the outer do/while's nextSibling() advances from there.
       exprs.push(expr);
+      // Sync the inParens flag if we're now at a ")"
+      if (cursor.name === ')') inParens = false;
       continue;
     }
     if (!inParens && cursor.name === 'TemplateLiteral') {
@@ -1034,22 +1025,12 @@ function buildTspanStatement(cursor: TreeCursor, source: string): TspanStatement
     if (cursor.name === ')') { inParens = false; continue; }
     if (inParens && cursor.name === ',') continue;
     if (inParens && isExpressionNode(cursor.name)) {
-      let expr = buildExpression(cursor, source);
-      while (cursor.nextSibling()) {
-        if (cursor.name === '.' && cursor.nextSibling() && isExpressionNode(cursor.name)) {
-          const propName = text(cursor, source);
-          expr = {
-            type: 'MemberExpression',
-            object: expr,
-            property: propName,
-            loc: (expr as { loc?: SourceLocation }).loc,
-          } as MemberExpression;
-        } else {
-          if (cursor.name === ')') inParens = false;
-          break;
-        }
-      }
+      // Delegate to buildExpressionWithPostfix so each argument can be any
+      // expression — function calls (`polarX(...)`), member chains
+      // (`pt.x`), method calls, etc. — not just a bare primary.
+      const expr = buildExpressionWithPostfix(cursor, source);
       args.push(expr);
+      if (cursor.name === ')') inParens = false;
       continue;
     }
     if (!inParens && cursor.name === 'TemplateLiteral') {
@@ -1498,9 +1479,12 @@ function buildArgList(cursor: TreeCursor, source: string): Expression[] {
 function buildTernaryExpression(cursor: TreeCursor, source: string): TernaryExpression {
   cursor.firstChild();
   const parts: Expression[] = [];
+  // Same postfix-folding rationale as buildUnaryExpression: any of the
+  // three ternary operands can be a function call / member chain, and
+  // bare `buildExpression` would drop the ArgList sibling.
   do {
     if (cursor.name !== '?' && cursor.name !== ':' && isExpressionNode(cursor.name)) {
-      parts.push(buildExpression(cursor, source));
+      parts.push(buildExpressionWithPostfix(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1575,11 +1559,17 @@ function buildUnaryExpression(cursor: TreeCursor, source: string): UnaryExpressi
   let operator: '-' | '!' = '-';
   let argument: Expression = { type: 'NullLiteral' };
 
+  // Use buildExpressionWithPostfix so the unary's operand can be a
+  // function call / member chain / index expression — not just a bare
+  // primary. Without this, `-sin(0.5)` would parse `sin` as Identifier
+  // and drop the ArgList, since `buildExpression` returns NullLiteral
+  // for ArgList nodes (they're meant to be folded into a postfix chain).
   do {
     if (cursor.name === '-' || cursor.name === '!') {
       operator = text(cursor, source) as '-' | '!';
     } else if (isExpressionNode(cursor.name)) {
-      argument = buildExpression(cursor, source);
+      argument = buildExpressionWithPostfix(cursor, source);
+      break;
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1677,9 +1667,17 @@ function unescapeTemplate(s: string): string {
 function buildCalcExpression(cursor: TreeCursor, source: string): CalcExpression {
   cursor.firstChild();
   let expression: Expression = { type: 'NullLiteral' };
+  // The body of `calc(expr)` is a single expression. We must use
+  // buildExpressionWithPostfix so postfix operators (`(args)`, `.prop`,
+  // `[idx]`) get folded into the expression — otherwise `calc(foo(5))`
+  // builds as Identifier("foo") and the ArgList sibling falls through to
+  // the `buildExpression` case 'ArgList' branch which returns NullLiteral,
+  // clobbering the identifier. Break after the first real expression so a
+  // trailing `)` doesn't trigger that bug.
   do {
-    if (cursor.name !== 'calc' && cursor.name !== '(' && cursor.name !== ')') {
-      expression = buildExpression(cursor, source);
+    if (cursor.name !== 'calc' && cursor.name !== '(' && cursor.name !== ')' && isExpressionNode(cursor.name)) {
+      expression = buildExpressionWithPostfix(cursor, source);
+      break;
     }
   } while (cursor.nextSibling());
   cursor.parent();

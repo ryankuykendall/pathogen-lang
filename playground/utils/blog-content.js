@@ -215,7 +215,7 @@ C 367.6 141.7  410.9 72.6  470 70
 </tbody></table>
 <p>The anatomy diagram below shows how these properties map to the geometry. Blue dots are the on-curve waypoints. Red circles are exit control points (placed <code>exit</code> distance forward along the tangent). Green circles are entry control points (placed <code>entry</code> distance backward). Orange arcs show the tangent angle at each point.</p>
 <p><mini-workspace code-open caption="cubicSpline anatomy — waypoints, control points, tangent lines, and angle arcs">
-  <code>// viewBox="0 0 540 330"
+  <code>define ViewBox(0, 0, 540, 330);
 // cubicSpline anatomy — control points, tangent lines, angle arcs
 
 // --- Background ---
@@ -361,7 +361,7 @@ layer('legend-text').apply {
 <h3>Why It&#39;s Smooth: G1 Continuity</h3>
 <p>The smoothness guarantee comes from a simple geometric constraint: at every join point, the exit control point of the outgoing segment and the entry control point of the incoming segment lie on the same line — the tangent line defined by <code>angle</code>. Because both control points are collinear through the join, the curve&#39;s direction doesn&#39;t change abruptly.</p>
 <p><mini-workspace code-open caption="G1 continuity — exit and entry CPs are collinear through the join point">
-  <code>// viewBox="0 0 420 255"
+  <code>define ViewBox(0, 0, 420, 255);
 // G1 continuity at a join point — collinear control points
 
 // --- Background ---
@@ -447,7 +447,7 @@ layer('note').apply {
 <h3>Examples</h3>
 <p>Three <code>cubicSpline</code> curves: a two-segment S-curve, a five-point sine wave approximation, and a closed loop where the first and last points coincide.</p>
 <p><mini-workspace code-open caption="cubicSpline examples — S-curve, sine wave, and closed loop">
-  <code>// viewBox="0 0 460 145"
+  <code>define ViewBox(0, 0, 460, 145);
 // Three cubicSpline examples: S-curve, sine wave, closed loop
 
 // --- Background ---
@@ -560,7 +560,7 @@ layer('loop').apply {
   { <span class="hljs-attr">x</span>: <span class="hljs-number">500</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">120</span> }                              <span class="hljs-comment">// end: no angle needed</span>
 )
 </code></pre><p><mini-workspace code-open caption="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension">
-  <code>// viewBox="0 0 540 350"
+  <code>define ViewBox(0, 0, 540, 350);
 // quadSpline anatomy — implicit angle derivation from previous CP
 
 // --- Background ---
@@ -680,7 +680,7 @@ layer('note').apply {
 </mini-workspace></p>
 <p>The signature is different from <code>cubicSpline</code>: start and end are separate arguments, with an array of intermediates between them. This reflects the asymmetry — only the start carries an explicit angle.</p>
 <p><mini-workspace code-open caption="quadSpline examples — simple arc, flowing curve, and zigzag">
-  <code>// viewBox="0 0 460 145"
+  <code>define ViewBox(0, 0, 460, 145);
 // Three quadSpline examples: simple arc, flowing curve, zigzag
 
 // --- Background ---
@@ -800,7 +800,7 @@ layer('zigzag').apply {
 <li><strong>t = 0</strong> — control points at the endpoints (straight lines, no curve)</li>
 </ul>
 <p><mini-workspace code-open caption="Single segment anatomy — virtual shared CP (diamond) and actual CPs placed via lerp">
-  <code>// viewBox="0 0 460 270"
+  <code>define ViewBox(0, 0, 460, 270);
 // clippedQuadSpline anatomy — virtual shared CP and lerped actual CPs
 
 // --- Background ---
@@ -918,7 +918,7 @@ layer('ref-note').apply {
 </mini-workspace></p>
 <p>The effect is dramatic when overlaid. Same waypoints, same angles — only the time values change:</p>
 <p><mini-workspace code-open caption="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)">
-  <code>// viewBox="0 0 520 250"
+  <code>define ViewBox(0, 0, 520, 250);
 // clippedQuadSpline eccentricity comparison — same geometry, different time values
 
 // --- Background ---
@@ -1034,7 +1034,7 @@ layer('note').apply {
 yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)
 </code></pre><p>Four parameters — <code>a</code>, <code>b</code>, <code>c</code>, <code>d</code> — control the shape. Starting from a seed point <code>(x₀, y₀)</code>, each iteration produces a new point. The trajectory doesn&#39;t converge to a fixed point or diverge to infinity — it&#39;s trapped in a bounded region, orbiting forever without repeating. That region is the attractor.</p>
 <p><mini-workspace caption="Iteration trajectory — each point maps to the next through the Clifford equations">
-  <code>// viewBox="0 0 560 260"
+  <code>define ViewBox(0, 0, 560, 260);
 // Iteration concept diagram — shows how points map through the Clifford equations
 
 let a = -1.4;
@@ -1167,7 +1167,7 @@ g.append(bg, trail, dots, labels, formula);
 <p><strong>Coordinate mapping.</strong> The attractor lives in a small mathematical space (roughly <code>[-3, 3]</code>). To render in SVG, we scale and offset to the canvas center. This <code>calc(cx + value * scale)</code> pattern is the same coordinate transform you&#39;d write in any graphics system.</p>
 <p><strong><code>circle()</code> for visibility.</strong> At 100 points, individual dots need to be large enough to see. We use radius <code>3</code> here — we&#39;ll optimize this later.</p>
 <p><mini-workspace code-open caption="100 iterations — the attractor's skeleton is just barely visible">
-  <code>// viewBox="0 0 400 340"
+  <code>define ViewBox(0, 0, 400, 340);
 // First Clifford Attractor — 100 iterations, circle() dots
 
 let a = -1.4;
@@ -1222,7 +1222,7 @@ M <span class="hljs-title function_">calc</span>(cx + x * scale) <span class="hl
 }
 </code></pre><p>The initial <code>M</code> command plots the seed point before the loop, so the loop starts at <code>1</code> rather than <code>0</code> — together they produce exactly 10,000 points (the per-loop iteration limit). The <code>M x y l 0 0</code> idiom is a well-known SVG trick for point rendering, but it&#39;s admittedly non-obvious. A dedicated <code>dot(x, y)</code> function would communicate intent more clearly — we&#39;ll return to this idea later.</p>
 <p><mini-workspace code-open caption="10,000 iterations — the full Clifford attractor emerges">
-  <code>// viewBox="0 0 600 480"
+  <code>define ViewBox(0, 0, 600, 480);
 // Full Clifford Attractor — 10,000 points, efficient line rendering
 
 let a = -1.4;
@@ -1286,7 +1286,7 @@ for (i in 1..9999) {
 }
 </code></pre><p>The outer loop destructures each layer and its index. The inner loop draws 2,000 points. Since <code>x</code> and <code>y</code> are declared in the outer scope, they persist across chunks — the attractor&#39;s trajectory is continuous even though the color changes.</p>
 <p><mini-workspace code-open caption="Temporal color mapping — blue (early iterations) to orange (late iterations)">
-  <code>// viewBox="0 0 600 480"
+  <code>define ViewBox(0, 0, 600, 480);
 // Color-mapped Clifford Attractor — 10,000 points across 5 temporal layers
 
 let a = -1.4;
@@ -1336,7 +1336,7 @@ g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 <h2>Parameter Exploration</h2>
 <p>The four parameters are the soul of the attractor. Small changes produce dramatically different forms. Here are three parameter sets that show the range:</p>
 <p><mini-workspace caption="Three parameter sets — each producing a distinct attractor form">
-  <code>// viewBox="0 0 900 370"
+  <code>define ViewBox(0, 0, 900, 370);
 // Parameter Gallery — three Clifford attractors with different parameters
 
 // Reusable attractor function
@@ -1434,7 +1434,7 @@ g.append(p1, p2, p3, names, params);
 <h2>Interactive Colors</h2>
 <p>Since the attractor parameters control the <em>geometry</em> and must be baked in at compile time, we can&#39;t make them reactive via CSS variables. But we <em>can</em> make the color palette reactive. The sample below uses <code>CSSVar</code> for the early and late colors — try changing them in the playground&#39;s CSS variable panel to see the palette update in real time:</p>
 <p><mini-workspace code-open caption="Reactive color palette — change --early-color and --late-color to restyle the attractor">
-  <code>// viewBox="0 0 600 480"
+  <code>define ViewBox(0, 0, 600, 480);
 // Interactive Clifford Attractor — CSS variable colors
 
 let a = -1.4;
@@ -1623,7 +1623,7 @@ not_found_handling = <span class="hljs-string">&quot;single-page-application&quo
 <p>When users changed colors via the playground&#39;s color picker on <code>Color(&#39;#cc0000&#39;)</code>, the picker stripped the quotes — producing <code>Color(#cc0000)</code>, which failed to compile. Rather than just fixing the quoting, we asked: why require quotes at all?</p>
 <p>The result is <strong>color literals</strong> — bare hex codes and CSS color functions that are first-class expressions. Writing colors now feels like writing CSS, not calling an API. No <code>Color()</code> wrapper, no string quoting — just <code>#cc0000</code> directly in your code. Everything is backwards-compatible; existing <code>Color()</code> calls continue to work unchanged.</p>
 <p><mini-workspace caption="Before and After — Color('#cc0000') vs #cc0000 produce identical output">
-  <code>// viewBox="0 0 540 280"
+  <code>define ViewBox(0, 0, 540, 280);
 // Before/After — Color('#cc0000') vs #cc0000
 // Shows that both produce identical output, but the literal is cleaner
 
@@ -1850,7 +1850,7 @@ equals.apply {
 <span class="hljs-keyword">let</span> shifted = (#0066ff).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
 </code></pre><p>From a single hex literal you can build full color palettes — lighten, darken, shift hue, adjust saturation, set alpha. The demo below starts from <code>#0066ff</code> and derives an entire palette using method chaining and the percent suffix:</p>
 <p><mini-workspace code-open caption="Lightness, hue, and saturation ramps derived from a single hex literal">
-  <code>// viewBox="0 0 520 320"
+  <code>define ViewBox(0, 0, 520, 320);
 // Hex Palette — Building a color palette from a single hex literal
 // Demonstrates method chaining on hex color literals
 
@@ -2054,7 +2054,7 @@ base_line.apply {
 <span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
 </code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
 <p><mini-workspace code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
-  <code>// viewBox="0 0 560 340"
+  <code>define ViewBox(0, 0, 560, 340);
 // Color Spaces — The same red expressed in 7 CSS color function syntaxes
 // All produce the same ColorValue internally
 
@@ -2192,7 +2192,7 @@ arrow_line.apply {
 </code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
 <p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
 <p><mini-workspace code-open caption="Tint, shade, and alpha scales using the percent suffix">
-  <code>// viewBox="0 0 520 300"
+  <code>define ViewBox(0, 0, 520, 300);
 // Percent Tints — Using % suffix with color methods for tint/shade scales
 // 20% becomes 0.2, reads naturally: "lighten by 20%"
 
@@ -2380,7 +2380,7 @@ base_ind.apply {
 </code></pre><p>Change <code>--base-color</code> and every derived value recalculates — lighten, complement, triadic harmony, everything. The compiler emits <code>@property</code> declarations so the browser knows these are interpolatable <code>&lt;color&gt;</code> values.</p>
 <p>The first demo below shows a full reactive palette — lightness ramp, color transformations, and triadic harmony, all driven by a single CSS variable. Use the color picker to change <code>--base-color</code> and watch every swatch update:</p>
 <p><mini-workspace code-open caption="Reactive palette — change --base-color to update all swatches">
-  <code>// viewBox="0 0 520 340"
+  <code>define ViewBox(0, 0, 520, 340);
 // Reactive Palette — CSSVar base color + hex literals + % suffix
 // Change --base-color in the playground to recolor every swatch
 
@@ -2557,7 +2557,7 @@ code_kw.apply {
 </mini-workspace></p>
 <p>The second demo shows a tint/shade scale — seven lighten steps and seven darken steps from a single reactive base:</p>
 <p><mini-workspace code-open caption="Reactive tint/shade scale — change --tint-color to update every swatch">
-  <code>// viewBox="0 0 520 280"
+  <code>define ViewBox(0, 0, 520, 280);
 // Reactive Tints — CSSVar + percent suffix for tint/shade scales
 // Change --tint-color to update every row
 
@@ -2751,7 +2751,7 @@ code_comment.apply {
 </ol>
 <h2>The family at a glance</h2>
 <p><mini-workspace code-open caption="Six filters, one shape per cell. Each is a single language-level value: NoiseFilter, GlowFilter, EmbossFilter, ElevationShadowFilter, InnerShadowFilter, PixelateFilter.">
-  <code>// viewBox="0 0 600 400"
+  <code>define ViewBox(0, 0, 600, 400);
 // Six filters, one shape per cell — the family portrait.
 
 let bg = PathLayer('bg') \${
@@ -2912,7 +2912,7 @@ l6.apply {
 <h2>GlowFilter — two glow modes in one value</h2>
 <p>CSS <code>drop-shadow()</code> gives you one kind of glow: a colored outer halo. Pathogen&#39;s <code>GlowFilter</code> gives you two — <code>GlowMode.Outer</code> and <code>GlowMode.Inner</code> — packed into one filter value that you can flip with a single property write.</p>
 <p><mini-workspace code-open caption="Outer halo and inner edge light. Same constructor, same color, same radius — only the mode property differs.">
-  <code>// viewBox="0 0 400 220"
+  <code>define ViewBox(0, 0, 400, 220);
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
 let bg = PathLayer('bg') \${
@@ -2983,7 +2983,7 @@ l2.apply {
 <p>The two modes share most of their plumbing — both use <code>feGaussianBlur</code> against <code>SourceAlpha</code>, both apply <code>feFlood</code> for the color, both composite into a <code>feMerge</code> at the end. The difference is one composite operator: outer mode merges the blurred silhouette underneath the source; inner mode inverts the blur against the source alpha so the glow rides the inside edge instead.</p>
 <p>A <code>spread</code> parameter is also available in both modes — it dilates the silhouette in Outer mode (fattening the halo before the blur) and erodes it in Inner mode (pushing the inner light further inset). The two knobs that do the most visible work in either mode are <code>radius</code> and <code>opacity</code>.</p>
 <p><mini-workspace code-open caption="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — radius sweep. Larger radius = wider, softer halo.
 
 let bg = PathLayer('bg') \${
@@ -3100,7 +3100,7 @@ l4.apply {
   <img src="/blog/samples/post26/03-glow-radius-sweep.svg" alt="Radius controls the blur stdDeviation — wider radius produces a softer, broader halo." loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — opacity sweep at constant radius.
 
 let bg = PathLayer('bg') \${
@@ -3232,7 +3232,7 @@ l4.apply {
 </code></pre><h3>angle — the light direction</h3>
 <p>The most visible knob. Sweeping <code>angle</code> rotates the simulated light around the surface; the highlight follows.</p>
 <p><mini-workspace code-open caption="Six light azimuths around the clock. The highlight tracks the light source.">
-  <code>// viewBox="0 0 720 240"
+  <code>define ViewBox(0, 0, 720, 240);
 // EmbossFilter — light azimuth sweep. The highlight tracks the light source.
 
 let bg = PathLayer('bg') \${
@@ -3395,7 +3395,7 @@ l6.apply {
 <h3>depth — the bevel surface scale</h3>
 <p><code>depth</code> maps to <code>surfaceScale</code> on <code>feSpecularLighting</code> — the perceived height of the embossed surface. Higher values produce a more pronounced bevel.</p>
 <p><mini-workspace code-open caption="depth = 1 reads as a flat panel with a hint of light. depth = 8 reads as a dramatically raised tile.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
 let bg = PathLayer('bg') \${
@@ -3510,7 +3510,7 @@ l4.apply {
 <h3>strength — the highlight brightness</h3>
 <p><code>strength</code> maps to <code>specularConstant</code>. It controls how much of the simulated light reaches the surface — higher values brighten the highlight, lower values dial it down toward a flat appearance.</p>
 <p><mini-workspace code-open caption="Same angle and depth. strength = 0.3 is a barely-lit surface; 1.5 is dramatic studio lighting.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
 let bg = PathLayer('bg') \${
@@ -3628,7 +3628,7 @@ l4.apply {
 <p>You can&#39;t express that in CSS as <code>drop-shadow(...)</code> because <code>drop-shadow()</code> is one layer. You&#39;d write three <code>filter: drop-shadow(...) drop-shadow(...) drop-shadow(...)</code> and hand-tune the offset/blur/opacity for each layer. Three times the typing, three times the chance of mistuning the layers, and zero introspection on the result.</p>
 <p><code>ElevationShadowFilter</code> gives you one knob — <code>elevation</code> — and does the layering for you.</p>
 <p><mini-workspace code-open caption="One value, six elevations. elevation = 0 emits no shadow; elevation = 24 produces a deeply lifted floating element.">
-  <code>// viewBox="0 0 720 240"
+  <code>define ViewBox(0, 0, 720, 240);
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
@@ -3811,7 +3811,7 @@ l24.apply {
 <h3>tightness — scaling the ratios</h3>
 <p>For finer control over the shadow character at a fixed elevation, the <code>tightness</code> property scales the per-layer distance and blur ratios. <code>0.5</code> reads as a tighter, crisper depth; <code>2.0</code> reads as a wider, hazier cast.</p>
 <p><mini-workspace code-open caption="Same elevation (6), three tightness values. The shadow widens and softens as tightness grows.">
-  <code>// viewBox="0 0 540 240"
+  <code>define ViewBox(0, 0, 540, 240);
 // ElevationShadowFilter — tightness sweep at fixed elevation=6.
 // 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
 
@@ -3915,7 +3915,7 @@ l3.apply {
 <h3>Why three layers beats one</h3>
 <p>Side by side: the left card uses a single CSS <code>drop-shadow(0 6px 12px black)</code> at 40% opacity. The right card uses <code>ElevationShadowFilter</code> with <code>elevation = 6</code>. Same approximate &quot;depth budget&quot; — the elevation knob and the drop-shadow params land in the same neighborhood — but the three-layer chain reads as something hovering above the page rather than something with a shadow under it.</p>
 <p><mini-workspace code-open caption="Single CSS drop-shadow on the left; three-layer ElevationShadowFilter on the right. The contact zone, falloff, and outer haze tell different stories.">
-  <code>// viewBox="0 0 400 240"
+  <code>define ViewBox(0, 0, 400, 240);
 // Same depth budget, two ways to spend it.
 // Left: native CSS \`drop-shadow(0 6px 12px black)\` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
@@ -4010,7 +4010,7 @@ l2b.apply {
 <p>CSS <code>drop-shadow()</code> is outer-only. There is no <code>drop-shadow(... inset)</code> keyword and no other CSS filter function that produces an inset shadow. Pressed buttons, recessed wells, engraved-text effects, carved-look artwork — all of these reach for <code>box-shadow: inset ...</code>, which works on box backgrounds but not on SVG paths.</p>
 <p><code>InnerShadowFilter</code> is the capability that closes that gap.</p>
 <p><mini-workspace code-open caption="Four blur radii. blur = 2 reads as a hard-edged debossed groove; blur = 16 reads as a soft recessed well.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
 
 let bg = PathLayer('bg') \${
@@ -4146,7 +4146,7 @@ l4.apply {
 <h3>The offset compass</h3>
 <p><code>offsetX</code> and <code>offsetY</code> together control where the shadow falls <em>inside</em> the shape — and therefore where the perceived light source sits <em>outside</em> it. A positive <code>offsetY</code> (the default of <code>2</code>) pushes the shadow down, which reads as light coming from above. Negative <code>offsetY</code> flips that. Diagonal offsets simulate raking light.</p>
 <p><mini-workspace code-open caption="Eight offset directions on the same disc. Each label is the (offsetX, offsetY) pair; the shadow lands opposite the implied light source.">
-  <code>// viewBox="0 0 480 480"
+  <code>define ViewBox(0, 0, 480, 480);
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
@@ -4401,7 +4401,7 @@ caption.apply {
 </code></pre><h3>Block size sweep</h3>
 <p>Three positional values, four block sizes. Larger <code>width</code> produces coarser pixelation.</p>
 <p><mini-workspace code-open caption="PixelateFilter(4, 4, 2) through PixelateFilter(32, 32, 16). radius = width / 2 keeps blocks touching with no gap or overlap.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
 
 let bg = PathLayer('bg') \${
@@ -4511,7 +4511,7 @@ lcap.apply {
 <h3>Radius regime</h3>
 <p>At fixed <code>width</code> and <code>height</code>, <code>radius</code> controls three visually distinct regimes:</p>
 <p><mini-workspace code-open caption="Width = height = 16 in all three. Radius below width/2 leaves gaps; equal to width/2 makes blocks touch; above width/2 makes them overlap.">
-  <code>// viewBox="0 0 540 240"
+  <code>define ViewBox(0, 0, 540, 240);
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius &lt; 8: gaps between blocks. radius = 8: blocks touch. radius &gt; 8: overlap.
 
@@ -4626,7 +4626,7 @@ l3b.apply {
 <p>A single <code>filter:</code> declaration in a Pathogen style block accepts <strong>either</strong> a custom filter value <strong>or</strong> a chain of native CSS filter functions — not both at once. That&#39;s the v1 limit on filter chaining.</p>
 <p>The composition workaround is straightforward and ergonomic: nest the layer in a <a href="/docs/layers"><code>GroupLayer</code></a> carrying one filter, and put the second filter on the inner layer.</p>
 <p><mini-workspace code-open caption="A card raised above its surface (ElevationShadow on the outer GroupLayer) and visually recessed on its top edge (InnerShadow on the inner PathLayer).">
-  <code>// viewBox="0 0 400 240"
+  <code>define ViewBox(0, 0, 400, 240);
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 
@@ -4707,7 +4707,7 @@ label.apply {
 </ol>
 <h2>Five primitives, one named value</h2>
 <p><mini-workspace code-open caption="Five SVG filter primitives behind a single named value. A NoiseFilter you can reuse across layers, log, override by name, and pass to any layer's filter: style property.">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Hero: one line of Pathogen — five SVG filter primitives in the output.
 
 let bg = PathLayer('bg') \${
@@ -4771,7 +4771,7 @@ define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class=
 <h2>NoiseFilter — five presets, one shape</h2>
 <p><code>NoiseFilter</code> ships with five style presets. The primitive chain is the same across all of them; what changes is which <code>feTurbulence</code> type runs, which blend mode mixes the result back into the source, and where the defaults for <code>scale</code>, <code>octaves</code>, <code>amount</code>, <code>monochrome</code>, <code>contrast</code>, and <code>stitch</code> land.</p>
 <p><mini-workspace code-open caption="The five NoiseFilterStyle presets applied to identical discs. Same shape, same fill. Different chain defaults.">
-  <code>// viewBox="0 0 720 240"
+  <code>define ViewBox(0, 0, 720, 240);
 // All five NoiseFilterStyle presets applied to the same disc, side by side.
 
 let bg = PathLayer('bg') \${
@@ -4901,7 +4901,7 @@ l5.apply {
 <h3>scale — the noise frequency knob</h3>
 <p><code>scale</code> maps directly to SVG&#39;s <code>baseFrequency</code>. Higher number means a finer, denser pattern; lower number means larger, coarser features. The <code>NoiseFilterScale</code> enum packages the three common values (<code>Coarse</code>, <code>Medium</code>, <code>Fine</code> → 0.3, 1.0, 5.0) so they&#39;re IDE-autocompleted; for anything in between, assign a finite positive number directly.</p>
 <p><mini-workspace code-open caption="Same disc, same Grain preset. Only scale changes — from a coarse 0.3, through Medium (1.0), to Fine (5.0).">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — scale sweep from coarse to fine.
 // Each disc uses the same preset, only \`scale\` changes.
 
@@ -5024,7 +5024,7 @@ lh.apply {
 <h3>amount — visible intensity</h3>
 <p><code>amount</code> is a 0–1 multiplier on the alpha of the noise pass before it blends with the source. 0 disables the effect entirely; 1 hits full strength. It interacts predictably with <code>blend</code>: at <code>amount = 0.5</code> you see roughly half the contribution of the chosen blend mode.</p>
 <p><mini-workspace code-open caption="Grain at four amounts. The chain stays the same; the alpha ramp does the heavy lifting.">
-  <code>// viewBox="0 0 640 240"
+  <code>define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — amount sweep. amount = 0 is no effect; 1 is full strength.
 
 let bg = PathLayer('bg') \${
@@ -5136,7 +5136,7 @@ l4.apply {
 <h3>monochrome — strip color variance</h3>
 <p>The <code>feTurbulence</code> primitive produces RGB-valued noise by default — different intensities per channel, which reads as faintly colored static. Setting <code>monochrome = true</code> inserts an <code>feColorMatrix</code> step that maps the noise to a single luminance channel, so the grain reads as pure light-and-dark texture independent of the source fill.</p>
 <p><mini-workspace code-open caption="Same Speckle preset, same seed. monochrome = true (left) reads as flat texture; false (right) preserves the per-channel color variance.">
-  <code>// viewBox="0 0 400 220"
+  <code>define ViewBox(0, 0, 400, 220);
 // NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
 
 let bg = PathLayer('bg') \${
@@ -5205,7 +5205,7 @@ l2.apply {
 <h2>Pairing filters with gradients</h2>
 <p>Filters apply on top of whatever the layer&#39;s <code>fill</code> resolved to. That includes Pathogen&#39;s gradient values, which means a noisy gradient is just a layer with a gradient fill and a <code>NoiseFilter</code> filter — no separate plumbing.</p>
 <p><mini-workspace code-open caption="LinearGradient fill plus Grain filter. The grain rides the gradient — and the Gradient preset is tuned for exactly this case, pumping contrast on the noise so it reads through saturated stops.">
-  <code>// viewBox="0 0 400 240"
+  <code>define ViewBox(0, 0, 400, 240);
 // LinearGradient fill + Grain filter on the same layer.
 // One declarative pairing — the grain rides the gradient.
 
@@ -5239,7 +5239,7 @@ panel.apply {
 <h2>One filter, many layers — one <code>&lt;filter&gt;</code> def</h2>
 <p>Because a <code>NoiseFilter</code> is a value, you can assign it to a <code>let</code> once and reference it from as many layers as you want. The output SVG contains exactly one <code>&lt;filter&gt;</code> element regardless of reference count — every layer points at the same <code>url(#pathogen-noise-1)</code>.</p>
 <p><mini-workspace >
-  <code>// viewBox="0 0 600 200"
+  <code>define ViewBox(0, 0, 600, 200);
 // One filter, six shapes — one &lt;filter&gt; def in the output SVG.
 
 let bg = PathLayer('bg') \${
@@ -5313,7 +5313,7 @@ c6.apply {
 <h2>Introspection: filter values you can log and pass around</h2>
 <p>Read-side property access is a small thing on the surface and a big thing in practice. You can <code>log()</code> a filter&#39;s id and seed for debugging, branch on its style in downstream logic, or compose a filter value into another expression.</p>
 <p><mini-workspace code-open caption="Open the console panel: every configurable property is also readable. The seed is auto-derived from the filter's id; set it explicitly to lock the noise pattern across edits.">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Filter values support read-side property access — useful for debug,
 // computation, and conditional logic. Open the console to see the logs.
 
@@ -5381,7 +5381,7 @@ wheel.<span class="hljs-property">interpolation</span> = <span class="hljs-strin
 </code></pre><p>Stops at 0 and 1 should match to avoid a hard seam at the join. With OKLCH interpolation enabled, the transitions stay vibrant across the entire hue wheel — no desaturated dead zones between complementary colors.</p>
 <p>The color wheel below uses <code>innerRadius</code> to create a donut effect and <code>.inherit()</code> to create a smaller inner disc with a different fill mode. One gradient definition, two visual treatments.</p>
 <p><mini-workspace code-open caption="Full 360-degree sweep with innerRadius donut and OKLCH interpolation">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Color Wheel — Classic 360° Conic Gradient
 // The "hello world" of conic gradients: a full rainbow sweep
 
@@ -5460,7 +5460,7 @@ gauge.<span class="hljs-property">innerRadius</span> = <span class="hljs-number"
 gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
 </code></pre><p>The <code>from</code> and <code>to</code> values use degree syntax. Values above 360 are valid — <code>405deg</code> is equivalent to <code>45deg</code> but makes the intent clear: a 270-degree arc that wraps past the top. The dashboard below shows three gauges with different angular ranges and inner radii.</p>
 <p><mini-workspace code-open caption="Three gauges using partial sweeps — 270-degree and 180-degree arcs">
-  <code>// viewBox="0 0 660 340"
+  <code>define ViewBox(0, 0, 660, 340);
 // Gauge Dashboard — Partial Sweeps + innerRadius
 // Three gauges using conic gradients as speedometer-style UI
 
@@ -5705,7 +5705,7 @@ scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_val
 };
 grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
 </code></pre><p><mini-workspace caption="Same four stops — clockwise vs counter-clockwise">
-  <code>// viewBox="0 0 500 300"
+  <code>define ViewBox(0, 0, 500, 300);
 // Direction Comparison — CW vs CCW
 // Same gradient, two directions: showing how direction reverses color flow
 
@@ -5814,7 +5814,7 @@ scene.append(bg, left, right, labels, note);
 grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
 grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;
 </code></pre><p><mini-workspace code-open caption="Four innerFill modes: transparent, transparent-blend, center, and custom color">
-  <code>// viewBox="0 0 520 530"
+  <code>define ViewBox(0, 0, 520, 530);
 // Inner Radius &amp; Fill Modes — 2×2 Grid
 // The 4 innerFill modes with the same base gradient
 
@@ -5952,7 +5952,7 @@ scene.append(bg, top_row, bottom_row, labels, desc, title);
 <p>OKLCH interpolation matters even more on conic gradients than on linear ones. A full-sweep color wheel interpolated in sRGB produces muddy bands wherever complementary colors meet. In OKLCH, the transitions trace a perceptually uniform arc through the hue wheel, maintaining chroma and lightness throughout.</p>
 <p>The comparison below renders the same color pairs as both sRGB and OKLCH conic gradients. The sRGB versions show visible desaturation at the midpoints. The OKLCH versions maintain vivid color throughout the full rotation.</p>
 <p><mini-workspace caption="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs">
-  <code>// viewBox="0 0 600 540"
+  <code>define ViewBox(0, 0, 600, 540);
 // OKLCH vs sRGB Interpolation on Conic Gradients
 // Perceptual difference: muddy sRGB midpoints vs vibrant OKLCH transitions
 
@@ -6100,7 +6100,7 @@ scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 sky_layer.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
 <p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Linear Gradient Basics — Layered Landscape
 // Demonstrates vertical, diagonal, and horizontal linear gradients
 
@@ -6174,7 +6174,7 @@ scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 <p>The <code>x1, y1 → x2, y2</code> coordinates control the gradient&#39;s angle. A vertical gradient uses <code>(0, 0, 0, 1)</code>. A horizontal one uses <code>(0, 0, 1, 0)</code>. Diagonals use any combination. Reversing the coordinates reverses the color flow — <code>(1, 0, 0, 0)</code> runs right to left.</p>
 <p>There is no <code>angle</code> property. The two-point model is more flexible: you can offset the start or end to create gradients that begin or end partway through an element, or run along arbitrary diagonals. The six swatches below show the same three color stops at six different directions.</p>
 <p><mini-workspace caption="Same stops, six directions — the two-point model controls angle">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Angle Fan — Linear Gradient Direction Showcase
 // Same gradient stops at 6 different angles, arranged in a fan
 
@@ -6290,7 +6290,7 @@ fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 };
 </code></pre><p>Radial gradients are natural fits for glows, spotlights, and vignettes. The scene below composes four radial gradients — a nebula background, two star types, and a planet with an off-center highlight — to build a cosmic scene entirely from radial falloffs and transparent stops.</p>
 <p><mini-workspace code-open caption="Four radial gradients — nebula, stars, and a ringed planet">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Radial Gradient Glow — Cosmic Scene
 // Demonstrates radial gradients for light sources, glows, and shading
 
@@ -6393,7 +6393,7 @@ scene.append(bg, nebula, stars, planet);
 };
 </code></pre><p>The three spheres below use identical color stops. Only <code>fx</code> and <code>fy</code> differ — the highlight shifts from top-left to center to top-right.</p>
 <p><mini-workspace caption="Same gradient stops, three focal points — the highlight shifts with fx, fy">
-  <code>// viewBox="0 0 450 180"
+  <code>define ViewBox(0, 0, 450, 180);
 // Focal Point Spheres — Same stops, different fx/fy positions
 // Demonstrates how RadialGradient's focal point shifts the highlight
 
@@ -6473,7 +6473,7 @@ scene.append(bg, s1, s2, s3, labels);
 grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>The comparison below shows three color pairs — blue/yellow, red/cyan, magenta/green — in both sRGB and OKLCH. The difference is dramatic: sRGB midpoints are desaturated and dull, while OKLCH transitions stay vibrant and chromatic.</p>
 <p><mini-workspace code-open caption="sRGB vs OKLCH — same stops, dramatically different midpoints">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // OKLCH vs sRGB Interpolation — Side-by-Side Comparison
 // Same color stops, dramatically different midpoints
 
@@ -6601,7 +6601,7 @@ comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, m
 grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;reflect&#x27;</span>;
 </code></pre><p>The three strips below use the same gradient that covers only the first 30% of each element. The vertical lines mark the gradient&#39;s defined range. Beyond that boundary, each spread method produces a different visual pattern.</p>
 <p><mini-workspace code-open caption="pad, reflect, repeat — same narrow gradient, three spread behaviors">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Spread Modes — Pad / Reflect / Repeat
 // Same narrow gradient, three different spread behaviors
 
@@ -6715,7 +6715,7 @@ cool.<span class="hljs-property">gradientTransform</span> = <span class="hljs-st
 vertical.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
 </code></pre><p>One base gradient, three variants. Change the base and all inherited gradients update. This is the foundation of a themeable gradient system — define your palette once, derive everything else.</p>
 <p><mini-workspace code-open caption="One base gradient spawns a family of variants via inherit()">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Gradient Inheritance — Themed UI Palette
 // One base gradient spawns variants via inherit()
 
@@ -6825,7 +6825,7 @@ palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3,
 <p>Pathogen&#39;s gradients compose naturally with the <a href="/blog/reactive-color-svg">reactive color system</a>. When gradient stops reference CSS custom properties, the compiled SVG responds to runtime changes — swap a theme variable and every gradient updates instantly.</p>
 <p>The demo below puts three overlapping radial glows on a dark background. Each glow&#39;s center color is bound to a CSS variable (<code>--light-a</code>, <code>--light-b</code>, <code>--light-c</code>) — use the color pickers to remix the scene in real time.</p>
 <p><mini-workspace code-open caption="Drag the color pickers to recolor three overlapping radial lights">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Reactive Radial Lights — CSSVar-driven overlapping glows
 // Drag the color pickers to recolor three radial light sources
 
@@ -6898,7 +6898,7 @@ scene.append(bg, la, lb, lc);
 mesh.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>A 2x2 grid is the simplest case — four corners, each a different color, with smooth blending across the surface. The result looks like what you might get from a CSS four-corner gradient, except it is rendered as a high-resolution image embedded in SVG.</p>
 <p><mini-workspace code-open caption="2x2 mesh — four corner colors with bilinear OKLCH interpolation">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Mesh Basics — 2×2 Corner Colors
 // The simplest mesh gradient: four corners, bilinear interpolation
 
@@ -6965,7 +6965,7 @@ scene.append(bg, patch, labels, title);
   g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">0</span>, <span class="hljs-number">20</span>);    <span class="hljs-comment">// warp top edge</span>
 };
 </code></pre><p><mini-workspace caption="Uniform grid vs deformed grid — same colors, different point positions">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Mesh Deformation — Translated Control Points
 // Side-by-side: uniform grid vs deformed grid with .translate()
 
@@ -7083,7 +7083,7 @@ nebula.<span class="hljs-property">falloff</span> = <span class="hljs-number">2.
 nebula.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
 </code></pre><p>The <code>g.point(x, y, color)</code> method places a color source at absolute coordinates. Six points with OKLCH interpolation produce a smooth nebula-like color field. The small dots in the demo below mark where each color point is placed.</p>
 <p><mini-workspace code-open caption="Six color points blended with inverse-distance weighting">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Freeform Scatter — Inverse-Distance Blending
 // Color points placed freely; IDW interpolation creates smooth fields
 
@@ -7164,7 +7164,7 @@ scene.append(bg, field, dots, point_labels, title);
 <li><strong>falloff = 4.0</strong>: Tight halos. Each point&#39;s color is concentrated in a small region, with rapid transitions between adjacent points.</li>
 </ul>
 <p><mini-workspace code-open caption="Same five points at three falloff exponents: 1.0, 2.0, 4.0">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Falloff Comparison — Same Points, Different Exponents
 // How the falloff parameter controls color blending sharpness
 
@@ -7264,7 +7264,7 @@ scene.append(bg, f1, f2, f3, labels, desc, title);
 <p>The two gradient types serve different design needs. MeshGradient excels at structured, predictable blending — backgrounds, UI surfaces, and any case where you want precise control over the transition boundaries. FreeformGradient is better for organic, painterly effects — glows, nebulae, abstract art.</p>
 <p>The comparison below places the same nine colors using both methods. The mesh version (left) uses a 3x3 grid with bilinear interpolation, producing clean diagonal transitions. The freeform version (right) uses the same colors at similar positions with IDW blending, producing rounder, more diffuse regions.</p>
 <p><mini-workspace code-open caption="Same 9 colors — bilinear grid vs inverse-distance scatter">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Mesh vs Freeform — Side-by-Side Comparison
 // Same palette, two interpolation models: grid vs scatter
 
@@ -7388,7 +7388,7 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 <h2>The Pipeline</h2>
 <p>The compilation pipeline has five stages. Source code enters on the left. An interactive blog embed exits on the right.</p>
 <p><mini-workspace caption="Five stages: source, compiler, GPU renderer, SVG output, blog embed">
-  <code>// viewBox="0 0 700 250"
+  <code>define ViewBox(0, 0, 700, 250);
 // Pipeline Flow — Source to Blog
 // Visual flowchart showing the Pathogen gradient compilation pipeline
 
@@ -7536,7 +7536,7 @@ card.<span class="hljs-title function_">append</span>(fill_layer, label_layer, t
 </code></pre><p>The <code>translate-x</code>, <code>translate-y</code>, <code>rotate</code>, and <code>scale</code> convenience properties in the style block compile to a <code>transform</code> attribute on the <code>&lt;g&gt;</code> element. This is simpler than writing raw <code>transform: translate(20, 25)</code> and composes correctly when multiple transforms are needed (the order is always translate, rotate, scale).</p>
 <p>The <code>.append()</code> method adds child layers to the group. Children render in append order. When a layer is appended to a new group, it is automatically removed from any previous group — no duplicate references.</p>
 <p><mini-workspace code-open caption="Three cards positioned with GroupLayer translate — mixing native and GPU gradients">
-  <code>// viewBox="0 0 600 320"
+  <code>define ViewBox(0, 0, 600, 320);
 // GroupLayer Cards — Organizational Power
 // Three gradient panels positioned with GroupLayer translate convenience property
 
@@ -7738,7 +7738,7 @@ npm run dev:website   <span class="hljs-comment"># Build + serve at localhost:30
 </code></pre><h2>All Six Types</h2>
 <p>The gallery below shows all six gradient types in a single Pathogen source file. The top row — Linear, Radial, Conic — spans the range from native SVG to GPU-rendered. The bottom row — Mesh, Freeform, Topo — represents gradient models that have never existed in any web standard.</p>
 <p><mini-workspace caption="The complete Pathogen gradient system — six types, one language">
-  <code>// viewBox="0 0 580 400"
+  <code>define ViewBox(0, 0, 580, 400);
 // Gradient Gallery — All Six Types
 // A complete overview of every gradient type in the Pathogen language
 
@@ -7928,7 +7928,7 @@ topo.<span class="hljs-property">interpolation</span> = <span class="hljs-string
 </code></pre><p>Contour paths are defined as path variables using the <code>@{ ... }</code> syntax and positioned using <code>.project(x, y)</code>. The <code>.contour()</code> method takes three arguments: a projected path, an elevation scalar, and a <code>Color</code>. The path must be closed (ending with <code>z</code>).</p>
 <p>The elevation value determines where this contour sits in the gradient&#39;s range. At elevation 0.0, the <code>baseColor</code> applies. At 0.25, the first contour&#39;s color takes over. Between contours, the renderer interpolates based on the signed distance from each contour boundary.</p>
 <p><mini-workspace code-open caption="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Topo Basics — Contour-as-Color-Stop
 // The core concept: closed paths at elevations create terrain-like gradients
 
@@ -8011,7 +8011,7 @@ scene.append(bg, labels, title);
 };
 </code></pre><p>The twin peaks below use the same base shape (an organic blob) projected to two different positions. Each peak has its own color palette — warm tones on the left, cool on the right — but shares the same dark ocean base color.</p>
 <p><mini-workspace caption="Two independent peaks at the same elevation — warm and cool palettes">
-  <code>// viewBox="0 0 500 350"
+  <code>define ViewBox(0, 0, 500, 350);
 // Twin Peaks — Non-Nested Contours
 // Separate contours at the same elevation create independent features
 
@@ -8088,7 +8088,7 @@ scene.append(bg, labels, title);
 topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">300</span>;
 </code></pre><p>The <code>iterations</code> property controls convergence (default 200, max 2000). Higher values produce smoother results at the cost of render time. For most cases, 200-400 iterations are sufficient.</p>
 <p><mini-workspace code-open caption="Same three contours — distance (concentric) vs Laplace (smooth potential field)">
-  <code>// viewBox="0 0 500 300"
+  <code>define ViewBox(0, 0, 500, 300);
 // Method Comparison — Distance (SDF) vs Laplace Solver
 // Same contours, two solver algorithms: different blending behavior
 
@@ -8192,7 +8192,7 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 </ul>
 <p>Easing is applied after the solver computes the raw elevation — it remaps the value through the chosen curve before looking up the color. This means the same contour geometry produces different visual densities depending on the easing mode.</p>
 <p><mini-workspace code-open caption="Five easing modes applied to the same two contours">
-  <code>// viewBox="0 0 550 350"
+  <code>define ViewBox(0, 0, 550, 350);
 // Easing Modes — 5 Elevation Interpolation Curves
 // How easing changes the visual transition between contours
 
@@ -8328,7 +8328,7 @@ scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 <p>With five elevation bands and the Laplace solver, <code>TopoGradient</code> can produce convincing terrain maps. Each contour represents a different geographic feature — ocean, beach, lowland, forest, ridge, summit — with colors chosen to match cartographic conventions.</p>
 <p>The sample below nests five contour shapes, each slightly smaller than the last, at increasing elevations. The Laplace solver (400 iterations) produces the smooth, flowing transitions between bands. An embedded legend labels each elevation.</p>
 <p><mini-workspace caption="Five elevation bands with Laplace solver — ocean to summit">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Terrain Map — Island with Nested Elevation Bands
 // Classic topographic map aesthetic with 5 elevation levels
 
@@ -8441,7 +8441,7 @@ scene.append(bg, legend_group, title);
 <p>TopoGradient is not limited to cartography. When contours overlap, the solver blends their influence regions, creating complex color fields that emerge from simple shape definitions. Overlapping blobs at different elevations produce layered, painterly effects.</p>
 <p>The abstract composition below uses six contours — two warm clusters, two cool clusters, and a center overlap — with the Laplace solver and ease-in-out easing. The three contour groups interact where their influence regions meet, producing a result that looks hand-painted but is fully defined by code.</p>
 <p><mini-workspace caption="Overlapping contour clusters with Laplace blending — abstract topography">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Abstract Topo — Artistic Contour Composition
 // Multiple overlapping shapes creating an abstract topographic artwork
 
@@ -8509,7 +8509,7 @@ scene.append(bg, title);
 <h3>Geometric Contours</h3>
 <p>When contour shapes are angular rather than organic, the results change character. Nested rotated rectangles produce sharp ridgelines and faceted valleys — the Laplace solver smooths the transitions between angular boundaries while preserving the geometric feel. The schematic on the right shows each contour outline with its elevation value and color, so you can trace how the gradient follows the shape geometry.</p>
 <p><mini-workspace caption="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map">
-  <code>// viewBox="0 0 840 420"
+  <code>define ViewBox(0, 0, 840, 420);
 // Nested Rectangles — Annotated Schematic
 // Left: rendered gradient, Right: contour map with paint chips + elevation labels
 
@@ -8658,7 +8658,7 @@ scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline
 </mini-workspace></p>
 <p>Multi-cluster polygonal contours create crystal-like formations. Three separate shape clusters — a central blue faceted core, a magenta wedge in the lower right, and a green shard in the upper left — compete for influence across the canvas. Where their distance fields overlap, the Laplace solver blends them into smooth transitions that emerge from purely angular geometry.</p>
 <p><mini-workspace caption="Crystal formation — eight polygonal contours across three clusters with annotated contour map">
-  <code>// viewBox="0 0 840 420"
+  <code>define ViewBox(0, 0, 840, 420);
 // Crystal Formation — Annotated Schematic
 // Left: rendered gradient, Right: contour map with paint chips + elevation labels
 
@@ -8913,7 +8913,7 @@ scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, 
 <h3>Organic Methods Compared</h3>
 <p>The method choice matters most with complex organic contours. The same three shapes — a sweeping coastline curve, a flat-topped mesa, and a sharp triangular spire — produce markedly different results under the two solvers. Distance (SDF) creates concentric bands that follow every curve and corner exactly. The Laplace solver diffuses those boundaries into flowing transitions, softening the mesa&#39;s flat top and the spire&#39;s sharp point into a continuous potential field.</p>
 <p><mini-workspace caption="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes">
-  <code>// viewBox="0 0 740 370"
+  <code>define ViewBox(0, 0, 740, 370);
 // Method Comparison — Organic + Annotated Schematic
 // Left: distance SDF, Center: Laplace solver, Right: contour map
 
@@ -9137,7 +9137,7 @@ scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spi
 </tbody></table>
 <p>The grid fills as many complete cells as fit: <code>floor(width / cellSize)</code> columns and <code>floor(height / cellSize)</code> rows. Extra space is ignored.</p>
 <p><mini-workspace code-open caption="squareGrid — four pattern types with reactive colors">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Square grid — all four pattern types
 
 let gridColor = Color(CSSVar('--grid-color', #4488ff));
@@ -9204,7 +9204,7 @@ labels.apply {
 </code></pre><p>Same parameters as <code>squareGrid</code>, but <code>cellSize</code> is the triangle <strong>height</strong> (altitude of the equilateral triangle). The side length is derived: <code>side = 2 × cellSize / √3</code>. Triangles alternate between point-up and point-down orientations, with odd rows offset by half a side length to form a seamless tessellation.</p>
 <p>The intersection marks on triangle grids are edge-aligned — six arms at 60° intervals (three bidirectional lines), matching the grid&#39;s natural symmetry where six edges meet at each interior vertex.</p>
 <p><mini-workspace code-open caption="triangleGrid — equilateral triangle tessellation in four pattern types">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Triangle grid — all four pattern types
 
 let gridColor = Color(CSSVar('--grid-color', #44cc88));
@@ -9290,7 +9290,7 @@ labels.apply {
 </tbody></table>
 <p>Intersection marks on hex grids are 3-arm radial marks — matching the three edges that meet at each vertex.</p>
 <p><mini-workspace code-open caption="hexagonGrid — flat-top hexagons in four pattern types">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Hexagon grid — all four pattern types (flat-top)
 
 let gridColor = Color(CSSVar('--grid-color', #ff6688));
@@ -9355,7 +9355,7 @@ labels.apply {
 <h3>Orientation Comparison</h3>
 <p>The two orientations produce visually distinct tessellations from the same cell size:</p>
 <p><mini-workspace code-open caption="HexagonOrientation.Edge (flat-top) vs HexagonOrientation.Vertex (pointy-top)">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Hexagon orientations — flat-top (Edge) vs pointy-top (Vertex)
 
 let gridColor = Color(CSSVar('--grid-color', #cc88ff));
@@ -9436,7 +9436,7 @@ labels.apply {
 <h2>Putting It Together</h2>
 <p>Grid functions are most useful as background textures layered behind other geometry. Combine them with <a href="/docs#layers-defining-layers">layer transforms</a> for rotation, and use <code>Color</code> methods to derive palette variations from a single reactive base color:</p>
 <p><mini-workspace code-open caption="Layered composition — rotated partial grid, hex outline, and triangle intersections">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Practical composition — rotated grid background with foreground geometry
 
 let gridColor = Color(CSSVar('--grid-color', #5577aa));
@@ -9516,7 +9516,7 @@ h <span class="hljs-number">0.01</span>            <span class="hljs-comment">//
 </code></pre><h2>Shapes Without Dummy Segments</h2>
 <p>The demo below shows four shapes built entirely with <code>heading</code>, <code>turn</code>, <code>tangentLine</code>, and <code>tangentArc</code> — no dummy segments needed. Each shape includes the code used to construct it.</p>
 <p><mini-workspace code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
-  <code>// viewBox="0 0 540 220"
+  <code>define ViewBox(0, 0, 540, 220);
 // heading() and turn() — tangent context without path commands
 
 // --- Background ---
@@ -9664,7 +9664,7 @@ fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-param
 }
 </code></pre><p>The showcase below draws triangles through decagons — eight polygons in each row, sharp and rounded. One function, one loop, any number of sides.</p>
 <p><mini-workspace code-open caption="Regular polygons from 3 to 10 sides — sharp and rounded corners">
-  <code>// viewBox="0 0 680 400"
+  <code>define ViewBox(0, 0, 680, 400);
 // Regular polygons via heading + turn + tangentLine/tangentArc
 
 // --- Background ---
@@ -9856,7 +9856,7 @@ M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
 <p><a href="/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
 </code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
-  <code>// viewBox="0 0 580 480"
+  <code>define ViewBox(0, 0, 580, 480);
 // Boolean operations — union, difference, intersection, xor
 // Each quadrant uses a GroupLayer with translate to avoid compounding projections
 
@@ -10234,7 +10234,7 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 </code></pre><p>This creates a union of two overlapping squares, then rounds all the corners with a 5px fillet. The composability is the whole point — each operation produces a value that feeds into the next.</p>
 <p>The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a PathBlock that feeds into the next.</p>
 <p><mini-workspace caption="Chaining pipeline — overlapping squares → union → union + fillet(8)">
-  <code>// viewBox="0 0 520 280"
+  <code>define ViewBox(0, 0, 520, 280);
 // Boolean + fillet chaining — compose operations
 // Each step uses a GroupLayer with translate to avoid compounding projections
 
@@ -10468,7 +10468,7 @@ subtitle.apply {
 drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
 </code></pre><p>The demo below shows two practical examples: a plate with four drilled holes (chained <code>.difference()</code> calls), and a badge shape created by unioning a star with a circle.</p>
 <p><mini-workspace code-open caption="Standard library shapes — drilled plate and star-circle badge">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // Standard library shapes with boolean operations
 
 let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
@@ -10595,7 +10595,7 @@ asym.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">
 </code></pre><p>You can chain <code>chamferAtVertex</code> calls to selectively bevel specific corners with different distances.</p>
 <p>The anatomy diagram below shows the geometric construction: the red dot is the original vertex, green dots are the trim points at distance <code>d</code> along each edge, and the blue line connects them. The yellow dimension arrows show <code>d1</code> (incoming) and <code>d2</code> (outgoing) trim distances.</p>
 <p><mini-workspace caption="Chamfer anatomy — geometric construction at a right-angle corner">
-  <code>// viewBox="0 0 480 340"
+  <code>define ViewBox(0, 0, 480, 340);
 // Chamfer anatomy — geometric construction at a single corner
 
 // A right-angle corner
@@ -10847,7 +10847,7 @@ subtitle.apply {
   <img src="/blog/samples/post8/chamfer-anatomy.svg" alt="Chamfer anatomy — geometric construction at a right-angle corner" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Chamfer variations — symmetric, large, asymmetric, per-vertex, and chained">
-  <code>// viewBox="0 0 560 300"
+  <code>define ViewBox(0, 0, 560, 300);
 // Chamfer gallery — symmetric, asymmetric, per-vertex
 
 let box = @{ h 70 v 70 h -70 z };
@@ -11001,7 +11001,7 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
 </code></pre><p>The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance <code>r</code> from both edges) and the trim formula <code>trim = r / tan(halfAngle)</code> are labeled. For a right angle, <code>trim = r</code>.</p>
 <p><mini-workspace caption="Fillet anatomy — arc center, trim points, and radius at a 90° corner">
-  <code>// viewBox="0 0 480 340"
+  <code>define ViewBox(0, 0, 480, 340);
 // Fillet anatomy — circular arc construction at a corner
 
 // --- Background ---
@@ -11283,7 +11283,7 @@ rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 <h3>Adapting to Corner Angles</h3>
 <p>The elliptical fillet computes separate trim distances for each edge based on the tangent parameters of the ellipse. At a 90° corner with <code>ellipticalFillet(rx, ry)</code>, the horizontal edges are trimmed by <code>rx</code> and the vertical edges by <code>ry</code> — matching CSS <code>border-radius</code> behavior. The diagram below shows two configurations — <code>ellipticalFillet(32, 16)</code> (wider) and <code>ellipticalFillet(24, 48)</code> (taller) — at eight different corner angles.</p>
 <p><mini-workspace caption="Elliptical fillet at various angles — adapts trim distances per-edge">
-  <code>// viewBox="0 0 700 380"
+  <code>define ViewBox(0, 0, 700, 380);
 // Elliptical fillet at various corner angles — before (dashed) and after (solid)
 
 // --- Background ---
@@ -11447,7 +11447,7 @@ subtitle.apply {
   <img src="/blog/samples/post8/elliptical-fillet-angles.svg" alt="Elliptical fillet at various angles — adapts trim distances per-edge" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace code-open caption="Fillet gallery — circular (small, large), elliptical, single-vertex, and rotated elliptical">
-  <code>// viewBox="0 0 560 300"
+  <code>define ViewBox(0, 0, 560, 300);
 // Fillet gallery — circular, elliptical, per-vertex
 
 let box = @{ h 70 v 70 h -70 z };
@@ -11676,7 +11676,7 @@ glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">dr
 </code></pre><p>This is the text layout engine&#39;s job, and now it&#39;s yours. The advance width accumulation produces the same letter spacing that a browser would use for the same font at the same size — because the values come directly from the font file via opentype.js.</p>
 <p>The difference between proportional and monospace fonts shows up clearly here. A proportional font like Bebas Neue produces variable spacing: the &quot;P&quot; might advance 22px while the &quot;I&quot; advances 8px. A monospace font like Inconsolata advances every character by the same amount. The demo below renders the same word in both fonts, with dashed tick marks showing each character&#39;s advance-width boundary.</p>
 <p><mini-workspace caption="Advance-width layout — proportional (Bebas Neue) vs monospace (Inconsolata)">
-  <code>// viewBox="0 0 600 300"
+  <code>define ViewBox(0, 0, 600, 300);
 // Hello World glyph layout — advance-width loop placing each letter
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -11874,7 +11874,7 @@ code_group.append(code, kw);
 }
 </code></pre><p>The demo below decomposes &quot;Bingo!&quot; into its contours. Count them: B has 3 (outer shape + 2 holes), i has 2 (body + dot), n has 1 (solid body), g has 2 (body + descender loop), o has 2 (outer + inner), and ! has 2 (body + dot). That&#39;s 12 contours across 6 characters, each drawn in its own color. Each contour is colored from a 12-color palette cycling through blue, green, amber, red, purple, pink, cyan, lime, orange, indigo, teal, and fuchsia.</p>
 <p><mini-workspace caption="Contour decomposition — 12 contours across 6 characters of 'Bingo!'">
-  <code>// viewBox="0 0 660 400"
+  <code>define ViewBox(0, 0, 660, 400);
 // Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
 
 @font "../../../../fonts/Raleway/Raleway-Bold.ttf"
@@ -12226,7 +12226,7 @@ layer('divider').apply { M 345 20 v 370 }
 }
 </code></pre><p>Each glyph is rotated to follow the arc&#39;s tangent direction using <code>.rotateAtVertexIndex(0, angle)</code>, then placed at the corresponding position on the circle. The <code>0.5pi</code> uses Pathogen&#39;s numeric suffix notation — a shorthand for π/2 (a quarter turn) — which converts the radial angle to the tangent direction. The advance widths are converted to angular offsets by dividing by the arc radius.</p>
 <p><mini-workspace caption="Three per-character transform effects — wave, grow, and circular arc text">
-  <code>// viewBox="0 0 600 220"
+  <code>define ViewBox(0, 0, 600, 220);
 // Per-character transforms — wave, scale, and arc effects on individual glyphs
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -12499,7 +12499,7 @@ layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
 </code></pre><p>The chaining works because every boolean operation returns a PathBlock, so the result of <code>.union()</code> feeds directly into the next <code>.union()</code> or <code>.difference()</code> — for any number of glyphs. Because boolean operations <a href="/blog/pathblock-boolean-operations">preserve curve types</a>, the glyph outlines stay smooth at any zoom level.</p>
 <p>The demo below shows the full pipeline in five panels: individual glyph outlines, a <code>.union()</code> arrow, the combined path, a <code>.difference()</code> arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using <code>.difference()</code>.</p>
 <p><mini-workspace caption="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle">
-  <code>// viewBox="0 0 900 310"
+  <code>define ViewBox(0, 0, 900, 310);
 // Text cutout — seven-glyph pipeline: glyph outlines → union → difference
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -12693,7 +12693,7 @@ code_group.append(code_bg, code, kw);
 <p>Contrast this with SVG <code>&lt;text&gt;</code>. When you write <code>&lt;text font-family=&quot;Inter&quot;&gt;Hello&lt;/text&gt;</code>, the <em>browser</em> picks the font and renders the text. If you need to know how wide &quot;Hello&quot; is before drawing it, you&#39;re estimating — either with built-in character width tables (which TextBlock uses when no font is loaded) or with a <code>@font</code> declaration that might not exactly match what the browser loads. The estimation tables are ~85-90% accurate for Latin text, which is usually good enough for layout decisions. But for tight positioning — aligning a bounding box precisely to rendered text, for example — the gap can be visible.</p>
 <p>With <code>fromGlyph()</code>, there&#39;s no gap. The path commands <em>are</em> the rendering. The advance widths <em>are</em> the layout. Everything comes from one source — the loaded font file.</p>
 <p><mini-workspace caption="Same word, two approaches — fromGlyph() paths with exact metrics vs SVG text with estimated metrics">
-  <code>// viewBox="0 0 600 340"
+  <code>define ViewBox(0, 0, 600, 340);
 // @font precision — fromGlyph() uses the exact same font for both paths and metrics
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -12947,7 +12947,7 @@ layer('insight').apply {
 </code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
 <p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
 <p><mini-workspace caption="PathBlock anatomy — origin, vertices, bounds, and path direction">
-  <code>// viewBox="0 0 600 380"
+  <code>define ViewBox(0, 0, 600, 380);
 // PathBlock Anatomy — visual guide to structure and properties
 
 let arrow = @{
@@ -13231,7 +13231,7 @@ arrow.<span class="hljs-title function_">draw</span>()
 </code></pre><p>It emits <code>M 60 70</code> followed by the PathBlock&#39;s commands, and returns a <code>ProjectedPath</code> value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.</p>
 <p>The demo below shows both approaches — manual on top, <code>drawTo</code> on the bottom. Same shapes, same positions, less ceremony with <code>drawTo</code>.</p>
 <p><mini-workspace code-open caption="Manual M+draw() vs drawTo() — same result, less code">
-  <code>// viewBox="0 0 400 200"
+  <code>define ViewBox(0, 0, 400, 200);
 // drawTo() vs manual M + draw()
 
 let diamond = @{
@@ -13289,7 +13289,7 @@ drawto.apply {
 </code></pre><p>PathBlocks are <a href="/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
 <p>Below, a single leaf-shaped PathBlock (defined with two cubic Béziers) is drawn 28 times in radial rings — 8 in an inner ring, 12 in an outer ring, plus 8 diamond accents. One definition, many instances.</p>
 <p><mini-workspace caption="Radial pattern — one PathBlock drawn 28 times with trigonometric placement">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // PathBlock reuse — define once, create patterns
 
 // A leaf-like motif
@@ -13456,7 +13456,7 @@ title.apply {
 <h2>A Practical Example</h2>
 <p>Here&#39;s a grid built from two simple PathBlocks — a horizontal line and a vertical line — repeated with loops. The PathBlock captures the shape; the loop handles placement.</p>
 <p><mini-workspace code-open caption="Grid from two PathBlocks — define once, draw in loops">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // PathBlock basics — define, draw, reuse
 
 let arrow = @{
@@ -13526,7 +13526,7 @@ arrows.apply {
 <span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
 </code></pre><p>These return PathBlocks, so all the same methods — <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, transforms — work on them.</p>
 <p><mini-workspace caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
-  <code>// viewBox="0 0 600 260"
+  <code>define ViewBox(0, 0, 600, 260);
 // Standard library shape gallery
 
 // --- Background ---
@@ -13712,7 +13712,7 @@ subtitle.apply {
 <span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
 <p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
-  <code>// viewBox="0 0 560 360"
+  <code>define ViewBox(0, 0, 560, 360);
 // Parametric Sampling Anatomy — .get(), .tangent(), .normal() visualized
 
 let curve = @{
@@ -13970,7 +13970,7 @@ curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number"
 <h2>Sampling Points Along a Curve</h2>
 <p>The demo below shows parametric sampling in action. A sine-like curve is defined with two cubic Béziers, then 8 points are placed along it using <code>partition()</code>, and tangent lines are drawn at regular intervals.</p>
 <p><mini-workspace code-open caption="Points and tangent lines sampled along a cubic Bézier curve">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Parametric sampling — placing dots along a curve
 
 let curve = @{
@@ -14059,7 +14059,7 @@ tangents.apply {
 </tbody></table>
 <p>The demo below shows <code>partition(8)</code> on an S-curve. Each of the 9 points (fence posts at both ends) is labeled with its <code>t</code> value. Notice the even spacing — the points are equidistant along the curve, not along the x-axis.</p>
 <p><mini-workspace caption="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve">
-  <code>// viewBox="0 0 520 300"
+  <code>define ViewBox(0, 0, 520, 300);
 // Partition with t-value labels — even arc-length spacing
 
 let curve = @{
@@ -14181,7 +14181,7 @@ subtitle.apply {
 <h2>Building a Fence Along a Curve</h2>
 <p>Here&#39;s a practical example: fence posts distributed evenly along a winding road. The posts are placed using <code>partition(16)</code>, then oriented perpendicular to the road using <code>normal()</code>. Rails connect adjacent posts at 1/3 and 2/3 height.</p>
 <p><mini-workspace code-open caption="Fence posts and rails distributed along a curved road">
-  <code>// viewBox="0 0 540 320"
+  <code>define ViewBox(0, 0, 540, 320);
 // partition() — evenly-spaced fence posts along a curved path
 
 let road = @{
@@ -14383,7 +14383,7 @@ subtitle.apply {
 <span class="hljs-keyword">let</span> blended = base.<span class="hljs-title function_">mix</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#457b9d&#x27;</span>), <span class="hljs-number">0.5</span>); <span class="hljs-comment">// interpolate</span>
 </code></pre><p>All of this operates in OKLCH, so a <code>.lighten(0.18)</code> on a deeply saturated red doesn&#39;t accidentally desaturate it — it shifts only lightness while preserving chroma and hue. Try it: pick a color below and watch each method derive its swatch.</p>
 <p><mini-workspace code-open caption="Pick a color. Eight OKLCH manipulation methods fan around a central base-color hub — each sector shows the same derivation expression applied to your choice.">
-  <code>// viewBox="0 0 520 400"
+  <code>define ViewBox(0, 0, 520, 400);
 // Color Methods — Direction 2: Radial Wheel
 // Eight slim 30° sectors arranged around a central base-color hub.
 // Each sector fills with one OKLCH method derivation; labels sit
@@ -14540,7 +14540,7 @@ layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
 <span class="hljs-keyword">let</span> blend = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(base, accent, <span class="hljs-number">5</span>);  <span class="hljs-comment">// 5-step interpolation</span>
 </code></pre><p>The lightness ramp spreads evenly from dark (L=0.15) to light (L=0.95). The interpolation variant uses <code>color-mix()</code> when backed by CSS variables, so the browser handles the blending at render time.</p>
 <p><mini-workspace code-open caption="Pick a base color. The 12-sector hue wheel is the reference; the harmony chord overlays show where analogous, triadic, tetradic, and split-complement partners sit — with live base-derived chips at each vertex.">
-  <code>// viewBox="0 0 520 560"
+  <code>define ViewBox(0, 0, 520, 560);
 // Harmonies &amp; Palettes — Direction 2: Hue Wheel
 // A 12-sector static hue wheel with harmony-chord overlays (analogous
 // arc, triadic triangle, tetradic square, split-comp Y). Harmony
@@ -14840,7 +14840,7 @@ layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
 <span class="hljs-keyword">let</span> secondaryMuted = secondary.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">0.5</span>);
 <span class="hljs-keyword">let</span> accentShift   = accent.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
 </code></pre><p><mini-workspace code-open caption="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych.">
-  <code>// viewBox="0 0 520 640"
+  <code>define ViewBox(0, 0, 520, 640);
 // Theme Demo — Combined: SYSTEM + STAGE
 // Top half is the "theme system" — geometric composition showing how
 // four CSS vars (bg, primary, secondary, accent) and five derived
@@ -15183,7 +15183,7 @@ ld.<span class="hljs-property">interpolation</span> = <span class="hljs-string">
   base.<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">90</span>), base.<span class="hljs-title function_">complement</span>(),
 ];
 </code></pre><p><mini-workspace code-open caption="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once.">
-  <code>// viewBox="0 0 520 520"
+  <code>define ViewBox(0, 0, 520, 520);
 // Light/Dark — Conic (off-canvas center, fanned chips)
 // Gradient origin sits at x = −260 (−50% of canvas width). The conic
 // gradient runs from −90° (north of center = bg_light) to +90°
@@ -15387,7 +15387,7 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
 <span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
 </code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
 <p><mini-workspace code-open caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations">
-  <code>// viewBox="0 0 560 400"
+  <code>define ViewBox(0, 0, 560, 400);
 // radialWedge() — the annular sector with automatic rounded corners
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -15680,7 +15680,7 @@ M cx cy
 <span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
 </code></pre><p>To compare two datasets (all games vs top 100), the Observable chart overlays a narrower dark bar on top of each wider red bar. The dark bar uses 50% of the angular width, centered within the slice:</p>
 <p><mini-workspace code-open caption="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)">
-  <code>// viewBox="0 0 520 400"
+  <code>define ViewBox(0, 0, 520, 400);
 // Radial bar — mapping data values to bar length with radialWedge()
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -15900,7 +15900,7 @@ noteLabel.apply {
 <h2>Arranging Categories</h2>
 <p>With <code>radialWedge()</code> handling individual bars, arranging multiple categories is a <code>for</code> loop over a data array. The syntax <code>for ([d, i] in data)</code> destructures each element into the value <code>d</code> and its index <code>i</code> — a pattern you&#39;ll see throughout the rest of this post. Each category gets an angular slice of <code>TAU() / count</code> radians, with a slight overlap between adjacent wedges:</p>
 <p><mini-workspace code-open caption="8 categories distributed radially — labels are added in the next section">
-  <code>// viewBox="0 0 600 600"
+  <code>define ViewBox(0, 0, 600, 600);
 // Category layout — 8 categories arranged radially with radialWedge()
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -16033,7 +16033,7 @@ catLabels.<span class="hljs-property">apply</span> {
 <li><code>VerticalAnchor.Midline</code> — which vertical font metric aligns with the projected point</li>
 </ol>
 <p><mini-workspace code-open caption="radialProject with VerticalAnchor.Midline — one TextLayer, automatic rotation and hemisphere flip">
-  <code>// viewBox="0 0 700 700"
+  <code>define ViewBox(0, 0, 700, 700);
 // Radial labels — radialProject with VerticalAnchor.Midline
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -16180,7 +16180,7 @@ g.append(bg, grid, center, barsAll, barsTop, catLabels,
 <h2>Testing with Diagnostic Matrices</h2>
 <p>Building <code>radialWedge()</code> required multiple iterations to get the corner geometry right. To verify correctness across the full parameter space, we built diagnostic matrices — grids of wedges with varying angular width and outer radius, each rendered with guide circles, a dotted sharp-corner reference outline, and an XOR diff layer that highlights any geometric differences between the sharp and rounded versions.</p>
 <p><mini-workspace caption="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry">
-  <code>// viewBox="0 0 900 700"
+  <code>define ViewBox(0, 0, 900, 700);
 // radialWedge diagnostic matrix: sharp outline + rounded fill + XOR diff
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -16310,7 +16310,7 @@ g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, titl
   <img src="/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
 </mini-workspace></p>
 <p><mini-workspace caption="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs">
-  <code>// viewBox="0 0 900 700"
+  <code>define ViewBox(0, 0, 900, 700);
 // radialWedge diagnostic matrix: sharp outline + rounded fill + XOR diff
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -16444,7 +16444,7 @@ g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, titl
 <h2>The Complete Chart</h2>
 <p>Bringing everything together: 26 BoardGameGeek categories, overlaid red and dark bars, rotated labels with inline colored percentages via tspan styling, annotation badges, a wedge legend, and a summary bar chart — all driven by a single data array:</p>
 <p><mini-workspace caption="Complete radial hierarchical bar chart — BoardGameGeek category comparison">
-  <code>// viewBox="0 0 1000 750"
+  <code>define ViewBox(0, 0, 1000, 750);
 // Complete radial hierarchical bar chart — BoardGameGeek categories
 
 // === Theme colors (CSSVar for interactive switching) ===
@@ -17045,7 +17045,7 @@ sourceNote.apply {
 <h2>Summary Bar Chart</h2>
 <p>The radial chart excels at showing the overall distribution pattern, but a linear layout makes precise value comparison easier. The companion horizontal bar chart below the main visualization shows the top 5 categories among the highest-ranked games, making the ranking immediately scannable:</p>
 <p><mini-workspace code-open caption="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left">
-  <code>// viewBox="0 0 450 280"
+  <code>define ViewBox(0, 0, 450, 280);
 // Summary bar chart — reusing the same data in a horizontal layout
 
 let bgColor = Color(CSSVar('--bg-color', #f6efe6));
@@ -17402,7 +17402,7 @@ img.<span class="hljs-property">src</span> = url;
 </code></pre><p>Each <code>text(x, y)</code> statement positions a text element relative to the block&#39;s origin. The backtick-delimited content follows the coordinate pair. You can have as many <code>text()</code> statements as you need — a single-line label, a multi-line card, a table of values.</p>
 <p>The anatomy diagram below shows how this works in practice. A three-line TextBlock is defined once, then drawn at two different positions using <code>.drawTo()</code>. The green crosshairs mark each placement&#39;s origin. The dashed amber rectangles show the bounding box — measured once from the TextBlock value, valid at both locations. The arrow connecting the placements reinforces the key idea: one definition, many positions.</p>
 <p><mini-workspace caption="TextBlock anatomy — compose once, place anywhere with bounding box overlay">
-  <code>// viewBox="0 0 600 340"
+  <code>define ViewBox(0, 0, 600, 340);
 // TextBlock Anatomy — compose text at relative coordinates, then position
 
 // ─── Background ─────────────────────────────────────────────────────
@@ -17666,7 +17666,7 @@ legend_group.append(leg_o, leg_b, leg);
 </code></pre><p>This separation of content from presentation is what makes TextBlock composable. Define the text structure once, apply different styles for different contexts, measure for layout, then place. The <code>&lt;&lt;</code> operator does not mutate the original — it returns a new value with the styles merged in, leaving the original available for reuse.</p>
 <p>The demo below shows the same three-line TextBlock rendered with three different style blocks. The dashed outlines are the bounding boxes — each one reflects the actual measured dimensions for that style variant.</p>
 <p><mini-workspace caption="One TextBlock, three styles — bounding box adapts to each font configuration">
-  <code>// viewBox="0 0 600 300"
+  <code>define ViewBox(0, 0, 600, 300);
 // Style merging — &lt;&lt; operator sets block-level styles
 
 // --- Background ---
@@ -17874,7 +17874,7 @@ dims.apply {
 </blockquote>
 <p>The demo below shows <code>.boundingBox()</code> at three different font sizes. Each row renders the same text, measures it, and draws width/height dimension lines. Notice how the bounding box scales with font size — the measurement adapts automatically.</p>
 <p><mini-workspace caption="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text">
-  <code>// viewBox="0 0 600 360"
+  <code>define ViewBox(0, 0, 600, 360);
 // Bounding box measurement — .boundingBox() returns {x, y, width, height}
 
 // --- Background ---
@@ -18048,7 +18048,7 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 </code></pre><p>The convention is that the <strong>anchor faces the center</strong> — so a label projected to the right of a shape uses <code>BBoxAnchor.Left</code> (the left edge of the text box is closest to the center), while a label above uses <code>BBoxAnchor.Bottom</code>. This keeps text radiating outward naturally.</p>
 <p>The compass demo below shows this in action. Eight labels are placed at 45-degree intervals around a central hexagon, each using the appropriate anchor. The amber dots mark the polar target points on the guide circle; the text stays clear of the shape at every position.</p>
 <p><mini-workspace caption="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment">
-  <code>// viewBox="0 0 500 500"
+  <code>define ViewBox(0, 0, 500, 500);
 // Polar projection — labels placed at compass positions around a shape
 // Uses GroupLayers per Code Example Guideline §9
 
@@ -18280,7 +18280,7 @@ code_group.append(code, kw);
 </code></pre><p>Each angle is paired with an anchor that faces back toward the center point. This means the label always radiates outward, regardless of which direction it ends up. The search stops at the first collision-free candidate, so labels near the top of the list get their preferred direction (right, then bottom-left, then bottom, and so on).</p>
 <p>The demo below shows the full pattern in action: a scatter of 8 data points, labeled in two ways. The left panel uses naive fixed-offset placement — every label is shifted right of its point by 8 pixels. Three clusters produce visible collisions, highlighted with red dashed boxes. The right panel uses the 8-angle search above. Study the demo source to see how the complete loop integrates with the data point geometry checks.</p>
 <p><mini-workspace caption="Before and after — naive fixed-offset placement vs smart 8-angle collision avoidance">
-  <code>// viewBox="0 0 600 400"
+  <code>define ViewBox(0, 0, 600, 400);
 // Collision avoidance — before/after with .polarProject() + .intersects()
 
 // --- Background ---
@@ -18639,7 +18639,7 @@ bottom_label.<span class="hljs-title function_">polarProject</span>(<span class=
 left_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-variable constant_">PI</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Right</span>)
 </code></pre><p>Four calls, four directions, one radius. The text content doesn&#39;t appear in the positioning logic at all — it&#39;s fully decoupled. The demo below makes the contrast visual: red annotations on the left expose the fragile arithmetic; green annotations on the right show the semantic anchor names.</p>
 <p><mini-workspace caption="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)">
-  <code>// viewBox="0 0 600 400"
+  <code>define ViewBox(0, 0, 600, 400);
 // Before/After — manual offset math vs .polarProject()
 // Uses GroupLayers per Code Example Guideline §9
 
@@ -18977,8 +18977,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <h2>Architecture: Language services as a shared layer</h2>
 <p>Rather than building VS Code-specific intelligence, we built a <strong>language services layer</strong> that&#39;s editor-agnostic. It exports pure functions that take a <code>TextDocument</code> interface and return plain objects — no VS Code types, no Node.js dependencies, no editor assumptions:</p>
 <p><mini-workspace caption="The shared language services architecture — one intelligence layer, three consumers.">
-  <code>// viewBox="0 0 560 320"
-
+  <code>define ViewBox(0, 0, 560, 320);
 @font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
 
 let bgColor = Color('#f8f9fa');

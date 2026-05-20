@@ -273,7 +273,7 @@ topo.<span class="hljs-property">interpolation</span> = <span class="hljs-string
 </code></pre><p>Contour paths are defined as path variables using the <code>@{ ... }</code> syntax and positioned using <code>.project(x, y)</code>. The <code>.contour()</code> method takes three arguments: a projected path, an elevation scalar, and a <code>Color</code>. The path must be closed (ending with <code>z</code>).</p>
 <p>The elevation value determines where this contour sits in the gradient&#39;s range. At elevation 0.0, the <code>baseColor</code> applies. At 0.25, the first contour&#39;s color takes over. Between contours, the renderer interpolates based on the signed distance from each contour boundary.</p>
 <p><mini-workspace code-open caption="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Topo Basics — Contour-as-Color-Stop
 // The core concept: closed paths at elevations create terrain-like gradients
 
@@ -356,7 +356,7 @@ scene.append(bg, labels, title);
 };
 </code></pre><p>The twin peaks below use the same base shape (an organic blob) projected to two different positions. Each peak has its own color palette — warm tones on the left, cool on the right — but shares the same dark ocean base color.</p>
 <p><mini-workspace caption="Two independent peaks at the same elevation — warm and cool palettes">
-  <code>// viewBox="0 0 500 350"
+  <code>define ViewBox(0, 0, 500, 350);
 // Twin Peaks — Non-Nested Contours
 // Separate contours at the same elevation create independent features
 
@@ -433,7 +433,7 @@ scene.append(bg, labels, title);
 topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">300</span>;
 </code></pre><p>The <code>iterations</code> property controls convergence (default 200, max 2000). Higher values produce smoother results at the cost of render time. For most cases, 200-400 iterations are sufficient.</p>
 <p><mini-workspace code-open caption="Same three contours — distance (concentric) vs Laplace (smooth potential field)">
-  <code>// viewBox="0 0 500 300"
+  <code>define ViewBox(0, 0, 500, 300);
 // Method Comparison — Distance (SDF) vs Laplace Solver
 // Same contours, two solver algorithms: different blending behavior
 
@@ -537,7 +537,7 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 </ul>
 <p>Easing is applied after the solver computes the raw elevation — it remaps the value through the chosen curve before looking up the color. This means the same contour geometry produces different visual densities depending on the easing mode.</p>
 <p><mini-workspace code-open caption="Five easing modes applied to the same two contours">
-  <code>// viewBox="0 0 550 350"
+  <code>define ViewBox(0, 0, 550, 350);
 // Easing Modes — 5 Elevation Interpolation Curves
 // How easing changes the visual transition between contours
 
@@ -673,7 +673,7 @@ scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 <p>With five elevation bands and the Laplace solver, <code>TopoGradient</code> can produce convincing terrain maps. Each contour represents a different geographic feature — ocean, beach, lowland, forest, ridge, summit — with colors chosen to match cartographic conventions.</p>
 <p>The sample below nests five contour shapes, each slightly smaller than the last, at increasing elevations. The Laplace solver (400 iterations) produces the smooth, flowing transitions between bands. An embedded legend labels each elevation.</p>
 <p><mini-workspace caption="Five elevation bands with Laplace solver — ocean to summit">
-  <code>// viewBox="0 0 500 400"
+  <code>define ViewBox(0, 0, 500, 400);
 // Terrain Map — Island with Nested Elevation Bands
 // Classic topographic map aesthetic with 5 elevation levels
 
@@ -786,7 +786,7 @@ scene.append(bg, legend_group, title);
 <p>TopoGradient is not limited to cartography. When contours overlap, the solver blends their influence regions, creating complex color fields that emerge from simple shape definitions. Overlapping blobs at different elevations produce layered, painterly effects.</p>
 <p>The abstract composition below uses six contours — two warm clusters, two cool clusters, and a center overlap — with the Laplace solver and ease-in-out easing. The three contour groups interact where their influence regions meet, producing a result that looks hand-painted but is fully defined by code.</p>
 <p><mini-workspace caption="Overlapping contour clusters with Laplace blending — abstract topography">
-  <code>// viewBox="0 0 400 400"
+  <code>define ViewBox(0, 0, 400, 400);
 // Abstract Topo — Artistic Contour Composition
 // Multiple overlapping shapes creating an abstract topographic artwork
 
@@ -854,7 +854,7 @@ scene.append(bg, title);
 <h3>Geometric Contours</h3>
 <p>When contour shapes are angular rather than organic, the results change character. Nested rotated rectangles produce sharp ridgelines and faceted valleys — the Laplace solver smooths the transitions between angular boundaries while preserving the geometric feel. The schematic on the right shows each contour outline with its elevation value and color, so you can trace how the gradient follows the shape geometry.</p>
 <p><mini-workspace caption="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map">
-  <code>// viewBox="0 0 840 420"
+  <code>define ViewBox(0, 0, 840, 420);
 // Nested Rectangles — Annotated Schematic
 // Left: rendered gradient, Right: contour map with paint chips + elevation labels
 
@@ -1003,7 +1003,7 @@ scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline
 </mini-workspace></p>
 <p>Multi-cluster polygonal contours create crystal-like formations. Three separate shape clusters — a central blue faceted core, a magenta wedge in the lower right, and a green shard in the upper left — compete for influence across the canvas. Where their distance fields overlap, the Laplace solver blends them into smooth transitions that emerge from purely angular geometry.</p>
 <p><mini-workspace caption="Crystal formation — eight polygonal contours across three clusters with annotated contour map">
-  <code>// viewBox="0 0 840 420"
+  <code>define ViewBox(0, 0, 840, 420);
 // Crystal Formation — Annotated Schematic
 // Left: rendered gradient, Right: contour map with paint chips + elevation labels
 
@@ -1258,7 +1258,7 @@ scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, 
 <h3>Organic Methods Compared</h3>
 <p>The method choice matters most with complex organic contours. The same three shapes — a sweeping coastline curve, a flat-topped mesa, and a sharp triangular spire — produce markedly different results under the two solvers. Distance (SDF) creates concentric bands that follow every curve and corner exactly. The Laplace solver diffuses those boundaries into flowing transitions, softening the mesa&#39;s flat top and the spire&#39;s sharp point into a continuous potential field.</p>
 <p><mini-workspace caption="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes">
-  <code>// viewBox="0 0 740 370"
+  <code>define ViewBox(0, 0, 740, 370);
 // Method Comparison — Organic + Annotated Schematic
 // Left: distance SDF, Center: Laplace solver, Right: contour map
 

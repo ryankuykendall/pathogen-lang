@@ -263,7 +263,7 @@ code.hljs {
 yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)
 </code></pre><p>Four parameters — <code>a</code>, <code>b</code>, <code>c</code>, <code>d</code> — control the shape. Starting from a seed point <code>(x₀, y₀)</code>, each iteration produces a new point. The trajectory doesn&#39;t converge to a fixed point or diverge to infinity — it&#39;s trapped in a bounded region, orbiting forever without repeating. That region is the attractor.</p>
 <p><mini-workspace caption="Iteration trajectory — each point maps to the next through the Clifford equations">
-  <code>// viewBox="0 0 560 260"
+  <code>define ViewBox(0, 0, 560, 260);
 // Iteration concept diagram — shows how points map through the Clifford equations
 
 let a = -1.4;
@@ -396,7 +396,7 @@ g.append(bg, trail, dots, labels, formula);
 <p><strong>Coordinate mapping.</strong> The attractor lives in a small mathematical space (roughly <code>[-3, 3]</code>). To render in SVG, we scale and offset to the canvas center. This <code>calc(cx + value * scale)</code> pattern is the same coordinate transform you&#39;d write in any graphics system.</p>
 <p><strong><code>circle()</code> for visibility.</strong> At 100 points, individual dots need to be large enough to see. We use radius <code>3</code> here — we&#39;ll optimize this later.</p>
 <p><mini-workspace code-open caption="100 iterations — the attractor's skeleton is just barely visible">
-  <code>// viewBox="0 0 400 340"
+  <code>define ViewBox(0, 0, 400, 340);
 // First Clifford Attractor — 100 iterations, circle() dots
 
 let a = -1.4;
@@ -451,7 +451,7 @@ M <span class="hljs-title function_">calc</span>(cx + x * scale) <span class="hl
 }
 </code></pre><p>The initial <code>M</code> command plots the seed point before the loop, so the loop starts at <code>1</code> rather than <code>0</code> — together they produce exactly 10,000 points (the per-loop iteration limit). The <code>M x y l 0 0</code> idiom is a well-known SVG trick for point rendering, but it&#39;s admittedly non-obvious. A dedicated <code>dot(x, y)</code> function would communicate intent more clearly — we&#39;ll return to this idea later.</p>
 <p><mini-workspace code-open caption="10,000 iterations — the full Clifford attractor emerges">
-  <code>// viewBox="0 0 600 480"
+  <code>define ViewBox(0, 0, 600, 480);
 // Full Clifford Attractor — 10,000 points, efficient line rendering
 
 let a = -1.4;
@@ -515,7 +515,7 @@ for (i in 1..9999) {
 }
 </code></pre><p>The outer loop destructures each layer and its index. The inner loop draws 2,000 points. Since <code>x</code> and <code>y</code> are declared in the outer scope, they persist across chunks — the attractor&#39;s trajectory is continuous even though the color changes.</p>
 <p><mini-workspace code-open caption="Temporal color mapping — blue (early iterations) to orange (late iterations)">
-  <code>// viewBox="0 0 600 480"
+  <code>define ViewBox(0, 0, 600, 480);
 // Color-mapped Clifford Attractor — 10,000 points across 5 temporal layers
 
 let a = -1.4;
@@ -565,7 +565,7 @@ g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 <h2>Parameter Exploration</h2>
 <p>The four parameters are the soul of the attractor. Small changes produce dramatically different forms. Here are three parameter sets that show the range:</p>
 <p><mini-workspace caption="Three parameter sets — each producing a distinct attractor form">
-  <code>// viewBox="0 0 900 370"
+  <code>define ViewBox(0, 0, 900, 370);
 // Parameter Gallery — three Clifford attractors with different parameters
 
 // Reusable attractor function
@@ -663,7 +663,7 @@ g.append(p1, p2, p3, names, params);
 <h2>Interactive Colors</h2>
 <p>Since the attractor parameters control the <em>geometry</em> and must be baked in at compile time, we can&#39;t make them reactive via CSS variables. But we <em>can</em> make the color palette reactive. The sample below uses <code>CSSVar</code> for the early and late colors — try changing them in the playground&#39;s CSS variable panel to see the palette update in real time:</p>
 <p><mini-workspace code-open caption="Reactive color palette — change --early-color and --late-color to restyle the attractor">
-  <code>// viewBox="0 0 600 480"
+  <code>define ViewBox(0, 0, 600, 480);
 // Interactive Clifford Attractor — CSS variable colors
 
 let a = -1.4;

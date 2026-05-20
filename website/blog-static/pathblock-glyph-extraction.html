@@ -321,7 +321,7 @@ glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">dr
 </code></pre><p>This is the text layout engine&#39;s job, and now it&#39;s yours. The advance width accumulation produces the same letter spacing that a browser would use for the same font at the same size — because the values come directly from the font file via opentype.js.</p>
 <p>The difference between proportional and monospace fonts shows up clearly here. A proportional font like Bebas Neue produces variable spacing: the &quot;P&quot; might advance 22px while the &quot;I&quot; advances 8px. A monospace font like Inconsolata advances every character by the same amount. The demo below renders the same word in both fonts, with dashed tick marks showing each character&#39;s advance-width boundary.</p>
 <p><mini-workspace caption="Advance-width layout — proportional (Bebas Neue) vs monospace (Inconsolata)">
-  <code>// viewBox="0 0 600 300"
+  <code>define ViewBox(0, 0, 600, 300);
 // Hello World glyph layout — advance-width loop placing each letter
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -519,7 +519,7 @@ code_group.append(code, kw);
 }
 </code></pre><p>The demo below decomposes &quot;Bingo!&quot; into its contours. Count them: B has 3 (outer shape + 2 holes), i has 2 (body + dot), n has 1 (solid body), g has 2 (body + descender loop), o has 2 (outer + inner), and ! has 2 (body + dot). That&#39;s 12 contours across 6 characters, each drawn in its own color. Each contour is colored from a 12-color palette cycling through blue, green, amber, red, purple, pink, cyan, lime, orange, indigo, teal, and fuchsia.</p>
 <p><mini-workspace caption="Contour decomposition — 12 contours across 6 characters of 'Bingo!'">
-  <code>// viewBox="0 0 660 400"
+  <code>define ViewBox(0, 0, 660, 400);
 // Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
 
 @font "../../../../fonts/Raleway/Raleway-Bold.ttf"
@@ -871,7 +871,7 @@ layer('divider').apply { M 345 20 v 370 }
 }
 </code></pre><p>Each glyph is rotated to follow the arc&#39;s tangent direction using <code>.rotateAtVertexIndex(0, angle)</code>, then placed at the corresponding position on the circle. The <code>0.5pi</code> uses Pathogen&#39;s numeric suffix notation — a shorthand for π/2 (a quarter turn) — which converts the radial angle to the tangent direction. The advance widths are converted to angular offsets by dividing by the arc radius.</p>
 <p><mini-workspace caption="Three per-character transform effects — wave, grow, and circular arc text">
-  <code>// viewBox="0 0 600 220"
+  <code>define ViewBox(0, 0, 600, 220);
 // Per-character transforms — wave, scale, and arc effects on individual glyphs
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -1144,7 +1144,7 @@ layer('title').apply { text(30, 205)`Per-Character Transforms` }
 </code></pre><p>The chaining works because every boolean operation returns a PathBlock, so the result of <code>.union()</code> feeds directly into the next <code>.union()</code> or <code>.difference()</code> — for any number of glyphs. Because boolean operations <a href="/blog/pathblock-boolean-operations">preserve curve types</a>, the glyph outlines stay smooth at any zoom level.</p>
 <p>The demo below shows the full pipeline in five panels: individual glyph outlines, a <code>.union()</code> arrow, the combined path, a <code>.difference()</code> arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using <code>.difference()</code>.</p>
 <p><mini-workspace caption="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle">
-  <code>// viewBox="0 0 900 310"
+  <code>define ViewBox(0, 0, 900, 310);
 // Text cutout — seven-glyph pipeline: glyph outlines → union → difference
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
@@ -1338,7 +1338,7 @@ code_group.append(code_bg, code, kw);
 <p>Contrast this with SVG <code>&lt;text&gt;</code>. When you write <code>&lt;text font-family=&quot;Inter&quot;&gt;Hello&lt;/text&gt;</code>, the <em>browser</em> picks the font and renders the text. If you need to know how wide &quot;Hello&quot; is before drawing it, you&#39;re estimating — either with built-in character width tables (which TextBlock uses when no font is loaded) or with a <code>@font</code> declaration that might not exactly match what the browser loads. The estimation tables are ~85-90% accurate for Latin text, which is usually good enough for layout decisions. But for tight positioning — aligning a bounding box precisely to rendered text, for example — the gap can be visible.</p>
 <p>With <code>fromGlyph()</code>, there&#39;s no gap. The path commands <em>are</em> the rendering. The advance widths <em>are</em> the layout. Everything comes from one source — the loaded font file.</p>
 <p><mini-workspace caption="Same word, two approaches — fromGlyph() paths with exact metrics vs SVG text with estimated metrics">
-  <code>// viewBox="0 0 600 340"
+  <code>define ViewBox(0, 0, 600, 340);
 // @font precision — fromGlyph() uses the exact same font for both paths and metrics
 
 @font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"

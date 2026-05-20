@@ -283,7 +283,7 @@ code.hljs {
 <span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
 <p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
-  <code>// viewBox="0 0 560 360"
+  <code>define ViewBox(0, 0, 560, 360);
 // Parametric Sampling Anatomy — .get(), .tangent(), .normal() visualized
 
 let curve = @{
@@ -541,7 +541,7 @@ curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number"
 <h2>Sampling Points Along a Curve</h2>
 <p>The demo below shows parametric sampling in action. A sine-like curve is defined with two cubic Béziers, then 8 points are placed along it using <code>partition()</code>, and tangent lines are drawn at regular intervals.</p>
 <p><mini-workspace code-open caption="Points and tangent lines sampled along a cubic Bézier curve">
-  <code>// viewBox="0 0 400 300"
+  <code>define ViewBox(0, 0, 400, 300);
 // Parametric sampling — placing dots along a curve
 
 let curve = @{
@@ -630,7 +630,7 @@ tangents.apply {
 </tbody></table>
 <p>The demo below shows <code>partition(8)</code> on an S-curve. Each of the 9 points (fence posts at both ends) is labeled with its <code>t</code> value. Notice the even spacing — the points are equidistant along the curve, not along the x-axis.</p>
 <p><mini-workspace caption="partition(8) with t-value labels — 9 evenly-spaced points along an S-curve">
-  <code>// viewBox="0 0 520 300"
+  <code>define ViewBox(0, 0, 520, 300);
 // Partition with t-value labels — even arc-length spacing
 
 let curve = @{
@@ -752,7 +752,7 @@ subtitle.apply {
 <h2>Building a Fence Along a Curve</h2>
 <p>Here&#39;s a practical example: fence posts distributed evenly along a winding road. The posts are placed using <code>partition(16)</code>, then oriented perpendicular to the road using <code>normal()</code>. Rails connect adjacent posts at 1/3 and 2/3 height.</p>
 <p><mini-workspace code-open caption="Fence posts and rails distributed along a curved road">
-  <code>// viewBox="0 0 540 320"
+  <code>define ViewBox(0, 0, 540, 320);
 // partition() — evenly-spaced fence posts along a curved path
 
 let road = @{

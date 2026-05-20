@@ -317,7 +317,7 @@ C 367.6 141.7  410.9 72.6  470 70
 </tbody></table>
 <p>The anatomy diagram below shows how these properties map to the geometry. Blue dots are the on-curve waypoints. Red circles are exit control points (placed <code>exit</code> distance forward along the tangent). Green circles are entry control points (placed <code>entry</code> distance backward). Orange arcs show the tangent angle at each point.</p>
 <p><mini-workspace code-open caption="cubicSpline anatomy — waypoints, control points, tangent lines, and angle arcs">
-  <code>// viewBox="0 0 540 330"
+  <code>define ViewBox(0, 0, 540, 330);
 // cubicSpline anatomy — control points, tangent lines, angle arcs
 
 // --- Background ---
@@ -463,7 +463,7 @@ layer('legend-text').apply {
 <h3>Why It&#39;s Smooth: G1 Continuity</h3>
 <p>The smoothness guarantee comes from a simple geometric constraint: at every join point, the exit control point of the outgoing segment and the entry control point of the incoming segment lie on the same line — the tangent line defined by <code>angle</code>. Because both control points are collinear through the join, the curve&#39;s direction doesn&#39;t change abruptly.</p>
 <p><mini-workspace code-open caption="G1 continuity — exit and entry CPs are collinear through the join point">
-  <code>// viewBox="0 0 420 255"
+  <code>define ViewBox(0, 0, 420, 255);
 // G1 continuity at a join point — collinear control points
 
 // --- Background ---
@@ -549,7 +549,7 @@ layer('note').apply {
 <h3>Examples</h3>
 <p>Three <code>cubicSpline</code> curves: a two-segment S-curve, a five-point sine wave approximation, and a closed loop where the first and last points coincide.</p>
 <p><mini-workspace code-open caption="cubicSpline examples — S-curve, sine wave, and closed loop">
-  <code>// viewBox="0 0 460 145"
+  <code>define ViewBox(0, 0, 460, 145);
 // Three cubicSpline examples: S-curve, sine wave, closed loop
 
 // --- Background ---
@@ -662,7 +662,7 @@ layer('loop').apply {
   { <span class="hljs-attr">x</span>: <span class="hljs-number">500</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">120</span> }                              <span class="hljs-comment">// end: no angle needed</span>
 )
 </code></pre><p><mini-workspace code-open caption="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension">
-  <code>// viewBox="0 0 540 350"
+  <code>define ViewBox(0, 0, 540, 350);
 // quadSpline anatomy — implicit angle derivation from previous CP
 
 // --- Background ---
@@ -782,7 +782,7 @@ layer('note').apply {
 </mini-workspace></p>
 <p>The signature is different from <code>cubicSpline</code>: start and end are separate arguments, with an array of intermediates between them. This reflects the asymmetry — only the start carries an explicit angle.</p>
 <p><mini-workspace code-open caption="quadSpline examples — simple arc, flowing curve, and zigzag">
-  <code>// viewBox="0 0 460 145"
+  <code>define ViewBox(0, 0, 460, 145);
 // Three quadSpline examples: simple arc, flowing curve, zigzag
 
 // --- Background ---
@@ -902,7 +902,7 @@ layer('zigzag').apply {
 <li><strong>t = 0</strong> — control points at the endpoints (straight lines, no curve)</li>
 </ul>
 <p><mini-workspace code-open caption="Single segment anatomy — virtual shared CP (diamond) and actual CPs placed via lerp">
-  <code>// viewBox="0 0 460 270"
+  <code>define ViewBox(0, 0, 460, 270);
 // clippedQuadSpline anatomy — virtual shared CP and lerped actual CPs
 
 // --- Background ---
@@ -1020,7 +1020,7 @@ layer('ref-note').apply {
 </mini-workspace></p>
 <p>The effect is dramatic when overlaid. Same waypoints, same angles — only the time values change:</p>
 <p><mini-workspace code-open caption="Same waypoints, different time values — t=1.0 (blue) down to t=0.25 (orange)">
-  <code>// viewBox="0 0 520 250"
+  <code>define ViewBox(0, 0, 520, 250);
 // clippedQuadSpline eccentricity comparison — same geometry, different time values
 
 // --- Background ---

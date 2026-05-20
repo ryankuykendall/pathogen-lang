@@ -57,7 +57,7 @@ for ([d, i] in data) {
 
   barsAll.apply {
     M cx cy
-    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR)
+    radialWedge(innerR, allOuterR, sliceFrom, sliceTo, cornerR);
   }
 
   if (d.top > 0) {
@@ -66,7 +66,7 @@ for ([d, i] in data) {
     let topOff = calc((barSweep - topSweep) / 2);
     barsTop.apply {
       M cx cy
-      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR)
+      radialWedge(innerR, topOuterR, calc(sliceFrom + topOff), calc(sliceFrom + topOff + topSweep), cornerR);
     }
   }
 }
