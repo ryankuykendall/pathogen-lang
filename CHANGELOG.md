@@ -5,9 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-05-19
+## [Unreleased] - 2026-05-24
 
 ### Added
+
+#### `Grid()` constructor — 2D data containers for flow fields, heatmaps, sampling tables
+
+- **New typed value `Grid(rows, cols, options) {|grid| ... }`** for spatial data that maps cells to canvas coordinates. The trailing block runs once at construction and receives the (mutable) grid — same pattern as `Marker(...)`, `Mask(...)`, and `Pattern(...)`. `rows` and `cols` are positive integers; `options` is an object literal whose keys are all optional.
+- **Constructor options:** `xDim` / `yDim` (cell size, default 1), `origin` (Point, default `Point(0, 0)`), `defaultValue` (initial cell value, default `null`), `outOfBounds` (`'clamp'` | `'wrap'` | `'null'`, default `'clamp'`), `interpolation` (`'nearest'` | `'bilinear'`, default `'nearest'`). `defaultValue` is named that way because `default` is a reserved Pathogen keyword.
+- **Driving use case.** Pathogen arrays throw on out-of-bounds access; assignment doesn't auto-extend. That makes the JS-style `if (!map[row]) map[row] = []` lazy-init pattern impossible. `Grid` removes the manual init entirely (`grid.fill {|row, col, center| return ... }`), removes the manual `row*cellSize + cellSize/2` arithmetic (`grid.getPoint(row, col)`), and adds the `outOfBounds: 'wrap'` mode common in toroidal flow-field art.
+- **Members:** `rows`, `cols`, `xDim`, `yDim`, `origin`, `width` (`cols * xDim`), `height` (`rows * yDim`).
+- **Methods.** Cell access: `get(r, c)`, `set(r, c, v)` (mutates, returns self), `getPoint(r, c)` (cell center as `Point`), `getRow(r)`, `getCol(c)`, `cells()` (flat row-major). Iteration: `fill {|row, col, center| return ... }` (mutate every cell), `forEach {|cell, row, col, center| ... }` (side effects — drawing arrows etc.), `map {|cell, row, col, center| return ... }` (new grid). Sampling: `sample(x, y)`, `sampleNearest(x, y)`, `sampleBilinear(x, y)`. `getPoint`/`getRow`/`getCol` deliberately mirror `MeshGradient`'s vocabulary.
+- **`forEach` threads the active layer's accum** when invoked inside `layer.apply { }`, so `drawTo()` / path commands inside the block emit to the surrounding layer — same semantics users already get from a regular `for` loop.
+- **Bilinear sampling handles both numeric and Point cells.** Numeric cells get the standard three-lerp (`(1-fx)`/`fx` × `(1-fy)`/`fy`) blend. Point cells interpolate `x` and `y` separately — the standard fix for direction sampling, since bilinear on raw angles produces wrong directions at every wrap-around. Cells of other types throw a clear `Grid.sampleBilinear() requires cells to be numbers or Points` error.
+- **`docs/grid.md`** is the new user-facing page (registered in `scripts/build-docs.ts` `DOC_FILES`). Covers the constructor, options, members, methods, a full flow-field example, the bilinear-sampling primer, and the angle-wraparound caveat (`Point(cos(a), sin(a))` then `atan2(v.y, v.x)`). `docs/stdlib.md` and `docs/grid.md` carry reciprocal "not to be confused with" callouts disambiguating the new data-container `Grid()` from the existing `squareGrid`/`triangleGrid`/`hexagonGrid` PathSegment generators.
+- **Completion + hover + signature help.** `Grid` is declared in `src/pathogen-api.ts` as `PathogenGrid` with `PathogenGridOptions`. `npm run generate:completions` produces the top-level constructor entry, the 7-property/12-method member set, and the signature `Grid(rows, cols, options)`. `let g = Grid(...)` triggers Grid member completions on `g.` via the inference table in `src/language-services/completion.ts`. Hover automatically picks up the constructor doc from `STDLIB_COMPLETIONS`.
+- **VS Code.** TextMate grammar adds `Grid` to the constructor token list. A new `grid` snippet expands to `Grid(rows, cols, { xDim, yDim }) {|g| g.fill {|row, col, center| return ... }; };`.
+- **Annotated evaluator parity.** `src/evaluator/annotated.ts` mirrors the constructor, member access, all 11 methods, and the sampling helpers so the Annotated debug pane doesn't error on programs using Grid.
+
+### Tests
+
+- **`tests/evaluator.test.ts`** — 20 new tests covering construction (defaults, `defaultValue`, fill block), members, cell access (`get`/`set`/`getPoint` with origin, `getRow`/`getCol`/`cells`), iteration (`forEach` row-major, `map` returns new grid, `forEach` inside `layer.apply` emits paths to the surrounding layer), and sampling (nearest at cell centers, bilinear at centers and midpoints, all three `outOfBounds` modes, `sample` dispatching on `interpolation`, bilinear Point interpolation).
+- **`tests/errors.test.ts`** — 7 new tests pinning the error messages for argument validation, `get`/`set` out-of-bounds, invalid option values, and `sampleBilinear` on non-numeric/non-Point cells.
+- **`tests/language-services/completion.test.ts`** — 1 new test verifying Grid members appear on `g.` after `let g = Grid(...)`.
+- Full suite passing: **3050 tests** (up from 3022 pre-feature), no regressions.
 
 #### `define ViewBox(...)` — viewBox in source
 
