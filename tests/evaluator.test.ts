@@ -3435,4 +3435,269 @@ describe('Evaluator', () => {
       });
     });
   });
+
+  describe('Grid constructor', () => {
+    describe('construction', () => {
+      it('creates a grid with default cell value null', () => {
+        const result = compile('let g = Grid(2, 3, {}); log(g.get(0, 0)); log(g.get(1, 2));');
+        expect(result.logs[0].parts[0].value).toBe('null');
+        expect(result.logs[1].parts[0].value).toBe('null');
+      });
+
+      it('honors options.defaultValue for initial cell value', () => {
+        const result = compile('let g = Grid(2, 2, { defaultValue: 7 }); log(g.get(0, 0)); log(g.get(1, 1));');
+        expect(result.logs[0].parts[0].value).toBe('7');
+        expect(result.logs[1].parts[0].value).toBe('7');
+      });
+
+      it('populates cells via trailing block fill()', () => {
+        const result = compile(`
+          let g = Grid(2, 3, {}) {|grid|
+            grid.fill {|row, col, center| return calc(row * 10 + col); };
+          };
+          log(g.get(0, 0)); log(g.get(0, 2)); log(g.get(1, 1));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('0');
+        expect(result.logs[1].parts[0].value).toBe('2');
+        expect(result.logs[2].parts[0].value).toBe('11');
+      });
+    });
+
+    describe('members', () => {
+      it('exposes rows, cols, xDim, yDim, width, height', () => {
+        const result = compile(`
+          let g = Grid(3, 4, { xDim: 10, yDim: 20 });
+          log(g.rows); log(g.cols); log(g.xDim); log(g.yDim); log(g.width); log(g.height);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('3');
+        expect(result.logs[1].parts[0].value).toBe('4');
+        expect(result.logs[2].parts[0].value).toBe('10');
+        expect(result.logs[3].parts[0].value).toBe('20');
+        expect(result.logs[4].parts[0].value).toBe('40'); // cols * xDim
+        expect(result.logs[5].parts[0].value).toBe('60'); // rows * yDim
+      });
+    });
+
+    describe('cell access', () => {
+      it('set() mutates and returns the grid', () => {
+        const result = compile(`
+          let g = Grid(2, 2, {}) {|grid|
+            grid.set(0, 0, 1).set(0, 1, 2).set(1, 0, 3).set(1, 1, 4);
+          };
+          log(g.get(0, 0)); log(g.get(0, 1)); log(g.get(1, 0)); log(g.get(1, 1));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[1].parts[0].value).toBe('2');
+        expect(result.logs[2].parts[0].value).toBe('3');
+        expect(result.logs[3].parts[0].value).toBe('4');
+      });
+
+      it('getPoint returns cell center in canvas coords', () => {
+        // 3x4 grid with xDim=10, yDim=10. Cell (0,0) center = (0.5*10, 0.5*10) = (5, 5).
+        // Cell (2, 3) center = (3.5*10, 2.5*10) = (35, 25).
+        const result = compile(`
+          let g = Grid(3, 4, { xDim: 10, yDim: 10 });
+          log(g.getPoint(0, 0).x); log(g.getPoint(0, 0).y);
+          log(g.getPoint(2, 3).x); log(g.getPoint(2, 3).y);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('5');
+        expect(result.logs[1].parts[0].value).toBe('5');
+        expect(result.logs[2].parts[0].value).toBe('35');
+        expect(result.logs[3].parts[0].value).toBe('25');
+      });
+
+      it('getPoint accounts for non-zero origin', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10, origin: Point(100, 200) });
+          log(g.getPoint(0, 0).x); log(g.getPoint(0, 0).y);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('105');
+        expect(result.logs[1].parts[0].value).toBe('205');
+      });
+
+      it('getRow and getCol return array slices', () => {
+        const result = compile(`
+          let g = Grid(2, 3, {}) {|grid|
+            grid.fill {|row, col, center| return calc(row * 10 + col); };
+          };
+          let r = g.getRow(1);
+          log(r.length); log(r[0]); log(r[2]);
+          let c = g.getCol(2);
+          log(c.length); log(c[0]); log(c[1]);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('3');
+        expect(result.logs[1].parts[0].value).toBe('10');
+        expect(result.logs[2].parts[0].value).toBe('12');
+        expect(result.logs[3].parts[0].value).toBe('2');
+        expect(result.logs[4].parts[0].value).toBe('2');
+        expect(result.logs[5].parts[0].value).toBe('12');
+      });
+
+      it('cells() returns flat row-major array', () => {
+        const result = compile(`
+          let g = Grid(2, 2, {}) {|grid|
+            grid.fill {|row, col, center| return calc(row * 10 + col); };
+          };
+          let flat = g.cells();
+          log(flat.length); log(flat[0]); log(flat[1]); log(flat[2]); log(flat[3]);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('4');
+        expect(result.logs[1].parts[0].value).toBe('0');
+        expect(result.logs[2].parts[0].value).toBe('1');
+        expect(result.logs[3].parts[0].value).toBe('10');
+        expect(result.logs[4].parts[0].value).toBe('11');
+      });
+    });
+
+    describe('iteration', () => {
+      it('forEach visits every cell in row-major order', () => {
+        const result = compile(`
+          let g = Grid(2, 3, {}) {|grid|
+            grid.fill {|row, col, center| return calc(row * 10 + col); };
+          };
+          let visits = [];
+          g.forEach {|cell, row, col, center|
+            visits.push(cell);
+          };
+          log(visits.length); log(visits[0]); log(visits[5]);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('6');
+        expect(result.logs[1].parts[0].value).toBe('0');
+        expect(result.logs[2].parts[0].value).toBe('12');
+      });
+
+      it('map returns a new grid without mutating the original', () => {
+        const result = compile(`
+          let g = Grid(2, 2, {}) {|grid|
+            grid.fill {|row, col, center| return calc(row * 10 + col); };
+          };
+          let doubled = g.map {|cell, row, col, center| return calc(cell * 2); };
+          log(g.get(1, 1)); log(doubled.get(1, 1));
+          log(g.rows); log(doubled.rows);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('11');
+        expect(result.logs[1].parts[0].value).toBe('22');
+        expect(result.logs[2].parts[0].value).toBe('2');
+        expect(result.logs[3].parts[0].value).toBe('2');
+      });
+
+      it('forEach inside layer.apply emits paths to the surrounding layer', () => {
+        const result = compile(`
+          define ViewBox(0, 0, 100, 100);
+          define PathLayer('flow') \${ stroke: Color('#000'); }
+          let g = Grid(2, 2, { xDim: 50, yDim: 50 });
+          layer('flow').apply {
+            g.forEach {|cell, row, col, center|
+              M center.x center.y l 10 0
+            };
+          }
+        `);
+        const flowLayer = result.layers.find((l) => l.name === 'flow');
+        // 2x2 grid with xDim=50, yDim=50 → centers at (25,25), (75,25), (25,75), (75,75)
+        expect(flowLayer?.data).toContain('M 25 25');
+        expect(flowLayer?.data).toContain('M 75 25');
+        expect(flowLayer?.data).toContain('M 25 75');
+        expect(flowLayer?.data).toContain('M 75 75');
+      });
+    });
+
+    describe('sampling', () => {
+      it('sampleNearest at a cell center returns that cell', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10 }) {|grid|
+            grid.fill {|row, col, center| return calc(row * 10 + col); };
+          };
+          log(g.sampleNearest(5, 5));    // cell (0, 0) center → 0
+          log(g.sampleNearest(15, 15));  // cell (1, 1) center → 11
+        `);
+        expect(result.logs[0].parts[0].value).toBe('0');
+        expect(result.logs[1].parts[0].value).toBe('11');
+      });
+
+      it('sampleBilinear at a cell center matches the stored value', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10 }) {|grid|
+            grid.set(0, 0, 0); grid.set(0, 1, 10); grid.set(1, 0, 100); grid.set(1, 1, 1000);
+          };
+          log(g.sampleBilinear(5, 5));    // cell (0, 0) center → 0
+          log(g.sampleBilinear(15, 15));  // cell (1, 1) center → 1000
+        `);
+        expect(result.logs[0].parts[0].value).toBe('0');
+        expect(result.logs[1].parts[0].value).toBe('1000');
+      });
+
+      it('sampleBilinear at a midpoint averages adjacent cells', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10 }) {|grid|
+            grid.set(0, 0, 0); grid.set(0, 1, 100); grid.set(1, 0, 0); grid.set(1, 1, 100);
+          };
+          // (10, 5): horizontally midway between (0,0) center and (0,1) center → 50
+          log(g.sampleBilinear(10, 5));
+          // (10, 10): center of all four cells → 50
+          log(g.sampleBilinear(10, 10));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('50');
+        expect(result.logs[1].parts[0].value).toBe('50');
+      });
+
+      it('outOfBounds: clamp returns edge cell for out-of-range coords', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10, outOfBounds: 'clamp' }) {|grid|
+            grid.set(0, 0, 1); grid.set(0, 1, 2); grid.set(1, 0, 3); grid.set(1, 1, 4);
+          };
+          log(g.sampleNearest(-100, -100));  // clamped to (0, 0) → 1
+          log(g.sampleNearest(1000, 1000));  // clamped to (1, 1) → 4
+        `);
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[1].parts[0].value).toBe('4');
+      });
+
+      it('outOfBounds: null returns null for out-of-range coords', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10, outOfBounds: 'null' }) {|grid|
+            grid.set(0, 0, 1);
+          };
+          log(g.sampleNearest(-100, -100));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('null');
+      });
+
+      it('outOfBounds: wrap wraps coordinates around', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10, outOfBounds: 'wrap' }) {|grid|
+            grid.set(0, 0, 1); grid.set(0, 1, 2); grid.set(1, 0, 3); grid.set(1, 1, 4);
+          };
+          // x=25 → cell col 2 → wraps to col 0; y=5 → row 0. Value = 1.
+          log(g.sampleNearest(25, 5));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('1');
+      });
+
+      it('sample dispatches to bilinear when interpolation option is set', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10, interpolation: 'bilinear' }) {|grid|
+            grid.set(0, 0, 0); grid.set(0, 1, 100); grid.set(1, 0, 0); grid.set(1, 1, 100);
+          };
+          log(g.sample(10, 5));  // midpoint between cols → 50 (bilinear)
+        `);
+        expect(result.logs[0].parts[0].value).toBe('50');
+      });
+
+      it('sampleBilinear interpolates Points component-wise (for flow-field vectors)', () => {
+        const result = compile(`
+          let g = Grid(2, 2, { xDim: 10, yDim: 10 }) {|grid|
+            grid.set(0, 0, Point(1, 0));
+            grid.set(0, 1, Point(0, 1));
+            grid.set(1, 0, Point(0, 1));
+            grid.set(1, 1, Point(-1, 0));
+          };
+          // (10, 10) = center of all four → average is Point(0, 0.5)
+          let p = g.sampleBilinear(10, 10);
+          log(p.x); log(p.y);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('0');
+        expect(result.logs[1].parts[0].value).toBe('0.5');
+      });
+    });
+  });
 });

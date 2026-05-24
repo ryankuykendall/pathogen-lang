@@ -576,4 +576,39 @@ let c = s[10];`;
 let x = arr['oops'];`;
     expect(() => compile(source)).toThrow(/Line 2.*Array index must be a number/);
   });
+
+  describe('Grid errors', () => {
+    it('throws on non-integer rows', () => {
+      expect(() => compile('let g = Grid(2.5, 3, {});')).toThrow(/rows must be a positive integer/);
+    });
+
+    it('throws on zero or negative cols', () => {
+      expect(() => compile('let g = Grid(3, 0, {});')).toThrow(/cols must be a positive integer/);
+    });
+
+    it('throws on get() out of bounds', () => {
+      expect(() => compile('let g = Grid(2, 3, {}); g.get(5, 0);')).toThrow(/Grid\.get\(5, 0\) out of bounds for 2×3 grid/);
+    });
+
+    it('throws on set() out of bounds', () => {
+      expect(() => compile('let g = Grid(2, 3, {}); g.set(0, 10, 1);')).toThrow(/Grid\.set\(0, 10\) out of bounds for 2×3 grid/);
+    });
+
+    it('throws on invalid outOfBounds option', () => {
+      expect(() => compile("let g = Grid(2, 2, { outOfBounds: 'bounce' });")).toThrow(/outOfBounds must be 'clamp', 'wrap', or 'null'/);
+    });
+
+    it('throws on invalid interpolation option', () => {
+      expect(() => compile("let g = Grid(2, 2, { interpolation: 'cubic' });")).toThrow(/interpolation must be 'nearest' or 'bilinear'/);
+    });
+
+    it('throws on sampleBilinear with non-numeric, non-Point cells', () => {
+      expect(() => compile(`
+        let g = Grid(2, 2, { xDim: 10, yDim: 10 }) {|grid|
+          grid.set(0, 0, 'a'); grid.set(0, 1, 'b'); grid.set(1, 0, 'c'); grid.set(1, 1, 'd');
+        };
+        g.sampleBilinear(10, 10);
+      `)).toThrow(/sampleBilinear\(\) requires cells to be numbers or Points/);
+    });
+  });
 });

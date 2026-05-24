@@ -394,6 +394,9 @@ Output: `m` followed by one `c` (relative cubic) command per segment — not `q`
 
 These functions generate complete grid patterns as path segments. Each accepts a `GridPatternType` enum (or string) that controls the visual style:
 
+> **Not to be confused with** the [`Grid()`](grid.md) constructor — that's a data container for 2D values mapped to canvas coordinates (flow fields, heatmaps, sampling). The functions below produce SVG path data for visual lattices.
+
+
 | Pattern | Description |
 |---------|-------------|
 | `GridPatternType.Shape` (`'shape'`) | Cell outlines — full grid lines |

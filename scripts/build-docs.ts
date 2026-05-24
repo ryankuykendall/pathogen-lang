@@ -96,6 +96,7 @@ const DOC_FILES: Record<string, string> = {
   'markers.md': 'markers',
   'masks.md': 'masks',
   'filters.md': 'filters',
+  'grid.md': 'grid',
   'objects.md': 'objects',
   'debug.md': 'debug',
   'cli.md': 'cli',

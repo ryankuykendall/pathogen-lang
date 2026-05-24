@@ -1,0 +1,50 @@
+// Flow-field demo for the new Grid() constructor.
+//
+// Builds a 20x20 grid of angles via Grid().fill(), then draws an arrow
+// at each cell center rotated by that angle. The arrowhead uses a
+// context-stroke Marker so the marker color follows the line color.
+//
+// See docs/grid.md for the full Grid API reference.
+
+define ViewBox(0, 0, 200, 200);
+
+define default PathLayer('background') ${
+  fill: Color('#fafafa');
+}
+
+let arrow = @{
+  m 0 0
+  l 10 5
+  l -10 5
+  z
+};
+
+let arrowMarker = Marker('arrowhead', 10, 10) {|m|
+  m.append(arrow, ${ fill: context-stroke; });
+};
+
+let arrowPB = @{
+  m 0 0
+  m -3 0
+  h 6
+};
+
+squareGrid(GridPatternType.Partial, 0, 0, 200, 200, 10);
+
+let field = Grid(20, 20, { xDim: 10, yDim: 10, outOfBounds: 'wrap' }) {|g|
+  g.fill {|row, col, center|
+    return calc(sin(row / g.rows) + cos(col * 3 / g.cols));
+  };
+};
+
+define PathLayer('flow-vectors') ${
+  stroke-width: 0.2;
+  stroke: Color('#0c0');
+  marker-end: arrowMarker;
+}
+
+layer('flow-vectors').apply {
+  field.forEach {|angle, row, col, center|
+    arrowPB.rotateAtVertexIndex(0, angle).drawTo(center.x, center.y);
+  };
+}

@@ -56,6 +56,9 @@ export declare function InnerShadowFilter(): PathogenInnerShadowFilter;
 /** PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter @boost 11 */
 export declare function PixelateFilter(width?: number, height?: number, radius?: number): PathogenPixelateFilter;
 
+/** Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction. @boost 12 */
+export declare function Grid(rows: number, cols: number, options?: PathogenGridOptions): PathogenGrid;
+
 // =============================================================================
 // Context-Aware Functions (implemented in evaluator, not stdlib)
 // =============================================================================
@@ -370,6 +373,64 @@ export declare const ctx: PathContext;
 // =============================================================================
 // Type Interfaces — extracted by generation script for member completions
 // =============================================================================
+
+/** Options object for Grid() constructor */
+export interface PathogenGridOptions {
+  /** Cell width in canvas units (default 1) */
+  xDim?: number;
+  /** Cell height in canvas units (default 1) */
+  yDim?: number;
+  /** Top-left corner of the grid in canvas space (default Point(0, 0)) */
+  origin?: PathogenPoint;
+  /** Initial value for every cell (default null) */
+  defaultValue?: Value;
+  /** Out-of-bounds sampling behavior: 'clamp' | 'wrap' | 'null' (default 'clamp') */
+  outOfBounds?: string;
+  /** Default sample() interpolation mode: 'nearest' | 'bilinear' (default 'nearest') */
+  interpolation?: string;
+}
+
+/** @type Grid */
+export interface PathogenGrid {
+  /** Row count */
+  readonly rows: number;
+  /** Column count */
+  readonly cols: number;
+  /** Cell width */
+  readonly xDim: number;
+  /** Cell height */
+  readonly yDim: number;
+  /** Grid top-left in canvas space */
+  readonly origin: PathogenPoint;
+  /** Total spatial width (cols * xDim) */
+  readonly width: number;
+  /** Total spatial height (rows * yDim) */
+  readonly height: number;
+  /** get(row, col) — Return cell value; throws on out-of-bounds */
+  get(row: number, col: number): Value;
+  /** set(row, col, value) — Mutate cell; returns the grid */
+  set(row: number, col: number, value: Value): PathogenGrid;
+  /** getPoint(row, col) — Return cell center as a Point */
+  getPoint(row: number, col: number): PathogenPoint;
+  /** getRow(row) — Array of cell values across the row */
+  getRow(row: number): PathogenArray;
+  /** getCol(col) — Array of cell values down the column */
+  getCol(col: number): PathogenArray;
+  /** cells() — Flat row-major array of every cell */
+  cells(): PathogenArray;
+  /** fill {|row, col, center| return ...} — Populate every cell from a block (mutates) */
+  fill(): PathogenGrid;
+  /** forEach {|cell, row, col, center| ...} — Side-effect iteration in row-major order */
+  forEach(): void;
+  /** map {|cell, row, col, center| return ...} — Return a new grid with transformed cells */
+  map(): PathogenGrid;
+  /** sample(x, y) — Lookup using grid's default interpolation mode */
+  sample(x: number, y: number): Value;
+  /** sampleNearest(x, y) — Lookup snapping to nearest cell */
+  sampleNearest(x: number, y: number): Value;
+  /** sampleBilinear(x, y) — Lookup with bilinear interpolation (numeric or Point cells) */
+  sampleBilinear(x: number, y: number): Value;
+}
 
 /** @type Point */
 export interface PathogenPoint {

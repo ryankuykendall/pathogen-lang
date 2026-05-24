@@ -86,6 +86,9 @@ import type {
   GradientOutput,
   GradientStop,
   GradientValue,
+  GridInterpolationMode,
+  GridOutOfBoundsMode,
+  GridValue,
   GroupLayerState,
   LayerOutput,
   LayerReference,
@@ -165,6 +168,9 @@ export type {
   GradientOutput,
   GradientStop,
   GradientValue,
+  GridInterpolationMode,
+  GridOutOfBoundsMode,
+  GridValue,
   GroupLayerState,
   LayerOutput,
   LayerReference,
@@ -248,6 +254,73 @@ export function isPatternValue(value: Value): value is PatternValue {
 
 export function isMarkerValue(value: Value): value is MarkerValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MarkerValue';
+}
+
+export function isGridValue(value: Value): value is GridValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GridValue';
+}
+
+// Resolve an integer cell index (r or c) under the grid's outOfBounds mode.
+// Returns null when the mode is 'null' and the index is outside the range.
+function gridResolveIndex(idx: number, size: number, mode: GridOutOfBoundsMode): number | null {
+  if (idx >= 0 && idx < size) return idx;
+  if (mode === 'clamp') return Math.max(0, Math.min(size - 1, idx));
+  if (mode === 'wrap') {
+    const m = ((idx % size) + size) % size;
+    return m;
+  }
+  return null; // mode === 'null'
+}
+
+function gridSampleNearest(grid: GridValue, x: number, y: number): Value {
+  const fc = (x - grid.origin.x) / grid.xDim - 0.5;
+  const fr = (y - grid.origin.y) / grid.yDim - 0.5;
+  const r = gridResolveIndex(Math.round(fr), grid.rows, grid.outOfBounds);
+  const c = gridResolveIndex(Math.round(fc), grid.cols, grid.outOfBounds);
+  if (r === null || c === null) return null;
+  return grid.cells[r][c];
+}
+
+function gridSampleBilinear(grid: GridValue, x: number, y: number, mError: (msg: string) => Error): Value {
+  const fc = (x - grid.origin.x) / grid.xDim - 0.5;
+  const fr = (y - grid.origin.y) / grid.yDim - 0.5;
+  const c0base = Math.floor(fc);
+  const r0base = Math.floor(fr);
+  const fx = fc - c0base;
+  const fy = fr - r0base;
+  const r0 = gridResolveIndex(r0base, grid.rows, grid.outOfBounds);
+  const r1 = gridResolveIndex(r0base + 1, grid.rows, grid.outOfBounds);
+  const c0 = gridResolveIndex(c0base, grid.cols, grid.outOfBounds);
+  const c1 = gridResolveIndex(c0base + 1, grid.cols, grid.outOfBounds);
+  if (r0 === null || r1 === null || c0 === null || c1 === null) return null;
+  const v00 = grid.cells[r0][c0];
+  const v01 = grid.cells[r0][c1];
+  const v10 = grid.cells[r1][c0];
+  const v11 = grid.cells[r1][c1];
+  // Numeric scalars: standard bilinear
+  if (typeof v00 === 'number' && typeof v01 === 'number' && typeof v10 === 'number' && typeof v11 === 'number') {
+    const top = v00 * (1 - fx) + v01 * fx;
+    const bottom = v10 * (1 - fx) + v11 * fx;
+    return top * (1 - fy) + bottom * fy;
+  }
+  // PointValues: interpolate x and y separately (the standard fix for direction sampling)
+  if (
+    typeof v00 === 'object' && v00 !== null && 'type' in v00 && v00.type === 'PointValue' &&
+    typeof v01 === 'object' && v01 !== null && 'type' in v01 && v01.type === 'PointValue' &&
+    typeof v10 === 'object' && v10 !== null && 'type' in v10 && v10.type === 'PointValue' &&
+    typeof v11 === 'object' && v11 !== null && 'type' in v11 && v11.type === 'PointValue'
+  ) {
+    const xTop = v00.x * (1 - fx) + v01.x * fx;
+    const xBot = v10.x * (1 - fx) + v11.x * fx;
+    const yTop = v00.y * (1 - fx) + v01.y * fx;
+    const yBot = v10.y * (1 - fx) + v11.y * fx;
+    return {
+      type: 'PointValue' as const,
+      x: xTop * (1 - fy) + xBot * fy,
+      y: yTop * (1 - fy) + yBot * fy,
+    };
+  }
+  throw mError('Grid.sampleBilinear() requires cells to be numbers or Points');
 }
 
 export function isFilterValue(value: Value): value is FilterValue {
@@ -3881,6 +3954,224 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // GridValue methods
+  if (isGridValue(obj)) {
+    switch (expr.method) {
+      case 'get': {
+        if (expr.args.length !== 2) throw mError('Grid.get() expects 2 arguments (row, col)');
+        const r = evaluateExpression(expr.args[0], scope);
+        const c = evaluateExpression(expr.args[1], scope);
+        if (typeof r !== 'number' || typeof c !== 'number') throw mError('Grid.get() arguments must be numbers');
+        if (!Number.isInteger(r) || !Number.isInteger(c)) throw mError('Grid.get() arguments must be integers');
+        if (r < 0 || r >= obj.rows || c < 0 || c >= obj.cols) {
+          throw mError(`Grid.get(${r}, ${c}) out of bounds for ${obj.rows}×${obj.cols} grid`);
+        }
+        return obj.cells[r][c];
+      }
+      case 'set': {
+        if (expr.args.length !== 3) throw mError('Grid.set() expects 3 arguments (row, col, value)');
+        const r = evaluateExpression(expr.args[0], scope);
+        const c = evaluateExpression(expr.args[1], scope);
+        const v = evaluateExpression(expr.args[2], scope);
+        if (typeof r !== 'number' || typeof c !== 'number') throw mError('Grid.set() row/col must be numbers');
+        if (!Number.isInteger(r) || !Number.isInteger(c)) throw mError('Grid.set() row/col must be integers');
+        if (r < 0 || r >= obj.rows || c < 0 || c >= obj.cols) {
+          throw mError(`Grid.set(${r}, ${c}) out of bounds for ${obj.rows}×${obj.cols} grid`);
+        }
+        obj.cells[r][c] = v;
+        return obj;
+      }
+      case 'getPoint': {
+        if (expr.args.length !== 2) throw mError('Grid.getPoint() expects 2 arguments (row, col)');
+        const r = evaluateExpression(expr.args[0], scope);
+        const c = evaluateExpression(expr.args[1], scope);
+        if (typeof r !== 'number' || typeof c !== 'number') throw mError('Grid.getPoint() arguments must be numbers');
+        if (!Number.isInteger(r) || !Number.isInteger(c)) throw mError('Grid.getPoint() arguments must be integers');
+        if (r < 0 || r >= obj.rows || c < 0 || c >= obj.cols) {
+          throw mError(`Grid.getPoint(${r}, ${c}) out of bounds for ${obj.rows}×${obj.cols} grid`);
+        }
+        return {
+          type: 'PointValue' as const,
+          x: obj.origin.x + (c + 0.5) * obj.xDim,
+          y: obj.origin.y + (r + 0.5) * obj.yDim,
+        };
+      }
+      case 'getRow': {
+        if (expr.args.length !== 1) throw mError('Grid.getRow() expects 1 argument (row)');
+        const r = evaluateExpression(expr.args[0], scope);
+        if (typeof r !== 'number' || !Number.isInteger(r)) throw mError('Grid.getRow() argument must be an integer');
+        if (r < 0 || r >= obj.rows) throw mError(`Grid.getRow(${r}) out of bounds for grid with ${obj.rows} rows`);
+        return { type: 'ArrayValue' as const, elements: [...obj.cells[r]] };
+      }
+      case 'getCol': {
+        if (expr.args.length !== 1) throw mError('Grid.getCol() expects 1 argument (col)');
+        const c = evaluateExpression(expr.args[0], scope);
+        if (typeof c !== 'number' || !Number.isInteger(c)) throw mError('Grid.getCol() argument must be an integer');
+        if (c < 0 || c >= obj.cols) throw mError(`Grid.getCol(${c}) out of bounds for grid with ${obj.cols} columns`);
+        return { type: 'ArrayValue' as const, elements: obj.cells.map((row) => row[c]) };
+      }
+      case 'cells': {
+        if (expr.args.length !== 0) throw mError('Grid.cells() does not take arguments');
+        const flat: Value[] = [];
+        for (let r = 0; r < obj.rows; r++) for (let c = 0; c < obj.cols; c++) flat.push(obj.cells[r][c]);
+        return { type: 'ArrayValue' as const, elements: flat };
+      }
+      case 'fill': {
+        if (expr.args.length !== 0) throw mError('Grid.fill() does not take arguments — use fill {|row, col, center| ... }');
+        if (!expr.block) throw mError('Grid.fill() requires a trailing block: grid.fill {|row, col, center| return ...; }');
+        const params = expr.block.params;
+        const callLine = getLine(expr);
+        for (let r = 0; r < obj.rows; r++) {
+          for (let c = 0; c < obj.cols; c++) {
+            const blockScope = createScope(scope);
+            if (params.length > 0) setVariable(blockScope, params[0], r);
+            if (params.length > 1) setVariable(blockScope, params[1], c);
+            if (params.length > 2) {
+              const center: PointValue = {
+                type: 'PointValue',
+                x: obj.origin.x + (c + 0.5) * obj.xDim,
+                y: obj.origin.y + (r + 0.5) * obj.yDim,
+              };
+              setVariable(blockScope, params[2], center);
+            }
+            try {
+              for (const stmt of expr.block.body) {
+                evaluateStatementToAccum(stmt, blockScope, []);
+              }
+              obj.cells[r][c] = null;
+            } catch (e) {
+              if (e instanceof ReturnSignal) {
+                obj.cells[r][c] = e.value;
+              } else {
+                const msg = e instanceof Error ? e.message : String(e);
+                throw new Error(formatError(`Error in Grid.fill() callback at (${r}, ${c}): ${msg}`, callLine));
+              }
+            }
+          }
+        }
+        return obj;
+      }
+      case 'forEach': {
+        if (expr.args.length !== 0) throw mError('Grid.forEach() does not take arguments — use forEach {|cell, row, col, center| ... }');
+        if (!expr.block) throw mError('Grid.forEach() requires a trailing block');
+        const params = expr.block.params;
+        const callLine = getLine(expr);
+        // Thread the active layer's accum so drawTo/path commands inside the block
+        // emit to the surrounding layer.apply { ... }, matching for-loop semantics.
+        let blockAccum: string[] = [];
+        if (scope.evalState?.activeLayerName) {
+          const activeLayer = scope.evalState.layers.get(scope.evalState.activeLayerName);
+          if (activeLayer && activeLayer.layerType === 'PathLayer') {
+            blockAccum = (activeLayer as PathLayerState).accum;
+          }
+        }
+        for (let r = 0; r < obj.rows; r++) {
+          for (let c = 0; c < obj.cols; c++) {
+            const blockScope = createScope(scope);
+            if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
+            if (params.length > 1) setVariable(blockScope, params[1], r);
+            if (params.length > 2) setVariable(blockScope, params[2], c);
+            if (params.length > 3) {
+              const center: PointValue = {
+                type: 'PointValue',
+                x: obj.origin.x + (c + 0.5) * obj.xDim,
+                y: obj.origin.y + (r + 0.5) * obj.yDim,
+              };
+              setVariable(blockScope, params[3], center);
+            }
+            try {
+              for (const stmt of expr.block.body) {
+                evaluateStatementToAccum(stmt, blockScope, blockAccum);
+              }
+            } catch (e) {
+              if (e instanceof ReturnSignal) {
+                // forEach ignores returns
+              } else {
+                const msg = e instanceof Error ? e.message : String(e);
+                throw new Error(formatError(`Error in Grid.forEach() callback at (${r}, ${c}): ${msg}`, callLine));
+              }
+            }
+          }
+        }
+        return null;
+      }
+      case 'map': {
+        if (expr.args.length !== 0) throw mError('Grid.map() does not take arguments — use map {|cell, row, col, center| ... }');
+        if (!expr.block) throw mError('Grid.map() requires a trailing block');
+        const params = expr.block.params;
+        const callLine = getLine(expr);
+        const newCells: Value[][] = [];
+        for (let r = 0; r < obj.rows; r++) {
+          const row: Value[] = [];
+          for (let c = 0; c < obj.cols; c++) {
+            const blockScope = createScope(scope);
+            if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
+            if (params.length > 1) setVariable(blockScope, params[1], r);
+            if (params.length > 2) setVariable(blockScope, params[2], c);
+            if (params.length > 3) {
+              const center: PointValue = {
+                type: 'PointValue',
+                x: obj.origin.x + (c + 0.5) * obj.xDim,
+                y: obj.origin.y + (r + 0.5) * obj.yDim,
+              };
+              setVariable(blockScope, params[3], center);
+            }
+            let cellResult: Value = null;
+            try {
+              for (const stmt of expr.block.body) {
+                evaluateStatementToAccum(stmt, blockScope, []);
+              }
+            } catch (e) {
+              if (e instanceof ReturnSignal) {
+                cellResult = e.value;
+              } else {
+                const msg = e instanceof Error ? e.message : String(e);
+                throw new Error(formatError(`Error in Grid.map() callback at (${r}, ${c}): ${msg}`, callLine));
+              }
+            }
+            row.push(cellResult);
+          }
+          newCells.push(row);
+        }
+        return {
+          type: 'GridValue' as const,
+          rows: obj.rows,
+          cols: obj.cols,
+          xDim: obj.xDim,
+          yDim: obj.yDim,
+          origin: obj.origin,
+          outOfBounds: obj.outOfBounds,
+          interpolation: obj.interpolation,
+          cells: newCells,
+        };
+      }
+      case 'sampleNearest': {
+        if (expr.args.length !== 2) throw mError('Grid.sampleNearest() expects 2 arguments (x, y)');
+        const x = evaluateExpression(expr.args[0], scope);
+        const y = evaluateExpression(expr.args[1], scope);
+        if (typeof x !== 'number' || typeof y !== 'number') throw mError('Grid.sampleNearest() arguments must be numbers');
+        return gridSampleNearest(obj, x, y);
+      }
+      case 'sampleBilinear': {
+        if (expr.args.length !== 2) throw mError('Grid.sampleBilinear() expects 2 arguments (x, y)');
+        const x = evaluateExpression(expr.args[0], scope);
+        const y = evaluateExpression(expr.args[1], scope);
+        if (typeof x !== 'number' || typeof y !== 'number') throw mError('Grid.sampleBilinear() arguments must be numbers');
+        return gridSampleBilinear(obj, x, y, mError);
+      }
+      case 'sample': {
+        if (expr.args.length !== 2) throw mError('Grid.sample() expects 2 arguments (x, y)');
+        const x = evaluateExpression(expr.args[0], scope);
+        const y = evaluateExpression(expr.args[1], scope);
+        if (typeof x !== 'number' || typeof y !== 'number') throw mError('Grid.sample() arguments must be numbers');
+        if (obj.interpolation === 'bilinear') return gridSampleBilinear(obj, x, y, mError);
+        return gridSampleNearest(obj, x, y);
+      }
+      default:
+        throw mError(`Unknown Grid method: ${expr.method}`);
+    }
+  }
+
   // GradientValue methods
   if (isGradientValue(obj)) {
     switch (expr.method) {
@@ -4665,6 +4956,22 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     if (expr.property === 'x') return obj.x;
     if (expr.property === 'y') return obj.y;
     throw new Error(`Property '${expr.property}' does not exist on Point`);
+  }
+
+  // Handle GridValue property access
+  if (isGridValue(obj)) {
+    switch (expr.property) {
+      case 'rows': return obj.rows;
+      case 'cols': return obj.cols;
+      case 'xDim': return obj.xDim;
+      case 'yDim': return obj.yDim;
+      case 'origin': return obj.origin;
+      case 'width': return obj.cols * obj.xDim;
+      case 'height': return obj.rows * obj.yDim;
+      case 'outOfBounds': return obj.outOfBounds;
+      case 'interpolation': return obj.interpolation;
+      default: throw new Error(`Property '${expr.property}' does not exist on Grid`);
+    }
   }
 
   // Handle PolarVectorValue property access
@@ -5684,6 +5991,105 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       }
     }
     return marker;
+  }
+
+  // Handle Grid() constructor: Grid(rows, cols, options) {|g| ... }
+  if (call.name === 'Grid') {
+    if (call.args.length < 2 || call.args.length > 3) {
+      throw new Error(
+        formatError(
+          `Grid() expects 2 or 3 arguments (rows, cols, options?), got ${call.args.length}`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    const rowsVal = evaluateExpression(call.args[0], scope);
+    const colsVal = evaluateExpression(call.args[1], scope);
+    if (typeof rowsVal !== 'number' || !Number.isInteger(rowsVal) || rowsVal <= 0) {
+      throw new Error(formatError('Grid() rows must be a positive integer', getLine(call), getCol(call)));
+    }
+    if (typeof colsVal !== 'number' || !Number.isInteger(colsVal) || colsVal <= 0) {
+      throw new Error(formatError('Grid() cols must be a positive integer', getLine(call), getCol(call)));
+    }
+
+    let xDim = 1;
+    let yDim = 1;
+    let origin: PointValue = { type: 'PointValue', x: 0, y: 0 };
+    let defaultValue: Value = null;
+    let outOfBounds: GridOutOfBoundsMode = 'clamp';
+    let interpolation: GridInterpolationMode = 'nearest';
+
+    if (call.args.length === 3) {
+      const optsVal = evaluateExpression(call.args[2], scope);
+      if (!isObjectValue(optsVal)) {
+        throw new Error(formatError('Grid() options (3rd arg) must be an object literal', getLine(call), getCol(call)));
+      }
+      const opts = optsVal.properties;
+      if (opts.has('xDim')) {
+        const v = opts.get('xDim');
+        if (typeof v !== 'number' || v <= 0) throw new Error(formatError('Grid() options.xDim must be a positive number', getLine(call), getCol(call)));
+        xDim = v;
+      }
+      if (opts.has('yDim')) {
+        const v = opts.get('yDim');
+        if (typeof v !== 'number' || v <= 0) throw new Error(formatError('Grid() options.yDim must be a positive number', getLine(call), getCol(call)));
+        yDim = v;
+      }
+      if (opts.has('origin')) {
+        const v = opts.get('origin');
+        if (!isPointValue(v as Value)) throw new Error(formatError('Grid() options.origin must be a Point', getLine(call), getCol(call)));
+        origin = v as PointValue;
+      }
+      if (opts.has('defaultValue')) {
+        defaultValue = opts.get('defaultValue') as Value;
+      }
+      if (opts.has('outOfBounds')) {
+        const v = opts.get('outOfBounds');
+        if (v !== 'clamp' && v !== 'wrap' && v !== 'null') {
+          throw new Error(formatError(`Grid() options.outOfBounds must be 'clamp', 'wrap', or 'null'`, getLine(call), getCol(call)));
+        }
+        outOfBounds = v as GridOutOfBoundsMode;
+      }
+      if (opts.has('interpolation')) {
+        const v = opts.get('interpolation');
+        if (v !== 'nearest' && v !== 'bilinear') {
+          throw new Error(formatError(`Grid() options.interpolation must be 'nearest' or 'bilinear'`, getLine(call), getCol(call)));
+        }
+        interpolation = v as GridInterpolationMode;
+      }
+    }
+
+    const cells: Value[][] = [];
+    for (let r = 0; r < rowsVal; r++) {
+      const row: Value[] = [];
+      for (let c = 0; c < colsVal; c++) row.push(defaultValue);
+      cells.push(row);
+    }
+
+    const grid: GridValue = {
+      type: 'GridValue',
+      rows: rowsVal,
+      cols: colsVal,
+      xDim,
+      yDim,
+      origin,
+      outOfBounds,
+      interpolation,
+      cells,
+    };
+
+    if (call.block) {
+      if (call.block.params.length < 1) {
+        throw new Error(formatError('Grid() trailing block requires a parameter binding, e.g. {|g| ... }', getLine(call), getCol(call)));
+      }
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], grid);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return grid;
   }
 
   // Handle NoiseFilter() constructor

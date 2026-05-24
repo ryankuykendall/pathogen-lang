@@ -48,6 +48,7 @@ export type Value =
   | GradientValue
   | FilterValue
   | MeshPointValue
+  | GridValue
   | ColorValue
   | ColorNamespace
   | CSSVarValue
@@ -172,6 +173,29 @@ export interface MarkerValue {
   orient: number | string; // number (radians) or MarkerOrient enum value ('auto' | 'auto-start-reverse')
   preserveAspectRatio: string; // MarkerPreserveAspectRatio enum value
   paths: MaskPathEntry[]; // reuse {d, styles} type
+}
+
+export type GridOutOfBoundsMode = 'clamp' | 'wrap' | 'null';
+export type GridInterpolationMode = 'nearest' | 'bilinear';
+
+/**
+ * Represents a fixed-shape, mutable, 2D container of values that maps cells
+ * to canvas coordinates. Used for flow fields, heatmaps, lookup tables.
+ *
+ * Cell (r, c) center is at:
+ *   origin.x + (c + 0.5) * xDim
+ *   origin.y + (r + 0.5) * yDim
+ */
+export interface GridValue {
+  type: 'GridValue';
+  rows: number;
+  cols: number;
+  xDim: number;
+  yDim: number;
+  origin: PointValue;
+  outOfBounds: GridOutOfBoundsMode;
+  interpolation: GridInterpolationMode;
+  cells: Value[][]; // row-major: cells[row][col]
 }
 
 /**

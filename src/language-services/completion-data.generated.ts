@@ -183,6 +183,7 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
   { label: 'ElevationShadowFilter', kind: 'function', detail: 'ElevationShadowFilter() — Material-style layered depth shadow', boost: 11 },
   { label: 'InnerShadowFilter', kind: 'function', detail: 'InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks)', boost: 11 },
   { label: 'PixelateFilter', kind: 'function', detail: 'PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter', boost: 11 },
+  { label: 'Grid', kind: 'function', detail: 'Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction.', boost: 12 },
   { label: 'polarPoint', kind: 'function', detail: 'polarPoint(angle, distance) — Point at polar offset', boost: 14 },
   { label: 'polarOffset', kind: 'function', detail: 'polarOffset(angle, distance) — Relative polar offset', boost: 14 },
   { label: 'polarMove', kind: 'function', detail: 'polarMove(angle, distance) — Move in polar direction', boost: 14 },
@@ -295,6 +296,31 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
     ],
     methods: [
 
+    ],
+  },
+  'Grid': {
+    properties: [
+      { label: 'rows', kind: 'property', detail: 'Row count', boost: 8 },
+      { label: 'cols', kind: 'property', detail: 'Column count', boost: 8 },
+      { label: 'xDim', kind: 'property', detail: 'Cell width', boost: 8 },
+      { label: 'yDim', kind: 'property', detail: 'Cell height', boost: 8 },
+      { label: 'origin', kind: 'property', detail: 'Grid top-left in canvas space', boost: 8 },
+      { label: 'width', kind: 'property', detail: 'Total spatial width (cols * xDim)', boost: 8 },
+      { label: 'height', kind: 'property', detail: 'Total spatial height (rows * yDim)', boost: 8 },
+    ],
+    methods: [
+      { label: 'get', kind: 'function', detail: 'get(row, col) — Return cell value; throws on out-of-bounds', boost: 8 },
+      { label: 'set', kind: 'function', detail: 'set(row, col, value) — Mutate cell; returns the grid', boost: 8 },
+      { label: 'getPoint', kind: 'function', detail: 'getPoint(row, col) — Return cell center as a Point', boost: 8 },
+      { label: 'getRow', kind: 'function', detail: 'getRow(row) — Array of cell values across the row', boost: 8 },
+      { label: 'getCol', kind: 'function', detail: 'getCol(col) — Array of cell values down the column', boost: 8 },
+      { label: 'cells', kind: 'function', detail: 'cells() — Flat row-major array of every cell', boost: 8 },
+      { label: 'fill', kind: 'function', detail: 'fill {|row, col, center| return ...} — Populate every cell from a block (mutates)', boost: 8 },
+      { label: 'forEach', kind: 'function', detail: 'forEach {|cell, row, col, center| ...} — Side-effect iteration in row-major order', boost: 8 },
+      { label: 'map', kind: 'function', detail: 'map {|cell, row, col, center| return ...} — Return a new grid with transformed cells', boost: 8 },
+      { label: 'sample', kind: 'function', detail: 'sample(x, y) — Lookup using grid\'s default interpolation mode', boost: 8 },
+      { label: 'sampleNearest', kind: 'function', detail: 'sampleNearest(x, y) — Lookup snapping to nearest cell', boost: 8 },
+      { label: 'sampleBilinear', kind: 'function', detail: 'sampleBilinear(x, y) — Lookup with bilinear interpolation (numeric or Point cells)', boost: 8 },
     ],
   },
   'Point': {
@@ -602,6 +628,7 @@ export const SIGNATURE_DATA: Record<string, { label: string; params: string[]; d
   'ElevationShadowFilter': { label: 'ElevationShadowFilter()', params: [], doc: 'ElevationShadowFilter() — Material-style layered depth shadow' },
   'InnerShadowFilter': { label: 'InnerShadowFilter()', params: [], doc: 'InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks)' },
   'PixelateFilter': { label: 'PixelateFilter(width, height, radius)', params: ['width', 'height', 'radius'], doc: 'PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter' },
+  'Grid': { label: 'Grid(rows, cols, options)', params: ['rows', 'cols', 'options'], doc: 'Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction.' },
   'polarPoint': { label: 'polarPoint(angle, distance)', params: ['angle', 'distance'], doc: 'polarPoint(angle, distance) — Point at polar offset' },
   'polarOffset': { label: 'polarOffset(angle, distance)', params: ['angle', 'distance'], doc: 'polarOffset(angle, distance) — Relative polar offset' },
   'polarMove': { label: 'polarMove(angle, distance)', params: ['angle', 'distance'], doc: 'polarMove(angle, distance) — Move in polar direction' },

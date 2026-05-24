@@ -144,6 +144,27 @@ describe('getCompletions', () => {
       expect(names).not.toContain('distance');
     });
 
+    it('offers Grid members for Grid variables', () => {
+      const items = completeAtEnd('let g = Grid(3, 4, { xDim: 10, yDim: 10 });\ng.');
+      const names = labels(items);
+      expect(names).toContain('rows');
+      expect(names).toContain('cols');
+      expect(names).toContain('xDim');
+      expect(names).toContain('yDim');
+      expect(names).toContain('origin');
+      expect(names).toContain('width');
+      expect(names).toContain('height');
+      expect(names).toContain('get');
+      expect(names).toContain('set');
+      expect(names).toContain('getPoint');
+      expect(names).toContain('fill');
+      expect(names).toContain('forEach');
+      expect(names).toContain('map');
+      expect(names).toContain('sample');
+      expect(names).toContain('sampleBilinear');
+      expect(names).toContain('sampleNearest');
+    });
+
     it('offers PathBlock members for path block variables', () => {
       const items = completeAtEnd('let shape = @{\n  M 0 0\n  L 100 0\n};\nshape.');
       const names = labels(items);

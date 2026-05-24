@@ -82,6 +82,17 @@
     ],
     "description": "grid loop — nested rows and columns"
   },
+  "Grid Constructor": {
+    "prefix": "grid",
+    "body": [
+      "let ${1:field} = Grid(${2:rows}, ${3:cols}, { xDim: ${4:10}, yDim: ${5:10} }) {|g|",
+      "  g.fill {|row, col, center|",
+      "    return ${6:0};",
+      "  };",
+      "};"
+    ],
+    "description": "Grid constructor with fill block — 2D values mapped to canvas coordinates"
+  },
   "Define Layer": {
     "prefix": "define",
     "body": [

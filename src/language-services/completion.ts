@@ -399,6 +399,9 @@ function inferType(name: string, source: string): string | null {
   if (new RegExp(`let\\s+${esc}\\s*=\\s*InnerShadowFilter\\s*\\(`).test(source)) return 'InnerShadowFilter';
   if (new RegExp(`let\\s+${esc}\\s*=\\s*PixelateFilter\\s*\\(`).test(source)) return 'PixelateFilter';
 
+  // let name = Grid(...)
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*Grid\\s*\\(`).test(source)) return 'Grid';
+
   // let name = [...]  or method returning array
   if (new RegExp(`let\\s+${esc}\\s*=\\s*\\[`).test(source)) return 'array';
 

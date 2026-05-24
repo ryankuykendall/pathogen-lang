@@ -209,7 +209,7 @@
 
     "constructor-call": {
       "comment": "Constructor calls: LinearGradient, RadialGradient, ConicGradient, Color, Point, etc.",
-      "match": "\\b(LinearGradient|RadialGradient|ConicGradient|MeshGradient|FreeformGradient|TopoGradient|Color|Point|PolarVector|CSSVar|Cycler|Mask|ClipPath|Pattern|SVGDocumentFragment)\\s*(?=\\()",
+      "match": "\\b(LinearGradient|RadialGradient|ConicGradient|MeshGradient|FreeformGradient|TopoGradient|Color|Point|PolarVector|CSSVar|Cycler|Mask|ClipPath|Pattern|Grid|SVGDocumentFragment)\\s*(?=\\()",
       "captures": {
         "1": { "name": "support.class.constructor.pathogen" }
       }
