@@ -37,6 +37,11 @@ class AutosaveManager {
   _lastSavedHash: string | null;
   _pendingCode: string | null;
   _isEnabled: boolean;
+  // Optimistic concurrency: the code revision this client is editing from. Sent
+  // as `baseRev`; advanced from each save's response. Left stale on a 409 so
+  // saves stay blocked (rather than clobbering the other tab) until reload.
+  _baseRev: number;
+  _conflicted: boolean;
   // Preferences state (separate from code)
   _preferencesTimer: ReturnType<typeof setTimeout> | null;
   _lastPreferences: string | null;
@@ -51,6 +56,8 @@ class AutosaveManager {
     this._lastSavedHash = null;
     this._pendingCode = null;
     this._isEnabled = false;
+    this._baseRev = 0;
+    this._conflicted = false;
     // Preferences state (separate from code)
     this._preferencesTimer = null;
     this._lastPreferences = null;
@@ -59,10 +66,12 @@ class AutosaveManager {
   }
 
   // Initialize autosave for a workspace
-  init(workspaceId: string, initialHash: string | null = null): void {
+  init(workspaceId: string, initialHash: string | null = null, initialRev = 0): void {
     this.stop(); // Clean up any previous instance
     this._workspaceId = workspaceId;
     this._lastSavedHash = initialHash;
+    this._baseRev = initialRev;
+    this._conflicted = false;
     this._lastSaveTime = Date.now();
     this._isEnabled = true;
 
@@ -114,6 +123,13 @@ class AutosaveManager {
       return;
     }
 
+    // While conflicted, every save would 409 against our stale baseRev (and
+    // force-saving would clobber the other tab). Stop attempting until the user
+    // reloads — which re-inits autosave at the latest rev and clears this.
+    if (this._conflicted) {
+      return;
+    }
+
     const now = Date.now();
     const timeSinceLastSave = now - this._lastSaveTime;
 
@@ -141,7 +157,9 @@ class AutosaveManager {
     await this._doSave(code, newHash);
   }
 
-  // Actually perform the save
+  // Actually perform the save. The keepalive (page-teardown) flush does NOT
+  // route through here — it dispatches its fetch synchronously in saveNow so the
+  // request survives unload; this path is the normal awaited save.
   async _doSave(code: string, hash: string): Promise<void> {
     if (!this._isEnabled || !this._workspaceId) {
       return;
@@ -153,13 +171,24 @@ class AutosaveManager {
     });
 
     try {
-      const result = (await workspaceApi.update(this._workspaceId, { code })) as Record<
-        string,
-        unknown
-      >;
+      const result = (await workspaceApi.update(this._workspaceId, {
+        code,
+        baseRev: this._baseRev,
+      })) as Record<string, unknown>;
+
+      // Advance our base revision from the server's authoritative value so the
+      // next save's baseRev matches.
+      if (typeof result.rev === 'number') {
+        this._baseRev = result.rev;
+      }
 
       if (result.skipped) {
-        // Server said content unchanged
+        // Server said content unchanged — settle local state so we stop
+        // reporting "unsaved" (hasUnsavedChanges → beforeunload prompt) and
+        // don't keep re-sending identical bytes on the next debounce.
+        this._lastSaveTime = Date.now();
+        this._lastSavedHash = hash;
+        this._pendingCode = null;
         store.set('saveStatus', SaveStatus.SAVED);
       } else {
         // Save successful
@@ -173,6 +202,16 @@ class AutosaveManager {
         });
       }
     } catch (err) {
+      // 409 = another tab/window advanced this workspace. Retrying with our
+      // stale baseRev would just 409 again, and force-saving would clobber the
+      // newer code — so surface the conflict and STOP autosaving. We keep
+      // _pendingCode so the user's local edits aren't lost; they reconcile by
+      // reloading (which re-inits autosave at the latest rev).
+      if (this._isConflictError(err)) {
+        this._enterConflict();
+        return;
+      }
+
       console.error('Autosave failed:', err);
       (store as any).update({
         saveStatus: SaveStatus.ERROR,
@@ -185,6 +224,31 @@ class AutosaveManager {
         this._attemptSave();
       }, MIN_INTERVAL_MS);
     }
+  }
+
+  // True when an error is a 409 optimistic-concurrency conflict.
+  _isConflictError(err: unknown): boolean {
+    const e = err as { status?: number; data?: { conflict?: boolean } };
+    return e?.status === 409 || e?.data?.conflict === true;
+  }
+
+  // Surface a multi-tab save conflict and halt autosave. Shared by the normal
+  // save path and the keepalive (visibilitychange) path so a conflict never
+  // dies silently — both set the error pill and raise the warning banner.
+  _enterConflict(): void {
+    this._conflicted = true;
+    (store as any).update({
+      saveStatus: SaveStatus.ERROR,
+      saveError:
+        'This workspace was changed in another tab. Reload to get the latest version before saving.',
+    });
+    document.dispatchEvent(
+      new CustomEvent('workspace-conflict', {
+        bubbles: true,
+        composed: true,
+        detail: { workspaceId: this._workspaceId, reason: 'save-conflict' },
+      }),
+    );
   }
 
   // Flush any pending changes and stop autosave (call before navigation)
@@ -226,8 +290,10 @@ class AutosaveManager {
     }
   }
 
-  // Force immediate save (e.g., before navigation)
-  async saveNow(): Promise<boolean> {
+  // Force immediate save (e.g., before navigation). Pass { keepalive: true }
+  // from page-unload / tab-hidden handlers so the request isn't cancelled when
+  // the document tears down.
+  async saveNow({ keepalive = false }: { keepalive?: boolean } = {}): Promise<boolean> {
     if (!this._isEnabled || !this._workspaceId) {
       return false;
     }
@@ -243,6 +309,51 @@ class AutosaveManager {
       return true;
     }
 
+    if (keepalive) {
+      // Page-teardown path (beforeunload / visibilitychange→hidden). The fetch
+      // MUST be dispatched synchronously: any await here (e.g. hashing via
+      // crypto.subtle) defers the request to a microtask the browser won't run
+      // once the document starts unloading — keepalive would then have nothing
+      // to keep alive. So skip the async hash dirty-check, gate on the
+      // synchronous unsaved signal, and fire immediately.
+      if (!this.hasUnsavedChanges() || this._conflicted) {
+        return true;
+      }
+      // The fetch is dispatched synchronously here (before any await), so it
+      // survives a real teardown. We still attach a continuation: when the page
+      // SURVIVES (e.g. visibilitychange backgrounding, not a real unload) it
+      // runs and keeps _baseRev in sync — otherwise this keepalive save would
+      // advance the server's rev while our _baseRev went stale, and the next
+      // edit after returning to the tab would falsely 409. On a true unload the
+      // continuation simply never runs (reload re-seeds _baseRev), which is fine.
+      const sentCode = code;
+      workspaceApi
+        .update(this._workspaceId, { code: sentCode, baseRev: this._baseRev }, { keepalive: true })
+        .then((result) => {
+          const rev = (result as { rev?: number } | null)?.rev;
+          if (typeof rev === 'number') {
+            this._baseRev = rev;
+            // Content is now persisted; settle local dirty state and the pill so
+            // we don't re-warn/re-send when the tab is restored.
+            if (this._pendingCode === sentCode) this._pendingCode = null;
+            store.set('saveStatus', SaveStatus.SAVED);
+          }
+        })
+        .catch((err) => {
+          // Surface a conflict the same way the normal path does — otherwise a
+          // visibilitychange 409 would silently halt autosave (no banner/pill).
+          if (this._isConflictError(err)) this._enterConflict();
+        });
+      return true;
+    }
+
+    // Conflicted: a normal/forced save (editor-blur, flush, Ctrl+S) would 409
+    // against our stale baseRev and re-dispatch the conflict. It's already
+    // surfaced; skip until the user reloads (which re-inits at the latest rev).
+    if (this._conflicted) {
+      return false;
+    }
+
     const hash = await hashContent(code);
     if (hash === this._lastSavedHash) {
       return true; // No changes to save
@@ -252,6 +363,16 @@ class AutosaveManager {
     this._lastSaveTime = 0;
     await this._doSave(code, hash);
     return store.get('saveStatus') !== SaveStatus.ERROR;
+  }
+
+  // True when there is unsaved code (a pending edit, or the live store code
+  // differs from the last persisted hash). Used by the unload guard to decide
+  // whether to warn the user before they leave.
+  hasUnsavedChanges(): boolean {
+    if (!this._isEnabled || !this._workspaceId) return false;
+    if (this._pendingCode !== null) return true;
+    if (this._debounceTimer !== null) return true;
+    return store.get('saveStatus') === SaveStatus.ERROR;
   }
 
   // Set initial preferences state for change detection

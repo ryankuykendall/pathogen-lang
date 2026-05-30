@@ -31,7 +31,7 @@ import type {
   ReviewQueueEntry,
 } from './types.js';
 import type { D1Database } from './types.js';
-import { slugify } from './utils.js';
+import { readThumbMeta, slugify } from './utils.js';
 
 export const PUBLIC_INDEX_CAP = 100;
 export const FEATURED_CAP = 100;
@@ -310,7 +310,12 @@ export async function publishApprovalToIndex(
     description: approval.description || '',
     userId: approval.userId,
     updatedAt: workspace.updatedAt,
-    thumbnailAt: workspace.thumbnailAt || null,
+    // Read the live thumbnail timestamp via the sidecar (with legacy fallback)
+    // — same source adminReconcileIndexes uses, so the two index-writing paths
+    // agree. Deriving from the approval's manual/auto fields alone would blank
+    // the card for pre-kind-split workspaces (single legacy `thumbnailAt`, both
+    // manual/auto null) on re-approve or owner un-flag.
+    thumbnailAt: (await readThumbMeta(env, approval.workspaceId, workspace)).thumbnailAt,
     approvedAt: approval.approvedAt,
     ...(approval.ownerHandle ? { ownerHandle: approval.ownerHandle } : {}),
   });

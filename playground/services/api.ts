@@ -100,11 +100,19 @@ export const workspaceApi = {
     });
   },
 
-  // Update a workspace (for autosave)
-  async update(id: string, data: Record<string, unknown>): Promise<unknown> {
+  // Update a workspace (for autosave). Pass keepalive:true on the leave-the-page
+  // flush so the browser still delivers the request after the document starts
+  // tearing down — a plain fetch issued during unload is otherwise cancelled,
+  // which silently drops the final save.
+  async update(
+    id: string,
+    data: Record<string, unknown>,
+    { keepalive = false }: { keepalive?: boolean } = {},
+  ): Promise<unknown> {
     return apiRequest(`/workspace/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+      keepalive,
     });
   },
 

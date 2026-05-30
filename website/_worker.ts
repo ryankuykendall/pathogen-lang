@@ -14,6 +14,7 @@ import { getSessionUserId, readSessionTokenFromRequest } from './auth/session.js
 import { findUserById, findUserByHandle } from './auth/users.js';
 import { computeUserFeatures } from './auth/features.js';
 import { findApprovalForUserAndSlug } from './api/moderation.js';
+import { readThumbMeta } from './api/utils.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import type {
   Env,
@@ -861,7 +862,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
             description: approval.description || '',
             slug: approval.slug,
             ownerHandle: approval.ownerHandle ?? null,
-            thumbnailAt: ws.thumbnailAt ?? null,
+            thumbnailAt: (await readThumbMeta(env, id, ws)).thumbnailAt,
           };
         } catch {
           return null;

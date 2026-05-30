@@ -55,7 +55,16 @@ import {
 } from './moderation.js';
 import { setUserFlag } from '../auth/users.js';
 import type { Env, Workspace, WorkspaceApproval, WorkspaceListing, WorkspaceRejection } from './types.js';
-import { errorResponse, generateNanoId, hashContent, jsonResponse, slugify } from './utils.js';
+import {
+  deleteThumbMeta,
+  errorResponse,
+  generateNanoId,
+  hashContent,
+  jsonResponse,
+  readThumbMeta,
+  slugify,
+  writeThumbMeta,
+} from './utils.js';
 
 // Canvas dimensions now live in source via `define ViewBox(originX, originY,
 // width, height);`. Older clients may still send `width`/`height` in the
@@ -250,6 +259,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
           if (!wsJson) return null;
           const ws: Workspace = JSON.parse(wsJson);
           const publicationState = await getEffectiveStateString(env, ws.id);
+          const meta = await readThumbMeta(env, ws.id, ws);
           const listing: WorkspaceListing = {
             id: ws.id,
             slug: ws.slug,
@@ -258,9 +268,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             isPublic: ws.isPublic,
             createdAt: ws.createdAt,
             updatedAt: ws.updatedAt,
-            thumbnailAt: ws.thumbnailAt || null,
-            manualThumbnailAt: ws.manualThumbnailAt || null,
-            autoThumbnailAt: ws.autoThumbnailAt || null,
+            thumbnailAt: meta.thumbnailAt,
+            manualThumbnailAt: meta.manualThumbnailAt,
+            autoThumbnailAt: meta.autoThumbnailAt,
             publicationState: publicationState as WorkspaceListing['publicationState'],
           };
           return listing;
@@ -317,6 +327,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         createdAt: now,
         updatedAt: now,
         contentHash,
+        rev: 0,
         thumbnailAt: null,
         manualThumbnailAt: null,
         autoThumbnailAt: null,
@@ -372,7 +383,10 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
       const publicationState = await getEffectiveStateString(env, workspace.id);
       const rereviewPending = await isRereviewPending(env, workspace.id);
-      return jsonResponse({ ...workspace, publicationState, rereviewPending });
+      // Thumbnail timestamps now live in the sidecar; the inline fields on the
+      // doc are legacy and may be stale, so the sidecar wins.
+      const meta = await readThumbMeta(env, workspace.id, workspace);
+      return jsonResponse({ ...workspace, ...meta, publicationState, rereviewPending });
     } catch (err) {
       return errorResponse('Failed to load workspace: ' + (err as Error).message, 500);
     }
@@ -391,12 +405,13 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
       const body = (await request.json()) as Record<string, unknown>;
-      const { name, description, code, isPublic, preferences } = body as {
+      const { name, description, code, isPublic, preferences, baseRev } = body as {
         name?: string;
         description?: string;
         code?: string;
         isPublic?: boolean;
         preferences?: Record<string, unknown>;
+        baseRev?: number;
       };
 
       // isPublic transitions now flow through the moderation state machine.
@@ -416,12 +431,30 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       }
 
       if (code !== undefined) {
+        const currentRev = workspace.rev ?? 0;
+        // Optimistic concurrency: when the client tells us which revision it
+        // edited from, reject the write if the doc has since advanced (another
+        // tab/window saved). This stops a stale tab from clobbering newer code.
+        // Clients that don't send baseRev keep the old last-write-wins behavior.
+        if (baseRev !== undefined && baseRev !== currentRev) {
+          return jsonResponse(
+            {
+              error: 'Workspace was modified in another tab or window',
+              conflict: true,
+              currentRev,
+              rev: currentRev,
+              updatedAt: workspace.updatedAt,
+            },
+            409,
+          );
+        }
         const newHash = await hashContent(code);
         if (newHash === workspace.contentHash) {
-          return jsonResponse({ ...workspace, publicationState: priorState, skipped: true });
+          return jsonResponse({ ...workspace, rev: currentRev, publicationState: priorState, skipped: true });
         }
         workspace.code = code;
         workspace.contentHash = newHash;
+        workspace.rev = currentRev + 1;
       }
 
       if (name !== undefined) {
@@ -438,6 +471,23 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // The submit-for-review path doesn't change it.
 
       workspace.updatedAt = new Date().toISOString();
+
+      // Non-code updates (rename, preferences, publish toggle) write the whole
+      // doc back, so a code save that landed since we read at the top of this
+      // handler would be reverted — the same clobber class, just via a
+      // different field. When we did NOT touch code, re-read immediately before
+      // the write and carry over the freshest code/contentHash/rev so a
+      // concurrent code save survives. (Shrinks the window to this re-read→put
+      // gap; KV has no CAS, so it isn't zero — a Durable Object would close it.)
+      if (code === undefined) {
+        const freshJson = await env.WORKSPACES.get(`workspace:${id}`);
+        if (freshJson) {
+          const fresh = JSON.parse(freshJson) as Workspace;
+          workspace.code = fresh.code;
+          workspace.contentHash = fresh.contentHash;
+          workspace.rev = fresh.rev;
+        }
+      }
 
       if (ownerUnpublish && env.USERS_DB) {
         workspace.isPublic = false;
@@ -515,6 +565,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       await Promise.all([
         env.WORKSPACES.delete(`approval:${id}`),
         env.WORKSPACES.delete(`rejection:${id}`),
+        deleteThumbMeta(env, id),
         removeFromReviewQueue(env, id),
         unpublishFromIndex(env, id),
         removeFromFeatured(env, id),
@@ -555,6 +606,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         isPublic: false,
         createdAt: now,
         updatedAt: now,
+        // Fresh document — start its revision counter over.
+        rev: 0,
         // Copies don't inherit R2 thumbnail blobs — reset all three timestamps so
         // the listing renders the letter fallback until the copy gets its own.
         thumbnailAt: null,
@@ -636,19 +689,23 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         });
       }
 
+      // Stamp the timestamps in the sidecar only — never write `workspace:${id}`
+      // here, or this thumbnail upload would clobber any code save that landed
+      // since we read the doc above (the auth read is read-only and safe).
+      const meta = await readThumbMeta(env, id, workspace);
       const now = new Date().toISOString();
       if (kind === 'manual') {
-        workspace.manualThumbnailAt = now;
+        meta.manualThumbnailAt = now;
       } else {
-        workspace.autoThumbnailAt = now;
+        meta.autoThumbnailAt = now;
       }
-      workspace.thumbnailAt = now;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      meta.thumbnailAt = now;
+      await writeThumbMeta(env, id, meta);
 
       return jsonResponse({
-        thumbnailAt: workspace.thumbnailAt,
-        manualThumbnailAt: workspace.manualThumbnailAt || null,
-        autoThumbnailAt: workspace.autoThumbnailAt || null,
+        thumbnailAt: meta.thumbnailAt,
+        manualThumbnailAt: meta.manualThumbnailAt || null,
+        autoThumbnailAt: meta.autoThumbnailAt || null,
       });
     } catch (err) {
       return errorResponse('Failed to upload thumbnail: ' + (err as Error).message, 500);
@@ -693,38 +750,40 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const workspace: Workspace = JSON.parse(wsJson);
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
+      const meta = await readThumbMeta(env, id, workspace);
       const sizes = ['1024', '512', '256'];
       const deletes: Promise<void>[] = [];
       if (kind === 'manual' || kind === 'all') {
         for (const s of sizes) deletes.push(env.THUMBNAILS.delete(`${id}/manual-${s}.png`));
-        workspace.manualThumbnailAt = null;
+        meta.manualThumbnailAt = null;
       }
       if (kind === 'auto' || kind === 'all') {
         for (const s of sizes) deletes.push(env.THUMBNAILS.delete(`${id}/${s}.png`));
-        workspace.autoThumbnailAt = null;
+        meta.autoThumbnailAt = null;
       }
       await Promise.all(deletes);
 
       // Pre-split workspaces have a legacy thumbnail at ${id}/${size}.png but
       // null autoThumbnailAt in KV (the field didn't exist when they were uploaded).
-      // If we just removed the manual layer and the workspace record claims no
-      // auto exists, probe R2 directly — if the legacy blob is there, surface it
-      // so the frontend toast and the listing card stay honest about what GET
+      // If we just removed the manual layer and the metadata claims no auto
+      // exists, probe R2 directly — if the legacy blob is there, surface it so
+      // the frontend toast and the listing card stay honest about what GET
       // will return.
-      if (kind === 'manual' && !workspace.autoThumbnailAt) {
+      if (kind === 'manual' && !meta.autoThumbnailAt) {
         const legacy = await env.THUMBNAILS.get(`${id}/256.png`);
-        if (legacy) workspace.autoThumbnailAt = new Date().toISOString();
+        if (legacy) meta.autoThumbnailAt = new Date().toISOString();
       }
 
       // thumbnailAt is now whichever layer still has data, or null if none.
-      workspace.thumbnailAt = workspace.manualThumbnailAt || workspace.autoThumbnailAt || null;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      // Sidecar-only write — never touch `workspace:${id}` from a thumbnail path.
+      meta.thumbnailAt = meta.manualThumbnailAt || meta.autoThumbnailAt || null;
+      await writeThumbMeta(env, id, meta);
 
       return jsonResponse({
         success: true,
-        thumbnailAt: workspace.thumbnailAt,
-        manualThumbnailAt: workspace.manualThumbnailAt || null,
-        autoThumbnailAt: workspace.autoThumbnailAt || null,
+        thumbnailAt: meta.thumbnailAt,
+        manualThumbnailAt: meta.manualThumbnailAt || null,
+        autoThumbnailAt: meta.autoThumbnailAt || null,
       });
     } catch (err) {
       return errorResponse('Failed to delete thumbnail: ' + (err as Error).message, 500);
@@ -895,6 +954,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       } catch {
         /* leave undefined; approval record degrades to legacy shape */
       }
+      const approvalMeta = await readThumbMeta(env, id, workspace);
       const approval: WorkspaceApproval = {
         workspaceId: id,
         userId: queueEntry.userId,
@@ -903,8 +963,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         slug: uniqueSlug,
         name: queueEntry.name,
         description: queueEntry.description,
-        manualThumbnailAt: workspace.manualThumbnailAt ?? null,
-        autoThumbnailAt: workspace.autoThumbnailAt ?? null,
+        manualThumbnailAt: approvalMeta.manualThumbnailAt,
+        autoThumbnailAt: approvalMeta.autoThumbnailAt,
         approvedAt: new Date().toISOString(),
         approvedByUserId: adminUserId,
         featuredAt: feature ? new Date().toISOString() : null,
@@ -1018,7 +1078,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               const wsRaw = await env.WORKSPACES.get(`workspace:${a.workspaceId}`);
               if (wsRaw) {
                 const ws = JSON.parse(wsRaw) as Workspace & { flagged?: boolean };
-                thumbnailAt = ws.thumbnailAt ?? null;
+                thumbnailAt = (await readThumbMeta(env, a.workspaceId, ws)).thumbnailAt;
                 isPublic = Boolean(ws.isPublic);
                 flagged = Boolean(ws.flagged);
               }
@@ -1066,7 +1126,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             const wsRaw = await env.WORKSPACES.get(`workspace:${id}`);
             if (wsRaw) {
               const ws = JSON.parse(wsRaw) as Workspace;
-              thumbnailAt = ws.thumbnailAt ?? null;
+              thumbnailAt = (await readThumbMeta(env, id, ws)).thumbnailAt;
             }
           } catch {
             /* leave null */
@@ -1117,7 +1177,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               const ws = JSON.parse(wsRaw) as Workspace & { flagged?: boolean };
               name = ws.name;
               userId = ws.userId;
-              thumbnailAt = ws.thumbnailAt ?? null;
+              thumbnailAt = (await readThumbMeta(env, r.workspaceId, ws)).thumbnailAt;
               codeHash = ws.contentHash;
               workspaceFlagged = Boolean(ws.flagged);
             }
@@ -1184,7 +1244,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
           ownerHandle: handle,
           ownerUserId: ws.userId,
           ownerFlagged,
-          thumbnailAt: ws.thumbnailAt ?? null,
+          thumbnailAt: (await readThumbMeta(env, wsId, ws)).thumbnailAt,
         });
       }
       return jsonResponse({ entries });
@@ -1485,7 +1545,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
           description: a.description || '',
           userId: a.userId,
           updatedAt: ws.updatedAt,
-          thumbnailAt: ws.thumbnailAt || null,
+          thumbnailAt: (await readThumbMeta(env, a.workspaceId, ws)).thumbnailAt,
           approvedAt: a.approvedAt,
         };
         if (a.ownerHandle) entry.ownerHandle = a.ownerHandle;
@@ -1537,7 +1597,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         const wsJson = await env.WORKSPACES.get(key.name);
         if (!wsJson) continue;
         const ws: Workspace = JSON.parse(wsJson);
-        if (!ws.thumbnailAt) {
+        const { thumbnailAt } = await readThumbMeta(env, ws.id, ws);
+        if (!thumbnailAt) {
           workspaces.push({
             id: ws.id,
             name: ws.name,

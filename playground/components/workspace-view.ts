@@ -51,7 +51,9 @@ export class WorkspaceView extends HTMLElement {
   private _handleRenameWorkspace: (() => void) | null = null;
   private _handleCopyDebugInfo: (() => Promise<void>) | null = null;
   private _handleThumbnailAutoGenerate: ((e: Event) => void) | null = null;
-  private _handleBeforeUnload: (() => void) | null = null;
+  private _handleBeforeUnload: ((e: BeforeUnloadEvent) => void) | null = null;
+  private _handleVisibilityChange: (() => void) | null = null;
+  private _handleEditorBlur: (() => void) | null = null;
   private _handleWorkspaceConflict: ((e: Event) => void) | null = null;
   private _handleFullscreenChange: ((e: Event) => void) | null = null;
   private _multiTabUnsubscribe: (() => void) | null = null;
@@ -318,7 +320,7 @@ export class WorkspaceView extends HTMLElement {
 
       // Initialize autosave if user owns this workspace
       if (workspace.userId === userId) {
-        autosave.init(workspace.id, workspace.contentHash);
+        autosave.init(workspace.id, workspace.contentHash, workspace.rev ?? 0);
 
         // Start thumbnail auto-generation tracking
         thumbnailService.startAutoGeneration(workspace.id);
@@ -602,18 +604,49 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
 
-    // beforeunload: fire-and-forget save + thumbnail generation
-    this._handleBeforeUnload = (): void => {
+    // beforeunload: flush the pending save with keepalive so it survives page
+    // teardown (a plain fetch issued here is cancelled), and warn the user when
+    // there are still-unsaved changes so they can't silently lose work.
+    this._handleBeforeUnload = (e: BeforeUnloadEvent): void => {
       if (store.get('currentView') === 'workspace' && this._currentWorkspaceId) {
-        autosave.saveNow();
+        const unsaved = autosave.hasUnsavedChanges();
+        autosave.saveNow({ keepalive: true });
         thumbnailService.generateIfDirty(
           this._currentWorkspaceId,
           () => this.previewPane?.preview ?? null,
           store.getAll(),
         );
+        if (unsaved) {
+          // Native "Leave site? Changes you made may not be saved." prompt.
+          e.preventDefault();
+          e.returnValue = '';
+        }
       }
     };
     window.addEventListener('beforeunload', this._handleBeforeUnload);
+
+    // visibilitychange → hidden is the reliable backgrounding/mobile signal
+    // (beforeunload is unreliable on mobile). Flush with keepalive so a save is
+    // delivered before the OS may discard the tab, shrinking the unsaved window.
+    this._handleVisibilityChange = (): void => {
+      if (
+        document.visibilityState === 'hidden' &&
+        store.get('currentView') === 'workspace' &&
+        this._currentWorkspaceId
+      ) {
+        autosave.saveNow({ keepalive: true });
+      }
+    };
+    document.addEventListener('visibilitychange', this._handleVisibilityChange);
+
+    // Flush the pending save when focus leaves the editor. The page is still
+    // alive here, so a normal (non-keepalive) save is fine.
+    this._handleEditorBlur = (): void => {
+      if (store.get('currentView') === 'workspace' && this._currentWorkspaceId) {
+        autosave.saveNow();
+      }
+    };
+    this.shadowRoot!.addEventListener('editor-blur', this._handleEditorBlur);
 
     // Multi-tab conflict warning
     this._handleWorkspaceConflict = (): void => {
@@ -684,6 +717,8 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleRenameWorkspace) document.removeEventListener('rename-workspace', this._handleRenameWorkspace);
     if (this._handleThumbnailAutoGenerate) document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
     if (this._handleBeforeUnload) window.removeEventListener('beforeunload', this._handleBeforeUnload);
+    if (this._handleVisibilityChange) document.removeEventListener('visibilitychange', this._handleVisibilityChange);
+    if (this._handleEditorBlur) this.shadowRoot!.removeEventListener('editor-blur', this._handleEditorBlur);
     if (this._handleWorkspaceConflict) document.removeEventListener('workspace-conflict', this._handleWorkspaceConflict);
     if (this._handleLayerVisibilityChange) document.removeEventListener('layer-visibility-change', this._handleLayerVisibilityChange);
     if (this._handleDefsVisibilityChange) document.removeEventListener('defs-visibility-change', this._handleDefsVisibilityChange);

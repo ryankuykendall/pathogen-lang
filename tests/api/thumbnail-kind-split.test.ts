@@ -122,13 +122,17 @@ async function deleteKind(env: Env, id: string, userId: string, kind: 'manual' |
   );
 }
 
-async function readWorkspace(kv: MemoryKV, id: string): Promise<{
+// Thumbnail timestamps now live in the sidecar (`thumbmeta:${id}`), not on the
+// workspace doc — that separation is what stops a thumbnail upload from
+// clobbering a concurrent code save. A missing sidecar reads as all-null.
+async function readThumbMeta(kv: MemoryKV, id: string): Promise<{
   thumbnailAt: string | null;
   manualThumbnailAt: string | null;
   autoThumbnailAt: string | null;
 }> {
-  const json = await (kv as unknown as KVNamespace).get(`workspace:${id}`);
-  return JSON.parse(json!);
+  const json = await (kv as unknown as KVNamespace).get(`thumbmeta:${id}`);
+  if (!json) return { thumbnailAt: null, manualThumbnailAt: null, autoThumbnailAt: null };
+  return JSON.parse(json);
 }
 
 describe('thumbnail manual/auto split', () => {
@@ -146,7 +150,7 @@ describe('thumbnail manual/auto split', () => {
     expect(r2.has(`${id}/1024.png`)).toBe(false);
 
     // Workspace record
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBeTruthy();
     expect(ws.autoThumbnailAt).toBeNull();
     expect(ws.thumbnailAt).toBe(ws.manualThumbnailAt);
@@ -164,7 +168,7 @@ describe('thumbnail manual/auto split', () => {
     expect(r2.has(`${id}/256.png`)).toBe(true);
     expect(r2.has(`${id}/manual-1024.png`)).toBe(false);
 
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.autoThumbnailAt).toBeTruthy();
     expect(ws.manualThumbnailAt).toBeNull();
   });
@@ -174,7 +178,7 @@ describe('thumbnail manual/auto split', () => {
     const id = await createWorkspace(env, 'user-1');
 
     await uploadKind(env, id, 'user-1', 'auto');
-    const beforeManual = await readWorkspace(kv, id);
+    const beforeManual = await readThumbMeta(kv, id);
 
     await uploadKind(env, id, 'user-1', 'manual');
 
@@ -182,7 +186,7 @@ describe('thumbnail manual/auto split', () => {
     expect(r2.has(`${id}/manual-256.png`)).toBe(true);
     expect(r2.has(`${id}/256.png`)).toBe(true);
 
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBeTruthy();
     expect(ws.autoThumbnailAt).toBe(beforeManual.autoThumbnailAt); // unchanged
   });
@@ -192,14 +196,14 @@ describe('thumbnail manual/auto split', () => {
     const id = await createWorkspace(env, 'user-1');
 
     await uploadKind(env, id, 'user-1', 'manual');
-    const beforeAuto = await readWorkspace(kv, id);
+    const beforeAuto = await readThumbMeta(kv, id);
 
     await uploadKind(env, id, 'user-1', 'auto');
 
     expect(r2.has(`${id}/manual-256.png`)).toBe(true);
     expect(r2.has(`${id}/256.png`)).toBe(true);
 
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBe(beforeAuto.manualThumbnailAt); // unchanged
     expect(ws.autoThumbnailAt).toBeTruthy();
   });
@@ -249,7 +253,7 @@ describe('thumbnail manual/auto split', () => {
     expect(r2.has(`${id}/manual-256.png`)).toBe(false);
     expect(r2.has(`${id}/256.png`)).toBe(true);
 
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBeNull();
     expect(ws.autoThumbnailAt).toBeTruthy();
     expect(ws.thumbnailAt).toBe(ws.autoThumbnailAt);
@@ -262,7 +266,7 @@ describe('thumbnail manual/auto split', () => {
     await uploadKind(env, id, 'user-1', 'manual');
     await deleteKind(env, id, 'user-1', 'manual');
 
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBeNull();
     expect(ws.autoThumbnailAt).toBeNull();
     expect(ws.thumbnailAt).toBeNull();
@@ -280,7 +284,7 @@ describe('thumbnail manual/auto split', () => {
 
     expect(r2.keys().filter((k) => k.startsWith(`${id}/`))).toEqual([]);
 
-    const ws = await readWorkspace(kv, id);
+    const ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBeNull();
     expect(ws.autoThumbnailAt).toBeNull();
     expect(ws.thumbnailAt).toBeNull();
@@ -325,12 +329,12 @@ describe('thumbnail manual/auto split', () => {
     await (r2 as unknown as { put: (k: string, v: string) => Promise<void> }).put(`${id}/256.png`, 'legacy-png');
 
     await uploadKind(env, id, 'user-1', 'manual');
-    let ws = await readWorkspace(kv, id);
+    let ws = await readThumbMeta(kv, id);
     expect(ws.autoThumbnailAt).toBeNull();
     expect(ws.manualThumbnailAt).toBeTruthy();
 
     await deleteKind(env, id, 'user-1', 'manual');
-    ws = await readWorkspace(kv, id);
+    ws = await readThumbMeta(kv, id);
     expect(ws.manualThumbnailAt).toBeNull();
     // The synthesized timestamp reflects "we don't know when, but the blob is real."
     expect(ws.autoThumbnailAt).toBeTruthy();
@@ -354,7 +358,7 @@ describe('thumbnail manual/auto split', () => {
     expect(res.status).toBe(201);
     const copy = (await res.json()) as { id: string };
 
-    const ws = await readWorkspace(kv, copy.id);
+    const ws = await readThumbMeta(kv, copy.id);
     expect(ws.thumbnailAt).toBeNull();
     expect(ws.manualThumbnailAt).toBeNull();
     expect(ws.autoThumbnailAt).toBeNull();

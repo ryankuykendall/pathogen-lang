@@ -103,10 +103,27 @@ export interface Workspace extends WorkspaceListing {
   code: string;
   preferences: Record<string, unknown>;
   contentHash: string;
+  // Monotonic code-revision counter for optimistic concurrency. Incremented on
+  // every successful code write. A client sends the `rev` it last loaded/saved
+  // as `baseRev`; the server rejects the write (409) when the doc has advanced —
+  // stopping a stale second tab from clobbering a newer save. Absent on docs
+  // created before this field existed; readers treat missing as 0.
+  rev?: number;
   // Set by admin moderation (Phase 3). Flagged workspaces are removed from
   // public + featured indexes immediately and listed in
   // `queue:flagged-workspaces`.
   flagged?: boolean;
+}
+
+// Thumbnail timestamps live in a sidecar KV value (`workspace:thumbmeta:{id}`)
+// rather than on the workspace doc, so the thumbnail upload/clear endpoints
+// never read-modify-write `workspace:{id}` and therefore can never clobber a
+// concurrent code save. Legacy workspace docs still carry these fields inline;
+// `readThumbMeta` falls back to them when no sidecar exists (lazy migration).
+export interface ThumbMeta {
+  thumbnailAt: string | null;
+  manualThumbnailAt: string | null;
+  autoThumbnailAt: string | null;
 }
 
 export interface PublicIndexEntry {

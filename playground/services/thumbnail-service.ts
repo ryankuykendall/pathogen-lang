@@ -360,6 +360,20 @@ async function generateIfDirty(
     return await generateThumbnail(workspaceId, svgElement, storeState, undefined, { kind: 'auto' });
   } catch (err) {
     console.warn('Auto thumbnail generation failed:', err);
+    // Surface to the user instead of failing silently — a thumbnail that never
+    // updates is otherwise invisible until they notice a stale card.
+    document.dispatchEvent(
+      new CustomEvent('show-toast', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          type: 'error',
+          title: 'Thumbnail not updated',
+          message:
+            'Auto-generating the workspace preview failed. Your code is unaffected; the thumbnail may be out of date.',
+        },
+      }),
+    );
   }
 }
 

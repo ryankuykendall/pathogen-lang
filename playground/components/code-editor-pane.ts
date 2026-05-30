@@ -38,6 +38,7 @@ interface CmViewModule {
     editable: { of(value: boolean): unknown };
     scrollIntoView(pos: number, options?: unknown): unknown;
     updateListener: { of(fn: (update: CmViewUpdate) => void): unknown };
+    domEventHandlers(handlers: Record<string, (...args: unknown[]) => boolean | void>): unknown;
   };
   lineNumbers(): unknown;
   highlightActiveLineGutter(): unknown;
@@ -259,6 +260,17 @@ export class CodeEditorPane extends HTMLElement {
       }
     });
 
+    // Flush any pending autosave when focus leaves the editor — shrinks the
+    // window where an edit sits unsaved between the debounce and the next save.
+    const blurExtension = view.EditorView.domEventHandlers({
+      blur: () => {
+        this.dispatchEvent(
+          new CustomEvent('editor-blur', { bubbles: true, composed: true }),
+        );
+        return false;
+      },
+    });
+
     const editorState = state.EditorState.create({
       doc: this._initialCode,
       extensions: [
@@ -301,6 +313,7 @@ export class CodeEditorPane extends HTMLElement {
         ]),
         ...languageExtensions.extensions,
         updateExtension,
+        blurExtension,
         view.EditorView.lineWrapping,
         ...colorPickerExtension(view, language),
         ...textLayerEditorExtension(view, language),
