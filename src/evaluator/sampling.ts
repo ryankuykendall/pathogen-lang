@@ -95,6 +95,10 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
     case 'L':
     case 'H':
     case 'V':
+      return Math.sqrt(dx * dx + dy * dy);
+
+    // T (and S below) are expected to be expanded to Q/C via resolveSmooth before
+    // reaching here; these branches are a straight-line/degenerate fallback only.
     case 'T':
       return Math.sqrt(dx * dx + dy * dy);
 
@@ -132,11 +136,98 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
 }
 
 export function calculatePathLength(commands: SamplingCmd[]): number {
+  // Resolve smooth commands first so T/S contribute their true curve length
+  // rather than a straight-line approximation (same reason sampling resolves).
   let total = 0;
-  for (const cmd of commands) {
+  for (const cmd of resolveSmooth(commands)) {
     total += calculateCommandLength(cmd);
   }
   return total;
+}
+
+// ---- resolveSmooth: convert S→C and T→Q ----
+//
+// A smooth command (T/S) has an implicit control point — the reflection of the
+// previous Q/T (resp. C/S) control point about the current point. That control
+// point cannot be recovered from a single command in isolation, so any per-command
+// geometry (length, point sampling, tangent) must run on a *resolved* command list
+// where T has been expanded to Q and S to C. This lives here (the lowest-level
+// geometry module) so both the sampling entry points below and the transforms in
+// path-transforms.ts can share it without an import cycle.
+export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
+  const result: SamplingCmd[] = [];
+  let lastCubicCP: Point | null = null; // last CP2 of C/S (absolute)
+  let lastQuadCP: Point | null = null; // last CP of Q/T (absolute)
+
+  for (const cmd of commands) {
+    const upper = cmd.command.toUpperCase();
+
+    if (upper === 'S') {
+      // S x2 y2 dx dy → C cp1x cp1y x2 y2 dx dy
+      const [x2, y2, dx, dy] = cmd.args;
+      let cp1x: number;
+      let cp1y: number;
+      if (lastCubicCP) {
+        // Reflected point = 2*start - lastCP2 (absolute); relative to start: start - lastCP2
+        cp1x = cmd.start.x - lastCubicCP.x;
+        cp1y = cmd.start.y - lastCubicCP.y;
+      } else {
+        cp1x = 0;
+        cp1y = 0;
+      }
+      result.push({
+        command: 'c',
+        args: [cp1x, cp1y, x2, y2, dx, dy],
+        start: { ...cmd.start },
+        end: { ...cmd.end },
+      });
+      lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
+      lastQuadCP = null;
+    } else if (upper === 'T') {
+      // T dx dy → Q cpx cpy dx dy
+      const [dx, dy] = cmd.args;
+      let cpx: number;
+      let cpy: number;
+      if (lastQuadCP) {
+        cpx = cmd.start.x - lastQuadCP.x;
+        cpy = cmd.start.y - lastQuadCP.y;
+      } else {
+        cpx = 0;
+        cpy = 0;
+      }
+      result.push({
+        command: 'q',
+        args: [cpx, cpy, dx, dy],
+        start: { ...cmd.start },
+        end: { ...cmd.end },
+      });
+      lastQuadCP = { x: cmd.start.x + cpx, y: cmd.start.y + cpy };
+      lastCubicCP = null;
+    } else {
+      result.push({
+        command: cmd.command,
+        args: [...cmd.args],
+        start: { ...cmd.start },
+        end: { ...cmd.end },
+      });
+
+      // Track control points for C and Q so a following S/T can reflect them
+      if (upper === 'C') {
+        const [, , x2, y2] = cmd.args;
+        lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
+        lastQuadCP = null;
+      } else if (upper === 'Q') {
+        const [x1, y1] = cmd.args;
+        lastQuadCP = { x: cmd.start.x + x1, y: cmd.start.y + y1 };
+        lastCubicCP = null;
+      } else {
+        lastCubicCP = null;
+        lastQuadCP = null;
+      }
+    }
+  }
+
+  return result;
 }
 
 // ---- Parametric curve evaluation ----
@@ -332,6 +423,8 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
     case 'M':
       return { point: { x: cmd.start.x, y: cmd.start.y }, tangent: 0 };
 
+    // T is grouped with the linear commands as a fallback: callers resolve smooth
+    // commands (T→Q, S→C) before sampling, so a real T should never reach here.
     case 'L':
     case 'H':
     case 'V':
@@ -530,7 +623,8 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
     }
 
     case 'T':
-      // T is treated as linear (same as sampleOnCommand does)
+      // Fallback only — callers resolveSmooth (T→Q) before sampling, so a real
+      // T should never reach here; treat as linear if it somehow does.
       return arcLengthFraction;
 
     case 'A': {
@@ -567,31 +661,43 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
 
 // ---- Path-level sampling ----
 
-export function samplePathAtFraction(commands: SamplingCmd[], t: number): SampleResult {
-  if (commands.length === 0) {
-    return { point: { x: 0, y: 0 }, tangent: 0 };
-  }
-
+// Sample a fraction of an already-resolved command list (T→Q, S→C applied).
+// Callers that pass raw commands must go through samplePathAtFraction so smooth
+// commands are expanded first; sampling a raw T/S would treat it as a line.
+function samplePathAtFractionResolved(resolved: SamplingCmd[], t: number): SampleResult {
   const cmdLengths: number[] = [];
   let totalLength = 0;
-  for (const cmd of commands) {
+  for (const cmd of resolved) {
     const len = calculateCommandLength(cmd);
     cmdLengths.push(len);
     totalLength += len;
   }
 
   if (totalLength === 0) {
-    return { point: { x: commands[0].start.x, y: commands[0].start.y }, tangent: 0 };
+    return { point: { x: resolved[0].start.x, y: resolved[0].start.y }, tangent: 0 };
   }
 
-  const loc = locateCommandAtFraction(commands, cmdLengths, totalLength, t);
-  return sampleOnCommand(commands[loc.cmdIndex], loc.localT);
+  const loc = locateCommandAtFraction(resolved, cmdLengths, totalLength, t);
+  return sampleOnCommand(resolved[loc.cmdIndex], loc.localT);
+}
+
+export function samplePathAtFraction(commands: SamplingCmd[], t: number): SampleResult {
+  if (commands.length === 0) {
+    return { point: { x: 0, y: 0 }, tangent: 0 };
+  }
+  return samplePathAtFractionResolved(resolveSmooth(commands), t);
 }
 
 export function partitionPath(commands: SamplingCmd[], n: number): SampleResult[] {
   const results: SampleResult[] = [];
+  if (commands.length === 0) {
+    for (let i = 0; i <= n; i++) results.push({ point: { x: 0, y: 0 }, tangent: 0 });
+    return results;
+  }
+  // Resolve smooth commands once, then sample the resolved list n+1 times.
+  const resolved = resolveSmooth(commands);
   for (let i = 0; i <= n; i++) {
-    results.push(samplePathAtFraction(commands, i / n));
+    results.push(samplePathAtFractionResolved(resolved, i / n));
   }
   return results;
 }

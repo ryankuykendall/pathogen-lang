@@ -5,6 +5,7 @@ import {
   calculateCommandLength,
   getParametricTForCommand,
   locateCommandAtFraction,
+  resolveSmooth,
 } from './sampling';
 
 import type { Point } from './context';
@@ -56,87 +57,10 @@ function isAngleInArc(angle: number, startAngle: number, deltaAngle: number): bo
   return aNeg >= deltaAngle - 1e-9;
 }
 
-// ---- resolveSmooth: convert S→C and T→Q ----
-
-export function resolveSmooth(commands: TransformCmd[]): TransformCmd[] {
-  const result: TransformCmd[] = [];
-  let lastCubicCP: Point | null = null; // last CP2 of C/S
-  let lastQuadCP: Point | null = null; // last CP of Q/T
-
-  for (const cmd of commands) {
-    const upper = cmd.command.toUpperCase();
-
-    if (upper === 'S') {
-      // S x2 y2 dx dy → C cp1x cp1y x2 y2 dx dy
-      const [x2, y2, dx, dy] = cmd.args;
-      let cp1x: number;
-      let cp1y: number;
-      if (lastCubicCP) {
-        // Reflected point = 2*start - lastCP2 (absolute)
-        // Relative to start: (2*start - lastCP2) - start = start - lastCP2
-        cp1x = cmd.start.x - lastCubicCP.x;
-        cp1y = cmd.start.y - lastCubicCP.y;
-      } else {
-        cp1x = 0;
-        cp1y = 0;
-      }
-      const newCmd: TransformCmd = {
-        command: 'c',
-        args: [cp1x, cp1y, x2, y2, dx, dy],
-        start: { ...cmd.start },
-        end: { ...cmd.end },
-      };
-      result.push(newCmd);
-      // Track the absolute position of CP2
-      lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
-      lastQuadCP = null;
-    } else if (upper === 'T') {
-      // T dx dy → Q cpx cpy dx dy
-      const [dx, dy] = cmd.args;
-      let cpx: number;
-      let cpy: number;
-      if (lastQuadCP) {
-        cpx = cmd.start.x - lastQuadCP.x;
-        cpy = cmd.start.y - lastQuadCP.y;
-      } else {
-        cpx = 0;
-        cpy = 0;
-      }
-      const newCmd: TransformCmd = {
-        command: 'q',
-        args: [cpx, cpy, dx, dy],
-        start: { ...cmd.start },
-        end: { ...cmd.end },
-      };
-      result.push(newCmd);
-      lastQuadCP = { x: cmd.start.x + cpx, y: cmd.start.y + cpy };
-      lastCubicCP = null;
-    } else {
-      result.push({
-        command: cmd.command,
-        args: [...cmd.args],
-        start: { ...cmd.start },
-        end: { ...cmd.end },
-      });
-
-      // Track control points for C and Q
-      if (upper === 'C') {
-        const [, , x2, y2] = cmd.args;
-        lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
-        lastQuadCP = null;
-      } else if (upper === 'Q') {
-        const [x1, y1] = cmd.args;
-        lastQuadCP = { x: cmd.start.x + x1, y: cmd.start.y + y1 };
-        lastCubicCP = null;
-      } else {
-        lastCubicCP = null;
-        lastQuadCP = null;
-      }
-    }
-  }
-
-  return result;
-}
+// resolveSmooth (S→C, T→Q) now lives in ./sampling — the lowest-level geometry
+// module — so both sampling and these transforms can share it without an import
+// cycle. Re-exported here for backwards compatibility with existing importers.
+export { resolveSmooth };
 
 // ---- reverse ----
 

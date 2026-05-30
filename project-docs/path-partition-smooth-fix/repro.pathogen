@@ -1,0 +1,50 @@
+// Reproduction of the partition()-on-smooth-quadratic bug.
+//
+// primaryPath2 mixes q (quadratic) and t (smooth quadratic) commands. Before the
+// fix, partition() sampled the `t` segments as straight chords, so the circles on
+// the 'offset-points' layer cut across the curve instead of lying on it.
+//
+// This file renders the path (red dashed) and overlays the partition points as
+// circles. After the fix, every circle should sit on the red dashed curve.
+
+define ViewBox(0, 0, 8000, 8000);
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
+let primaryPath2 = @{
+  m 0 0
+  q 30 20 0 180
+  t -130 280
+  q -424 275 30 340
+  t 230 360
+  v 400
+};
+
+let primaryPathLayer = PathLayer('primary') ${
+  stroke: #ed0000;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 2 10;
+};
+
+let projection = null;
+primaryPathLayer.apply {
+  projection = primaryPath2.scale(3, 3).drawTo(3000, 3000);
+}
+
+let primaryPathPoints = projection.partition(400);
+
+let offsetPointsLayer = PathLayer('offset-points') ${
+  stroke: #00000044;
+  fill: #00000022;
+  stroke-width: 1;
+};
+
+for (item in primaryPathPoints) {
+  offsetPointsLayer.apply {
+    circle(item.point.x, item.point.y, 10);
+  }
+}

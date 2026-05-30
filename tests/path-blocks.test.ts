@@ -706,6 +706,115 @@ describe('Path Blocks', () => {
       });
     });
 
+    describe('smooth commands (t / s) sample on the curve, not the chord', () => {
+      // A smooth quadratic `t` has an implicit control point = reflection of the
+      // previous quadratic control point about the current point. Sampling must
+      // honor that reflected control point, exactly like the explicit `q` form.
+      //
+      //   start (0,0) → q cp(0,100) end(100,100) → t end(200,0)
+      //   reflected cp for t = 2*(100,100) - (0,100) = (200,100)
+      // so `t 100 -100` is identical to the explicit `q 100 0 100 -100`.
+      const T_PATH = '@{ m 0 0 q 0 100 100 100 t 100 -100 }';
+      const T_PATH_EXPLICIT = '@{ m 0 0 q 0 100 100 100 q 100 0 100 -100 }';
+
+      it('t segment matches the equivalent explicit q at every sampled t', () => {
+        for (const tv of [0.5, 0.7, 0.85, 1]) {
+          const result = compile(`
+            let a = ${T_PATH};
+            let b = ${T_PATH_EXPLICIT};
+            log(a.get(${tv}).x, a.get(${tv}).y, b.get(${tv}).x, b.get(${tv}).y);
+          `);
+          const [ax, ay, bx, by] = result.logs[0].parts.map((p) => Number(p.value));
+          expect(ax).toBeCloseTo(bx, 4);
+          expect(ay).toBeCloseTo(by, 4);
+        }
+      });
+
+      it('t sample bulges off the chord (regression for straight-line sampling)', () => {
+        // The chord of the t segment runs (100,100)→(200,0); its quadratic
+        // bulges to the +x/+y side. A point sampled inside the t segment must
+        // lie off that chord. Before the fix the sample sat exactly on it.
+        const result = compile(`
+          let a = ${T_PATH};
+          let pt = a.get(0.85);
+          log(pt.x, pt.y);
+        `);
+        const x = Number(result.logs[0].parts[0].value);
+        const y = Number(result.logs[0].parts[1].value);
+        // Chord (100,100)→(200,0): points satisfy x + y = 200. The curve is
+        // strictly outside, so x + y > 200 for an interior sample.
+        expect(x + y).toBeGreaterThan(201);
+      });
+
+      it('length of a t path equals its explicit-q equivalent (curve, not chord)', () => {
+        const result = compile(`
+          let a = ${T_PATH};
+          let b = ${T_PATH_EXPLICIT};
+          log(a.length, b.length);
+        `);
+        const aLen = Number(result.logs[0].parts[0].value);
+        const bLen = Number(result.logs[0].parts[1].value);
+        expect(aLen).toBeCloseTo(bLen, 3);
+        // The t segment's chord is hypot(100,100) ≈ 141.42; its curve is longer,
+        // so the whole-path length must exceed the q-segment length + chord.
+        const qSegmentChord = Math.hypot(100, 100); // (0,0)->(100,100)
+        const tSegmentChord = Math.hypot(100, 100); // (100,100)->(200,0)
+        expect(aLen).toBeGreaterThan(qSegmentChord + tSegmentChord + 1);
+      });
+
+      it('partition over a t segment matches the explicit-q partition pointwise', () => {
+        const result = compile(`
+          let a = ${T_PATH};
+          let b = ${T_PATH_EXPLICIT};
+          let pa = a.partition(8);
+          let pb = b.partition(8);
+          for (i in 0..8) {
+            log(pa[i].point.x, pa[i].point.y, pb[i].point.x, pb[i].point.y);
+          }
+        `);
+        expect(result.logs).toHaveLength(9);
+        for (const entry of result.logs) {
+          const [ax, ay, bx, by] = entry.parts.map((p) => Number(p.value));
+          expect(ax).toBeCloseTo(bx, 4);
+          expect(ay).toBeCloseTo(by, 4);
+        }
+      });
+
+      it('t tangent matches the curve tangent, not the chord direction', () => {
+        // Chord direction of the t segment is atan2(-100,100) = -PI/4.
+        // The curve tangent at an interior point differs from the chord.
+        const result = compile(`
+          let a = ${T_PATH};
+          let b = ${T_PATH_EXPLICIT};
+          log(a.tangent(0.85).angle, b.tangent(0.85).angle);
+        `);
+        const aAngle = Number(result.logs[0].parts[0].value);
+        const bAngle = Number(result.logs[0].parts[1].value);
+        expect(aAngle).toBeCloseTo(bAngle, 4);
+        expect(Math.abs(aAngle - -Math.PI / 4)).toBeGreaterThan(0.05);
+      });
+
+      it('smooth cubic s matches the equivalent explicit c at every sampled t', () => {
+        // Geometry chosen so the reflected first control point does NOT coincide
+        // with the segment start (otherwise a degenerate cp1=start would pass too):
+        //   start(0,0) → c cp1(20,60) cp2(40,60) end(60,0) → s cp2(100,-60) end(120,0)
+        //   reflected cp1 for s = 2*(60,0) - (40,60) = (80,-60); relative to start
+        //   (60,0) that is (20,-60). So `s 40 -60 60 0` == explicit `c 20 -60 40 -60 60 0`.
+        const S_PATH = '@{ m 0 0 c 20 60 40 60 60 0 s 40 -60 60 0 }';
+        const S_PATH_EXPLICIT = '@{ m 0 0 c 20 60 40 60 60 0 c 20 -60 40 -60 60 0 }';
+        for (const tv of [0.5, 0.75, 0.9]) {
+          const result = compile(`
+            let a = ${S_PATH};
+            let b = ${S_PATH_EXPLICIT};
+            log(a.get(${tv}).x, a.get(${tv}).y, b.get(${tv}).x, b.get(${tv}).y);
+          `);
+          const [ax, ay, bx, by] = result.logs[0].parts.map((p) => Number(p.value));
+          expect(ax).toBeCloseTo(bx, 4);
+          expect(ay).toBeCloseTo(by, 4);
+        }
+      });
+    });
+
     describe('on ProjectedPathValue', () => {
       it('get() on projected path uses absolute coordinates', () => {
         const result = compile(`
