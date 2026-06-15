@@ -150,7 +150,8 @@ body:has(.workspace-detail) main.site-main {
   margin: 0 auto;
   height: auto;
 }
-.detail-plate-art svg {
+.detail-plate-art svg,
+.detail-plate-art img {
   display: block;
   width: 100%;
   height: auto;

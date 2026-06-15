@@ -149,6 +149,8 @@ export const preferencesApi = {
   },
 };
 
+// Square card-thumbnail layers. The uncropped detail-page hero (kind=hero) is a
+// separate path via uploadHero(), deliberately not part of this union.
 export type ThumbnailKind = 'manual' | 'auto';
 export type ThumbnailDeleteKind = 'manual' | 'auto' | 'all';
 
@@ -181,9 +183,46 @@ export const thumbnailApi = {
 
     const data = await response.json();
     if (!response.ok) {
-      const error: ApiError = new Error(data.error || 'Thumbnail upload failed');
-      error.status = response.status;
-      error.data = data;
+      const error: ApiError = Object.assign(new Error(data.error || 'Thumbnail upload failed'), {
+        kind: 'http' as const,
+        status: response.status,
+        data,
+      });
+      throw error;
+    }
+    return data;
+  },
+
+  // Upload a single uncropped, source-aspect-ratio hero image (kind=hero). Stored at
+  // ${id}/hero.png and served by GET /thumbnail/:id/hero, which the workspace detail
+  // page uses so non-square artwork isn't clipped the way the square card thumbnails
+  // are. Generated alongside the square thumbnails by thumbnail-service.
+  async uploadHero(
+    workspaceId: string,
+    blob: Blob,
+    { adminToken }: { adminToken?: string } = {},
+  ): Promise<unknown> {
+    const userId = getUserId();
+    const formData = new FormData();
+    formData.append('hero', blob, 'hero.png');
+
+    const params = new URLSearchParams();
+    if (adminToken) params.set('token', adminToken);
+    params.set('kind', 'hero');
+    const response = await fetch(`${API_BASE}/workspace/${workspaceId}/thumbnail?${params}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'X-User-Id': userId },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      const error: ApiError = Object.assign(new Error(data.error || 'Hero upload failed'), {
+        kind: 'http' as const,
+        status: response.status,
+        data,
+      });
       throw error;
     }
     return data;

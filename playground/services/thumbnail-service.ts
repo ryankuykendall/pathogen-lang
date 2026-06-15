@@ -6,6 +6,7 @@ import { createSvgSnapshot } from '../utils/svg-snapshot.js';
 
 const SIZES = [1024, 512, 256];
 const MAX_RASTER_SIZE = 4096; // Supersample ceiling (pixels) — balances quality vs memory
+const HERO_MAX_DIM = 1440; // Hero longest-edge target (px) — ~2× the 720px detail display
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const MIN_AUTO_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes between auto-generations
 
@@ -144,6 +145,78 @@ async function processOnMainThread(bitmap: ImageBitmap): Promise<Record<number, 
 }
 
 /**
+ * Render and upload the hero image: a single uncropped raster at the source viewBox
+ * aspect ratio (aspect-fit to HERO_MAX_DIM). Used only by the workspace detail page,
+ * which would otherwise fall back to the square-cropped thumbnail and clip non-square
+ * artwork. Unlike the square crop, this preserves the full `define ViewBox(...)` shape.
+ */
+async function uploadHeroRender(
+  workspaceId: string,
+  svgElement: SVGElement,
+  storeState: Record<string, unknown>,
+  adminToken?: string,
+): Promise<void> {
+  const canvasWidth = (storeState.width as number) || 200;
+  const canvasHeight = (storeState.height as number) || 200;
+
+  // Aspect-fit to HERO_MAX_DIM, preserving ratio (never upscale beyond source units).
+  const scale = Math.min(1, HERO_MAX_DIM / Math.max(canvasWidth, canvasHeight));
+  const outW = Math.max(1, Math.round(canvasWidth * scale));
+  const outH = Math.max(1, Math.round(canvasHeight * scale));
+
+  // Full viewBox (no crop) at the aspect-fit output size.
+  const clone = createSvgSnapshot(svgElement, {
+    width: outW,
+    height: outH,
+    viewBox: `0 0 ${canvasWidth} ${canvasHeight}`,
+  });
+  const svgString = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  try {
+    const img: HTMLImageElement = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Failed to load hero SVG image'));
+      image.src = url;
+    });
+
+    // Vector → raster directly at target size, so no supersampling needed.
+    let blob: Blob;
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const canvas = new OffscreenCanvas(outW, outH);
+      const ctx = canvas.getContext('2d')!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.drawImage(img, 0, 0, outW, outH);
+      blob = await canvas.convertToBlob({ type: 'image/png' });
+    } else {
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.drawImage(img, 0, 0, outW, outH);
+      // Reject (rather than upload a null/garbage blob) so the best-effort caller
+      // logs a warning instead of silently PUTing an invalid hero.
+      blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png'),
+      );
+    }
+
+    await thumbnailApi.uploadHero(workspaceId, blob, { adminToken });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
  * Generate a thumbnail for a workspace.
  *
  * @param workspaceId - Workspace ID
@@ -246,6 +319,18 @@ async function generateThumbnail(
         adminToken: options?.adminToken,
         kind: options?.kind ?? 'manual',
       });
+
+      // 8b. Hero: an uncropped, source-aspect-ratio render for the workspace detail
+      // page (so non-square art isn't clipped like the square card thumbnails). Skipped
+      // on the admin svgString path, which only has the pre-cropped square string.
+      // Best-effort: a hero failure must not fail the (already-uploaded) thumbnails.
+      if (!options?.svgString) {
+        try {
+          await uploadHeroRender(workspaceId, svgElement, storeState, options?.adminToken);
+        } catch (err) {
+          console.warn('Hero render failed (thumbnails unaffected):', err);
+        }
+      }
 
       // 9. Update tracking
       _thumbnailContentHash = _latestContentHash;

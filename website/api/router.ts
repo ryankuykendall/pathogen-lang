@@ -657,17 +657,21 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
-  // PUT /api/workspace/:id/thumbnail?kind=manual|auto — upload three sizes (1024/512/256)
-  // via FormData. kind=manual (default) writes to ${id}/manual-${size}.png and takes
-  // precedence on read. kind=auto writes to ${id}/${size}.png (legacy key) — these are
-  // the ones the idle/beforeunload timer produces. The two layers coexist; clearing
-  // the manual layer reveals the auto one (or the letter fallback if neither exists).
+  // PUT /api/workspace/:id/thumbnail?kind=manual|auto|hero — upload thumbnails via
+  // FormData. kind=manual (default) writes three square sizes to ${id}/manual-${size}.png
+  // and takes precedence on read. kind=auto writes the same sizes to ${id}/${size}.png
+  // (legacy key) — these are the ones the idle/beforeunload timer produces; the two
+  // square layers coexist and clearing the manual layer reveals the auto one. kind=hero
+  // writes a single uncropped, source-aspect-ratio image to ${id}/hero.png used only by
+  // the workspace detail page (GET /thumbnail/:id/hero), so non-square artwork is not
+  // clipped there the way the square card thumbnails are.
   async uploadThumbnail(request: Request, env: Env, id: string): Promise<Response> {
     const userId = await getEffectiveUserId(request, env);
     const url = new URL(request.url);
     const adminToken = url.searchParams.get('token');
     const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
-    const kind = url.searchParams.get('kind') === 'auto' ? 'auto' : 'manual';
+    const rawKind = url.searchParams.get('kind');
+    const kind = rawKind === 'auto' ? 'auto' : rawKind === 'hero' ? 'hero' : 'manual';
 
     if (!userId && !isAdmin) return errorResponse('User ID required', 401);
 
@@ -678,6 +682,20 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (!isAdmin && workspace.userId !== userId) return errorResponse('Access denied', 403);
 
       const formData = await request.formData();
+
+      // Hero: a single uncropped image. No metadata is stamped — its presence is
+      // detected at read time (GET /thumbnail/:id/hero falls back to the square 1024
+      // when absent), and the square upload that runs alongside it already stamps the
+      // timestamps. Pure R2 write, so it never clobbers the square layers' meta.
+      if (kind === 'hero') {
+        const file = formData.get('hero') as File | null;
+        if (!file) return errorResponse('Missing hero image', 400);
+        await env.THUMBNAILS.put(`${id}/hero.png`, file.stream(), {
+          httpMetadata: { contentType: 'image/png' },
+        });
+        return jsonResponse({ success: true });
+      }
+
       const sizes = ['1024', '512', '256'];
 
       for (const size of sizes) {
@@ -732,9 +750,33 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
+  // GET /api/thumbnail/:id/hero — public read of the uncropped, source-aspect-ratio
+  // hero image used by the workspace detail page. Falls back to the square 1024
+  // (manual, then auto/legacy) when no hero exists, so workspaces approved before
+  // hero generation — or any without one yet — still return their square thumbnail
+  // through this URL rather than 404-ing.
+  async getThumbnailHero(_request: Request, env: Env, id: string): Promise<Response> {
+    try {
+      let object = await env.THUMBNAILS.get(`${id}/hero.png`);
+      if (!object) object = await env.THUMBNAILS.get(`${id}/manual-1024.png`);
+      if (!object) object = await env.THUMBNAILS.get(`${id}/1024.png`);
+      if (!object) return errorResponse('Thumbnail not found', 404);
+
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
+    } catch (err) {
+      return errorResponse('Failed to get hero thumbnail: ' + (err as Error).message, 500);
+    }
+  },
+
   // DELETE /api/workspace/:id/thumbnail?kind=manual|auto|all
   // kind=manual (default) removes the manual layer only, revealing the auto layer
-  // if one exists. kind=auto removes the auto/legacy layer. kind=all removes both.
+  // if one exists. kind=auto removes the auto/legacy layer. kind=all removes both
+  // square layers plus the hero image.
   async deleteThumbnail(request: Request, env: Env, id: string): Promise<Response> {
     const userId = await getEffectiveUserId(request, env);
     if (!userId) return errorResponse('User ID required', 401);
@@ -760,6 +802,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (kind === 'auto' || kind === 'all') {
         for (const s of sizes) deletes.push(env.THUMBNAILS.delete(`${id}/${s}.png`));
         meta.autoThumbnailAt = null;
+      }
+      if (kind === 'all') {
+        deletes.push(env.THUMBNAILS.delete(`${id}/hero.png`));
       }
       await Promise.all(deletes);
 
@@ -1664,6 +1709,11 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
     const id = thumbUploadMatch[1];
     if (method === 'PUT') return apiHandlers.uploadThumbnail(request, env, id);
     if (method === 'DELETE') return apiHandlers.deleteThumbnail(request, env, id);
+  }
+
+  const heroGetMatch = apiPath.match(/^\/thumbnail\/([^/]+)\/hero$/);
+  if (heroGetMatch && method === 'GET') {
+    return apiHandlers.getThumbnailHero(request, env, heroGetMatch[1]);
   }
 
   const thumbGetMatch = apiPath.match(/^\/thumbnail\/([^/]+)\/(\d+)$/);

@@ -301,6 +301,12 @@ function thumbnailUrl(env: Env, workspaceId: string, size: 256 | 512 | 1024): st
   return `${apiBase(env)}/thumbnail/${encodeURIComponent(workspaceId)}/${size}`;
 }
 
+// Uncropped, source-aspect-ratio hero image for the detail page. The endpoint falls
+// back to the square 1024 when no hero exists, so this is safe for any workspace.
+function heroUrl(env: Env, workspaceId: string): string {
+  return `${apiBase(env)}/thumbnail/${encodeURIComponent(workspaceId)}/hero`;
+}
+
 // ─── Public Profile Page (Worker-Rendered) ────────────────────────────
 
 async function renderProfilePage(request: Request, env: Env, url: URL, handle: string): Promise<Response> {
@@ -621,7 +627,10 @@ async function renderWorkspaceDetailPage(
   if (approval.svg) {
     heroHtml = `<div class="detail-plate-art">${approval.svg}</div>`;
   } else if (thumbUrl) {
-    heroHtml = `<img class="detail-plate-art" src="${thumbUrl}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`;
+    // Use the uncropped hero (not the square 1024 thumbUrl, which is still used for
+    // og:image) so non-square artwork renders at its true aspect ratio here. The hero
+    // endpoint falls back to the square 1024 when a workspace has no hero yet.
+    heroHtml = `<img class="detail-plate-art" src="${heroUrl(env, approval.workspaceId)}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`;
   } else {
     const [from, to] = swatchFor(approval.workspaceId);
     heroHtml = `<div class="detail-plate-fallback" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
