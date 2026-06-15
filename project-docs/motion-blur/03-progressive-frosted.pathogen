@@ -1,0 +1,27 @@
+// Progressive blur — the iOS "frosted/variable blur" look. A stack of label
+// bars stays crisp at the top and dissolves toward the bottom. The ramp tracks
+// the painted region's own bounds (objectBoundingBox gradient mask).
+
+define ViewBox(0, 0, 200, 200);
+
+define PathLayer('bg') ${ fill: oklch(22% 0.03 265); }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+let fade = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Progressive;
+  f.distance = 7;
+  f.angle = 90deg;        // sharp at top, blurred toward the bottom
+};
+
+define PathLayer('bars') ${
+  fill: oklch(86% 0.13 200);
+  filter: fade;
+}
+layer('bars').apply {
+  rect(24, 22, 152, 12);
+  rect(24, 50, 152, 12);
+  rect(24, 78, 152, 12);
+  rect(24, 106, 152, 12);
+  rect(24, 134, 152, 12);
+  rect(24, 162, 152, 12);
+}

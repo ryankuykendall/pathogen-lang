@@ -1,0 +1,20 @@
+// Linear motion blur — a horizontal "pan" smear, the way a fast object blurs
+// along its direction of travel. Swap f.angle to redirect the motion.
+
+define ViewBox(0, 0, 240, 160);
+
+let pan = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Linear;
+  f.distance = 34;
+  f.angle = 0deg;
+  f.samples = 16;
+};
+
+define PathLayer('bg') ${ fill: oklch(96% 0.01 250); }
+layer('bg').apply { rect(0, 0, 240, 160); }
+
+define PathLayer('puck') ${
+  fill: oklch(55% 0.21 25);
+  filter: pan;
+}
+layer('puck').apply { circle(120, 80, 26); }

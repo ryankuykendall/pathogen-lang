@@ -34,6 +34,7 @@ export const ENUM_METADATA: Record<string, { detail: string; boost: number }> = 
   NoiseFilterScale: { detail: 'NoiseFilter scale preset (fine/medium/coarse)', boost: 7 },
   BlendMode: { detail: 'CSS blend-mode keyword', boost: 6 },
   GlowMode: { detail: 'GlowFilter outer/inner mode', boost: 8 },
+  MotionBlurType: { detail: 'MotionBlurFilter linear/progressive mode', boost: 8 },
 };
 
 // Re-export for generation script

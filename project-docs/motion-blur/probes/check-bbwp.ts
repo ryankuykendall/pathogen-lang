@@ -1,0 +1,2 @@
+import puppeteer from 'puppeteer';
+(async()=>{const b=await puppeteer.launch({headless:'new' as unknown as boolean});const p=await b.newPage();await p.setViewport({width:600,height:600,deviceScaleFactor:2});await p.goto('file:///Users/ryan/claude-code-projects/svg-path-extended/website/bbwp/2026-06-09-18:13:36--motion-blur--03-progressive-frosted.bbwp.html',{waitUntil:'networkidle0'});await new Promise(r=>setTimeout(r,400));await p.screenshot({path:'project-docs/motion-blur/probes/bbwp-prog-check.png'});await b.close();console.log('ok')})();

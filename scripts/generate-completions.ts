@@ -243,6 +243,7 @@ function crossCheck(declaredFunctions: Set<string>): void {
     'PathLayer', 'TextLayer', 'GroupLayer',
     // Filter constructors live in the evaluator's call dispatch, not the stdlib registry.
     'NoiseFilter', 'GlowFilter', 'EmbossFilter', 'ElevationShadowFilter', 'InnerShadowFilter', 'PixelateFilter',
+    'MotionBlurFilter',
     // Grid constructor lives in the evaluator, not the stdlib registry.
     'Grid',
   ]);

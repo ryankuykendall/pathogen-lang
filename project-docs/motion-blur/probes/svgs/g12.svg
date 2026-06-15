@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+
+<defs>
+  <filter id="pathogen-motion-blur-1" x="-50%" y="-50%" width="200%" height="200%">
+    <feOffset in="SourceGraphic" dx="-15" dy="0" result="t0o"/>
+    <feComponentTransfer in="t0o" result="acc0">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feOffset in="SourceGraphic" dx="-12.272727" dy="0" result="t1o"/>
+    <feComponentTransfer in="t1o" result="t1s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc0" in2="t1s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc1"/>
+    <feOffset in="SourceGraphic" dx="-9.545455" dy="0" result="t2o"/>
+    <feComponentTransfer in="t2o" result="t2s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc1" in2="t2s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc2"/>
+    <feOffset in="SourceGraphic" dx="-6.818182" dy="0" result="t3o"/>
+    <feComponentTransfer in="t3o" result="t3s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc2" in2="t3s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc3"/>
+    <feOffset in="SourceGraphic" dx="-4.090909" dy="0" result="t4o"/>
+    <feComponentTransfer in="t4o" result="t4s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc3" in2="t4s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc4"/>
+    <feOffset in="SourceGraphic" dx="-1.363636" dy="0" result="t5o"/>
+    <feComponentTransfer in="t5o" result="t5s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc4" in2="t5s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc5"/>
+    <feOffset in="SourceGraphic" dx="1.363636" dy="0" result="t6o"/>
+    <feComponentTransfer in="t6o" result="t6s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc5" in2="t6s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc6"/>
+    <feOffset in="SourceGraphic" dx="4.090909" dy="0" result="t7o"/>
+    <feComponentTransfer in="t7o" result="t7s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc6" in2="t7s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc7"/>
+    <feOffset in="SourceGraphic" dx="6.818182" dy="0" result="t8o"/>
+    <feComponentTransfer in="t8o" result="t8s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc7" in2="t8s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc8"/>
+    <feOffset in="SourceGraphic" dx="9.545455" dy="0" result="t9o"/>
+    <feComponentTransfer in="t9o" result="t9s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc8" in2="t9s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc9"/>
+    <feOffset in="SourceGraphic" dx="12.272727" dy="0" result="t10o"/>
+    <feComponentTransfer in="t10o" result="t10s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc9" in2="t10s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc10"/>
+    <feOffset in="SourceGraphic" dx="15" dy="0" result="t11o"/>
+    <feComponentTransfer in="t11o" result="t11s">
+      <feFuncA type="linear" slope="0.083333"/>
+    </feComponentTransfer>
+    <feComposite in="acc10" in2="t11s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc11"/>
+    <feGaussianBlur in="acc11" stdDeviation="4.090909"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="fast" id="fast" d="M 100 30 l 25.98076211353316 45 l -51.96152422706632 1.4210854715202004e-14 z" fill="oklch(55% 0.21 25)" stroke="#000" stroke-width="2" filter="url(#pathogen-motion-blur-1)"/>
+</svg>

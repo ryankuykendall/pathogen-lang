@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+
+<defs>
+  <linearGradient id="pathogen-motion-blur-1-ramp" x1="0" y1="0.5" x2="1" y2="0.5" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+  <rect id="pathogen-motion-blur-1-mask" x="0" y="0" width="100%" height="100%" fill="url(#pathogen-motion-blur-1-ramp)"/>
+  <filter id="pathogen-motion-blur-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blurred"/>
+    <feImage href="#pathogen-motion-blur-1-mask" result="ramp"/>
+    <feComponentTransfer in="ramp" result="invRamp">
+      <feFuncA type="table" tableValues="1 0"/>
+    </feComponentTransfer>
+    <feComposite in="SourceGraphic" in2="invRamp" operator="in" result="sharpPart"/>
+    <feComposite in="blurred" in2="ramp" operator="in" result="blurPart"/>
+    <feMerge>
+      <feMergeNode in="sharpPart"/>
+      <feMergeNode in="blurPart"/>
+    </feMerge>
+  </filter>
+</defs>
+
+  <path data-layer-name="art" id="art" d="M 94 19 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 16 l 160 0 l 0 7 l -160 0 z M 94 38 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 35 l 160 0 l 0 7 l -160 0 z M 94 57 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 54 l 160 0 l 0 7 l -160 0 z M 94 76 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 73 l 160 0 l 0 7 l -160 0 z M 94 95 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 92 l 160 0 l 0 7 l -160 0 z M 94 114 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 111 l 160 0 l 0 7 l -160 0 z M 94 133 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 130 l 160 0 l 0 7 l -160 0 z M 94 152 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 149 l 160 0 l 0 7 l -160 0 z M 94 171 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 20 168 l 160 0 l 0 7 l -160 0 z" fill="oklch(45% 0.18 265)" stroke="#000" stroke-width="2" filter="url(#pathogen-motion-blur-1)"/>
+</svg>

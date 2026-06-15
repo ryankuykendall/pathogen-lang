@@ -320,7 +320,7 @@ function annGridSampleBilinear(grid: GridValue, x: number, y: number, throwErr: 
 
 export interface AnnotatedFilterValue {
   type: 'FilterValue';
-  kind: 'noise' | 'glow' | 'emboss' | 'elevation-shadow' | 'inner-shadow' | 'pixelate';
+  kind: 'noise' | 'glow' | 'emboss' | 'elevation-shadow' | 'inner-shadow' | 'pixelate' | 'motion-blur';
   id: string;
 }
 

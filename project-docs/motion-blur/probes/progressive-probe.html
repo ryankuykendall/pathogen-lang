@@ -1,0 +1,460 @@
+<!doctype html><html><body style="margin:16px;background:#eee">
+  <div style="display:grid;grid-template-columns:repeat(3,200px);gap:18px">
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g><rect x="10" y="12" width="180" height="7" fill="#111"/><rect x="10" y="30" width="180" height="7" fill="#111"/><rect x="10" y="48" width="180" height="7" fill="#111"/><rect x="10" y="66" width="180" height="7" fill="#111"/><rect x="10" y="84" width="180" height="7" fill="#111"/><rect x="10" y="102" width="180" height="7" fill="#111"/><rect x="10" y="120" width="180" height="7" fill="#111"/><rect x="10" y="138" width="180" height="7" fill="#111"/><rect x="10" y="156" width="180" height="7" fill="#111"/><rect x="10" y="174" width="180" height="7" fill="#111"/></g>
+    </svg>
+    <figcaption>0 reference (sharp)</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fU)"><rect x="10" y="12" width="180" height="7" fill="#111"/><rect x="10" y="30" width="180" height="7" fill="#111"/><rect x="10" y="48" width="180" height="7" fill="#111"/><rect x="10" y="66" width="180" height="7" fill="#111"/><rect x="10" y="84" width="180" height="7" fill="#111"/><rect x="10" y="102" width="180" height="7" fill="#111"/><rect x="10" y="120" width="180" height="7" fill="#111"/><rect x="10" y="138" width="180" height="7" fill="#111"/><rect x="10" y="156" width="180" height="7" fill="#111"/><rect x="10" y="174" width="180" height="7" fill="#111"/></g>
+    </svg>
+    <figcaption>1 uniform blur</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fA)"><rect x="10" y="12" width="180" height="7" fill="#111"/><rect x="10" y="30" width="180" height="7" fill="#111"/><rect x="10" y="48" width="180" height="7" fill="#111"/><rect x="10" y="66" width="180" height="7" fill="#111"/><rect x="10" y="84" width="180" height="7" fill="#111"/><rect x="10" y="102" width="180" height="7" fill="#111"/><rect x="10" y="120" width="180" height="7" fill="#111"/><rect x="10" y="138" width="180" height="7" fill="#111"/><rect x="10" y="156" width="180" height="7" fill="#111"/><rect x="10" y="174" width="180" height="7" fill="#111"/></g>
+    </svg>
+    <figcaption>A feImage abs-rect (full)</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fB)"><rect x="10" y="12" width="180" height="7" fill="#111"/><rect x="10" y="30" width="180" height="7" fill="#111"/><rect x="10" y="48" width="180" height="7" fill="#111"/><rect x="10" y="66" width="180" height="7" fill="#111"/><rect x="10" y="84" width="180" height="7" fill="#111"/><rect x="10" y="102" width="180" height="7" fill="#111"/><rect x="10" y="120" width="180" height="7" fill="#111"/><rect x="10" y="138" width="180" height="7" fill="#111"/><rect x="10" y="156" width="180" height="7" fill="#111"/><rect x="10" y="174" width="180" height="7" fill="#111"/></g>
+    </svg>
+    <figcaption>B feImage pct-rect (full)</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fC)"><rect x="10" y="12" width="180" height="7" fill="#111"/><rect x="10" y="30" width="180" height="7" fill="#111"/><rect x="10" y="48" width="180" height="7" fill="#111"/><rect x="10" y="66" width="180" height="7" fill="#111"/><rect x="10" y="84" width="180" height="7" fill="#111"/><rect x="10" y="102" width="180" height="7" fill="#111"/><rect x="10" y="120" width="180" height="7" fill="#111"/><rect x="10" y="138" width="180" height="7" fill="#111"/><rect x="10" y="156" width="180" height="7" fill="#111"/><rect x="10" y="174" width="180" height="7" fill="#111"/></g>
+    </svg>
+    <figcaption>C feFlood bands (full)</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fA)"><rect x="8" y="8" width="84" height="5" fill="#111"/><rect x="8" y="20" width="84" height="5" fill="#111"/><rect x="8" y="32" width="84" height="5" fill="#111"/><rect x="8" y="44" width="84" height="5" fill="#111"/><rect x="8" y="56" width="84" height="5" fill="#111"/><rect x="8" y="68" width="84" height="5" fill="#111"/><rect x="8" y="80" width="84" height="5" fill="#111"/></g>
+    </svg>
+    <figcaption>A small bbox (top-left)</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fB)"><rect x="8" y="8" width="84" height="5" fill="#111"/><rect x="8" y="20" width="84" height="5" fill="#111"/><rect x="8" y="32" width="84" height="5" fill="#111"/><rect x="8" y="44" width="84" height="5" fill="#111"/><rect x="8" y="56" width="84" height="5" fill="#111"/><rect x="8" y="68" width="84" height="5" fill="#111"/><rect x="8" y="80" width="84" height="5" fill="#111"/></g>
+    </svg>
+    <figcaption>B small bbox (top-left)</figcaption>
+  </figure>
+    
+  <figure style="margin:0;text-align:center;font:12px monospace">
+    <svg width="200" height="200" viewBox="0 0 200 200" style="background:#fff;border:1px solid #ccc">
+      
+<defs>
+  <!-- vertical alpha ramp, objectBoundingBox so it tracks whatever it fills -->
+  <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- mask source rects for feImage variants -->
+  <rect id="maskRectAbs" x="0" y="0" width="200" height="200" fill="url(#vgrad)"/>
+  <rect id="maskRectPct" x="0" y="0" width="100%" height="100%" fill="url(#vgrad)"/>
+
+  <!-- A: feImage of an ABSOLUTE-sized gradient rect, overlay-merge -->
+  <filter id="fA" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectAbs" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- B: feImage of a PERCENT-sized gradient rect, overlay-merge -->
+  <filter id="fB" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feImage href="#maskRectPct" result="m"/>
+    <feComposite in="b" in2="m" operator="in" result="fade"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="fade"/></feMerge>
+  </filter>
+
+  <!-- C: feFlood discrete bands (assumes 0..200 extent), stacked blur levels -->
+  <filter id="fC" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="0"  result="l0"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3"  result="l1"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="l2"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="l3"/>
+    <feFlood x="0" y="0"   width="200" height="50" flood-color="#fff" result="f0"/>
+    <feComposite in="l0" in2="f0" operator="in" result="m0"/>
+    <feFlood x="0" y="50"  width="200" height="50" flood-color="#fff" result="f1"/>
+    <feComposite in="l1" in2="f1" operator="in" result="m1"/>
+    <feFlood x="0" y="100" width="200" height="50" flood-color="#fff" result="f2"/>
+    <feComposite in="l2" in2="f2" operator="in" result="m2"/>
+    <feFlood x="0" y="150" width="200" height="50" flood-color="#fff" result="f3"/>
+    <feComposite in="l3" in2="f3" operator="in" result="m3"/>
+    <feMerge><feMergeNode in="m0"/><feMergeNode in="m1"/><feMergeNode in="m2"/><feMergeNode in="m3"/></feMerge>
+  </filter>
+
+  <!-- ref: uniform blur -->
+  <filter id="fU" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+  </filter>
+</defs>
+      <g filter="url(#fC)"><rect x="8" y="8" width="84" height="5" fill="#111"/><rect x="8" y="20" width="84" height="5" fill="#111"/><rect x="8" y="32" width="84" height="5" fill="#111"/><rect x="8" y="44" width="84" height="5" fill="#111"/><rect x="8" y="56" width="84" height="5" fill="#111"/><rect x="8" y="68" width="84" height="5" fill="#111"/><rect x="8" y="80" width="84" height="5" fill="#111"/></g>
+    </svg>
+    <figcaption>C small bbox (top-left)</figcaption>
+  </figure>
+  </div>
+</body></html>

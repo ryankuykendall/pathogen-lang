@@ -2,7 +2,7 @@
 
 Filters apply post-render visual effects — film grain, paper texture, glow, emboss, layered depth shadows, inner shadows, pixelation — to any layer. Native CSS filter functions like `blur(2px)` and `brightness(1.2)` already work directly inside a style block. **Custom filters** go further: each one synthesizes a real `<filter>` definition in the output SVG with a thoughtfully tuned chain of primitives, so you get the look you want without writing `<feTurbulence>`, `<feSpecularLighting>`, `<feMorphology>`, or `<feMerge>` by hand.
 
-Pathogen ships six custom filter constructors:
+Pathogen ships seven custom filter constructors:
 
 - [`NoiseFilter`](#filters-noisefilter) — grain, paper, speckle, TV static, grainy gradient
 - [`GlowFilter`](#filters-glowfilter) — soft outer or inner glow
@@ -10,8 +10,9 @@ Pathogen ships six custom filter constructors:
 - [`ElevationShadowFilter`](#filters-elevationshadowfilter) — Material-style layered depth shadow
 - [`InnerShadowFilter`](#filters-innershadowfilter) — inset shadow (no native CSS equivalent)
 - [`PixelateFilter`](#filters-pixelatefilter) — mosaic / pixelation
+- [`MotionBlurFilter`](#filters-motionblurfilter) — directional and progressive blur (no native CSS equivalent)
 
-Custom filters live in the shared `<defs>` block alongside [gradients](./gradients.md), patterns, masks, and [markers](./markers.md), and are referenced via `url(#id)`. All six compile to stock SVG filter primitives, so they render identically in the CLI, the playground, and the VS Code preview.
+Custom filters live in the shared `<defs>` block alongside [gradients](./gradients.md), patterns, masks, and [markers](./markers.md), and are referenced via `url(#id)`. They compile to stock SVG filter primitives, so they render identically in the CLI, the playground, and the VS Code preview — with one documented exception for progressive motion blur in non-Chromium engines (see [MotionBlurFilter](#filters-motionblurfilter)).
 
 ## NoiseFilter
 
@@ -419,6 +420,92 @@ The 2×2 flood positioned at `(radius/2, radius/2)` is the sample-positioning fr
 
 The filter uses `filterUnits="userSpaceOnUse"` (instead of the default `objectBoundingBox`) so the literal pixel coordinates on `feFlood` / `feComposite` / `feMorphology` are interpreted as user-space distances rather than fractions of the source's bounding box. The region is `0% / 100%` of the viewport — `userSpaceOnUse` makes `%` relative to the SVG viewport.
 
+## MotionBlurFilter
+
+`MotionBlurFilter()` adds directional and progressive blur — effects CSS cannot express today (they are still only a [proposal](https://github.com/w3c/csswg-drafts/issues/11134)). Pathogen synthesizes them from SVG filter primitives. Linear blur renders in every SVG engine; Progressive blur relies on `feImage` and needs a Chromium-class engine (see [Renderer support](#filters-renderer-support) below). Two `type`s are available:
+
+- **`Linear`** — a directional smear along an angle, the way a fast-moving object blurs along its path of travel.
+- **`Progressive`** — blur that ramps across the element (sharp at one edge, increasingly blurred toward the other), the "variable blur" popularized by iOS frosted surfaces.
+
+```
+let smear = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Linear;
+  f.distance = 20;
+  f.angle = 30deg;
+  f.samples = 12;
+};
+
+define PathLayer('car') ${
+  fill: oklch(60% 0.2 250);
+  filter: smear;
+}
+layer('car').apply { roundRect(40, 80, 120, 40, 8); }
+```
+
+Constructor signature: `MotionBlurFilter()` — no positional arguments. Configure via the trailing block.
+
+`distance` and `angle` use the same coordinate conventions as the rest of the language: `distance` is in **user-space units** (the same units as your `viewBox`, *not* CSS pixels), and `angle` takes an angle unit — `0deg` points right (+x), `90deg` points down (+y), matching `EmbossFilter` and `ElevationShadowFilter`.
+
+### Properties
+
+| Property | Type | Default | Effect |
+|---|---|---|---|
+| `type` | `MotionBlurType` | `Linear` | `Linear` (directional smear) or `Progressive` (spatial ramp) |
+| `distance` | number ≥ 0 | 10 | **Linear:** smear length. **Progressive:** maximum blur radius at the far edge |
+| `angle` | number (angle unit) | `0deg` | **Linear:** smear direction. **Progressive:** ramp direction (sharp → blurred) |
+| `samples` | integer 2–32 | 12 | Tap count / quality. **Linear only** — Progressive is continuous and ignores it. Higher = smoother smear at more cost |
+
+### Generated SVG Output — Linear
+
+For `MotionBlurFilter() {|f| f.type = MotionBlurType.Linear; f.distance = 20; f.angle = 30deg; f.samples = 4; }` (`samples = 4` reduced from the default of 12 for a readable chain):
+
+```xml
+<filter id="pathogen-motion-blur-1" x="-50%" y="-50%" width="200%" height="200%">
+  <feOffset in="SourceGraphic" dx="-8.660254" dy="-5" result="t0o"/>
+  <feComponentTransfer in="t0o" result="acc0"><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+  <feOffset in="SourceGraphic" dx="-2.886751" dy="-1.666667" result="t1o"/>
+  <feComponentTransfer in="t1o" result="t1s"><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+  <feComposite in="acc0" in2="t1s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc1"/>
+  <feOffset in="SourceGraphic" dx="2.886751" dy="1.666667" result="t2o"/>
+  <feComponentTransfer in="t2o" result="t2s"><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+  <feComposite in="acc1" in2="t2s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc2"/>
+  <feOffset in="SourceGraphic" dx="8.660254" dy="5" result="t3o"/>
+  <feComponentTransfer in="t3o" result="t3s"><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+  <feComposite in="acc2" in2="t3s" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="acc3"/>
+  <feGaussianBlur in="acc3" stdDeviation="5.196152 3"/>
+</filter>
+```
+
+Physical motion blur is the *average* of the source translated along the motion vector over the shutter interval. Each of the `samples` taps is one `feOffset` copy, centered on the source (`t ∈ [-0.5, +0.5]` so the smear is symmetric rather than a one-sided ghost). Each tap is scaled to `1/samples` alpha by `feFuncA slope`, and the taps are **summed** with `feComposite operator="arithmetic"` (`k2=k3=1`). Summation — not `feMerge` — is what makes it a true average: `feMerge` over-composites, biasing the result toward the last tap and brightening it.
+
+A finite number of taps would otherwise read as discrete ghost copies on a hard-edged shape, so a final `feGaussianBlur` fuses them into a continuous smear. Its `stdDeviation` is a **two-value, direction-aligned** blur (`stdDeviation="σ·cos σ·sin"`, here `30°` → `"5.196 3"`) sized to the tap spacing — it blurs *along* the motion to merge the copies while leaving the perpendicular edge (the object's cross-section) crisp. A higher `samples` count tightens the tap spacing and shrinks this smoothing automatically.
+
+### Generated SVG Output — Progressive
+
+For `MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 8; f.angle = 90deg; }`:
+
+```xml
+<linearGradient id="pathogen-motion-blur-1-ramp" x1="0.5" y1="0" x2="0.5" y2="1" gradientUnits="objectBoundingBox">
+  <stop offset="0" stop-color="#000" stop-opacity="0"/>
+  <stop offset="1" stop-color="#000" stop-opacity="1"/>
+</linearGradient>
+<rect id="pathogen-motion-blur-1-mask" x="0" y="0" width="100%" height="100%" fill="url(#pathogen-motion-blur-1-ramp)"/>
+<filter id="pathogen-motion-blur-1" x="-10%" y="-10%" width="120%" height="120%">
+  <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blurred"/>
+  <feImage href="#pathogen-motion-blur-1-mask" result="ramp"/>
+  <feComponentTransfer in="ramp" result="invRamp"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+  <feComposite in="SourceGraphic" in2="invRamp" operator="in" result="sharpPart"/>
+  <feComposite in="blurred" in2="ramp" operator="in" result="blurPart"/>
+  <feComposite in="sharpPart" in2="blurPart" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+</filter>
+```
+
+Progressive blur **crossfades** the sharp source and a blurred copy along a gradient. The sibling `<linearGradient>` runs in `objectBoundingBox` units, and the mask `<rect>` fills 100% of it, so the ramp automatically tracks the **element's own bounding box** — a small element gets the full sharp→blurred ramp across its own extent, not the viewport's. The `feImage` pulls that ramp into the filter; the sharp source is masked by the inverted ramp and the blurred copy by the ramp, so the near edge shows only the sharp pixels and the far edge only the blur. The two halves are **summed** with `feComposite operator="arithmetic"` rather than merged: the masks are exact complements (`invRamp + ramp = 1`), so the sum holds full opacity across the crossfade — a plain `feMerge` would over-composite and dip a solid shape to ~75% alpha through the midband, lightening it. The region is kept tight (`-10% / 120%`) because an oversized region would compress the ramp to a middle band and wash the effect out. Because the gradient vector is set from `angle`, any direction works (a non-square element skews a diagonal ramp slightly, an inherent `objectBoundingBox` gradient behavior).
+
+### Renderer support
+
+> The limitation is about the **rendering engine**, not which surface or embedding you use. Progressive blur relies on `feImage` referencing a local gradient. In **Chromium-class engines** (Chrome, Edge, and the Electron-based VS Code preview) it renders correctly in every context we tested — inline in a page, embedded as `<img>`, and rasterized to a canvas (so playground previews and PNG thumbnails are fine). Support is **weaker in non-Chromium engines, notably Firefox**, where progressive blur may not render as intended; because the playground and CLI output delegate `feImage` to the host browser, that applies wherever the output is opened in such an engine. **If you need Progressive blur to be engine-independent, prerender the blurred region as a raster, or fall back to `Linear`**, which uses only `feOffset` / `feComposite` and renders everywhere. This is the same class of cross-engine filter concern covered in [Browser Caveats](#filters-browser-caveats).
+
 ## BlendMode
 
 `BlendMode` is a regular built-in enum — usable anywhere a CSS blend-mode keyword is expected.
@@ -465,6 +552,29 @@ let edge = GlowFilter() {|f|
   f.mode = GlowMode.Inner;
   f.color = white;
   f.radius = 4;
+};
+```
+
+## MotionBlurType
+
+`MotionBlurType` selects which blur a `MotionBlurFilter` produces.
+
+| Member | String value | Effect |
+|---|---|---|
+| `MotionBlurType.Linear` | `linear` | Directional smear along `angle` — averaged offset copies |
+| `MotionBlurType.Progressive` | `progressive` | Blur ramps across the element along `angle`, sharp edge → blurred edge |
+
+```
+let pan = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Linear;
+  f.distance = 28;
+  f.angle = 0deg;
+};
+
+let frosted = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Progressive;
+  f.distance = 10;
+  f.angle = 90deg;
 };
 ```
 
@@ -794,6 +904,14 @@ let pix = PixelateFilter(16, 16, 8);
 | `PixelateFilter.width must be a finite positive number` | Wrong type or non-positive on `f.width` |
 | `PixelateFilter.height must be a finite positive number` | Wrong type or non-positive on `f.height` |
 | `PixelateFilter.radius must be a finite positive number` | Wrong type or non-positive on `f.radius` |
+| `MotionBlurFilter() takes no positional arguments — configure via the trailing block` | Calling `MotionBlurFilter(...)` with any arguments |
+| `Invalid value '<x>' for MotionBlurFilter.type. Valid values: linear, progressive` | Assigning an unrecognized string to `f.type` |
+| `MotionBlurFilter.type must be a MotionBlurType enum value` | Assigning a non-string to `f.type` |
+| `MotionBlurFilter.distance must be a finite non-negative number` | Negative, `Infinity`, or `NaN` |
+| `MotionBlurFilter.angle must be a finite number (with angle unit)` | Non-number, `Infinity`, or `NaN` on `f.angle` |
+| `MotionBlurFilter.samples must be an integer between 2 and 32` | Non-integer, out of range, or wrong type |
+| `Cannot assign to MotionBlurFilter property '<x>'` | Assigning to an unrecognized property name |
+| `Property '<x>' does not exist on MotionBlurFilter` | Reading an unrecognized property |
 | `Cannot assign to GlowFilter property '<x>'` | Assigning to an unrecognized property name on a GlowFilter |
 | `Cannot assign to EmbossFilter property '<x>'` | Same, EmbossFilter |
 | `Cannot assign to ElevationShadowFilter property '<x>'` | Same, ElevationShadowFilter |

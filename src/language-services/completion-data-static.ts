@@ -178,6 +178,15 @@ export const DECLARATION_SNIPPETS: CompletionEntry[] = [
     insertText: 'let ${1:pix} = PixelateFilter(${2:10}, ${3:10}, ${4:5});$0',
     isSnippet: true,
   },
+  {
+    label: 'MotionBlurFilter',
+    kind: 'snippet',
+    detail: 'Directional (linear) or progressive blur',
+    boost: 10,
+    insertText:
+      'let ${1:blur} = MotionBlurFilter() {|f|\n\tf.type = MotionBlurType.${2|Linear,Progressive|};\n\tf.distance = ${3:20};\n\tf.angle = ${4:0}deg;$0\n};',
+    isSnippet: true,
+  },
 ];
 
 // --- Template interpolation snippet (offered inside backtick strings) ---

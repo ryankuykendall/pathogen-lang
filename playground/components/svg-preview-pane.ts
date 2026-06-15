@@ -400,7 +400,7 @@ export class SvgPreviewPane extends HTMLElement {
       const defsEl = this._iframeDoc.querySelector('#preview defs') as SVGDefsElement | null;
       if (defsEl) {
         for (const old of defsEl.querySelectorAll(
-          '[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def], [data-marker-def]',
+          '[data-fragment-layer], [data-mask-def], [data-clippath-def], [data-gradient-def], [data-pattern-def], [data-marker-def], [data-filter-def]',
         )) {
           old.remove();
         }

@@ -1,0 +1,23 @@
+// Why directional blur matters: the same arrow with native CSS blur() (left)
+// vs MotionBlurFilter Linear (right). Uniform blur just softens; motion blur
+// smears along the direction of travel, reading as speed.
+
+define ViewBox(0, 0, 260, 120);
+
+define PathLayer('bg') ${ fill: oklch(97% 0.01 250); }
+layer('bg').apply { rect(0, 0, 260, 120); }
+
+let speed = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Linear;
+  f.distance = 30;
+  f.angle = 0deg;
+  f.samples = 18;
+};
+
+// Left: native uniform blur (a raw CSS filter string passthrough).
+define PathLayer('soft') ${ fill: oklch(55% 0.21 25); filter: blur(4px); }
+layer('soft').apply { polygon(70, 60, 22, 3); }
+
+// Right: directional motion blur.
+define PathLayer('fast') ${ fill: oklch(55% 0.21 25); filter: speed; }
+layer('fast').apply { polygon(190, 60, 22, 3); }

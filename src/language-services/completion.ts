@@ -398,6 +398,7 @@ function inferType(name: string, source: string): string | null {
   if (new RegExp(`let\\s+${esc}\\s*=\\s*ElevationShadowFilter\\s*\\(`).test(source)) return 'ElevationShadowFilter';
   if (new RegExp(`let\\s+${esc}\\s*=\\s*InnerShadowFilter\\s*\\(`).test(source)) return 'InnerShadowFilter';
   if (new RegExp(`let\\s+${esc}\\s*=\\s*PixelateFilter\\s*\\(`).test(source)) return 'PixelateFilter';
+  if (new RegExp(`let\\s+${esc}\\s*=\\s*MotionBlurFilter\\s*\\(`).test(source)) return 'MotionBlurFilter';
 
   // let name = Grid(...)
   if (new RegExp(`let\\s+${esc}\\s*=\\s*Grid\\s*\\(`).test(source)) return 'Grid';
@@ -455,7 +456,7 @@ function inferBlockParamType(paramName: string, source: string): string | null {
 
   // Match: FilterCtor(...) {|paramName| — bound parameter inside a filter trailing block
   const filterCtorMatch = new RegExp(
-    `(NoiseFilter|GlowFilter|EmbossFilter|ElevationShadowFilter|InnerShadowFilter|PixelateFilter)\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*${esc}\\s*\\|`,
+    `(NoiseFilter|GlowFilter|EmbossFilter|ElevationShadowFilter|InnerShadowFilter|PixelateFilter|MotionBlurFilter)\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*${esc}\\s*\\|`,
   ).exec(source);
   if (filterCtorMatch) {
     return filterCtorMatch[1];

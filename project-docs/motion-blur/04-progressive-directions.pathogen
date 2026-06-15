@@ -1,0 +1,24 @@
+// Progressive blur ramps along f.angle — four panels, four directions. Each
+// panel is solid at its sharp edge and dissolves toward the opposite edge,
+// confirming the gradient mask follows the angle and the interior stays opaque
+// (no midband lightening).
+
+define ViewBox(0, 0, 200, 200);
+
+define PathLayer('bg') ${ fill: oklch(97% 0.01 250); }
+layer('bg').apply { rect(0, 0, 200, 200); }
+
+let down  = MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 8; f.angle = 90deg;  };
+let up    = MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 8; f.angle = 270deg; };
+let right = MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 8; f.angle = 0deg;   };
+let left  = MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 8; f.angle = 180deg; };
+
+define PathLayer('tl') ${ fill: oklch(55% 0.2 25);  filter: down; }
+define PathLayer('tr') ${ fill: oklch(55% 0.2 145); filter: up; }
+define PathLayer('bl') ${ fill: oklch(55% 0.2 265); filter: right; }
+define PathLayer('br') ${ fill: oklch(55% 0.2 320); filter: left; }
+
+layer('tl').apply { rect(20, 20, 70, 70); }
+layer('tr').apply { rect(110, 20, 70, 70); }
+layer('bl').apply { rect(20, 110, 70, 70); }
+layer('br').apply { rect(110, 110, 70, 70); }

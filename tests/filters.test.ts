@@ -751,3 +751,260 @@ describe('PixelateFilter', () => {
     expect(filterNode.attrs.filterUnits).toBe('userSpaceOnUse');
   });
 });
+
+// ============================================================================
+// MotionBlurFilter
+// ============================================================================
+
+/** Find the single emitted <filter> VNode (with its attrs), plus all defs. */
+function emittedDefs(source: string): VNode[] {
+  return buildDefs(compile(source)).filter(
+    (n): n is VNode => typeof n === 'object' && n !== null && 'tag' in n,
+  );
+}
+function findTag(defs: VNode[], tag: string): VNode | undefined {
+  return defs.find((n) => n.tag === tag);
+}
+
+describe('MotionBlurFilter', () => {
+  describe('Construction & defaults', () => {
+    it('creates a linear filter with documented defaults', () => {
+      const result = compile(wrapInLayer('MotionBlurFilter() {|f| }'));
+      expect(result.filters).toHaveLength(1);
+      const f = result.filters[0] as {
+        kind: string;
+        motionType: string;
+        distance: number;
+        angle: number;
+        samples: number;
+      };
+      expect(f.kind).toBe('motion-blur');
+      expect(f.motionType).toBe('linear');
+      expect(f.distance).toBe(10);
+      expect(f.angle).toBe(0);
+      expect(f.samples).toBe(12);
+    });
+
+    it('auto-generates a CSS-safe id', () => {
+      const f = compile(wrapInLayer('MotionBlurFilter() {|f| }')).filters[0];
+      expect(f.id).toMatch(/^pathogen-motion-blur-\d+$/);
+    });
+
+    it('rejects positional arguments', () => {
+      expect(() => compile(`let f = MotionBlurFilter(20);`)).toThrow(
+        /MotionBlurFilter\(\) takes no positional arguments/,
+      );
+    });
+  });
+
+  describe('Properties', () => {
+    it('honors type / distance / angle / samples overrides', () => {
+      const f = compile(
+        wrapInLayer(`MotionBlurFilter() {|f|
+          f.type = MotionBlurType.Progressive;
+          f.distance = 24;
+          f.angle = 90deg;
+          f.samples = 8;
+        }`),
+      ).filters[0] as { motionType: string; distance: number; angle: number; samples: number };
+      expect(f.motionType).toBe('progressive');
+      expect(f.distance).toBe(24);
+      expect(f.angle).toBeCloseTo(Math.PI / 2);
+      expect(f.samples).toBe(8);
+    });
+
+    it('converts angle units (deg) to radians', () => {
+      const f = compile(wrapInLayer('MotionBlurFilter() {|f| f.angle = 45deg; }')).filters[0] as {
+        angle: number;
+      };
+      expect(f.angle).toBeCloseTo(Math.PI / 4);
+    });
+
+    it('exposes read-side property access (type reads back the enum string)', () => {
+      const result = compile(`
+        let f = MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 7; };
+        log(f.id);
+        log(f.type);
+        log(f.distance);
+        log(f.samples);
+      `);
+      const values = result.logs.map((l) => l.parts.map((p) => p.value).join(''));
+      expect(values[0]).toMatch(/^pathogen-motion-blur-/);
+      expect(values[1]).toBe('progressive');
+      expect(values[2]).toBe('7');
+      expect(values[3]).toBe('12');
+    });
+  });
+
+  describe('Validation', () => {
+    it('rejects an invalid type', () => {
+      expect(() => compile(`let f = MotionBlurFilter() {|f| f.type = 'wobble'; };`)).toThrow(
+        /Invalid value 'wobble' for MotionBlurFilter\.type/,
+      );
+    });
+    it('rejects negative distance', () => {
+      expect(() => compile(`let f = MotionBlurFilter() {|f| f.distance = -1; };`)).toThrow(
+        /MotionBlurFilter\.distance must be a finite non-negative number/,
+      );
+    });
+    it('rejects non-integer / out-of-range samples', () => {
+      expect(() => compile(`let f = MotionBlurFilter() {|f| f.samples = 2.5; };`)).toThrow(
+        /MotionBlurFilter\.samples must be an integer between 2 and 32/,
+      );
+      expect(() => compile(`let f = MotionBlurFilter() {|f| f.samples = 1; };`)).toThrow(
+        /between 2 and 32/,
+      );
+      expect(() => compile(`let f = MotionBlurFilter() {|f| f.samples = 64; };`)).toThrow(
+        /between 2 and 32/,
+      );
+    });
+    it('rejects unknown properties', () => {
+      expect(() => compile(`let f = MotionBlurFilter() {|f| f.wobble = 5; };`)).toThrow(
+        /Cannot assign to MotionBlurFilter property 'wobble'/,
+      );
+    });
+  });
+
+  describe('Linear primitive chain', () => {
+    it('averages N centered taps additively (feComposite arithmetic), never feMerge', () => {
+      const primitives = emittedFilterPrimitives(
+        wrapInLayer('MotionBlurFilter() {|f| f.type = MotionBlurType.Linear; f.distance = 20; f.angle = 0deg; f.samples = 4; }'),
+      );
+      const tags = primitives.map((p) => p.tag);
+      // 4 taps → 4 feOffset, 4 feComponentTransfer, 3 arithmetic folds.
+      expect(tags.filter((t) => t === 'feOffset')).toHaveLength(4);
+      expect(tags.filter((t) => t === 'feComponentTransfer')).toHaveLength(4);
+      const composites = primitives.filter((p) => p.tag === 'feComposite');
+      expect(composites).toHaveLength(3);
+      for (const c of composites) {
+        expect(c.attrs.operator).toBe('arithmetic');
+        expect(c.attrs.k2).toBe('1');
+        expect(c.attrs.k3).toBe('1');
+      }
+      // Averaging must NOT use feMerge (over-compositing would brighten/bias).
+      expect(tags).not.toContain('feMerge');
+    });
+
+    it('centers the smear and scales each tap to 1/samples', () => {
+      const primitives = emittedFilterPrimitives(
+        wrapInLayer('MotionBlurFilter() {|f| f.distance = 20; f.angle = 0deg; f.samples = 2; }'),
+      );
+      const offsets = primitives.filter((p) => p.tag === 'feOffset');
+      // samples=2 → t = -0.5, +0.5 → dx = -10, +10 (centered, symmetric).
+      expect(offsets[0].attrs.dx).toBe('-10');
+      expect(offsets[1].attrs.dx).toBe('10');
+      // each tap pre-scaled to 1/samples via feFuncA slope (read from the tree).
+      const filterNode = findTag(
+        emittedDefs(wrapInLayer('MotionBlurFilter() {|f| f.distance = 20; f.angle = 0deg; f.samples = 2; }')),
+        'filter',
+      )!;
+      const transfer = (filterNode.children as VNode[]).find((c) => c.tag === 'feComponentTransfer')!;
+      const funcA = (transfer.children as VNode[])[0];
+      expect(funcA.attrs.slope).toBe('0.5');
+    });
+
+    it('steers offsets purely along the angle (0deg → x only, 90deg → y only)', () => {
+      const horiz = emittedFilterPrimitives(
+        wrapInLayer('MotionBlurFilter() {|f| f.distance = 20; f.angle = 0deg; f.samples = 4; }'),
+      ).filter((p) => p.tag === 'feOffset');
+      for (const o of horiz) expect(o.attrs.dy).toBe('0');
+
+      const vert = emittedFilterPrimitives(
+        wrapInLayer('MotionBlurFilter() {|f| f.distance = 20; f.angle = 90deg; f.samples = 4; }'),
+      ).filter((p) => p.tag === 'feOffset');
+      for (const o of vert) expect(o.attrs.dx).toBe('0'); // cos(90°) cleans to 0
+    });
+
+    it('uses a generous filter region so the smear is not clipped', () => {
+      const filterNode = findTag(
+        emittedDefs(wrapInLayer('MotionBlurFilter() {|f| f.distance = 20; }')),
+        'filter',
+      )!;
+      expect(filterNode.attrs.width).toBe('200%');
+      expect(filterNode.attrs.height).toBe('200%');
+    });
+
+    it('fuses the taps with a Gaussian aligned to the motion axis (smooth, not ghosted)', () => {
+      // horizontal: smoothing along x only, perpendicular (y) stays crisp.
+      const horiz = emittedFilterPrimitives(
+        wrapInLayer('MotionBlurFilter() {|f| f.distance = 30; f.angle = 0deg; f.samples = 16; }'),
+      );
+      const blurH = horiz[horiz.length - 1];
+      expect(blurH.tag).toBe('feGaussianBlur');
+      const [sxH, syH] = blurH.attrs.stdDeviation.split(' ');
+      expect(Number(sxH)).toBeGreaterThan(0);
+      expect(Number(syH)).toBe(0);
+      // vertical: mirror image — smoothing along y only.
+      const vert = emittedFilterPrimitives(
+        wrapInLayer('MotionBlurFilter() {|f| f.distance = 30; f.angle = 90deg; f.samples = 16; }'),
+      );
+      const [sxV, syV] = vert[vert.length - 1].attrs.stdDeviation.split(' ');
+      expect(Number(sxV)).toBe(0);
+      expect(Number(syV)).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Progressive primitive chain', () => {
+    const progSrc = wrapInLayer(
+      'MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.distance = 8; f.angle = 90deg; }',
+    );
+
+    it('crossfades sharp↔blurred via an feImage gradient mask, summed additively', () => {
+      const prims = emittedFilterPrimitives(progSrc);
+      const tags = prims.map((p) => p.tag);
+      expect(tags).toEqual([
+        'feGaussianBlur',
+        'feImage',
+        'feComponentTransfer', // invert ramp
+        'feComposite', // sharp ∩ inverted ramp
+        'feComposite', // blurred ∩ ramp
+        'feComposite', // additive sum of the two complementary halves
+      ]);
+      // The final combine must be arithmetic (k2=k3=1), NOT feMerge — feMerge's
+      // over-compositing would dip a solid shape's alpha through the midband.
+      expect(tags).not.toContain('feMerge');
+      const combine = prims[prims.length - 1];
+      expect(combine.attrs.operator).toBe('arithmetic');
+      expect(combine.attrs.k2).toBe('1');
+      expect(combine.attrs.k3).toBe('1');
+    });
+
+    it('blurs by distance and references its own mask by id', () => {
+      const prims = emittedFilterPrimitives(progSrc);
+      expect(prims[0].attrs.stdDeviation).toBe('8');
+      const filterNode = findTag(emittedDefs(progSrc), 'filter')!;
+      const feImage = prims.find((p) => p.tag === 'feImage')!;
+      expect(feImage.attrs.href).toBe(`#${filterNode.attrs.id}-mask`);
+    });
+
+    it('emits a sibling objectBoundingBox gradient + mask rect tracking the bbox', () => {
+      const defs = emittedDefs(progSrc);
+      const grad = findTag(defs, 'linearGradient')!;
+      const rect = findTag(defs, 'rect')!;
+      // 90deg ramp = top→bottom: vector (0.5,0)→(0.5,1).
+      expect(grad.attrs.gradientUnits).toBe('objectBoundingBox');
+      expect([grad.attrs.x1, grad.attrs.y1, grad.attrs.x2, grad.attrs.y2]).toEqual(['0.5', '0', '0.5', '1']);
+      // bbox-tracking depends on the mask rect filling 100% of the (bbox) region.
+      expect(rect.attrs.width).toBe('100%');
+      expect(rect.attrs.height).toBe('100%');
+      expect(rect.attrs.fill).toBe(`url(#${grad.attrs.id})`);
+    });
+
+    it('uses a tight filter region (oversized region washes the ramp out)', () => {
+      const filterNode = findTag(emittedDefs(progSrc), 'filter')!;
+      expect(filterNode.attrs.width).toBe('120%');
+      expect(filterNode.attrs.height).toBe('120%');
+      expect(filterNode.attrs.filterUnits).toBeUndefined(); // default objectBoundingBox
+    });
+
+    it('orients the gradient along the angle (0deg → left→right)', () => {
+      const grad = findTag(
+        emittedDefs(
+          wrapInLayer('MotionBlurFilter() {|f| f.type = MotionBlurType.Progressive; f.angle = 0deg; }'),
+        ),
+        'linearGradient',
+      )!;
+      expect([grad.attrs.x1, grad.attrs.y1, grad.attrs.x2, grad.attrs.y2]).toEqual(['0', '0.5', '1', '0.5']);
+    });
+  });
+});

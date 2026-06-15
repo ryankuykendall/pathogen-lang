@@ -737,7 +737,7 @@ describe('getCompletions', () => {
   });
 
   describe('Filter constructors', () => {
-    it('lists all six filter constructors in top-level completions', () => {
+    it('lists all seven filter constructors in top-level completions', () => {
       const items = completeAtEnd('');
       const names = labels(items);
       expect(names).toContain('NoiseFilter');
@@ -746,6 +746,17 @@ describe('getCompletions', () => {
       expect(names).toContain('ElevationShadowFilter');
       expect(names).toContain('InnerShadowFilter');
       expect(names).toContain('PixelateFilter');
+      expect(names).toContain('MotionBlurFilter');
+    });
+
+    it('offers MotionBlurFilter members on the let-bound variable and block param', () => {
+      const onVar = labels(completeAtEnd('let m = MotionBlurFilter() {|f| };\nm.'));
+      for (const member of ['id', 'type', 'distance', 'angle', 'samples']) {
+        expect(onVar).toContain(member);
+      }
+      const onParam = labels(completeAtEnd('let m = MotionBlurFilter() {|f| f.'));
+      expect(onParam).toContain('distance');
+      expect(onParam).toContain('type');
     });
 
     it('offers NoiseFilter members on the let-bound variable', () => {

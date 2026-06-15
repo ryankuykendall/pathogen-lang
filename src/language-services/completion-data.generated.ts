@@ -22,6 +22,7 @@ export const ENUM_COMPLETIONS: CompletionEntry[] = [
   { label: 'MarkerRefX', kind: 'variable', detail: 'Marker refX keyword position', boost: 6 },
   { label: 'MarkerRefY', kind: 'variable', detail: 'Marker refY keyword position', boost: 6 },
   { label: 'MarkerUnits', kind: 'variable', detail: 'Marker coordinate system', boost: 6 },
+  { label: 'MotionBlurType', kind: 'variable', detail: 'MotionBlurFilter linear/progressive mode', boost: 8 },
   { label: 'NoiseFilterScale', kind: 'variable', detail: 'NoiseFilter scale preset (fine/medium/coarse)', boost: 7 },
   { label: 'NoiseFilterStyle', kind: 'variable', detail: 'NoiseFilter primitive-chain preset', boost: 8 },
   { label: 'SpreadMethod', kind: 'variable', detail: 'Gradient spread method', boost: 8 },
@@ -139,6 +140,10 @@ export const ENUM_MEMBER_MAP: Record<string, CompletionEntry[]> = {
     { label: 'StrokeWidth', kind: 'constant', detail: 'MarkerUnits.StrokeWidth → "strokeWidth"', boost: 8 },
     { label: 'UserSpaceOnUse', kind: 'constant', detail: 'MarkerUnits.UserSpaceOnUse → "userSpaceOnUse"', boost: 8 },
   ],
+  MotionBlurType: [
+    { label: 'Linear', kind: 'constant', detail: 'MotionBlurType.Linear → "linear"', boost: 8 },
+    { label: 'Progressive', kind: 'constant', detail: 'MotionBlurType.Progressive → "progressive"', boost: 8 },
+  ],
   NoiseFilterScale: [
     { label: 'Fine', kind: 'constant', detail: 'NoiseFilterScale.Fine → "fine"', boost: 8 },
     { label: 'Medium', kind: 'constant', detail: 'NoiseFilterScale.Medium → "medium"', boost: 8 },
@@ -183,6 +188,7 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
   { label: 'ElevationShadowFilter', kind: 'function', detail: 'ElevationShadowFilter() — Material-style layered depth shadow', boost: 11 },
   { label: 'InnerShadowFilter', kind: 'function', detail: 'InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks)', boost: 11 },
   { label: 'PixelateFilter', kind: 'function', detail: 'PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter', boost: 11 },
+  { label: 'MotionBlurFilter', kind: 'function', detail: 'MotionBlurFilter() — Directional (linear) or progressive blur; configure via trailing block', boost: 11 },
   { label: 'Grid', kind: 'function', detail: 'Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction.', boost: 12 },
   { label: 'polarPoint', kind: 'function', detail: 'polarPoint(angle, distance) — Point at polar offset', boost: 14 },
   { label: 'polarOffset', kind: 'function', detail: 'polarOffset(angle, distance) — Relative polar offset', boost: 14 },
@@ -585,6 +591,18 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
 
     ],
   },
+  'MotionBlurFilter': {
+    properties: [
+      { label: 'id', kind: 'property', detail: 'Filter id (auto-generated as pathogen-motion-blur-N)', boost: 8 },
+      { label: 'type', kind: 'property', detail: 'MotionBlurType.Linear (directional smear) or MotionBlurType.Progressive (spatial ramp)', boost: 8 },
+      { label: 'distance', kind: 'property', detail: 'Smear length (Linear) / max blur radius (Progressive), in user-space units', boost: 8 },
+      { label: 'angle', kind: 'property', detail: 'Direction angle (use a unit, e.g. 30deg); 0deg = horizontal, 90deg = down', boost: 8 },
+      { label: 'samples', kind: 'property', detail: 'Tap count / quality — Linear only (2–32, default 12)', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
 };
 
 /** Namespace member completion sets keyed by namespace name */
@@ -628,6 +646,7 @@ export const SIGNATURE_DATA: Record<string, { label: string; params: string[]; d
   'ElevationShadowFilter': { label: 'ElevationShadowFilter()', params: [], doc: 'ElevationShadowFilter() — Material-style layered depth shadow' },
   'InnerShadowFilter': { label: 'InnerShadowFilter()', params: [], doc: 'InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks)' },
   'PixelateFilter': { label: 'PixelateFilter(width, height, radius)', params: ['width', 'height', 'radius'], doc: 'PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter' },
+  'MotionBlurFilter': { label: 'MotionBlurFilter()', params: [], doc: 'MotionBlurFilter() — Directional (linear) or progressive blur; configure via trailing block' },
   'Grid': { label: 'Grid(rows, cols, options)', params: ['rows', 'cols', 'options'], doc: 'Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction.' },
   'polarPoint': { label: 'polarPoint(angle, distance)', params: ['angle', 'distance'], doc: 'polarPoint(angle, distance) — Point at polar offset' },
   'polarOffset': { label: 'polarOffset(angle, distance)', params: ['angle', 'distance'], doc: 'polarOffset(angle, distance) — Relative polar offset' },

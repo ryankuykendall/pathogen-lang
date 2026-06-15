@@ -20,6 +20,7 @@ import type {
   InnerShadowFilterOutput,
   MarkerOutput,
   MaskOutput,
+  MotionBlurFilterOutput,
   NoiseFilterOutput,
   PatternOutput,
   PixelateFilterOutput,
@@ -95,10 +96,22 @@ export function buildDefs(result: CompileResult, options: BuildDefsOptions = {})
     defs.push(buildMarker(marker, emitData));
   }
   for (const filter of result.filters ?? []) {
-    defs.push(buildFilter(filter, emitData));
+    defs.push(...buildFilterDefs(filter, emitData));
   }
 
   return defs;
+}
+
+/**
+ * A filter normally emits a single `<filter>` element. Progressive motion blur
+ * additionally needs a sibling `<linearGradient>` + mask `<rect>` (referenced by
+ * its `feImage`), so it returns those defs ahead of the `<filter>`.
+ */
+function buildFilterDefs(filter: FilterOutput, emitData: boolean): VNode[] {
+  if (filter.kind === 'motion-blur' && filter.motionType === 'progressive') {
+    return [...buildProgressiveMaskDefs(filter, emitData), buildFilter(filter, emitData)];
+  }
+  return [buildFilter(filter, emitData)];
 }
 
 function buildMask(mask: MaskOutput, emitData: boolean): VNode {
@@ -326,6 +339,14 @@ function filterRegion(filter: FilterOutput): FilterRegion {
     case 'pixelate':
       // Tile + dilate operate inside the source bounds.
       return { x: '0%', y: '0%', width: '100%', height: '100%' };
+    case 'motion-blur':
+      // Linear taps reach ±distance/2 — a generous region avoids clipping the
+      // smear. Progressive maps a 0→1 gradient ramp across the filter region, so
+      // it needs a TIGHT region (≈the bbox); an oversized one compresses the
+      // ramp to the middle band and the effect washes out to a uniform haze.
+      return filter.motionType === 'progressive'
+        ? { x: '-10%', y: '-10%', width: '120%', height: '120%' }
+        : { x: '-50%', y: '-50%', width: '200%', height: '200%' };
     default: {
       const _exhaustive: never = filter;
       throw new Error(`Unsupported filter kind in filterRegion: ${String((_exhaustive as { kind: string }).kind)}`);
@@ -368,6 +389,9 @@ function buildFilter(filter: FilterOutput, emitData: boolean): VNode {
       break;
     case 'pixelate':
       children = buildPixelatePrimitives(filter);
+      break;
+    case 'motion-blur':
+      children = buildMotionBlurPrimitives(filter);
       break;
     default: {
       const _exhaustive: never = filter;
@@ -642,4 +666,154 @@ function buildPixelatePrimitives(filter: PixelateFilterOutput): VNode[] {
     h('feComposite', { in: 'SourceGraphic', in2: 'a', operator: 'in' }),
     h('feMorphology', { operator: 'dilate', radius: String(filter.radius) }),
   ];
+}
+
+// ---------------------------------------------------------------------------
+// MotionBlurFilter — directional (linear) and progressive blur.
+// ---------------------------------------------------------------------------
+
+function buildMotionBlurPrimitives(filter: MotionBlurFilterOutput): VNode[] {
+  return filter.motionType === 'progressive'
+    ? buildProgressiveMotionBlurPrimitives(filter)
+    : buildLinearMotionBlurPrimitives(filter);
+}
+
+/**
+ * Linear (directional) blur. Physical motion blur is the integral of the source
+ * translated along the motion vector over the shutter interval; we approximate
+ * it with `samples` copies offset evenly along `angle`, centered on the source
+ * (t ∈ [-0.5, +0.5] so the smear is symmetric, not a one-sided ghost). Each tap
+ * is pre-scaled to 1/N alpha (feComponentTransfer) and the taps are *summed*
+ * additively (feComposite operator="arithmetic", k2=k3=1) — NOT feMerge, whose
+ * over-compositing would bias toward the last tap and brighten the result.
+ *
+ * Discrete offset copies of a hard-edged shape read as ghost repeats rather than
+ * a smooth smear, so a final feGaussianBlur sized to the tap spacing fuses the
+ * copies into a continuous blur. The smoothing scales with spacing: dense taps
+ * (already smooth) get a negligible blur, sparse taps get more.
+ */
+function buildLinearMotionBlurPrimitives(filter: MotionBlurFilterOutput): VNode[] {
+  const n = Math.max(2, Math.round(filter.samples));
+  const cos = Math.cos(filter.angle);
+  const sin = Math.sin(filter.angle);
+  const slope = cleanNum(1 / n);
+  const nodes: VNode[] = [];
+  let acc = '';
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1) - 0.5;
+    const dx = filter.distance * t * cos;
+    const dy = filter.distance * t * sin;
+    const offRes = `t${i}o`;
+    nodes.push(h('feOffset', { in: 'SourceGraphic', dx: cleanNum(dx), dy: cleanNum(dy), result: offRes }));
+    const scaledRes = i === 0 ? 'acc0' : `t${i}s`;
+    nodes.push(
+      h('feComponentTransfer', { in: offRes, result: scaledRes }, [
+        h('feFuncA', { type: 'linear', slope }),
+      ]),
+    );
+    if (i === 0) {
+      acc = 'acc0';
+    } else {
+      const next = `acc${i}`;
+      nodes.push(
+        h('feComposite', {
+          in: acc,
+          in2: scaledRes,
+          operator: 'arithmetic',
+          k1: '0',
+          k2: '1',
+          k3: '1',
+          k4: '0',
+          result: next,
+        }),
+      );
+      acc = next;
+    }
+  }
+  // Fuse the discrete taps into a smooth smear. The ghost copies are spaced
+  // ALONG the motion axis, so the smoothing must be directional: a two-value
+  // stdDeviation aligned to (cos, sin) blurs along the smear (merging copies)
+  // while leaving the perpendicular edge — the object's cross-section — crisp.
+  // An isotropic blur would dull that edge and read as a soft blob instead of
+  // motion. Sized to ~1.5× the tap spacing and capped for long smears.
+  const spacing = Math.abs(filter.distance) / (n - 1);
+  const smoothing = Math.min(6, spacing * 1.5);
+  if (smoothing > 0.05) {
+    const sx = cleanNum(smoothing * Math.abs(cos));
+    const sy = cleanNum(smoothing * Math.abs(sin));
+    nodes.push(h('feGaussianBlur', { in: acc, stdDeviation: `${sx} ${sy}` }));
+  }
+  return nodes;
+}
+
+/**
+ * Progressive blur. A single blurred copy is gated by an `feImage` of a
+ * gradient mask (the sibling defs from `buildProgressiveMaskDefs`). Because the
+ * filter region stays in the default `objectBoundingBox` units and the mask
+ * rect fills 100% of that region, the ramp tracks the *element's own bounds* —
+ * sharp at the near edge, fully blurred at the far edge along `angle`.
+ */
+function buildProgressiveMotionBlurPrimitives(filter: MotionBlurFilterOutput): VNode[] {
+  // Crossfade sharp↔blurred along the ramp. Masking the *sharp* source by the
+  // inverted ramp (and the blurred copy by the ramp) means the near edge shows
+  // only the sharp source and the far edge shows only the blur — a genuine
+  // progressive blur, not a sharp image with a blurred halo painted on top.
+  return [
+    h('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: cleanNum(filter.distance), result: 'blurred' }),
+    h('feImage', { href: `#${filter.id}-mask`, result: 'ramp' }),
+    h('feComponentTransfer', { in: 'ramp', result: 'invRamp' }, [
+      h('feFuncA', { type: 'table', tableValues: '1 0' }),
+    ]),
+    h('feComposite', { in: 'SourceGraphic', in2: 'invRamp', operator: 'in', result: 'sharpPart' }),
+    h('feComposite', { in: 'blurred', in2: 'ramp', operator: 'in', result: 'blurPart' }),
+    // Sum the two complementary halves additively (NOT feMerge). The masks are
+    // exact complements (invRamp + ramp = 1), so summing yields alpha 1 across
+    // the crossfade; feMerge's over-compositing would dip a solid shape to
+    // ~0.75 alpha through the midband and lighten it — the same trap avoided in
+    // the linear chain.
+    h('feComposite', {
+      in: 'sharpPart',
+      in2: 'blurPart',
+      operator: 'arithmetic',
+      k1: '0',
+      k2: '1',
+      k3: '1',
+      k4: '0',
+    }),
+  ];
+}
+
+/**
+ * Sibling defs for progressive blur: a `<linearGradient>` (alpha 0→1 along
+ * `angle`, objectBoundingBox) and the mask `<rect>` it fills. The `feImage` in
+ * `buildProgressiveMotionBlurPrimitives` references the rect by id.
+ */
+function buildProgressiveMaskDefs(filter: MotionBlurFilterOutput, emitData: boolean): VNode[] {
+  const cos = Math.cos(filter.angle);
+  const sin = Math.sin(filter.angle);
+  const gradId = `${filter.id}-ramp`;
+  const maskId = `${filter.id}-mask`;
+  const gradAttrs: Record<string, string> = {
+    id: gradId,
+    x1: cleanNum(0.5 - 0.5 * cos),
+    y1: cleanNum(0.5 - 0.5 * sin),
+    x2: cleanNum(0.5 + 0.5 * cos),
+    y2: cleanNum(0.5 + 0.5 * sin),
+    gradientUnits: 'objectBoundingBox',
+  };
+  if (emitData) gradAttrs['data-filter-def'] = filter.id;
+  const grad = h('linearGradient', gradAttrs, [
+    h('stop', { offset: '0', 'stop-color': '#000', 'stop-opacity': '0' }),
+    h('stop', { offset: '1', 'stop-color': '#000', 'stop-opacity': '1' }),
+  ]);
+  const rectAttrs: Record<string, string> = {
+    id: maskId,
+    x: '0',
+    y: '0',
+    width: '100%',
+    height: '100%',
+    fill: `url(#${gradId})`,
+  };
+  if (emitData) rectAttrs['data-filter-def'] = filter.id;
+  return [grad, h('rect', rectAttrs)];
 }

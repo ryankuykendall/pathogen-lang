@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+
+<defs>
+  <linearGradient id="pathogen-motion-blur-1-ramp" x1="0.5" y1="0" x2="0.5" y2="1" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+  <rect id="pathogen-motion-blur-1-mask" x="0" y="0" width="100%" height="100%" fill="url(#pathogen-motion-blur-1-ramp)"/>
+  <filter id="pathogen-motion-blur-1" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blurred"/>
+    <feImage href="#pathogen-motion-blur-1-mask" result="ramp"/>
+    <feComponentTransfer in="ramp" result="invRamp">
+      <feFuncA type="table" tableValues="1 0"/>
+    </feComponentTransfer>
+    <feComposite in="SourceGraphic" in2="invRamp" operator="in" result="sharpPart"/>
+    <feComposite in="blurred" in2="ramp" operator="in" result="blurPart"/>
+    <feComposite in="sharpPart" in2="blurPart" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+  <linearGradient id="pathogen-motion-blur-2-ramp" x1="0.5" y1="1" x2="0.5" y2="0" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+  <rect id="pathogen-motion-blur-2-mask" x="0" y="0" width="100%" height="100%" fill="url(#pathogen-motion-blur-2-ramp)"/>
+  <filter id="pathogen-motion-blur-2" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blurred"/>
+    <feImage href="#pathogen-motion-blur-2-mask" result="ramp"/>
+    <feComponentTransfer in="ramp" result="invRamp">
+      <feFuncA type="table" tableValues="1 0"/>
+    </feComponentTransfer>
+    <feComposite in="SourceGraphic" in2="invRamp" operator="in" result="sharpPart"/>
+    <feComposite in="blurred" in2="ramp" operator="in" result="blurPart"/>
+    <feComposite in="sharpPart" in2="blurPart" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+  <linearGradient id="pathogen-motion-blur-3-ramp" x1="0" y1="0.5" x2="1" y2="0.5" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+  <rect id="pathogen-motion-blur-3-mask" x="0" y="0" width="100%" height="100%" fill="url(#pathogen-motion-blur-3-ramp)"/>
+  <filter id="pathogen-motion-blur-3" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blurred"/>
+    <feImage href="#pathogen-motion-blur-3-mask" result="ramp"/>
+    <feComponentTransfer in="ramp" result="invRamp">
+      <feFuncA type="table" tableValues="1 0"/>
+    </feComponentTransfer>
+    <feComposite in="SourceGraphic" in2="invRamp" operator="in" result="sharpPart"/>
+    <feComposite in="blurred" in2="ramp" operator="in" result="blurPart"/>
+    <feComposite in="sharpPart" in2="blurPart" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+  <linearGradient id="pathogen-motion-blur-4-ramp" x1="1" y1="0.5" x2="0" y2="0.5" gradientUnits="objectBoundingBox">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="1"/>
+  </linearGradient>
+  <rect id="pathogen-motion-blur-4-mask" x="0" y="0" width="100%" height="100%" fill="url(#pathogen-motion-blur-4-ramp)"/>
+  <filter id="pathogen-motion-blur-4" x="-10%" y="-10%" width="120%" height="120%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blurred"/>
+    <feImage href="#pathogen-motion-blur-4-mask" result="ramp"/>
+    <feComponentTransfer in="ramp" result="invRamp">
+      <feFuncA type="table" tableValues="1 0"/>
+    </feComponentTransfer>
+    <feComposite in="SourceGraphic" in2="invRamp" operator="in" result="sharpPart"/>
+    <feComposite in="blurred" in2="ramp" operator="in" result="blurPart"/>
+    <feComposite in="sharpPart" in2="blurPart" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+</defs>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 200 0 l 0 200 l -200 0 z" fill="oklch(97% 0.01 250)" stroke="#000" stroke-width="2"/>
+  <path data-layer-name="tl" id="tl" d="M 20 20 l 70 0 l 0 70 l -70 0 z" fill="oklch(55% 0.2 25)" stroke="#000" stroke-width="2" filter="url(#pathogen-motion-blur-1)"/>
+  <path data-layer-name="tr" id="tr" d="M 110 20 l 70 0 l 0 70 l -70 0 z" fill="oklch(55% 0.2 145)" stroke="#000" stroke-width="2" filter="url(#pathogen-motion-blur-2)"/>
+  <path data-layer-name="bl" id="bl" d="M 20 110 l 70 0 l 0 70 l -70 0 z" fill="oklch(55% 0.2 265)" stroke="#000" stroke-width="2" filter="url(#pathogen-motion-blur-3)"/>
+  <path data-layer-name="br" id="br" d="M 110 110 l 70 0 l 0 70 l -70 0 z" fill="oklch(55% 0.2 320)" stroke="#000" stroke-width="2" filter="url(#pathogen-motion-blur-4)"/>
+</svg>

@@ -300,10 +300,12 @@ export type FilterValue =
   | EmbossFilterValue
   | ElevationShadowFilterValue
   | InnerShadowFilterValue
-  | PixelateFilterValue;
+  | PixelateFilterValue
+  | MotionBlurFilterValue;
 
 export type NoiseFilterStyleName = 'grain' | 'paper' | 'speckle' | 'static' | 'gradient';
 export type GlowModeName = 'outer' | 'inner';
+export type MotionBlurTypeName = 'linear' | 'progressive';
 
 export interface NoiseFilterValue {
   type: 'FilterValue';
@@ -379,6 +381,26 @@ export interface PixelateFilterValue {
   width: number; // tile stride x
   height: number; // tile stride y
   radius: number; // feMorphology dilate radius
+}
+
+/**
+ * Directional/progressive blur, modeled on the CSS motion-blur proposal
+ * (w3c/csswg-drafts#11134). Synthesized from SVG filter primitives:
+ *  - 'linear': N centered feOffset taps along `angle`, alpha-averaged via
+ *    feComponentTransfer (1/samples) + additive feComposite arithmetic.
+ *  - 'progressive': a single feGaussianBlur gated by an feImage gradient mask
+ *    (objectBoundingBox) so blur ramps across the element's own bounds.
+ * `motionType` is the user-facing `type` property; the struct's own `type`
+ * field is the 'FilterValue' discriminant, so the two never collide.
+ */
+export interface MotionBlurFilterValue {
+  type: 'FilterValue';
+  kind: 'motion-blur';
+  id: string;
+  motionType: MotionBlurTypeName;
+  distance: number; // user-space units (smear length / max blur radius)
+  angle: number; // radians; 0 = +x, PI/2 = +y (down)
+  samples: number; // integer tap count — Linear only (Progressive ignores)
 }
 
 /**
@@ -732,7 +754,8 @@ export type FilterOutput =
   | EmbossFilterOutput
   | ElevationShadowFilterOutput
   | InnerShadowFilterOutput
-  | PixelateFilterOutput;
+  | PixelateFilterOutput
+  | MotionBlurFilterOutput;
 
 export interface NoiseFilterOutput {
   kind: 'noise';
@@ -795,6 +818,15 @@ export interface PixelateFilterOutput {
   width: number;
   height: number;
   radius: number;
+}
+
+export interface MotionBlurFilterOutput {
+  kind: 'motion-blur';
+  id: string;
+  motionType: MotionBlurTypeName;
+  distance: number;
+  angle: number; // radians
+  samples: number;
 }
 
 export interface ViewBoxValue {

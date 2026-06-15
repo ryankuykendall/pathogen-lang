@@ -55,6 +55,8 @@ export declare function ElevationShadowFilter(): PathogenElevationShadowFilter;
 export declare function InnerShadowFilter(): PathogenInnerShadowFilter;
 /** PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter @boost 11 */
 export declare function PixelateFilter(width?: number, height?: number, radius?: number): PathogenPixelateFilter;
+/** MotionBlurFilter() — Directional (linear) or progressive blur; configure via trailing block @boost 11 */
+export declare function MotionBlurFilter(): PathogenMotionBlurFilter;
 
 /** Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction. @boost 12 */
 export declare function Grid(rows: number, cols: number, options?: PathogenGridOptions): PathogenGrid;
@@ -788,4 +790,18 @@ export interface PathogenPixelateFilter {
   height: number;
   /** Dilation radius */
   radius: number;
+}
+
+/** @type MotionBlurFilter */
+export interface PathogenMotionBlurFilter {
+  /** Filter id (auto-generated as pathogen-motion-blur-N) */
+  readonly id: string;
+  /** MotionBlurType.Linear (directional smear) or MotionBlurType.Progressive (spatial ramp) */
+  type: string;
+  /** Smear length (Linear) / max blur radius (Progressive), in user-space units */
+  distance: number;
+  /** Direction angle (use a unit, e.g. 30deg); 0deg = horizontal, 90deg = down */
+  angle: number;
+  /** Tap count / quality — Linear only (2–32, default 12) */
+  samples: number;
 }

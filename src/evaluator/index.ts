@@ -82,6 +82,8 @@ import type {
   GlowModeName,
   InnerShadowFilterValue,
   PixelateFilterValue,
+  MotionBlurFilterValue,
+  MotionBlurTypeName,
   FragmentLayerState,
   GradientOutput,
   GradientStop,
@@ -393,6 +395,17 @@ export function isPixelateFilterValue(value: Value): value is PixelateFilterValu
   );
 }
 
+export function isMotionBlurFilterValue(value: Value): value is MotionBlurFilterValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'FilterValue' &&
+    'kind' in value &&
+    value.kind === 'motion-blur'
+  );
+}
+
 export function isMeshPointValue(value: Value): value is MeshPointValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MeshPointValue';
 }
@@ -481,6 +494,10 @@ export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   GlowMode: {
     Outer: 'outer',
     Inner: 'inner',
+  },
+  MotionBlurType: {
+    Linear: 'linear',
+    Progressive: 'progressive',
   },
   BlendMode: {
     Normal: 'normal',
@@ -705,6 +722,18 @@ function makeDefaultPixelateFilter(id: string): PixelateFilterValue {
     width: 10,
     height: 10,
     radius: 5,
+  };
+}
+
+function makeDefaultMotionBlurFilter(id: string): MotionBlurFilterValue {
+  return {
+    type: 'FilterValue',
+    kind: 'motion-blur',
+    id,
+    motionType: 'linear',
+    distance: 10,
+    angle: 0,
+    samples: 12,
   };
 }
 
@@ -5327,6 +5356,23 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
+  if (isMotionBlurFilterValue(obj)) {
+    switch (expr.property) {
+      case 'id':
+        return obj.id;
+      case 'type':
+        return obj.motionType;
+      case 'distance':
+        return obj.distance;
+      case 'angle':
+        return obj.angle;
+      case 'samples':
+        return obj.samples;
+      default:
+        throw new Error(`Property '${expr.property}' does not exist on MotionBlurFilter`);
+    }
+  }
+
   // Handle MeshPointValue property access
   if (isMeshPointValue(obj)) {
     switch (expr.property) {
@@ -6259,6 +6305,32 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       filter.height = h as number;
       filter.radius = r as number;
     }
+    scope.evalState.filters.set(id, filter);
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementToAccum(stmt, blockScope, []);
+      }
+    }
+    return filter;
+  }
+
+  // Handle MotionBlurFilter() constructor — directional/progressive blur.
+  // No positional arguments; configure via the trailing block.
+  if (call.name === 'MotionBlurFilter') {
+    if (call.args.length !== 0) {
+      throw new Error(
+        formatError(
+          `MotionBlurFilter() takes no positional arguments — configure via the trailing block`,
+          getLine(call),
+          getCol(call),
+        ),
+      );
+    }
+    if (!scope.evalState) throw new Error('MotionBlurFilter() requires evaluation context');
+    const id = nextAutoFilterId(scope.evalState, 'motion-blur');
+    const filter: MotionBlurFilterValue = makeDefaultMotionBlurFilter(id);
     scope.evalState.filters.set(id, filter);
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8288,6 +8360,54 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             );
         }
       }
+      if (isMotionBlurFilterValue(obj)) {
+        switch (stmt.property) {
+          case 'type': {
+            if (typeof value !== 'string')
+              throw new Error(
+                formatError(`MotionBlurFilter.type must be a MotionBlurType enum value`, getLine(stmt)),
+              );
+            const valid = Object.values(BUILTIN_ENUMS.MotionBlurType);
+            if (!valid.includes(value))
+              throw new Error(
+                formatError(
+                  `Invalid value '${value}' for MotionBlurFilter.type. Valid values: ${valid.join(', ')}`,
+                  getLine(stmt),
+                ),
+              );
+            obj.motionType = value as MotionBlurTypeName;
+            return;
+          }
+          case 'distance': {
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
+              throw new Error(
+                formatError(`MotionBlurFilter.distance must be a finite non-negative number`, getLine(stmt)),
+              );
+            obj.distance = value;
+            return;
+          }
+          case 'angle': {
+            if (typeof value !== 'number' || !Number.isFinite(value))
+              throw new Error(
+                formatError(`MotionBlurFilter.angle must be a finite number (with angle unit)`, getLine(stmt)),
+              );
+            obj.angle = value;
+            return;
+          }
+          case 'samples': {
+            if (typeof value !== 'number' || !Number.isInteger(value) || value < 2 || value > 32)
+              throw new Error(
+                formatError(`MotionBlurFilter.samples must be an integer between 2 and 32`, getLine(stmt)),
+              );
+            obj.samples = value;
+            return;
+          }
+          default:
+            throw new Error(
+              formatError(`Cannot assign to MotionBlurFilter property '${stmt.property}'`, getLine(stmt)),
+            );
+        }
+      }
       if (isMeshPointValue(obj)) {
         switch (stmt.property) {
           case 'color': {
@@ -9024,6 +9144,15 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
         width: filter.width,
         height: filter.height,
         radius: filter.radius,
+      });
+    } else if (filter.kind === 'motion-blur') {
+      filters.push({
+        kind: 'motion-blur',
+        id: filter.id,
+        motionType: filter.motionType,
+        distance: filter.distance,
+        angle: filter.angle,
+        samples: filter.samples,
       });
     } else {
       // Exhaustiveness guard — if a new filter kind is added to FilterValue

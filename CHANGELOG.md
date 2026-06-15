@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### `partition()` / sampling treated smooth `t`/`s` commands as straight lines
+
+- Smooth-quadratic (`t`/`T`) and smooth-cubic (`s`/`S`) path commands were sampled as if they were straight line segments, so `partition()` and other length/position sampling produced wrong points along any path that used them. They are now reflected into their full quadratic/cubic control points before sampling, matching how the renderer draws them.
+
 #### Workspace code reverting after edits (silent data loss)
 
 - **Root cause — server-side clobber.** The thumbnail upload (`PUT /workspace/:id/thumbnail`) and clear (`DELETE /workspace/:id/thumbnail`) endpoints did a full-document read-modify-write of the `workspace:${id}` KV value just to stamp three timestamp fields — carrying `workspace.code` along. A code save (autosave, or a fresher second tab) that landed between the handler's read and write was silently reverted. The thumbnail is rendered client-side from the live preview, so it always looked up-to-date while the persisted code rolled back to an older version.
@@ -19,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fix — optimistic concurrency.** The workspace doc carries a monotonic `rev` counter, bumped on every accepted code write. Each save sends `baseRev` (the revision the client edited from); the server rejects with **409** when the doc has advanced, so a stale tab can't clobber newer code. The client advances `baseRev` from each save's response (sequential saves keep working), and on a 409 stops autosaving, surfaces the multi-tab conflict (warning banner + save-status message), and keeps the local edit in memory — the user reconciles by reloading. Clients that omit `baseRev` keep the old behavior (backward compatible). Non-code updates (rename, preferences, publish toggle) re-read `code`/`rev` immediately before their full-doc write so they can't revert a concurrent code save either. Residual: KV has no compare-and-swap, so two saves landing in the *same* sub-second window can still race — exceedingly unlikely for one user given the 5s/30s autosave cadence; a Durable Object would close it fully.
 
 ### Added
+
+#### `MotionBlurFilter()` — directional and progressive blur
+
+- **New custom filter constructor** (the seventh, alongside `NoiseFilter`/`GlowFilter`/`EmbossFilter`/`ElevationShadowFilter`/`InnerShadowFilter`/`PixelateFilter`) bringing the effects of the CSS [`motion-blur` proposal](https://github.com/w3c/csswg-drafts/issues/11134) — which no browser implements — to Pathogen, synthesized from stock SVG filter primitives. Configured via a trailing block: `let b = MotionBlurFilter() {|f| f.type = MotionBlurType.Linear; f.distance = 20; f.angle = 30deg; f.samples = 12; };` then `filter: b;` in a style block.
+- **Two `MotionBlurType`s.** `Linear` — a directional smear along `angle` (the way a fast object blurs along its travel). `Progressive` — blur that ramps across the element, sharp at one edge and increasingly blurred toward the other (the iOS "variable/frosted blur"). New `MotionBlurType` enum (`Linear` | `Progressive`).
+- **Properties:** `type` (`MotionBlurType`, default `Linear`), `distance` (≥ 0, user-space units — smear length for Linear, max blur radius for Progressive, default 10), `angle` (angle unit, default `0deg`; `0deg` = right, `90deg` = down), `samples` (integer 2–32, Linear-only tap count / quality, default 12).
+- **How it's built.** Linear averages `samples` centered `feOffset` taps along the motion vector, each scaled to `1/samples` alpha and summed additively with `feComposite operator="arithmetic"` (summation, not `feMerge`, so the average isn't brightened); a final **direction-aligned** `feGaussianBlur` (two-value `stdDeviation` along the motion axis) fuses the discrete taps into a continuous smear without dulling the perpendicular edge, so the result reads as a smooth blur rather than ghost copies. Progressive crossfades a single `feGaussianBlur` copy against the sharp source through an `feImage` gradient mask in `objectBoundingBox` units, so the ramp tracks the **element's own bounding box** and supports any `angle`; the two complementary halves are summed (not merged) so a solid shape keeps full opacity through the midband.
+- **Renderer support.** Linear renders in every SVG engine. Progressive depends on `feImage`, solid in Chromium-class engines (Chrome, Edge, the Electron VS Code preview) but weak in non-Chromium engines (notably Firefox), where the shape may render unblurred — documented in `docs/filters.md`. Radial/zoom blur is intentionally **not** included: it cannot be expressed as a static SVG filter (no scale/rotate primitive).
+- **Surfaces & language services.** Renders in the CLI SVG output and the playground (verified via the `buildDefs` + `mountInto` DOM path). Completions, hover, member access (`f.<TAB>`), and a declaration snippet are wired for `MotionBlurFilter` and `MotionBlurType`.
+- **Playground fix (incidental).** The SVG preview pane's defs-cleanup selector omitted `[data-filter-def]`, so every filter's `<filter>` def leaked across recompiles (`mountInto` appends, never clears) — a changed filter could resolve `url(#id)` to a stale duplicate. Added `[data-filter-def]` to the cleanup selector.
 
 #### `Grid()` constructor — 2D data containers for flow fields, heatmaps, sampling tables
 

@@ -1,0 +1,15 @@
+// Source of truth for the docs/filters.md "MotionBlurFilter" code block.
+// If you change this file, update the doc accordingly.
+
+let smear = MotionBlurFilter() {|f|
+  f.type = MotionBlurType.Linear;
+  f.distance = 20;
+  f.angle = 30deg;
+  f.samples = 12;
+};
+
+define PathLayer('car') ${
+  fill: oklch(60% 0.2 250);
+  filter: smear;
+}
+layer('car').apply { roundRect(40, 80, 120, 40, 8); }
