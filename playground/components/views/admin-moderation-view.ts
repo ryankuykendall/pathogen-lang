@@ -511,7 +511,7 @@ class AdminModerationView extends HTMLElement {
   private async _post(
     path: string,
     body: Record<string, unknown> | null,
-    method: 'POST' | 'DELETE' = 'POST',
+    method: 'POST' | 'PUT' | 'DELETE' = 'POST',
   ): Promise<{ ok: boolean; error?: string; slug?: string }> {
     const init: RequestInit = {
       method,
@@ -674,10 +674,13 @@ class AdminModerationView extends HTMLElement {
       const previewSvg = lib.generateSvg(result, dims);
       if (!previewSvg || previewSvg.length === 0) throw new Error('Compile produced no SVG');
 
-      // 3. Preview → R2 (detail-page hero source).
-      const put = await this._post(`/admin/approval/${encodeURIComponent(workspaceId)}/svg`, {
-        svg: previewSvg,
-      });
+      // 3. Preview → R2 (detail-page hero source). The backfill endpoint is
+      // registered as PUT (not POST) — see adminPutApprovalSvg.
+      const put = await this._post(
+        `/admin/approval/${encodeURIComponent(workspaceId)}/svg`,
+        { svg: previewSvg },
+        'PUT',
+      );
       if (!put.ok) throw new Error(put.error || 'Failed to save preview');
 
       // 4. Square-crop SVG → PNG grid thumbnails (used on /explore + /featured).
