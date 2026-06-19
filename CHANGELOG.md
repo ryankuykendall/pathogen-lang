@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Moderation "Regenerate preview" follow-ups
 
 - **Regenerate hit a 404.** The action posted the preview to `/admin/approval/:id/svg` via the `_post()` helper, which defaults to `POST`, but the route is registered `PUT`-only — so it failed in production. `_post()` now accepts `PUT` and the call sends it.
+- **A too-large preview aborted the whole regenerate.** Gradient-heavy workspaces bake GPU-rendered raster data into the captured SVG, so the browser's preview can be several times larger than the CLI's and exceed the 12 MB server cap (HTTP 400). The 400 threw before the thumbnail step, leaving such workspaces with neither artifact. The preview upload is now best-effort: the PNG thumbnail (the grid image and detail-page hero fallback) is always generated, and the toast reports the outcome ("Regenerated preview + thumbnail" vs "Updated thumbnail. Preview not stored: …"). Verified end-to-end in a browser via Puppeteer against `dev:stack`.
 - **Featured cards showed "approved Invalid Date".** `adminListFeatured` omitted `approvedAt` from its response (the Featured card renders an "approved &lt;date&gt;" meta line), so `new Date(undefined)` formatted as "Invalid Date". The endpoint now returns `approvedAt`, and `_fmtDate` degrades missing/unparseable values to "unknown date" instead.
 
 #### Grid `fill()` / `map()` / `forEach()` compiled ~100× slower than necessary

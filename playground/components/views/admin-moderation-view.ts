@@ -674,26 +674,34 @@ class AdminModerationView extends HTMLElement {
       const previewSvg = lib.generateSvg(result, dims);
       if (!previewSvg || previewSvg.length === 0) throw new Error('Compile produced no SVG');
 
-      // 3. Preview → R2 (detail-page hero source). The backfill endpoint is
-      // registered as PUT (not POST) — see adminPutApprovalSvg.
+      // 3. Preview → R2 (detail-page hero source). Best-effort: a gradient-heavy
+      // workspace can bake GPU-rendered raster data into the SVG and exceed the
+      // server's size cap (HTTP 400). That must NOT abort the thumbnail below —
+      // the PNG thumbnail is the grid image and the detail-page hero fallback,
+      // so it's the more important artifact for exactly these large pieces. The
+      // backfill endpoint is registered as PUT (not POST) — see adminPutApprovalSvg.
       const put = await this._post(
         `/admin/approval/${encodeURIComponent(workspaceId)}/svg`,
         { svg: previewSvg },
         'PUT',
       );
-      if (!put.ok) throw new Error(put.error || 'Failed to save preview');
+      const previewOk = put.ok;
+      const previewErr = put.ok ? '' : put.error || 'preview not stored';
 
       // 4. Square-crop SVG → PNG grid thumbnails (used on /explore + /featured).
+      // Always attempt this, even if the preview PUT failed.
       const square = this._squareDims(dims.viewBox);
       const squareSvg = lib.generateSvg(result, square);
-      const thumbResult = await thumbnailService.generateThumbnail(
-        workspaceId,
-        null as unknown as SVGElement,
-        {},
-        undefined,
-        { svgString: squareSvg, kind: 'auto' },
+      const thumbOk = Boolean(
+        await thumbnailService.generateThumbnail(workspaceId, null as unknown as SVGElement, {}, undefined, {
+          svgString: squareSvg,
+          kind: 'auto',
+        }),
       );
-      if (!thumbResult) throw new Error('Thumbnail generation was blocked or timed out');
+
+      if (!previewOk && !thumbOk) {
+        throw new Error(previewErr || 'thumbnail generation was blocked or timed out');
+      }
 
       // 5. Reflect immediately: bust the cached compile + stamp thumbnailAt so
       // the card repaints with the fresh thumbnail.
@@ -704,10 +712,13 @@ class AdminModerationView extends HTMLElement {
         this._approved.find((x) => x.workspaceId === workspaceId) ??
         this._featured.find((x) => x.workspaceId === workspaceId);
       if (entry) {
-        entry.thumbnailAt = stamp;
-        entry.hasSvg = true;
+        if (thumbOk) entry.thumbnailAt = stamp;
+        if (previewOk) entry.hasSvg = true;
       }
-      this._toast('Regenerated preview + thumbnail');
+
+      if (previewOk && thumbOk) this._toast('Regenerated preview + thumbnail');
+      else if (previewOk) this._toast('Saved preview; thumbnail generation failed');
+      else this._toast(`Updated thumbnail. Preview not stored: ${previewErr}`);
     } catch (err) {
       this._toast(`Regenerate failed: ${(err as Error).message}`);
     } finally {
