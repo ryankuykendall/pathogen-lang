@@ -23,6 +23,7 @@
 
 import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
 import compilerWorker from '../../services/compiler-worker.js';
+import thumbnailService from '../../services/thumbnail-service.js';
 import { store } from '../../state/store.js';
 import { dimensionsOrDefault } from '../../utils/source-dimensions.js';
 // Side-effect import: register the <mini-workspace> custom element so the
@@ -195,9 +196,10 @@ class AdminModerationView extends HTMLElement {
     await this._loadAllTabs();
   }
 
-  // Fetch every queue concurrently. Mutating actions (approve, reject,
-  // unpublish, flag, …) call this so cross-tab counts refresh — e.g.
-  // approving from Pending should bump the Approved count too.
+  // Fetch every queue concurrently on initial load (via _loadIfAdmin) so
+  // every tab's count is accurate up front, then bound-compile thumbnails
+  // for the active tab only. Mutating actions no longer call this — they
+  // mutate the active tab locally and let other tabs re-fetch on visit.
   private async _loadAllTabs(): Promise<void> {
     this._loading = true;
     this._error = null;
@@ -309,20 +311,50 @@ class AdminModerationView extends HTMLElement {
     }
   }
 
+  // Bounded thumbnail compile for the current tab. Only the queue tabs
+  // (Pending / Re-review) carry inline `code` to compile — they have no
+  // R2 thumbnail to fall back on, so without this a freshly-submitted
+  // card shows only a letter avatar until the admin opens it. The
+  // catalog tabs (Approved/Featured/Rejected/Flagged) have no `code` on
+  // the listing and degrade to the R2 thumbnail or avatar via
+  // _renderThumb, so they're skipped entirely.
+  //
+  // The previous version compiled every queue card eagerly with no
+  // ceiling, so a single slow-to-compile workspace (~14s) blocked the
+  // whole tab. This version caps concurrency at 2 and races each compile
+  // against a ~4s timer: when the timer wins, the slot frees and the
+  // card stays on its avatar. The worker call can't truly be cancelled,
+  // so the real compile still resolves later, populates `_svg`, and
+  // renders the thumbnail late — we just stop blocking on it. The
+  // existing `_svg` / `_svgPending` memoization dedups the late finish.
   private _compileThumbnailsForCurrentTab(): void {
-    const compile = (key: string, code: string): void => {
-      if (this._svg.has(key)) return;
-      void this._compileSvg(code, key).then(() => this.render());
+    const entries =
+      this._tab === 'pending' ? this._pending : this._tab === 'rereview' ? this._rereview : null;
+    if (!entries) return;
+
+    const jobs = entries
+      .map((e) => ({ key: this._svgKey(this._tab, e.workspaceId), code: e.code }))
+      .filter((j) => !this._svg.has(j.key));
+    if (jobs.length === 0) return;
+
+    const COMPILE_TIMEOUT_MS = 4000;
+    const MAX_CONCURRENT = 2;
+    let next = 0;
+
+    const runWorker = async (): Promise<void> => {
+      while (next < jobs.length) {
+        const job = jobs[next++];
+        // Re-render once the real compile finishes regardless of whether
+        // we're still waiting on it — late completions paint the thumb.
+        const compile = this._compileSvg(job.code, job.key).then(() => this.render());
+        const timer = new Promise<void>((resolve) => setTimeout(resolve, COMPILE_TIMEOUT_MS));
+        // Stop blocking after the timeout; the card falls back to its
+        // avatar until (if ever) the slow compile resolves.
+        await Promise.race([compile, timer]);
+      }
     };
-    if (this._tab === 'pending') {
-      for (const e of this._pending) compile(this._svgKey('pending', e.workspaceId), e.code);
-    } else if (this._tab === 'rereview') {
-      for (const e of this._rereview) compile(this._svgKey('rereview', e.workspaceId), e.code);
-    }
-    // Approved/Featured/Rejected have no `code` field on the listing
-    // (they come from approval/rejection records on the server, which
-    // we'd need to fetch separately). The thumbnail there falls back to
-    // the R2 thumbnail or a letter avatar — see _renderThumb.
+
+    for (let i = 0; i < Math.min(MAX_CONCURRENT, jobs.length); i++) void runWorker();
   }
 
   // ─── Actions ────────────────────────────────────────────────────────
@@ -346,7 +378,12 @@ class AdminModerationView extends HTMLElement {
       this._pending = this._pending.filter((e) => e.workspaceId !== workspaceId);
       this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
       this._toast(`Approved: ${res.slug ?? workspaceId}`);
-      void this._refreshAllInBackground();
+      // The local list mutations above keep the active tab correct; we
+      // deliberately skip a full re-fetch+render of every tab here. The
+      // old eager-compile path made that refresh janky, and other tabs'
+      // counts self-correct when the admin visits them (_loadTab
+      // re-fetches the destination). Cross-tab counts stay stale until
+      // visited — an accepted trade for a responsive UI.
     } catch (err) {
       this._toast(`Approve failed: ${(err as Error).message}`);
     } finally {
@@ -371,7 +408,8 @@ class AdminModerationView extends HTMLElement {
       this._rejectingId = null;
       this._rejectionNotes.delete(workspaceId);
       this._toast('Rejected');
-      void this._refreshAllInBackground();
+      // See _approve: skip the full cross-tab refresh; counts on other
+      // tabs self-correct on visit.
     } catch (err) {
       this._toast(`Reject failed: ${(err as Error).message}`);
     } finally {
@@ -455,26 +493,19 @@ class AdminModerationView extends HTMLElement {
       const res = await this._post(path, method === 'POST' ? {} : null, method);
       if (!res.ok) throw new Error(res.error || 'Request failed');
       onSuccess();
-      // State-mutating actions can shift items between tabs (approve →
-      // moves Pending → Approved; flag-user → drops entries from every
-      // catalog tab; etc.). Re-fetch everything in the background so
-      // every tab's count stays accurate without the admin having to
-      // click through them.
-      void this._refreshAllInBackground();
+      // State-mutating actions can shift items between tabs (feature →
+      // moves Approved → Featured; flag-user → drops entries from every
+      // catalog tab; etc.). The onSuccess callback above applies the
+      // optimistic mutation to the active tab; we no longer re-fetch
+      // every tab here. Other tabs' counts go stale until visited, at
+      // which point _loadTab re-fetches them — an accepted trade for
+      // avoiding the janky full refresh.
     } catch (err) {
       this._toast(`Action failed: ${(err as Error).message}`);
     } finally {
       this._busy.delete(key);
       this.render();
     }
-  }
-
-  // Re-fetch every tab without flipping the global loading flag. The
-  // current tab already shows its optimistic state from the action
-  // handler; this just brings the others in line.
-  private async _refreshAllInBackground(): Promise<void> {
-    await Promise.all(TABS.map((t) => this._fetchTab(t.id).catch(() => null)));
-    this.render();
   }
 
   private async _post(
@@ -610,6 +641,91 @@ class AdminModerationView extends HTMLElement {
       this._modalError = (err as Error).message;
       this.render();
     }
+  }
+
+  // Regenerate the public preview (approval.svg → R2) and the grid PNG
+  // thumbnails for an Approved/Featured workspace, compiling from the FROZEN
+  // approval.code (what visitors actually see — not the possibly-diverged live
+  // workspace). Heals entries whose preview was dropped by the old 1 MB cap or
+  // that never got a thumbnail. Thumbnail upload rides the session cookie;
+  // uploadThumbnail grants session-admins the ownership bypass.
+  private async _regenerate(workspaceId: string): Promise<void> {
+    if (this._busy.has(workspaceId)) return;
+    this._busy.add(workspaceId);
+    this.render();
+    try {
+      // 1. Frozen approval record → immutable source.
+      const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
+        credentials: 'include',
+      });
+      const data = (await res.json()) as { code?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || 'Failed to load approval');
+      const code = (data.code ?? '').trim();
+      if (!code) throw new Error('Approval record has no source code');
+
+      // 2. Compile once; render the full-aspect preview + a square-crop variant.
+      const id = ++this._compilationCounter;
+      const result = (await compilerWorker.compileWithContext(code, id, undefined)) as Record<string, unknown>;
+      const lib = (
+        window as unknown as { PathogenLang?: { generateSvg?: (r: unknown, o: unknown) => string } }
+      ).PathogenLang;
+      if (!lib?.generateSvg) throw new Error('Compiler not available (PathogenLang.generateSvg missing)');
+      const dims = dimensionsOrDefault(code);
+      const previewSvg = lib.generateSvg(result, dims);
+      if (!previewSvg || previewSvg.length === 0) throw new Error('Compile produced no SVG');
+
+      // 3. Preview → R2 (detail-page hero source).
+      const put = await this._post(`/admin/approval/${encodeURIComponent(workspaceId)}/svg`, {
+        svg: previewSvg,
+      });
+      if (!put.ok) throw new Error(put.error || 'Failed to save preview');
+
+      // 4. Square-crop SVG → PNG grid thumbnails (used on /explore + /featured).
+      const square = this._squareDims(dims.viewBox);
+      const squareSvg = lib.generateSvg(result, square);
+      const thumbResult = await thumbnailService.generateThumbnail(
+        workspaceId,
+        null as unknown as SVGElement,
+        {},
+        undefined,
+        { svgString: squareSvg, kind: 'auto' },
+      );
+      if (!thumbResult) throw new Error('Thumbnail generation was blocked or timed out');
+
+      // 5. Reflect immediately: bust the cached compile + stamp thumbnailAt so
+      // the card repaints with the fresh thumbnail.
+      this._svg.delete(this._svgKey('approved', workspaceId));
+      this._svg.delete(this._svgKey('featured', workspaceId));
+      const stamp = new Date().toISOString();
+      const entry =
+        this._approved.find((x) => x.workspaceId === workspaceId) ??
+        this._featured.find((x) => x.workspaceId === workspaceId);
+      if (entry) {
+        entry.thumbnailAt = stamp;
+        entry.hasSvg = true;
+      }
+      this._toast('Regenerated preview + thumbnail');
+    } catch (err) {
+      this._toast(`Regenerate failed: ${(err as Error).message}`);
+    } finally {
+      this._busy.delete(workspaceId);
+      this.render();
+    }
+  }
+
+  // Centered square crop of a "x y w h" viewBox, as generateSvg dims. The
+  // raster width/height mirror generateThumbnail's supersampling (≥1024,
+  // capped at 4096) so the square PNGs come out crisp.
+  private _squareDims(viewBox: string): { viewBox: string; width: string; height: string } {
+    const [vx, vy, vw, vh] = viewBox.split(/\s+/).map(Number);
+    if (![vx, vy, vw, vh].every((n) => Number.isFinite(n)) || vw <= 0 || vh <= 0) {
+      return { viewBox, width: '1024', height: '1024' };
+    }
+    const size = Math.min(vw, vh);
+    const cropX = vx + (vw - size) / 2;
+    const cropY = vy + (vh - size) / 2;
+    const raster = Math.max(1024, Math.min(Math.ceil(size), 4096));
+    return { viewBox: `${cropX} ${cropY} ${size} ${size}`, width: `${raster}`, height: `${raster}` };
   }
 
   private _closeReview(): void {
@@ -762,6 +878,7 @@ class AdminModerationView extends HTMLElement {
                 <button class="ghost" data-action="unfeature" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''}>Unfeature</button>
               `
           }
+          <button class="ghost" data-action="regenerate" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''} title="Recompile from the frozen approval source and refresh the public preview + thumbnail">${busy ? 'Regenerating…' : 'Regenerate preview'}</button>
         </div>
       </div>
     </li>`;
@@ -1010,6 +1127,11 @@ class AdminModerationView extends HTMLElement {
     root.querySelectorAll('[data-action="feature"]').forEach((btn) => {
       btn.addEventListener('click', (e) =>
         this._feature((e.currentTarget as HTMLElement).getAttribute('data-id')!),
+      );
+    });
+    root.querySelectorAll('[data-action="regenerate"]').forEach((btn) => {
+      btn.addEventListener('click', (e) =>
+        this._regenerate((e.currentTarget as HTMLElement).getAttribute('data-id')!),
       );
     });
     root.querySelectorAll('[data-action="unfeature"]').forEach((btn) => {

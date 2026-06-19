@@ -307,6 +307,13 @@ function heroUrl(env: Env, workspaceId: string): string {
   return `${apiBase(env)}/thumbnail/${encodeURIComponent(workspaceId)}/hero`;
 }
 
+// Admin-captured approval SVG, served from R2 by the API Worker. Used when an
+// approval carries approvalSvgAt (the SVG lives in R2, not inline in KV) — the
+// Pages worker has no R2 binding so it must reference this cross-origin URL.
+function approvalSvgUrl(env: Env, workspaceId: string): string {
+  return `${apiBase(env)}/approval-svg/${encodeURIComponent(workspaceId)}`;
+}
+
 // ─── Public Profile Page (Worker-Rendered) ────────────────────────────
 
 async function renderProfilePage(request: Request, env: Env, url: URL, handle: string): Promise<Response> {
@@ -618,14 +625,26 @@ async function renderWorkspaceDetailPage(
   const swatchFor = (id: string): [string, string] =>
     SWATCH_PALETTES[hashStr(id) % SWATCH_PALETTES.length] as [string, string];
 
-  // Hero artwork chain: approval.svg → thumbnail <img> → swatch fallback.
-  // In practice (1) is the path for ≥99% of approvals post-Phase 4. The
-  // CSS in workspace-detail.css forces width/height on the inlined SVG
-  // so any width/height attributes the captured SVG carries don't break
-  // sizing.
+  // Hero artwork chain: legacy inline approval.svg → R2 approval SVG
+  // (approvalSvgAt) → thumbnail <img> → swatch fallback. The CSS in
+  // workspace-detail.css forces width/height on the inlined SVG so any
+  // width/height attributes the captured SVG carries don't break sizing;
+  // the bare .detail-plate-art rule sizes the <object> and <img> variants
+  // (class is on the element itself, not a wrapper) identically.
   let heroHtml: string;
   if (approval.svg) {
+    // Legacy: SVG was inlined in the KV approval record (pre-R2 storage).
     heroHtml = `<div class="detail-plate-art">${approval.svg}</div>`;
+  } else if (approval.approvalSvgAt) {
+    // SVG stored in R2; reference it by URL via the API Worker. The <object>'s
+    // children render only if the R2 blob fails to load (deletion, outage, key
+    // mismatch) — degrade to the thumbnail when available, else the swatch,
+    // rather than showing an empty hero.
+    const [from, to] = swatchFor(approval.workspaceId);
+    const objectFallback = thumbUrl
+      ? `<img class="detail-plate-art" src="${heroUrl(env, approval.workspaceId)}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`
+      : `<div class="detail-plate-fallback" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
+    heroHtml = `<object type="image/svg+xml" data="${approvalSvgUrl(env, approval.workspaceId)}" class="detail-plate-art" aria-label="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}">${objectFallback}</object>`;
   } else if (thumbUrl) {
     // Use the uncropped hero (not the square 1024 thumbUrl, which is still used for
     // og:image) so non-square artwork renders at its true aspect ratio here. The hero

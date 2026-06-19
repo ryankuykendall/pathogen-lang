@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Grid `fill()` / `map()` / `forEach()` compiled ~100× slower than necessary
+
+- **Root cause — per-cell `throw`.** Each grid cell's callback body was evaluated inside a `try`, and a `return` was implemented as `throw new ReturnSignal(value)` caught once per cell. The per-cell throw-through-`try` kept V8 from optimizing the loop, so cost scaled with cell count independent of the body — a 64,000-cell `Grid(320, 200)` took ~14s to compile even when the callback was a bare `return 0.5;` (not `calc()`, not the math, not the drawing loops downstream).
+- **Fix — top-level-return fast path.** A new `evaluateGridCellBody()` (`src/evaluator/index.ts`) short-circuits a **top-level** `return` without throwing; **nested** returns (inside `if`/`for`) still throw `ReturnSignal` and are caught, so all semantics are preserved (no-return → `null` cell, top-level early-return stops the body, nested return honored, `forEach` ignores returns, callback-error message unchanged). The 64k-cell fill dropped **14,400ms → 27ms**; a real flow-field workspace (64k-cell grid + 115k circles across 241 layers) went **15,049ms → 831ms (18×)**. The annotated/`--annotated` evaluator keeps the old pattern (debug-only path).
+
+#### Public previews silently dropped for large artwork (1 MB cap)
+
+- **Root cause.** The admin-captured preview SVG (`approval.svg`) was inlined in the KV approval record and capped at 1 MB — anything larger was silently set to `null`. A 6 MB flow-field workspace lost its preview entirely, so the detail page (`/u/:handle/:slug`) fell through to a "Preview pending" swatch no matter how it compiled.
+- **Fix — R2-backed previews.** The preview SVG now lives in R2 (`{id}/approval.svg`) with the approval record stamping `approvalSvgAt`; the cap is raised to a 12 MB sanity ceiling. A new public, visibility-guarded `GET /approval-svg/:id` serves it (with `Content-Security-Policy: script-src 'none'` defense-in-depth), and the detail page references it via `<object>` with a thumbnail/swatch fallback. Legacy inline `approval.svg` records still render (backward compatible); `deleteWorkspace` cascades an R2 delete. `hasSvg` in admin listings now reflects either storage location.
+
 #### `partition()` / sampling treated smooth `t`/`s` commands as straight lines
 
 - Smooth-quadratic (`t`/`T`) and smooth-cubic (`s`/`S`) path commands were sampled as if they were straight line segments, so `partition()` and other length/position sampling produced wrong points along any path that used them. They are now reflected into their full quadratic/cubic control points before sampling, matching how the renderer draws them.
@@ -23,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fix — optimistic concurrency.** The workspace doc carries a monotonic `rev` counter, bumped on every accepted code write. Each save sends `baseRev` (the revision the client edited from); the server rejects with **409** when the doc has advanced, so a stale tab can't clobber newer code. The client advances `baseRev` from each save's response (sequential saves keep working), and on a 409 stops autosaving, surfaces the multi-tab conflict (warning banner + save-status message), and keeps the local edit in memory — the user reconciles by reloading. Clients that omit `baseRev` keep the old behavior (backward compatible). Non-code updates (rename, preferences, publish toggle) re-read `code`/`rev` immediately before their full-doc write so they can't revert a concurrent code save either. Residual: KV has no compare-and-swap, so two saves landing in the *same* sub-second window can still race — exceedingly unlikely for one user given the 5s/30s autosave cadence; a Durable Object would close it fully.
 
 ### Added
+
+#### Admin "Regenerate preview" action (Approved / Featured moderation tabs)
+
+- **Per-workspace regeneration in `/admin/moderation`.** Each Approved and Featured card has a **Regenerate preview** button that recompiles the **frozen `approval.code`** (what visitors see — not the possibly-diverged live workspace), writes the full multi-layer preview SVG to R2 (the detail-page hero), and rasterizes a square-cropped variant into the grid PNG thumbnails. Used to heal entries whose preview was dropped by the old 1 MB cap or that never got a thumbnail. The card repaints immediately (local `thumbnailAt`/`hasSvg` stamp).
+- **Session-admin thumbnail uploads.** `uploadThumbnail` now grants the ownership bypass to a session-authed admin (`isAdminRequest`), not only the legacy `?token=` param, so the moderation UI can refresh any workspace's thumbnail over its session cookie. The session-admin (D1) check is consulted lazily — only for non-owner uploads — so frequent owner auto-uploads pay no extra latency.
 
 #### `MotionBlurFilter()` — directional and progressive blur
 
@@ -75,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Admin moderation tabs no longer compile every card up front.** The view previously compiled every Pending/Re-review card's source in the browser on load, and re-fetched all seven tabs after every moderation action — a single slow-compiling workspace janked the whole tab and re-janked on each click. Eager compilation is now bounded (at most two concurrent, each raced against a 4s timeout so a slow card falls back to its avatar), and the post-action full refetch is gone (local list mutations keep the active tab correct; other tabs re-fetch on visit, so non-active counts may briefly lag).
 - **Workspace canvas size is no longer user-editable in the playground.** The W/H number inputs are gone from the workspace footer (replaced with a read-only viewBox display), the new-workspace dialog (no longer asks for canvas size on create), and the preferences page (`Canvas Size` section removed). `store.preferences` no longer carries `width`/`height`; the new-workspace boilerplate is `define ViewBox(0, 0, 200, 200);` followed by a `define default PathLayer('main-path-layer') ${ ... };` block. The footer's viewBox display updates live from `result.viewBox` after each compile.
 - **API stops persisting `preferences.width`/`height`.** POST `/api/workspace`, PUT `/api/workspace/:id`, and PUT `/api/preferences` strip those keys from incoming payloads (via `stripDimensions`). Existing KV records keep their legacy values until the migration script runs; old values are inert because the new client never reads them.
 - **Optional trailing `;` on `define <LayerType>(...) ${ ... }`.** Previously a trailing `;` was a parse error; now it's accepted (matching the user-facing boilerplate style and `define ViewBox(...);`'s mandatory `;`). Existing layer definitions without `;` continue to parse unchanged.

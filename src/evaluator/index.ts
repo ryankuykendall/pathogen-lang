@@ -4049,7 +4049,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 0) throw mError('Grid.fill() does not take arguments — use fill {|row, col, center| ... }');
         if (!expr.block) throw mError('Grid.fill() requires a trailing block: grid.fill {|row, col, center| return ...; }');
         const params = expr.block.params;
+        const body = expr.block.body;
         const callLine = getLine(expr);
+        // Commands emitted inside a fill body are discarded (fill computes cell
+        // values). Reuse one throwaway accum rather than allocating per cell.
+        const fillSink: string[] = [];
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
             const blockScope = createScope(scope);
@@ -4064,10 +4068,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
               setVariable(blockScope, params[2], center);
             }
             try {
-              for (const stmt of expr.block.body) {
-                evaluateStatementToAccum(stmt, blockScope, []);
-              }
-              obj.cells[r][c] = null;
+              const res = evaluateGridCellBody(body, blockScope, fillSink);
+              obj.cells[r][c] = res.returned ? res.value : null;
             } catch (e) {
               if (e instanceof ReturnSignal) {
                 obj.cells[r][c] = e.value;
@@ -4109,9 +4111,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
               setVariable(blockScope, params[3], center);
             }
             try {
-              for (const stmt of expr.block.body) {
-                evaluateStatementToAccum(stmt, blockScope, blockAccum);
-              }
+              evaluateGridCellBody(expr.block.body, blockScope, blockAccum);
             } catch (e) {
               if (e instanceof ReturnSignal) {
                 // forEach ignores returns
@@ -4130,6 +4130,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const params = expr.block.params;
         const callLine = getLine(expr);
         const newCells: Value[][] = [];
+        // Commands emitted inside a map body are discarded (map computes cell
+        // values). Reuse one throwaway accum rather than allocating per cell.
+        const mapSink: string[] = [];
         for (let r = 0; r < obj.rows; r++) {
           const row: Value[] = [];
           for (let c = 0; c < obj.cols; c++) {
@@ -4147,9 +4150,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             }
             let cellResult: Value = null;
             try {
-              for (const stmt of expr.block.body) {
-                evaluateStatementToAccum(stmt, blockScope, []);
-              }
+              const res = evaluateGridCellBody(expr.block.body, blockScope, mapSink);
+              if (res.returned) cellResult = res.value;
             } catch (e) {
               if (e instanceof ReturnSignal) {
                 cellResult = e.value;
@@ -7504,6 +7506,33 @@ function bindDestructuringPattern(
  * Evaluate a statement, appending output to the accumulator array.
  * Using an accumulator avoids O(n^2) string concatenation from nested joins.
  */
+/**
+ * Fast-path evaluation of a Grid cell-callback body (fill/map/forEach).
+ *
+ * A top-level `return` is handled by short-circuiting WITHOUT throwing — the
+ * per-cell `throw new ReturnSignal(...)` / `catch` round-trip was the dominant
+ * cost for large grids (it kept V8 from optimizing the loop, so a 64k-cell
+ * grid took ~14s even when the body was a bare `return 0.5;`). Nested returns
+ * (inside if/for) still throw ReturnSignal and are caught by the caller's
+ * try/catch, preserving full early-return semantics.
+ *
+ * Returns { returned: true, value } when a top-level return fired (the rest of
+ * the body is skipped), otherwise { returned: false, value: null }.
+ */
+function evaluateGridCellBody(
+  body: Statement[],
+  scope: Scope,
+  accum: string[],
+): { returned: boolean; value: Value } {
+  for (const stmt of body) {
+    if (stmt.type === 'ReturnStatement') {
+      return { returned: true, value: evaluateExpression(stmt.value, scope) };
+    }
+    evaluateStatementToAccum(stmt, scope, accum);
+  }
+  return { returned: false, value: null };
+}
+
 function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]): void {
   switch (stmt.type) {
     case 'LetDeclaration': {

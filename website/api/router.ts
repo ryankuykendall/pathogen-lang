@@ -565,6 +565,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       await Promise.all([
         env.WORKSPACES.delete(`approval:${id}`),
         env.WORKSPACES.delete(`rejection:${id}`),
+        env.THUMBNAILS.delete(`${id}/approval.svg`),
         deleteThumbMeta(env, id),
         removeFromReviewQueue(env, id),
         unpublishFromIndex(env, id),
@@ -669,17 +670,29 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     const userId = await getEffectiveUserId(request, env);
     const url = new URL(request.url);
     const adminToken = url.searchParams.get('token');
-    const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
+    // Cheap admin signal: the legacy ?token= param. The session-admin path
+    // (isAdminRequest does D1 lookups) is consulted lazily below — only when the
+    // caller isn't the owner — so frequent owner auto-uploads pay no extra cost.
+    // Session-admin is what lets the /admin/moderation "Regenerate" action
+    // upload thumbnails for a workspace it doesn't own.
+    const tokenAdmin = !!adminToken && !!env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
     const rawKind = url.searchParams.get('kind');
     const kind = rawKind === 'auto' ? 'auto' : rawKind === 'hero' ? 'hero' : 'manual';
 
-    if (!userId && !isAdmin) return errorResponse('User ID required', 401);
+    if (!userId && !tokenAdmin && !(await isAdminRequest(request, env))) {
+      return errorResponse('User ID required', 401);
+    }
 
     try {
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
       if (!wsJson) return errorResponse('Workspace not found', 404);
       const workspace: Workspace = JSON.parse(wsJson);
-      if (!isAdmin && workspace.userId !== userId) return errorResponse('Access denied', 403);
+      // Owners pass directly; non-owners need admin. Only here — after the
+      // cheaper checks miss — do we pay for the session-admin D1 lookup.
+      if (workspace.userId !== userId) {
+        const isAdmin = tokenAdmin || (await isAdminRequest(request, env));
+        if (!isAdmin) return errorResponse('Access denied', 403);
+      }
 
       const formData = await request.formData();
 
@@ -770,6 +783,40 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       });
     } catch (err) {
       return errorResponse('Failed to get hero thumbnail: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /api/approval-svg/:id — public read of the admin-captured approval
+  // SVG from R2. The detail page references this URL (the Pages worker has
+  // no R2 binding) when an approval carries approvalSvgAt. Guarded the same
+  // way the detail page guards visitors: 404 unless the workspace is public
+  // and not flagged, so unpublished/flagged work doesn't leak its preview.
+  async getApprovalSvg(_request: Request, env: Env, id: string): Promise<Response> {
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace & { flagged?: boolean } = JSON.parse(wsJson);
+      if (!workspace.isPublic || workspace.flagged) {
+        return errorResponse('Workspace not available', 404);
+      }
+
+      const object = await env.THUMBNAILS.get(`${id}/approval.svg`);
+      if (!object) return errorResponse('Approval SVG not found', 404);
+
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': 'image/svg+xml',
+          'Cache-Control': 'public, max-age=3600',
+          // Defense-in-depth: this is user-derived SVG served from the API
+          // origin (where .pathogen.studio cookies are readable) and may be
+          // opened directly. The compiler already sanitizes, but block script
+          // execution at the transport layer too. script-src 'none' (not
+          // default-src 'none') so inline <style>/presentation still render.
+          'Content-Security-Policy': "script-src 'none'",
+        },
+      });
+    } catch (err) {
+      return errorResponse('Failed to get approval SVG: ' + (err as Error).message, 500);
     }
   },
 
@@ -930,10 +977,10 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
     const feature = decision === 'approve' && Boolean(body.feature);
     const internalNotes = typeof body.internalNotes === 'string' ? body.internalNotes : '';
-    // Optional admin-captured SVG snapshot. Capped at 1 MB so a runaway
-    // serialization can't blow out the KV value. Oversized payloads get
-    // silently dropped — detail page falls back to code-only.
-    const SVG_MAX_BYTES = 1024 * 1024;
+    // Optional admin-captured SVG snapshot. Stored in R2 (no KV size cap)
+    // so large workspaces keep their inline preview. A 12 MB sanity ceiling
+    // rejects only truly pathological payloads; anything within it is kept.
+    const SVG_MAX_BYTES = 12 * 1024 * 1024;
     const rawSvg = typeof body.svg === 'string' ? body.svg : null;
     const svg = rawSvg && rawSvg.length <= SVG_MAX_BYTES ? rawSvg : null;
 
@@ -1000,6 +1047,16 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         /* leave undefined; approval record degrades to legacy shape */
       }
       const approvalMeta = await readThumbMeta(env, id, workspace);
+      // Persist the admin-captured SVG to R2 (no size cap) rather than
+      // inlining it in the KV approval record. Stamp approvalSvgAt so the
+      // detail page knows to reference it by URL via GET /approval-svg/:id.
+      let approvalSvgAt: string | null = null;
+      if (svg) {
+        await env.THUMBNAILS.put(`${id}/approval.svg`, svg, {
+          httpMetadata: { contentType: 'image/svg+xml' },
+        });
+        approvalSvgAt = new Date().toISOString();
+      }
       const approval: WorkspaceApproval = {
         workspaceId: id,
         userId: queueEntry.userId,
@@ -1014,7 +1071,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         approvedByUserId: adminUserId,
         featuredAt: feature ? new Date().toISOString() : null,
         ...(ownerHandle ? { ownerHandle } : {}),
-        ...(svg ? { svg } : {}),
+        ...(approvalSvgAt ? { approvalSvgAt } : {}),
       };
       await writeApproval(env, approval);
 
@@ -1069,10 +1126,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
-  // PUT /admin/approval/:id/svg — admin-only. Backfills approval.svg on
-  // an existing approval record. Used by the moderation modal to
-  // silently refresh the rendered SVG for legacy approvals (pre-Phase-4)
-  // that don't have one. Same 1 MB cap as the approve endpoint.
+  // PUT /admin/approval/:id/svg — admin-only. Backfills the rendered SVG on
+  // an existing approval record. Used by the moderation modal to silently
+  // refresh the rendered SVG for legacy approvals (pre-Phase-4) that don't
+  // have one. Stores the SVG in R2 (no KV size cap) and stamps
+  // approvalSvgAt; same 12 MB sanity ceiling as the approve endpoint.
   async adminPutApprovalSvg(request: Request, env: Env, id: string): Promise<Response> {
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     try {
@@ -1083,13 +1141,21 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         return errorResponse('Invalid JSON body', 400);
       }
       const raw = typeof body.svg === 'string' ? body.svg : null;
-      const SVG_MAX_BYTES = 1024 * 1024;
+      const SVG_MAX_BYTES = 12 * 1024 * 1024;
       if (!raw || raw.length > SVG_MAX_BYTES) {
         return errorResponse('SVG payload missing or oversized', 400);
       }
       const approval = await readApproval(env, id);
       if (!approval) return errorResponse('No approval record', 404);
-      approval.svg = raw;
+      await env.THUMBNAILS.put(`${id}/approval.svg`, raw, {
+        httpMetadata: { contentType: 'image/svg+xml' },
+      });
+      approval.approvalSvgAt = new Date().toISOString();
+      // Make R2 the single source of truth. A legacy approval may still
+      // carry an inline `svg`; the detail page checks that field first, so
+      // leaving it would render the stale inline copy instead of the fresh
+      // R2 one. Drop it so the freshly-stored SVG is what visitors see.
+      delete approval.svg;
       await writeApproval(env, approval);
       return jsonResponse({ ok: true });
     } catch (err) {
@@ -1145,7 +1211,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               approvedAt: a.approvedAt,
               featuredAt: a.featuredAt ?? null,
               thumbnailAt,
-              hasSvg: Boolean(a.svg),
+              // A preview SVG exists if it's inline (legacy KV) OR in R2 (current).
+              hasSvg: Boolean(a.svg || a.approvalSvgAt),
             };
           }),
         )
@@ -1188,7 +1255,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             codeHash: approval.codeHash,
             featuredAt: approval.featuredAt,
             thumbnailAt,
-            hasSvg: Boolean(approval.svg),
+            // A preview SVG exists if it's inline (legacy KV) OR in R2 (current).
+            hasSvg: Boolean(approval.svg || approval.approvalSvgAt),
           };
         }),
       );
@@ -1719,6 +1787,11 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   const thumbGetMatch = apiPath.match(/^\/thumbnail\/([^/]+)\/(\d+)$/);
   if (thumbGetMatch && method === 'GET') {
     return apiHandlers.getThumbnail(request, env, thumbGetMatch[1], thumbGetMatch[2]);
+  }
+
+  const publicApprovalSvgMatch = apiPath.match(/^\/approval-svg\/([^/]+)$/);
+  if (publicApprovalSvgMatch && method === 'GET') {
+    return apiHandlers.getApprovalSvg(request, env, publicApprovalSvgMatch[1]);
   }
 
   // ─── Admin ────────────────────────────────────────────────────────

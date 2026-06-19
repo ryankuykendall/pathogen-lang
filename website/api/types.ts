@@ -201,12 +201,18 @@ export interface WorkspaceApproval {
   // card. Optional only for back-compat with pre-Phase-4 approval records.
   ownerHandle?: string;
   // Pre-rendered SVG markup captured by the admin's browser at approval
-  // time. Embedded into the workspace detail page so visitors see a live
-  // <mini-workspace> render rather than just source code. Absent on
-  // legacy approvals (pre-Phase-4) and when the admin's browser failed to
-  // compile — detail page falls back to code-only in those cases. Capped
-  // at 1 MB server-side.
+  // time. LEGACY storage path: early approvals embedded the SVG inline in
+  // this KV record (capped at 1 MB server-side). Newer approvals store the
+  // SVG in R2 instead (see `approvalSvgAt`) so large workspaces aren't
+  // size-capped. Kept for backward-compat: legacy records still carry it
+  // and the detail page still inlines it when present.
   svg?: string;
+  // ISO timestamp set when the admin-captured SVG is stored in R2 at
+  // `${workspaceId}/approval.svg` (no size cap there). When set, the detail
+  // page references the SVG by URL via the API Worker rather than inlining
+  // it. Absent on legacy approvals (which used the inline `svg` field) and
+  // on approvals where no SVG was captured.
+  approvalSvgAt?: string | null;
 }
 
 export interface WorkspaceRejection {

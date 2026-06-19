@@ -3699,5 +3699,79 @@ describe('Evaluator', () => {
         expect(result.logs[1].parts[0].value).toBe('0.5');
       });
     });
+
+    // Guards for the per-cell return fast path (evaluateGridCellBody): a
+    // top-level `return` is short-circuited without throwing for speed, while
+    // nested returns (inside if/for) still throw ReturnSignal. These verify the
+    // two paths produce identical semantics.
+    describe('cell-body return handling', () => {
+      it('fill: top-level return stores the value in the cell', () => {
+        const result = compile(`
+          let g = Grid(1, 2, {}) {|grid|
+            grid.fill {|row, col, center| return calc(col + 5); };
+          };
+          log(g.get(0, 0)); log(g.get(0, 1));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('5');
+        expect(result.logs[1].parts[0].value).toBe('6');
+      });
+
+      it('fill: a body with no return leaves the cell null', () => {
+        const result = compile(`
+          let g = Grid(1, 2, {}) {|grid|
+            grid.fill {|row, col, center| let x = calc(col * 2); };
+          };
+          log(g.get(0, 0)); log(g.get(0, 1));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('null');
+        expect(result.logs[1].parts[0].value).toBe('null');
+      });
+
+      it('fill: a nested return inside if/else is honored (ReturnSignal path)', () => {
+        const result = compile(`
+          let g = Grid(1, 2, {}) {|grid|
+            grid.fill {|row, col, center|
+              if (col == 0) { return 100; }
+              return 200;
+            };
+          };
+          log(g.get(0, 0)); log(g.get(0, 1));
+        `);
+        // col 0 returns from inside the if (nested → ReturnSignal);
+        // col 1 falls through to the top-level return (fast path).
+        expect(result.logs[0].parts[0].value).toBe('100');
+        expect(result.logs[1].parts[0].value).toBe('200');
+      });
+
+      it('map: a nested return inside if/else is honored', () => {
+        const result = compile(`
+          let g = Grid(1, 2, {}) {|grid| grid.fill {|row, col, center| return col; }; };
+          let m = g.map {|cell, row, col, center|
+            if (cell == 0) { return 7; }
+            return 8;
+          };
+          log(m.get(0, 0)); log(m.get(0, 1));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('7');
+        expect(result.logs[1].parts[0].value).toBe('8');
+      });
+
+      it('forEach: a top-level return ends the cell body but iteration continues', () => {
+        const result = compile(`
+          let g = Grid(1, 2, {});
+          let visits = [];
+          g.forEach {|cell, row, col, center|
+            visits.push(col);
+            return 0;
+            visits.push(999);
+          };
+          log(visits.length); log(visits[0]); log(visits[1]);
+        `);
+        // Both cells visited (push(col)); the unreachable push(999) never runs.
+        expect(result.logs[0].parts[0].value).toBe('2');
+        expect(result.logs[1].parts[0].value).toBe('0');
+        expect(result.logs[2].parts[0].value).toBe('1');
+      });
+    });
   });
 });

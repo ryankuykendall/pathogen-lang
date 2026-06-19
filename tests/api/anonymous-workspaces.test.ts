@@ -25,11 +25,12 @@ import { MemoryKV } from '../auth/helpers';
 
 function makeEnv(): Env {
   const kv = new MemoryKV();
-  // R2/D1 are unused for the anon workspace paths; cast through `unknown`
-  // so we don't have to stub bindings the handlers under test never call.
+  // D1 is unused for the anon workspace paths. THUMBNAILS only needs a
+  // no-op `delete`: deleteWorkspace cascades a `THUMBNAILS.delete` for the
+  // approval.svg blob, which always exists as a binding in production.
   return {
     WORKSPACES: kv as unknown as Env['WORKSPACES'],
-    THUMBNAILS: {} as unknown as Env['THUMBNAILS'],
+    THUMBNAILS: { delete: async () => {} } as unknown as Env['THUMBNAILS'],
     USERS_DB: undefined as unknown as Env['USERS_DB'],
   } as Env;
 }
