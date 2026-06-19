@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Moderation "Regenerate preview" follow-ups
+
+- **Regenerate hit a 404.** The action posted the preview to `/admin/approval/:id/svg` via the `_post()` helper, which defaults to `POST`, but the route is registered `PUT`-only — so it failed in production. `_post()` now accepts `PUT` and the call sends it.
+- **Featured cards showed "approved Invalid Date".** `adminListFeatured` omitted `approvedAt` from its response (the Featured card renders an "approved &lt;date&gt;" meta line), so `new Date(undefined)` formatted as "Invalid Date". The endpoint now returns `approvedAt`, and `_fmtDate` degrades missing/unparseable values to "unknown date" instead.
+
 #### Grid `fill()` / `map()` / `forEach()` compiled ~100× slower than necessary
 
 - **Root cause — per-cell `throw`.** Each grid cell's callback body was evaluated inside a `try`, and a `return` was implemented as `throw new ReturnSignal(value)` caught once per cell. The per-cell throw-through-`try` kept V8 from optimizing the loop, so cost scaled with cell count independent of the body — a 64,000-cell `Grid(320, 200)` took ~14s to compile even when the callback was a bare `return 0.5;` (not `calc()`, not the math, not the drawing loops downstream).

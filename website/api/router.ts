@@ -1253,6 +1253,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             ownerHandle: approval.ownerHandle ?? null,
             ownerFlagged,
             codeHash: approval.codeHash,
+            // Featured cards render an "approved <date>" meta line (FeaturedEntry
+            // extends ApprovedEntry); without approvedAt it showed "Invalid Date".
+            approvedAt: approval.approvedAt,
             featuredAt: approval.featuredAt,
             thumbnailAt,
             // A preview SVG exists if it's inline (legacy KV) OR in R2 (current).

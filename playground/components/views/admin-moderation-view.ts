@@ -1171,12 +1171,14 @@ class AdminModerationView extends HTMLElement {
     return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
   }
 
-  private _fmtDate(iso: string): string {
-    try {
-      return new Date(iso).toLocaleString();
-    } catch {
-      return iso;
-    }
+  private _fmtDate(iso: string | null | undefined): string {
+    // new Date(undefined/'') yields an Invalid Date whose toLocaleString()
+    // returns the literal "Invalid Date" (it does not throw), so guard the
+    // value explicitly rather than relying on the catch.
+    if (!iso) return 'unknown date';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString();
   }
 
   private _styles(): string {
