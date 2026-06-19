@@ -699,6 +699,21 @@ class AdminModerationView extends HTMLElement {
         }),
       );
 
+      // 4b. Uncropped, source-aspect hero PNG from the FULL preview SVG. Without
+      // it, the detail page falls back to the square thumbnail, which distorts
+      // non-square artwork (e.g. an 8000×4800 workspace squashed to 1:1). Best-
+      // effort: a hero failure must not fail the (already-uploaded) thumbnail.
+      try {
+        await thumbnailService.uploadHeroFromSvgString(
+          workspaceId,
+          previewSvg,
+          Number(dims.width) || 0,
+          Number(dims.height) || 0,
+        );
+      } catch (e) {
+        console.warn('[regenerate] hero render failed (thumbnail unaffected):', e);
+      }
+
       if (!previewOk && !thumbOk) {
         throw new Error(previewErr || 'thumbnail generation was blocked or timed out');
       }

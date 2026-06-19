@@ -217,6 +217,68 @@ async function uploadHeroRender(
 }
 
 /**
+ * Hero render from a pre-built FULL-aspect SVG string. The admin "Regenerate"
+ * path has no live <svg> element to clone (it works from a compiled string), so
+ * it can't use uploadHeroRender. Without an uncropped hero, the detail page
+ * falls back to the SQUARE 1024 thumbnail — which distorts/clips non-square
+ * artwork. This rasterizes the full viewBox at aspect-fit HERO_MAX_DIM,
+ * preserving the source ratio. Best-effort; callers ignore failure.
+ */
+async function uploadHeroFromSvgString(
+  workspaceId: string,
+  svgString: string,
+  canvasWidth: number,
+  canvasHeight: number,
+  adminToken?: string,
+): Promise<void> {
+  const w = canvasWidth > 0 ? canvasWidth : 200;
+  const h = canvasHeight > 0 ? canvasHeight : 200;
+  // Aspect-fit to HERO_MAX_DIM (never upscale beyond source units). outW:outH
+  // equals the source ratio, so drawImage into it preserves aspect.
+  const scale = Math.min(1, HERO_MAX_DIM / Math.max(w, h));
+  const outW = Math.max(1, Math.round(w * scale));
+  const outH = Math.max(1, Math.round(h * scale));
+
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  try {
+    const img: HTMLImageElement = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Failed to load hero SVG image'));
+      image.src = url;
+    });
+    let blob: Blob;
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const canvas = new OffscreenCanvas(outW, outH);
+      const ctx = canvas.getContext('2d')!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.drawImage(img, 0, 0, outW, outH);
+      blob = await canvas.convertToBlob({ type: 'image/png' });
+    } else {
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.drawImage(img, 0, 0, outW, outH);
+      blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png'),
+      );
+    }
+    await thumbnailApi.uploadHero(workspaceId, blob, { adminToken });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
  * Generate a thumbnail for a workspace.
  *
  * @param workspaceId - Workspace ID
@@ -471,6 +533,7 @@ function isGenerating(): boolean {
 
 export default {
   generateThumbnail,
+  uploadHeroFromSvgString,
   startAutoGeneration,
   stopAutoGeneration,
   setThumbnailContentHash,
