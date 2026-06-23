@@ -2038,4 +2038,93 @@ describe('Multi-Layer Support', () => {
       expect(result.layers[0].transform).toBe('translate(10, 20) rotate(45)');
     });
   });
+
+  describe('default layer is the single implicit layer (no global/default split)', () => {
+    // `define default PathLayer` configures the one implicit default layer rather
+    // than forking a second one. Bare top-level commands, the pen context, and the
+    // layer transform all belong to that single layer.
+
+    it('routes bare commands written BEFORE the define into the default layer', () => {
+      // Previously these pre-define commands were silently dropped (they landed in
+      // the orphaned global accum, which buildCompileResult discarded once a named
+      // default layer existed).
+      const result = compile(`
+        M 0 0 L 10 10
+        define default PathLayer('main') \${ stroke: red; };
+        M 20 20 L 30 30
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('main');
+      expect(result.layers[0].isDefault).toBe(true);
+      expect(result.layers[0].data).toBe('M 0 0 L 10 10 M 20 20 L 30 30');
+    });
+
+    it('applies a top-level ctx.transform to the default layer', () => {
+      // Previously the transform mutated the orphaned global transformState while the
+      // default layer carried its own (untouched) transformState, so it never emitted.
+      const result = compile(`
+        define default PathLayer('main') \${ fill: none; };
+        ctx.transform.translate.set(25, 25);
+        M 0 0 L 100 0
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('main');
+      expect(result.layers[0].transform).toBe('translate(25, 25)');
+    });
+
+    it('bare commands and the default layer share one pen context (no drift)', () => {
+      // Context-aware functions read the same context the bare M/m commands update,
+      // so an absolute M reset each iteration is honored. (Mirrors the context.test.ts
+      // regression, asserted here at the layer-output boundary.)
+      const result = compile(`
+        define default PathLayer('main') \${ fill: none; };
+        for (i in 0..2) { M 100 100 m 10 10 polarLine(0, 5); }
+      `);
+      expect(result.layers[0].data).toBe(
+        'M 100 100 m 10 10 L 115 110 M 100 100 m 10 10 L 115 110 M 100 100 m 10 10 L 115 110',
+      );
+    });
+
+    it('merges bare commands with the default layer\'s own apply block', () => {
+      // Targeting the default layer by name via apply must flow into the same
+      // accumulator as bare top-level commands (the apply swap is a no-op since the
+      // layer's context already IS evalState.pathContext).
+      const result = compile(`
+        define default PathLayer('main') \${ fill: none; }
+        M 10 10
+        layer('main').apply { L 50 50 }
+        M 90 90
+      `);
+      expect(result.layers).toHaveLength(1);
+      expect(result.layers[0].name).toBe('main');
+      expect(result.layers[0].data).toBe('M 10 10 L 50 50 M 90 90');
+    });
+
+    it('default layer adopts the root accumulator regardless of where the define runs', () => {
+      // A `define default PathLayer` evaluated inside a function body (where the
+      // threaded accum is a throwaway) must still capture top-level bare commands —
+      // it adopts evalState.rootAccum, not the local accum. Previously these were
+      // silently dropped.
+      const fromFn = compile(`
+        fn setup() { define default PathLayer('main') \${ fill: none; }; return 0; }
+        let _ = setup();
+        M 0 0 L 10 10
+      `);
+      expect(fromFn.layers).toHaveLength(1);
+      expect(fromFn.layers[0].name).toBe('main');
+      expect(fromFn.layers[0].data).toBe('M 0 0 L 10 10');
+
+      // Same when the define runs inside another layer's apply block: the default
+      // layer must NOT alias that layer's accumulator.
+      const fromApply = compile(`
+        define PathLayer('other') \${}
+        layer('other').apply { define default PathLayer('main') \${ fill: none; }; }
+        M 0 0 L 10 10
+      `);
+      const other = fromApply.layers.find((l) => l.name === 'other');
+      const main = fromApply.layers.find((l) => l.name === 'main');
+      expect(other?.data).toBe('');
+      expect(main?.data).toBe('M 0 0 L 10 10');
+    });
+  });
 });

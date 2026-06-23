@@ -22,7 +22,7 @@ Layer names must be unique strings. The style block uses CSS/SVG property syntax
 
 ### Default Layer
 
-Mark one layer as `default` to receive all bare path commands (commands outside any `layer().apply` block):
+Every program has exactly **one** default layer — the layer that receives all bare path commands (commands outside any `layer().apply` block). You don't create it; it always exists. `define default PathLayer('name')` simply **names and styles** that one layer:
 
 ```
 define default PathLayer('main') ${
@@ -31,14 +31,14 @@ define default PathLayer('main') ${
   fill: none;
 }
 
-// These commands go to 'main' automatically
+// These commands go to 'main' — the default layer
 M 10 10
 L 90 10
 L 90 90
 Z
 ```
 
-Without a default layer, bare commands go to an implicit unnamed layer.
+If you never write `define default PathLayer`, the default layer is still there: bare commands flow into it and it appears in the output named `'default'` (with no styles). There is no separate "global" layer alongside the default — bare commands, the pen position (`ctx`), and any top-level transform all belong to this single default layer, whether or not you have named it.
 
 ## Writing to Layers
 
@@ -577,9 +577,9 @@ layer('shape').ctx.transform.scale.x        // 1 if not set (default scale)
 layer('shape').ctx.transform.scale.y        // 1 if not set
 ```
 
-### Default Context (No Layers)
+### Default Layer Context
 
-When no layers are defined, use `ctx.transform` directly:
+Outside any `layer().apply` block, `ctx` refers to the default layer's context — including its transform. This is true whether or not you have named the default layer with `define default PathLayer`:
 
 ```
 ctx.transform.translate.set(25, 25)

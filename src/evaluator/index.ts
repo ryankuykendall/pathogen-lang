@@ -2257,16 +2257,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (!scope.evalState) throw mError('draw() requires evaluation context');
 
         // Get the current cursor position as the draw origin
-        const ctx = scope.evalState.pathContext;
-        // If there's a default layer active, use its context
-        let activeCtx = ctx;
-        if (scope.evalState.defaultLayerName && !scope.evalState.activeLayerName) {
-          const defaultLayer = scope.evalState.layers.get(scope.evalState.defaultLayerName);
-          if (defaultLayer?.layerType === 'PathLayer') {
-            activeCtx = defaultLayer.pathContext;
-          }
-        }
-
+        const activeCtx = scope.evalState.pathContext;
         const originX = activeCtx.position.x;
         const originY = activeCtx.position.y;
 
@@ -7334,13 +7325,7 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): string {
   // Update path context if tracking is enabled
   if (scope.evalState && cmd.command !== '') {
     const numericArgs = getNumericArgs(cmd.args, scope);
-    // If bare command (not in apply block) with a default layer, update that layer's context
-    if (scope.evalState.defaultLayerName && !scope.evalState.activeLayerName) {
-      const defaultLayer = scope.evalState.layers.get(scope.evalState.defaultLayerName)! as PathLayerState;
-      updateContextForCommand(defaultLayer.pathContext, cmd.command, numericArgs);
-    } else {
-      updateContextForCommand(scope.evalState.pathContext, cmd.command, numericArgs);
-    }
+    updateContextForCommand(scope.evalState.pathContext, cmd.command, numericArgs);
     updateCtxVariable(scope);
   }
 
@@ -7714,12 +7699,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         ) {
           const pwr = methodResult;
           if (pwr.path) {
-            if (scope.evalState?.defaultLayerName && !scope.evalState.activeLayerName) {
-              const defaultLayer = scope.evalState.layers.get(scope.evalState.defaultLayerName)! as PathLayerState;
-              defaultLayer.accum.push(pwr.path);
-            } else {
-              accum.push(pwr.path);
-            }
+            // `accum` is the default layer's accumulator at top level (it adopts the
+            // top-level accum) and the active layer's inside an apply block, so a
+            // single push routes correctly in all cases.
+            accum.push(pwr.path);
           }
         }
         return;
@@ -7746,13 +7729,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       }
       const result = evaluatePathCommand(stmt, scope);
       if (result) {
-        // Route path commands to default layer if one is defined and we're not in an apply block
-        if (scope.evalState?.defaultLayerName && !scope.evalState.activeLayerName) {
-          const defaultLayer = scope.evalState.layers.get(scope.evalState.defaultLayerName)! as PathLayerState;
-          defaultLayer.accum.push(result);
-        } else {
-          accum.push(result);
-        }
+        // `accum` is the default layer's accumulator at top level (the default layer
+        // adopts the top-level accum) and the active layer's accumulator inside an
+        // apply block — a single push routes correctly in all cases.
+        accum.push(result);
       }
       return;
     }
@@ -7850,14 +7830,25 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         }
         return;
       }
+      // The default layer IS the implicit/global layer — there is only ever one
+      // default layer, not a separate "global" layer alongside it. So a default
+      // PathLayer adopts the global pen context, transform state, and the top-level
+      // (root) accumulator rather than forking its own. Bare top-level commands —
+      // which write to those global objects and the root accum — thereby flow into
+      // this layer automatically, and `define default PathLayer` simply names and
+      // styles that single layer. We adopt `rootAccum` (the top-level accumulator
+      // stored on evalState) rather than the `accum` parameter, because the `define`
+      // may be evaluated where the threaded `accum` is a throwaway (function body,
+      // map callback) or another layer's — only the root accum is the default layer's.
+      // Non-default layers get their own fresh state.
       const layerState: PathLayerState = {
         name: nameValue,
         layerType: 'PathLayer',
         isDefault: stmt.isDefault,
         styles,
-        pathContext: createPathContext(),
-        accum: [],
-        transformState: createTransformState(),
+        pathContext: stmt.isDefault ? scope.evalState.pathContext : createPathContext(),
+        accum: stmt.isDefault ? (scope.evalState.rootAccum ?? accum) : [],
+        transformState: stmt.isDefault ? scope.evalState.transformState : createTransformState(),
       };
       scope.evalState.layers.set(nameValue, layerState);
       scope.evalState.layerOrder.push(nameValue);
@@ -9252,6 +9243,7 @@ export function evaluate(program: Program, options?: { toFixed?: number; fonts?:
     });
 
     const accum: string[] = [];
+    evalState.rootAccum = accum;
     evaluateStatementsToAccum(program.body, scope, accum);
 
     return buildCompileResult(accum, evalState);
@@ -9336,6 +9328,7 @@ export function evaluateWithContext(
     // Note: log() is handled specially in evaluateFunctionCall, not registered here
 
     const accum: string[] = [];
+    evalState.rootAccum = accum;
     evaluateStatementsToAccum(program.body, scope, accum);
 
     const compileResult = buildCompileResult(accum, evalState);

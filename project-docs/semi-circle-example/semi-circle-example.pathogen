@@ -1,0 +1,30 @@
+define ViewBox(0, 0, 8192, 8192);
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
+let foo = calc(10 % 3);
+
+let directionalAngleOffset = 0.35;
+for (h in 1..80) {
+  for (i in 0..1500) {
+    M 4096 2648
+
+    let prePrimary = calc(randomRange(0.069995, 0.070025) * i);
+    if (prePrimary > 1.25) {
+      // Need to fix modulus operator + scope maybe???
+      prePrimary = calc(prePrimary % 1.25);
+    }
+
+    let primary = calc(prePrimary - 0.125); // Was 0.07
+    let primaryAngle = mpi(primary);
+    let daoPos = calc(primary - directionalAngleOffset);
+    let daoNeg = calc(primary + directionalAngleOffset);
+    let offset = polarOffset(primaryAngle, calc(500 + (i * 2.25)));
+    m offset.dx offset.dy
+    polarLine(mpi(randomRange(daoPos, daoNeg)), randomRange(5, 50));
+    tangentArc(randomRange(5, 80), mpi(randomRange(daoPos, daoNeg)));
+  }
+}

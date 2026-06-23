@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compileWithContext } from '../src';
+import { compile, compileWithContext } from '../src';
 
 // Helper to check if two numbers are approximately equal
 function approxEqual(a: number, b: number, epsilon = 0.0001): boolean {
@@ -1471,6 +1471,67 @@ describe('Path Context Tracking', () => {
         M 100 100
       `);
       expect(result.context.heading).toBeUndefined();
+    });
+  });
+
+  describe('default-layer context sharing (regression: drift outside viewBox)', () => {
+    // Context-aware functions (polarLine, tangentArc, ...) must read/write the SAME
+    // pen-position context that bare top-level commands update. When a `default PathLayer`
+    // is defined, bare M/m commands update the default layer's context; the context-aware
+    // functions used to read a separate global context that never saw the per-iteration
+    // M reset, so absolute coordinates drifted monotonically across iterations.
+
+    it('polarLine emits constant L coords across iterations under a default layer', () => {
+      // Each iteration resets to (100,100) via absolute M, moves to (110,110) via m 10 10,
+      // then polarLine(0, 5) → dx=cos(0)*5=5, dy=0 → absolute L 115 110. No drift.
+      const data = compile(`
+        define default PathLayer('p') \${ fill: none; };
+        for (i in 0..2) {
+          M 100 100
+          m 10 10
+          polarLine(0, 5);
+        }
+      `).layers[0]?.data;
+      expect(data).toBe(
+        'M 100 100 m 10 10 L 115 110 M 100 100 m 10 10 L 115 110 M 100 100 m 10 10 L 115 110',
+      );
+    });
+
+    it('matches the no-default-layer behavior (shared global context)', () => {
+      const withDefault = compile(`
+        define default PathLayer('p') \${ fill: none; };
+        for (i in 0..2) { M 100 100 m 10 10 polarLine(0, 5); }
+      `).layers[0]?.data;
+      const withoutDefault = compile(`
+        for (i in 0..2) { M 100 100 m 10 10 polarLine(0, 5); }
+      `).layers[0]?.data;
+      expect(withDefault).toBe(withoutDefault);
+    });
+
+    it('tangentArc does not drift under a default layer (each iteration identical)', () => {
+      // tangentArc round-trips through parseAndTrackPathString, which must also use the
+      // active (default-layer) context. With fixed args each iteration is deterministic,
+      // so every subpath must be byte-identical — drift would make them diverge.
+      const data = compile(`
+        define default PathLayer('p') \${ fill: none; };
+        for (i in 0..3) {
+          M 100 100
+          m 10 10
+          polarLine(0, 10);
+          tangentArc(20, mpi(0.5));
+        }
+      `).layers[0]?.data;
+      const subpaths = (data ?? '')
+        .split('M ')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      expect(subpaths.length).toBe(4);
+      // Deterministic geometry: m 10 10 → (110,110); polarLine(0,10) → L 120 110;
+      // tangentArc(20, π/2) sweeps a quarter-circle to (140,130). Every iteration
+      // resets via the absolute M, so all four subpaths must be byte-identical.
+      for (const sp of subpaths) {
+        expect(sp).toBe('100 100 m 10 10 L 120 110 A 20 20 0 0 1 140 130');
+      }
     });
   });
 });

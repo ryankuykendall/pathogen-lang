@@ -899,6 +899,7 @@ export interface EvaluationState {
   layerOrder: string[]; // Definition order for z-index
   activeLayerName: string | null; // Currently inside layer().apply
   defaultLayerName: string | null; // Default layer name
+  rootAccum?: string[]; // Top-level command accumulator (the default layer adopts this)
   transformState: TransformState; // Transform state for implicit default layer
   masks: Map<string, MaskValue>; // Mask definitions by ID
   clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID
