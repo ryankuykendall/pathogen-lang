@@ -169,6 +169,8 @@ function wrapMiniWorkspaceHtml(
     .workspace-container { flex: 1; min-height: 0; padding: 0.75rem 1rem; }
     mini-workspace { width: 100%; height: 100%; min-height: 0; max-height: none; margin: 0; }
   </style>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — must load before mini-preview -->
+  <script src="../../public/dist/pan-zoom.global.js"></script>
   <script type="module" src="../../public/components/blog/mini-workspace.js"></script>
   <script type="module" src="../../public/components/shared/theme-toggle.js"></script>
 </head>

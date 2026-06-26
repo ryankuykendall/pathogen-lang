@@ -12,6 +12,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./pan-zoom": {
+      "types": "./dist/pan-zoom.d.ts",
+      "import": "./dist/pan-zoom.js",
+      "require": "./dist/pan-zoom.cjs",
+      "browser": "./dist/pan-zoom.global.js"
     }
   },
   "bin": {
@@ -50,6 +56,8 @@
     "test:run": "vitest run",
     "security:audit": "vitest run tests/security/",
     "security:browser-audit": "tsx scripts/security-browser-audit.ts",
+    "perf:panzoom": "tsx scripts/perf-pan-zoom-audit.ts",
+    "perf:transform-probe": "tsx scripts/perf-transform-probe.ts",
     "cli": "tsx src/cli.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",

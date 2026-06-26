@@ -178,7 +178,8 @@ async function copyAssets(): Promise<void> {
   let indexHtml = await fs.readFile(join(PLAYGROUND, 'index.html'), 'utf-8');
   indexHtml = indexHtml
     .replace('<head>', '<head>\n    <base href="/">')
-    .replace('../dist/index.global.js', 'dist/index.global.js');
+    .replace('../dist/index.global.js', 'dist/index.global.js')
+    .replace('../dist/pan-zoom.global.js', 'dist/pan-zoom.global.js');
   await fs.mkdir(OUT, { recursive: true });
   await fs.writeFile(join(OUT, 'spa.html'), indexHtml);
   await fs.writeFile(join(OUT, '404.html'), indexHtml);
@@ -198,8 +199,8 @@ async function copyLibArtifacts(): Promise<void> {
   const distDest = join(OUT, 'dist');
   await fs.mkdir(distDest, { recursive: true });
 
-  const required = ['index.global.js', 'worker.worker.js', 'highlight.global.js'];
-  const optional = ['index.global.js.map', 'worker.worker.js.map', 'highlight.global.js.map'];
+  const required = ['index.global.js', 'worker.worker.js', 'highlight.global.js', 'pan-zoom.global.js'];
+  const optional = ['index.global.js.map', 'worker.worker.js.map', 'highlight.global.js.map', 'pan-zoom.global.js.map'];
 
   let missing = 0;
   for (const name of required) {

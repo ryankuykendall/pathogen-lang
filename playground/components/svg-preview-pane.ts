@@ -8,6 +8,9 @@ import type {
   MarkerOutput,
 } from '../../src/evaluator/types.js';
 import type { VNode } from '../../src/render/index.js';
+// Type-only (erased by the esbuild transpiler). The controller is loaded at
+// runtime via the dist/pan-zoom.global.js script (window.PathogenPanZoom).
+import type { PanZoomController, PanZoomView } from '../../dist/pan-zoom';
 import { store } from '../state/store.js';
 import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
@@ -141,10 +144,14 @@ export class SvgPreviewPane extends HTMLElement {
   private readonly MAX_ZOOM = 10;
   private readonly ZOOM_STEP = 1.5;
 
-  // Pan state
-  private isPanning: boolean = false;
-  private panStartX: number = 0;
-  private panStartY: number = 0;
+  // Shared pan/zoom controller (transform-during-gesture → bake-on-idle). Owns
+  // the viewBox/transform; this component mirrors its state into the store and
+  // keeps the navigator/zoom chrome in sync. Created once the iframe SVG exists.
+  private panZoom: PanZoomController | null = null;
+  // Guards the store mirror: true while we're writing the controller's view INTO
+  // the store (onChange), so the [zoomLevel,panX,panY] subscription doesn't treat
+  // our own echo as an external write and feed it back into the controller.
+  private _panZoomEcho = false;
 
   // Navigator drag state
   private isNavigatorDragging: boolean = false;
@@ -183,6 +190,8 @@ export class SvgPreviewPane extends HTMLElement {
 
   disconnectedCallback(): void {
     if (this._cleanupFullscreen) this._cleanupFullscreen();
+    this.panZoom?.destroy();
+    this.panZoom = null;
   }
 
   /**
@@ -219,34 +228,83 @@ export class SvgPreviewPane extends HTMLElement {
   }
 
   /**
-   * Pan / wheel listeners attach to the iframe document because mouse events
-   * inside the iframe do not bubble to the parent. Same-origin sandbox makes
-   * this reach legal; the iframe never runs scripts, so we are not bridging
-   * across a script boundary.
+   * Create the shared pan/zoom controller once the iframe SVG is reachable. The
+   * controller attaches its own wheel/pointer/touch listeners to the iframe
+   * document (mouse events inside the iframe do not bubble to the parent; the
+   * same-origin sandbox makes this reach legal). We add only the grab-cursor
+   * class toggles here.
    */
   private _setupIframeEventListeners(doc: Document): void {
-    doc.addEventListener('mousedown', (e: MouseEvent) => this.startPan(e));
-    doc.addEventListener('mousemove', (e: MouseEvent) => this.doPan(e));
-    doc.addEventListener('mouseup', () => this.endPan());
-    doc.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const dampening = 0.002;
-        const delta = -e.deltaY * dampening;
-
-        const oldZoom = store.get('zoomLevel') as number;
-        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom * (1 + delta)));
-
-        this.adjustPanForZoom(oldZoom, newZoom);
-        store.set('zoomLevel', newZoom);
-        this.updateViewBox();
+    if (!this.preview) return;
+    this.panZoom?.destroy();
+    this.panZoom = new window.PathogenPanZoom.PanZoomController({
+      svg: this.preview,
+      eventTarget: doc,
+      mode: 'transform',
+      canvas: this._panZoomCanvas(),
+      view: {
+        zoom: store.get('zoomLevel') as number,
+        panX: store.get('panX') as number,
+        panY: store.get('panY') as number,
       },
-      { passive: false },
-    );
+      onChange: (v) => this._onPanZoomChange(v),
+      options: {
+        minZoom: this.MIN_ZOOM,
+        maxZoom: this.MAX_ZOOM,
+        zoomStep: this.ZOOM_STEP,
+        wheelDampening: 0.002,
+      },
+    });
+
+    // Grab-cursor feedback while a gesture is active inside the iframe.
+    doc.addEventListener('pointerdown', () => {
+      if ((store.get('zoomLevel') as number) >= 0.5) {
+        this.previewContainer.classList.add('panning');
+        doc.body.classList.add('panning');
+      }
+    });
+    const clearGrab = () => {
+      this.previewContainer.classList.remove('panning');
+      doc.body.classList.remove('panning');
+    };
+    doc.addEventListener('pointerup', clearGrab);
+    doc.addEventListener('pointercancel', clearGrab);
+  }
+
+  /** Current canvas dims from the store (origin + size of the compiled SVG). */
+  private _panZoomCanvas(): { originX: number; originY: number; width: number; height: number } {
+    return {
+      originX: (store.get('viewBoxOriginX') as number) ?? 0,
+      originY: (store.get('viewBoxOriginY') as number) ?? 0,
+      width: store.get('width') as number,
+      height: store.get('height') as number,
+    };
+  }
+
+  /** Mirror a controller view-change into the store + zoom chrome (echo-guarded). */
+  private _onPanZoomChange(v: PanZoomView): void {
+    this._panZoomEcho = true;
+    store.update({ zoomLevel: v.zoom, panX: v.panX, panY: v.panY });
+    this._panZoomEcho = false;
+    this._refreshZoomChrome(v.zoom);
+  }
+
+  /** Update the zoom % display, navigator viewport rect, and can-pan classes. */
+  private _refreshZoomChrome(zoomLevel: number): void {
+    const zoomDisplay = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement | null;
+    if (zoomDisplay) zoomDisplay.value = `${Math.round(zoomLevel * 100)}%`;
+    this.updateNavigatorViewport();
+    this.previewContainer.classList.toggle('can-pan', zoomLevel >= 0.5);
+    if (this._iframeDoc) this._iframeDoc.body.classList.toggle('can-pan', zoomLevel >= 0.5);
   }
 
   subscribeToStore(): void {
+    // Content-affecting keys run the full (heavy) updateSvgStyles, which resets
+    // path styles, bg, grid and rebuilds the navigator minimap. zoomLevel/panX/
+    // panY are deliberately NOT here: pan/zoom is owned by the PanZoomController
+    // (cheap transform during gestures), and gets its own external-write-only
+    // subscription below. Routing pan/zoom through the heavy path would rebuild
+    // the navigator and re-style every path each frame — pure waste.
     store.subscribe(
       [
         'width',
@@ -257,15 +315,29 @@ export class SvgPreviewPane extends HTMLElement {
         'gridEnabled',
         'gridColor',
         'gridSize',
-        'zoomLevel',
-        'panX',
-        'panY',
         'pathData',
       ],
       () => {
         this.updateSvgStyles();
       },
     );
+    // zoomLevel/panX/panY are owned by the pan/zoom controller. This
+    // subscription handles only EXTERNAL writes — applyURLState() (shared-link
+    // restore) writes these keys directly. We skip our own echo (onChange
+    // mirroring the controller's view into the store) via _panZoomEcho, so the
+    // controller is driven only by genuinely-external changes (no feedback loop).
+    store.subscribe(['zoomLevel', 'panX', 'panY'], () => {
+      if (this._panZoomEcho || !this.panZoom) return;
+      this.panZoom.setView(
+        {
+          zoom: store.get('zoomLevel') as number,
+          panX: store.get('panX') as number,
+          panY: store.get('panY') as number,
+        },
+        { emit: false },
+      );
+      this._refreshZoomChrome(store.get('zoomLevel') as number);
+    });
     store.subscribe('inspectorOpen', () => {
       const btn = this.shadowRoot!.querySelector('#inspector-open-btn') as HTMLElement | null;
       if (btn) btn.style.display = (store.get('inspectorOpen') as boolean) ? 'none' : '';
@@ -622,8 +694,8 @@ export class SvgPreviewPane extends HTMLElement {
     store.set('pathData', '');
     const navPaths = this.shadowRoot!.querySelector('#navigator-paths');
     if (navPaths) navPaths.innerHTML = '';
-    store.update({ zoomLevel: 1, panX: 0, panY: 0 });
-    this.updateViewBox();
+    if (this.panZoom) this.panZoom.zoomToFit();
+    else store.update({ zoomLevel: 1, panX: 0, panY: 0 });
   }
 
   showLoading(): void {
@@ -634,132 +706,19 @@ export class SvgPreviewPane extends HTMLElement {
     (this.shadowRoot!.querySelector('#loading-overlay') as HTMLElement).style.display = 'none';
   }
 
-  // Zoom/Pan methods
-  updateViewBox(): void {
-    const width = store.get('width') as number;
-    const height = store.get('height') as number;
-    const originX = (store.get('viewBoxOriginX') as number) ?? 0;
-    const originY = (store.get('viewBoxOriginY') as number) ?? 0;
-    const zoomLevel = store.get('zoomLevel') as number;
-    let panX = store.get('panX') as number;
-    let panY = store.get('panY') as number;
-
-    const viewWidth = width / zoomLevel;
-    const viewHeight = height / zoomLevel;
-
-    // Clamp pan values; center canvas when zoomed out below 50%.
-    // panX/panY are offsets relative to the source viewBox origin.
-    if (zoomLevel < 0.5) {
-      panX = -(viewWidth - width) / 2;
-      panY = -(viewHeight - height) / 2;
-    } else {
-      const marginX = viewWidth / 3;
-      const marginY = viewHeight / 3;
-      const minPanX = Math.min(0, width - viewWidth) - marginX;
-      const maxPanX = Math.max(0, width - viewWidth) + marginX;
-      const minPanY = Math.min(0, height - viewHeight) - marginY;
-      const maxPanY = Math.max(0, height - viewHeight) + marginY;
-      panX = Math.max(minPanX, Math.min(panX, maxPanX));
-      panY = Math.max(minPanY, Math.min(panY, maxPanY));
-    }
-
-    // Update store with clamped values
-    store.update({ panX, panY });
-
-    if (this.preview) this.preview.setAttribute('viewBox', `${originX + panX} ${originY + panY} ${viewWidth} ${viewHeight}`);
-
-    // Update zoom level display
-    const zoomDisplay = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement | null;
-    if (zoomDisplay) {
-      zoomDisplay.value = `${Math.round(zoomLevel * 100)}%`;
-    }
-
-    this.updateNavigatorViewport();
-    this.previewContainer.classList.toggle('can-pan', zoomLevel >= 0.5);
-    // Mirror cursor state into the iframe document so panning shows the
-    // grabbing cursor inside the iframe too.
-    if (this._iframeDoc) {
-      this._iframeDoc.body.classList.toggle('can-pan', zoomLevel >= 0.5);
-    }
-  }
-
-  adjustPanForZoom(oldZoom: number, newZoom: number): void {
-    const width = store.get('width') as number;
-    const height = store.get('height') as number;
-    const panX = store.get('panX') as number;
-    const panY = store.get('panY') as number;
-
-    const oldViewWidth = width / oldZoom;
-    const oldViewHeight = height / oldZoom;
-    const centerX = panX + oldViewWidth / 2;
-    const centerY = panY + oldViewHeight / 2;
-
-    const newViewWidth = width / newZoom;
-    const newViewHeight = height / newZoom;
-
-    store.update({
-      panX: centerX - newViewWidth / 2,
-      panY: centerY - newViewHeight / 2,
-    });
-  }
+  // Zoom/Pan methods — all delegate to the shared PanZoomController, which owns
+  // the viewBox/transform and emits onChange (→ store mirror + zoom chrome).
 
   zoomIn(): void {
-    const oldZoom = store.get('zoomLevel') as number;
-    const newZoom = Math.min(this.MAX_ZOOM, oldZoom * this.ZOOM_STEP);
-    this.adjustPanForZoom(oldZoom, newZoom);
-    store.set('zoomLevel', newZoom);
-    this.updateViewBox();
+    this.panZoom?.zoomIn();
   }
 
   zoomOut(): void {
-    const oldZoom = store.get('zoomLevel') as number;
-    const newZoom = Math.max(this.MIN_ZOOM, oldZoom / this.ZOOM_STEP);
-    this.adjustPanForZoom(oldZoom, newZoom);
-    store.set('zoomLevel', newZoom);
-    this.updateViewBox();
+    this.panZoom?.zoomOut();
   }
 
   zoomFit(): void {
-    store.update({ zoomLevel: 1, panX: 0, panY: 0 });
-    this.updateViewBox();
-  }
-
-  // Pan handling
-  startPan(e: MouseEvent): void {
-    if ((store.get('zoomLevel') as number) < 0.5) return;
-    this.isPanning = true;
-    this.panStartX = e.clientX;
-    this.panStartY = e.clientY;
-    this.previewContainer.classList.add('panning');
-    if (this._iframeDoc) this._iframeDoc.body.classList.add('panning');
-    e.preventDefault();
-  }
-
-  doPan(e: MouseEvent): void {
-    if (!this.isPanning) return;
-    if (!this.preview) return;
-
-    const ctm = this.preview.getScreenCTM();
-    if (!ctm) return;
-
-    const dx = (this.panStartX - e.clientX) / ctm.a;
-    const dy = (this.panStartY - e.clientY) / ctm.d;
-
-    store.update({
-      panX: (store.get('panX') as number) + dx,
-      panY: (store.get('panY') as number) + dy,
-    });
-
-    this.panStartX = e.clientX;
-    this.panStartY = e.clientY;
-
-    this.updateViewBox();
-  }
-
-  endPan(): void {
-    this.isPanning = false;
-    this.previewContainer.classList.remove('panning');
-    if (this._iframeDoc) this._iframeDoc.body.classList.remove('panning');
+    this.panZoom?.zoomToFit();
   }
 
   // Navigator methods
@@ -885,10 +844,12 @@ export class SvgPreviewPane extends HTMLElement {
     const offsetX = (navWidth - width * scale) / 2;
     const offsetY = (navHeight - height * scale) / 2;
 
-    navSvg.setAttribute(
-      'viewBox',
-      `${-offsetX / scale} ${-offsetY / scale} ${navWidth / scale} ${navHeight / scale}`,
-    );
+    const navViewBox = `${-offsetX / scale} ${-offsetY / scale} ${navWidth / scale} ${navHeight / scale}`;
+    navSvg.setAttribute('viewBox', navViewBox);
+    // The overlay (viewport rect) must share the content SVG's viewBox so the
+    // rect's canvas-unit coordinates line up with the rendered minimap.
+    const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay') as SVGSVGElement | null;
+    if (navOverlay) navOverlay.setAttribute('viewBox', navViewBox);
     navBg.setAttribute('fill', store.get('background') as string);
     navBg.setAttribute('x', '0');
     navBg.setAttribute('y', '0');
@@ -927,11 +888,8 @@ export class SvgPreviewPane extends HTMLElement {
       this.navDragStartPanX = panX;
       this.navDragStartPanY = panY;
     } else {
-      store.update({
-        panX: svgX - viewWidth / 2,
-        panY: svgY - viewHeight / 2,
-      });
-      this.updateViewBox();
+      // Click outside the viewport rect → recenter there (discrete jump).
+      this.panZoom?.setView({ panX: svgX - viewWidth / 2, panY: svgY - viewHeight / 2 }, { emit: true });
     }
   }
 
@@ -940,16 +898,16 @@ export class SvgPreviewPane extends HTMLElement {
 
     const { x: svgX, y: svgY } = this.screenToNavigatorSVG(e.clientX, e.clientY);
 
-    store.update({
+    // Continuous drag → drive() (transform session + idle bake, like input).
+    this.panZoom?.drive({
       panX: this.navDragStartPanX + (svgX - this.navDragStartX),
       panY: this.navDragStartPanY + (svgY - this.navDragStartY),
     });
-
-    this.updateViewBox();
   }
 
   navigatorMouseUp(): void {
     this.isNavigatorDragging = false;
+    this.panZoom?.endGesture();
   }
 
   navigatorDoubleClick(e: MouseEvent): void {
@@ -962,12 +920,7 @@ export class SvgPreviewPane extends HTMLElement {
     const viewWidth = width / zoomLevel;
     const viewHeight = height / zoomLevel;
 
-    store.update({
-      panX: svgX - viewWidth / 2,
-      panY: svgY - viewHeight / 2,
-    });
-
-    this.updateViewBox();
+    this.panZoom?.setView({ panX: svgX - viewWidth / 2, panY: svgY - viewHeight / 2 }, { emit: true });
   }
 
   updateSvgStyles(): void {
@@ -983,7 +936,12 @@ export class SvgPreviewPane extends HTMLElement {
       this.preview.setAttribute('height', String(state.height));
     }
 
-    this.updateViewBox();
+    // Canvas size/origin may have changed (new compile). Re-apply the viewBox
+    // through the controller and refresh the zoom chrome.
+    if (this.panZoom) {
+      this.panZoom.setCanvas(this._panZoomCanvas());
+      this._refreshZoomChrome(store.get('zoomLevel') as number);
+    }
 
     if (this.previewPath) {
       this.previewPath.setAttribute('stroke', DEFAULT_STROKE);
@@ -1044,11 +1002,7 @@ export class SvgPreviewPane extends HTMLElement {
     zoomInput.addEventListener('change', (e: Event) => {
       const value = parseInt((e.target as HTMLInputElement).value);
       if (!isNaN(value) && value >= this.MIN_ZOOM * 100 && value <= this.MAX_ZOOM * 100) {
-        const oldZoom = store.get('zoomLevel') as number;
-        const newZoom = value / 100;
-        this.adjustPanForZoom(oldZoom, newZoom);
-        store.set('zoomLevel', newZoom);
-        this.updateViewBox();
+        this.panZoom?.zoomTo(value / 100);
       } else {
         (e.target as HTMLInputElement).value = `${Math.round((store.get('zoomLevel') as number) * 100)}%`;
       }
@@ -1059,22 +1013,17 @@ export class SvgPreviewPane extends HTMLElement {
         e.preventDefault();
         const step = e.shiftKey ? 0.25 : 0.05;
         const direction = e.key === 'ArrowUp' ? 1 : -1;
-
-        const oldZoom = store.get('zoomLevel') as number;
-        const newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, oldZoom + step * direction));
-        this.adjustPanForZoom(oldZoom, newZoom);
-        store.set('zoomLevel', newZoom);
-        this.updateViewBox();
+        const newZoom = (store.get('zoomLevel') as number) + step * direction;
+        this.panZoom?.zoomTo(newZoom);
       }
     });
 
-    // Pan and wheel-zoom listeners live on the iframe document (see
-    // _setupIframeEventListeners), since mouse events inside the iframe do
-    // not bubble to the parent. Document-level listeners are still required
-    // to capture mousemove / mouseup that travel outside the iframe (e.g.
-    // when the user drags past the iframe boundary).
-    document.addEventListener('mousemove', (e: MouseEvent) => this.doPan(e));
-    document.addEventListener('mouseup', () => this.endPan());
+    // Pan/wheel/touch listeners live on the iframe document (the controller
+    // attaches them there — mouse events inside the iframe don't bubble to the
+    // parent). A parent-document pointerup ends any gesture whose release lands
+    // outside the iframe, so a fast drag past the boundary can't get stuck.
+    document.addEventListener('pointerup', () => this.panZoom?.endGesture());
+    document.addEventListener('mouseup', () => this.panZoom?.endGesture());
 
     // Navigator
     const navSvg = this.shadowRoot!.querySelector('#navigator-svg') as SVGSVGElement;
@@ -1156,9 +1105,27 @@ export class SvgPreviewPane extends HTMLElement {
           z-index: 10;
         }
 
-        #navigator-svg {
+        /* The content SVG (heavy: holds every path) and the viewport-rect
+           overlay are STACKED, not nested. Moving the viewport rect each pan
+           frame would otherwise invalidate and re-rasterize the whole content
+           SVG (its paths can carry tens of MB of path data). With the rect in a
+           separate overlay, panning only repaints the cheap overlay. */
+        #navigator-svg,
+        #navigator-overlay {
+          position: absolute;
+          inset: 0;
           width: 100%;
           height: 100%;
+        }
+        #navigator-svg {
+          /* Promote the heavy content SVG to its own compositor layer so the
+             overlay's per-frame rect repaint doesn't re-rasterize these paths.
+             Without this, both SVGs share one layer and the split above is moot. */
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+        #navigator-overlay {
+          pointer-events: none; /* drag detection stays on #navigator-svg below */
         }
 
         #navigator-viewport {
@@ -1298,6 +1265,8 @@ export class SvgPreviewPane extends HTMLElement {
         <svg id="navigator-svg">
           <rect id="navigator-bg" width="100%" height="100%"></rect>
           <g id="navigator-paths"></g>
+        </svg>
+        <svg id="navigator-overlay">
           <rect id="navigator-viewport" fill="none" stroke="var(--accent-color, #10b981)" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
         </svg>
       </div>

@@ -1,0 +1,40 @@
+{
+  "local": {
+    "render": {
+      "nodes": 481,
+      "dLen": 72537650
+    },
+    "scenarios": [
+      {
+        "label": "local pan",
+        "steps": 60,
+        "wallMs": 17854,
+        "longestTaskMs": 353.685,
+        "metricsDelta": {
+          "ScriptDuration": 0.1376,
+          "LayoutDuration": 1.4067,
+          "RecalcStyleDuration": 0.1266,
+          "TaskDuration": 18.0285
+        },
+        "rasterTaskMs": 17763.767,
+        "deserializeMs": 10557.98,
+        "commitWaitMs": 16026.826
+      },
+      {
+        "label": "local zoom",
+        "steps": 60,
+        "wallMs": 15367,
+        "longestTaskMs": 353.834,
+        "metricsDelta": {
+          "ScriptDuration": 0.2353,
+          "LayoutDuration": 1.3953,
+          "RecalcStyleDuration": 0.1203,
+          "TaskDuration": 15.7301
+        },
+        "rasterTaskMs": 15257.722,
+        "deserializeMs": 9284.674,
+        "commitWaitMs": 13464.615
+      }
+    ]
+  }
+}

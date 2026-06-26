@@ -23,12 +23,15 @@
 // never reach the browser.
 
 import type * as PathogenLangLib from '../../dist/index';
+import type * as PathogenPanZoomLib from '../../dist/pan-zoom';
 
 export {};
 
 declare global {
   interface Window {
     PathogenLang: typeof PathogenLangLib;
+    /** Shared pan/zoom controller, loaded via dist/pan-zoom.global.js. */
+    PathogenPanZoom: typeof PathogenPanZoomLib;
   }
 
   /** Global alias available via ESLint config — same as window.PathogenLang */

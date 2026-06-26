@@ -51,4 +51,26 @@ export default defineConfig([
     sourcemap: true,
     noExternal: [/.*/],
   },
+  // Shared pan/zoom controller — the single implementation consumed by every
+  // surface that pans/zooms an SVG (workspace preview, blog mini-workspace,
+  // BBWP, VS Code preview webview, thumbnail/legend modals). ESM + types power
+  // the `pathogen-lang/pan-zoom` sub-path export; the IIFE global is loaded via
+  // a <script> tag by surfaces that don't import ESM (the webview's inline
+  // script and the pre-compiled-SVG mini-preview, which doesn't load the
+  // compiler global at all). Self-contained (noExternal) so the global runs
+  // standalone, like dist/highlight.global.js.
+  {
+    entry: { 'pan-zoom': 'src/ui/pan-zoom-controller.ts' },
+    format: ['esm', 'cjs'],
+    dts: true,
+    sourcemap: true,
+  },
+  {
+    entry: { 'pan-zoom': 'src/ui/pan-zoom-controller.ts' },
+    format: ['iife'],
+    globalName: 'PathogenPanZoom',
+    outExtension: () => ({ js: '.global.js' }),
+    sourcemap: true,
+    noExternal: [/.*/],
+  },
 ]);
