@@ -152,6 +152,8 @@ export class SvgPreviewPane extends HTMLElement {
   // the store (onChange), so the [zoomLevel,panX,panY] subscription doesn't treat
   // our own echo as an external write and feed it back into the controller.
   private _panZoomEcho = false;
+  // Timer for the "⌘ + scroll to zoom" hint shown on un-modified wheel.
+  private _scrollHintTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Navigator drag state
   private isNavigatorDragging: boolean = false;
@@ -253,8 +255,30 @@ export class SvgPreviewPane extends HTMLElement {
         maxZoom: this.MAX_ZOOM,
         zoomStep: this.ZOOM_STEP,
         wheelDampening: 0.002,
+        // Require Ctrl/Cmd for wheel-zoom (consistent with blog/website embeds).
+        requireModifierForWheel: true,
       },
     });
+
+    // Un-modified wheel: the controller ignores it; show the zoom hint.
+    const scrollHint = this.shadowRoot!.querySelector('#scroll-hint') as HTMLElement | null;
+    if (scrollHint) {
+      const span = scrollHint.querySelector('span') as HTMLSpanElement | null;
+      if (span) {
+        const isMac = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
+        span.textContent = isMac ? '⌘ + scroll to zoom' : 'Ctrl + scroll to zoom';
+      }
+      doc.addEventListener(
+        'wheel',
+        (e: WheelEvent) => {
+          if (e.ctrlKey || e.metaKey) return; // controller handles modified wheel
+          scrollHint.classList.add('visible');
+          clearTimeout(this._scrollHintTimer);
+          this._scrollHintTimer = setTimeout(() => scrollHint.classList.remove('visible'), 800);
+        },
+        { passive: true },
+      );
+    }
 
     // Grab-cursor feedback while a gesture is active inside the iframe.
     doc.addEventListener('pointerdown', () => {
@@ -1090,6 +1114,32 @@ export class SvgPreviewPane extends HTMLElement {
           cursor: grabbing;
         }
 
+        /* Shown briefly when the user scrolls without the zoom modifier. */
+        #scroll-hint {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.4);
+          z-index: 20;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        #scroll-hint.visible {
+          opacity: 1;
+        }
+        #scroll-hint span {
+          color: #ffffff;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          padding: 0.5rem 1rem;
+          background: rgba(0, 0, 0, 0.7);
+          border-radius: var(--radius-md, 8px);
+          user-select: none;
+        }
+
         /* Navigator */
         #zoom-navigator {
           position: absolute;
@@ -1286,6 +1336,7 @@ export class SvgPreviewPane extends HTMLElement {
         <!-- The sandboxed iframe is created programmatically in _setupIframe
              so srcdoc is set before insertion (avoids the about:blank phase
              warning). See playground/utils/preview-iframe.ts. -->
+        <div id="scroll-hint"><span></span></div>
         <div id="loading-overlay">
           <div class="loading-spinner"></div>
         </div>
