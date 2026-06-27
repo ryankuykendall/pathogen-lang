@@ -94,7 +94,7 @@ const DEFAULTS: Required<PanZoomOptions> = {
   requireModifierForWheel: false,
   clampMargin: 1 / 3,
   enableTouch: true,
-  bakeDelayMs: 180,
+  bakeDelayMs: 72,
   panDisableBelowZoom: 0.5,
   rebaselineThreshold: 0.5,
 };
