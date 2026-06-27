@@ -593,7 +593,9 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
       canvas: { originX: 0, originY: 0, width: canvasW, height: canvasH },
       view: { zoom: zoomLevel, panX: panX, panY: panY },
       onChange: (v) => { zoomLevel = v.zoom; panX = v.panX; panY = v.panY; refreshChrome(); },
-      options: { minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, zoomStep: ZOOM_STEP, wheelDampening: 0.002, requireModifierForWheel: true },
+      // Plain scroll zooms — this is a dedicated preview panel, not a long
+      // scrollable page, so no Ctrl/Cmd gate (unlike blog embeds).
+      options: { minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, zoomStep: ZOOM_STEP, wheelDampening: 0.002, requireModifierForWheel: false },
     });
     function refreshChrome() {
       zoomLevelInput.value = Math.round(zoomLevel * 100) + '%';
@@ -609,15 +611,8 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
       if (v >= 25 && v <= 1000) pz.zoomTo(v / 100);
     });
 
-    // Un-modified wheel: the controller ignores it (Ctrl/Cmd gate); show hint.
-    container.addEventListener('wheel', (e) => {
-      if (e.ctrlKey || e.metaKey) return;
-      scrollHint.querySelector('span').textContent =
-        navigator.platform.includes('Mac') ? '\\u2318 + scroll to zoom' : 'Ctrl + scroll to zoom';
-      scrollHint.classList.add('visible');
-      clearTimeout(scrollHintTimer);
-      scrollHintTimer = setTimeout(() => scrollHint.classList.remove('visible'), 800);
-    }, { passive: true });
+    // (No scroll hint: plain scroll zooms directly, so the "Ctrl + scroll"
+    // hint that blog embeds use isn't needed here.)
 
     // Grab cursor while panning; navigator drag (driven on the document so it
     // tracks outside the minimap); end any controller gesture released anywhere.
@@ -695,11 +690,6 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     });
 
     // --- Compile and render ---
-    function parseViewBox(source) {
-      const m = source.match(/\\/\\/\\s*viewBox\\s*=\\s*"([^"]+)"/);
-      return m ? m[1] : '0 0 200 200';
-    }
-
     function compileAndRender(source) {
       const start = performance.now();
       try {
@@ -711,13 +701,19 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
           modifiedSource = modifiedSource.replace(pattern, "Color('" + value + "')");
         }
 
-        const vb = parseViewBox(source);
-        const parts = vb.split(/\\s+/).map(Number);
-        canvasW = parts[2] || 200;
-        canvasH = parts[3] || 200;
-
         const result = PathogenLang.compile(modifiedSource);
         lastResult = result;
+
+        // Canvas dims come from the COMPILED viewBox (the define ViewBox(...)
+        // construct), not a // viewBox comment — modern sources use the
+        // construct, and reading a comment left the canvas at the 200x200
+        // default so all content rendered off-screen.
+        const cvb = (result && result.viewBox) || { originX: 0, originY: 0, width: 200, height: 200 };
+        const originX = cvb.originX || 0;
+        const originY = cvb.originY || 0;
+        canvasW = cvb.width || 200;
+        canvasH = cvb.height || 200;
+        const vb = originX + ' ' + originY + ' ' + canvasW + ' ' + canvasH;
 
         // Build the shared render tree and split its children across the two
         // DOM targets: <defs>/<style> go next to previewBg (z-order below
@@ -767,9 +763,9 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
         applyLayerVisibility();
 
         // Canvas dims may have changed — re-apply the viewBox via the controller.
-        pz.setCanvas({ originX: 0, originY: 0, width: canvasW, height: canvasH });
-        previewBg.setAttribute('x', '0');
-        previewBg.setAttribute('y', '0');
+        pz.setCanvas({ originX: originX, originY: originY, width: canvasW, height: canvasH });
+        previewBg.setAttribute('x', originX);
+        previewBg.setAttribute('y', originY);
         previewBg.setAttribute('width', canvasW);
         previewBg.setAttribute('height', canvasH);
 
