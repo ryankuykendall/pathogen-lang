@@ -25,7 +25,7 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/extension.ts` | Entry point. Starts LanguageClient, registers preview command |
-| `src/preview.ts` | SVG preview webview panel — functional; webview consumes the bundled library via `<script src="${compilerUri}">` and renders via the shared `buildSvgTree` + `mountInto` adapters |
+| `src/preview.ts` | SVG preview webview panel — functional; webview consumes the bundled library via `<script src="${compilerUri}">` and renders via the shared `buildSvgTree` + `mountInto` adapters. Pan/zoom is the shared `PanZoomController` (`window.PathogenPanZoom`, loaded from a second bundled script `compiler/pan-zoom.global.js`) — CSS-transform during the gesture, baked into the viewBox on idle; wheel + drag + touch pinch |
 | `syntaxes/pathogen.tmLanguage.json` | TextMate grammar for syntax highlighting |
 | `snippets/pathogen.code-snippets` | 18 code snippets (for, fn, if, shapes, etc.) |
 | `language-configuration.json` | Comment toggling, brackets, auto-closing, indentation, folding |
@@ -107,7 +107,9 @@ For the full cross-system checklist, see `project-docs/developer-experience/cros
 
 ## Readiness Status
 
-The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `pathogen-lang` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (`src/preview.ts` lines ~711–755, as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator.
+The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `pathogen-lang` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator, and pan/zoom.
+
+**Pan/zoom (2026-06).** The preview adopted the shared `PanZoomController` (`src/ui/pan-zoom-controller.ts` → `dist/pan-zoom.global.js` → `window.PathogenPanZoom`); `scripts/build-vscode-extension.ts` copies that bundle into `compiler/` next to `index.global.js`, and the webview loads it via a second nonce'd `<script>`. Pan/zoom uses a CSS transform during the gesture and bakes into the `viewBox` on idle (the large-SVG perf win — see [`project-docs/pan-zoom-performance/findings-and-recommendations.md`](../../project-docs/pan-zoom-performance/findings-and-recommendations.md)); adds touch pinch-zoom; and splits the navigator viewport rect into its own GPU-promoted overlay SVG. Verified headless (`getWebviewContent` is exported for this): the webview compiles a real scene, pans/zooms, and bakes cleanly. The final interactive feel still wants a `.vsix` install/reload (see Development Lifecycle).
 
 Other items below are still open.
 
@@ -137,6 +139,6 @@ The VS Code extension follows the same quality standard as the rest of the proje
    - Extension activates (check Extension Host output for errors)
    - "Pathogen Language Server" appears in the Output dropdown
    - Completions, hover, diagnostics work on a `.pathogen` file
-   - Preview command opens and renders (when implemented)
+   - Preview command opens and renders; pan/zoom (wheel, drag, pinch) and zoom-fit work
 4. **No dead features** — Do not register commands, menu items, or UI that don't work. If a feature isn't ready, don't expose it to users.
 5. **Full test suite** — Run `npm run test:run` from the project root before committing.
