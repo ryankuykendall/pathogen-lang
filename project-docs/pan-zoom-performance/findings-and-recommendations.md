@@ -235,6 +235,20 @@ leading sliver of blank); a drag under it stays cheap and fills on idle-bake. Ea
 surface can tune the fraction (lower → less blank, more mid-drag re-rasters; 0 →
 pure transform, blank only fills on idle).
 
+## Rollout status (all surfaces)
+
+The shared controller is now adopted across every pan/zoom surface:
+
+| Surface | Mode | Notes |
+|---|---|---|
+| Workspace preview (`svg-preview-pane.ts`) | transform | ~16× faster; navigator overlay-split |
+| mini-preview (blog + BBWP `.mw.html`) | transform | + navigator overlay-split; Ctrl/Cmd wheel + scroll hint |
+| VS Code preview webview (`preview.ts`) | transform | inline JS → `window.PathogenPanZoom`; bundle copied by `build-vscode-extension.ts`; nonce'd script; navigator overlay-split. Verified headless (compiles, pans/zooms, bakes); final interactive feel = `.vsix` reload |
+| thumbnail-crop modal, export-legend modal | viewbox (math-only) | dedup `clampZoom`/`adjustPanForZoom`/`viewToViewBox` onto the shared functions; keep viewBox + crop/legend input handling (their crop/pan input flow conflicts with controller pan, so full adoption was intentionally not done) |
+
+Touch/pinch is in the controller for all transform-mode surfaces. The configurable
+`rebaselineThreshold` (default 0.5) bounds the high-zoom blank.
+
 ## Reproducing
 
 ```bash

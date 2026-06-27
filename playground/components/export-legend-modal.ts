@@ -651,11 +651,18 @@ class ExportLegendModal extends HTMLElement {
 
   // --- Zoom / Pan ---
 
+  /** Canvas dims for the shared pan/zoom math (this modal's viewBox origin is 0,0). */
+  _pzCanvas(): { originX: number; originY: number; width: number; height: number } {
+    return { originX: 0, originY: 0, width: this._canvasWidth, height: this._canvasHeight };
+  }
+
   _updateViewBox(): void {
     if (!this._svg) return;
-    const vw = this._canvasWidth / this._zoom;
-    const vh = this._canvasHeight / this._zoom;
-    this._svg.setAttribute('viewBox', `${this._panX} ${this._panY} ${vw} ${vh}`);
+    // Shared math (window.PathogenPanZoom); this modal keeps viewBox mutation.
+    this._svg.setAttribute(
+      'viewBox',
+      window.PathogenPanZoom.viewToViewBox({ zoom: this._zoom, panX: this._panX, panY: this._panY }, this._pzCanvas()),
+    );
   }
 
   _updateZoomDisplay(): void {
@@ -665,7 +672,7 @@ class ExportLegendModal extends HTMLElement {
 
   _zoomIn(): void {
     const oldZoom = this._zoom;
-    this._zoom = Math.min(this.MAX_ZOOM, this._zoom * this.ZOOM_STEP);
+    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * this.ZOOM_STEP, { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
     this._adjustPanForZoom(oldZoom, this._zoom);
     this._updateViewBox();
     this._updateZoomDisplay();
@@ -673,7 +680,7 @@ class ExportLegendModal extends HTMLElement {
 
   _zoomOut(): void {
     const oldZoom = this._zoom;
-    this._zoom = Math.max(this.MIN_ZOOM, this._zoom / this.ZOOM_STEP);
+    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom / this.ZOOM_STEP, { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
     this._adjustPanForZoom(oldZoom, this._zoom);
     this._updateViewBox();
     this._updateZoomDisplay();
@@ -688,14 +695,13 @@ class ExportLegendModal extends HTMLElement {
   }
 
   _adjustPanForZoom(oldZoom: number, newZoom: number): void {
-    const oldVW = this._canvasWidth / oldZoom;
-    const oldVH = this._canvasHeight / oldZoom;
-    const cx = this._panX + oldVW / 2;
-    const cy = this._panY + oldVH / 2;
-    const newVW = this._canvasWidth / newZoom;
-    const newVH = this._canvasHeight / newZoom;
-    this._panX = cx - newVW / 2;
-    this._panY = cy - newVH / 2;
+    const adj = window.PathogenPanZoom.adjustPanForZoom(
+      { zoom: oldZoom, panX: this._panX, panY: this._panY },
+      newZoom,
+      this._pzCanvas(),
+    );
+    this._panX = adj.panX;
+    this._panY = adj.panY;
   }
 
   // --- Screen to SVG coordinate conversion ---
@@ -974,7 +980,7 @@ class ExportLegendModal extends HTMLElement {
         const dampening = 0.002;
         const delta = -e.deltaY * dampening;
         const oldZoom = this._zoom;
-        this._zoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, this._zoom * (1 + delta)));
+        this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * (1 + delta), { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
         this._adjustPanForZoom(oldZoom, this._zoom);
         this._updateViewBox();
         this._updateZoomDisplay();

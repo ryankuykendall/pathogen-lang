@@ -120,7 +120,12 @@ fs.copyFileSync(
   path.join(ROOT, 'dist', 'index.global.js'),
   path.join(COMPILER_DIR, 'index.global.js'),
 );
-console.log('  Bundled compiler for preview webview');
+// Shared pan/zoom controller bundle (window.PathogenPanZoom) for the webview.
+fs.copyFileSync(
+  path.join(ROOT, 'dist', 'pan-zoom.global.js'),
+  path.join(COMPILER_DIR, 'pan-zoom.global.js'),
+);
+console.log('  Bundled compiler + pan/zoom controller for preview webview');
 
 // Copy extension's runtime dependency (vscode-languageclient + transitive deps)
 // into server/node_modules which vsce --no-dependencies includes (it skips

@@ -45,13 +45,20 @@ export function openPreview(context: vscode.ExtensionContext): void {
   );
 
   const webviewCompilerUri = currentPanel.webview.asWebviewUri(compilerUri);
+  const panZoomUri = getPanZoomUri(context);
+  const webviewPanZoomUri = panZoomUri ? currentPanel.webview.asWebviewUri(panZoomUri).toString() : '';
   // Tighten the webview CSP to match the playground iframe contract — see
   // project-docs/security/iframe-sandbox-rationale.md and docs/security.md.
   // The webview is already iframe-isolated by VS Code; this CSP is the
   // structural defense that makes the article's recommended boundary explicit.
   const cspSource = currentPanel.webview.cspSource;
   const nonce = generateNonce();
-  currentPanel.webview.html = getWebviewContent(webviewCompilerUri.toString(), cspSource, nonce);
+  currentPanel.webview.html = getWebviewContent(
+    webviewCompilerUri.toString(),
+    webviewPanZoomUri,
+    cspSource,
+    nonce,
+  );
 
   currentPanel.onDidDispose(() => {
     currentPanel = undefined;
@@ -110,7 +117,18 @@ function getCompilerUri(context: vscode.ExtensionContext): vscode.Uri | null {
   return null;
 }
 
-function getWebviewContent(compilerUri: string, cspSource: string, nonce: string): string {
+/** The shared pan/zoom controller bundle (window.PathogenPanZoom). */
+function getPanZoomUri(context: vscode.ExtensionContext): vscode.Uri | null {
+  const fs = require('fs');
+  const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', 'pan-zoom.global.js');
+  if (fs.existsSync(bundled.fsPath)) return bundled;
+  const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', 'pan-zoom.global.js');
+  if (fs.existsSync(dev.fsPath)) return dev;
+  return null;
+}
+
+// Exported for headless webview tests (renders the full HTML given asset URIs).
+export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSource: string, nonce: string): string {
   // CSP rationale (see project-docs/security/iframe-sandbox-rationale.md):
   //  - default-src 'none'        — nothing loads unless explicitly allow-listed.
   //  - script-src 'nonce-${nonce}' ${cspSource}
@@ -240,7 +258,12 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
       z-index: 10;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-    .navigator svg { width: 100%; height: 100%; }
+    /* Content SVG and viewport-rect overlay are stacked, not nested, and the
+       content layer is GPU-promoted, so moving the viewport rect each pan frame
+       doesn't re-rasterize the heavy minimap paths. */
+    .navigator svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #navigator-svg { transform: translateZ(0); backface-visibility: hidden; }
+    #navigator-overlay { pointer-events: none; }
     #navigator-viewport {
       fill: rgba(14, 99, 156, 0.15);
       stroke: var(--vscode-focusBorder, #0e639c);
@@ -484,6 +507,8 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
         <svg id="navigator-svg" xmlns="http://www.w3.org/2000/svg">
           <rect id="navigator-bg" width="100%" height="100%" fill="white"></rect>
           <g id="navigator-paths"></g>
+        </svg>
+        <svg id="navigator-overlay" xmlns="http://www.w3.org/2000/svg">
           <rect id="navigator-viewport"></rect>
         </svg>
       </div>
@@ -513,6 +538,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
   </div>
 
   <script nonce="${nonce}" src="${compilerUri}"></script>
+  <script nonce="${nonce}" src="${panZoomUri}"></script>
   <script nonce="${nonce}">
   (function() {
     const vscode = acquireVsCodeApi();
@@ -524,6 +550,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
     const status = document.getElementById('status');
     const info = document.getElementById('info');
     const navigatorSvg = document.getElementById('navigator-svg');
+    const navigatorOverlay = document.getElementById('navigator-overlay');
     const navigatorPaths = document.getElementById('navigator-paths');
     const navigatorViewport = document.getElementById('navigator-viewport');
     const zoomLevelInput = document.getElementById('zoom-level');
@@ -533,13 +560,16 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
       container.innerHTML = '<div class="error"><div class="error-title">Compiler not loaded</div></div>';
       return;
     }
+    if (typeof PathogenPanZoom === 'undefined') {
+      container.innerHTML = '<div class="error"><div class="error-title">Pan/zoom controller not loaded</div></div>';
+      return;
+    }
 
     status.textContent = 'Ready';
 
     // --- State ---
     let canvasW = 200, canvasH = 200;
     let zoomLevel = 1, panX = 0, panY = 0;
-    let isPanning = false, panStartX = 0, panStartY = 0;
     let isNavDragging = false, navDragStartX = 0, navDragStartY = 0, navDragPanX = 0, navDragPanY = 0;
     let scrollHintTimer = null;
     let lastResult = null;
@@ -551,121 +581,58 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
     const eyeOpenSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
     const eyeClosedSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
-    // --- Zoom/Pan ---
-    function updateViewBox() {
-      const vw = canvasW / zoomLevel;
-      const vh = canvasH / zoomLevel;
-      if (zoomLevel < 0.5) {
-        panX = (canvasW - vw) / 2;
-        panY = (canvasH - vh) / 2;
-      } else {
-        const margin = 1 / 3;
-        const minPanX = -vw * margin;
-        const maxPanX = canvasW - vw * (1 - margin);
-        const minPanY = -vh * margin;
-        const maxPanY = canvasH - vh * (1 - margin);
-        panX = Math.max(minPanX, Math.min(panX, maxPanX));
-        panY = Math.max(minPanY, Math.min(panY, maxPanY));
-      }
-      preview.setAttribute('viewBox', panX + ' ' + panY + ' ' + vw + ' ' + vh);
+    // --- Zoom/Pan (shared controller) ---
+    // The controller owns the viewBox/transform (CSS-transform during the
+    // gesture, bake into viewBox on idle) and emits onChange → local state +
+    // chrome. The webview SVG is in this document (not a nested iframe), so
+    // listeners attach to the preview container.
+    const pz = new PathogenPanZoom.PanZoomController({
+      svg: preview,
+      eventTarget: container,
+      mode: 'transform',
+      canvas: { originX: 0, originY: 0, width: canvasW, height: canvasH },
+      view: { zoom: zoomLevel, panX: panX, panY: panY },
+      onChange: (v) => { zoomLevel = v.zoom; panX = v.panX; panY = v.panY; refreshChrome(); },
+      options: { minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, zoomStep: ZOOM_STEP, wheelDampening: 0.002, requireModifierForWheel: true },
+    });
+    function refreshChrome() {
       zoomLevelInput.value = Math.round(zoomLevel * 100) + '%';
       updateNavigatorViewport();
       container.classList.toggle('can-pan', zoomLevel >= 0.5);
     }
 
-    function adjustPanForZoom(oldZ, newZ) {
-      const oldVW = canvasW / oldZ, oldVH = canvasH / oldZ;
-      const newVW = canvasW / newZ, newVH = canvasH / newZ;
-      panX = panX + (oldVW - newVW) / 2;
-      panY = panY + (oldVH - newVH) / 2;
-    }
-
-    function zoomIn() {
-      const old = zoomLevel;
-      zoomLevel = Math.min(MAX_ZOOM, old * ZOOM_STEP);
-      adjustPanForZoom(old, zoomLevel);
-      updateViewBox();
-    }
-    function zoomOut() {
-      const old = zoomLevel;
-      zoomLevel = Math.max(MIN_ZOOM, old / ZOOM_STEP);
-      adjustPanForZoom(old, zoomLevel);
-      updateViewBox();
-    }
-    function zoomFit() {
-      zoomLevel = 1; panX = 0; panY = 0;
-      updateViewBox();
-    }
-
-    document.getElementById('zoom-in').addEventListener('click', zoomIn);
-    document.getElementById('zoom-out').addEventListener('click', zoomOut);
-    document.getElementById('zoom-fit').addEventListener('click', zoomFit);
-
+    document.getElementById('zoom-in').addEventListener('click', () => pz.zoomIn());
+    document.getElementById('zoom-out').addEventListener('click', () => pz.zoomOut());
+    document.getElementById('zoom-fit').addEventListener('click', () => pz.zoomToFit());
     zoomLevelInput.addEventListener('change', () => {
       const v = parseInt(zoomLevelInput.value, 10);
-      if (v >= 25 && v <= 1000) {
-        const newZ = v / 100;
-        adjustPanForZoom(zoomLevel, newZ);
-        zoomLevel = newZ;
-        updateViewBox();
-      }
+      if (v >= 25 && v <= 1000) pz.zoomTo(v / 100);
     });
 
-    // --- Mouse pan ---
-    container.addEventListener('mousedown', (e) => {
-      if (zoomLevel < 0.5 || e.button !== 0) return;
-      isPanning = true;
-      panStartX = e.clientX;
-      panStartY = e.clientY;
-      container.classList.add('panning');
-      e.preventDefault();
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (isPanning) {
-        const ctm = preview.getScreenCTM();
-        if (ctm) {
-          panX += (panStartX - e.clientX) / ctm.a;
-          panY += (panStartY - e.clientY) / ctm.d;
-          panStartX = e.clientX;
-          panStartY = e.clientY;
-          updateViewBox();
-        }
-      }
-      if (isNavDragging) {
-        const pt = navigatorSvg.createSVGPoint();
-        pt.x = e.clientX; pt.y = e.clientY;
-        const ctm = navigatorSvg.getScreenCTM();
-        if (ctm) {
-          const svgPt = pt.matrixTransform(ctm.inverse());
-          panX = navDragPanX + (svgPt.x - navDragStartX);
-          panY = navDragPanY + (svgPt.y - navDragStartY);
-          updateViewBox();
-        }
-      }
-    });
-    document.addEventListener('mouseup', () => {
-      isPanning = false;
-      isNavDragging = false;
-      container.classList.remove('panning');
-    });
-
-    // --- Wheel zoom ---
+    // Un-modified wheel: the controller ignores it (Ctrl/Cmd gate); show hint.
     container.addEventListener('wheel', (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const old = zoomLevel;
-        const delta = -e.deltaY * 0.002;
-        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, old * (1 + delta)));
-        adjustPanForZoom(old, zoomLevel);
-        updateViewBox();
-      } else {
-        scrollHint.querySelector('span').textContent =
-          navigator.platform.includes('Mac') ? '\\u2318 + scroll to zoom' : 'Ctrl + scroll to zoom';
-        scrollHint.classList.add('visible');
-        clearTimeout(scrollHintTimer);
-        scrollHintTimer = setTimeout(() => scrollHint.classList.remove('visible'), 800);
-      }
-    }, { passive: false });
+      if (e.ctrlKey || e.metaKey) return;
+      scrollHint.querySelector('span').textContent =
+        navigator.platform.includes('Mac') ? '\\u2318 + scroll to zoom' : 'Ctrl + scroll to zoom';
+      scrollHint.classList.add('visible');
+      clearTimeout(scrollHintTimer);
+      scrollHintTimer = setTimeout(() => scrollHint.classList.remove('visible'), 800);
+    }, { passive: true });
+
+    // Grab cursor while panning; navigator drag (driven on the document so it
+    // tracks outside the minimap); end any controller gesture released anywhere.
+    container.addEventListener('pointerdown', () => { if (zoomLevel >= 0.5) container.classList.add('panning'); });
+    document.addEventListener('mousemove', (e) => {
+      if (!isNavDragging) return;
+      const pt = navigatorSvg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const ctm = navigatorSvg.getScreenCTM();
+      if (!ctm) return;
+      const svgPt = pt.matrixTransform(ctm.inverse());
+      pz.drive({ panX: navDragPanX + (svgPt.x - navDragStartX), panY: navDragPanY + (svgPt.y - navDragStartY) });
+    });
+    document.addEventListener('pointerup', () => { pz.endGesture(); container.classList.remove('panning'); });
+    document.addEventListener('mouseup', () => { isNavDragging = false; });
 
     // --- Navigator ---
     function updateNavigatorViewport() {
@@ -681,7 +648,10 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
         navigatorPaths.appendChild(child.cloneNode(true));
       }
       const pad = canvasW * 0.05;
-      navigatorSvg.setAttribute('viewBox', (-pad) + ' ' + (-pad) + ' ' + (canvasW + pad * 2) + ' ' + (canvasH + pad * 2));
+      const navVB = (-pad) + ' ' + (-pad) + ' ' + (canvasW + pad * 2) + ' ' + (canvasH + pad * 2);
+      navigatorSvg.setAttribute('viewBox', navVB);
+      // Overlay shares the content viewBox so the viewport rect aligns.
+      if (navigatorOverlay) navigatorOverlay.setAttribute('viewBox', navVB);
       navigatorViewport.setAttribute('fill', 'rgba(14, 99, 156, 0.15)');
       navigatorViewport.setAttribute('stroke', 'var(--vscode-focusBorder, #0e639c)');
       navigatorViewport.setAttribute('stroke-width', '1');
@@ -702,9 +672,7 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
         navDragStartX = svgPt.x; navDragStartY = svgPt.y;
         navDragPanX = panX; navDragPanY = panY;
       } else {
-        panX = svgPt.x - vw / 2;
-        panY = svgPt.y - vh / 2;
-        updateViewBox();
+        pz.setView({ panX: svgPt.x - vw / 2, panY: svgPt.y - vh / 2 }, { emit: true });
       }
       e.preventDefault();
     });
@@ -720,10 +688,9 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
     });
 
     document.getElementById('reset-btn').addEventListener('click', () => {
-      zoomLevel = 1; panX = 0; panY = 0;
       cssVarOverrides = {};
       layerVisibility = {};
-      updateViewBox();
+      pz.zoomToFit();
       if (lastSource) compileAndRender(lastSource);
     });
 
@@ -799,8 +766,8 @@ function getWebviewContent(compilerUri: string, cspSource: string, nonce: string
         // Apply layer visibility
         applyLayerVisibility();
 
-        // Update canvas dimensions
-        preview.setAttribute('viewBox', panX + ' ' + panY + ' ' + (canvasW / zoomLevel) + ' ' + (canvasH / zoomLevel));
+        // Canvas dims may have changed — re-apply the viewBox via the controller.
+        pz.setCanvas({ originX: 0, originY: 0, width: canvasW, height: canvasH });
         previewBg.setAttribute('x', '0');
         previewBg.setAttribute('y', '0');
         previewBg.setAttribute('width', canvasW);
