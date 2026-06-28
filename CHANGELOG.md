@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Problem.** Panning/zooming a large workspace was janky. Puppeteer profiling (`scripts/perf-pan-zoom-audit.ts`, `scripts/perf-transform-probe.ts`, `project-docs/pan-zoom-performance/`) proved it was **raster-bound, not JS-bound**: mutating an SVG's `viewBox` makes Chrome re-rasterize the whole drawing every frame (~300 ms/frame for a scene of 481 paths carrying 72.5M chars of path data — *not* the assumed ~422k DOM nodes; `circle()` in a `PathLayer` emits path data, not elements). Driving pan/zoom with a CSS `transform` on the composited layer instead is ~25× cheaper for pan / ~12× for zoom.
 - **`PanZoomController`** (`src/ui/pan-zoom-controller.ts`, shipped as `dist/pan-zoom.global.js` → `window.PathogenPanZoom`, plus ESM/types via the `pathogen-lang/pan-zoom` sub-path). Framework-agnostic, DOM-only, zero top-level DOM. CSS-`transform` during a gesture, baked into the `viewBox` on idle (atomic, flash-free — verified by CDP screencast). Wheel + pointer drag + **touch pinch-zoom**; rAF-batched; loop-safe (input → `onChange`; external writes → `setView`, no echo). Configurable `rebaselineThreshold` (default 0.5) bounds the "blank while panning far when zoomed in" reveal by re-rasterizing mid-drag. A `viewbox` mode keeps viewBox mutation for surfaces whose overlays can't ride a transform. Pure math (`clampPan`/`adjustPanForZoom`/`viewToViewBox`/`computeTransform`) unit-tested (`tests/pan-zoom-controller.test.ts`).
 - **Adopted across every pan/zoom surface:** workspace preview (`svg-preview-pane.ts`, ~16× faster / ~300× less raster on the big scene), blog/BBWP mini-preview (`blog/mini-preview.ts`), VS Code preview webview (`packages/vscode-pathogen/src/preview.ts`), and — math-only (dedup, keep viewBox) — the thumbnail-crop and export-legend modals. Surfaces with a navigator minimap also split the viewport rect into a GPU-promoted overlay SVG so its per-frame update stops re-rasterizing the heavy minimap paths.
+- **Wheel-zoom modifier per surface.** The workspace editor and blog/website embeds gate wheel-zoom behind Ctrl/Cmd (with a brief "⌘ + scroll to zoom" hint) so plain scrolling doesn't trap the page; the VS Code preview — a dedicated panel — zooms on plain scroll.
+- **`bakeDelayMs` default is 72 ms** (idle before the crisp re-raster bakes in), so the area revealed by zooming out fills in quickly.
 
 ### Changed
 
@@ -22,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pan/zoom no longer rebuilds the navigator minimap or re-styles every path each frame, no longer double-fires the viewBox update, and is rAF-batched with a cached screen-CTM — previously every `mousemove`/`wheel` ran the heavy `updateSvgStyles` path twice. These were stepping-stones now subsumed by the shared controller.
 
 ### Fixed
+
+#### VS Code preview rendered blank / wrong aspect for `define ViewBox(...)` sources
+
+- The preview webview sized its canvas from a `// viewBox="..."` source **comment** (an old convention); modern sources use the `define ViewBox(...)` construct, so `canvasW/H` fell back to the 200×200 default and all content (at the real coordinates, e.g. 13200×7200) rendered entirely outside that tiny square viewBox — a blank white box with the wrong aspect ratio. The preview now reads dimensions from the compiled `result.viewBox` (origin + size), matching the playground. (`packages/vscode-pathogen/src/preview.ts`.)
 
 #### The default layer and the "global" layer were two distinct things internally (drift outside the viewBox)
 
