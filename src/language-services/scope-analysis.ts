@@ -15,10 +15,11 @@ import type {
 
 // --- Built-in names that are always in scope ---
 
-const BUILTIN_NAMESPACES = new Set(['Object', 'Color', 'PathBlock']);
+const BUILTIN_NAMESPACES = new Set(['Object', 'Color', 'PathBlock', 'Cap']);
 
 const BUILTIN_ENUMS = new Set([
   'Easing', 'Interpolation', 'SpreadMethod', 'GradientUnits', 'Direction',
+  'CurveContinuity',
   'ConicSpread', 'InnerFill', 'TopoMethod', 'BBoxAnchor', 'GridPatternType',
   'HexagonOrientation', 'VerticalAnchor',
   'MarkerUnits', 'MarkerOrient', 'MarkerRefX', 'MarkerRefY', 'MarkerPreserveAspectRatio',

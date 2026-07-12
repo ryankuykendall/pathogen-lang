@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { compilePath } from './helpers';
 import {
   buildContinuitySpline,
   projectStop,
@@ -136,6 +137,37 @@ describe('variable-offset geometry: spline construction', () => {
     for (const c of cubics(cmds)) {
       for (const u of [0, 0.5, 1]) expect(Math.abs(curvature(c, u))).toBeLessThan(1e-6);
     }
+  });
+});
+
+describe('CurveContinuity enum + Cap constructors (Phase 2 scaffolding)', () => {
+  it('CurveContinuity members resolve to their string values', () => {
+    expect(() => compilePath('let c = CurveContinuity.G0; M 0 0 L 10 10')).not.toThrow();
+    expect(() => compilePath('let c = CurveContinuity.G1; M 0 0 L 10 10')).not.toThrow();
+    expect(() => compilePath('let c = CurveContinuity.G2; M 0 0 L 10 10')).not.toThrow();
+  });
+
+  // NOTE: like all builtin enums, unknown member ACCESS (CurveContinuity.G3) does
+  // not throw — it yields undefined. Invalid continuity is rejected at the
+  // consumption site (Cap.tapered below; go.stop in Phase 3), not at access time.
+
+  it('all four Cap constructors evaluate', () => {
+    expect(() =>
+      compilePath(
+        'let a = Cap.butt(); let b = Cap.round(); let e = Cap.elliptical(5); let t = Cap.tapered(12, CurveContinuity.G2); M 0 0 L 10 10',
+      ),
+    ).not.toThrow();
+  });
+
+  it('Cap.tapered accepts an optional continuity and rejects a non-CurveContinuity one', () => {
+    expect(() => compilePath('let t = Cap.tapered(12); M 0 0 L 10 10')).not.toThrow();
+    expect(() => compilePath('let t = Cap.tapered(12, 3); M 0 0')).toThrow();
+  });
+
+  it('Cap arity + unknown-method errors', () => {
+    expect(() => compilePath('let b = Cap.round(5); M 0 0')).toThrow();
+    expect(() => compilePath('let e = Cap.elliptical(); M 0 0')).toThrow();
+    expect(() => compilePath('let x = Cap.bevel(); M 0 0')).toThrow();
   });
 });
 

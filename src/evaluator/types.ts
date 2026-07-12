@@ -32,6 +32,8 @@ export type Value =
   | ArrayValue
   | PointValue
   | PolarVectorValue
+  | CapValue
+  | CapNamespace
   | TransformReference
   | TransformPropertyReference
   | ObjectValue
@@ -91,6 +93,21 @@ export interface PolarVectorValue {
   type: 'PolarVectorValue';
   angle: number;
   distance: number;
+}
+
+/**
+ * End-cap value for compoundVariableOffset ribbons. Constructed via the `Cap`
+ * namespace (Cap.butt / round / elliptical / tapered). See docs/variable-offset.md.
+ */
+export interface CapValue {
+  type: 'CapValue';
+  cap: 'butt' | 'round' | 'elliptical' | 'tapered';
+  /** elliptical: along-path semi-axis length */
+  projection?: number;
+  /** tapered: apex distance outward from the cap midpoint */
+  length?: number;
+  /** tapered: CurveContinuity value ('position' | 'tangent' | 'curvature') for the flanks */
+  continuity?: string;
 }
 
 /**
@@ -428,6 +445,13 @@ export interface CSSVarValue {
  */
 export interface ColorNamespace {
   type: 'ColorNamespace';
+}
+
+/**
+ * Sentinel for Cap namespace (Cap.butt, Cap.round, Cap.elliptical, Cap.tapered)
+ */
+export interface CapNamespace {
+  type: 'CapNamespace';
 }
 
 /**

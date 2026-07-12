@@ -19,6 +19,7 @@ type AngleValue = `${number}${AngleSuffix}` | number;
 // Forward-declared types (interfaces for runtime types defined at end of file)
 declare type PathSegment = { __brand: 'PathSegment' };
 declare type ColorValue = { __brand: 'ColorValue' };
+declare type CapValue = { __brand: 'CapValue' };
 declare type Value = string | number | boolean | null;
 
 // =============================================================================
@@ -305,6 +306,18 @@ export declare namespace Color {
   function palette(color: ColorValue, n: number): ColorValue[];
   /** Color.lightDark(light, dark) — Theme-aware color */
   function lightDark(light: ColorValue, dark: ColorValue): ColorValue;
+}
+
+/** End-cap constructors for compoundVariableOffset ribbons @boost 6 */
+export declare namespace Cap {
+  /** Cap.butt() — straight line between the two profile endpoints */
+  function butt(): CapValue;
+  /** Cap.round() — semicircle bulging outward */
+  function round(): CapValue;
+  /** Cap.elliptical(projection) — half-ellipse projecting `projection` units outward */
+  function elliptical(projection: number): CapValue;
+  /** Cap.tapered(length, continuity?) — apex `length` units out; optional CurveContinuity smooths the flanks */
+  function tapered(length: number, continuity?: string): CapValue;
 }
 
 /** @type ColorInstance */

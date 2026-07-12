@@ -116,6 +116,8 @@ import type {
   PatternValue,
   PointValue,
   PolarVectorValue,
+  CapValue,
+  CapNamespace,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -202,6 +204,8 @@ export type {
   PatternValue,
   PointValue,
   PolarVectorValue,
+  CapValue,
+  CapNamespace,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -232,6 +236,10 @@ export function isPointValue(value: Value): value is PointValue {
 
 export function isPolarVectorValue(value: Value): value is PolarVectorValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PolarVectorValue';
+}
+
+export function isCapValue(value: Value): value is CapValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CapValue';
 }
 
 export function isCyclerValue(value: Value): value is CyclerValue {
@@ -468,6 +476,7 @@ export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
   GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
   Direction: { CW: 'cw', CCW: 'ccw' },
+  CurveContinuity: { G0: 'position', G1: 'tangent', G2: 'curvature' },
   ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
   InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
   TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
@@ -798,6 +807,10 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   // PathBlock namespace
   if (name === 'PathBlock') {
     return { type: 'PathBlockNamespace' } as PathBlockNamespace;
+  }
+  // Cap namespace (end caps for compoundVariableOffset)
+  if (name === 'Cap') {
+    return { type: 'CapNamespace' } as CapNamespace;
   }
   // Built-in enums
   if (name in BUILTIN_ENUMS) {
@@ -4631,6 +4644,42 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       default:
         throw mError(`Unknown Object method: ${expr.method}`);
+    }
+  }
+
+  // CapNamespace methods (Cap.butt, Cap.round, Cap.elliptical, Cap.tapered)
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'CapNamespace') {
+    switch (expr.method) {
+      case 'butt': {
+        if (expr.args.length !== 0) throw mError('Cap.butt() expects 0 arguments');
+        return { type: 'CapValue' as const, cap: 'butt' };
+      }
+      case 'round': {
+        if (expr.args.length !== 0) throw mError('Cap.round() expects 0 arguments');
+        return { type: 'CapValue' as const, cap: 'round' };
+      }
+      case 'elliptical': {
+        if (expr.args.length !== 1) throw mError('Cap.elliptical() expects 1 argument (projection)');
+        const projection = evaluateExpression(expr.args[0], scope);
+        if (typeof projection !== 'number') throw mError('Cap.elliptical() projection must be a number');
+        return { type: 'CapValue' as const, cap: 'elliptical', projection };
+      }
+      case 'tapered': {
+        if (expr.args.length < 1 || expr.args.length > 2)
+          throw mError('Cap.tapered() expects 1 or 2 arguments (length, continuity?)');
+        const length = evaluateExpression(expr.args[0], scope);
+        if (typeof length !== 'number') throw mError('Cap.tapered() length must be a number');
+        let continuity: string | undefined;
+        if (expr.args.length === 2) {
+          const c = evaluateExpression(expr.args[1], scope);
+          if (typeof c !== 'string' || !Object.values(BUILTIN_ENUMS.CurveContinuity).includes(c))
+            throw mError('Cap.tapered() second argument must be a CurveContinuity value');
+          continuity = c;
+        }
+        return { type: 'CapValue' as const, cap: 'tapered', length, continuity };
+      }
+      default:
+        throw mError(`Unknown Cap method: ${expr.method}`);
     }
   }
 

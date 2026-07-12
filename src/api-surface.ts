@@ -18,6 +18,7 @@ export const ENUM_METADATA: Record<string, { detail: string; boost: number }> = 
   SpreadMethod: { detail: 'Gradient spread method', boost: 8 },
   GradientUnits: { detail: 'Gradient coordinate system', boost: 6 },
   Direction: { detail: 'Rotation direction (CW/CCW)', boost: 8 },
+  CurveContinuity: { detail: 'Curve join continuity (G0 corner / G1 tangent / G2 curvature)', boost: 8 },
   ConicSpread: { detail: 'Conic gradient edge behavior', boost: 6 },
   InnerFill: { detail: 'Conic gradient inner fill mode', boost: 6 },
   TopoMethod: { detail: 'Topological gradient method', boost: 6 },

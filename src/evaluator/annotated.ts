@@ -117,6 +117,7 @@ const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
   SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
   GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
   Direction: { CW: 'cw', CCW: 'ccw' },
+  CurveContinuity: { G0: 'position', G1: 'tangent', G2: 'curvature' },
   ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
   InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
   TopoMethod: { Distance: 'distance', Laplace: 'laplace' },

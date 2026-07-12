@@ -9,6 +9,7 @@ export const ENUM_COMPLETIONS: CompletionEntry[] = [
   { label: 'BBoxAnchor', kind: 'variable', detail: 'Bounding box anchor position', boost: 8 },
   { label: 'BlendMode', kind: 'variable', detail: 'CSS blend-mode keyword', boost: 6 },
   { label: 'ConicSpread', kind: 'variable', detail: 'Conic gradient edge behavior', boost: 6 },
+  { label: 'CurveContinuity', kind: 'variable', detail: 'Curve join continuity (G0 corner / G1 tangent / G2 curvature)', boost: 8 },
   { label: 'Direction', kind: 'variable', detail: 'Rotation direction (CW/CCW)', boost: 8 },
   { label: 'Easing', kind: 'variable', detail: 'Easing function for interpolation', boost: 10 },
   { label: 'GlowMode', kind: 'variable', detail: 'GlowFilter outer/inner mode', boost: 8 },
@@ -61,6 +62,11 @@ export const ENUM_MEMBER_MAP: Record<string, CompletionEntry[]> = {
     { label: 'Clamp', kind: 'constant', detail: 'ConicSpread.Clamp → "clamp"', boost: 8 },
     { label: 'Repeat', kind: 'constant', detail: 'ConicSpread.Repeat → "repeat"', boost: 8 },
     { label: 'Transparent', kind: 'constant', detail: 'ConicSpread.Transparent → "transparent"', boost: 8 },
+  ],
+  CurveContinuity: [
+    { label: 'G0', kind: 'constant', detail: 'CurveContinuity.G0 → "position"', boost: 8 },
+    { label: 'G1', kind: 'constant', detail: 'CurveContinuity.G1 → "tangent"', boost: 8 },
+    { label: 'G2', kind: 'constant', detail: 'CurveContinuity.G2 → "curvature"', boost: 8 },
   ],
   Direction: [
     { label: 'CW', kind: 'constant', detail: 'Direction.CW → "cw"', boost: 8 },
@@ -262,6 +268,7 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
   { label: 'ctx', kind: 'variable', detail: 'ctx — Path context (position, start, heading)', boost: 16 },
   { label: 'Object', kind: 'variable', detail: 'Object — Static methods (keys, values, entries)', boost: 6 },
   { label: 'Color', kind: 'variable', detail: 'Color — Color creation and manipulation', boost: 8 },
+  { label: 'Cap', kind: 'function', detail: 'End-cap constructors for compoundVariableOffset ribbons', boost: 6 },
 ];
 
 /** Type member completion sets keyed by Pathogen type name */
@@ -627,6 +634,17 @@ export const NAMESPACE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'mix', kind: 'function', detail: 'Color.mix(c1, c2, t) — Interpolate colors', boost: 8 },
       { label: 'palette', kind: 'function', detail: 'Color.palette(color, n) — Generate palette', boost: 8 },
       { label: 'lightDark', kind: 'function', detail: 'Color.lightDark(light, dark) — Theme-aware color', boost: 8 },
+    ],
+  },
+  'Cap': {
+    properties: [
+
+    ],
+    methods: [
+      { label: 'butt', kind: 'function', detail: 'Cap.butt() — straight line between the two profile endpoints', boost: 8 },
+      { label: 'round', kind: 'function', detail: 'Cap.round() — semicircle bulging outward', boost: 8 },
+      { label: 'elliptical', kind: 'function', detail: 'Cap.elliptical(projection) — half-ellipse projecting `projection` units outward', boost: 8 },
+      { label: 'tapered', kind: 'function', detail: 'Cap.tapered(length, continuity?) — apex `length` units out; optional CurveContinuity smooths the flanks', boost: 8 },
     ],
   },
 };
