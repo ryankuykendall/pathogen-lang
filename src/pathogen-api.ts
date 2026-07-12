@@ -554,6 +554,10 @@ export interface PathogenPathBlock {
   // Transforms
   /** offset(distance) — Offset path */
   offset(distance: number): PathogenPathBlock;
+  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity */
+  variableOffset(): PathogenPathBlock;
+  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon */
+  compoundVariableOffset(): PathogenPathBlock;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenPathBlock;
   /** scale(sx, sy) — Scale path */

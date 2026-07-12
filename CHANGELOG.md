@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### `variableOffset` / `compoundVariableOffset` — variable-distance offset paths with per-stop curve continuity
+
+- **Core.** Two new PathBlock methods that trace a *new* path alongside a reference "spine" using a gradient-stop-like syntax. Where `offset(distance)` produces a uniform parallel curve, these let the offset distance **vary** per stop and let you choose the join continuity at each stop. Model A ("rail-guided points"): each stop samples the spine at an arc-length fraction and steps along the spine normal to a point; the points are connected by a curve whose joins you control. (`src/evaluator/variable-offset-geometry.ts`, `src/evaluator/index.ts`.)
+  ```
+  let edge = spine.variableOffset() {|go, pb|
+    go.stop(10%, 5,  CurveContinuity.G1);
+    go.stop(50%, 15, CurveContinuity.G2);
+    go.stop(90%, 20, CurveContinuity.G1);
+  };
+  ```
+- **`CurveContinuity` enum** — `G0` (corner), `G1` (tangent-continuous, no kink), `G2` (curvature-continuous, seamless flow). A run of `G1`/`G2` stops is built as one spline; `G2` runs solve a **clamped** cubic spline for curvature continuity, with centripetal parameterization. Endpoint tangents default to the spine's own direction (natural ⅓-chord tension) or take an explicit `PolarVector` handle via `go.startTangent`/`go.endTangent`.
+- **`compoundVariableOffset`** — two profiles (one per side), closeable into a filled ribbon with **end caps**: `Cap.butt()`, `Cap.round()`, `Cap.elliptical(projection)`, `Cap.tapered(length, continuity?)`. Omitting a cap leaves that end open; omitting both yields two unconnected profiles. The `pb` block parameter is the spine itself, exposing the existing `get`/`tangent`/`normal`/`length`/`vertices` sampling API.
+- **Documentation.** New published page `docs/variable-offset.md`.
+- **Three-surface parity.** Works identically in the CLI, playground preview, and VS Code preview (returns a standard `PathBlockValue`); editor completions for the methods, `Cap.*`, and `CurveContinuity.*` in both the playground and VS Code LSP. Not supported in `--annotated` debug mode (raises a clear error).
+
 #### Shared CSS-transform pan/zoom controller — large-SVG pan/zoom ~16× faster
 
 - **Problem.** Panning/zooming a large workspace was janky. Puppeteer profiling (`scripts/perf-pan-zoom-audit.ts`, `scripts/perf-transform-probe.ts`, `project-docs/pan-zoom-performance/`) proved it was **raster-bound, not JS-bound**: mutating an SVG's `viewBox` makes Chrome re-rasterize the whole drawing every frame (~300 ms/frame for a scene of 481 paths carrying 72.5M chars of path data — *not* the assumed ~422k DOM nodes; `circle()` in a `PathLayer` emits path data, not elements). Driving pan/zoom with a CSS `transform` on the composited layer instead is ~25× cheaper for pan / ~12× for zoom.

@@ -402,6 +402,8 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'reverse', kind: 'function', detail: 'reverse() — Reverse direction', boost: 8 },
       { label: 'boundingBox', kind: 'function', detail: 'boundingBox() — Get bounding box', boost: 8 },
       { label: 'offset', kind: 'function', detail: 'offset(distance) — Offset path', boost: 8 },
+      { label: 'variableOffset', kind: 'function', detail: 'variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity', boost: 8 },
+      { label: 'compoundVariableOffset', kind: 'function', detail: 'compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon', boost: 8 },
       { label: 'mirror', kind: 'function', detail: 'mirror(angle) — Mirror path', boost: 8 },
       { label: 'scale', kind: 'function', detail: 'scale(sx, sy) — Scale path', boost: 8 },
       { label: 'rotateAtVertexIndex', kind: 'function', detail: 'rotateAtVertexIndex(index, angle) — Rotate at vertex', boost: 8 },

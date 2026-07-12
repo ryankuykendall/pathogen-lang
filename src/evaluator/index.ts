@@ -2510,7 +2510,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         // pb = the spine PathBlockValue itself (exposes get/tangent/normal/length/vertices).
         if (params.length > 1) setVariable(blockScope, params[1], obj);
         evaluateStatementsToAccum(expr.block.body, blockScope, []);
-        if (builder.stops.length < 1) throw mError('variableOffset() needs at least one go.stop(...)');
+        if (builder.stops.length < 2)
+          throw mError('variableOffset() needs at least 2 stops to trace a path (each go.stop() places one point)');
 
         const simpleStops: SimpleStop[] = builder.stops.map((s) => ({
           time: s.time,
@@ -2558,7 +2559,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (params.length > 0) setVariable(blockScope, params[0], builder);
         if (params.length > 1) setVariable(blockScope, params[1], obj);
         evaluateStatementsToAccum(expr.block.body, blockScope, []);
-        if (builder.stops.length < 1) throw mError('compoundVariableOffset() needs at least one go.stop(...)');
+        if (builder.stops.length < 2)
+          throw mError('compoundVariableOffset() needs at least 2 stops to trace a ribbon (each go.stop() places one cross-section)');
 
         const compStops: CompoundStop[] = builder.stops.map((s) => ({
           time: s.time,
@@ -3982,6 +3984,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       case 'startTangent':
       case 'endTangent': {
+        if (b.compound)
+          throw mError(
+            `go.${expr.method}() is only available in the simple variableOffset() — compoundVariableOffset() ends are shaped by startCap()/endCap()`,
+          );
         if (expr.args.length !== 1) throw mError(`go.${expr.method}() expects 1 argument (PolarVector)`);
         const v = evaluateExpression(expr.args[0], scope);
         if (!isPolarVectorValue(v)) throw mError(`go.${expr.method}() argument must be a PolarVector`);

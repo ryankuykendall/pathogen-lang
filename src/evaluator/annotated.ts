@@ -2622,11 +2622,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
         return { type: 'ArrayValue' as const, elements: glyphs };
       }
-      case 'variableOffset':
-      case 'compoundVariableOffset':
-        throw mError(
-          `${expr.method}() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).`,
-        );
       default:
         throw mError(`Unknown PathBlock method: ${expr.method}`);
     }

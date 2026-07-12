@@ -311,7 +311,8 @@ function getDeepMembers(obj: string, prop: string, source?: string): MemberCompl
 function getMethodReturnType(method: string): string | null {
   const METHOD_RETURN_TYPES: Record<string, string> = {
     // PathBlock methods returning PathBlock
-    offset: 'PathBlock', reverse: 'PathBlock', mirror: 'PathBlock',
+    offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock',
+    reverse: 'PathBlock', mirror: 'PathBlock',
     subPath: 'PathBlock', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock',
     fillet: 'PathBlock', filletAtVertex: 'PathBlock',
     ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock',

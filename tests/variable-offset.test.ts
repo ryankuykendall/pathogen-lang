@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { compilePath, parseSVGPath } from './helpers';
+import { StringTextDocument } from '../src/language-services/document';
+import { getCompletions } from '../src/language-services/completion';
 import {
   buildContinuitySpline,
+  buildSimpleVariableOffset,
+  buildCompoundVariableOffset,
+  continuityFromValue,
   projectStop,
   type Knot,
   type GeomCmd,
+  type SimpleStop,
+  type CompoundStop,
 } from '../src/evaluator/variable-offset-geometry';
+import { BUILTIN_ENUMS } from '../src/evaluator';
 
 // ---- cubic sampling helpers (reconstruct absolute control points from relative-`c`) ----
 
@@ -201,20 +209,43 @@ describe('variableOffset — language surface (Phase 3)', () => {
     ).not.toThrow();
   });
 
-  it('a single stop yields just a move (no cubics)', () => {
-    const result = compilePath(`
+  it('rejects a single stop — a path needs at least two points', () => {
+    expect(() =>
+      compilePath(`
       let spine = @{ h 100 };
       let e = spine.variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); };
       e.drawTo(0, 0);
+    `),
+    ).toThrow(/at least 2 stops/);
+  });
+
+  it('rejects a tangent handle on the compound form', () => {
+    expect(() =>
+      compilePath(
+        'let s = @{ h 100 }; let r = s.compoundVariableOffset() {|go, pb| go.startTangent(PolarVector(0deg, 5)); go.stop(10%, 5, CurveContinuity.G1, -5, CurveContinuity.G1); go.stop(90%, 5, CurveContinuity.G1, -5, CurveContinuity.G1); }; r.drawTo(0,0);',
+      ),
+    ).toThrow(/simple variableOffset/);
+  });
+
+  it('coincident stops do not crash or emit NaN', () => {
+    const result = compilePath(`
+      let s = @{ h 100 };
+      let e = s.variableOffset() {|go, pb|
+        go.stop(50%, 10, CurveContinuity.G1);
+        go.stop(50%, 10, CurveContinuity.G1);
+        go.stop(90%, 20, CurveContinuity.G1);
+      };
+      e.drawTo(0, 0);
     `);
-    expect(cubicCount(result)).toBe(0);
+    expect(result).not.toContain('NaN');
+    expect(result.trim().startsWith('M')).toBe(true);
   });
 
   it('rejects missing block / no stops / out-of-range time / non-CurveContinuity', () => {
     expect(() => compilePath('let s = @{ h 100 }; let e = s.variableOffset(); e.drawTo(0,0);')).toThrow();
     expect(() =>
       compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| }; e.drawTo(0,0);'),
-    ).toThrow(/at least one/);
+    ).toThrow(/at least 2 stops/);
     expect(() =>
       compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| go.stop(150%, 5, CurveContinuity.G1); }; e.drawTo(0,0);'),
     ).toThrow(/between 0 and 1/);
@@ -286,6 +317,97 @@ describe('compoundVariableOffset — ribbons + caps (Phase 4)', () => {
     expect(() =>
       compilePath('let s = @{ h 100 }; let r = s.compoundVariableOffset() {|go, pb| go.startCap(5); go.stop(50%, 5, CurveContinuity.G1, -5, CurveContinuity.G1); }; r.drawTo(0,0);'),
     ).toThrow(/Cap/);
+  });
+});
+
+describe('variableOffset — editor completions (playground + VS Code LSP)', () => {
+  const completeAtEnd = (src: string): string[] => {
+    const lines = src.split('\n');
+    return getCompletions(new StringTextDocument(src), { line: lines.length - 1, character: lines[lines.length - 1].length }).map(
+      (i) => i.label,
+    );
+  };
+
+  it('offers variableOffset / compoundVariableOffset on a PathBlock', () => {
+    const labels = completeAtEnd('let s = @{ h 100 };\ns.');
+    expect(labels).toContain('variableOffset');
+    expect(labels).toContain('compoundVariableOffset');
+  });
+
+  it('offers the Cap constructors', () => {
+    const labels = completeAtEnd('Cap.');
+    expect(labels).toEqual(expect.arrayContaining(['butt', 'round', 'elliptical', 'tapered']));
+  });
+
+  it('offers the CurveContinuity members', () => {
+    const labels = completeAtEnd('CurveContinuity.');
+    expect(labels).toEqual(expect.arrayContaining(['G0', 'G1', 'G2']));
+  });
+});
+
+describe('variable-offset orchestration builders (exact coordinates)', () => {
+  // Straight horizontal spine (0,0)→(100,0).
+  const spine: GeomCmd[] = [
+    { command: 'M', args: [0, 0], start: { x: 0, y: 0 }, end: { x: 0, y: 0 } },
+    { command: 'L', args: [100, 0], start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
+  ];
+
+  it('buildSimpleVariableOffset emits one normalized cubic with natural ⅓-chord handles', () => {
+    const stops: SimpleStop[] = [
+      { time: 0.1, offset: 10, continuity: 'G1' },
+      { time: 0.9, offset: 10, continuity: 'G1' },
+    ];
+    const cmds = buildSimpleVariableOffset(spine, stops);
+    // knots (10,-10)→(90,-10); normalized to origin (10,-10) → segment (0,0)→(80,0).
+    // spine-derived flat tangents, natural handle = chord/3 = 80/3.
+    expect(cmds.length).toBe(1);
+    expect(cmds[0].command).toBe('c');
+    const [c1x, c1y, c2x, c2y, ex, ey] = cmds[0].args;
+    expect(c1x).toBeCloseTo(80 / 3, 4);
+    expect(c1y).toBeCloseTo(0, 6);
+    expect(c2x).toBeCloseTo((2 * 80) / 3, 4);
+    expect(c2y).toBeCloseTo(0, 6);
+    expect(ex).toBeCloseTo(80, 6);
+    expect(ey).toBeCloseTo(0, 6);
+  });
+
+  it('buildCompoundVariableOffset follows the §4.8 traversal and closes with both caps', () => {
+    const stops: CompoundStop[] = [
+      { time: 0.1, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
+      { time: 0.9, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
+    ];
+    const cmds = buildCompoundVariableOffset(spine, stops, {
+      startCap: { cap: 'butt' },
+      endCap: { cap: 'butt' },
+    });
+    // profile1 fwd → end butt cap → profile2 reversed → start butt cap → close.
+    expect(cmds.map((c) => c.command)).toEqual(['c', 'l', 'c', 'l', 'z']);
+    // end cap bridges p1End(90,-10)→p2End(90,10): a vertical line of +20 (relative).
+    expect(cmds[1].args).toEqual([0, 20]);
+    // start cap bridges p2Start(10,10)→p1Start(10,-10): vertical line of -20.
+    expect(cmds[3].args).toEqual([0, -20]);
+  });
+
+  it('buildCompoundVariableOffset with no caps emits two separate subpaths', () => {
+    const stops: CompoundStop[] = [
+      { time: 0.1, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
+      { time: 0.9, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
+    ];
+    const cmds = buildCompoundVariableOffset(spine, stops);
+    // profile1 cubic, then an explicit M for the profile-2 subpath, then its cubic.
+    expect(cmds.map((c) => c.command)).toEqual(['c', 'M', 'c']);
+    expect(cmds.some((c) => c.command === 'z')).toBe(false);
+  });
+});
+
+describe('CurveContinuity value mapping stays in sync with BUILTIN_ENUMS', () => {
+  it('continuityFromValue accepts every enum value and maps to the right G-level', () => {
+    for (const v of Object.values(BUILTIN_ENUMS.CurveContinuity)) {
+      expect(() => continuityFromValue(v)).not.toThrow();
+    }
+    expect(continuityFromValue(BUILTIN_ENUMS.CurveContinuity.G0)).toBe('G0');
+    expect(continuityFromValue(BUILTIN_ENUMS.CurveContinuity.G1)).toBe('G1');
+    expect(continuityFromValue(BUILTIN_ENUMS.CurveContinuity.G2)).toBe('G2');
   });
 });
 

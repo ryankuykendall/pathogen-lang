@@ -125,7 +125,8 @@ The compiler rejects:
 - **`time` outside `[0, 1]`** — stops must fall on the spine.
 - **An unknown `continuity` value** — use `CurveContinuity.G0`, `.G1`, or `.G2`.
 - **A cap on the simple form** — `startCap`/`endCap` apply only to `compoundVariableOffset`.
-- **Fewer than one stop** — an offset needs at least one point to place.
+- **A tangent handle on the compound form** — `startTangent`/`endTangent` apply only to the simple `variableOffset`; a compound ribbon's ends are shaped by `startCap`/`endCap`.
+- **Fewer than two stops** — a path needs at least two points, so both forms require at least two `go.stop(...)` calls.
 
 Self-intersecting output is **not** an error: if dense stops or extreme offsets make the curve cross itself, Pathogen emits the true curve as-is rather than silently reshaping your geometry.
 
