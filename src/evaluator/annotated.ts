@@ -1748,6 +1748,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     // Transform methods: reverse, boundingBox, offset
     const pathTransformResult = evaluateAnnotatedPathTransforms(obj, expr, scope);
     if (pathTransformResult !== null) return pathTransformResult;
+    if (expr.method === 'variableOffset' || expr.method === 'compoundVariableOffset') {
+      throw mError(
+        `${expr.method}() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).`,
+      );
+    }
     throw mError(`Unknown PathBlock method: ${expr.method}`);
   }
 
@@ -2617,6 +2622,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
         return { type: 'ArrayValue' as const, elements: glyphs };
       }
+      case 'variableOffset':
+      case 'compoundVariableOffset':
+        throw mError(
+          `${expr.method}() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).`,
+        );
       default:
         throw mError(`Unknown PathBlock method: ${expr.method}`);
     }

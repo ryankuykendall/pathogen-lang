@@ -230,6 +230,65 @@ describe('variableOffset — language surface (Phase 3)', () => {
   });
 });
 
+describe('compoundVariableOffset — ribbons + caps (Phase 4)', () => {
+  const moveCount = (d: string) => parseSVGPath(d).filter((c) => c.command.toLowerCase() === 'm').length;
+
+  it('with both caps, produces a single closed ribbon', () => {
+    const result = compilePath(`
+      let spine = @{ h 100 };
+      let ribbon = spine.compoundVariableOffset() {|go, pb|
+        go.startCap(Cap.round());
+        go.stop(10%,  6, CurveContinuity.G2, -6, CurveContinuity.G2);
+        go.stop(50%, 12, CurveContinuity.G2, -4, CurveContinuity.G2);
+        go.stop(90%, 18, CurveContinuity.G2, -8, CurveContinuity.G2);
+        go.endCap(Cap.tapered(10, CurveContinuity.G2));
+      };
+      ribbon.drawTo(0, 0);
+    `);
+    expect(result).toClosePath();
+    expect(moveCount(result)).toBe(1); // single subpath
+  });
+
+  it('with no caps, produces two separate (unclosed) profiles', () => {
+    const result = compilePath(`
+      let spine = @{ h 100 };
+      let two = spine.compoundVariableOffset() {|go, pb|
+        go.stop(10%, 6, CurveContinuity.G1, -6, CurveContinuity.G1);
+        go.stop(90%, 12, CurveContinuity.G1, -4, CurveContinuity.G1);
+      };
+      two.drawTo(0, 0);
+    `);
+    expect(result).not.toClosePath();
+    expect(moveCount(result)).toBe(2); // two subpaths (drawTo move + the profile-2 move)
+  });
+
+  it('every cap style evaluates', () => {
+    for (const cap of ['Cap.butt()', 'Cap.round()', 'Cap.elliptical(6)', 'Cap.tapered(10)', 'Cap.tapered(10, CurveContinuity.G2)']) {
+      expect(() =>
+        compilePath(`
+        let s = @{ h 100 };
+        let r = s.compoundVariableOffset() {|go, pb|
+          go.startCap(${cap});
+          go.stop(20%, 8, CurveContinuity.G1, -8, CurveContinuity.G1);
+          go.stop(80%, 8, CurveContinuity.G1, -8, CurveContinuity.G1);
+          go.endCap(${cap});
+        };
+        r.drawTo(0, 0);
+      `),
+      ).not.toThrow();
+    }
+  });
+
+  it('compound go.stop requires 5 args; a cap requires a Cap value', () => {
+    expect(() =>
+      compilePath('let s = @{ h 100 }; let r = s.compoundVariableOffset() {|go, pb| go.stop(50%, 5, CurveContinuity.G1); }; r.drawTo(0,0);'),
+    ).toThrow(/5 arguments/);
+    expect(() =>
+      compilePath('let s = @{ h 100 }; let r = s.compoundVariableOffset() {|go, pb| go.startCap(5); go.stop(50%, 5, CurveContinuity.G1, -5, CurveContinuity.G1); }; r.drawTo(0,0);'),
+    ).toThrow(/Cap/);
+  });
+});
+
 describe('variable-offset geometry: stop projection', () => {
   // A straight horizontal spine from (0,0) to (100,0): L command.
   const spine: GeomCmd[] = [

@@ -17,7 +17,7 @@
 
 import type { Point } from './context';
 import { samplePathAtFraction } from './sampling';
-import { unitNormal } from './path-transforms';
+import { unitNormal, reverseCommands } from './path-transforms';
 
 export type Continuity = 'G0' | 'G1' | 'G2';
 
@@ -327,24 +327,155 @@ export function buildSimpleVariableOffset(
     return { point, continuity: s.continuity, spineTangent };
   });
   if (knots.length === 0) return [];
+  const spline = buildContinuitySpline(knots, endpointSpecs(knots, startOverride, endOverride));
+  return stripLeadingMove(normalizeToOrigin(spline));
+}
 
-  let start: EndpointSpec | undefined;
-  let end: EndpointSpec | undefined;
+/**
+ * Resolve endpoint boundary conditions for a knot run: spine-derived DIRECTION with
+ * natural (⅓-chord) tension by default; a PolarVector override supplies both an
+ * explicit direction and an explicit handle length. Empty for < 2 knots.
+ */
+function endpointSpecs(knots: Knot[], startOverride?: PolarOverride, endOverride?: PolarOverride): SplineOptions {
   const n = knots.length;
-  if (n >= 2) {
-    // Default: spine-derived DIRECTION with natural (⅓-chord) tension. A PolarVector
-    // override supplies both an explicit direction and an explicit handle length.
-    start = startOverride
+  if (n < 2) return {};
+  return {
+    start: startOverride
       ? { dir: startOverride.angle, tension: startOverride.distance }
-      : { dir: knots[0].spineTangent };
-    end = endOverride
-      ? { dir: endOverride.angle, tension: endOverride.distance }
-      : { dir: knots[n - 1].spineTangent };
+      : { dir: knots[0].spineTangent },
+    end: endOverride ? { dir: endOverride.angle, tension: endOverride.distance } : { dir: knots[n - 1].spineTangent },
+  };
+}
+
+/** Drop a leading absolute M so the result is a relative sequence positioned by drawTo. */
+function stripLeadingMove(cmds: GeomCmd[]): GeomCmd[] {
+  return cmds.length > 0 && cmds[0].command === 'M' ? cmds.slice(1) : cmds;
+}
+
+// ---- end caps ----
+
+export interface CapSpec {
+  cap: 'butt' | 'round' | 'elliptical' | 'tapered';
+  projection?: number; // elliptical
+  length?: number; // tapered
+  continuity?: Continuity; // tapered
+}
+
+const crossZ = (u: Point, v: Point): number => u.x * v.y - u.y * v.x;
+const unitAt = (angle: number): Point => ({ x: Math.cos(angle), y: Math.sin(angle) });
+
+/**
+ * Build the commands for one end cap, from profile endpoint A to profile endpoint B,
+ * bulging along the unit `outward` direction. Returns segments starting at A (pen is
+ * assumed there) and ending at B — no leading move.
+ */
+function buildCap(spec: CapSpec, A: Point, B: Point, outward: Point): GeomCmd[] {
+  const chord = sub(B, A);
+  const chordLen = len(chord);
+  if (chordLen < EPS) return [];
+  const rel = (from: Point, to: Point): number[] => [to.x - from.x, to.y - from.y];
+
+  switch (spec.cap) {
+    case 'butt':
+      return [{ command: 'l', args: [chord.x, chord.y], start: { ...A }, end: { ...B } }];
+
+    case 'round':
+    case 'elliptical': {
+      const rx = chordLen / 2;
+      const ry = spec.cap === 'round' ? rx : spec.projection ?? rx;
+      const phi = spec.cap === 'round' ? 0 : (Math.atan2(chord.y, chord.x) * 180) / Math.PI;
+      // Sweep so the arc bulges toward `outward`.
+      const sweep = crossZ(chord, outward) < 0 ? 1 : 0;
+      return [{ command: 'a', args: [rx, ry, phi, 0, sweep, chord.x, chord.y], start: { ...A }, end: { ...B } }];
+    }
+
+    case 'tapered': {
+      const L = spec.length ?? chordLen / 2;
+      const apex = add(scale(add(A, B), 0.5), scale(outward, L));
+      if ((spec.continuity ?? 'G0') === 'G0') {
+        return [
+          { command: 'l', args: rel(A, apex), start: { ...A }, end: { ...apex } },
+          { command: 'l', args: rel(apex, B), start: { ...apex }, end: { ...B } },
+        ];
+      }
+      // Smooth taper (G1/G2): one cubic A→B pulled toward the apex.
+      const cp1 = add(A, scale(sub(apex, A), 0.6));
+      const cp2 = add(B, scale(sub(apex, B), 0.6));
+      return [
+        {
+          command: 'c',
+          args: [cp1.x - A.x, cp1.y - A.y, cp2.x - A.x, cp2.y - A.y, chord.x, chord.y],
+          start: { ...A },
+          end: { ...B },
+        },
+      ];
+    }
+  }
+}
+
+// ---- compound (two-profile ribbon) ----
+
+export interface CompoundStop {
+  time: number;
+  offset1: number;
+  continuity1: Continuity;
+  offset2: number;
+  continuity2: Continuity;
+}
+
+export interface CompoundOptions {
+  startOverride?: PolarOverride;
+  endOverride?: PolarOverride;
+  startCap?: CapSpec;
+  endCap?: CapSpec;
+}
+
+/**
+ * Two-profile ribbon. Traversal (design-note §4.8): profile 1 forward → end cap →
+ * profile 2 reversed → start cap → close. A missing cap leaves that end open; with
+ * neither cap the two profiles are emitted as separate, unconnected subpaths.
+ */
+export function buildCompoundVariableOffset(
+  spine: GeomCmd[],
+  stops: CompoundStop[],
+  opts: CompoundOptions = {},
+): GeomCmd[] {
+  if (stops.length === 0) return [];
+  const project = (offsetKey: 'offset1' | 'offset2', contKey: 'continuity1' | 'continuity2'): Knot[] =>
+    stops.map((s) => {
+      const { point, spineTangent } = projectStop(spine, s.time, s[offsetKey]);
+      return { point, continuity: s[contKey], spineTangent };
+    });
+  const p1Knots = project('offset1', 'continuity1');
+  const p2Knots = project('offset2', 'continuity2');
+
+  const p1 = buildContinuitySpline(p1Knots, endpointSpecs(p1Knots, opts.startOverride, opts.endOverride));
+  const p2 = buildContinuitySpline(p2Knots, endpointSpecs(p2Knots));
+  const p2Rev = reverseCommands(p2);
+
+  const last = stops.length - 1;
+  const p1Start = p1Knots[0].point;
+  const p1End = p1Knots[last].point;
+  const p2Start = p2Knots[0].point;
+  const p2End = p2Knots[last].point;
+  const endOutward = unitAt(p1Knots[last].spineTangent); // forward beyond the last stop
+  const startOutward = unitAt(p1Knots[0].spineTangent + Math.PI); // backward before the first stop
+
+  // reverseCommands returns draw commands only (no leading M); it assumes the pen
+  // is already at the reversed start (p2End).
+  const cmds: GeomCmd[] = [...p1]; // M p1Start + profile-1 cubics
+  if (opts.endCap) {
+    cmds.push(...buildCap(opts.endCap, p1End, p2End, endOutward)); // pen → p2End
+    cmds.push(...p2Rev); // reversed profile 2 from p2End
+  } else {
+    // No end cap → profile 2 is a separate subpath; move to its (reversed) start.
+    cmds.push({ command: 'M', args: [p2End.x, p2End.y], start: { ...p2End }, end: { ...p2End } });
+    cmds.push(...p2Rev);
+  }
+  if (opts.startCap) cmds.push(...buildCap(opts.startCap, p2Start, p1Start, startOutward));
+  if (opts.startCap && opts.endCap) {
+    cmds.push({ command: 'z', args: [], start: { ...p1Start }, end: { ...p1Start } });
   }
 
-  const spline = buildContinuitySpline(knots, { start, end });
-  const normalized = normalizeToOrigin(spline);
-  // Drop the leading absolute M: a PathBlock is a relative command sequence that
-  // drawTo positions (matches offset()'s output — no self-contained move).
-  return normalized.length > 0 && normalized[0].command === 'M' ? normalized.slice(1) : normalized;
+  return stripLeadingMove(normalizeToOrigin(cmds));
 }

@@ -55,7 +55,14 @@ import {
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
-import { buildSimpleVariableOffset, continuityFromValue, type SimpleStop } from './variable-offset-geometry';
+import {
+  buildSimpleVariableOffset,
+  buildCompoundVariableOffset,
+  continuityFromValue,
+  type SimpleStop,
+  type CompoundStop,
+  type CapSpec,
+} from './variable-offset-geometry';
 import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints, resolveFontFamily, resolveFontWeight, resolveEffectiveFontSize } from './font-metrics';
 import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
 import { normalizeCodeText, tokenizeLine, getTokenColor } from './code-snippet';
@@ -2533,6 +2540,64 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           pathStrings: voResult.map((c) => commandToPathString(c)),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: voLast.end.x, y: voLast.end.y },
+        };
+      }
+
+      case 'compoundVariableOffset': {
+        if (expr.args.length !== 0)
+          throw mError('compoundVariableOffset() takes no arguments — use compoundVariableOffset() {|go, pb| ... }');
+        if (!expr.block)
+          throw mError('compoundVariableOffset() requires a block, e.g. compoundVariableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1, -10, CurveContinuity.G1); }');
+        const builder: VariableOffsetBuilderValue = {
+          type: 'VariableOffsetBuilderValue',
+          compound: true,
+          stops: [],
+        };
+        const blockScope = createScope(scope);
+        const params = expr.block.params;
+        if (params.length > 0) setVariable(blockScope, params[0], builder);
+        if (params.length > 1) setVariable(blockScope, params[1], obj);
+        evaluateStatementsToAccum(expr.block.body, blockScope, []);
+        if (builder.stops.length < 1) throw mError('compoundVariableOffset() needs at least one go.stop(...)');
+
+        const compStops: CompoundStop[] = builder.stops.map((s) => ({
+          time: s.time,
+          offset1: s.offset1,
+          continuity1: continuityFromValue(s.continuity1),
+          offset2: s.offset2 ?? 0,
+          continuity2: continuityFromValue(s.continuity2 ?? s.continuity1),
+        }));
+        const capToSpec = (c: CapValue | undefined): CapSpec | undefined =>
+          c
+            ? {
+                cap: c.cap,
+                projection: c.projection,
+                length: c.length,
+                continuity: c.continuity ? continuityFromValue(c.continuity) : undefined,
+              }
+            : undefined;
+        const cvResult = buildCompoundVariableOffset(obj.commands, compStops, {
+          startOverride: builder.startTangent,
+          endOverride: builder.endTangent,
+          startCap: capToSpec(builder.startCap),
+          endCap: capToSpec(builder.endCap),
+        });
+        if (cvResult.length === 0) {
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
+        }
+        const cvLast = cvResult[cvResult.length - 1];
+        return {
+          type: 'PathBlockValue' as const,
+          commands: cvResult,
+          pathStrings: cvResult.map((c) => commandToPathString(c)),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: cvLast.end.x, y: cvLast.end.y },
         };
       }
 

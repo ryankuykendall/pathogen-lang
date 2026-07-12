@@ -248,6 +248,15 @@ not the sampling/normal machinery.
   `partition` / `offset` cases ~2377 / ~2441) — the new methods slot in beside them
   and return a `PathBlockValue`.
 
+### Known limitation — `--annotated` debug mode
+`variableOffset` / `compoundVariableOffset` work in all three user surfaces (CLI,
+playground, VS Code preview — all use the main evaluator). They are **not** wired
+into the parallel `annotated.ts` evaluator (`--annotated` / `compileAnnotated`),
+which has a reduced value system (it lacks `PolarVectorValue`, the `go` builder,
+and `Cap`). Using them in `--annotated` mode raises a clear, explicit error rather
+than producing wrong output. Full annotated support is deferred (debug-only mode;
+disproportionate duplication for the value). Decided 2026-07-12.
+
 ### Implementation-phase scope (NOT this note)
 Because the result is a PathBlock, it flows through the existing PathBlock render
 path — but per `.claude/CLAUDE.md` the new methods/constructors/enum still require:
