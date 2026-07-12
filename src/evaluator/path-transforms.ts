@@ -350,7 +350,7 @@ interface OffsetSegment {
   cmd: TransformCmd; // original command
 }
 
-function unitNormal(dx: number, dy: number): Point {
+export function unitNormal(dx: number, dy: number): Point {
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len < 1e-12) return { x: 0, y: -1 }; // default upward
   // Left-hand normal in SVG coords (y-down): (dy, -dx) / len

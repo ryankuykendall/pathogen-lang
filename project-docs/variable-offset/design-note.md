@@ -114,14 +114,32 @@ PathBlock operation (`+`, `.drawTo`, `.boundingBox`, etc.).
 Per-knot continuity flag drives curve construction:
 - **G0** — hard corner; the spline **breaks** here (position continuity only).
 - **G1** — tangent-continuous; tangent from both neighbors (Catmull-Rom / Hermite).
-- **G2** — curvature-continuous; **natural cubic spline** (tridiagonal solve) over
-  each maximal run of non-G0 knots, clamped at G0 breaks.
+- **G2** — curvature-continuous; **clamped cubic spline** (tridiagonal solve) over
+  each maximal run of non-G0 knots, broken at G0 knots.
+
+**Clamped, NOT natural** (important — resolves a §4.3/§4.4 tension): a *natural*
+spline pins end curvature to zero and cannot honor a specified end tangent. §4.4
+requires the endpoints to use a *specified first derivative* (spine-derived, or a
+`PolarVector`), with end curvature left free. That is by definition a **clamped**
+spline. The interior tridiagonal rows are identical to the natural case; only the
+two boundary rows differ (clamped encodes the end tangent; natural zeroes end
+curvature). Implement clamped.
 
 Algorithm shape: split the knot sequence at G0 knots into spans. Within a span,
 if all interior knots are G1, a local Hermite/Catmull-Rom tangent pass suffices;
-if any are G2, solve the tridiagonal system for that span. Emit every segment as a
-**cubic Bézier**. This is the hard core and the main implementation risk — build
-and visually verify happy-path construction *first*.
+if any are G2, solve the clamped tridiagonal system for that span. Use
+**centripetal/chord-length parameterization** (not uniform) for both the
+Catmull-Rom tangents and the tridiagonal solve — uniform overshoots on unevenly
+spaced knots and worsens the §4.6 cusp/self-intersection risk. Emit every segment
+as a **cubic Bézier** (Hermite→Bézier: control points at `p0 + m0/3`,
+`p1 − m1/3`). This is the hard core and the main implementation risk — build and
+visually verify happy-path construction *first*.
+
+> **Mixed G1/G2 within one span (deferred, conscious):** when a span contains both
+> G1 and G2 knots, "solve the tridiagonal for the span" effectively upgrades the G1
+> knots to G2. v1 happy-path tests use uniform continuity per span, so this doesn't
+> bite the spike — but it is a real under-specification to revisit, not a silent
+> decision.
 
 ### 4.4 Endpoint tangents
 - **Default = spine-derived**: with no explicit handle, the first/last knot's
