@@ -65,7 +65,7 @@ let edge = spine.variableOffset() {|go, pb|
   go.stop(10%, 5,  CurveContinuity.G2);
   go.stop(50%, 12, CurveContinuity.G2);
   go.stop(90%, 20, CurveContinuity.G2);
-  go.endTangent(PolarVector(0deg, 6).rotate(pb.tangentAt(90%)));  // optional
+  go.endTangent(PolarVector(0deg, 6).turn(pb.tangent(90%).angle));  // optional
 };
 
 // Compound: two profiles, closeable into a ribbon
@@ -92,7 +92,7 @@ PathBlock operation (`+`, `.drawTo`, `.boundingBox`, etc.).
 ### 4.1 No coordinate arguments anywhere
 - Simple form has **no** `.start(x,y)` / `.end(x,y)`. The path spans first-stop →
   last-stop. Lead-ins / lead-outs are done by **composing PathBlocks**
-  (`@{ m ax ay; … } + edge`), which the language already supports. Keeping the
+  (`@{ m ax ay; … } << edge`), which the language already supports. Keeping the
   block to one job (sample → place → interpolate) beats a second, coordinate-based
   mental model inside the same closure.
 - Compound **caps carry no coordinates** — the two endpoints are already fully
@@ -143,14 +143,14 @@ visually verify happy-path construction *first*.
 
 ### 4.4 Endpoint tangents
 - **Default = spine-derived**: with no explicit handle, the first/last knot's
-  tangent = the spine's own tangent at that stop's `time` (`pb.tangentAt`). Chosen
+  tangent = the spine's own tangent at that stop's `time` (`pb.tangent`). Chosen
   because it is zero-config and maximally on-brand for Model A — the rail that
   placed the point also orients how the curve leaves it.
 - **Override** = `go.startTangent(v)` / `go.endTangent(v)` where `v` is a
   **`PolarVector`** (reused as-is — its type doc literally says "for defining
   bezier control points"). `distance` encodes tension, `angle` the direction.
   Angle is **absolute** by default; spine-relative is free via
-  `.rotate(pb.tangentAt(t))`. The handle only bites on a **G1/G2** endpoint
+  `.turn(pb.tangent(t).angle)`. The handle only bites on a **G1/G2** endpoint
   (a G0 endpoint is a corner — no tangent to clamp).
 - The endpoint boundary condition is **always a first-derivative (tangent)
   condition** — spine-derived by default, or clamped via `PolarVector`. Endpoint
@@ -191,14 +191,18 @@ constructor functions for parameterized ones.**
   feature and must not gate this one).
 
 ### 4.7 `pb : PathBlockRef` — minimal read-only surface
-A convenience handle to the spine for querying inside the block:
-- `pb.length`
-- `pb.pointAt(time)`
-- `pb.tangentAt(time)`
-- `pb.normalAt(time)`
-- `pb.vertices`
+A convenience handle to the spine for querying inside the block. **Aligned with
+the existing PathBlock sampling API** (names + return shapes) so users reuse what
+they already know (decided 2026-07-12 after agentic review):
+- `pb.length` → number (total arc length)
+- `pb.get(time)` → Point
+- `pb.tangent(time)` → `{ point, angle }` (angle in radians)
+- `pb.normal(time)` → `{ point, angle }` (angle in radians)
+- `pb.vertices` → list of points
 
 Read-only; purely for computing offsets/handles relative to the spine.
+(Earlier drafts used `pointAt`/`tangentAt`/`normalAt` returning scalars — rejected
+for diverging from the shipped `get`/`tangent`/`normal` sampling methods.)
 
 ### 4.8 Compound traversal / winding order
 A closed compound ribbon is always assembled as the standard stroke-outline
@@ -232,14 +236,14 @@ not the sampling/normal machinery.
   - `samplePathAtFraction(cmds, t) → { point, tangent }` — **arc-length** sampling.
     Directly powers stop placement; normal = tangent ± 90°.
   - `calculatePathLength`, `partitionPath` — total length / even sampling.
-    Back the `pb.length` / `pb.pointAt` / `pb.tangentAt` / `pb.normalAt` surface.
+    Back the `pb.length` / `pb.get` / `pb.tangent` / `pb.normal` surface.
 - **`src/evaluator/path-transforms.ts`**
   - `offsetCommands(cmds, distance)` — the current uniform `offset()`. Establishes
     the left-hand-normal `(dy, −dx)` (y-down) **sign convention** to reuse for
     "which side is positive," and shows the miter-join / miter-limit handling.
 - **`src/evaluator/types.ts`**
   - `PolarVectorValue { angle, distance }` + `PolarVector(a, d)` constructor with
-    `.rotate / .scale / .reverse`. Reused verbatim as the endpoint tangent handle.
+    `.turn / .scale / .mirror`. Reused verbatim as the endpoint tangent handle.
 - **PathBlock method dispatch** lives in `src/evaluator/index.ts` (see the existing
   `partition` / `offset` cases ~2377 / ~2441) — the new methods slot in beside them
   and return a `PathBlockValue`.
