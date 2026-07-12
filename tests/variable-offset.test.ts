@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { compilePath } from './helpers';
+import { compilePath, parseSVGPath } from './helpers';
 import {
   buildContinuitySpline,
   projectStop,
-  spineDerivedTangent,
   type Knot,
   type GeomCmd,
 } from '../src/evaluator/variable-offset-geometry';
@@ -121,11 +120,10 @@ describe('variable-offset geometry: spline construction', () => {
     expect(Math.abs(angleDiff(before, after))).toBeGreaterThan(0.1);
   });
 
-  it('clamped endpoint: first segment leaves along the supplied start tangent', () => {
-    const startTangent = spineDerivedTangent(Math.PI / 2, 10); // straight up
+  it('clamped endpoint: first segment leaves along the supplied start direction', () => {
     const cmds = buildContinuitySpline(
       [knot(0, 0, 'G2'), knot(10, 10, 'G2'), knot(25, 5, 'G2')],
-      { startTangent },
+      { start: { dir: Math.PI / 2 } }, // straight up
     );
     const segs = cubics(cmds);
     const t0 = tangentAngle(segs[0], 0);
@@ -168,6 +166,67 @@ describe('CurveContinuity enum + Cap constructors (Phase 2 scaffolding)', () => 
     expect(() => compilePath('let b = Cap.round(5); M 0 0')).toThrow();
     expect(() => compilePath('let e = Cap.elliptical(); M 0 0')).toThrow();
     expect(() => compilePath('let x = Cap.bevel(); M 0 0')).toThrow();
+  });
+});
+
+describe('variableOffset — language surface (Phase 3)', () => {
+  const cubicCount = (d: string) => parseSVGPath(d).filter((c) => c.command.toLowerCase() === 'c').length;
+
+  it('produces a smooth offset path (M + cubic segments) drawn via drawTo', () => {
+    const result = compilePath(`
+      let spine = @{ h 100 };
+      let e = spine.variableOffset() {|go, pb|
+        go.stop(10%, 5, CurveContinuity.G1);
+        go.stop(50%, 15, CurveContinuity.G2);
+        go.stop(90%, 20, CurveContinuity.G1);
+      };
+      e.drawTo(0, 0);
+    `);
+    expect(result.trim().startsWith('M')).toBe(true);
+    expect(cubicCount(result)).toBe(2); // 3 knots → 2 cubic segments
+  });
+
+  it('accepts pb sampling (spine-relative endTangent) and PolarVector handles', () => {
+    expect(() =>
+      compilePath(`
+      let spine = @{ h 100 };
+      let e = spine.variableOffset() {|go, pb|
+        go.startTangent(PolarVector(-90deg, 8));
+        go.stop(10%, 5, CurveContinuity.G2);
+        go.stop(90%, 20, CurveContinuity.G2);
+        go.endTangent(PolarVector(0deg, 6).turn(pb.tangent(90%).angle));
+      };
+      e.drawTo(0, 0);
+    `),
+    ).not.toThrow();
+  });
+
+  it('a single stop yields just a move (no cubics)', () => {
+    const result = compilePath(`
+      let spine = @{ h 100 };
+      let e = spine.variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); };
+      e.drawTo(0, 0);
+    `);
+    expect(cubicCount(result)).toBe(0);
+  });
+
+  it('rejects missing block / no stops / out-of-range time / non-CurveContinuity', () => {
+    expect(() => compilePath('let s = @{ h 100 }; let e = s.variableOffset(); e.drawTo(0,0);')).toThrow();
+    expect(() =>
+      compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| }; e.drawTo(0,0);'),
+    ).toThrow(/at least one/);
+    expect(() =>
+      compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| go.stop(150%, 5, CurveContinuity.G1); }; e.drawTo(0,0);'),
+    ).toThrow(/between 0 and 1/);
+    expect(() =>
+      compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| go.stop(50%, 5, 3); }; e.drawTo(0,0);'),
+    ).toThrow(/CurveContinuity/);
+  });
+
+  it('rejects a cap on the simple form', () => {
+    expect(() =>
+      compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| go.startCap(Cap.round()); go.stop(50%, 5, CurveContinuity.G1); }; e.drawTo(0,0);'),
+    ).toThrow(/compoundVariableOffset/);
   });
 });
 

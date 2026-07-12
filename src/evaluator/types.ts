@@ -34,6 +34,7 @@ export type Value =
   | PolarVectorValue
   | CapValue
   | CapNamespace
+  | VariableOffsetBuilderValue
   | TransformReference
   | TransformPropertyReference
   | ObjectValue
@@ -452,6 +453,30 @@ export interface ColorNamespace {
  */
 export interface CapNamespace {
   type: 'CapNamespace';
+}
+
+/** One accumulated stop inside a variableOffset / compoundVariableOffset block. */
+export interface VariableOffsetStop {
+  time: number;
+  offset1: number;
+  continuity1: string; // CurveContinuity enum value ('position' | 'tangent' | 'curvature')
+  offset2?: number; // compound only
+  continuity2?: string; // compound only
+}
+
+/**
+ * Mutable builder handle (`go`) passed to a variableOffset / compoundVariableOffset
+ * block. Its methods (stop / startTangent / endTangent / startCap / endCap) mutate
+ * this accumulator; the surrounding method reads it after the block runs.
+ */
+export interface VariableOffsetBuilderValue {
+  type: 'VariableOffsetBuilderValue';
+  compound: boolean;
+  stops: VariableOffsetStop[];
+  startTangent?: PolarVectorValue;
+  endTangent?: PolarVectorValue;
+  startCap?: CapValue; // compound only
+  endCap?: CapValue; // compound only
 }
 
 /**

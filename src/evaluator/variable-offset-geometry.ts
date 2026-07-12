@@ -105,25 +105,42 @@ function knotParams(points: Point[]): number[] {
 // ---- per-span tangent computation ----
 
 /**
+ * Endpoint boundary condition: a tangent DIRECTION (radians) with an optional
+ * explicit handle length (tension). Magnitude is resolved in parameter space so
+ * the Bézier handle equals `tension` (or a natural ⅓-chord when tension is omitted).
+ */
+export interface EndpointSpec {
+  dir: number;
+  tension?: number;
+}
+
+/**
  * Tangents (dP/dt) at each knot of a single span, given the knot parameters.
  * `useG2` selects the clamped-cubic C2 solve; otherwise non-uniform Catmull-Rom.
- * `startTan`/`endTan` clamp the span endpoints (spine-derived vector or override);
- * when undefined, a one-sided finite difference is used (a G0 corner boundary).
+ * `startSpec`/`endSpec` clamp the span endpoints (spine-derived direction or a
+ * PolarVector override); when undefined, a one-sided finite difference is used
+ * (a G0 corner boundary). The endpoint dP/dt is computed as `handleLen·3 / h` so
+ * that the emitted handle (`m·h/3`) has the intended length in user units.
  */
 function spanTangents(
   points: Point[],
   t: number[],
   useG2: boolean,
-  startTan: Point | undefined,
-  endTan: Point | undefined,
+  startSpec: EndpointSpec | undefined,
+  endSpec: EndpointSpec | undefined,
 ): Point[] {
   const n = points.length - 1; // last index
   const h = (i: number) => t[i + 1] - t[i];
   const chord = (i: number): Point => scale(sub(points[i + 1], points[i]), 1 / h(i)); // Δ[i]
 
-  // One-sided endpoint fallbacks.
-  const m0 = startTan ?? chord(0);
-  const mn = endTan ?? chord(n - 1);
+  const endpointM = (spec: EndpointSpec | undefined, fallback: Point, hEnd: number, euclid: number): Point => {
+    if (!spec) return fallback; // one-sided default (G0 boundary between spans)
+    const handleLen = spec.tension ?? euclid / 3; // natural handle = ⅓ chord
+    const mag = (handleLen * 3) / hEnd; // so that m·hEnd/3 === handleLen
+    return { x: Math.cos(spec.dir) * mag, y: Math.sin(spec.dir) * mag };
+  };
+  const m0 = endpointM(startSpec, chord(0), h(0), len(sub(points[1], points[0])));
+  const mn = endpointM(endSpec, chord(n - 1), h(n - 1), len(sub(points[n], points[n - 1])));
 
   if (n === 1) return [m0, mn]; // single segment → just the two endpoint tangents
 
@@ -200,10 +217,10 @@ function emitCubic(p0: Point, p1: Point, m0: Point, m1: Point, h: number): GeomC
 // ---- main builder ----
 
 export interface SplineOptions {
-  /** Explicit dP/dt at the first knot (spine-derived or PolarVector override). */
-  startTangent?: Point;
-  /** Explicit dP/dt at the last knot. */
-  endTangent?: Point;
+  /** Boundary condition at the first knot (spine-derived direction or override). */
+  start?: EndpointSpec;
+  /** Boundary condition at the last knot. */
+  end?: EndpointSpec;
 }
 
 /**
@@ -238,14 +255,14 @@ export function buildContinuitySpline(knots: Knot[], opts: SplineOptions = {}): 
     // mixed G1/G2 within a span is a deferred under-spec — upgrades G1→G2 here).
     const useG2 = span.slice(1, -1).some((k) => k.continuity === 'G2');
 
-    // Endpoint clamps: the whole-sequence first/last use opts tangents (spine-derived
+    // Endpoint clamps: the whole-sequence first/last use opts specs (spine-derived
     // default); interior G0 boundaries stay undefined → one-sided (corner).
     const isFirstSpan = s === 0;
     const isLastSpan = s === spans.length - 1;
-    const startTan = isFirstSpan ? opts.startTangent : undefined;
-    const endTan = isLastSpan ? opts.endTangent : undefined;
+    const startSpec = isFirstSpan ? opts.start : undefined;
+    const endSpec = isLastSpan ? opts.end : undefined;
 
-    const m = spanTangents(pts, t, useG2, startTan, endTan);
+    const m = spanTangents(pts, t, useG2, startSpec, endSpec);
     for (let i = 0; i < pts.length - 1; i++) {
       out.push(emitCubic(pts[i], pts[i + 1], m[i], m[i + 1], t[i + 1] - t[i]));
     }
@@ -253,7 +270,81 @@ export function buildContinuitySpline(knots: Knot[], opts: SplineOptions = {}): 
   return out;
 }
 
-/** Spine-derived endpoint tangent vector: unit spine direction scaled to a chord magnitude. */
-export function spineDerivedTangent(spineTangent: number, magnitude: number): Point {
-  return { x: Math.cos(spineTangent) * magnitude, y: Math.sin(spineTangent) * magnitude };
+/** A PolarVector-like endpoint override (direction + tension/handle length). */
+export interface PolarOverride {
+  angle: number;
+  distance: number;
+}
+
+// ---- high-level orchestration (project stops → spline → normalized commands) ----
+
+/** Map a CurveContinuity enum *value* ('position'|'tangent'|'curvature') to G0/G1/G2. */
+const CONTINUITY_BY_VALUE: Record<string, Continuity> = {
+  position: 'G0',
+  tangent: 'G1',
+  curvature: 'G2',
+};
+export function continuityFromValue(enumValue: string): Continuity {
+  const c = CONTINUITY_BY_VALUE[enumValue];
+  if (!c) throw new Error(`Invalid CurveContinuity value: ${enumValue}`);
+  return c;
+}
+
+export interface SimpleStop {
+  time: number;
+  offset: number;
+  continuity: Continuity;
+}
+
+/** Translate a command list so its first point sits at (0,0), zeroing a leading M's args. */
+function normalizeToOrigin(cmds: GeomCmd[]): GeomCmd[] {
+  if (cmds.length === 0) return cmds;
+  const ox = cmds[0].start.x;
+  const oy = cmds[0].start.y;
+  return cmds.map((c) => {
+    const start = { x: c.start.x - ox, y: c.start.y - oy };
+    const end = { x: c.end.x - ox, y: c.end.y - oy };
+    // Leading absolute M → re-anchor its args to the new origin; relative `c` args are unchanged.
+    const args = c.command === 'M' ? [start.x, start.y] : [...c.args];
+    return { command: c.command, args, start, end };
+  });
+}
+
+/**
+ * Full simple-offset pipeline: project each stop onto the spine → knots, resolve
+ * endpoint tangents (spine-derived by default, or an explicit override vector),
+ * build the continuity spline, and normalize to a (0,0) origin. Returns the
+ * emitted command list (leading M + cubic `c` segments).
+ */
+export function buildSimpleVariableOffset(
+  spine: GeomCmd[],
+  stops: SimpleStop[],
+  startOverride?: PolarOverride,
+  endOverride?: PolarOverride,
+): GeomCmd[] {
+  const knots: Knot[] = stops.map((s) => {
+    const { point, spineTangent } = projectStop(spine, s.time, s.offset);
+    return { point, continuity: s.continuity, spineTangent };
+  });
+  if (knots.length === 0) return [];
+
+  let start: EndpointSpec | undefined;
+  let end: EndpointSpec | undefined;
+  const n = knots.length;
+  if (n >= 2) {
+    // Default: spine-derived DIRECTION with natural (⅓-chord) tension. A PolarVector
+    // override supplies both an explicit direction and an explicit handle length.
+    start = startOverride
+      ? { dir: startOverride.angle, tension: startOverride.distance }
+      : { dir: knots[0].spineTangent };
+    end = endOverride
+      ? { dir: endOverride.angle, tension: endOverride.distance }
+      : { dir: knots[n - 1].spineTangent };
+  }
+
+  const spline = buildContinuitySpline(knots, { start, end });
+  const normalized = normalizeToOrigin(spline);
+  // Drop the leading absolute M: a PathBlock is a relative command sequence that
+  // drawTo positions (matches offset()'s output — no self-contained move).
+  return normalized.length > 0 && normalized[0].command === 'M' ? normalized.slice(1) : normalized;
 }

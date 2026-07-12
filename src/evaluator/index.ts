@@ -55,6 +55,7 @@ import {
 } from './path-transforms';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
+import { buildSimpleVariableOffset, continuityFromValue, type SimpleStop } from './variable-offset-geometry';
 import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints, resolveFontFamily, resolveFontWeight, resolveEffectiveFontSize } from './font-metrics';
 import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
 import { normalizeCodeText, tokenizeLine, getTokenColor } from './code-snippet';
@@ -118,6 +119,7 @@ import type {
   PolarVectorValue,
   CapValue,
   CapNamespace,
+  VariableOffsetBuilderValue,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -206,6 +208,7 @@ export type {
   PolarVectorValue,
   CapValue,
   CapNamespace,
+  VariableOffsetBuilderValue,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -2484,6 +2487,55 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         };
       }
 
+      case 'variableOffset': {
+        if (expr.args.length !== 0)
+          throw mError('variableOffset() takes no arguments — use variableOffset() {|go, pb| ... }');
+        if (!expr.block)
+          throw mError('variableOffset() requires a block, e.g. variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); }');
+        const builder: VariableOffsetBuilderValue = {
+          type: 'VariableOffsetBuilderValue',
+          compound: false,
+          stops: [],
+        };
+        const blockScope = createScope(scope);
+        const params = expr.block.params;
+        if (params.length > 0) setVariable(blockScope, params[0], builder);
+        // pb = the spine PathBlockValue itself (exposes get/tangent/normal/length/vertices).
+        if (params.length > 1) setVariable(blockScope, params[1], obj);
+        evaluateStatementsToAccum(expr.block.body, blockScope, []);
+        if (builder.stops.length < 1) throw mError('variableOffset() needs at least one go.stop(...)');
+
+        const simpleStops: SimpleStop[] = builder.stops.map((s) => ({
+          time: s.time,
+          offset: s.offset1,
+          continuity: continuityFromValue(s.continuity1),
+        }));
+        // PolarVectorValue ({angle, distance}) is structurally a PolarOverride.
+        const voResult = buildSimpleVariableOffset(
+          obj.commands,
+          simpleStops,
+          builder.startTangent,
+          builder.endTangent,
+        );
+        if (voResult.length === 0) {
+          return {
+            type: 'PathBlockValue' as const,
+            commands: [],
+            pathStrings: [],
+            startPoint: { x: 0, y: 0 },
+            endPoint: { x: 0, y: 0 },
+          };
+        }
+        const voLast = voResult[voResult.length - 1];
+        return {
+          type: 'PathBlockValue' as const,
+          commands: voResult,
+          pathStrings: voResult.map((c) => commandToPathString(c)),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: voLast.end.x, y: voLast.end.y },
+        };
+      }
+
       case 'mirror': {
         if (expr.args.length !== 1) throw mError('mirror() expects 1 argument (angle)');
         const mAngle = evaluateExpression(expr.args[0], scope);
@@ -3827,6 +3879,64 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       default:
         throw mError(`Unknown PolarVector method: ${expr.method}`);
+    }
+  }
+
+  // VariableOffset builder methods (go.stop / go.startTangent / go.endTangent /
+  // go.startCap / go.endCap). The methods mutate the builder accumulator in place.
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'VariableOffsetBuilderValue') {
+    const b = obj as VariableOffsetBuilderValue;
+    const validContinuity = (v: Value): v is string =>
+      typeof v === 'string' && Object.values(BUILTIN_ENUMS.CurveContinuity).includes(v);
+    switch (expr.method) {
+      case 'stop': {
+        const time = evaluateExpression(expr.args[0], scope);
+        if (typeof time !== 'number') throw mError('go.stop() time must be a number');
+        if (time < 0 || time > 1) throw mError(`go.stop() time must be between 0 and 1, got ${time}`);
+        if (!b.compound) {
+          if (expr.args.length !== 3)
+            throw mError('go.stop() expects 3 arguments (time, offset, continuity)');
+          const offset = evaluateExpression(expr.args[1], scope);
+          const cont = evaluateExpression(expr.args[2], scope);
+          if (typeof offset !== 'number') throw mError('go.stop() offset must be a number');
+          if (!validContinuity(cont)) throw mError('go.stop() continuity must be a CurveContinuity value');
+          b.stops.push({ time, offset1: offset, continuity1: cont });
+        } else {
+          if (expr.args.length !== 5)
+            throw mError('go.stop() expects 5 arguments (time, offset1, continuity1, offset2, continuity2)');
+          const o1 = evaluateExpression(expr.args[1], scope);
+          const c1 = evaluateExpression(expr.args[2], scope);
+          const o2 = evaluateExpression(expr.args[3], scope);
+          const c2 = evaluateExpression(expr.args[4], scope);
+          if (typeof o1 !== 'number' || typeof o2 !== 'number') throw mError('go.stop() offsets must be numbers');
+          if (!validContinuity(c1) || !validContinuity(c2))
+            throw mError('go.stop() continuity arguments must be CurveContinuity values');
+          b.stops.push({ time, offset1: o1, continuity1: c1, offset2: o2, continuity2: c2 });
+        }
+        return b;
+      }
+      case 'startTangent':
+      case 'endTangent': {
+        if (expr.args.length !== 1) throw mError(`go.${expr.method}() expects 1 argument (PolarVector)`);
+        const v = evaluateExpression(expr.args[0], scope);
+        if (!isPolarVectorValue(v)) throw mError(`go.${expr.method}() argument must be a PolarVector`);
+        if (expr.method === 'startTangent') b.startTangent = v;
+        else b.endTangent = v;
+        return b;
+      }
+      case 'startCap':
+      case 'endCap': {
+        if (!b.compound)
+          throw mError(`go.${expr.method}() is only available inside compoundVariableOffset()`);
+        if (expr.args.length !== 1) throw mError(`go.${expr.method}() expects 1 argument (Cap)`);
+        const v = evaluateExpression(expr.args[0], scope);
+        if (!isCapValue(v)) throw mError(`go.${expr.method}() argument must be a Cap (e.g. Cap.round())`);
+        if (expr.method === 'startCap') b.startCap = v;
+        else b.endCap = v;
+        return b;
+      }
+      default:
+        throw mError(`Unknown variableOffset builder method: ${expr.method}`);
     }
   }
 

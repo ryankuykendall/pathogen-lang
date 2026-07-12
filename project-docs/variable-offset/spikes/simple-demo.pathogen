@@ -1,0 +1,21 @@
+// Simple variableOffset demo — a smooth G2 offset ramp (blue) traced along a
+// straight spine (grey). The spine is a rail; the offset distance ramps per stop.
+define ViewBox(-6, -32, 104, 44);
+define PathLayer('spine') ${ stroke: #cbd5e1; stroke-width: 1; fill: none; };
+define PathLayer('edge') ${ stroke: #3b82f6; stroke-width: 2.5; fill: none; };
+
+let spine = @{ h 100 };
+layer('spine').apply {
+  spine.drawTo(0, 0);
+}
+
+let edge = spine.variableOffset() {|go, pb|
+  go.stop(5%,  4,  CurveContinuity.G2);
+  go.stop(30%, 14, CurveContinuity.G2);
+  go.stop(55%, 22, CurveContinuity.G2);
+  go.stop(80%, 9,  CurveContinuity.G2);
+  go.stop(95%, 24, CurveContinuity.G2);
+};
+layer('edge').apply {
+  edge.drawTo(0, 0);
+}
