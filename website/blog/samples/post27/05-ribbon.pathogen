@@ -1,22 +1,39 @@
-define ViewBox(0, 0, 520, 220);
-// compoundVariableOffset: two profiles (one per side of the spine) close into
-// a single filled, variable-width ribbon. The dashed rail is drawn on top so
-// you can see it running through the middle.
+define ViewBox(0, 0, 520, 560);
+// compoundVariableOffset: two profiles close into a filled ribbon.
+// Three shapes for the same idea:
+//   1. symmetric offsets (mirror-image profiles),
+//   2. asymmetric offsets (a calligraphy nib pressing harder on one side),
+//   3. same-side offsets (both positive → a detached band riding above the rail).
+// The dashed rail is drawn on top so you can see where the spine runs.
 
 // ─── Core tokens ──────────────────────────────────────────────
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
 let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--ribbon-color', #457b9d));
+let amber = Color('#e0a725');
+let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
 define PathLayer('bg') ${
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbon') ${
+define PathLayer('ribbonSym') ${
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
+  stroke-width: 1.5;
+}
+define PathLayer('ribbonAsym') ${
+  fill: amber;
+  fill-opacity: 0.45;
+  stroke: amber;
+  stroke-width: 1.5;
+}
+define PathLayer('ribbonBand') ${
+  fill: red;
+  fill-opacity: 0.38;
+  stroke: red;
   stroke-width: 1.5;
 }
 define PathLayer('rail') ${
@@ -34,16 +51,16 @@ define TextLayer('eyebrow') ${
 }
 
 layer('bg').apply {
-  rect(0, 0, 520, 220);
+  rect(0, 0, 520, 560);
 }
 
 let L = 400;
-let railY = 124;
 let spine = @{
   h 400
 };
 
-let ribbon = spine.compoundVariableOffset() {|go, pb|
+// ─── 1. Symmetric: the two profiles mirror each other ─────────
+let sym = spine.compoundVariableOffset() {|go, pb|
   go.startCap(Cap.round());
   go.stop(4%,
       8,
@@ -51,30 +68,108 @@ let ribbon = spine.compoundVariableOffset() {|go, pb|
       -8,
       CurveContinuity.G2);
   go.stop(32%,
-      34,
+      28,
       CurveContinuity.G2,
-      -26,
+      -28,
       CurveContinuity.G2);
   go.stop(60%,
-      18,
+      14,
       CurveContinuity.G2,
-      -12,
+      -14,
       CurveContinuity.G2);
   go.stop(96%,
-      10,
+      9,
       CurveContinuity.G2,
-      -10,
+      -9,
       CurveContinuity.G2);
-  go.endCap(Cap.tapered(30, CurveContinuity.G2));
+  go.endCap(Cap.tapered(26, CurveContinuity.G2));
 };
 
 layer('eyebrow').apply {
-  text(60, 48)`TWO PROFILES + CAPS = A CLOSED RIBBON`;
+  text(60, 48)`SYMMETRIC — MIRRORED PROFILES`;
 }
-layer('ribbon').apply {
-  ribbon.drawTo(calc(60 + L * 0.04), calc(railY - 8));
+layer('ribbonSym').apply {
+  sym.drawTo(calc(60 + L * 0.04), calc(130 - 8));
 }
-// Rail drawn last so it reads through the translucent fill.
 layer('rail').apply {
-  spine.drawTo(60, railY);
+  spine.drawTo(60, 130);
+}
+
+// ─── 2. Asymmetric: the nib presses harder on one side ────────
+let asym = spine.compoundVariableOffset() {|go, pb|
+  go.startCap(Cap.round());
+  go.stop(4%,
+      6,
+      CurveContinuity.G2,
+      -4,
+      CurveContinuity.G2);
+  go.stop(30%,
+      46,
+      CurveContinuity.G2,
+      -6,
+      CurveContinuity.G2);
+  go.stop(58%,
+      12,
+      CurveContinuity.G2,
+      -10,
+      CurveContinuity.G2);
+  go.stop(80%,
+      34,
+      CurveContinuity.G2,
+      -5,
+      CurveContinuity.G2);
+  go.stop(96%,
+      8,
+      CurveContinuity.G2,
+      -4,
+      CurveContinuity.G2);
+  go.endCap(Cap.tapered(26, CurveContinuity.G2));
+};
+
+layer('eyebrow').apply {
+  text(60, 216)`ASYMMETRIC — THE SWELL LIVES ON ONE SIDE`;
+}
+layer('ribbonAsym').apply {
+  asym.drawTo(calc(60 + L * 0.04), calc(300 - 6));
+}
+layer('rail').apply {
+  spine.drawTo(60, 300);
+}
+
+// ─── 3. Same side: both offsets positive → a floating band ────
+// Nothing straddles the rail; the ribbon detaches and rides above it.
+// (This is exactly how the wordmark auras at the end of the post work.)
+let band = spine.compoundVariableOffset() {|go, pb|
+  go.startCap(Cap.round());
+  go.stop(4%,
+      30,
+      CurveContinuity.G2,
+      12,
+      CurveContinuity.G2);
+  go.stop(32%,
+      52,
+      CurveContinuity.G2,
+      20,
+      CurveContinuity.G2);
+  go.stop(60%,
+      34,
+      CurveContinuity.G2,
+      14,
+      CurveContinuity.G2);
+  go.stop(96%,
+      40,
+      CurveContinuity.G2,
+      18,
+      CurveContinuity.G2);
+  go.endCap(Cap.round());
+};
+
+layer('eyebrow').apply {
+  text(60, 388)`SAME SIDE — A DETACHED BAND ABOVE THE RAIL`;
+}
+layer('ribbonBand').apply {
+  band.drawTo(calc(60 + L * 0.04), calc(490 - 30));
+}
+layer('rail').apply {
+  spine.drawTo(60, 490);
 }

@@ -5,7 +5,7 @@ date: 2026-07-12
 description: "Two new PathBlock methods — variableOffset and compoundVariableOffset — turn any path into a rail for expressive, variable-width strokes. We build up from the rail model to curvature-continuous joins, filled ribbons with end caps, and a glyph-wrapped Pathogen wordmark."
 ---
 
-Pathogen has always had [`offset()`](/docs/path-blocks): give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never *breathes*.
+Pathogen has always had [`offset()`](/docs#path-blocks-path-blocks): give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never *breathes*.
 
 This post introduces two new PathBlock methods that let it breathe: **`variableOffset`** and **`compoundVariableOffset`**. The distance can now change along the path, and you decide — stop by stop — how smoothly the curve flows. By the end we'll wrap every letter of the word *Pathogen* in flowing, multi-colored ribbons.
 
@@ -41,7 +41,7 @@ Under the hood, a run of `G1`/`G2` stops is built as one spline; the `G2` runs s
 
 ## Shaping the ends
 
-By default, the curve leaves its first and last points along the spine's own direction — a sensible, zero-configuration choice. When you want more control, hand an endpoint a [`PolarVector`](/docs/stdlib): a direction plus a tension.
+By default, the curve leaves its first and last points along the spine's own direction — a sensible, zero-configuration choice. When you want more control, hand an endpoint a [`PolarVector`](/docs#stdlib-polarvectorangle-distance): a direction plus a tension.
 
 One subtlety: tangent handles are *directional* — they describe the direction of travel, so the two ends of a curve usually want different treatments. A common pattern (below): pin the start with an absolute angle, and aim the end along the rail by rotating a handle with `.turn(pb.tangent(94%).angle)`.
 
@@ -51,9 +51,13 @@ The handle's angle sets the departure direction; its distance sets how firmly th
 
 ## From strokes to ribbons
 
-An open stroke is only half the story. **`compoundVariableOffset`** places *two* profiles — one on each side of the spine — and closes them into a filled, variable-width **ribbon**. Think of it as a calligraphic pen whose pressure rises and falls as it travels.
+An open stroke is only half the story. **`compoundVariableOffset`** places *two* profiles and closes them into a filled, variable-width **ribbon**. Each stop now takes two offset/continuity pairs — one per profile — and the *signs* of those offsets decide the ribbon's whole character:
 
-<mini-workspace src="samples/post27/05-ribbon.pathogen" caption="Two profiles (dashed spine down the middle) close into a single filled ribbon that swells and tapers." code-open></mini-workspace>
+- **Opposite signs, mirrored** — a classic ribbon straddling the spine symmetrically.
+- **Opposite signs, asymmetric** — a calligraphy nib pressing harder on one side: the swell lives above the rail while the underside stays taut.
+- **Same sign** — both profiles sit on *one* side, so the ribbon detaches from the spine entirely and floats alongside it as a band. (Hold that thought — it's exactly how the wordmark auras at the end of this post are built.)
+
+<mini-workspace src="samples/post27/05-ribbon.pathogen" caption="One idea, three shapes: mirrored profiles, an asymmetric swell, and a same-side band floating above the dashed rail." code-open></mini-workspace>
 
 Every ribbon is finished with **end caps** — and, like `CurveContinuity`, caps are a small vocabulary you compose:
 
@@ -63,7 +67,7 @@ Omit a cap and that end stays open; omit both and you get two separate profiles 
 
 ## Any path — including type
 
-Because the spine is *just a PathBlock*, anything that produces one can be a rail — including a font glyph. [`PathBlock.fromGlyph`](/docs/path-blocks) returns an array with one PathBlock per character (hence the `[0]` to take the first letter), and `contours[0]` isolates one clean closed loop from that glyph's outline. Now that loop is a spine like any other.
+Because the spine is *just a PathBlock*, anything that produces one can be a rail — including a font glyph. [`PathBlock.fromGlyph`](/docs#path-blocks-pathblockfromglyphtext-styles) returns an array with one PathBlock per character (hence the `[0]` to take the first letter), and `contours[0]` isolates one clean closed loop from that glyph's outline. Now that loop is a spine like any other.
 
 One practical note: a letterform is a *long* rail with reversing curves, and the offset curve only knows about your stops. A handful of stops produces a loose gesture that ignores the letter; **densely placed stops** (a `for` loop works nicely) let the offset genuinely trace it.
 
@@ -77,7 +81,7 @@ Push it further: three concentric compound ribbons, each a different distance ou
 
 ## The finale: a living wordmark
 
-Put it all together. Lay out the letters of *Pathogen* with [advance-width spacing](/docs/path-blocks), give each glyph its own three-band red/yellow/blue aura, and set the crisp letters on top. Every ribbon in this image is a `compoundVariableOffset`.
+Put it all together. Lay out the letters of *Pathogen* with [advance-width spacing](/docs#path-blocks-path-blocks), give each glyph its own three-band red/yellow/blue aura, and set the crisp letters on top. Every ribbon in this image is a `compoundVariableOffset`.
 
 <mini-workspace src="samples/post27/09-finale-wordmark.pathogen" caption="Every letter of the wordmark wrapped in three concentric compound-offset bands — the whole post in one image." code-open></mini-workspace>
 
@@ -85,4 +89,4 @@ Put it all together. Lay out the letters of *Pathogen* with [advance-width spaci
 
 Two methods, one idea: **any path can be a rail for a variable-width stroke.** Vary the distance for tapered edges; choose `G0`/`G1`/`G2` for the character of the joins; add a second profile for a filled ribbon; cap it; and point it at your own geometry — even your own type.
 
-The full reference lives in the [Variable Offset docs](/docs/variable-offset). Go make something that breathes.
+The full reference lives in the [Variable Offset docs](/docs#variable-offset-variable-offset). Go make something that breathes.
