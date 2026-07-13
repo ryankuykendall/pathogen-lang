@@ -58,7 +58,7 @@ layer('spine').apply {
 }
 layer('a').apply {
   spine.variableOffset() {|go, pb|
-    go.stop(6% , 14, CurveContinuity.G2);
+    go.stop(6%, 14, CurveContinuity.G2);
     go.stop(50%, 42, CurveContinuity.G2);
     go.stop(94%, 14, CurveContinuity.G2);
   }.drawTo(calc(60 + L * 0.06), calc(128 - 14));

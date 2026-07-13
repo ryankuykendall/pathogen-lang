@@ -11,7 +11,7 @@ This post introduces two new PathBlock methods that let it breathe: **`variableO
 
 ## The line that breathes
 
-Start with the contrast. `offset(16)` holds one distance the whole way. `variableOffset` places *stops* along the path — each with its own distance — and threads a curve through the resulting points.
+Start with the contrast. `offset(18)` holds one distance the whole way. `variableOffset` places *stops* along the path — each with its own distance — and threads a curve through the resulting points.
 
 <mini-workspace src="samples/post27/01-offset-vs-variable.pathogen" caption="Top: offset(18) — one fixed distance. Bottom: variableOffset() — the distance changes at each stop." code-open></mini-workspace>
 
@@ -61,7 +61,7 @@ An open stroke is only half the story. **`compoundVariableOffset`** places *two*
 
 Every ribbon is finished with **end caps** — and, like `CurveContinuity`, caps are a small vocabulary you compose:
 
-<mini-workspace src="samples/post27/06-caps.pathogen" caption="Top to bottom: Cap.butt(), Cap.round(), Cap.elliptical(16), Cap.tapered(18, CurveContinuity.G2)." code-open></mini-workspace>
+<mini-workspace src="samples/post27/06-caps.pathogen" caption="Top to bottom: Cap.butt(), Cap.round(), Cap.elliptical(34), Cap.tapered(40, CurveContinuity.G2)." code-open></mini-workspace>
 
 Omit a cap and that end stays open; omit both and you get two separate profiles instead of a closed ribbon.
 
