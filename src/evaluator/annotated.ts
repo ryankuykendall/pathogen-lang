@@ -1,10 +1,14 @@
 // Annotated evaluator - produces human-readable output with comments and annotations
 import { contextAwareFunctions, stdlib } from '../stdlib';
+import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import { DEFS_CONSTRUCTORS } from './constructor-registry';
 import { contextToObject, createPathContext, setLastTangent, updateContextForCommand } from './context';
+import { estimateTextBoundingBox } from './font-metrics';
+import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
 import {
+  chamferCommands,
   commandToPathString,
   computeBoundingBox,
-  chamferCommands,
   concatenateCommands,
   ellipticalFilletCommands,
   filletCommands,
@@ -15,18 +19,9 @@ import {
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
-import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import { partitionPath, samplePathAtFraction } from './sampling';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
-
-/** Maximum iterations allowed per for-loop to prevent runaway programs. */
-const MAX_ITERATIONS = 32000;
-
-import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
-const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
-import { partitionPath, samplePathAtFraction } from './sampling';
-import { estimateTextBoundingBox } from './font-metrics';
-import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
 import {
   cssSourceExpr,
   darken,
@@ -51,10 +46,21 @@ import {
   setAlphaCSS,
   setLightnessCSS,
 } from '../color';
+import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 
 import type { PathContext } from './context';
 import type { OKLCH } from '../color';
-import type { PathBlockCommand, Point, PointValue, GridOutOfBoundsMode, GridInterpolationMode, TextBlockElement, TextBlockValue, ProjectedTextValue, TextChild } from './types';
+import type {
+  GridInterpolationMode,
+  GridOutOfBoundsMode,
+  PathBlockCommand,
+  Point,
+  PointValue,
+  ProjectedTextValue,
+  TextBlockElement,
+  TextBlockValue,
+  TextChild,
+} from './types';
 import type {
   ArrayDestructuringPattern,
   Comment,
@@ -73,6 +79,15 @@ import type {
   TextBlockExpression,
   TextBodyItem,
 } from '../parser/ast';
+
+/** Maximum iterations allowed per for-loop to prevent runaway programs. */
+const MAX_ITERATIONS = 32000;
+const expressionParser = {
+  parse: (input: string) => {
+    const v = expressionParserFn(input);
+    return { status: v !== null, value: v };
+  },
+};
 
 // Types for annotated output
 export type AnnotatedLine =
@@ -112,7 +127,13 @@ function toNumber(v: Value): number | undefined {
 
 /** Built-in enum definitions */
 const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
-  Easing: { Linear: 'linear', Smoothstep: 'smoothstep', EaseIn: 'ease-in', EaseOut: 'ease-out', EaseInOut: 'ease-in-out' },
+  Easing: {
+    Linear: 'linear',
+    Smoothstep: 'smoothstep',
+    EaseIn: 'ease-in',
+    EaseOut: 'ease-out',
+    EaseInOut: 'ease-in-out',
+  },
   Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
   SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
   GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
@@ -168,6 +189,9 @@ export type Value =
   | ProjectedPathValue
   | SVGFragmentValue
   | GradientValue
+  | MeshPointValue
+  | MaskValue
+  | ClipPathValue
   | PatternValue
   | MarkerValue
   | AnnotatedFilterValue
@@ -175,6 +199,8 @@ export type Value =
   | ColorNamespace
   | CSSVarValue
   | PointValue
+  | PolarVectorValue
+  | CyclerValue
   | GridValue
   | TextBlockValue
   | ProjectedTextValue;
@@ -192,7 +218,7 @@ function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
 
 export interface GradientValue {
   type: 'GradientValue';
-  gradientType: 'linear' | 'radial' | 'conic';
+  gradientType: 'linear' | 'radial' | 'conic' | 'mesh' | 'freeform' | 'topo';
   id: string;
   attrs: Record<string, string>;
   stops: { offset: number; color: string }[];
@@ -206,10 +232,150 @@ export interface GradientValue {
   to?: number;
   direction?: 'cw' | 'ccw';
   spread?: string;
+  // Mesh-specific
+  meshGrid?: MeshPointValue[][];
+  meshWidth?: number;
+  meshHeight?: number;
+  meshCols?: number;
+  meshRows?: number;
+  // Freeform-specific
+  freeformPoints?: { x: number; y: number; color: OKLCH; colorCSS: string }[];
+  freeformWidth?: number;
+  freeformHeight?: number;
+  falloff?: number;
+  // Topo-specific
+  topoContours?: { elevation: number; dString: string; color: OKLCH; colorCSS: string }[];
+  topoWidth?: number;
+  topoHeight?: number;
+  topoEasing?: string;
+  topoMethod?: string;
+  topoIterations?: number;
+  topoBlend?: number;
+  topoBaseColor?: OKLCH;
+  topoBaseColorCSS?: string;
 }
 
 function isGradientValue(value: Value): value is GradientValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GradientValue';
+}
+
+export interface MeshPointValue {
+  type: 'MeshPointValue';
+  x: number;
+  y: number;
+  color: OKLCH;
+  colorCSS: string;
+  gridRow: number;
+  gridCol: number;
+}
+
+function isMeshPointValue(value: Value): value is MeshPointValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MeshPointValue';
+}
+
+export interface MaskValue {
+  type: 'MaskValue';
+  id: string;
+  paths: { d: string; styles: Record<string, string> }[];
+}
+
+function isMaskValue(value: Value): value is MaskValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MaskValue';
+}
+
+export interface ClipPathValue {
+  type: 'ClipPathValue';
+  id: string;
+  paths: string[];
+}
+
+function isClipPathValue(value: Value): value is ClipPathValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ClipPathValue';
+}
+
+/**
+ * Gradient property-assignment semantics shared by both annotated statement
+ * evaluators. Lenient by design: annotated mode produces no defs output, so
+ * type-mismatched values are ignored rather than thrown.
+ */
+function assignGradientProperty(obj: GradientValue, property: string, value: Value): void {
+  switch (property) {
+    case 'spreadMethod':
+    case 'gradientUnits':
+    case 'gradientTransform': {
+      if (typeof value === 'string') {
+        if (property === 'spreadMethod') obj.spreadMethod = value;
+        else if (property === 'gradientUnits') obj.gradientUnits = value;
+        else obj.gradientTransform = value;
+      }
+      break;
+    }
+    case 'interpolation': {
+      if (typeof value === 'string' && (value === 'srgb' || value === 'oklch' || value === 'linearRGB')) {
+        obj.interpolation = value;
+      }
+      break;
+    }
+    case 'steps': {
+      if (typeof value === 'number') obj.steps = value;
+      break;
+    }
+    // Conic-specific
+    case 'from':
+    case 'to': {
+      if (typeof value === 'number') obj[property] = value;
+      break;
+    }
+    case 'direction': {
+      if (value === 'cw' || value === 'ccw') obj.direction = value;
+      break;
+    }
+    case 'spread': {
+      if (typeof value === 'string') obj.spread = value;
+      break;
+    }
+    // Freeform-specific
+    case 'falloff': {
+      if (typeof value === 'number') obj.falloff = value;
+      break;
+    }
+    // Topo-specific
+    case 'easing': {
+      if (typeof value === 'string') obj.topoEasing = value;
+      break;
+    }
+    case 'method': {
+      if (typeof value === 'string') obj.topoMethod = value;
+      break;
+    }
+    case 'iterations': {
+      if (typeof value === 'number') obj.topoIterations = Math.round(value);
+      break;
+    }
+    case 'blend': {
+      if (typeof value === 'number') obj.topoBlend = value;
+      break;
+    }
+    case 'baseColor': {
+      if (isColorValue(value)) {
+        obj.topoBaseColor = { ...value.oklch };
+        obj.topoBaseColorCSS = oklchToCSS(value.oklch);
+      }
+      break;
+    }
+  }
+}
+
+/** MeshPoint property-assignment semantics shared by both annotated statement evaluators. */
+function assignMeshPointProperty(obj: MeshPointValue, property: string, value: Value): void {
+  if (property === 'color' && isColorValue(value)) {
+    obj.color = { ...value.oklch };
+    obj.colorCSS = oklchToCSS(value.oklch);
+  } else if (property === 'x' && typeof value === 'number') {
+    obj.x = value;
+  } else if (property === 'y' && typeof value === 'number') {
+    obj.y = value;
+  }
 }
 
 export interface PatternValue {
@@ -263,6 +429,26 @@ function isGridValue(value: Value): value is GridValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GridValue';
 }
 
+export interface PolarVectorValue {
+  type: 'PolarVectorValue';
+  angle: number;
+  distance: number;
+}
+
+function isPolarVectorValue(value: Value): value is PolarVectorValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PolarVectorValue';
+}
+
+export interface CyclerValue {
+  type: 'CyclerValue';
+  elements: Value[];
+  index: number;
+}
+
+function isCyclerValue(value: Value): value is CyclerValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CyclerValue';
+}
+
 function annGridResolveIndex(idx: number, size: number, mode: GridOutOfBoundsMode): number | null {
   if (idx >= 0 && idx < size) return idx;
   if (mode === 'clamp') return Math.max(0, Math.min(size - 1, idx));
@@ -301,10 +487,22 @@ function annGridSampleBilinear(grid: GridValue, x: number, y: number, throwErr: 
     return top * (1 - fy) + bottom * fy;
   }
   if (
-    typeof v00 === 'object' && v00 !== null && 'type' in v00 && v00.type === 'PointValue' &&
-    typeof v01 === 'object' && v01 !== null && 'type' in v01 && v01.type === 'PointValue' &&
-    typeof v10 === 'object' && v10 !== null && 'type' in v10 && v10.type === 'PointValue' &&
-    typeof v11 === 'object' && v11 !== null && 'type' in v11 && v11.type === 'PointValue'
+    typeof v00 === 'object' &&
+    v00 !== null &&
+    'type' in v00 &&
+    v00.type === 'PointValue' &&
+    typeof v01 === 'object' &&
+    v01 !== null &&
+    'type' in v01 &&
+    v01.type === 'PointValue' &&
+    typeof v10 === 'object' &&
+    v10 !== null &&
+    'type' in v10 &&
+    v10.type === 'PointValue' &&
+    typeof v11 === 'object' &&
+    v11 !== null &&
+    'type' in v11 &&
+    v11.type === 'PointValue'
   ) {
     const xTop = v00.x * (1 - fx) + v01.x * fx;
     const xBot = v10.x * (1 - fx) + v11.x * fx;
@@ -328,6 +526,19 @@ export interface AnnotatedFilterValue {
 function isFilterValue(value: Value): value is AnnotatedFilterValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'FilterValue';
 }
+
+/** Filter constructor name → annotated stub kind. */
+const ANNOTATED_FILTER_KINDS: Record<string, AnnotatedFilterValue['kind']> = {
+  NoiseFilter: 'noise',
+  GlowFilter: 'glow',
+  EmbossFilter: 'emboss',
+  ElevationShadowFilter: 'elevation-shadow',
+  InnerShadowFilter: 'inner-shadow',
+  PixelateFilter: 'pixelate',
+  MotionBlurFilter: 'motion-blur',
+};
+
+let annotatedFilterCounter = 0;
 
 export interface ColorValue {
   type: 'ColorValue';
@@ -406,20 +617,29 @@ function isProjectedPathValue(value: Value): value is ProjectedPathValue {
 
 function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
   if (cmds.length === 0) {
-    return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+    return {
+      type: 'PathBlockValue' as const,
+      commands: [],
+      pathStrings: [],
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 0, y: 0 },
+    };
   }
   const originX = origin ? origin.x : cmds[0].start.x;
   const originY = origin ? origin.y : cmds[0].start.y;
   const normalized = cmds.map((cmd) => ({
-    command: cmd.command, args: [...cmd.args],
+    command: cmd.command,
+    args: [...cmd.args],
     start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
     end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
   }));
   const last = normalized[normalized.length - 1];
   return {
-    type: 'PathBlockValue' as const, commands: normalized,
+    type: 'PathBlockValue' as const,
+    commands: normalized,
     pathStrings: normalized.map((c) => commandToPathString(c)),
-    startPoint: { x: 0, y: 0 }, endPoint: { x: last.end.x, y: last.end.y },
+    startPoint: { x: 0, y: 0 },
+    endPoint: { x: last.end.x, y: last.end.y },
   };
 }
 
@@ -1523,7 +1743,8 @@ function evaluateAnnotatedPathTransforms(
     case 'chamferAtVertex': {
       if (expr.args.length < 2 || expr.args.length > 3) throw new Error('chamferAtVertex() expects 2-3 arguments');
       const cvIdx = evaluateExpression(expr.args[0], scope);
-      if (typeof cvIdx !== 'number' || !Number.isInteger(cvIdx)) throw new Error('chamferAtVertex() index must be an integer');
+      if (typeof cvIdx !== 'number' || !Number.isInteger(cvIdx))
+        throw new Error('chamferAtVertex() index must be an integer');
       const cvD1 = evaluateExpression(expr.args[1], scope);
       if (typeof cvD1 !== 'number') throw new Error('chamferAtVertex() distance must be a number');
       let cvD2 = cvD1;
@@ -1546,7 +1767,8 @@ function evaluateAnnotatedPathTransforms(
     case 'filletAtVertex': {
       if (expr.args.length !== 2) throw new Error('filletAtVertex() expects 2 arguments (index, radius)');
       const fvIdx = evaluateExpression(expr.args[0], scope);
-      if (typeof fvIdx !== 'number' || !Number.isInteger(fvIdx)) throw new Error('filletAtVertex() index must be an integer');
+      if (typeof fvIdx !== 'number' || !Number.isInteger(fvIdx))
+        throw new Error('filletAtVertex() index must be an integer');
       const fvRadius = evaluateExpression(expr.args[1], scope);
       if (typeof fvRadius !== 'number') throw new Error('filletAtVertex() radius must be a number');
       const fvResult = filletCommands(obj.commands, fvRadius, [fvIdx]);
@@ -1569,9 +1791,11 @@ function evaluateAnnotatedPathTransforms(
     }
 
     case 'ellipticalFilletAtVertex': {
-      if (expr.args.length < 3 || expr.args.length > 4) throw new Error('ellipticalFilletAtVertex() expects 3-4 arguments');
+      if (expr.args.length < 3 || expr.args.length > 4)
+        throw new Error('ellipticalFilletAtVertex() expects 3-4 arguments');
       const efvIdx = evaluateExpression(expr.args[0], scope);
-      if (typeof efvIdx !== 'number' || !Number.isInteger(efvIdx)) throw new Error('ellipticalFilletAtVertex() index must be an integer');
+      if (typeof efvIdx !== 'number' || !Number.isInteger(efvIdx))
+        throw new Error('ellipticalFilletAtVertex() index must be an integer');
       const efvRx = evaluateExpression(expr.args[1], scope);
       const efvRy = evaluateExpression(expr.args[2], scope);
       if (typeof efvRx !== 'number') throw new Error('ellipticalFilletAtVertex() rx must be a number');
@@ -1601,11 +1825,20 @@ function evaluateAnnotatedPathTransforms(
       }
       let resultCmds: PathBlockCommand[];
       switch (expr.method) {
-        case 'union': resultCmds = pathUnion(obj.commands, otherCmds); break;
-        case 'difference': resultCmds = pathDifference(obj.commands, otherCmds); break;
-        case 'intersection': resultCmds = pathIntersection(obj.commands, otherCmds); break;
-        case 'xor': resultCmds = pathXor(obj.commands, otherCmds); break;
-        default: resultCmds = [];
+        case 'union':
+          resultCmds = pathUnion(obj.commands, otherCmds);
+          break;
+        case 'difference':
+          resultCmds = pathDifference(obj.commands, otherCmds);
+          break;
+        case 'intersection':
+          resultCmds = pathIntersection(obj.commands, otherCmds);
+          break;
+        case 'xor':
+          resultCmds = pathXor(obj.commands, otherCmds);
+          break;
+        default:
+          resultCmds = [];
       }
       return buildAnnotatedResult(resultCmds, true, obj);
     }
@@ -1625,15 +1858,27 @@ function buildAnnotatedResult(
 ): PathBlockValue | ProjectedPathValue {
   if (cmds.length === 0) {
     if (isBlock) {
-      return { type: 'PathBlockValue' as const, commands: [], pathStrings: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } };
+      return {
+        type: 'PathBlockValue' as const,
+        commands: [],
+        pathStrings: [],
+        startPoint: { x: 0, y: 0 },
+        endPoint: { x: 0, y: 0 },
+      };
     }
-    return { type: 'ProjectedPathValue' as const, commands: [], startPoint: { ...original.startPoint }, endPoint: { ...original.startPoint } };
+    return {
+      type: 'ProjectedPathValue' as const,
+      commands: [],
+      startPoint: { ...original.startPoint },
+      endPoint: { ...original.startPoint },
+    };
   }
   if (isBlock) {
     const originX = cmds[0].start.x;
     const originY = cmds[0].start.y;
     const normalized = cmds.map((cmd) => ({
-      command: cmd.command, args: [...cmd.args],
+      command: cmd.command,
+      args: [...cmd.args],
       start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
       end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
     }));
@@ -1840,7 +2085,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'ObjectValue' as const,
           properties: new Map<string, Value>([
-            ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+            ['x', bb.x],
+            ['y', bb.y],
+            ['width', bb.width],
+            ['height', bb.height],
           ]),
         };
       }
@@ -1851,7 +2099,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const ppAngle = evaluateExpression(expr.args[2], scope);
         const ppDist = evaluateExpression(expr.args[3], scope);
         const ppAnchor = evaluateExpression(expr.args[4], scope);
-        if (typeof ppx !== 'number' || typeof ppy !== 'number' || typeof ppAngle !== 'number' || typeof ppDist !== 'number') {
+        if (
+          typeof ppx !== 'number' ||
+          typeof ppy !== 'number' ||
+          typeof ppAngle !== 'number' ||
+          typeof ppDist !== 'number'
+        ) {
           throw mError('polarProject() numeric arguments must be numbers');
         }
         if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a string');
@@ -1925,7 +2178,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'ObjectValue' as const,
           properties: new Map<string, Value>([
-            ['x', bb.x], ['y', bb.y], ['width', bb.width], ['height', bb.height],
+            ['x', bb.x],
+            ['y', bb.y],
+            ['width', bb.width],
+            ['height', bb.height],
           ]),
         };
       }
@@ -1942,7 +2198,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const ppAngle = evaluateExpression(expr.args[2], scope);
         const ppDist = evaluateExpression(expr.args[3], scope);
         const ppAnchor = evaluateExpression(expr.args[4], scope);
-        if (typeof ppx !== 'number' || typeof ppy !== 'number' || typeof ppAngle !== 'number' || typeof ppDist !== 'number') {
+        if (
+          typeof ppx !== 'number' ||
+          typeof ppy !== 'number' ||
+          typeof ppAngle !== 'number' ||
+          typeof ppDist !== 'number'
+        ) {
           throw mError('polarProject() numeric arguments must be numbers');
         }
         if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a string');
@@ -1989,6 +2250,69 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
   }
 
   // PatternValue methods
+  // MaskValue methods
+  if (isMaskValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length < 1 || expr.args.length > 2)
+          throw mError('Mask.append() expects 1-2 arguments (path, styles?)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = pathArg.commands.map((cmd) => ({
+            command: cmd.command,
+            args: [...cmd.args],
+            start: { x: cmd.start.x, y: cmd.start.y },
+            end: { x: cmd.end.x, y: cmd.end.y },
+          }));
+        } else {
+          throw mError('Mask.append() first argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commands.map((c) => commandToPathString(c)).join(' ');
+        let styles: Record<string, string> = {};
+        if (expr.args.length === 2) {
+          const styleArg = evaluateExpression(expr.args[1], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Mask.append() second argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        obj.paths.push({ d, styles });
+        return 0;
+      }
+      default:
+        throw mError(`Unknown Mask method: ${expr.method}`);
+    }
+  }
+
+  // ClipPathValue methods
+  if (isClipPathValue(obj)) {
+    switch (expr.method) {
+      case 'append': {
+        if (expr.args.length !== 1) throw mError('ClipPath.append() expects 1 argument (path)');
+        const pathArg = evaluateExpression(expr.args[0], scope);
+        let commands: PathBlockCommand[];
+        if (isProjectedPathValue(pathArg)) {
+          commands = pathArg.commands;
+        } else if (isPathBlockValue(pathArg)) {
+          commands = pathArg.commands.map((cmd) => ({
+            command: cmd.command,
+            args: [...cmd.args],
+            start: { x: cmd.start.x, y: cmd.start.y },
+            end: { x: cmd.end.x, y: cmd.end.y },
+          }));
+        } else {
+          throw mError('ClipPath.append() argument must be a PathBlock or ProjectedPath');
+        }
+        const d = commands.map((c) => commandToPathString(c)).join(' ');
+        obj.paths.push(d);
+        return 0;
+      }
+      default:
+        throw mError(`Unknown ClipPath method: ${expr.method}`);
+    }
+  }
+
   if (isPatternValue(obj)) {
     switch (expr.method) {
       case 'append': {
@@ -2121,7 +2445,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return { type: 'ArrayValue' as const, elements: flat };
       }
       case 'fill': {
-        if (expr.args.length !== 0) throw mError('Grid.fill() does not take arguments — use fill {|row, col, center| ... }');
+        if (expr.args.length !== 0)
+          throw mError('Grid.fill() does not take arguments — use fill {|row, col, center| ... }');
         if (!expr.block) throw mError('Grid.fill() requires a trailing block');
         const params = expr.block.params;
         for (let r = 0; r < obj.rows; r++) {
@@ -2235,14 +2560,16 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 2) throw mError('Grid.sampleNearest() expects 2 arguments (x, y)');
         const x = evaluateExpression(expr.args[0], scope);
         const y = evaluateExpression(expr.args[1], scope);
-        if (typeof x !== 'number' || typeof y !== 'number') throw mError('Grid.sampleNearest() arguments must be numbers');
+        if (typeof x !== 'number' || typeof y !== 'number')
+          throw mError('Grid.sampleNearest() arguments must be numbers');
         return annGridSampleNearest(obj, x, y);
       }
       case 'sampleBilinear': {
         if (expr.args.length !== 2) throw mError('Grid.sampleBilinear() expects 2 arguments (x, y)');
         const x = evaluateExpression(expr.args[0], scope);
         const y = evaluateExpression(expr.args[1], scope);
-        if (typeof x !== 'number' || typeof y !== 'number') throw mError('Grid.sampleBilinear() arguments must be numbers');
+        if (typeof x !== 'number' || typeof y !== 'number')
+          throw mError('Grid.sampleBilinear() arguments must be numbers');
         return annGridSampleBilinear(obj, x, y, mError);
       }
       case 'sample': {
@@ -2295,8 +2622,147 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           spread: obj.spread,
         };
       }
+      // Mesh-specific methods
+      case 'getPoint': {
+        if (obj.gradientType !== 'mesh') throw mError('getPoint() is only available on MeshGradient');
+        if (expr.args.length !== 2) throw mError('getPoint() expects 2 arguments (row, col)');
+        const row = evaluateExpression(expr.args[0], scope);
+        const col = evaluateExpression(expr.args[1], scope);
+        if (typeof row !== 'number' || typeof col !== 'number') throw mError('getPoint() arguments must be numbers');
+        const grid = obj.meshGrid!;
+        if (row < 0 || row >= grid.length || col < 0 || col >= grid[0].length) {
+          throw mError(`getPoint(${row}, ${col}) out of bounds for ${grid.length}×${grid[0].length} grid`);
+        }
+        return grid[row][col];
+      }
+      case 'getRow': {
+        if (obj.gradientType !== 'mesh') throw mError('getRow() is only available on MeshGradient');
+        if (expr.args.length !== 1) throw mError('getRow() expects 1 argument (row)');
+        const row = evaluateExpression(expr.args[0], scope);
+        if (typeof row !== 'number') throw mError('getRow() argument must be a number');
+        const grid = obj.meshGrid!;
+        if (row < 0 || row >= grid.length)
+          throw mError(`getRow(${row}) out of bounds for grid with ${grid.length} rows`);
+        return { type: 'ArrayValue' as const, elements: [...grid[row]] };
+      }
+      case 'getCol': {
+        if (obj.gradientType !== 'mesh') throw mError('getCol() is only available on MeshGradient');
+        if (expr.args.length !== 1) throw mError('getCol() expects 1 argument (col)');
+        const col = evaluateExpression(expr.args[0], scope);
+        if (typeof col !== 'number') throw mError('getCol() argument must be a number');
+        const grid = obj.meshGrid!;
+        if (col < 0 || col >= grid[0].length)
+          throw mError(`getCol(${col}) out of bounds for grid with ${grid[0].length} columns`);
+        return { type: 'ArrayValue' as const, elements: grid.map((r) => r[col]) };
+      }
+      case 'colorAll': {
+        if (obj.gradientType !== 'mesh') throw mError('colorAll() is only available on MeshGradient');
+        if (expr.args.length !== 1) throw mError('colorAll() expects 1 argument (color)');
+        const color = evaluateExpression(expr.args[0], scope);
+        if (!isColorValue(color)) throw mError('colorAll() argument must be a Color value');
+        const css = oklchToCSS(color.oklch);
+        for (const row of obj.meshGrid!) {
+          for (const pt of row) {
+            pt.color = { ...color.oklch };
+            pt.colorCSS = css;
+          }
+        }
+        return 0;
+      }
+      // Freeform-specific methods
+      case 'point': {
+        if (obj.gradientType !== 'freeform') throw mError('point() is only available on FreeformGradient');
+        if (expr.args.length !== 3) throw mError('point() expects 3 arguments (x, y, color)');
+        const x = evaluateExpression(expr.args[0], scope);
+        const y = evaluateExpression(expr.args[1], scope);
+        const color = evaluateExpression(expr.args[2], scope);
+        if (typeof x !== 'number' || typeof y !== 'number') throw mError('point() x and y must be numbers');
+        if (!isColorValue(color)) throw mError('point() third argument must be a Color value');
+        obj.freeformPoints!.push({ x, y, color: { ...color.oklch }, colorCSS: oklchToCSS(color.oklch) });
+        return 0;
+      }
+      // Topo-specific methods
+      case 'contour': {
+        if (obj.gradientType !== 'topo') throw mError('.contour() is only available on TopoGradient');
+        if (expr.args.length !== 3) throw mError('.contour() expects 3 arguments (path, elevation, color)');
+        const pathVal = evaluateExpression(expr.args[0], scope);
+        const elevation = evaluateExpression(expr.args[1], scope);
+        const color = evaluateExpression(expr.args[2], scope);
+        if (!isProjectedPathValue(pathVal))
+          throw mError('.contour() first argument must be a ProjectedPathValue (use .project(x, y) on a path block)');
+        if (typeof elevation !== 'number') throw mError('.contour() elevation must be a number');
+        if (elevation < 0 || elevation > 1) throw mError('.contour() elevation must be between 0 and 1');
+        if (!isColorValue(color)) throw mError('.contour() third argument must be a Color value');
+        const cmds = pathVal.commands;
+        if (cmds.length === 0 || cmds[cmds.length - 1].command !== 'z')
+          throw mError('.contour() path must be closed (end with closePath())');
+        const dString = cmds.map((c) => commandToPathString(c)).join(' ');
+        obj.topoContours!.push({
+          elevation,
+          dString,
+          color: { ...color.oklch },
+          colorCSS: oklchToCSS(color.oklch),
+        });
+        return 0;
+      }
       default:
         throw mError(`Unknown Gradient method: ${expr.method}`);
+    }
+  }
+
+  // MeshPointValue methods
+  if (isMeshPointValue(obj)) {
+    switch (expr.method) {
+      case 'translate': {
+        if (expr.args.length !== 2) throw mError('translate() expects 2 arguments (dx, dy)');
+        const dx = evaluateExpression(expr.args[0], scope);
+        const dy = evaluateExpression(expr.args[1], scope);
+        if (typeof dx !== 'number' || typeof dy !== 'number') throw mError('translate() arguments must be numbers');
+        obj.x += dx;
+        obj.y += dy;
+        return 0;
+      }
+      default:
+        throw mError(`Unknown MeshPoint method: ${expr.method}`);
+    }
+  }
+
+  // PolarVector methods
+  if (isPolarVectorValue(obj)) {
+    switch (expr.method) {
+      case 'turn': {
+        if (expr.args.length !== 1) throw mError('turn() expects 1 argument');
+        const delta = evaluateExpression(expr.args[0], scope);
+        if (typeof delta !== 'number') throw mError('turn() argument must be a number');
+        return { type: 'PolarVectorValue' as const, angle: obj.angle + delta, distance: obj.distance };
+      }
+      case 'scale': {
+        if (expr.args.length !== 1) throw mError('scale() expects 1 argument');
+        const factor = evaluateExpression(expr.args[0], scope);
+        if (typeof factor !== 'number') throw mError('scale() argument must be a number');
+        if (factor < 0) throw mError('scale() factor must be non-negative — use mirror() to flip direction');
+        return { type: 'PolarVectorValue' as const, angle: obj.angle, distance: obj.distance * factor };
+      }
+      case 'mirror': {
+        if (expr.args.length !== 0) throw mError('mirror() expects no arguments');
+        return { type: 'PolarVectorValue' as const, angle: obj.angle + Math.PI, distance: obj.distance };
+      }
+      default:
+        throw mError(`Unknown PolarVector method: ${expr.method}`);
+    }
+  }
+
+  // Cycler methods
+  if (isCyclerValue(obj)) {
+    switch (expr.method) {
+      case 'pick': {
+        if (expr.args.length !== 0) throw mError('pick() expects 0 arguments');
+        const value = obj.elements[obj.index];
+        obj.index = (obj.index + 1) % obj.elements.length;
+        return value;
+      }
+      default:
+        throw mError(`Unknown Cycler method: ${expr.method}`);
     }
   }
 
@@ -2575,11 +3041,19 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const textArg = evaluateExpression(expr.args[0], scope);
         const stylesArg = evaluateExpression(expr.args[1], scope);
         if (typeof textArg !== 'string') throw mError('PathBlock.fromGlyph() first argument must be a string');
-        if (typeof stylesArg !== 'object' || stylesArg === null || !('type' in stylesArg) || stylesArg.type !== 'StyleBlockValue') {
+        if (
+          typeof stylesArg !== 'object' ||
+          stylesArg === null ||
+          !('type' in stylesArg) ||
+          stylesArg.type !== 'StyleBlockValue'
+        ) {
           throw mError('PathBlock.fromGlyph() second argument must be a style block');
         }
-        const styles = (stylesArg as StyleBlockValue).properties;
-        const fontFamily = styles['font-family']?.split(',')[0]?.trim()?.replace(/^['"]|['"]$/g, '');
+        const styles = stylesArg.properties;
+        const fontFamily = styles['font-family']
+          ?.split(',')[0]
+          ?.trim()
+          ?.replace(/^['"]|['"]$/g, '');
         const fontSize = parseFloat(styles['font-size'] ?? '16') || 16;
         const fontWeight = parseInt(styles['font-weight'] ?? '400', 10) || 400;
 
@@ -2702,7 +3176,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
     case 'reduce': {
       if (expr.args.length !== 1) throw mError('reduce() expects 1 argument (initial value)');
-      if (!expr.block) throw mError('reduce() requires a trailing block: array.reduce(init) {|acc, item| return acc; }');
+      if (!expr.block)
+        throw mError('reduce() requires a trailing block: array.reduce(init) {|acc, item| return acc; }');
       let accumulator: Value = evaluateExpression(expr.args[0], scope);
       const reduceParams = expr.block.params;
       for (let i = 0; i < obj.elements.length; i++) {
@@ -2794,7 +3269,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       for (const el of expr.elements) {
         if (el.type === 'SpreadElement') {
           const val = evaluateExpression(el.argument, scope);
-          if (!isArrayValue(val)) throw new Error(formatError('Spread argument must be an array', getLine(el.argument)));
+          if (!isArrayValue(val))
+            throw new Error(formatError('Spread argument must be an array', getLine(el.argument)));
           elements.push(...val.elements);
         } else {
           elements.push(evaluateExpression(el, scope));
@@ -2808,7 +3284,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       for (const prop of expr.properties) {
         if (prop.type === 'SpreadElement') {
           const val = evaluateExpression(prop.argument, scope);
-          if (!isObjectValue(val)) throw new Error(formatError('Spread argument must be an object', getLine(prop.argument)));
+          if (!isObjectValue(val))
+            throw new Error(formatError('Spread argument must be an object', getLine(prop.argument)));
           for (const [k, v] of val.properties) props.set(k, v);
         } else {
           props.set(prop.key, evaluateExpression(prop.value, scope));
@@ -2825,7 +3302,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'TernaryExpression': {
       const condVal = evaluateExpression(expr.condition, scope);
-      const truthValue = typeof condVal === 'number' ? condVal !== 0 : (isBooleanValue(condVal) ? condVal.value !== 0 : condVal !== null);
+      const truthValue =
+        typeof condVal === 'number' ? condVal !== 0 : isBooleanValue(condVal) ? condVal.value !== 0 : condVal !== null;
       return truthValue ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
     }
 
@@ -2856,10 +3334,19 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           };
         }
         if (isTextBlockValue(left) && isStyleBlock(right)) {
-          return { type: 'TextBlockValue' as const, elements: left.elements, styles: { ...left.styles, ...right.properties } };
+          return {
+            type: 'TextBlockValue' as const,
+            elements: left.elements,
+            styles: { ...left.styles, ...right.properties },
+          };
         }
         if (isProjectedTextValue(left) && isStyleBlock(right)) {
-          return { type: 'ProjectedTextValue' as const, elements: left.elements, styles: { ...left.styles, ...right.properties }, origin: left.origin };
+          return {
+            type: 'ProjectedTextValue' as const,
+            elements: left.elements,
+            styles: { ...left.styles, ...right.properties },
+            origin: left.origin,
+          };
         }
         if (isStyleBlock(left) && isStyleBlock(right)) {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
@@ -2868,7 +3355,10 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return left; // Return same ref, no real layer state in annotated mode
         }
         throw new Error(
-          formatError('Operator << requires matching operand types (both style blocks, both path blocks, or text block << style block)', line),
+          formatError(
+            'Operator << requires matching operand types (both style blocks, both path blocks, or text block << style block)',
+            line,
+          ),
         );
       }
 
@@ -2882,8 +3372,9 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
       // String/BooleanValue equality
       if (expr.operator === '==' || expr.operator === '!=') {
-        const ls = typeof left === 'string' ? left : (isBooleanValue(left) ? (left.value ? 'true' : 'false') : undefined);
-        const rs = typeof right === 'string' ? right : (isBooleanValue(right) ? (right.value ? 'true' : 'false') : undefined);
+        const ls = typeof left === 'string' ? left : isBooleanValue(left) ? (left.value ? 'true' : 'false') : undefined;
+        const rs =
+          typeof right === 'string' ? right : isBooleanValue(right) ? (right.value ? 'true' : 'false') : undefined;
         if (ls !== undefined && rs !== undefined) {
           if (expr.operator === '==') return boolVal(ls === rs);
           return boolVal(ls !== rs);
@@ -2988,7 +3479,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
               })
               .join(', ')}]`;
           if (isTextBlockValue(val)) return `TextBlock(${val.elements.length} elements)`;
-          if (isProjectedTextValue(val)) return `ProjectedText(${val.origin.x}, ${val.origin.y}, ${val.elements.length} elements)`;
+          if (isProjectedTextValue(val))
+            return `ProjectedText(${val.origin.x}, ${val.origin.y}, ${val.elements.length} elements)`;
           return String(val);
         })
         .join('');
@@ -3085,9 +3577,7 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
       const x = evaluateExpression(stmt.x, blockScope);
       const y = evaluateExpression(stmt.y, blockScope);
       if (typeof x !== 'number' || typeof y !== 'number') continue;
-      const rotation = stmt.rotation
-        ? (evaluateExpression(stmt.rotation, blockScope) as number)
-        : undefined;
+      const rotation = stmt.rotation ? (evaluateExpression(stmt.rotation, blockScope) as number) : undefined;
       let textStyles: Record<string, string> | undefined;
       if (stmt.styles) {
         const sv = evaluateExpression(stmt.styles, blockScope);
@@ -3129,7 +3619,8 @@ function evaluateAnnotatedTemplateLiteral(tl: TemplateLiteral, scope: Scope): st
       if (typeof val === 'number') return String(val);
       if (typeof val === 'string') return val;
       if (isTextBlockValue(val)) return `TextBlock(${val.elements.length} elements)`;
-      if (isProjectedTextValue(val)) return `ProjectedText(${val.origin.x}, ${val.origin.y}, ${val.elements.length} elements)`;
+      if (isProjectedTextValue(val))
+        return `ProjectedText(${val.origin.x}, ${val.origin.y}, ${val.elements.length} elements)`;
       return String(val);
     })
     .join('');
@@ -3184,7 +3675,13 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
-      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy =
+        condition !== null &&
+        (isBooleanValue(condition)
+          ? condition.value !== 0
+          : typeof condition === 'number'
+            ? condition !== 0
+            : Boolean(condition));
       if (isTruthy) {
         evaluateAnnotatedTextBody(item.consequent as TextBodyItem[], scope, children);
       } else if (item.alternate) {
@@ -3241,9 +3738,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       }
       case 'contours': {
         const contourGroups = splitContours(obj.commands);
-        const contourBlocks: Value[] = contourGroups.map((cmds) =>
-          buildPathBlockFromCommands(cmds, { x: 0, y: 0 }),
-        );
+        const contourBlocks: Value[] = contourGroups.map((cmds) => buildPathBlockFromCommands(cmds, { x: 0, y: 0 }));
         return { type: 'ArrayValue' as const, elements: contourBlocks };
       }
       default:
@@ -3349,23 +3844,33 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // Handle GridValue property access
   if (isGridValue(obj)) {
     switch (expr.property) {
-      case 'rows': return obj.rows;
-      case 'cols': return obj.cols;
-      case 'xDim': return obj.xDim;
-      case 'yDim': return obj.yDim;
-      case 'origin': return obj.origin;
-      case 'width': return obj.cols * obj.xDim;
-      case 'height': return obj.rows * obj.yDim;
-      case 'outOfBounds': return obj.outOfBounds;
-      case 'interpolation': return obj.interpolation;
-      default: throw new Error(formatError(`Property '${expr.property}' does not exist on Grid`, line));
+      case 'rows':
+        return obj.rows;
+      case 'cols':
+        return obj.cols;
+      case 'xDim':
+        return obj.xDim;
+      case 'yDim':
+        return obj.yDim;
+      case 'origin':
+        return obj.origin;
+      case 'width':
+        return obj.cols * obj.xDim;
+      case 'height':
+        return obj.rows * obj.yDim;
+      case 'outOfBounds':
+        return obj.outOfBounds;
+      case 'interpolation':
+        return obj.interpolation;
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on Grid`, line));
     }
   }
 
   // Handle PointValue property access (added for Grid origin / sampled directions)
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'PointValue') {
-    if (expr.property === 'x') return (obj as PointValue).x;
-    if (expr.property === 'y') return (obj as PointValue).y;
+    if (expr.property === 'x') return obj.x;
+    if (expr.property === 'y') return obj.y;
     throw new Error(formatError(`Property '${expr.property}' does not exist on Point`, line));
   }
 
@@ -3393,9 +3898,88 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return obj.direction ?? 'cw';
       case 'spread':
         return obj.spread ?? 'clamp';
+      // Mesh/Freeform-specific properties
+      case 'falloff':
+        return obj.falloff ?? 2.0;
+      case 'cols':
+        return obj.meshCols ?? 0;
+      case 'rows':
+        return obj.meshRows ?? 0;
+      case 'width': {
+        if (obj.gradientType === 'mesh') return obj.meshWidth!;
+        if (obj.gradientType === 'freeform') return obj.freeformWidth!;
+        if (obj.gradientType === 'topo') return obj.topoWidth!;
+        throw new Error(formatError(`Property 'width' does not exist on ${obj.gradientType} gradient`, line));
+      }
+      case 'height': {
+        if (obj.gradientType === 'mesh') return obj.meshHeight!;
+        if (obj.gradientType === 'freeform') return obj.freeformHeight!;
+        if (obj.gradientType === 'topo') return obj.topoHeight!;
+        throw new Error(formatError(`Property 'height' does not exist on ${obj.gradientType} gradient`, line));
+      }
+      // Topo-specific properties
+      case 'easing':
+        return obj.topoEasing ?? 'linear';
+      case 'method':
+        return obj.topoMethod ?? 'distance';
+      case 'iterations':
+        return obj.topoIterations ?? 200;
+      case 'blend':
+        return obj.topoBlend ?? 1.0;
+      case 'baseColor': {
+        if (obj.topoBaseColor) {
+          return { type: 'ColorValue' as const, oklch: { ...obj.topoBaseColor } };
+        }
+        return null;
+      }
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on Gradient`, line));
     }
+  }
+
+  // Handle MeshPointValue property access
+  if (isMeshPointValue(obj)) {
+    switch (expr.property) {
+      case 'x':
+        return obj.x;
+      case 'y':
+        return obj.y;
+      case 'color':
+        return { type: 'ColorValue' as const, oklch: { ...obj.color } };
+      default:
+        throw new Error(formatError(`Property '${expr.property}' does not exist on MeshPoint`, line));
+    }
+  }
+
+  // Handle MaskValue property access
+  if (isMaskValue(obj)) {
+    if (expr.property === 'id') return obj.id;
+    throw new Error(formatError(`Property '${expr.property}' does not exist on Mask`, line));
+  }
+
+  // Handle FilterValue property access (annotated stub tracks only id)
+  if (isFilterValue(obj)) {
+    if (expr.property === 'id') return obj.id;
+    throw new Error(formatError(`Property '${expr.property}' does not exist on Filter in annotated mode`, line));
+  }
+
+  // Handle ClipPathValue property access
+  if (isClipPathValue(obj)) {
+    if (expr.property === 'id') return obj.id;
+    throw new Error(formatError(`Property '${expr.property}' does not exist on ClipPath`, line));
+  }
+
+  // Handle PolarVectorValue property access
+  if (isPolarVectorValue(obj)) {
+    if (expr.property === 'angle') return obj.angle;
+    if (expr.property === 'distance') return obj.distance;
+    throw new Error(formatError(`Property '${expr.property}' does not exist on PolarVector`, line));
+  }
+
+  // Handle CyclerValue property access
+  if (isCyclerValue(obj)) {
+    if (expr.property === 'length') return obj.elements.length;
+    throw new Error(formatError(`Property '${expr.property}' does not exist on Cycler`, line));
   }
 
   // Handle ColorValue property access
@@ -3609,7 +4193,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(
         formatError('LinearGradient() first argument must be a string', call.loc?.line, call.loc?.column),
       );
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
+    try {
+      validateCSSIdent(id, 'gradient-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
     const x1 = evaluateExpression(call.args[1], scope);
     const y1 = evaluateExpression(call.args[2], scope);
     const x2 = evaluateExpression(call.args[3], scope);
@@ -3647,7 +4235,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       throw new Error(
         formatError('RadialGradient() first argument must be a string', call.loc?.line, call.loc?.column),
       );
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
+    try {
+      validateCSSIdent(id, 'gradient-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     const r = evaluateExpression(call.args[3], scope);
@@ -3685,7 +4277,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('ConicGradient() first argument must be a string', call.loc?.line, call.loc?.column));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
+    try {
+      validateCSSIdent(id, 'gradient-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     if (typeof cx !== 'number' || typeof cy !== 'number') {
@@ -3714,6 +4310,244 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     return gradient;
   }
 
+  // Handle MeshGradient() constructor
+  if (call.name === 'MeshGradient') {
+    if (call.args.length !== 5) {
+      throw new Error(
+        formatError(
+          `MeshGradient() expects 5 arguments (id, width, height, cols, rows), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(formatError('MeshGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    try {
+      validateCSSIdent(id, 'gradient-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
+    const width = evaluateExpression(call.args[1], scope);
+    const height = evaluateExpression(call.args[2], scope);
+    const cols = evaluateExpression(call.args[3], scope);
+    const rows = evaluateExpression(call.args[4], scope);
+    if (
+      typeof width !== 'number' ||
+      typeof height !== 'number' ||
+      typeof cols !== 'number' ||
+      typeof rows !== 'number'
+    ) {
+      throw new Error(
+        formatError('MeshGradient() width, height, cols, rows must be numbers', call.loc?.line, call.loc?.column),
+      );
+    }
+    if (cols < 2 || rows < 2) {
+      throw new Error(
+        formatError(
+          'MeshGradient() cols and rows must be >= 2 (need at least one patch)',
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
+    }
+    const meshGrid: MeshPointValue[][] = [];
+    for (let r = 0; r < rows; r++) {
+      const row: MeshPointValue[] = [];
+      for (let c = 0; c < cols; c++) {
+        row.push({
+          type: 'MeshPointValue',
+          x: (c / (cols - 1)) * width,
+          y: (r / (rows - 1)) * height,
+          color: { L: 0, C: 0, H: 0, alpha: 0 },
+          colorCSS: 'oklch(0 0 0 / 0)',
+          gridRow: r,
+          gridCol: c,
+        });
+      }
+      meshGrid.push(row);
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue',
+      gradientType: 'mesh',
+      id,
+      attrs: {},
+      stops: [],
+      meshGrid,
+      meshWidth: width,
+      meshHeight: height,
+      meshCols: cols,
+      meshRows: rows,
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle FreeformGradient() constructor
+  if (call.name === 'FreeformGradient') {
+    if (call.args.length !== 3) {
+      throw new Error(
+        formatError(
+          `FreeformGradient() expects 3 arguments (id, width, height), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(
+        formatError('FreeformGradient() first argument must be a string', call.loc?.line, call.loc?.column),
+      );
+    try {
+      validateCSSIdent(id, 'gradient-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
+    const width = evaluateExpression(call.args[1], scope);
+    const height = evaluateExpression(call.args[2], scope);
+    if (typeof width !== 'number' || typeof height !== 'number') {
+      throw new Error(
+        formatError('FreeformGradient() width and height must be numbers', call.loc?.line, call.loc?.column),
+      );
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue',
+      gradientType: 'freeform',
+      id,
+      attrs: {},
+      stops: [],
+      freeformPoints: [],
+      freeformWidth: width,
+      freeformHeight: height,
+      falloff: 2.0,
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle TopoGradient() constructor
+  if (call.name === 'TopoGradient') {
+    if (call.args.length !== 3) {
+      throw new Error(
+        formatError(
+          `TopoGradient() expects 3 arguments (id, width, height), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(formatError('TopoGradient() first argument must be a string', call.loc?.line, call.loc?.column));
+    try {
+      validateCSSIdent(id, 'gradient-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
+    const width = evaluateExpression(call.args[1], scope);
+    const height = evaluateExpression(call.args[2], scope);
+    if (typeof width !== 'number' || typeof height !== 'number') {
+      throw new Error(formatError('TopoGradient() width and height must be numbers', call.loc?.line, call.loc?.column));
+    }
+    const gradient: GradientValue = {
+      type: 'GradientValue',
+      gradientType: 'topo',
+      id,
+      attrs: {},
+      stops: [],
+      topoContours: [],
+      topoWidth: width,
+      topoHeight: height,
+      topoEasing: 'linear',
+      topoMethod: 'distance',
+      topoIterations: 200,
+      topoBlend: 1.0,
+    };
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], gradient);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return gradient;
+  }
+
+  // Handle Mask() constructor
+  if (call.name === 'Mask') {
+    if (call.args.length !== 1) {
+      throw new Error(
+        formatError(`Mask() expects 1 argument (id), got ${call.args.length}`, call.loc?.line, call.loc?.column),
+      );
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(formatError('Mask() argument must be a string', call.loc?.line, call.loc?.column));
+    try {
+      validateCSSIdent(id, 'mask-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
+    const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
+    return mask;
+  }
+
+  // Handle ClipPath() constructor
+  if (call.name === 'ClipPath') {
+    if (call.args.length !== 1) {
+      throw new Error(
+        formatError(`ClipPath() expects 1 argument (id), got ${call.args.length}`, call.loc?.line, call.loc?.column),
+      );
+    }
+    const id = evaluateExpression(call.args[0], scope);
+    if (typeof id !== 'string')
+      throw new Error(formatError('ClipPath() argument must be a string', call.loc?.line, call.loc?.column));
+    try {
+      validateCSSIdent(id, 'clippath-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
+    const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
+    return clipPath;
+  }
+
+  // Filter constructors — annotated mode has no defs output, so filters are
+  // stub values: the trailing block executes (property assignments are
+  // lenient no-ops) and the value carries only kind + id.
+  if (call.name in ANNOTATED_FILTER_KINDS) {
+    const kind = ANNOTATED_FILTER_KINDS[call.name];
+    annotatedFilterCounter += 1;
+    const filter: AnnotatedFilterValue = {
+      type: 'FilterValue',
+      kind,
+      id: `pathogen-${kind}-${annotatedFilterCounter}`,
+    };
+    // Evaluate args for errors (PixelateFilter accepts optional numbers)
+    call.args.forEach((arg) => evaluateExpression(arg, scope));
+    if (call.block) {
+      const blockScope = createScope(scope);
+      setVariable(blockScope, call.block.params[0], filter);
+      for (const stmt of call.block.body) {
+        evaluateStatementPlain(stmt, blockScope);
+      }
+    }
+    return filter;
+  }
+
   // Handle Pattern() constructor
   if (call.name === 'Pattern') {
     if (call.args.length !== 5) {
@@ -3728,7 +4562,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('Pattern() first argument must be a string', call.loc?.line, call.loc?.column));
-    try { validateCSSIdent(id, 'pattern-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
+    try {
+      validateCSSIdent(id, 'pattern-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
     const x = evaluateExpression(call.args[1], scope);
     const y = evaluateExpression(call.args[2], scope);
     const w = evaluateExpression(call.args[3], scope);
@@ -3769,7 +4607,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const id = evaluateExpression(call.args[0], scope);
     if (typeof id !== 'string')
       throw new Error(formatError('Marker() first argument must be a string', call.loc?.line, call.loc?.column));
-    try { validateCSSIdent(id, 'marker-id'); } catch (e) { throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column)); }
+    try {
+      validateCSSIdent(id, 'marker-id');
+    } catch (e) {
+      throw new Error(formatError((e as Error).message, call.loc?.line, call.loc?.column));
+    }
     const markerWidth = evaluateExpression(call.args[1], scope);
     const markerHeight = evaluateExpression(call.args[2], scope);
     if (typeof markerWidth !== 'number' || typeof markerHeight !== 'number') {
@@ -3807,7 +4649,13 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   // Handle Grid() constructor: Grid(rows, cols, options) {|g| ... }
   if (call.name === 'Grid') {
     if (call.args.length < 2 || call.args.length > 3) {
-      throw new Error(formatError(`Grid() expects 2 or 3 arguments (rows, cols, options?), got ${call.args.length}`, call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError(
+          `Grid() expects 2 or 3 arguments (rows, cols, options?), got ${call.args.length}`,
+          call.loc?.line,
+          call.loc?.column,
+        ),
+      );
     }
     const rowsVal = evaluateExpression(call.args[0], scope);
     const colsVal = evaluateExpression(call.args[1], scope);
@@ -3826,17 +4674,25 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     if (call.args.length === 3) {
       const optsVal = evaluateExpression(call.args[2], scope);
       if (!isObjectValue(optsVal)) {
-        throw new Error(formatError('Grid() options (3rd arg) must be an object literal', call.loc?.line, call.loc?.column));
+        throw new Error(
+          formatError('Grid() options (3rd arg) must be an object literal', call.loc?.line, call.loc?.column),
+        );
       }
       const opts = optsVal.properties;
       if (opts.has('xDim')) {
         const v = opts.get('xDim');
-        if (typeof v !== 'number' || v <= 0) throw new Error(formatError('Grid() options.xDim must be a positive number', call.loc?.line, call.loc?.column));
+        if (typeof v !== 'number' || v <= 0)
+          throw new Error(
+            formatError('Grid() options.xDim must be a positive number', call.loc?.line, call.loc?.column),
+          );
         xDim = v;
       }
       if (opts.has('yDim')) {
         const v = opts.get('yDim');
-        if (typeof v !== 'number' || v <= 0) throw new Error(formatError('Grid() options.yDim must be a positive number', call.loc?.line, call.loc?.column));
+        if (typeof v !== 'number' || v <= 0)
+          throw new Error(
+            formatError('Grid() options.yDim must be a positive number', call.loc?.line, call.loc?.column),
+          );
         yDim = v;
       }
       if (opts.has('origin')) {
@@ -3844,7 +4700,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
         if (typeof v !== 'object' || v === null || !('type' in v) || v.type !== 'PointValue') {
           throw new Error(formatError('Grid() options.origin must be a Point', call.loc?.line, call.loc?.column));
         }
-        origin = v as PointValue;
+        origin = v;
       }
       if (opts.has('defaultValue')) {
         defaultValue = opts.get('defaultValue') as Value;
@@ -3852,14 +4708,26 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
       if (opts.has('outOfBounds')) {
         const v = opts.get('outOfBounds');
         if (v !== 'clamp' && v !== 'wrap' && v !== 'null') {
-          throw new Error(formatError(`Grid() options.outOfBounds must be 'clamp', 'wrap', or 'null'`, call.loc?.line, call.loc?.column));
+          throw new Error(
+            formatError(
+              `Grid() options.outOfBounds must be 'clamp', 'wrap', or 'null'`,
+              call.loc?.line,
+              call.loc?.column,
+            ),
+          );
         }
         outOfBounds = v as GridOutOfBoundsMode;
       }
       if (opts.has('interpolation')) {
         const v = opts.get('interpolation');
         if (v !== 'nearest' && v !== 'bilinear') {
-          throw new Error(formatError(`Grid() options.interpolation must be 'nearest' or 'bilinear'`, call.loc?.line, call.loc?.column));
+          throw new Error(
+            formatError(
+              `Grid() options.interpolation must be 'nearest' or 'bilinear'`,
+              call.loc?.line,
+              call.loc?.column,
+            ),
+          );
         }
         interpolation = v as GridInterpolationMode;
       }
@@ -3884,7 +4752,13 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     if (call.block) {
       const blockScope = createScope(scope);
       if (call.block.params.length < 1) {
-        throw new Error(formatError('Grid() trailing block requires a parameter binding, e.g. {|g| ... }', call.loc?.line, call.loc?.column));
+        throw new Error(
+          formatError(
+            'Grid() trailing block requires a parameter binding, e.g. {|g| ... }',
+            call.loc?.line,
+            call.loc?.column,
+          ),
+        );
       }
       setVariable(blockScope, call.block.params[0], grid);
       for (const stmt of call.block.body) {
@@ -3897,13 +4771,58 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   // Handle Point() constructor (used by Grid origins and bilinear-sampled directions)
   if (call.name === 'Point') {
     if (call.args.length !== 2) {
-      throw new Error(formatError(`Point() expects 2 arguments, got ${call.args.length}`, call.loc?.line, call.loc?.column));
+      throw new Error(
+        formatError(`Point() expects 2 arguments, got ${call.args.length}`, call.loc?.line, call.loc?.column),
+      );
     }
     const x = evaluateExpression(call.args[0], scope);
     const y = evaluateExpression(call.args[1], scope);
-    if (typeof x !== 'number') throw new Error(formatError('Point() x must be a number', call.loc?.line, call.loc?.column));
-    if (typeof y !== 'number') throw new Error(formatError('Point() y must be a number', call.loc?.line, call.loc?.column));
+    if (typeof x !== 'number')
+      throw new Error(formatError('Point() x must be a number', call.loc?.line, call.loc?.column));
+    if (typeof y !== 'number')
+      throw new Error(formatError('Point() y must be a number', call.loc?.line, call.loc?.column));
     return { type: 'PointValue' as const, x, y };
+  }
+
+  // Handle PolarVector() constructor
+  if (call.name === 'PolarVector') {
+    if (call.args.length !== 2) {
+      throw new Error(
+        formatError(`PolarVector() expects 2 arguments, got ${call.args.length}`, call.loc?.line, call.loc?.column),
+      );
+    }
+    const angle = evaluateExpression(call.args[0], scope);
+    const distance = evaluateExpression(call.args[1], scope);
+    if (typeof angle !== 'number')
+      throw new Error(formatError('PolarVector() angle must be a number', call.loc?.line, call.loc?.column));
+    if (typeof distance !== 'number')
+      throw new Error(formatError('PolarVector() distance must be a number', call.loc?.line, call.loc?.column));
+    return { type: 'PolarVectorValue' as const, angle, distance };
+  }
+
+  // Handle Cycler() constructor
+  if (call.name === 'Cycler') {
+    if (call.args.length < 1 || call.args.length > 2) {
+      throw new Error(
+        formatError(`Cycler() expects 1-2 arguments, got ${call.args.length}`, call.loc?.line, call.loc?.column),
+      );
+    }
+    const list = evaluateExpression(call.args[0], scope);
+    if (!isArrayValue(list))
+      throw new Error(formatError('Cycler() first argument must be an array', call.loc?.line, call.loc?.column));
+    if (list.elements.length === 0)
+      throw new Error(formatError('Cycler() array must not be empty', call.loc?.line, call.loc?.column));
+    const elements = [...list.elements];
+    if (call.args.length === 2) {
+      const shuffle = evaluateExpression(call.args[1], scope);
+      if (shuffle) {
+        for (let i = elements.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [elements[i], elements[j]] = [elements[j], elements[i]];
+        }
+      }
+    }
+    return { type: 'CyclerValue' as const, elements, index: 0 };
   }
 
   // Handle SVGDocumentFragment() — evaluate args and call sanitizer
@@ -4140,9 +5059,13 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
       if (stmt.pattern) {
-        const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
+        const bindValue =
+          typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult'
+            ? value.result
+            : value;
         bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
-        if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') return value.path;
+        if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult')
+          return value.path;
         return '';
       }
       // Handle PathWithResult: assign the result to variable, emit the path
@@ -4198,7 +5121,13 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy =
+        condition !== null &&
+        (isBooleanValue(condition)
+          ? condition.value !== 0
+          : typeof condition === 'number'
+            ? condition !== 0
+            : Boolean(condition));
 
       if (isTruthy) {
         const results: string[] = [];
@@ -4289,13 +5218,13 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
     case 'EnumDefinition': {
       if (scope.variables.has(stmt.name)) {
-        throw new Error(formatError(`Enum '${stmt.name}' is already defined`, (stmt as { loc?: { line: number } }).loc?.line));
+        throw new Error(
+          formatError(`Enum '${stmt.name}' is already defined`, (stmt as { loc?: { line: number } }).loc?.line),
+        );
       }
       const enumProps = new Map<string, Value>();
       for (const member of stmt.members) {
-        const val = member.value
-          ? evaluateExpression(member.value, scope)
-          : member.name.toLowerCase();
+        const val = member.value ? evaluateExpression(member.value, scope) : member.name.toLowerCase();
         enumProps.set(member.name, val);
       }
       setVariable(scope, stmt.name, { type: 'ObjectValue', properties: enumProps } as ObjectValue);
@@ -4398,43 +5327,13 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
             break;
         }
       }
-      // Handle Gradient property assignment (including conic fields)
+      // Handle Gradient property assignment (including conic/freeform/topo fields)
       if (isGradientValue(obj)) {
-        switch (stmt.property) {
-          case 'spreadMethod':
-          case 'gradientUnits':
-          case 'gradientTransform': {
-            if (typeof value === 'string') {
-              if (stmt.property === 'spreadMethod') obj.spreadMethod = value;
-              else if (stmt.property === 'gradientUnits') obj.gradientUnits = value;
-              else obj.gradientTransform = value;
-            }
-            break;
-          }
-          case 'interpolation': {
-            if (typeof value === 'string' && (value === 'srgb' || value === 'oklch' || value === 'linearRGB')) {
-              obj.interpolation = value;
-            }
-            break;
-          }
-          case 'steps': {
-            if (typeof value === 'number') obj.steps = value;
-            break;
-          }
-          case 'from':
-          case 'to': {
-            if (typeof value === 'number') obj[stmt.property] = value;
-            break;
-          }
-          case 'direction': {
-            if (value === 'cw' || value === 'ccw') obj.direction = value;
-            break;
-          }
-          case 'spread': {
-            if (typeof value === 'string') obj.spread = value;
-            break;
-          }
-        }
+        assignGradientProperty(obj, stmt.property, value);
+      }
+      // Handle MeshPoint property assignment (g.getPoint(r, c).color = ...)
+      if (isMeshPointValue(obj)) {
+        assignMeshPointProperty(obj, stmt.property, value);
       }
       return '';
     }
@@ -4475,7 +5374,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
       if (stmt.pattern) {
-        const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
+        const bindValue =
+          typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult'
+            ? value.result
+            : value;
         bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
         if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
           emitPathString(value.path, ctx);
@@ -4589,7 +5491,13 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const isTruthy =
+        condition !== null &&
+        (isBooleanValue(condition)
+          ? condition.value !== 0
+          : typeof condition === 'number'
+            ? condition !== 0
+            : Boolean(condition));
 
       if (isTruthy) {
         for (const bodyStmt of stmt.consequent) {
@@ -4726,13 +5634,13 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'EnumDefinition': {
       if (scope.variables.has(stmt.name)) {
-        throw new Error(formatError(`Enum '${stmt.name}' is already defined`, (stmt as { loc?: { line: number } }).loc?.line));
+        throw new Error(
+          formatError(`Enum '${stmt.name}' is already defined`, (stmt as { loc?: { line: number } }).loc?.line),
+        );
       }
       const enumAnnotatedProps = new Map<string, Value>();
       for (const member of stmt.members) {
-        const val = member.value
-          ? evaluateExpression(member.value, scope)
-          : member.name.toLowerCase();
+        const val = member.value ? evaluateExpression(member.value, scope) : member.name.toLowerCase();
         enumAnnotatedProps.set(member.name, val);
       }
       setVariable(scope, stmt.name, { type: 'ObjectValue', properties: enumAnnotatedProps } as ObjectValue);
@@ -4773,6 +5681,19 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       if (stmt.command === '') {
         // Statement-level function call
         const funcCall = stmt.args[0] as FunctionCall;
+
+        // Built-in defs/filter constructors reached as bare statements
+        // (`Marker('m', 10, 10) {|m| ... };`) are not valid path output in
+        // the main evaluator either ("did not return a valid path value") —
+        // but the annotated fallback below would misreport them as
+        // "Undefined variable". Match the main evaluator's error instead.
+        if (
+          (DEFS_CONSTRUCTORS as readonly string[]).includes(funcCall.name) ||
+          funcCall.name in ANNOTATED_FILTER_KINDS
+        ) {
+          evaluateFunctionCall(funcCall, scope, ctx);
+          throw new Error(`Function ${funcCall.name} did not return a valid path value`);
+        }
 
         // Check for context-aware functions first
         if (contextAwareFunctions.has(funcCall.name)) {
@@ -4976,41 +5897,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       }
       // Handle Gradient property assignment (including conic fields)
       if (isGradientValue(maObj)) {
-        switch (stmt.property) {
-          case 'spreadMethod':
-          case 'gradientUnits':
-          case 'gradientTransform': {
-            if (typeof maValue === 'string') {
-              if (stmt.property === 'spreadMethod') maObj.spreadMethod = maValue;
-              else if (stmt.property === 'gradientUnits') maObj.gradientUnits = maValue;
-              else maObj.gradientTransform = maValue;
-            }
-            break;
-          }
-          case 'interpolation': {
-            if (typeof maValue === 'string' && (maValue === 'srgb' || maValue === 'oklch' || maValue === 'linearRGB')) {
-              maObj.interpolation = maValue;
-            }
-            break;
-          }
-          case 'steps': {
-            if (typeof maValue === 'number') maObj.steps = maValue;
-            break;
-          }
-          case 'from':
-          case 'to': {
-            if (typeof maValue === 'number') maObj[stmt.property] = maValue;
-            break;
-          }
-          case 'direction': {
-            if (maValue === 'cw' || maValue === 'ccw') maObj.direction = maValue;
-            break;
-          }
-          case 'spread': {
-            if (typeof maValue === 'string') maObj.spread = maValue;
-            break;
-          }
-        }
+        assignGradientProperty(maObj, stmt.property, maValue);
+      }
+      if (isMeshPointValue(maObj)) {
+        assignMeshPointProperty(maObj, stmt.property, maValue);
       }
       break;
     }

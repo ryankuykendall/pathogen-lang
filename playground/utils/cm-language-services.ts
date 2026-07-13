@@ -17,40 +17,35 @@
 //   3. Reference the wire-up from PLAYGROUND_WIRINGS so the parity test sees it.
 //   4. Include the returned extensions in buildLanguageExtensions()'s result.
 
-import { sharedCompletionSource } from './cm-completion-bridge.js';
+import { makeSharedCompletionSource } from './cm-completion-bridge.js';
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
 
 // ─── CodeMirror module shapes (dynamically imported from ESM CDN) ─────────────
 
 interface CmStateFieldSpec<T> {
-  create(state: CmEditorState): T;
-  update(value: T, transaction: CmTransaction): T;
-  provide?(field: unknown): unknown;
+  create: (state: CmEditorState) => T;
+  update: (value: T, transaction: CmTransaction) => T;
+  provide?: (field: unknown) => unknown;
 }
 
 interface CmStateModule {
   StateField: {
-    define<T>(spec: CmStateFieldSpec<T>): unknown;
+    define: <T>(spec: CmStateFieldSpec<T>) => unknown;
   };
 }
 
 interface CmViewModule {
   EditorView: {
-    updateListener: { of(fn: (update: CmViewUpdate) => void): unknown };
-    domEventHandlers(handlers: {
-      [event: string]: (event: Event, view: unknown) => boolean | void;
-    }): unknown;
+    updateListener: { of: (fn: (update: CmViewUpdate) => void) => unknown };
+    domEventHandlers: (handlers: Record<string, (event: Event, view: unknown) => boolean | void>) => unknown;
   };
-  hoverTooltip(
+  hoverTooltip: (
     source: (view: unknown, pos: number, side: number) => unknown,
     options?: { hideOnChange?: boolean },
-  ): unknown;
+  ) => unknown;
   showTooltip: {
-    computeN(
-      deps: unknown[],
-      read: (state: CmEditorState) => readonly CmTooltip[],
-    ): unknown;
+    computeN: (deps: unknown[], read: (state: CmEditorState) => readonly CmTooltip[]) => unknown;
   };
 }
 
@@ -58,18 +53,20 @@ interface CmTooltip {
   pos: number;
   above?: boolean;
   strictSide?: boolean;
-  create(view: unknown): { dom: HTMLElement };
+  create: (view: unknown) => { dom: HTMLElement };
 }
 
 interface CmAutocompleteModule {
-  autocompletion(config: unknown): unknown;
-  startCompletion(view: unknown): boolean;
+  autocompletion: (config: unknown) => unknown;
+  startCompletion: (view: unknown) => boolean;
+  /** Compiles a snippet template into an apply function with tab-stop cycling. */
+  snippet?: (template: string) => (view: unknown, completion: unknown, from: number, to: number) => void;
 }
 
 interface CmEditorState {
-  doc: { sliceString(from: number, to?: number): string; toString(): string };
+  doc: { sliceString: (from: number, to?: number) => string; toString: () => string };
   selection: { main: { head: number } };
-  field<T>(field: unknown): T;
+  field: <T>(field: unknown) => T;
 }
 
 interface CmEditorView {
@@ -77,7 +74,7 @@ interface CmEditorView {
 }
 
 interface CmTransaction {
-  isUserEvent(type: string): boolean;
+  isUserEvent: (type: string) => boolean;
   state: CmEditorState;
   docChanged: boolean;
   selection?: unknown;
@@ -132,12 +129,12 @@ function wireCompletionTriggers(cm: CmModulesForLanguageServices): unknown {
  *
  * Wired features: getCompletions.
  */
-function wireCompletion(
-  cm: CmModulesForLanguageServices,
-  legacyFallback: unknown,
-): unknown {
+function wireCompletion(cm: CmModulesForLanguageServices, legacyFallback: unknown): unknown {
+  // Pass the native snippet() so snippet completions (apply { }, drawTo(x, y),
+  // Marker(...) {|m|}) get real tab-stop cycling instead of a one-shot insert.
+  const source = makeSharedCompletionSource(cm.autocomplete.snippet);
   return cm.autocomplete.autocompletion({
-    override: [sharedCompletionSource, legacyFallback],
+    override: [source, legacyFallback],
   });
 }
 
@@ -177,7 +174,7 @@ function wireDiagnostics(cm: CmModulesForLanguageServices): ErrorHighlightHandle
  */
 function wireSignatureHelp(cm: CmModulesForLanguageServices): unknown[] {
   const services = window.PathogenLang;
-  if (!services || !services.getSignatureHelp || !services.StringTextDocument) {
+  if (!services?.getSignatureHelp || !services.StringTextDocument) {
     console.warn('Language services not available — signature help disabled');
     return [];
   }
@@ -244,7 +241,7 @@ function offsetToPosition(source: string, offset: number): { line: number; chara
 /** Render a SignatureInformation into the tooltip DOM, bolding the active param. */
 function renderSignature(
   dom: HTMLElement,
-  sig: { label: string; documentation?: string; parameters: Array<{ label: string }> },
+  sig: { label: string; documentation?: string; parameters: { label: string }[] },
   activeParam: number,
 ): void {
   const label = sig.label;
@@ -296,17 +293,17 @@ function renderSignature(
  */
 export function runRename(editorView: unknown): boolean {
   const services = window.PathogenLang;
-  if (!services || !services.prepareRename || !services.getRenameEdits || !services.StringTextDocument) {
+  if (!services?.prepareRename || !services.getRenameEdits || !services.StringTextDocument) {
     console.warn('Language services not available — rename disabled');
     return false;
   }
 
   const view = editorView as {
     state: {
-      doc: { toString(): string; length: number };
+      doc: { toString: () => string; length: number };
       selection: { main: { head: number } };
     };
-    dispatch(tr: unknown): void;
+    dispatch: (tr: unknown) => void;
   };
   const source = view.state.doc.toString();
   const head = view.state.selection.main.head;
@@ -364,27 +361,23 @@ export function runRename(editorView: unknown): boolean {
  */
 export function runFindReferences(editorView: unknown): boolean {
   const services = window.PathogenLang;
-  if (!services || !services.getReferences || !services.StringTextDocument) {
+  if (!services?.getReferences || !services.StringTextDocument) {
     console.warn('Language services not available — find references disabled');
     return false;
   }
 
   const view = editorView as {
     state: {
-      doc: { toString(): string; length: number };
+      doc: { toString: () => string; length: number };
       selection: { main: { head: number } };
     };
-    dispatch(tr: unknown): void;
+    dispatch: (tr: unknown) => void;
   };
   const source = view.state.doc.toString();
   const head = view.state.selection.main.head;
   const { line, character } = offsetToPosition(source, head);
 
-  const locations = services.getReferences(
-    new services.StringTextDocument(source),
-    { line, character },
-    true,
-  );
+  const locations = services.getReferences(new services.StringTextDocument(source), { line, character }, true);
   if (!locations || locations.length === 0) return false;
 
   // Convert each location to a CodeMirror selection range. The
@@ -421,7 +414,7 @@ export function runFindReferences(editorView: unknown): boolean {
  */
 function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
   const services = window.PathogenLang;
-  if (!services || !services.getDefinition || !services.StringTextDocument) {
+  if (!services?.getDefinition || !services.StringTextDocument) {
     console.warn('Language services not available — go-to-definition disabled');
     return [];
   }
@@ -435,11 +428,11 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
       if (!(ev.metaKey || ev.ctrlKey) || ev.button !== 0) return false;
       const view = viewArg as {
         state: {
-          doc: { toString(): string; length: number };
+          doc: { toString: () => string; length: number };
           selection: { main: { head: number; anchor: number } };
         };
-        posAtCoords(coords: { x: number; y: number }): number | null;
-        dispatch(tr: unknown): void;
+        posAtCoords: (coords: { x: number; y: number }) => number | null;
+        dispatch: (tr: unknown) => void;
       };
       const pos = view.posAtCoords({ x: ev.clientX, y: ev.clientY });
       if (pos == null) return false;
@@ -473,17 +466,17 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
  */
 export function runFormatDocument(editorView: unknown): boolean {
   const services = window.PathogenLang;
-  if (!services || !services.formatDocument || !services.StringTextDocument) {
+  if (!services?.formatDocument || !services.StringTextDocument) {
     console.warn('Language services not available — format disabled');
     return false;
   }
 
   const view = editorView as {
     state: {
-      doc: { toString(): string; length: number };
+      doc: { toString: () => string; length: number };
       selection: { main: { head: number; anchor: number } };
     };
-    dispatch(tr: unknown): void;
+    dispatch: (tr: unknown) => void;
   };
 
   const source = view.state.doc.toString();
@@ -501,9 +494,7 @@ export function runFormatDocument(editorView: unknown): boolean {
 
   // Preserve cursor as a best-effort: clamp to new doc length.
   const prevHead = view.state.selection.main.head;
-  const newDocLength = edits.length === 1
-    ? edits[0].newText.length
-    : source.length; // multi-edit: rough estimate
+  const newDocLength = edits.length === 1 ? edits[0].newText.length : source.length; // multi-edit: rough estimate
   const newHead = Math.min(prevHead, newDocLength);
 
   view.dispatch({
@@ -529,9 +520,9 @@ function positionToOffset(source: string, pos: { line: number; character: number
 
 export interface ErrorHighlightHandle {
   extension: unknown[];
-  setError(editorView: unknown, position: { line: number; column: number }): void;
-  setErrors(editorView: unknown, positions: Array<{ line: number; column: number }>): void;
-  clearError(editorView: unknown): void;
+  setError: (editorView: unknown, position: { line: number; column: number }) => void;
+  setErrors: (editorView: unknown, positions: { line: number; column: number }[]) => void;
+  clearError: (editorView: unknown) => void;
 }
 
 export interface LanguageExtensionsResult {
@@ -590,14 +581,7 @@ export function buildLanguageExtensions(
   const errorHighlight = wireDiagnostics(cm);
 
   return {
-    extensions: [
-      completion,
-      triggers,
-      ...hover,
-      ...signatureHelp,
-      goToDefinition,
-      ...errorHighlight.extension,
-    ],
+    extensions: [completion, triggers, ...hover, ...signatureHelp, goToDefinition, ...errorHighlight.extension],
     errorHighlight,
   };
 }

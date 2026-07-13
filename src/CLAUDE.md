@@ -23,7 +23,8 @@ src/
 │   ├── symbols.ts                # getDocumentSymbols (outline/breadcrumbs)
 │   ├── scope-analysis.ts         # analyzeScopes (scope tree, declarations, references)
 │   ├── completion.ts             # getCompletions (keywords, stdlib, user defs, members)
-│   ├── completion-data.ts        # Static completion entries (stdlib, keywords, properties)
+│   ├── completion-data-static.ts # Hand-written entries (keywords, style properties, snippets)
+│   ├── completion-data.generated.ts # GENERATED from pathogen-api.ts — npm run generate:completions
 │   ├── hover.ts                  # getHoverInfo (keywords, path commands, stdlib, symbols)
 │   ├── navigation.ts             # getDefinition, getReferences
 │   ├── signature-help.ts         # getSignatureHelp (active parameter in function calls)
@@ -153,8 +154,8 @@ Context-aware functions receive the current path context and can read pen positi
 | Add CLI option               | `cli.ts`                                                           |
 | Add library export           | `index.ts`                                                         |
 | Add language service feature | `language-services/*.ts`, `language-services/index.ts`              |
-| Add stdlib completion        | `language-services/completion-data.ts`, `language-services/hover.ts`|
-| Add type member completions  | `language-services/completion-data.ts`, `language-services/completion.ts` |
+| Add stdlib completion        | Declare in `src/pathogen-api.ts` → `npm run generate:completions` (hover + signature help flow automatically) |
+| Add type member completions  | `@type`-tagged interface in `src/pathogen-api.ts` → `npm run generate:completions` |
 | Update editor highlighting   | `parser/pathogen.grammar`, `parser/highlight.ts`                   |
 | Update VS Code highlighting  | `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json`       |
 | Add VS Code snippet          | `packages/vscode-pathogen/snippets/pathogen.code-snippets`         |

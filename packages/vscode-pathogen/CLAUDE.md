@@ -37,7 +37,6 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/server.ts` | LSP adapter — each `connection.on*` handler wraps a language-services function |
-| `src/pathogen-lang.d.ts` | Type shim (workaround for DTS build issue in main package) |
 
 ## LSP Capabilities
 

@@ -1,42 +1,51 @@
 import {
-  createConnection,
-  TextDocuments,
-  ProposedFeatures,
-  InitializeParams,
-  InitializeResult,
-  TextDocumentSyncKind,
-  Diagnostic as LSPDiagnostic,
-  DiagnosticSeverity as LSPDiagnosticSeverity,
-  SymbolKind as LSPSymbolKind,
-  CompletionItemKind,
-  InsertTextFormat,
-} from 'vscode-languageserver/node';
-import { TextDocument } from 'vscode-languageserver-textdocument';
-import {
+  DiagnosticSeverity,
+  encodeSemanticTokens,
+  formatDocument,
+  getCodeActions,
+  getCodeLenses,
+  getCompletions,
+  getDefinition,
   getDiagnostics,
   getDocumentSymbols,
-  getCompletions,
   getHoverInfo,
-  getDefinition,
   getReferences,
+  isStylePropertyNamePosition,
   getSignatureHelp,
   prepareRename,
   getRenameEdits,
   getSemanticTokens,
-  encodeSemanticTokens,
-  TOKEN_TYPES,
+  StringTextDocument,
+  SymbolKind,
   TOKEN_MODIFIERS,
-  formatDocument,
-  getCodeActions,
+  TOKEN_TYPES,
   getRefactorActions,
-  getCodeLenses,
   getInlayHints,
   InlayHintKind,
-  SymbolKind,
-  StringTextDocument,
-  DiagnosticSeverity,
 } from 'pathogen-lang';
-import type { Diagnostic, DocumentSymbol, CompletionItem, HoverInfo, Location, SignatureHelp, TextEdit, SemanticToken } from 'pathogen-lang';
+import {
+  CompletionItemKind,
+  createConnection,
+  DiagnosticSeverity as LSPDiagnosticSeverity,
+  InsertTextFormat,
+  ProposedFeatures,
+  SymbolKind as LSPSymbolKind,
+  TextDocuments,
+  TextDocumentSyncKind,
+} from 'vscode-languageserver/node';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+
+import type {
+  CompletionItem,
+  Diagnostic,
+  DocumentSymbol,
+  HoverInfo,
+  Location,
+  SemanticToken,
+  SignatureHelp,
+  TextEdit,
+} from 'pathogen-lang';
+import type { Diagnostic as LSPDiagnostic, InitializeParams, InitializeResult } from 'vscode-languageserver/node';
 
 // Create the LSP connection (stdio transport)
 const connection = createConnection(ProposedFeatures.all);
@@ -47,7 +56,13 @@ const documents = new TextDocuments(TextDocument);
 // Workspace context — captured during initialization
 let workspaceRoot: string | null = null;
 
+// Whether the client understands `${1:x}`/`$0` snippet syntax in completions.
+// When false, snippet templates are stripped to plain text before sending.
+let clientSupportsSnippets = false;
+
 connection.onInitialize((params: InitializeParams): InitializeResult => {
+  clientSupportsSnippets = params.capabilities.textDocument?.completion?.completionItem?.snippetSupport === true;
+
   // Capture workspace root for font path resolution and file-relative operations
   if (params.rootUri) {
     try {
@@ -114,8 +129,32 @@ connection.onCompletion((params) => {
   const textDocument = documents.get(params.textDocument.uri);
   if (!textDocument) return [];
 
-  const doc = new StringTextDocument(textDocument.getText());
+  const text = textDocument.getText();
+  const doc = new StringTextDocument(text);
   const items = getCompletions(doc, params.position);
+
+  // Style-block property names are hyphenated (`stroke-width`), but the
+  // client derives replacement ranges from its word pattern, which treats
+  // `-` as a boundary — accepting `stroke-width` over a typed `stroke-w`
+  // would double the prefix. Attach an explicit textEdit covering the full
+  // hyphenated run before the cursor. (Clients ignore insertText when a
+  // textEdit is present, so newText must carry the full insertion.)
+  const offset = textDocument.offsetAt(params.position);
+  if (isStylePropertyNamePosition(text, offset)) {
+    const prefix = /[-\w]*$/.exec(text.slice(0, offset))?.[0] ?? '';
+    const start = textDocument.positionAt(offset - prefix.length);
+    return items.map((item) => {
+      const lspItem = toLSPCompletionItem(item);
+      return {
+        ...lspItem,
+        textEdit: {
+          range: { start, end: params.position },
+          newText: lspItem.insertText,
+        },
+      };
+    });
+  }
+
   return items.map(toLSPCompletionItem);
 });
 
@@ -130,10 +169,12 @@ connection.onHover((params) => {
 
   return {
     contents: { kind: 'markdown' as const, value: info.contents },
-    range: info.range ? {
-      start: { line: info.range.start.line, character: info.range.start.character },
-      end: { line: info.range.end.line, character: info.range.end.character },
-    } : undefined,
+    range: info.range
+      ? {
+          start: { line: info.range.start.line, character: info.range.start.character },
+          end: { line: info.range.end.line, character: info.range.end.character },
+        }
+      : undefined,
   };
 });
 
@@ -279,10 +320,12 @@ connection.onDocumentRangeFormatting((params) => {
   // Extract the formatted lines within the requested range
   const rangeLines = formattedLines.slice(startLine, endLine + 1);
 
-  return [{
-    range: params.range,
-    newText: rangeLines.join('\n'),
-  }];
+  return [
+    {
+      range: params.range,
+      newText: rangeLines.join('\n'),
+    },
+  ];
 });
 
 // On-type formatting — auto-indent after newlines following {
@@ -290,7 +333,7 @@ connection.onDocumentOnTypeFormatting((params) => {
   const textDocument = documents.get(params.textDocument.uri);
   if (!textDocument) return [];
 
-  const line = params.position.line;
+  const { line } = params.position;
   const text = textDocument.getText();
   const lines = text.split('\n');
 
@@ -302,19 +345,21 @@ connection.onDocumentOnTypeFormatting((params) => {
     let indent = 0;
     for (let i = line - 1; i >= 0; i--) {
       if (lines[i].trimEnd().endsWith('{')) {
-        indent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
+        indent = /^(\s*)/.exec(lines[i])?.[1].length ?? 0;
         break;
       }
     }
-    const expected = ' '.repeat(indent) + '}';
+    const expected = `${' '.repeat(indent)}}`;
     if (currentLine.trim() === '}' && currentLine !== expected) {
-      return [{
-        range: {
-          start: { line, character: 0 },
-          end: { line, character: currentLine.length },
+      return [
+        {
+          range: {
+            start: { line, character: 0 },
+            end: { line, character: currentLine.length },
+          },
+          newText: expected,
         },
-        newText: expected,
-      }];
+      ];
     }
   }
 
@@ -322,18 +367,20 @@ connection.onDocumentOnTypeFormatting((params) => {
   if (params.ch === '\n' && line > 0) {
     const prevLine = lines[line - 1];
     if (prevLine.trimEnd().endsWith('{')) {
-      const prevIndent = prevLine.match(/^(\s*)/)?.[1].length ?? 0;
+      const prevIndent = /^(\s*)/.exec(prevLine)?.[1].length ?? 0;
       const newIndent = ' '.repeat(prevIndent + 2);
       const currentLine = lines[line] || '';
       // Only add indent if current line is empty or has less indent
-      if (currentLine.trim() === '' || currentLine.match(/^(\s*)/)?.[1].length === 0) {
-        return [{
-          range: {
-            start: { line, character: 0 },
-            end: { line, character: currentLine.length },
+      if (currentLine.trim() === '' || /^(\s*)/.exec(currentLine)?.[1].length === 0) {
+        return [
+          {
+            range: {
+              start: { line, character: 0 },
+              end: { line, character: currentLine.length },
+            },
+            newText: newIndent,
           },
-          newText: newIndent,
-        }];
+        ];
       }
     }
   }
@@ -347,9 +394,14 @@ connection.onCodeAction((params) => {
   if (!textDocument) return [];
 
   const doc = new StringTextDocument(textDocument.getText());
-  const uri = params.textDocument.uri;
+  const { uri } = params.textDocument;
 
-  function toLSPAction(action: { title: string; kind: string; diagnostics: unknown[]; edit: { changes: Array<{ range: any; newText: string }> } }) {
+  function toLSPAction(action: {
+    title: string;
+    kind: string;
+    diagnostics: unknown[];
+    edit: { changes: { range: any; newText: string }[] };
+  }) {
     return {
       title: action.title,
       kind: action.kind,
@@ -373,7 +425,7 @@ connection.onCodeAction((params) => {
   // Quick fixes for diagnostics
   const diagnostics = (params.context.diagnostics || []).map((d) => ({
     range: d.range,
-    severity: d.severity as number ?? 1,
+    severity: (d.severity as number) ?? 1,
     message: d.message,
     source: d.source ?? 'pathogen',
   }));
@@ -426,7 +478,7 @@ connection.onCodeLens((params) => {
 const validationTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 documents.onDidChangeContent((change) => {
-  const uri = change.document.uri;
+  const { uri } = change.document;
   const existing = validationTimers.get(uri);
   if (existing) clearTimeout(existing);
 
@@ -436,10 +488,13 @@ documents.onDidChangeContent((change) => {
   const isMidExpression = trimmed.endsWith('.') || trimmed.endsWith('(') || trimmed.endsWith(',');
   const delay = isMidExpression ? 500 : 200;
 
-  validationTimers.set(uri, setTimeout(() => {
-    validationTimers.delete(uri);
-    validateTextDocument(change.document);
-  }, delay));
+  validationTimers.set(
+    uri,
+    setTimeout(() => {
+      validationTimers.delete(uri);
+      validateTextDocument(change.document);
+    }, delay),
+  );
 });
 
 // Clear diagnostics when a document is closed
@@ -538,28 +593,55 @@ function mapSymbolKind(kind: SymbolKind): LSPSymbolKind {
 }
 
 /**
+ * Strip VS Code snippet placeholders down to plain text:
+ * `${1:name}` → `name`, `${2|Grain,Paper|}` → `Grain`, `$0`/`$1` → ''.
+ */
+function stripSnippetPlaceholders(template: string): string {
+  return template
+    .replace(/\$\{\d+\|([^,}|]+)[^}]*\}/g, '$1')
+    .replace(/\$\{\d+:([^}]*)\}/g, '$1')
+    .replace(/\$\d+/g, '');
+}
+
+/**
  * Map a language-services CompletionItem to an LSP CompletionItem.
+ * Snippet templates are downgraded to plain text when the client did not
+ * advertise completionItem.snippetSupport.
  */
 function toLSPCompletionItem(item: CompletionItem) {
+  const isSnippet = Boolean(item.isSnippet && item.insertText);
+  const useSnippetFormat = isSnippet && clientSupportsSnippets;
+  const insertText = isSnippet
+    ? useSnippetFormat
+      ? item.insertText!
+      : stripSnippetPlaceholders(item.insertText!)
+    : (item.insertText ?? item.label);
   return {
     label: item.label,
     kind: mapCompletionKind(item.kind),
     detail: item.detail,
     sortText: item.sortText,
-    insertText: item.insertText ?? item.label,
-    insertTextFormat: item.isSnippet ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
+    insertText,
+    insertTextFormat: useSnippetFormat ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
   };
 }
 
 function mapCompletionKind(kind: string): CompletionItemKind {
   switch (kind) {
-    case 'function': return CompletionItemKind.Function;
-    case 'variable': return CompletionItemKind.Variable;
-    case 'keyword': return CompletionItemKind.Keyword;
-    case 'property': return CompletionItemKind.Property;
-    case 'constant': return CompletionItemKind.Constant;
-    case 'snippet': return CompletionItemKind.Snippet;
-    default: return CompletionItemKind.Text;
+    case 'function':
+      return CompletionItemKind.Function;
+    case 'variable':
+      return CompletionItemKind.Variable;
+    case 'keyword':
+      return CompletionItemKind.Keyword;
+    case 'property':
+      return CompletionItemKind.Property;
+    case 'constant':
+      return CompletionItemKind.Constant;
+    case 'snippet':
+      return CompletionItemKind.Snippet;
+    default:
+      return CompletionItemKind.Text;
   }
 }
 

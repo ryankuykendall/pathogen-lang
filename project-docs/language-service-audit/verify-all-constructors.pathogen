@@ -1,0 +1,41 @@
+// Verification program: every evaluator constructor, compiled by both
+// `pathogen-lang` (main) and `pathogen-lang --annotated` (annotated parity).
+let s = SVGDocumentFragment('<circle cx="5" cy="5" r="2"/>');
+s.insert();
+let m = Mask('v-mask');
+m.append(@{ m 0 0 l 10 10 });
+let c = ClipPath('v-clip');
+c.append(@{ m 0 0 l 10 10 });
+let lg = LinearGradient('v-lg', 0, 0, 1, 1) {|g|
+  g.stop(0, oklch(0.7 0.1 250));
+  g.stop(1, oklch(0.3 0.1 250));
+};
+let rg = RadialGradient('v-rg', 0.5, 0.5, 0.5) {|g|
+  g.stop(0, oklch(0.7 0.1 250));
+};
+let cg = ConicGradient('v-cg', 100, 100) {|g|
+  g.stop(0, oklch(0.7 0.1 250));
+  g.stop(1, oklch(0.3 0.1 20));
+};
+let mg = MeshGradient('v-mg', 100, 100, 2, 2) {|g|
+  g.colorAll(oklch(0.7 0.1 250));
+  g.getPoint(0, 0).color = oklch(0.3 0.1 20);
+};
+let fg = FreeformGradient('v-fg', 100, 100) {|g|
+  g.point(10, 10, oklch(0.7 0.1 250));
+};
+let tg = TopoGradient('v-tg', 100, 100) {|g|
+  g.baseColor = oklch(0.2 0 0);
+  g.contour(@{ m 10 10 l 80 0 l 0 80 l -80 0 z }.project(0, 0), 0.5, oklch(0.7 0.1 250));
+};
+let pt = Pattern('v-pt', 0, 0, 10, 10) {|p|
+  p.append(@{ m 0 0 l 5 5 });
+};
+let mk = Marker('v-mk', 10, 10) {|m2|
+  m2.append(@{ m 0 0 l 5 5 });
+};
+let nf = NoiseFilter() {|n| n.amount = 0.5; };
+let pv = PolarVector(0.5, 10);
+let cy = Cycler([1, 2, 3]);
+let pb = @{ m 0 0 l 20 0 l 0 20 z };
+pb.drawTo(10, 10);

@@ -5,9 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-05-24
+## [Unreleased] - 2026-07-13
 
 ### Added
+
+#### Language-service audit — snippet templates, defs-constructor completions, drift guards
+
+- **Snippet templates on every callable completion.** Accepting a method or constructor now inserts a usable template instead of the bare name: block methods insert braces with the cursor inside (`apply { … }`), calls insert tab-stop placeholders per required parameter (`drawTo(x, y)` with `x` selected), and binding-block constructors insert the full block form (`Marker('id', 10, 10) {|m| … }`). Templates are generated from `src/pathogen-api.ts` parameter lists, with an explicit `@snippet` JSDoc tag for trailing-block syntax TypeScript can't express. The playground uses CodeMirror's native `snippet()` for real Tab-cycling between placeholders; VS Code gets LSP snippet format (with a plain-text fallback for clients without `snippetSupport`). (`scripts/generate-completions.ts`, `scripts/lib/completion-extract.ts`, `playground/utils/cm-completion-bridge.ts`, `packages/pathogen-language-server/src/server.ts`.)
+- **Completions, hover, and signature help for all 12 defs constructors.** `Mask`, `ClipPath`, `LinearGradient`, `RadialGradient`, `ConicGradient`, `MeshGradient`, `FreeformGradient`, `TopoGradient`, `Pattern`, `Marker`, `SVGDocumentFragment`, and the `PathBlock` namespace previously had **zero** editor support — no completion, no hover, no signature help — despite being documented and dispatched by the evaluator. All are now declared in `pathogen-api.ts` with `@type` member interfaces, so their returned objects complete too: `m.append` inside a `Marker` block, `g.stop(...)` on gradients, `g.getPoint(0, 0).color` on meshes (with a new per-type method-return map that also keeps `grid.getPoint()` → Point distinct from `mesh.getPoint()` → MeshPoint). A new `ProjectedPath` member set covers `.project()`/`.draw()`/`.drawTo()` results.
+- **Constructor registry + self-verifying drift guards.** New `src/evaluator/constructor-registry.ts` enumerates every evaluator-dispatched constructor; `tests/constructor-registry.test.ts` compiles a canonical program per name through **both** evaluators so the registry can't rot. The generator's `crossCheck()` now validates `pathogen-api.ts` against stdlib + context-aware functions + the registry, and `npm run check:completions` runs it in `--strict` mode (non-zero exit on drift). The pre-commit hook runs the check when a commit touches the API surface, evaluator, stdlib, or the generator (warn-only).
+
+### Fixed
+
+#### Completion bugs from the language-service audit
+
+- **`stroke-` + accept → `stroke-stroke-width`.** Style-block property names are hyphenated, but both editors' word patterns treat `-` as a boundary, so accepting a completion re-inserted the already-typed prefix. The playground bridge now widens its word/`validFor` patterns to include `-` **only** in style property-name position (via a new `isStylePropertyNamePosition` export — `a-b` subtraction is untouched), and the LSP attaches an explicit `textEdit` covering the hyphenated prefix. The engine also filters property-name completions by the hyphen-aware prefix so the popup narrows as you type. (`playground/utils/cm-completion-bridge.ts`, `packages/pathogen-language-server/src/server.ts`, `src/language-services/completion.ts`.)
+- **`drawTo` documented a signature that throws.** Completion detail read `drawTo(layerName) — Emit to layer`; the runtime signature is `drawTo(x, y)` (returns a ProjectedPath). Root cause was a wrong declaration in `src/pathogen-api.ts` — the published docs page was already correct. Also corrected `draw()`/`project()` return-type declarations.
+- **Choice-syntax snippets inserted raw `${2|Grain,Paper|}` text in the playground.** The bridge's placeholder handling didn't understand VS Code choice fields (used by the NoiseFilter/GlowFilter/MotionBlurFilter declaration snippets); they now convert to their first choice, and the manual fallback selects the first placeholder default so typing replaces it.
+- **`--annotated` mode was missing 5 defs constructors, all 7 filters, `PolarVector`, and `Cycler`.** `Mask`, `ClipPath`, `MeshGradient`, `FreeformGradient`, and `TopoGradient` (plus every filter constructor, `PolarVector`, and `Cycler`) threw `Undefined variable` under `pathogen-lang --annotated`. All now evaluate with full member/property support (gradient sub-methods, `append`, MeshPoint color assignment); filters evaluate as lenient stubs since annotated mode emits no defs. Statement-level defs-constructor calls now report the same error as the main evaluator instead of a misleading `Undefined variable`. (`src/evaluator/annotated.ts`.)
+
+### Development (language-service audit)
+
+- `completion-data.generated.ts` gains `CONSTRUCTOR_RETURN_TYPES` and `TYPE_METHOD_RETURNS`; `completion.ts` type inference now derives constructor and binding-block rules from them instead of hand-maintained regex ladders (adding a constructor to `pathogen-api.ts` propagates everywhere with no engine change).
+- Generator logic extracted to `scripts/lib/completion-extract.ts` with unit tests (`tests/language-services/generate-completions.test.ts`); `escapeString` now encodes newlines/tabs so multi-line templates emit valid code.
+- Deleted the hand-maintained `packages/pathogen-language-server/src/pathogen-lang.d.ts` type shim — the LSP now typechecks against the real `dist/index.d.ts`.
+- Rewrote stale `src/language-services/CLAUDE.md` (referenced a deleted `completion-data.ts`, claimed all enums were missing) and fixed the same stale references in `src/CLAUDE.md`.
+- New tests: method-snippet/detail assertions in `completion.test.ts`, replacement-range + snippet-apply coverage in `completion-bridge.test.ts`, defs-constructor hover in `hover.test.ts`.
+
+### Added (2026-05-24)
 
 #### `variableOffset` / `compoundVariableOffset` — variable-distance offset paths with per-stop curve continuity
 

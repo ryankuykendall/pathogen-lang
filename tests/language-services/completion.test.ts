@@ -842,4 +842,94 @@ describe('getCompletions', () => {
       expect(block).toContain('radius');
     });
   });
+
+  // Regression suite for the 2026-07-13 language-service audit: snippet
+  // templates on method completions, corrected drawTo docs, defs-constructor
+  // completions, and hyphen-aware style-property filtering.
+  describe('method snippet templates (generated insertText)', () => {
+    it('layer.apply inserts a brace template with cursor inside', () => {
+      const items = completeAtEnd("let bg = PathLayer('bg');\nbg.ap");
+      const apply = items.find((i) => i.label === 'apply');
+      expect(apply).toBeDefined();
+      expect(apply!.isSnippet).toBe(true);
+      expect(apply!.insertText).toBe('apply {\n\t$0\n}');
+    });
+
+    it('PathBlock drawTo documents (x, y) — not layerName — and derives a parens template', () => {
+      const items = completeAtEnd('let pb = @{ m 0 0 l 10 10 };\npb.dr');
+      const drawTo = items.find((i) => i.label === 'drawTo');
+      expect(drawTo).toBeDefined();
+      expect(drawTo!.detail).toBe('drawTo(x, y) — Draw path translated to (x, y); returns a ProjectedPath');
+      expect(drawTo!.insertText).toBe('drawTo(${1:x}, ${2:y})$0');
+      expect(drawTo!.isSnippet).toBe(true);
+    });
+
+    it('stdlib functions derive parens templates with named placeholders', () => {
+      const items = completeAtEnd('cir');
+      const circle = items.find((i) => i.label === 'circle');
+      expect(circle!.insertText).toBe('circle(${1:cx}, ${2:cy}, ${3:r})$0');
+    });
+
+    it('array map uses its @snippet block template, not a parens call', () => {
+      const items = completeAtEnd('let arr = [1, 2, 3];\narr.ma');
+      const map = items.find((i) => i.label === 'map');
+      expect(map!.insertText).toBe('map {|${1:item}|\n\treturn $0;\n}');
+    });
+  });
+
+  describe('defs constructor completions', () => {
+    it('offers the defs constructors at top level with binding-block snippets', () => {
+      const items = completeAtEnd('');
+      const names = labels(items);
+      for (const ctor of ['Mask', 'ClipPath', 'LinearGradient', 'RadialGradient', 'ConicGradient', 'MeshGradient', 'FreeformGradient', 'TopoGradient', 'Pattern', 'Marker']) {
+        expect(names).toContain(ctor);
+      }
+      const marker = items.find((i) => i.label === 'Marker');
+      expect(marker!.isSnippet).toBe(true);
+      expect(marker!.insertText).toBe("Marker('${1:id}', ${2:10}, ${3:10}) {|${4:m}|\n\t$0\n}");
+    });
+
+    it('completes members on a Marker binding-block param', () => {
+      const items = completeAtEnd("Marker('dot', 10, 10) {|m|\n  m.");
+      const names = labels(items);
+      expect(names).toContain('append');
+      expect(names).toContain('refX');
+      expect(names).toContain('orient');
+    });
+
+    it('completes members on a let-assigned Mask', () => {
+      const names = labels(completeAtEnd("let mk = Mask('fade');\nmk."));
+      expect(names).toEqual(expect.arrayContaining(['id', 'append']));
+    });
+
+    it('resolves mesh getPoint() chains to MeshPoint members', () => {
+      const names = labels(completeAtEnd("MeshGradient('m', 100, 100, 2, 2) {|g|\n  g.getPoint(0, 0)."));
+      expect(names).toEqual(expect.arrayContaining(['x', 'y', 'color', 'translate']));
+    });
+
+    it('resolves grid getPoint() chains to Point members (per-type return map)', () => {
+      const names = labels(completeAtEnd('let g = Grid(4, 4);\nlet p = g.getPoint(0, 0).'));
+      expect(names).toContain('distanceTo');
+      expect(names).not.toContain('color');
+    });
+
+    it('completes PathBlock namespace members', () => {
+      const names = labels(completeAtEnd('PathBlock.'));
+      expect(names).toContain('fromGlyph');
+    });
+  });
+
+  describe('style property-name prefix filtering (hyphen-aware)', () => {
+    it('narrows to stroke-* properties for a hyphenated prefix', () => {
+      const names = labels(completeAtEnd('let s = ${ stroke-w'));
+      expect(names).toContain('stroke-width');
+      expect(names).not.toContain('fill');
+    });
+
+    it('still offers all properties with no prefix', () => {
+      const names = labels(completeAtEnd('let s = ${ '));
+      expect(names).toContain('stroke-width');
+      expect(names).toContain('fill');
+    });
+  });
 });

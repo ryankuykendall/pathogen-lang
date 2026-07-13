@@ -7,6 +7,10 @@
  * When adding a new stdlib function or evaluator feature, declare it here.
  * Run `npm run generate:completions` to update the generated completion data.
  */
+/* eslint-disable @typescript-eslint/method-signature-style --
+ * The completion generator distinguishes methods (get snippet templates via
+ * iface.getMethods()) from properties. Converting `m(a): R` to `m: (a) => R`
+ * silently empties every method set — keep method signature style here. */
 
 // =============================================================================
 // Pathogen Type System
@@ -17,9 +21,15 @@ type AngleSuffix = 'deg' | 'rad' | 'pi';
 type AngleValue = `${number}${AngleSuffix}` | number;
 
 // Forward-declared types (interfaces for runtime types defined at end of file)
-declare type PathSegment = { __brand: 'PathSegment' };
-declare type ColorValue = { __brand: 'ColorValue' };
-declare type CapValue = { __brand: 'CapValue' };
+declare interface PathSegment {
+  __brand: 'PathSegment';
+}
+declare interface ColorValue {
+  __brand: 'ColorValue';
+}
+declare interface CapValue {
+  __brand: 'CapValue';
+}
 declare type Value = string | number | boolean | null;
 
 // =============================================================================
@@ -44,23 +54,67 @@ export declare function TextLayer(name: string): PathogenPathLayer | PathogenTex
 export declare function GroupLayer(name: string): PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer;
 
 // Filter constructors — see docs/filters.md
-/** NoiseFilter() — Grain/paper/speckle/static/grainy-gradient noise filter @boost 11 */
+/** NoiseFilter() — Grain/paper/speckle/static/grainy-gradient noise filter @boost 11 @snippet NoiseFilter() {|${1:f}|\n\t$0\n} */
 export declare function NoiseFilter(): PathogenNoiseFilter;
-/** GlowFilter() — Outer or inner soft glow @boost 11 */
+/** GlowFilter() — Outer or inner soft glow @boost 11 @snippet GlowFilter() {|${1:f}|\n\t$0\n} */
 export declare function GlowFilter(): PathogenGlowFilter;
-/** EmbossFilter() — Light-source-based embossed surface @boost 11 */
+/** EmbossFilter() — Light-source-based embossed surface @boost 11 @snippet EmbossFilter() {|${1:f}|\n\t$0\n} */
 export declare function EmbossFilter(): PathogenEmbossFilter;
-/** ElevationShadowFilter() — Material-style layered depth shadow @boost 11 */
+/** ElevationShadowFilter() — Material-style layered depth shadow @boost 11 @snippet ElevationShadowFilter() {|${1:f}|\n\t$0\n} */
 export declare function ElevationShadowFilter(): PathogenElevationShadowFilter;
-/** InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks) @boost 11 */
+/** InnerShadowFilter() — Inset shadow (capability CSS drop-shadow() lacks) @boost 11 @snippet InnerShadowFilter() {|${1:f}|\n\t$0\n} */
 export declare function InnerShadowFilter(): PathogenInnerShadowFilter;
-/** PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter @boost 11 */
+/** PixelateFilter(width?, height?, radius?) — Mosaic / pixelation filter @boost 11 @snippet PixelateFilter() {|${1:f}|\n\t$0\n} */
 export declare function PixelateFilter(width?: number, height?: number, radius?: number): PathogenPixelateFilter;
-/** MotionBlurFilter() — Directional (linear) or progressive blur; configure via trailing block @boost 11 */
+/** MotionBlurFilter() — Directional (linear) or progressive blur; configure via trailing block @boost 11 @snippet MotionBlurFilter() {|${1:f}|\n\t$0\n} */
 export declare function MotionBlurFilter(): PathogenMotionBlurFilter;
 
-/** Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction. @boost 12 */
+/** Grid(rows, cols, options?) — 2D mutable grid of values mapped to canvas coords. Trailing block runs at construction. @boost 12 @snippet Grid(${1:rows}, ${2:cols}) {|${3:g}|\n\t$0\n} */
 export declare function Grid(rows: number, cols: number, options?: PathogenGridOptions): PathogenGrid;
+
+// Defs constructors — masks, clip paths, gradients, patterns, markers
+// (see docs/masks.md, docs/gradients.md, docs/markers.md)
+/** SVGDocumentFragment(svg) — Parse an SVG string into an insertable fragment @boost 8 */
+export declare function SVGDocumentFragment(svg: string): PathogenSVGFragment;
+/** Mask('id') — Luminance mask; add shapes with .append(path, styles?) @boost 10 */
+export declare function Mask(id: string): PathogenMask;
+/** ClipPath('id') — Clipping region; add shapes with .append(path) @boost 10 */
+export declare function ClipPath(id: string): PathogenClipPath;
+/** LinearGradient('id', x1, y1, x2, y2) {|g| ...} — Linear gradient between two points @boost 11 @snippet LinearGradient('${1:id}', ${2:0}, ${3:0}, ${4:1}, ${5:1}) {|${6:g}|\n\t$0\n} */
+export declare function LinearGradient(
+  id: string,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): PathogenLinearGradient;
+/** RadialGradient('id', cx, cy, r, fx?, fy?) {|g| ...} — Radial gradient from a center point @boost 11 @snippet RadialGradient('${1:id}', ${2:0.5}, ${3:0.5}, ${4:0.5}) {|${5:g}|\n\t$0\n} */
+export declare function RadialGradient(
+  id: string,
+  cx: number,
+  cy: number,
+  r: number,
+  fx?: number,
+  fy?: number,
+): PathogenRadialGradient;
+/** ConicGradient('id', cx, cy) {|g| ...} — Angular sweep gradient (rasterized) @boost 10 @snippet ConicGradient('${1:id}', ${2:cx}, ${3:cy}) {|${4:g}|\n\t$0\n} */
+export declare function ConicGradient(id: string, cx: number, cy: number): PathogenConicGradient;
+/** MeshGradient('id', width, height, cols, rows) {|g| ...} — Grid of color control points (rasterized; cols/rows >= 2) @boost 10 @snippet MeshGradient('${1:id}', ${2:width}, ${3:height}, ${4:2}, ${5:2}) {|${6:g}|\n\t$0\n} */
+export declare function MeshGradient(
+  id: string,
+  width: number,
+  height: number,
+  cols: number,
+  rows: number,
+): PathogenMeshGradient;
+/** FreeformGradient('id', width, height) {|g| ...} — Scattered color points with distance falloff (rasterized) @boost 10 @snippet FreeformGradient('${1:id}', ${2:width}, ${3:height}) {|${4:g}|\n\t$0\n} */
+export declare function FreeformGradient(id: string, width: number, height: number): PathogenFreeformGradient;
+/** TopoGradient('id', width, height) {|g| ...} — Elevation contours blended into a color field (rasterized) @boost 10 @snippet TopoGradient('${1:id}', ${2:width}, ${3:height}) {|${4:g}|\n\t$0\n} */
+export declare function TopoGradient(id: string, width: number, height: number): PathogenTopoGradient;
+/** Pattern('id', x, y, width, height) {|p| ...} — Repeating tile; add shapes with .append(path, styles?) @boost 10 @snippet Pattern('${1:id}', ${2:0}, ${3:0}, ${4:10}, ${5:10}) {|${6:p}|\n\t$0\n} */
+export declare function Pattern(id: string, x: number, y: number, width: number, height: number): PathogenPattern;
+/** Marker('id', markerWidth, markerHeight) {|m| ...} — Arrowhead/vertex marker; styles support context-stroke and context-fill @boost 10 @snippet Marker('${1:id}', ${2:10}, ${3:10}) {|${4:m}|\n\t$0\n} */
+export declare function Marker(id: string, markerWidth: number, markerHeight: number): PathogenMarker;
 
 // =============================================================================
 // Context-Aware Functions (implemented in evaluator, not stdlib)
@@ -75,7 +129,14 @@ export declare function polarMove(angle: AngleValue, distance: number): PathSegm
 /** polarLine(angle, distance) — Line in polar direction @boost 14 */
 export declare function polarLine(angle: AngleValue, distance: number): PathSegment;
 /** arcFromCenter(dcx, dcy, r, start, end, cw) — Arc from center @boost 12 */
-export declare function arcFromCenter(dcx: number, dcy: number, r: number, start: AngleValue, end: AngleValue, cw: boolean): PathSegment;
+export declare function arcFromCenter(
+  dcx: number,
+  dcy: number,
+  r: number,
+  start: AngleValue,
+  end: AngleValue,
+  cw: boolean,
+): PathSegment;
 /** arcFromPolarOffset(angle, radius, sweepAngle) — Arc from polar center @boost 12 */
 export declare function arcFromPolarOffset(angle: AngleValue, radius: number, sweepAngle: AngleValue): PathSegment;
 /** tangentLine(length) — Line following tangent @boost 12 */
@@ -109,9 +170,26 @@ export declare function star(cx: number, cy: number, outer: number, inner: numbe
 /** quadratic(x1, y1, cx, cy, x2, y2) — Quadratic bezier @boost 10 */
 export declare function quadratic(x1: number, y1: number, cx: number, cy: number, x2: number, y2: number): PathSegment;
 /** cubic(x1, y1, c1x, c1y, c2x, c2y, x2, y2) — Cubic bezier @boost 10 */
-export declare function cubic(x1: number, y1: number, c1x: number, c1y: number, c2x: number, c2y: number, x2: number, y2: number): PathSegment;
+export declare function cubic(
+  x1: number,
+  y1: number,
+  c1x: number,
+  c1y: number,
+  c2x: number,
+  c2y: number,
+  x2: number,
+  y2: number,
+): PathSegment;
 /** arc(rx, ry, rot, large, sweep, x, y) — Arc command @boost 10 */
-export declare function arc(rx: number, ry: number, rot: AngleValue, large: number, sweep: number, x: number, y: number): PathSegment;
+export declare function arc(
+  rx: number,
+  ry: number,
+  rot: AngleValue,
+  large: number,
+  sweep: number,
+  x: number,
+  y: number,
+): PathSegment;
 /** line(x1, y1, x2, y2) — Line segment @boost 10 */
 export declare function line(x1: number, y1: number, x2: number, y2: number): PathSegment;
 /** moveTo(x, y) — Move command @boost 8 */
@@ -130,27 +208,64 @@ export declare function cubicSpline(points: PathogenArray): PathSegment;
 /** quadSpline(start, points, end) — Smooth quad spline @boost 8 */
 export declare function quadSpline(start: PathogenObject, points: PathogenArray, end: PathogenObject): PathSegment;
 /** clippedQuadSpline(start, points, end) — Clipped quad spline @boost 8 */
-export declare function clippedQuadSpline(start: PathogenObject, points: PathogenArray, end: PathogenObject): PathSegment;
+export declare function clippedQuadSpline(
+  start: PathogenObject,
+  points: PathogenArray,
+  end: PathogenObject,
+): PathSegment;
 /** polarCubicBezier(start, pv1, pv2, end) — Polar cubic bezier @boost 8 */
-export declare function polarCubicBezier(start: PathogenPoint, pv1: PathogenPolarVector, pv2: PathogenPolarVector, end: PathogenPoint): PathSegment;
+export declare function polarCubicBezier(
+  start: PathogenPoint,
+  pv1: PathogenPolarVector,
+  pv2: PathogenPolarVector,
+  end: PathogenPoint,
+): PathSegment;
 
 // =============================================================================
 // Stdlib: Radial Wedge
 // =============================================================================
 
 /** radialWedge(innerR, outerR, fromAngle, toAngle, cornerR) — Annular sector @boost 8 */
-export declare function radialWedge(innerR: number, outerR: number, fromAngle: AngleValue, toAngle: AngleValue, cornerR: number): PathSegment;
+export declare function radialWedge(
+  innerR: number,
+  outerR: number,
+  fromAngle: AngleValue,
+  toAngle: AngleValue,
+  cornerR: number,
+): PathSegment;
 
 // =============================================================================
 // Stdlib: Grids
 // =============================================================================
 
 /** squareGrid(type, x, y, w, h, cellSize) — Square grid @boost 8 */
-export declare function squareGrid(type: string, x: number, y: number, w: number, h: number, cellSize: number): PathSegment;
+export declare function squareGrid(
+  type: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  cellSize: number,
+): PathSegment;
 /** triangleGrid(type, x, y, w, h, cellSize) — Triangle grid @boost 8 */
-export declare function triangleGrid(type: string, x: number, y: number, w: number, h: number, cellSize: number): PathSegment;
+export declare function triangleGrid(
+  type: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  cellSize: number,
+): PathSegment;
 /** hexagonGrid(type, x, y, w, h, cellSize, orient?) — Hex grid @boost 8 */
-export declare function hexagonGrid(type: string, x: number, y: number, w: number, h: number, cellSize: number, orient?: string): PathSegment;
+export declare function hexagonGrid(
+  type: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  cellSize: number,
+  orient?: string,
+): PathSegment;
 
 // =============================================================================
 // Stdlib: Trig (angles in radians)
@@ -320,6 +435,12 @@ export declare namespace Cap {
   function tapered(length: number, continuity?: string): CapValue;
 }
 
+/** PathBlock — Glyph-outline namespace; path-block literals use @{ ... } syntax @boost 10 @kind variable */
+export declare namespace PathBlock {
+  /** PathBlock.fromGlyph(text, styles) — Array of glyph-outline PathBlocks (requires font-family in styles) */
+  function fromGlyph(text: string, styles: Value): PathogenArray<PathogenPathBlock>;
+}
+
 /** @type ColorInstance */
 export interface PathogenColorInstance {
   /** CSS color string */
@@ -433,11 +554,11 @@ export interface PathogenGrid {
   getCol(col: number): PathogenArray;
   /** cells() — Flat row-major array of every cell */
   cells(): PathogenArray;
-  /** fill {|row, col, center| return ...} — Populate every cell from a block (mutates) */
+  /** fill {|row, col, center| return ...} — Populate every cell from a block (mutates) @snippet fill {|${1:row}, ${2:col}, ${3:center}|\n\treturn $0;\n} */
   fill(): PathogenGrid;
-  /** forEach {|cell, row, col, center| ...} — Side-effect iteration in row-major order */
+  /** forEach {|cell, row, col, center| ...} — Side-effect iteration in row-major order @snippet forEach {|${1:cell}, ${2:row}, ${3:col}, ${4:center}|\n\t$0\n} */
   forEach(): void;
-  /** map {|cell, row, col, center| return ...} — Return a new grid with transformed cells */
+  /** map {|cell, row, col, center| return ...} — Return a new grid with transformed cells @snippet map {|${1:cell}, ${2:row}, ${3:col}, ${4:center}|\n\treturn $0;\n} */
   map(): PathogenGrid;
   /** sample(x, y) — Lookup using grid's default interpolation mode */
   sample(x: number, y: number): Value;
@@ -485,9 +606,9 @@ export interface PathogenArray<T = Value> {
   unshift(item: T): number;
   /** empty() — Check if array is empty */
   empty(): boolean;
-  /** map {|item| ...} — Transform elements */
+  /** map {|item| ...} — Transform elements @snippet map {|${1:item}|\n\treturn $0;\n} */
   map(block: (item: T, index?: number) => unknown): PathogenArray;
-  /** reduce(init) {|acc, item| ...} — Reduce */
+  /** reduce(init) {|acc, item| ...} — Reduce @snippet reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n} */
   reduce(init: Value, block: (acc: Value, item: T) => Value): Value;
   /** mapSlice(length) — Sliding window slices */
   mapSlice(length: number): PathogenArray;
@@ -534,10 +655,10 @@ export interface PathogenPathBlock {
   readonly contours: PathogenArray<PathogenPathBlock>;
 
   // Core methods
-  /** draw() — Emit path data */
-  draw(): void;
-  /** drawTo(layerName) — Emit to layer */
-  drawTo(layerName: string): void;
+  /** draw() — Emit path at the current pen position; returns a ProjectedPath */
+  draw(): PathogenProjectedPath;
+  /** drawTo(x, y) — Draw path translated to (x, y); returns a ProjectedPath */
+  drawTo(x: number, y: number): PathogenProjectedPath;
   /** get(t) — Sample point at t */
   get(t: number): PathogenPoint;
   /** tangent(t) — Tangent angle at t */
@@ -554,9 +675,9 @@ export interface PathogenPathBlock {
   // Transforms
   /** offset(distance) — Offset path */
   offset(distance: number): PathogenPathBlock;
-  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity */
+  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   variableOffset(): PathogenPathBlock;
-  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon */
+  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   compoundVariableOffset(): PathogenPathBlock;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenPathBlock;
@@ -566,8 +687,8 @@ export interface PathogenPathBlock {
   rotateAtVertexIndex(index: number, angle: AngleValue): PathogenPathBlock;
   /** subPath(startT, endT) — Extract sub-path */
   subPath(startT: number, endT: number): PathogenPathBlock;
-  /** project(x, y) — Project to position */
-  project(x: number, y: number): PathogenPathBlock;
+  /** project(x, y) — Project to absolute position without drawing; returns a ProjectedPath */
+  project(x: number, y: number): PathogenProjectedPath;
 
   // Fillets and chamfers
   /** chamfer(distance) — Chamfer all corners */
@@ -632,7 +753,7 @@ export interface PathogenTextLayer {
   readonly name: string;
   /** Style block */
   readonly styles: Value;
-  /** apply { } — Send text commands to this layer */
+  /** apply { } — Send text commands to this layer @snippet apply {\n\t$0\n} */
   apply(): void;
 }
 
@@ -644,7 +765,7 @@ export interface PathogenPathLayer {
   readonly styles: Value;
   /** Path context (position, heading, transform) */
   readonly ctx: PathContext;
-  /** apply { } — Send path commands to this layer */
+  /** apply { } — Send path commands to this layer @snippet apply {\n\t$0\n} */
   apply(): void;
 }
 
@@ -656,7 +777,7 @@ export interface PathogenGroupLayer {
   readonly styles: Value;
   /** Path context (position, heading, transform) */
   readonly ctx: PathContext;
-  /** apply { } — Send commands to this layer */
+  /** apply { } — Send commands to this layer @snippet apply {\n\t$0\n} */
   apply(): void;
   /** append(layer) — Add child layer */
   append(layer: PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer): void;
@@ -821,4 +942,264 @@ export interface PathogenMotionBlurFilter {
   angle: number;
   /** Tap count / quality — Linear only (2–32, default 12) */
   samples: number;
+}
+
+// =============================================================================
+// Defs types — masks, clip paths, gradients, patterns, markers
+// =============================================================================
+
+/** @type ProjectedPath */
+export interface PathogenProjectedPath {
+  /** Path length */
+  readonly length: number;
+  /** Vertex points */
+  readonly vertices: PathogenArray<PathogenPoint>;
+  /** Number of subpaths */
+  readonly subPathCount: number;
+  /** Array of command objects */
+  readonly subPathCommands: PathogenArray;
+  /** First point (absolute) */
+  readonly startPoint: PathogenPoint;
+  /** Last point (absolute) */
+  readonly endPoint: PathogenPoint;
+  /** drawTo(x, y) — Re-draw translated to a new origin; returns a ProjectedPath */
+  drawTo(x: number, y: number): PathogenProjectedPath;
+  /** get(t) — Sample point at t */
+  get(t: number): PathogenPoint;
+  /** tangent(t) — Tangent angle at t */
+  tangent(t: number): { point: PathogenPoint; angle: number };
+  /** normal(t) — Normal angle at t */
+  normal(t: number): { point: PathogenPoint; angle: number };
+  /** partition(n) — Split into segments */
+  partition(n: number): PathogenArray;
+  /** reverse() — Reverse direction */
+  reverse(): PathogenProjectedPath;
+  /** boundingBox() — Get bounding box */
+  boundingBox(): { x: number; y: number; width: number; height: number };
+  /** offset(distance) — Offset path */
+  offset(distance: number): PathogenProjectedPath;
+  /** mirror(angle) — Mirror path */
+  mirror(angle: AngleValue): PathogenProjectedPath;
+  /** rotateAtVertexIndex(index, angle) — Rotate at vertex */
+  rotateAtVertexIndex(index: number, angle: AngleValue): PathogenProjectedPath;
+  /** scale(sx, sy) — Scale path */
+  scale(sx: number, sy?: number): PathogenProjectedPath;
+  /** subPath(startT, endT) — Extract sub-path */
+  subPath(startT: number, endT: number): PathogenProjectedPath;
+  /** chamfer(distance) — Chamfer all corners */
+  chamfer(distance: number): PathogenProjectedPath;
+  /** chamferAtVertex(index, distance) — Chamfer at vertex */
+  chamferAtVertex(index: number, distance: number): PathogenProjectedPath;
+  /** fillet(radius) — Round all corners */
+  fillet(radius: number): PathogenProjectedPath;
+  /** filletAtVertex(index, radius) — Round at vertex */
+  filletAtVertex(index: number, radius: number): PathogenProjectedPath;
+  /** ellipticalFillet(rx, ry) — Elliptical fillet */
+  ellipticalFillet(rx: number, ry: number): PathogenProjectedPath;
+  /** ellipticalFilletAtVertex(index, rx, ry) — Elliptical fillet at vertex */
+  ellipticalFilletAtVertex(index: number, rx: number, ry: number): PathogenProjectedPath;
+  /** union(other) — Boolean union */
+  union(other: PathogenPathBlock): PathogenProjectedPath;
+  /** difference(other) — Boolean difference */
+  difference(other: PathogenPathBlock): PathogenProjectedPath;
+  /** intersection(other) — Boolean intersection */
+  intersection(other: PathogenPathBlock): PathogenProjectedPath;
+  /** xor(other) — Boolean XOR */
+  xor(other: PathogenPathBlock): PathogenProjectedPath;
+}
+
+/** @type Mask */
+export interface PathogenMask {
+  /** Mask id (reference with mask: 'id' in a style block) */
+  readonly id: string;
+  /** append(path, styles?) — Add a PathBlock/ProjectedPath shape to the mask (white reveals, black hides) */
+  append(path: PathogenPathBlock, styles?: Value): void;
+}
+
+/** @type ClipPath */
+export interface PathogenClipPath {
+  /** ClipPath id (reference with clip-path: 'id' in a style block) */
+  readonly id: string;
+  /** append(path) — Add a PathBlock/ProjectedPath shape to the clipping region */
+  append(path: PathogenPathBlock): void;
+}
+
+/** @type LinearGradient */
+export interface PathogenLinearGradient {
+  /** Gradient id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** stop(offset, color) — Add a color stop at offset 0..1 */
+  stop(offset: number, color: ColorValue): void;
+  /** inherit(newId) — New gradient that href-inherits this one's stops */
+  inherit(newId: string): PathogenLinearGradient;
+  /** 'pad' | 'reflect' | 'repeat' */
+  spreadMethod: string;
+  /** 'objectBoundingBox' | 'userSpaceOnUse' */
+  gradientUnits: string;
+  /** SVG transform list string */
+  gradientTransform: string;
+  /** Color interpolation space: 'srgb' | 'oklch' | 'linearRGB' */
+  interpolation: string;
+  /** Quantize into N discrete bands */
+  steps: number;
+}
+
+/** @type RadialGradient */
+export interface PathogenRadialGradient {
+  /** Gradient id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** stop(offset, color) — Add a color stop at offset 0..1 */
+  stop(offset: number, color: ColorValue): void;
+  /** inherit(newId) — New gradient that href-inherits this one's stops */
+  inherit(newId: string): PathogenRadialGradient;
+  /** 'pad' | 'reflect' | 'repeat' */
+  spreadMethod: string;
+  /** 'objectBoundingBox' | 'userSpaceOnUse' */
+  gradientUnits: string;
+  /** SVG transform list string */
+  gradientTransform: string;
+  /** Color interpolation space: 'srgb' | 'oklch' | 'linearRGB' */
+  interpolation: string;
+  /** Quantize into N discrete bands */
+  steps: number;
+}
+
+/** @type ConicGradient */
+export interface PathogenConicGradient {
+  /** Gradient id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** stop(offset, color) — Add a color stop at offset 0..1 */
+  stop(offset: number, color: ColorValue): void;
+  /** inherit(newId) — New gradient that href-inherits this one's stops */
+  inherit(newId: string): PathogenConicGradient;
+  /** Start angle (requires angle unit, e.g. 0deg) */
+  from: AngleValue;
+  /** End angle (requires angle unit, e.g. 360deg) */
+  to: AngleValue;
+  /** Sweep direction: 'cw' | 'ccw' */
+  direction: string;
+  /** Out-of-range behavior: 'clamp' | 'repeat' | 'transparent' */
+  spread: string;
+  /** Inner radius of the swept ring (>= 0) */
+  innerRadius: number;
+  /** Center fill: 'transparent' | 'transparent-blend' | 'center' | Color */
+  innerFill: Value;
+  /** Color interpolation space: 'srgb' | 'oklch' | 'linearRGB' */
+  interpolation: string;
+  /** Quantize into N discrete bands */
+  steps: number;
+}
+
+/** @type MeshGradient */
+export interface PathogenMeshGradient {
+  /** Gradient id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** Control-point columns */
+  readonly cols: number;
+  /** Control-point rows */
+  readonly rows: number;
+  /** Mesh width in user units */
+  readonly width: number;
+  /** Mesh height in user units */
+  readonly height: number;
+  /** getPoint(row, col) — Control point (set .color, call .translate()) */
+  getPoint(row: number, col: number): PathogenMeshPoint;
+  /** getRow(row) — Array of control points across a row */
+  getRow(row: number): PathogenArray<PathogenMeshPoint>;
+  /** getCol(col) — Array of control points down a column */
+  getCol(col: number): PathogenArray<PathogenMeshPoint>;
+  /** colorAll(color) — Set every control point to one color */
+  colorAll(color: ColorValue): void;
+  /** inherit(newId) — New gradient that href-inherits this one */
+  inherit(newId: string): PathogenMeshGradient;
+}
+
+/** @type MeshPoint */
+export interface PathogenMeshPoint {
+  /** X position in mesh space */
+  readonly x: number;
+  /** Y position in mesh space */
+  readonly y: number;
+  /** Control-point color (assignable) */
+  color: ColorValue;
+  /** translate(dx, dy) — Move the control point (mutates) */
+  translate(dx: number, dy: number): void;
+}
+
+/** @type FreeformGradient */
+export interface PathogenFreeformGradient {
+  /** Gradient id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** Canvas width in user units */
+  readonly width: number;
+  /** Canvas height in user units */
+  readonly height: number;
+  /** Distance falloff exponent (> 0, default 2) */
+  falloff: number;
+  /** point(x, y, color) — Add a color point to the field */
+  point(x: number, y: number, color: ColorValue): void;
+  /** inherit(newId) — New gradient that href-inherits this one */
+  inherit(newId: string): PathogenFreeformGradient;
+}
+
+/** @type TopoGradient */
+export interface PathogenTopoGradient {
+  /** Gradient id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** Canvas width in user units */
+  readonly width: number;
+  /** Canvas height in user units */
+  readonly height: number;
+  /** Elevation easing: 'linear' | 'smoothstep' | 'ease-in' | 'ease-out' | 'ease-in-out' */
+  easing: string;
+  /** Solver: 'distance' | 'laplace' */
+  method: string;
+  /** Laplace solver iterations (1–2000, default 200) */
+  iterations: number;
+  /** Contour blend strength 0..1 */
+  blend: number;
+  /** Base color beneath all contours */
+  baseColor: ColorValue;
+  /** contour(projectedPath, elevation, color) — Add a closed contour at elevation 0..1 (use .project(x, y)) */
+  contour(projectedPath: PathogenProjectedPath, elevation: number, color: ColorValue): void;
+  /** inherit(newId) — New gradient that href-inherits this one */
+  inherit(newId: string): PathogenTopoGradient;
+}
+
+/** @type Pattern */
+export interface PathogenPattern {
+  /** Pattern id (reference with fill: 'id' or stroke: 'id') */
+  readonly id: string;
+  /** 'userSpaceOnUse' | 'objectBoundingBox' */
+  patternUnits: string;
+  /** SVG transform list string */
+  patternTransform: string;
+  /** 'userSpaceOnUse' | 'objectBoundingBox' */
+  patternContentUnits: string;
+  /** append(path, styles?) — Add a PathBlock/ProjectedPath shape to the tile */
+  append(path: PathogenPathBlock, styles?: Value): void;
+}
+
+/** @type Marker */
+export interface PathogenMarker {
+  /** Marker id (reference with marker-start/mid/end: 'id') */
+  readonly id: string;
+  /** Marker viewport width */
+  readonly markerWidth: number;
+  /** Marker viewport height */
+  readonly markerHeight: number;
+  /** Marker viewBox (default '0 0 markerWidth markerHeight') */
+  viewBox: string;
+  /** Anchor X within the viewBox (default markerWidth / 2) */
+  refX: number;
+  /** Anchor Y within the viewBox (default markerHeight / 2) */
+  refY: number;
+  /** 'strokeWidth' | 'userSpaceOnUse' */
+  markerUnits: string;
+  /** 'auto' | 'auto-start-reverse' | angle */
+  orient: Value;
+  /** SVG preserveAspectRatio value */
+  preserveAspectRatio: string;
+  /** append(path, styles?) — Add a PathBlock/ProjectedPath shape; styles support context-stroke and context-fill */
+  append(path: PathogenPathBlock, styles?: Value): void;
 }

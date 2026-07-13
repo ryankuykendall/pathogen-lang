@@ -1,23 +1,25 @@
-import { analyzeScopes } from './scope-analysis';
 import {
-  KEYWORD_COMPLETIONS,
-  STYLE_PROPERTY_COMPLETIONS,
   BLOCK_START_SNIPPETS,
   DECLARATION_SNIPPETS,
   INTERPOLATION_SNIPPET,
+  KEYWORD_COMPLETIONS,
   STYLE_BLOCK_SNIPPET,
+  STYLE_PROPERTY_COMPLETIONS,
 } from './completion-data-static';
 import {
+  CONSTRUCTOR_RETURN_TYPES,
   ENUM_COMPLETIONS,
   ENUM_MEMBER_MAP,
+  NAMESPACE_MEMBERS,
   STDLIB_COMPLETIONS,
   TYPE_MEMBERS,
-  NAMESPACE_MEMBERS,
+  TYPE_METHOD_RETURNS,
 } from './completion-data.generated';
+import { analyzeScopes } from './scope-analysis';
 
+import type { CompletionEntry, MemberCompletionSet } from './completion-data-static';
 import type { TextDocument } from './document';
 import type { Position } from './types';
-import type { CompletionEntry, MemberCompletionSet } from './completion-data-static';
 
 export interface CompletionItem {
   label: string;
@@ -46,7 +48,7 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
     items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
     items.push(...collectScopeDeclarations(document, position));
-    const prefixMatch = textBefore.match(/[a-zA-Z_$]\w*$|\$\{?$/);
+    const prefixMatch = /[a-zA-Z_$]\w*$|\$\{?$/.exec(textBefore);
     const prefix = prefixMatch ? prefixMatch[0] : '';
     return filterByPrefix(items, prefix);
   }
@@ -56,15 +58,13 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   //   • Expression value → @{ } PathBlock, &{ } TextBlock (e.g. `let x = @{`)
   // `@font` is a top-level directive and is filtered out of expression
   // contexts where it would not parse.
-  const blockStartMatch = textBefore.match(/[@&]\w*$/);
+  const blockStartMatch = /[@&]\w*$/.exec(textBefore);
   if (blockStartMatch) {
     const before = textBefore.slice(0, textBefore.length - blockStartMatch[0].length);
     const stmtStart = isAtStatementStart(before);
     const exprPos = isInExpressionPosition(before);
     if (stmtStart || exprPos) {
-      const snippets = stmtStart
-        ? BLOCK_START_SNIPPETS
-        : BLOCK_START_SNIPPETS.filter((s) => s.label !== '@font');
+      const snippets = stmtStart ? BLOCK_START_SNIPPETS : BLOCK_START_SNIPPETS.filter((s) => s.label !== '@font');
       return filterByPrefix(snippets.map(toCompletionItem), blockStartMatch[0]);
     }
   }
@@ -96,7 +96,10 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // (e.g. `Color` variables in scope), then append style value keywords.
   if (isInsideStyleBlock(textBefore)) {
     if (isStylePropertyNameContext(textBefore)) {
-      return STYLE_PROPERTY_COMPLETIONS.map(toCompletionItem);
+      // Property names are hyphenated (`stroke-width`) — match the typed
+      // prefix with a hyphen-aware pattern so filtering narrows correctly.
+      const propPrefix = /[-\w]*$/.exec(textBefore)?.[0] ?? '';
+      return filterByPrefix(STYLE_PROPERTY_COMPLETIONS.map(toCompletionItem), propPrefix);
     }
     // Value context: fall through to collect user variables + stdlib +
     // keywords via the normal path, then append style-value keywords below.
@@ -104,11 +107,18 @@ export function getCompletions(document: TextDocument, position: Position): Comp
 
   // Check for method call on expression: expr.method(...).
   // e.g., shape.boundingBox(). or Color('#f00').lighten(0.2).
-  const chainMatch = textBefore.match(/\.(\w+)\(\s*[^)]*\)\s*\.(\w*)$/);
+  // When the receiver is a plain variable, prefer its per-type return map
+  // (grid.getPoint() → Point vs mesh.getPoint() → MeshPoint).
+  const chainMatch = /(\w+)?\.(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
   if (chainMatch) {
-    const methodName = chainMatch[1];
-    const memberPrefix = chainMatch[2];
-    const returnType = getMethodReturnType(methodName);
+    const receiverName = chainMatch[1];
+    const methodName = chainMatch[2];
+    const memberPrefix = chainMatch[3];
+    const receiverType = receiverName
+      ? (inferType(receiverName, source) ?? inferBlockParamType(receiverName, source))
+      : null;
+    const perType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[methodName] : undefined;
+    const returnType = perType ?? getMethodReturnType(methodName);
     if (returnType && returnType in TYPE_MEMBERS) {
       return filterByPrefix(
         [...TYPE_MEMBERS[returnType].properties, ...TYPE_MEMBERS[returnType].methods].map(toCompletionItem),
@@ -118,34 +128,28 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   }
 
   // Check for member access (dot completions)
-  const dotMatch = textBefore.match(/(\w+)\.(\w*)$/);
+  const dotMatch = /(\w+)\.(\w*)$/.exec(textBefore);
   if (dotMatch) {
     const objectName = dotMatch[1];
     const memberPrefix = dotMatch[2];
     const members = getMembersForObject(objectName, source);
     if (members) {
-      return filterByPrefix(
-        [...members.properties, ...members.methods].map(toCompletionItem),
-        memberPrefix,
-      );
+      return filterByPrefix([...members.properties, ...members.methods].map(toCompletionItem), memberPrefix);
     }
   }
 
   // Check for deep property access (e.g., ctx.position.x, layer.ctx.position)
-  const deepMatch = textBefore.match(/(\w+)\.(\w+)\.(\w*)$/);
+  const deepMatch = /(\w+)\.(\w+)\.(\w*)$/.exec(textBefore);
   if (deepMatch) {
     const [, obj, prop1, prefix] = deepMatch;
     const deepMembers = getDeepMembers(obj, prop1, source);
     if (deepMembers) {
-      return filterByPrefix(
-        [...deepMembers.properties, ...deepMembers.methods].map(toCompletionItem),
-        prefix,
-      );
+      return filterByPrefix([...deepMembers.properties, ...deepMembers.methods].map(toCompletionItem), prefix);
     }
   }
 
   // Get the word prefix at cursor
-  const prefixMatch = textBefore.match(/[a-zA-Z_]\w*$/);
+  const prefixMatch = /[a-zA-Z_]\w*$/.exec(textBefore);
   const prefix = prefixMatch ? prefixMatch[0] : '';
 
   // Collect all completions
@@ -251,7 +255,7 @@ function getMembersForObject(name: string, source: string): MemberCompletionSet 
   }
 
   // Special names with known types
-  if (name === 'ctx' && 'PathContext' in TYPE_MEMBERS) return TYPE_MEMBERS['PathContext'];
+  if (name === 'ctx' && 'PathContext' in TYPE_MEMBERS) return TYPE_MEMBERS.PathContext;
 
   // Try to infer type from source
   const type = inferType(name, source);
@@ -276,7 +280,7 @@ function getMembersForObject(name: string, source: string): MemberCompletionSet 
 function getDeepMembers(obj: string, prop: string, source?: string): MemberCompletionSet | null {
   // ctx.position.x, ctx.start.y
   if (obj === 'ctx' && (prop === 'position' || prop === 'start')) {
-    return TYPE_MEMBERS['Point'] ?? null;
+    return TYPE_MEMBERS.Point ?? null;
   }
   // ctx.transform has its own members
   if (obj === 'ctx' && prop === 'transform') {
@@ -297,7 +301,7 @@ function getDeepMembers(obj: string, prop: string, source?: string): MemberCompl
   if (source && prop === 'ctx') {
     const type = inferType(obj, source);
     if (type === 'PathLayer' || type === 'GroupLayer') {
-      return TYPE_MEMBERS['PathContext'] ?? null;
+      return TYPE_MEMBERS.PathContext ?? null;
     }
   }
 
@@ -311,30 +315,58 @@ function getDeepMembers(obj: string, prop: string, source?: string): MemberCompl
 function getMethodReturnType(method: string): string | null {
   const METHOD_RETURN_TYPES: Record<string, string> = {
     // PathBlock methods returning PathBlock
-    offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock',
-    reverse: 'PathBlock', mirror: 'PathBlock',
-    subPath: 'PathBlock', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock',
-    fillet: 'PathBlock', filletAtVertex: 'PathBlock',
-    ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock',
-    union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock',
-    scale: 'PathBlock', rotateAtVertexIndex: 'PathBlock',
+    offset: 'PathBlock',
+    variableOffset: 'PathBlock',
+    compoundVariableOffset: 'PathBlock',
+    reverse: 'PathBlock',
+    mirror: 'PathBlock',
+    subPath: 'PathBlock',
+    chamfer: 'PathBlock',
+    chamferAtVertex: 'PathBlock',
+    fillet: 'PathBlock',
+    filletAtVertex: 'PathBlock',
+    ellipticalFillet: 'PathBlock',
+    ellipticalFilletAtVertex: 'PathBlock',
+    union: 'PathBlock',
+    difference: 'PathBlock',
+    intersection: 'PathBlock',
+    xor: 'PathBlock',
+    scale: 'PathBlock',
+    rotateAtVertexIndex: 'PathBlock',
     toPathBlock: 'PathBlock',
 
+    // PathBlock methods returning ProjectedPath
+    project: 'ProjectedPath',
+    draw: 'ProjectedPath',
+    drawTo: 'ProjectedPath',
+
+    // PathBlock namespace
+    fromGlyph: 'array',
+
     // PathBlock methods returning BoundingBox
-    boundingBox: 'BoundingBox', paddedBoundingBox: 'BoundingBox',
+    boundingBox: 'BoundingBox',
+    paddedBoundingBox: 'BoundingBox',
 
     // PathBlock methods returning Point
-    get: 'Point', anchor: 'Point',
+    get: 'Point',
+    anchor: 'Point',
 
     // Color methods returning ColorInstance
-    lighten: 'ColorInstance', darken: 'ColorInstance',
-    saturate: 'ColorInstance', desaturate: 'ColorInstance',
-    alpha: 'ColorInstance', hueShift: 'ColorInstance',
-    complement: 'ColorInstance', mix: 'ColorInstance',
+    lighten: 'ColorInstance',
+    darken: 'ColorInstance',
+    saturate: 'ColorInstance',
+    desaturate: 'ColorInstance',
+    alpha: 'ColorInstance',
+    hueShift: 'ColorInstance',
+    complement: 'ColorInstance',
+    mix: 'ColorInstance',
 
     // Point methods returning Point
-    translate: 'Point', polarTranslate: 'Point',
-    midpoint: 'Point', lerp: 'Point', rotate: 'Point',
+    translate: 'Point',
+    polarTranslate: 'Point',
+    midpoint: 'Point',
+    lerp: 'Point',
+    rotate: 'Point',
 
     // PolarVector methods returning PolarVector
     turn: 'PolarVector',
@@ -345,7 +377,9 @@ function getMethodReturnType(method: string): string | null {
     pick: 'any',
 
     // Array methods
-    slice: 'array', map: 'array', mapSlice: 'array',
+    slice: 'array',
+    map: 'array',
+    mapSlice: 'array',
   };
 
   return METHOD_RETURN_TYPES[method] ?? null;
@@ -358,29 +392,31 @@ function getMethodReturnType(method: string): string | null {
 function inferType(name: string, source: string): string | null {
   const esc = escapeRegex(name);
 
-  // let name = Point(...)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*Point\\s*\\(`).test(source)) return 'Point';
-
-  // let name = PolarVector(...)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*PolarVector\\s*\\(`).test(source)) return 'PolarVector';
-
-  // let name = Cycler(...)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*Cycler\\s*\\(`).test(source)) return 'Cycler';
-
-  // let name = PathLayer(...) or define PathLayer(...)
+  // Layer constructors — support both `let x = PathLayer(...)` and
+  // `define x PathLayer(...)`. These return a layer union in pathogen-api.ts,
+  // so they stay hand-written rather than generated.
   if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*PathLayer\\s*\\(`).test(source)) return 'PathLayer';
-
-  // let name = TextLayer(...)
   if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*TextLayer\\s*\\(`).test(source)) return 'TextLayer';
-
-  // let name = GroupLayer(...)
   if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*GroupLayer\\s*\\(`).test(source)) return 'GroupLayer';
 
   // let name = layer('...')  — returns a layer reference (same as PathLayer)
   if (new RegExp(`let\\s+${esc}\\s*=\\s*layer\\s*\\(`).test(source)) return 'PathLayer';
 
+  // Constructor-derived types — generated from pathogen-api.ts return types
+  // (Point, PolarVector, Cycler, CSSVar, Grid, filters, gradients, Mask,
+  // ClipPath, Pattern, Marker, SVGDocumentFragment, ...). Adding a declared
+  // constructor to pathogen-api.ts propagates here with no code change.
+  for (const [ctor, info] of Object.entries(CONSTRUCTOR_RETURN_TYPES)) {
+    if (new RegExp(`let\\s+${esc}\\s*=\\s*${ctor}\\s*\\(`).test(source)) return info.type;
+  }
+
   // let name = Color(...) or let name = #hex or let name = rgb(...) or let name = oklch(...)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*(?:Color\\s*\\(|#[0-9a-fA-F]|rgb\\(|hsl\\(|oklch\\(|hwb\\(|lab\\(|lch\\(|oklab\\()`).test(source)) return 'ColorInstance';
+  if (
+    new RegExp(
+      `let\\s+${esc}\\s*=\\s*(?:Color\\s*\\(|#[0-9a-fA-F]|rgb\\(|hsl\\(|oklch\\(|hwb\\(|lab\\(|lch\\(|oklab\\()`,
+    ).test(source)
+  )
+    return 'ColorInstance';
 
   // let name = @{ ... }
   if (new RegExp(`let\\s+${esc}\\s*=\\s*@\\s*\\{`).test(source)) return 'PathBlock';
@@ -388,37 +424,29 @@ function inferType(name: string, source: string): string | null {
   // let name = &{ ... }
   if (new RegExp(`let\\s+${esc}\\s*=\\s*&\\s*\\{`).test(source)) return 'ProjectedText';
 
-  // let name = CSSVar(...)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*CSSVar\\s*\\(`).test(source)) return 'CSSVar';
-
-  // Filter constructors — `let f = FilterCtor(...)` or `let f = FilterCtor(...) {|x| ...}`
-  // (See docs/filters.md and pathogen-api.ts for the six filter type interfaces.)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*NoiseFilter\\s*\\(`).test(source)) return 'NoiseFilter';
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*GlowFilter\\s*\\(`).test(source)) return 'GlowFilter';
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*EmbossFilter\\s*\\(`).test(source)) return 'EmbossFilter';
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*ElevationShadowFilter\\s*\\(`).test(source)) return 'ElevationShadowFilter';
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*InnerShadowFilter\\s*\\(`).test(source)) return 'InnerShadowFilter';
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*PixelateFilter\\s*\\(`).test(source)) return 'PixelateFilter';
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*MotionBlurFilter\\s*\\(`).test(source)) return 'MotionBlurFilter';
-
-  // let name = Grid(...)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*Grid\\s*\\(`).test(source)) return 'Grid';
-
   // let name = [...]  or method returning array
   if (new RegExp(`let\\s+${esc}\\s*=\\s*\\[`).test(source)) return 'array';
 
   // let name = "..." or let name = '...' or let name = `...`
   if (new RegExp(`let\\s+${esc}\\s*=\\s*["'\`]`).test(source)) return 'string';
 
-  // let name = something.boundingBox() — infer from method return type
-  const methodAssignMatch = new RegExp(`let\\s+${esc}\\s*=\\s*\\w+\\.([a-zA-Z]+)\\s*\\(`).exec(source);
+  // let name = receiver.method() — infer from method return type, preferring
+  // the receiver's per-type return map over the global fallback.
+  const methodAssignMatch = new RegExp(`let\\s+${esc}\\s*=\\s*(\\w+)\\.([a-zA-Z]+)\\s*\\(`).exec(source);
   if (methodAssignMatch) {
-    const returnType = getMethodReturnType(methodAssignMatch[1]);
+    const [, receiver, method] = methodAssignMatch;
+    const receiverType = receiver !== name ? inferType(receiver, source) : null;
+    const perType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[method] : undefined;
+    const returnType = perType ?? getMethodReturnType(method);
     if (returnType && returnType !== 'any') return returnType;
   }
 
   // Stdlib path functions return PathBlock-like path segments
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*(?:circle|rect|roundRect|polygon|star|line|arc|quadratic|cubic|cubicSpline|quadSpline)\\s*\\(`).test(source)) {
+  if (
+    new RegExp(
+      `let\\s+${esc}\\s*=\\s*(?:circle|rect|roundRect|polygon|star|line|arc|quadratic|cubic|cubicSpline|quadSpline)\\s*\\(`,
+    ).test(source)
+  ) {
     return 'PathBlock';
   }
 
@@ -450,17 +478,22 @@ function inferBlockParamType(paramName: string, source: string): string | null {
   }
 
   // Match: arrayVar.reduce(init) {|acc, paramName| — param is 2nd arg (the element)
-  const reduceItemMatch = new RegExp(`(\\w+)\\.reduce\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*\\w+\\s*,\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\|`).exec(source);
+  const reduceItemMatch = new RegExp(
+    `(\\w+)\\.reduce\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*\\w+\\s*,\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\|`,
+  ).exec(source);
   if (reduceItemMatch) {
     return inferArrayElementType(reduceItemMatch[1], source);
   }
 
-  // Match: FilterCtor(...) {|paramName| — bound parameter inside a filter trailing block
-  const filterCtorMatch = new RegExp(
-    `(NoiseFilter|GlowFilter|EmbossFilter|ElevationShadowFilter|InnerShadowFilter|PixelateFilter|MotionBlurFilter)\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*${esc}\\s*\\|`,
-  ).exec(source);
-  if (filterCtorMatch) {
-    return filterCtorMatch[1];
+  // Match: Ctor(...) {|paramName| — bound parameter inside a constructor's
+  // trailing block (filters, gradients, Pattern, Marker, Grid). The
+  // constructor list is generated from @snippet tags in pathogen-api.ts.
+  const blockCtors = Object.keys(CONSTRUCTOR_RETURN_TYPES).filter(
+    (ctor) => CONSTRUCTOR_RETURN_TYPES[ctor].hasBindingBlock,
+  );
+  const ctorMatch = new RegExp(`(${blockCtors.join('|')})\\s*\\([^)]*\\)\\s*\\{\\s*\\|\\s*${esc}\\s*\\|`).exec(source);
+  if (ctorMatch) {
+    return CONSTRUCTOR_RETURN_TYPES[ctorMatch[1]].type;
   }
 
   return null;
@@ -473,7 +506,9 @@ function inferLoopVarType(varName: string, source: string): string | null {
   const esc = escapeRegex(varName);
 
   // Match: for ([varName, ...] in arrayVar) — destructured iteration
-  const destructuredMatch = new RegExp(`for\\s*\\(\\s*\\[\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\]\\s+in\\s+(\\w+)\\s*\\)`).exec(source);
+  const destructuredMatch = new RegExp(
+    `for\\s*\\(\\s*\\[\\s*${esc}(?:\\s*,\\s*\\w+)*\\s*\\]\\s+in\\s+(\\w+)\\s*\\)`,
+  ).exec(source);
   if (destructuredMatch) {
     return inferArrayElementType(destructuredMatch[1], source);
   }
@@ -511,7 +546,7 @@ function inferArrayElementType(arrayName: string, source: string): string | null
   if (/^GroupLayer\s*\(/.test(firstContent)) return 'GroupLayer';
 
   // Array of objects: let arr = [{ x: 0, y: 0 }, ...] — return a marker type
-  if (/^\{/.test(firstContent)) return '_ObjectLiteral';
+  if (firstContent.startsWith('{')) return '_ObjectLiteral';
 
   return null;
 }
@@ -536,7 +571,9 @@ function inferObjectProperties(name: string, source: string): MemberCompletionSe
   if (blockParamType === '_ObjectLiteral') {
     // Find the array variable
     const mapMatch = new RegExp(`(\\w+)\\.map\\s*\\(\\)\\s*\\{\\s*\\|\\s*${esc}`).exec(source);
-    const loopMatch = new RegExp(`for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`).exec(source);
+    const loopMatch = new RegExp(
+      `for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`,
+    ).exec(source);
     const arrName = mapMatch?.[1] ?? loopMatch?.[1];
     if (arrName) {
       const arrEsc = escapeRegex(arrName);
@@ -547,7 +584,9 @@ function inferObjectProperties(name: string, source: string): MemberCompletionSe
 
   const loopVarType = inferLoopVarType(name, source);
   if (loopVarType === '_ObjectLiteral') {
-    const loopMatch = new RegExp(`for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`).exec(source);
+    const loopMatch = new RegExp(
+      `for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`,
+    ).exec(source);
     const arrName = loopMatch?.[1];
     if (arrName) {
       const arrEsc = escapeRegex(arrName);
@@ -579,6 +618,20 @@ function extractObjectProps(body: string): MemberCompletionSet | null {
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * True when the cursor sits in style-block property-name position
+ * (`${ stroke-w… }` before the `:`). Editor integrations use this to widen
+ * their word/replacement range to include hyphens — CSS property names are
+ * hyphenated, but general identifier patterns treat `-` as a boundary, which
+ * makes accepting `stroke-width` after typing `stroke-w` double the prefix.
+ */
+export function isStylePropertyNamePosition(source: string, offset: number): boolean {
+  const textBefore = source.slice(0, offset);
+  return (
+    !isInsideBacktickString(textBefore) && isInsideStyleBlock(textBefore) && isStylePropertyNameContext(textBefore)
+  );
 }
 
 function toCompletionItem(entry: CompletionEntry): CompletionItem {
@@ -615,7 +668,10 @@ function isInsideBacktickString(textBefore: string): boolean {
   let inBacktick = false;
   for (let i = 0; i < textBefore.length; i++) {
     const ch = textBefore[i];
-    if (ch === '\\') { i++; continue; }
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
     if (inBacktick) {
       if (ch === '`') inBacktick = false;
       continue;
@@ -659,8 +715,17 @@ function isInExpressionPosition(textBefore: string): boolean {
   while (i >= 0 && /\s/.test(textBefore[i])) i--;
   if (i < 0) return false;
   const ch = textBefore[i];
-  return ch === '=' || ch === '(' || ch === ',' || ch === '['
-    || ch === '+' || ch === '-' || ch === '*' || ch === '/' || ch === ':';
+  return (
+    ch === '=' ||
+    ch === '(' ||
+    ch === ',' ||
+    ch === '[' ||
+    ch === '+' ||
+    ch === '-' ||
+    ch === '*' ||
+    ch === '/' ||
+    ch === ':'
+  );
 }
 
 /**

@@ -135,4 +135,34 @@ describe('getHoverInfo', () => {
       expect(result!.range!.end).toEqual({ line: 0, character: 6 });
     });
   });
+
+  // 2026-07-13 audit: defs constructors flow into hover via STDLIB_COMPLETIONS.
+  describe('defs constructor hover', () => {
+    it('shows hover for Marker with its real signature', () => {
+      const result = hover("let mk = Marker('dot', 10, 10);", 0, 10); // cursor on "Marker"
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('Marker');
+      expect(result!.contents).toContain('markerWidth');
+    });
+
+    it('shows hover for LinearGradient', () => {
+      const result = hover("let g = LinearGradient('fade', 0, 0, 1, 1);", 0, 12);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('LinearGradient');
+      expect(result!.contents).toContain('x1, y1, x2, y2');
+    });
+
+    it('shows hover for Mask', () => {
+      const result = hover("let m = Mask('fade');", 0, 9);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('Mask');
+      expect(result!.contents).toContain('append');
+    });
+
+    it('shows hover for Pattern', () => {
+      const result = hover("let p = Pattern('dots', 0, 0, 10, 10);", 0, 10);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('Pattern');
+    });
+  });
 });

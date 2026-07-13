@@ -9,9 +9,17 @@ const WATCHED_SRC_PATTERNS: RegExp[] = [
   /^src\/api-surface\.ts$/,
 ];
 
-const DOC_PATTERNS: RegExp[] = [
-  /^docs\/.+\.md$/,
-  /^scripts\/build-docs\.ts$/,
+const DOC_PATTERNS: RegExp[] = [/^docs\/.+\.md$/, /^scripts\/build-docs\.ts$/];
+
+// Files whose changes can put the generated completion data out of sync with
+// the runtime API surface (see scripts/generate-completions.ts crossCheck).
+const COMPLETION_DRIFT_PATTERNS: RegExp[] = [
+  /^src\/pathogen-api\.ts$/,
+  /^src\/api-surface\.ts$/,
+  /^src\/evaluator\//,
+  /^src\/stdlib\//,
+  /^scripts\/generate-completions\.ts$/,
+  /^scripts\/lib\//,
 ];
 
 function getStagedFiles(): string[] {
@@ -30,7 +38,9 @@ function stagedDiffAddsPublicApi(): boolean {
     const diff = execSync('git diff --cached --unified=0', { encoding: 'utf-8' });
     // Added lines start with "+" but not "+++" (file header). Match new exports,
     // which are the strongest signal of a new public API surface.
-    return /^\+(?!\+\+)[^\n]*\bexport\s+(?:function|const|let|var|class|interface|type|enum|default|async\s+function)\b/m.test(diff);
+    return /^\+(?!\+\+)[^\n]*\bexport\s+(?:function|const|let|var|class|interface|type|enum|default|async\s+function)\b/m.test(
+      diff,
+    );
   } catch {
     return false;
   }
@@ -50,6 +60,25 @@ program
     try {
       const staged = getStagedFiles();
       if (staged.length === 0) return;
+
+      // Completion-drift guard: when the API surface or the generator
+      // changes, verify the generated completion data is in sync and the
+      // runtime cross-check is clean. Warning only — never blocks.
+      if (staged.some((f) => COMPLETION_DRIFT_PATTERNS.some((re) => re.test(f)))) {
+        try {
+          execSync('npm run check:completions', { stdio: 'pipe' });
+        } catch {
+          console.log('');
+          console.log('⚠  pre-commit warning: completion data out of sync with the API surface');
+          console.log('');
+          console.log('  `npm run check:completions` failed. Either the generated file');
+          console.log('  src/language-services/completion-data.generated.ts is stale, or the');
+          console.log('  cross-check found runtime/declaration drift (see output of:');
+          console.log('    npm run check:completions');
+          console.log('  Regenerate with `npm run generate:completions` and stage the result.');
+          console.log('');
+        }
+      }
 
       const watchedStaged = staged.filter((f) => WATCHED_SRC_PATTERNS.some((re) => re.test(f)));
       if (watchedStaged.length === 0) return;

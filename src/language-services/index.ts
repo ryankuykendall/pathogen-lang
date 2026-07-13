@@ -13,7 +13,7 @@ export { getDocumentSymbols, SymbolKind } from './symbols';
 export type { DocumentSymbol } from './symbols';
 export { analyzeScopes } from './scope-analysis';
 export type { ScopeInfo, Scope, Declaration, Reference, DeclarationKind } from './scope-analysis';
-export { getCompletions } from './completion';
+export { getCompletions, isStylePropertyNamePosition } from './completion';
 export type { CompletionItem } from './completion';
 export { getHoverInfo } from './hover';
 export type { HoverInfo } from './hover';

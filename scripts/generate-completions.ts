@@ -1,227 +1,47 @@
 import { Command } from 'commander';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { Project } from 'ts-morph';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { BUILTIN_ENUMS, ENUM_METADATA } from '../src/api-surface';
 import { stdlib, contextAwareFunctions } from '../src/stdlib';
+import {
+  DEFS_CONSTRUCTORS,
+  FILTER_CONSTRUCTORS,
+  VALUE_CONSTRUCTORS,
+  LAYER_CONSTRUCTORS,
+  EVALUATOR_CONSTRUCTORS,
+} from '../src/evaluator/constructor-registry';
+import {
+  loadApiFile,
+  extractFromPathogenApi,
+  extractTypeMembers,
+  extractNamespaceMembers,
+  extractSignatureData,
+  extractConstructorReturnTypes,
+  extractTypeMethodReturns,
+  escapeString,
+} from './lib/completion-extract';
+import type { ExtractedCompletion, MemberSet, ExtractionWarning } from './lib/completion-extract';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-interface ExtractedCompletion {
-  label: string;
-  kind: string;
-  detail: string;
-  boost: number;
-}
-
 /**
- * Parse a JSDoc comment to extract the detail string, @boost, and @kind values.
- * Expected format: "description text @boost N @kind kindName"
- * The detail string is everything before the first @tag.
+ * Cross-check pathogen-api.ts declarations against the runtime surface:
+ * stdlib + contextAwareFunctions + the evaluator constructor registry
+ * (src/evaluator/constructor-registry.ts — behaviorally verified against
+ * the real dispatch by tests/constructor-registry.test.ts).
+ * Returns drift findings; `--strict` turns them into a non-zero exit.
  */
-function parseJsDoc(comment: string): { detail: string; boost: number; kind: string } {
-  let boost = 8;
-  let kind = 'function';
-
-  const boostMatch = comment.match(/@boost\s+(\d+)/);
-  if (boostMatch) boost = parseInt(boostMatch[1], 10);
-
-  const kindMatch = comment.match(/@kind\s+(\w+)/);
-  if (kindMatch) kind = kindMatch[1];
-
-  // Detail is everything before the first @tag, trimmed
-  const detail = comment.replace(/@boost\s+\d+/g, '').replace(/@kind\s+\w+/g, '').trim();
-
-  return { detail, boost, kind };
-}
-
-/**
- * Get the raw JSDoc comment text from a node's JSDoc, including custom tags.
- * ts-morph's getDescription() strips unknown tags, so we parse the full text.
- */
-function getRawJsDocComment(jsDocs: ReturnType<typeof import('ts-morph').FunctionDeclaration.prototype.getJsDocs>): string | null {
-  if (jsDocs.length === 0) return null;
-  // getFullText() returns "/** ... */" — strip the comment markers
-  const full = jsDocs[0].getFullText();
-  const inner = full.replace(/^\/\*\*\s*/, '').replace(/\s*\*\/$/, '').replace(/^\s*\*\s?/gm, '').trim();
-  return inner || null;
-}
-
-/**
- * Extract stdlib function completions from pathogen-api.ts using ts-morph.
- */
-function extractFromPathogenApi(apiPath: string): ExtractedCompletion[] {
-  const project = new Project({ compilerOptions: { strict: false } });
-  const sourceFile = project.addSourceFileAtPath(apiPath);
-  const completions: ExtractedCompletion[] = [];
-
-  // Extract top-level function declarations
-  for (const fn of sourceFile.getFunctions()) {
-    const name = fn.getName();
-    if (!name) continue;
-
-    const comment = getRawJsDocComment(fn.getJsDocs());
-    if (!comment) continue;
-
-    const { detail, boost, kind } = parseJsDoc(comment);
-    completions.push({ label: name, kind, detail, boost });
-  }
-
-  // Extract variable declarations (like `ctx`)
-  for (const decl of sourceFile.getVariableDeclarations()) {
-    const name = decl.getName();
-    const statement = decl.getVariableStatement();
-    if (!statement) continue;
-
-    const comment = getRawJsDocComment(statement.getJsDocs());
-    if (!comment) continue;
-
-    const { detail, boost, kind } = parseJsDoc(comment);
-    completions.push({ label: name, kind, detail, boost });
-  }
-
-  // Extract namespace declarations (Color, Object)
-  for (const ns of sourceFile.getModules()) {
-    const name = ns.getName();
-
-    const comment = getRawJsDocComment(ns.getJsDocs());
-    if (!comment) continue;
-
-    const { detail, boost, kind } = parseJsDoc(comment);
-    completions.push({ label: name, kind, detail, boost });
-  }
-
-  return completions;
-}
-
-interface MemberSet {
-  typeName: string;
-  properties: ExtractedCompletion[];
-  methods: ExtractedCompletion[];
-}
-
-/**
- * Extract type member completion sets from interfaces in pathogen-api.ts.
- * Interfaces with a `@type TypeName` JSDoc tag are extracted.
- */
-function extractTypeMembers(apiPath: string): MemberSet[] {
-  const project = new Project({ compilerOptions: { strict: false } });
-  const sourceFile = project.addSourceFileAtPath(apiPath);
-  const memberSets: MemberSet[] = [];
-
-  for (const iface of sourceFile.getInterfaces()) {
-    const comment = getRawJsDocComment(iface.getJsDocs());
-    if (!comment) continue;
-
-    // Extract @type tag to get the Pathogen type name
-    const typeMatch = comment.match(/@type\s+(\w+)/);
-    if (!typeMatch) continue;
-    const typeName = typeMatch[1];
-
-    const properties: ExtractedCompletion[] = [];
-    const methods: ExtractedCompletion[] = [];
-
-    // Extract properties
-    for (const prop of iface.getProperties()) {
-      const propComment = getRawJsDocComment(prop.getJsDocs());
-      const detail = propComment ? parseJsDoc(propComment).detail : prop.getName();
-      const boost = propComment ? parseJsDoc(propComment).boost : 8;
-      properties.push({ label: prop.getName(), kind: 'property', detail, boost });
-    }
-
-    // Extract methods
-    for (const method of iface.getMethods()) {
-      const methodComment = getRawJsDocComment(method.getJsDocs());
-      const detail = methodComment ? parseJsDoc(methodComment).detail : `${method.getName()}()`;
-      const boost = methodComment ? parseJsDoc(methodComment).boost : 8;
-      methods.push({ label: method.getName(), kind: 'function', detail, boost });
-    }
-
-    memberSets.push({ typeName, properties, methods });
-  }
-
-  return memberSets;
-}
-
-/**
- * Extract namespace member completion sets (Color.mix, Object.keys, etc.)
- */
-function extractNamespaceMembers(apiPath: string): MemberSet[] {
-  const project = new Project({ compilerOptions: { strict: false } });
-  const sourceFile = project.addSourceFileAtPath(apiPath);
-  const memberSets: MemberSet[] = [];
-
-  for (const ns of sourceFile.getModules()) {
-    const name = ns.getName();
-    const methods: ExtractedCompletion[] = [];
-
-    for (const fn of ns.getFunctions()) {
-      const fnName = fn.getName();
-      if (!fnName) continue;
-      const fnComment = getRawJsDocComment(fn.getJsDocs());
-      const detail = fnComment ? parseJsDoc(fnComment).detail : `${name}.${fnName}()`;
-      const boost = fnComment ? parseJsDoc(fnComment).boost : 8;
-      // Use the actual name, not delete_ → delete
-      const label = fnName.endsWith('_') ? fnName.slice(0, -1) : fnName;
-      methods.push({ label, kind: 'function', detail, boost });
-    }
-
-    if (methods.length > 0) {
-      memberSets.push({ typeName: name, properties: [], methods });
-    }
-  }
-
-  return memberSets;
-}
-
-interface SignatureEntry {
-  name: string;
-  label: string;
-  params: string[];
-  doc: string;
-}
-
-/**
- * Extract function signature data from pathogen-api.ts for signature help.
- */
-function extractSignatureData(apiPath: string): SignatureEntry[] {
-  const project = new Project({ compilerOptions: { strict: false } });
-  const sourceFile = project.addSourceFileAtPath(apiPath);
-  const signatures: SignatureEntry[] = [];
-
-  for (const fn of sourceFile.getFunctions()) {
-    const name = fn.getName();
-    if (!name) continue;
-
-    const params = fn.getParameters().map((p) => p.getName());
-    // Skip rest params marker
-    const cleanParams = params.map((p) => p.replace(/^\.\.\./, ''));
-
-    const comment = getRawJsDocComment(fn.getJsDocs());
-    const doc = comment ? parseJsDoc(comment).detail : `${name}()`;
-
-    const paramsStr = cleanParams.join(', ');
-    signatures.push({
-      name,
-      label: `${name}(${paramsStr})`,
-      params: cleanParams,
-      doc,
-    });
-  }
-
-  return signatures;
-}
-
-/**
- * Cross-check pathogen-api.ts declarations against runtime stdlib + contextAwareFunctions.
- * Warns about drift between declarations and runtime.
- */
-function crossCheck(declaredFunctions: Set<string>): void {
+function crossCheck(
+  declaredFunctions: Set<string>,
+  constructorReturnTypes: Record<string, { type: string; hasBindingBlock: boolean }>,
+): string[] {
+  const problems: string[] = [];
   const stdlibNames = new Set(Object.keys(stdlib));
   const contextNames = new Set(contextAwareFunctions);
 
-  // Functions in stdlib but not declared
+  // Runtime functions with no declaration in pathogen-api.ts → no completion,
+  // no hover, no signature help.
   const missingFromDecl: string[] = [];
   for (const name of stdlibNames) {
     if (!declaredFunctions.has(name)) missingFromDecl.push(name);
@@ -229,23 +49,24 @@ function crossCheck(declaredFunctions: Set<string>): void {
   for (const name of contextNames) {
     if (!declaredFunctions.has(name)) missingFromDecl.push(name);
   }
-
-  if (missingFromDecl.length > 0) {
-    console.warn(`⚠ Runtime functions not declared in pathogen-api.ts: ${missingFromDecl.join(', ')}`);
-    console.warn('  Add declarations to src/pathogen-api.ts');
+  for (const name of EVALUATOR_CONSTRUCTORS) {
+    if (!declaredFunctions.has(name)) missingFromDecl.push(name);
   }
 
-  // Declared functions not in runtime (excluding constructors, namespaces, variables)
-  const runtimeNames = new Set([
+  if (missingFromDecl.length > 0) {
+    problems.push(
+      `Runtime functions not declared in pathogen-api.ts: ${missingFromDecl.join(', ')} — add declarations to src/pathogen-api.ts`,
+    );
+  }
+
+  // Declared functions not present anywhere in the runtime → phantom completions.
+  const runtimeNames = new Set<string>([
     ...stdlibNames,
     ...contextNames,
-    'Point', 'PolarVector', 'Cycler', 'CSSVar',
-    'PathLayer', 'TextLayer', 'GroupLayer',
-    // Filter constructors live in the evaluator's call dispatch, not the stdlib registry.
-    'NoiseFilter', 'GlowFilter', 'EmbossFilter', 'ElevationShadowFilter', 'InnerShadowFilter', 'PixelateFilter',
-    'MotionBlurFilter',
-    // Grid constructor lives in the evaluator, not the stdlib registry.
-    'Grid',
+    ...VALUE_CONSTRUCTORS,
+    ...LAYER_CONSTRUCTORS,
+    ...FILTER_CONSTRUCTORS,
+    ...DEFS_CONSTRUCTORS,
   ]);
   const extraDecl: string[] = [];
   for (const name of declaredFunctions) {
@@ -253,17 +74,38 @@ function crossCheck(declaredFunctions: Set<string>): void {
   }
 
   if (extraDecl.length > 0) {
-    console.warn(`⚠ Declared in pathogen-api.ts but not in runtime: ${extraDecl.join(', ')}`);
+    problems.push(`Declared in pathogen-api.ts but not in runtime: ${extraDecl.join(', ')}`);
   }
+
+  // Every defs/filter constructor should map to a @type interface so its
+  // returned object gets member completions.
+  const missingReturnType = [...DEFS_CONSTRUCTORS, ...FILTER_CONSTRUCTORS].filter(
+    (name) => !(name in constructorReturnTypes),
+  );
+  if (missingReturnType.length > 0) {
+    problems.push(
+      `Constructors without a resolvable @type return interface (no member completions): ${missingReturnType.join(', ')}`,
+    );
+  }
+
+  return problems;
+}
+
+function formatEntry(c: ExtractedCompletion, indent: string): string {
+  const snippetPart = c.insertText ? `, insertText: '${escapeString(c.insertText)}', isSnippet: true` : '';
+  return `${indent}{ label: '${c.label}', kind: '${c.kind}', detail: '${escapeString(c.detail)}', boost: ${c.boost}${snippetPart} }`;
 }
 
 const program = new Command();
 program
   .name('generate-completions')
   .description('Generate completion data from API surface registry and pathogen-api.ts')
-  .action(() => {
+  .option('--strict', 'Exit non-zero on any drift warning')
+  .action((opts: { strict?: boolean }) => {
     const outputPath = path.resolve(__dirname, '../src/language-services/completion-data.generated.ts');
     const apiPath = path.resolve(__dirname, '../src/pathogen-api.ts');
+    const sourceFile = loadApiFile(apiPath);
+    const warnings: ExtractionWarning[] = [];
 
     // =========================================================================
     // Phase 1: Enum completions (from BUILTIN_ENUMS + ENUM_METADATA)
@@ -282,9 +124,10 @@ program
 
     const enumMemberEntries = enumNames.map((enumName) => {
       const members = BUILTIN_ENUMS[enumName];
-      const memberEntries = Object.entries(members).map(([memberName, value]) => {
-        return `    { label: '${memberName}', kind: 'constant', detail: '${enumName}.${memberName} → "${escapeString(value)}"', boost: 8 }`;
-      });
+      const memberEntries = Object.entries(members).map(
+        ([memberName, value]) =>
+          `    { label: '${memberName}', kind: 'constant', detail: '${enumName}.${memberName} → "${escapeString(value)}"', boost: 8 }`,
+      );
       return `  ${enumName}: [\n${memberEntries.join(',\n')},\n  ]`;
     });
 
@@ -292,39 +135,50 @@ program
     // Phase 2: Stdlib completions (from pathogen-api.ts via ts-morph)
     // =========================================================================
 
-    const stdlibCompletions = extractFromPathogenApi(apiPath);
-
-    const stdlibEntries = stdlibCompletions.map((c) => {
-      return `  { label: '${c.label}', kind: '${c.kind}', detail: '${escapeString(c.detail)}', boost: ${c.boost} }`;
-    });
+    const stdlibCompletions = extractFromPathogenApi(sourceFile, warnings);
+    const stdlibEntries = stdlibCompletions.map((c) => formatEntry(c, '  '));
 
     // =========================================================================
-    // Phase 4: Signature data + cross-check
+    // Phase 4: Signature data + constructor return types + cross-check
     // =========================================================================
 
-    const signatureData = extractSignatureData(apiPath);
+    const signatureData = extractSignatureData(sourceFile);
     const signatureEntries = signatureData.map((s) => {
       const paramsArr = s.params.map((p) => `'${p}'`).join(', ');
       return `  '${s.name}': { label: '${escapeString(s.label)}', params: [${paramsArr}], doc: '${escapeString(s.doc)}' }`;
     });
 
+    const constructorReturnTypes = extractConstructorReturnTypes(sourceFile);
+    const constructorEntries = Object.entries(constructorReturnTypes).map(
+      ([name, info]) => `  '${name}': { type: '${info.type}', hasBindingBlock: ${info.hasBindingBlock} }`,
+    );
+
+    const typeMethodReturns = extractTypeMethodReturns(sourceFile);
+    const methodReturnEntries = Object.entries(typeMethodReturns).map(([typeName, returns]) => {
+      const inner = Object.entries(returns)
+        .map(([m, t]) => `${m}: '${t}'`)
+        .join(', ');
+      return `  '${typeName}': { ${inner} }`;
+    });
+
     // Cross-check: compare declarations against runtime
     const declaredFunctions = new Set(signatureData.map((s) => s.name));
-    crossCheck(declaredFunctions);
+    const problems = crossCheck(declaredFunctions, constructorReturnTypes);
+    for (const p of problems) console.warn(`⚠ ${p}`);
 
     // =========================================================================
     // Phase 3: Type members + namespace members (from pathogen-api.ts interfaces)
     // =========================================================================
 
-    const typeMembers = extractTypeMembers(apiPath);
-    const namespaceMembers = extractNamespaceMembers(apiPath);
+    const typeMembers = extractTypeMembers(sourceFile, warnings);
+    const namespaceMembers = extractNamespaceMembers(sourceFile, warnings);
+
+    for (const w of warnings) console.warn(`⚠ ${w.member}: ${w.message}`);
 
     function formatMemberSet(ms: MemberSet): string {
       const formatEntries = (entries: ExtractedCompletion[]) => {
         if (entries.length === 0) return '';
-        return entries.map((c) =>
-          `      { label: '${c.label}', kind: '${c.kind}', detail: '${escapeString(c.detail)}', boost: ${c.boost} }`,
-        ).join(',\n') + ',';
+        return `${entries.map((c) => formatEntry(c, '      ')).join(',\n')},`;
       };
       const propsStr = formatEntries(ms.properties);
       const methsStr = formatEntries(ms.methods);
@@ -373,6 +227,16 @@ ${namespaceMemberEntries.join(',\n')},
 export const SIGNATURE_DATA: Record<string, { label: string; params: string[]; doc: string }> = {
 ${signatureEntries.join(',\n')},
 };
+
+/** Constructor name → Pathogen type of the returned value (drives member-access inference) */
+export const CONSTRUCTOR_RETURN_TYPES: Record<string, { type: string; hasBindingBlock: boolean }> = {
+${constructorEntries.join(',\n')},
+};
+
+/** Per-type method return types (resolves chains like grid.getPoint(0,0).x) */
+export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
+${methodReturnEntries.join(',\n')},
+};
 `;
 
     fs.writeFileSync(outputPath, output, 'utf-8');
@@ -381,13 +245,21 @@ ${signatureEntries.join(',\n')},
     console.log(`✓ Generated ${outputPath}`);
     console.log(`  ${enumNames.length} enums (${enumMemberCount} members)`);
     console.log(`  ${stdlibCompletions.length} stdlib/constructor/namespace completions`);
-    console.log(`  ${typeMembers.length} type member sets (${typeMembers.reduce((n, m) => n + m.properties.length + m.methods.length, 0)} total members)`);
-    console.log(`  ${namespaceMembers.length} namespace member sets (${namespaceMembers.reduce((n, m) => n + m.methods.length, 0)} total methods)`);
+    console.log(
+      `  ${typeMembers.length} type member sets (${typeMembers.reduce((n, m) => n + m.properties.length + m.methods.length, 0)} total members)`,
+    );
+    console.log(
+      `  ${namespaceMembers.length} namespace member sets (${namespaceMembers.reduce((n, m) => n + m.methods.length, 0)} total methods)`,
+    );
     console.log(`  ${signatureData.length} function signatures`);
-  });
+    console.log(`  ${Object.keys(constructorReturnTypes).length} constructor return-type mappings`);
 
-function escapeString(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-}
+    if (opts.strict && (problems.length > 0 || warnings.length > 0 || missingMetadata.length > 0)) {
+      console.error(
+        `✗ --strict: ${problems.length + warnings.length + missingMetadata.length} drift finding(s) — see warnings above`,
+      );
+      process.exit(1);
+    }
+  });
 
 program.parse();
