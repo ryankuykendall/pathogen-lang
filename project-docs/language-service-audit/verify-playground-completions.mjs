@@ -200,8 +200,8 @@ try {
   await new Promise((r) => setTimeout(r, 500));
   const text2 = await editorText();
   results.push({
-    name: '${ stroke-w → accept stroke-width inserts once',
-    pass: clicked2 && text2.includes('stroke-width') && !text2.includes('stroke-stroke-width'),
+    name: '${ stroke-w → accept stroke-width inserts `stroke-width: ;` once',
+    pass: clicked2 && text2.includes('stroke-width: ;') && !text2.includes('stroke-stroke-width'),
     detail: JSON.stringify(text2.split('\n').slice(-3)),
   });
 

@@ -932,4 +932,25 @@ describe('getCompletions', () => {
       expect(names).toContain('fill');
     });
   });
+
+  describe('style property-name declaration templates', () => {
+    it('property names insert `name: $0;` with the cursor in value position', () => {
+      const items = completeAtEnd('let s = ${ stroke-w');
+      const sw = items.find((i) => i.label === 'stroke-width');
+      expect(sw).toBeDefined();
+      expect(sw!.isSnippet).toBe(true);
+      expect(sw!.insertText).toBe('stroke-width: $0;');
+    });
+
+    it('inserts just the name when a colon already follows the cursor', () => {
+      // Cursor sits after `stroke-w`, before the existing `: 2;`.
+      const source = 'let s = ${ stroke-w: 2; };';
+      const cursor = source.indexOf(': 2;');
+      const items = complete(source, 0, cursor);
+      const sw = items.find((i) => i.label === 'stroke-width');
+      expect(sw).toBeDefined();
+      expect(sw!.insertText).toBeUndefined();
+      expect(sw!.isSnippet).toBeUndefined();
+    });
+  });
 });

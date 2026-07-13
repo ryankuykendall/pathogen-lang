@@ -99,7 +99,15 @@ export function getCompletions(document: TextDocument, position: Position): Comp
       // Property names are hyphenated (`stroke-width`) — match the typed
       // prefix with a hyphen-aware pattern so filtering narrows correctly.
       const propPrefix = /[-\w]*$/.exec(textBefore)?.[0] ?? '';
-      return filterByPrefix(STYLE_PROPERTY_COMPLETIONS.map(toCompletionItem), propPrefix);
+      // Entries carry a `name: $0;` template so accepting lands the cursor in
+      // value position. When a `:` already follows the cursor (retyping a
+      // property name over an existing declaration), insert just the name —
+      // otherwise the colon and semicolon would double up.
+      const colonAhead = /^[ \t]*:/.test(source.slice(offset));
+      const items = STYLE_PROPERTY_COMPLETIONS.map((entry) =>
+        colonAhead ? toCompletionItem({ ...entry, insertText: undefined, isSnippet: undefined }) : toCompletionItem(entry),
+      );
+      return filterByPrefix(items, propPrefix);
     }
     // Value context: fall through to collect user variables + stdlib +
     // keywords via the normal path, then append style-value keywords below.

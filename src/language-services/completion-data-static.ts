@@ -35,7 +35,11 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
 
 // --- Style properties (for inside ${ } blocks) ---
 
-export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = [
+// Raw entries; the export below adds a `name: $0;` template to each so
+// accepting a property name lands the cursor in value position with the
+// declaration's `;` already in place. The engine strips the template when a
+// `:` already follows the cursor (see completion.ts property-name branch).
+const STYLE_PROPERTY_ENTRIES: CompletionEntry[] = [
   { label: 'stroke', kind: 'property', detail: 'Stroke color', boost: 15 },
   { label: 'stroke-width', kind: 'property', detail: 'Stroke width', boost: 14 },
   { label: 'stroke-dasharray', kind: 'property', detail: 'Dash pattern (e.g., 4 2)', boost: 10 },
@@ -65,6 +69,12 @@ export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = [
   { label: 'marker-mid', kind: 'property', detail: 'Marker at path vertices', boost: 6 },
   { label: 'marker-end', kind: 'property', detail: 'Marker at path end', boost: 6 },
 ];
+
+export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = STYLE_PROPERTY_ENTRIES.map((entry) => ({
+  ...entry,
+  insertText: `${entry.label}: $0;`,
+  isSnippet: true,
+}));
 
 // --- Block-start snippets (offered when typing @, & at statement start) ---
 
