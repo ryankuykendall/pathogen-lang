@@ -40,6 +40,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Formatter could silently change program meaning
+
+- `formatDocument` (VS Code "Format Document", playground, and the new `npm run format:pathogen` CLI) had three semantic-corruption bugs: it dropped precedence parentheses (`calc((i + 0.5) / 28)` → `calc(i + 0.5 / 28)` — different math), re-quoted double-quoted strings containing single quotes without escaping (parse error), and printed `-(a + b)` as `-a + b`. Fixed with a grammar-mirrored operator-precedence table, quote-aware string re-escaping, and unary-argument parenthesization; regression tests assert formatting is meaning-preserving and idempotent. (`src/language-services/formatter.ts`.)
+
+#### Uncapped `compoundVariableOffset` teleported its second profile to the canvas origin
+
+- The no-`endCap` case emitted the profile-2 subpath break as an uppercase `M`, which the relative-command serializer turned into a literal absolute `M 0 0` — so the second profile jumped to the canvas origin whenever the ribbon was drawn anywhere else. Found by an independent model audit of the geometry; the exact-coordinate test had encoded the bug as the expected shape. Fixed to a lowercase relative `m` with a `drawTo(200,300)` regression test. Also hardened: `go.stop()` rejects decreasing times (silent cap-direction flip) and `Cap.elliptical()` rejects non-positive projections. (`src/evaluator/variable-offset-geometry.ts`, `src/evaluator/index.ts`.)
+
 #### VS Code preview rendered blank / wrong aspect for `define ViewBox(...)` sources
 
 - The preview webview sized its canvas from a `// viewBox="..."` source **comment** (an old convention); modern sources use the `define ViewBox(...)` construct, so `canvasW/H` fell back to the 200×200 default and all content (at the real coordinates, e.g. 13200×7200) rendered entirely outside that tiny square viewBox — a blank white box with the wrong aspect ratio. The preview now reads dimensions from the compiled `result.viewBox` (origin + size), matching the playground. (`packages/vscode-pathogen/src/preview.ts`.)
