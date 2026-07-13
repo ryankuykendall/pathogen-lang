@@ -1,7 +1,7 @@
 ---
 title: "The Swelling Line: Variable Offsets, Ribbons, and Letterforms"
 slug: the-swelling-line
-date: 2026-07-12
+date: 2026-07-13
 description: "Two new PathBlock methods — variableOffset and compoundVariableOffset — turn any path into a rail for expressive, variable-width strokes. We build up from the rail model to curvature-continuous joins, filled ribbons with end caps, and a glyph-wrapped Pathogen wordmark."
 ---
 

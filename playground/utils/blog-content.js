@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "the-swelling-line",
+    "title": "The Swelling Line: Variable Offsets, Ribbons, and Letterforms",
+    "date": "2026-07-13",
+    "description": "Two new PathBlock methods — variableOffset and compoundVariableOffset — turn any path into a rail for expressive, variable-width strokes. We build up from the rail model to curvature-continuous joins, filled ribbons with end caps, and a glyph-wrapped Pathogen wordmark."
+  },
+  {
     "slug": "custom-filters-family",
     "title": "The Full Filter Family: Glow, Emboss, Shadows, Pixelate",
     "date": "2026-05-12",
@@ -18911,6 +18917,1016 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <p>The built-in character width tables get you 85-90% accuracy — enough for layout and collision avoidance. But sometimes you need exact metrics: tight-fitting background rectangles, precise kerning, or text that aligns to a pixel grid. The next post, <a href="/blog/pathblock-glyph-extraction">From Fonts to Paths: Glyph Extraction with PathBlock.fromGlyph()</a>, covers the <code>@font</code> directive that loads OpenType font files for exact measurement, and <code>PathBlock.fromGlyph()</code> that converts individual glyphs into PathBlocks — actual SVG path geometry — that you can transform, <a href="/blog/pathblock-parametric-sampling">sample</a>, <a href="/blog/pathblock-fillets-chamfers">fillet</a>, and <a href="/blog/pathblock-boolean-operations">boolean-combine</a> just like any other shape.</p>
 <p>Text as geometry. That&#39;s where this is headed.</p>
 <p>Paste the collision-avoidance snippet into the <a href="/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
+`,
+  'the-swelling-line': `<p>Pathogen has always had <a href="/docs#path-blocks-path-blocks"><code>offset()</code></a>: give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never <em>breathes</em>.</p>
+<p>This post introduces two new PathBlock methods that let it breathe: <strong><code>variableOffset</code></strong> and <strong><code>compoundVariableOffset</code></strong>. The distance can now change along the path, and you decide — stop by stop — how smoothly the curve flows. By the end we&#39;ll wrap every letter of the word <em>Pathogen</em> in flowing, multi-colored ribbons.</p>
+<h2>The line that breathes</h2>
+<p>Start with the contrast. <code>offset(18)</code> holds one distance the whole way. <code>variableOffset</code> places <em>stops</em> along the path — each with its own distance — and threads a curve through the resulting points.</p>
+<p><mini-workspace code-open caption="Top: offset(18) — one fixed distance. Bottom: variableOffset() — the distance changes at each stop.">
+  <code>define ViewBox(0, 0, 520, 300);
+// Fixed vs variable: offset(18) holds one distance; variableOffset breathes.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let blue = Color(CSSVar('--stroke-color', #457b9d));
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('spine') \${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+}
+define PathLayer('uniform') \${
+  stroke: fg_muted;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('variable') \${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define TextLayer('eyebrow') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 300);
+}
+
+let spine = @{
+  h 400
+};
+
+// ─── Row 1: the existing offset() — one fixed distance ────────
+layer('eyebrow').apply {
+  text(60, 52)\`OFFSET(18) — ONE DISTANCE\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 118);
+}
+layer('uniform').apply {
+  spine.offset(18).drawTo(60, 100);
+}
+
+// ─── Row 2: variableOffset() — the distance breathes ──────────
+layer('eyebrow').apply {
+  text(60, 182)\`VARIABLEOFFSET() — THE DISTANCE BREATHES\`;
+}
+
+let edge = spine.variableOffset() {|go, pb|
+  go.stop(4% , 6, CurveContinuity.G2);
+  go.stop(30%, 34, CurveContinuity.G2);
+  go.stop(55%, 12, CurveContinuity.G2);
+  go.stop(80%, 38, CurveContinuity.G2);
+  go.stop(96%, 8, CurveContinuity.G2);
+};
+layer('spine').apply {
+  spine.drawTo(60, 258);
+}
+layer('variable').apply {
+  edge.drawTo(calc(60 + 400 * 0.04), calc(258 - 6));
+}
+</code>
+  <img src="/blog/samples/post27/01-offset-vs-variable.svg" alt="Top: offset(18) — one fixed distance. Bottom: variableOffset() — the distance changes at each stop." loading="lazy">
+</mini-workspace></p>
+<p>The syntax is deliberately gradient-like: a block of <code>go.stop(time, distance, continuity)</code> calls, where <code>time</code> is a fraction along the path (<code>10%</code> is exactly <code>0.1</code>).</p>
+<h2>The spine is a rail</h2>
+<p>Here&#39;s the mental model that makes everything click. The path you call <code>variableOffset</code> on is the <strong>spine</strong>, and it behaves like a <em>rail</em>: at each stop it samples a point and the direction perpendicular to itself (the <strong>normal</strong>), then steps out along that normal by your distance. The new curve is built through those points. The spine&#39;s own shape never appears in the output — it only <em>places and aims</em> the points.</p>
+<p><mini-workspace code-open caption="The grey rail, the red knots sitting out on its normals, and the offset curve threading through them.">
+  <code>define ViewBox(0, 0, 520, 280);
+// The mental model: the spine is a RAIL. Each stop steps out along the rail's
+// normal to place a knot; the offset curve threads through the knots.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let blue = Color(CSSVar('--stroke-color', #457b9d));
+let red = Color('#e63946');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('rail') \${
+  stroke: fg_muted;
+  stroke-width: 1.5;
+  fill: none;
+}
+define PathLayer('normals') \${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: "3 4";
+}
+define PathLayer('curve') \${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('knots') \${
+  fill: red;
+  stroke: none;
+}
+define PathLayer('leaders') \${
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+}
+define TextLayer('anno') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 280);
+}
+
+let L = 400;
+let railY = 208;
+let spine = @{
+  h 400
+};
+
+let edge = spine.variableOffset() {|go, pb|
+  go.stop(8% , 22, CurveContinuity.G2);
+  go.stop(30%, 52, CurveContinuity.G2);
+  go.stop(52%, 84, CurveContinuity.G2);
+  go.stop(74%, 46, CurveContinuity.G2);
+  go.stop(94%, 96, CurveContinuity.G2);
+};
+
+layer('rail').apply {
+  spine.drawTo(60, railY);
+}
+
+// Dashed "rail ties" along the normals, and a red knot at each stop.
+layer('normals').apply {
+  M calc(60 + L * 0.08) railY
+  v -22
+  M calc(60 + L * 0.3) railY
+  v -52
+  M calc(60 + L * 0.52) railY
+  v -84
+  M calc(60 + L * 0.74) railY
+  v -46
+  M calc(60 + L * 0.94) railY
+  v -96
+}
+layer('knots').apply {
+  circle(calc(60 + L * 0.08), calc(railY - 22), 3);
+  circle(calc(60 + L * 0.3), calc(railY - 52), 3);
+  circle(calc(60 + L * 0.52), calc(railY - 84), 3);
+  circle(calc(60 + L * 0.74), calc(railY - 46), 3);
+  circle(calc(60 + L * 0.94), calc(railY - 96), 3);
+}
+layer('curve').apply {
+  edge.drawTo(calc(60 + L * 0.08), calc(railY - 22));
+}
+
+// ─── In-figure vocabulary ─────────────────────────────────────
+layer('anno').apply {
+  text(60, 236)\`THE SPINE — A RAIL\`;
+  text(calc(60 + L * 0.52 + 12), calc(railY - 44))\`NORMAL\`;
+  text(calc(60 + L * 0.94 - 12), calc(railY - 110))\`KNOT\`;
+  text(80, 76)\`THE OFFSET CURVE\`;
+}
+layer('leaders').apply {
+  M calc(60 + L * 0.52 + 9) calc(railY - 47)
+  l -7 0
+  M calc(60 + L * 0.94 + 4) calc(railY - 106)
+  l 0 6
+  M 136 80
+  l 20 14
+}
+</code>
+  <img src="/blog/samples/post27/02-rail-model.svg" alt="The grey rail, the red knots sitting out on its normals, and the offset curve threading through them." loading="lazy">
+</mini-workspace></p>
+<p>That&#39;s why it&#39;s a <em>rail</em> and not a stencil: you&#39;re not tracing the spine, you&#39;re riding alongside it.</p>
+<h2>Choosing the join: G0, G1, G2</h2>
+<p>The best part is the last argument of each stop. <code>CurveContinuity</code> decides how the curve behaves <em>at</em> each point — the trade-off between crisp and smooth:</p>
+<ul>
+<li><strong><code>G0</code></strong> — a corner. The curve meets the point and bends sharply.</li>
+<li><strong><code>G1</code></strong> — no kink. The curve flows through with a continuous heading, though the <em>rate</em> of bending can still jump.</li>
+<li><strong><code>G2</code></strong> — seamless. Even the curvature is continuous; the eye reads it as a single fluid motion.</li>
+</ul>
+<p>The same five points, three ways — plus an overlay, because G1 and G2 are easy to conflate. Both are &quot;smooth,&quot; but watch the space <em>between</em> knots: G2 redistributes the bending across the whole run, so the two curves part company mid-span even though they agree at every knot.</p>
+<p><mini-workspace code-open caption="Identical knots. Top to bottom: G0 (corners), G1 (no kink), G2 (curvature-continuous flow) — and G1 vs G2 overlaid, separating between the knots.">
+  <code>define ViewBox(0, 0, 520, 630);
+// The control knob: identical knots, three join behaviors.
+// Asymmetric spacing + offsets so G1's curvature-rate jump is visible vs G2.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let red = Color('#e63946');
+let amber = Color('#e0a725');
+let blue = Color('#457b9d');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('spine') \${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+}
+define PathLayer('g0') \${
+  stroke: red;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g1') \${
+  stroke: amber;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g2') \${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g1thin') \${
+  stroke: amber;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g2dash') \${
+  stroke: blue;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: "3 4";
+}
+define TextLayer('eyebrow') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 630);
+}
+
+let L = 400;
+let spine = @{
+  h 400
+};
+
+// Deliberately uneven: a tight sharp rise into a long gentle tail.
+fn zig(cont) {
+  return spine.variableOffset() {|go, pb|
+    go.stop(5% , 10, cont);
+    go.stop(20%, 74, cont);
+    go.stop(32%, 16, cont);
+    go.stop(70%, 64, cont);
+    go.stop(95%, 12, cont);
+  };
+}
+fn place(e, base) {
+  e.drawTo(calc(60 + L * 0.05), calc(base - 10));
+}
+
+layer('eyebrow').apply {
+  text(60, 44)\`G0 — CORNERS\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 130);
+}
+layer('g0').apply {
+  place(zig(CurveContinuity.G0), 130);
+}
+
+layer('eyebrow').apply {
+  text(60, 196)\`G1 — NO KINK, BUT THE BEND RATE JUMPS\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 282);
+}
+layer('g1').apply {
+  place(zig(CurveContinuity.G1), 282);
+}
+
+layer('eyebrow').apply {
+  text(60, 348)\`G2 — CURVATURE FLOWS THROUGH EVERY KNOT\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 434);
+}
+layer('g2').apply {
+  place(zig(CurveContinuity.G2), 434);
+}
+
+// Same knots, overlaid: solid amber G1 vs dashed blue G2 — the two only
+// separate between knots, where G2 redistributes the bending.
+layer('eyebrow').apply {
+  text(60, 500)\`G1 VS G2, OVERLAID — SAME KNOTS, DIFFERENT FLOW\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 594);
+}
+layer('g1thin').apply {
+  place(zig(CurveContinuity.G1), 594);
+}
+layer('g2dash').apply {
+  place(zig(CurveContinuity.G2), 594);
+}
+</code>
+  <img src="/blog/samples/post27/03-continuity.svg" alt="Identical knots. Top to bottom: G0 (corners), G1 (no kink), G2 (curvature-continuous flow) — and G1 vs G2 overlaid, separating between the knots." loading="lazy">
+</mini-workspace></p>
+<p>Under the hood, a run of <code>G1</code>/<code>G2</code> stops is built as one spline; the <code>G2</code> runs solve a clamped cubic spline so the curvature matches across every join. You get to choose the smoothness; Pathogen does the maths.</p>
+<h2>Shaping the ends</h2>
+<p>By default, the curve leaves its first and last points along the spine&#39;s own direction — a sensible, zero-configuration choice. When you want more control, hand an endpoint a <a href="/docs#stdlib-polarvectorangle-distance"><code>PolarVector</code></a>: a direction plus a tension.</p>
+<p>One subtlety: tangent handles are <em>directional</em> — they describe the direction of travel, so the two ends of a curve usually want different treatments. A common pattern (below): pin the start with an absolute angle, and aim the end along the rail by rotating a handle with <code>.turn(pb.tangent(94%).angle)</code>.</p>
+<p><mini-workspace code-open caption="Top: spine-derived endpoints (default). Bottom: PolarVector handles — an absolute straight-up launch at the start, a spine-aligned landing at the end.">
+  <code>define ViewBox(0, 0, 520, 320);
+// Endpoint tangents. Default: the curve leaves along the spine's direction.
+// Override: PolarVector handles — absolute at the start, spine-relative (via
+// .turn) at the end, exactly the pattern from the docs.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let blue = Color('#457b9d');
+let red = Color('#e63946');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('spine') \${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+}
+define PathLayer('a') \${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('b') \${
+  stroke: red;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define TextLayer('eyebrow') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 320);
+}
+
+let L = 400;
+let spine = @{
+  h 400
+};
+
+// ─── Row 1: spine-derived endpoints (zero configuration) ──────
+layer('eyebrow').apply {
+  text(60, 48)\`DEFAULT — ENDS FOLLOW THE SPINE\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 128);
+}
+layer('a').apply {
+  spine.variableOffset() {|go, pb|
+    go.stop(6%, 14, CurveContinuity.G2);
+    go.stop(50%, 42, CurveContinuity.G2);
+    go.stop(94%, 14, CurveContinuity.G2);
+  }.drawTo(calc(60 + L * 0.06), calc(128 - 14));
+}
+
+// ─── Row 2: PolarVector handles ───────────────────────────────
+// Start: absolute -90° (straight up, y-down space). End: spine-relative —
+// PolarVector(0deg, …).turn(pb.tangent(94%).angle) aims along the rail.
+layer('eyebrow').apply {
+  text(60, 192)\`POLARVECTOR — UP AT START, SPINE AT END\`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 272);
+}
+layer('b').apply {
+  spine.variableOffset() {|go, pb|
+    go.startTangent(PolarVector(-90deg, 46));
+    go.stop(6%, 14, CurveContinuity.G2);
+    go.stop(50%, 42, CurveContinuity.G2);
+    go.stop(94%, 14, CurveContinuity.G2);
+    go.endTangent(PolarVector(0deg, 46).turn(pb.tangent(94%).angle));
+  }.drawTo(calc(60 + L * 0.06), calc(272 - 14));
+}
+</code>
+  <img src="/blog/samples/post27/04-endpoints.svg" alt="Top: spine-derived endpoints (default). Bottom: PolarVector handles — an absolute straight-up launch at the start, a spine-aligned landing at the end." loading="lazy">
+</mini-workspace></p>
+<p>The handle&#39;s angle sets the departure direction; its distance sets how firmly the curve pulls toward it before it bends away.</p>
+<h2>From strokes to ribbons</h2>
+<p>An open stroke is only half the story. <strong><code>compoundVariableOffset</code></strong> places <em>two</em> profiles and closes them into a filled, variable-width <strong>ribbon</strong>. Each stop now takes two offset/continuity pairs — one per profile — and the <em>signs</em> of those offsets decide the ribbon&#39;s whole character:</p>
+<ul>
+<li><strong>Opposite signs, mirrored</strong> — a classic ribbon straddling the spine symmetrically.</li>
+<li><strong>Opposite signs, asymmetric</strong> — a calligraphy nib pressing harder on one side: the swell lives above the rail while the underside stays taut.</li>
+<li><strong>Same sign</strong> — both profiles sit on <em>one</em> side, so the ribbon detaches from the spine entirely and floats alongside it as a band. (Hold that thought — it&#39;s exactly how the wordmark auras at the end of this post are built.)</li>
+</ul>
+<p><mini-workspace code-open caption="One idea, three shapes: mirrored profiles, an asymmetric swell, and a same-side band floating above the dashed rail.">
+  <code>define ViewBox(0, 0, 520, 560);
+// compoundVariableOffset: two profiles close into a filled ribbon.
+// Three shapes for the same idea:
+//   1. symmetric offsets (mirror-image profiles),
+//   2. asymmetric offsets (a calligraphy nib pressing harder on one side),
+//   3. same-side offsets (both positive → a detached band riding above the rail).
+// The dashed rail is drawn on top so you can see where the spine runs.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let blue = Color(CSSVar('--ribbon-color', #457b9d));
+let amber = Color('#e0a725');
+let red = Color('#e63946');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('ribbonSym') \${
+  fill: blue;
+  fill-opacity: 0.45;
+  stroke: blue;
+  stroke-width: 1.5;
+}
+define PathLayer('ribbonAsym') \${
+  fill: amber;
+  fill-opacity: 0.45;
+  stroke: amber;
+  stroke-width: 1.5;
+}
+define PathLayer('ribbonBand') \${
+  fill: red;
+  fill-opacity: 0.38;
+  stroke: red;
+  stroke-width: 1.5;
+}
+define PathLayer('rail') \${
+  stroke: fg_muted;
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: "3 4";
+}
+define TextLayer('eyebrow') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 560);
+}
+
+let L = 400;
+let spine = @{
+  h 400
+};
+
+// ─── 1. Symmetric: the two profiles mirror each other ─────────
+let sym = spine.compoundVariableOffset() {|go, pb|
+  go.startCap(Cap.round());
+  go.stop(4%,
+      8,
+      CurveContinuity.G2,
+      -8,
+      CurveContinuity.G2);
+  go.stop(32%,
+      28,
+      CurveContinuity.G2,
+      -28,
+      CurveContinuity.G2);
+  go.stop(60%,
+      14,
+      CurveContinuity.G2,
+      -14,
+      CurveContinuity.G2);
+  go.stop(96%,
+      9,
+      CurveContinuity.G2,
+      -9,
+      CurveContinuity.G2);
+  go.endCap(Cap.tapered(26, CurveContinuity.G2));
+};
+
+layer('eyebrow').apply {
+  text(60, 48)\`SYMMETRIC — MIRRORED PROFILES\`;
+}
+layer('ribbonSym').apply {
+  sym.drawTo(calc(60 + L * 0.04), calc(130 - 8));
+}
+layer('rail').apply {
+  spine.drawTo(60, 130);
+}
+
+// ─── 2. Asymmetric: the nib presses harder on one side ────────
+let asym = spine.compoundVariableOffset() {|go, pb|
+  go.startCap(Cap.round());
+  go.stop(4%,
+      6,
+      CurveContinuity.G2,
+      -4,
+      CurveContinuity.G2);
+  go.stop(30%,
+      46,
+      CurveContinuity.G2,
+      -6,
+      CurveContinuity.G2);
+  go.stop(58%,
+      12,
+      CurveContinuity.G2,
+      -10,
+      CurveContinuity.G2);
+  go.stop(80%,
+      34,
+      CurveContinuity.G2,
+      -5,
+      CurveContinuity.G2);
+  go.stop(96%,
+      8,
+      CurveContinuity.G2,
+      -4,
+      CurveContinuity.G2);
+  go.endCap(Cap.tapered(26, CurveContinuity.G2));
+};
+
+layer('eyebrow').apply {
+  text(60, 216)\`ASYMMETRIC — THE SWELL LIVES ON ONE SIDE\`;
+}
+layer('ribbonAsym').apply {
+  asym.drawTo(calc(60 + L * 0.04), calc(300 - 6));
+}
+layer('rail').apply {
+  spine.drawTo(60, 300);
+}
+
+// ─── 3. Same side: both offsets positive → a floating band ────
+// Nothing straddles the rail; the ribbon detaches and rides above it.
+// (This is exactly how the wordmark auras at the end of the post work.)
+let band = spine.compoundVariableOffset() {|go, pb|
+  go.startCap(Cap.round());
+  go.stop(4%,
+      30,
+      CurveContinuity.G2,
+      12,
+      CurveContinuity.G2);
+  go.stop(32%,
+      52,
+      CurveContinuity.G2,
+      20,
+      CurveContinuity.G2);
+  go.stop(60%,
+      34,
+      CurveContinuity.G2,
+      14,
+      CurveContinuity.G2);
+  go.stop(96%,
+      40,
+      CurveContinuity.G2,
+      18,
+      CurveContinuity.G2);
+  go.endCap(Cap.round());
+};
+
+layer('eyebrow').apply {
+  text(60, 388)\`SAME SIDE — A DETACHED BAND ABOVE THE RAIL\`;
+}
+layer('ribbonBand').apply {
+  band.drawTo(calc(60 + L * 0.04), calc(490 - 30));
+}
+layer('rail').apply {
+  spine.drawTo(60, 490);
+}
+</code>
+  <img src="/blog/samples/post27/05-ribbon.svg" alt="One idea, three shapes: mirrored profiles, an asymmetric swell, and a same-side band floating above the dashed rail." loading="lazy">
+</mini-workspace></p>
+<p>Every ribbon is finished with <strong>end caps</strong> — and, like <code>CurveContinuity</code>, caps are a small vocabulary you compose:</p>
+<p><mini-workspace code-open caption="Top to bottom: Cap.butt(), Cap.round(), Cap.elliptical(34), Cap.tapered(40, CurveContinuity.G2).">
+  <code>define ViewBox(0, 0, 520, 430);
+// The cap vocabulary. Same ribbon, four endings — labeled in-figure.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let blue = Color(CSSVar('--ribbon-color', #457b9d));
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('ribbon') \${
+  fill: blue;
+  fill-opacity: 0.45;
+  stroke: blue;
+  stroke-width: 1.5;
+}
+define TextLayer('eyebrow') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 430);
+}
+
+let L = 300;
+let spine = @{
+  h 300
+};
+
+fn ribbonWith(cap) {
+  return spine.compoundVariableOffset() {|go, pb|
+    go.startCap(Cap.round());
+    go.stop(6%,
+        10,
+        CurveContinuity.G2,
+        -10,
+        CurveContinuity.G2);
+
+    go.stop(50%,
+        26,
+        CurveContinuity.G2,
+        -26,
+        CurveContinuity.G2);
+    go.stop(94%,
+        14,
+        CurveContinuity.G2,
+        -14,
+        CurveContinuity.G2);
+
+    go.endCap(cap);
+  };
+}
+
+
+fn place(r, base) {
+  r.drawTo(calc(160 + L * 0.06), calc(base - 10));
+}
+
+layer('eyebrow').apply {
+  text(60, 36)\`CAP.BUTT()\`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.butt()), 80);
+}
+
+layer('eyebrow').apply {
+  text(60, 136)\`CAP.ROUND()\`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.round()), 180);
+}
+
+layer('eyebrow').apply {
+  text(60, 236)\`CAP.ELLIPTICAL(34)\`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.elliptical(34)), 280);
+}
+
+layer('eyebrow').apply {
+  text(60, 336)\`CAP.TAPERED(40, G2)\`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.tapered(40, CurveContinuity.G2)), 380);
+}
+</code>
+  <img src="/blog/samples/post27/06-caps.svg" alt="Top to bottom: Cap.butt(), Cap.round(), Cap.elliptical(34), Cap.tapered(40, CurveContinuity.G2)." loading="lazy">
+</mini-workspace></p>
+<p>Omit a cap and that end stays open; omit both and you get two separate profiles instead of a closed ribbon.</p>
+<h2>Any path — including type</h2>
+<p>Because the spine is <em>just a PathBlock</em>, anything that produces one can be a rail — including a font glyph. <a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph</code></a> returns an array with one PathBlock per character (hence the <code>[0]</code> to take the first letter), and <code>contours[0]</code> isolates one clean closed loop from that glyph&#39;s outline. Now that loop is a spine like any other.</p>
+<p>One practical note: a letterform is a <em>long</em> rail with reversing curves, and the offset curve only knows about your stops. A handful of stops produces a loose gesture that ignores the letter; <strong>densely placed stops</strong> (a <code>for</code> loop works nicely) let the offset genuinely trace it.</p>
+<p><mini-workspace code-open caption="Thirty stops along the outer contour of an 'S' — the offset hugs the letter, breathing between 6 and 18 units wide.">
+  <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 520, 400);
+// Any PathBlock can be a rail — including a letter. fromGlyph returns one
+// PathBlock per character (hence the [0]); contours[0] isolates one clean
+// closed loop from it. Densely-placed stops let the offset trace the glyph.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let blue = Color(CSSVar('--stroke-color', #457b9d));
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('flourish') \${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('glyph') \${
+  fill: fg;
+}
+define TextLayer('eyebrow') \${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 400);
+}
+
+let styles = \${
+  font-family: Baumans-Regular;
+  font-size: 300;
+};
+let S = PathBlock.fromGlyph('S', styles)[0];
+let spine = S.contours[0];
+
+// 30 dense stops: enough for the curve to follow the S's reversing bends,
+// while the width breathes between 6 and 18.
+let flourish = spine.variableOffset() {|go, pb|
+  for (i in 0..29) {
+    go.stop(calc((i + 0.5) / 30), calc(12 + 6 * sin(calc(i * 0.6))), CurveContinuity.G2);
+  }
+};
+
+// The offset is origin-normalized to its first knot — recover that knot's
+// position from the spine (point at t0, out along the normal by the first width).
+let n0 = spine.normal(calc(0.5 / 30));
+let gx = 200;
+let gy = 330;
+
+layer('eyebrow').apply {
+  text(60, 48)\`A GLYPH CONTOUR IS A SPINE\`;
+}
+layer('glyph').apply {
+  S.drawTo(gx, gy);
+}
+layer('flourish').apply {
+  flourish.drawTo(calc(gx + n0.point.x + cos(n0.angle) * 12), calc(gy + n0.point.y + sin(n0.angle) * 12));
+}
+</code>
+  <img src="/blog/samples/post27/07-glyph-spine.svg" alt="Thirty stops along the outer contour of an 'S' — the offset hugs the letter, breathing between 6 and 18 units wide." loading="lazy">
+</mini-workspace></p>
+<p>Push it further: three concentric compound ribbons, each a different distance out, wrap the letter in a colored aura. Render the crisp glyph on top and you have an ornament.</p>
+<p><mini-workspace code-open caption="Three concentric compound-offset bands — red inner, amber middle, blue outer — wrapping the letter, with the crisp glyph on top.">
+  <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 520, 440);
+// The finale technique on one letter: three concentric compound-offset bands
+// (red inner, amber middle, blue outer) tightly wrapping the glyph contour,
+// with the crisp letter on top.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let red = Color(CSSVar('--band-inner', #e63946));
+let amber = Color(CSSVar('--band-middle', #e0a725));
+let blue = Color(CSSVar('--band-outer', #457b9d));
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('bandOuter') \${
+  fill: blue;
+  fill-opacity: 0.30;
+  stroke: blue;
+  stroke-width: 0.5;
+}
+define PathLayer('bandMiddle') \${
+  fill: amber;
+  fill-opacity: 0.38;
+  stroke: amber;
+  stroke-width: 0.5;
+}
+define PathLayer('bandInner') \${
+  fill: red;
+  fill-opacity: 0.32;
+  stroke: red;
+  stroke-width: 0.5;
+}
+define PathLayer('glyph') \${
+  fill: fg;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 440);
+}
+
+let styles = \${
+  font-family: Baumans-Regular;
+  font-size: 300;
+};
+let S = PathBlock.fromGlyph('S', styles)[0];
+let spine = S.contours[0];
+
+// A band is the region between two same-side offsets (near → far), traced with
+// 28 dense stops so it hugs the letter. The width breathes gently.
+fn makeBand(sp, near, far) {
+  return sp.compoundVariableOffset() {|go, pb|
+    go.startCap(Cap.round());
+    for (i in 0..27) {
+      go.stop(calc((i + 0.5) / 28),
+          calc(far + 2.5 * sin(calc(i * 0.8))),
+          CurveContinuity.G2,
+          near,
+          CurveContinuity.G2);
+    }
+    go.endCap(Cap.round());
+  };
+}
+// Origin recovery: the band is normalized to its first knot (profile 1 = far side).
+fn aX(sp, far) {
+  let n = sp.normal(calc(0.5 / 28));
+  return calc(n.point.x + cos(n.angle) * far);
+}
+fn aY(sp, far) {
+  let n = sp.normal(calc(0.5 / 28));
+  return calc(n.point.y + sin(n.angle) * far);
+}
+
+let gx = 190;
+let gy = 350;
+
+layer('bandOuter').apply {
+  makeBand(spine, 26, 34).drawTo(calc(gx + aX(spine, 34)), calc(gy + aY(spine, 34)));
+}
+layer('bandMiddle').apply {
+  makeBand(spine, 15, 23).drawTo(calc(gx + aX(spine, 23)), calc(gy + aY(spine, 23)));
+}
+layer('bandInner').apply {
+  makeBand(spine, 4, 12).drawTo(calc(gx + aX(spine, 12)), calc(gy + aY(spine, 12)));
+}
+layer('glyph').apply {
+  S.drawTo(gx, gy);
+}
+</code>
+  <img src="/blog/samples/post27/08-glyph-aura.svg" alt="Three concentric compound-offset bands — red inner, amber middle, blue outer — wrapping the letter, with the crisp glyph on top." loading="lazy">
+</mini-workspace></p>
+<blockquote>
+<p>One caveat worth knowing: a glyph outline is a <em>closed</em> ink boundary, and letters with counters (<code>a</code>, <code>o</code>, <code>e</code>, <code>g</code>) return multiple contours in one PathBlock. Sampling across the jump between them produces spikes — so reach for <code>contours[0]</code> (or a specific contour) to get a single, well-behaved loop.</p>
+</blockquote>
+<h2>The finale: a living wordmark</h2>
+<p>Put it all together. Lay out the letters of <em>Pathogen</em> with <a href="/docs#path-blocks-path-blocks">advance-width spacing</a>, give each glyph its own three-band red/yellow/blue aura, and set the crisp letters on top. Every ribbon in this image is a <code>compoundVariableOffset</code>.</p>
+<p><mini-workspace code-open caption="Every letter of the wordmark wrapped in three concentric compound-offset bands — the whole post in one image.">
+  <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 620, 280);
+// The finale: every letter of "Pathogen" wrapped in three concentric
+// compound-offset bands (red inner, amber middle, blue outer), laid out with
+// advance widths, crisp glyphs on top.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let red = Color(CSSVar('--band-inner', #e63946));
+let amber = Color(CSSVar('--band-middle', #e0a725));
+let blue = Color(CSSVar('--band-outer', #457b9d));
+
+define PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('bandOuter') \${
+  fill: blue;
+  fill-opacity: 0.30;
+  stroke: blue;
+  stroke-width: 0.4;
+}
+define PathLayer('bandMiddle') \${
+  fill: amber;
+  fill-opacity: 0.38;
+  stroke: amber;
+  stroke-width: 0.4;
+}
+define PathLayer('bandInner') \${
+  fill: red;
+  fill-opacity: 0.32;
+  stroke: red;
+  stroke-width: 0.4;
+}
+define PathLayer('glyphs') \${
+  fill: fg;
+}
+
+layer('bg').apply {
+  rect(0, 0, 620, 280);
+}
+
+let styles = \${
+  font-family: Baumans-Regular;
+  font-size: 120;
+};
+let glyphs = PathBlock.fromGlyph('Pathogen', styles);
+let startX = 62;
+let baselineY = 170;
+
+// Dense same-side band (near → far), breathing gently, hugging the contour.
+fn makeBand(sp, near, far) {
+  return sp.compoundVariableOffset() {|go, pb|
+    go.startCap(Cap.round());
+    for (i in 0..23) {
+      go.stop(calc((i + 0.5) / 24),
+          calc(far + 1.5 * sin(calc(i * 0.9))),
+          CurveContinuity.G2,
+          near,
+          CurveContinuity.G2);
+    }
+    go.endCap(Cap.round());
+  };
+}
+fn aX(sp, far) {
+  let n = sp.normal(calc(0.5 / 24));
+  return calc(n.point.x + cos(n.angle) * far);
+}
+fn aY(sp, far) {
+  let n = sp.normal(calc(0.5 / 24));
+  return calc(n.point.y + sin(n.angle) * far);
+}
+
+layer('bandOuter').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    let sp = g.contours[0];
+    makeBand(sp, 15, 20).drawTo(calc(cx + aX(sp, 20)), calc(baselineY + aY(sp, 20)));
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+layer('bandMiddle').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    let sp = g.contours[0];
+    makeBand(sp, 9, 13).drawTo(calc(cx + aX(sp, 13)), calc(baselineY + aY(sp, 13)));
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+layer('bandInner').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    let sp = g.contours[0];
+    makeBand(sp, 3, 7).drawTo(calc(cx + aX(sp, 7)), calc(baselineY + aY(sp, 7)));
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+layer('glyphs').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    g.drawTo(cx, baselineY);
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+</code>
+  <img src="/blog/samples/post27/09-finale-wordmark.svg" alt="Every letter of the wordmark wrapped in three concentric compound-offset bands — the whole post in one image." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>Two methods, one idea: <strong>any path can be a rail for a variable-width stroke.</strong> Vary the distance for tapered edges; choose <code>G0</code>/<code>G1</code>/<code>G2</code> for the character of the joins; add a second profile for a filled ribbon; cap it; and point it at your own geometry — even your own type.</p>
+<p>The full reference lives in the <a href="/docs#variable-offset-variable-offset">Variable Offset docs</a>. Go make something that breathes.</p>
 `,
   'vscode-developer-experience': `<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
 
