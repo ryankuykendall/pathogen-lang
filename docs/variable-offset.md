@@ -123,6 +123,8 @@ The second block parameter, `pb`, is a read-only handle to the spine, mirroring 
 The compiler rejects:
 
 - **`time` outside `[0, 1]`** — stops must fall on the spine.
+- **Decreasing `time` between stops** — stops are visited in order along the spine; a later stop cannot sit before an earlier one.
+- **A zero or negative `Cap.elliptical` projection** — use `Cap.butt()` for a flat end.
 - **An unknown `continuity` value** — use `CurveContinuity.G0`, `.G1`, or `.G2`.
 - **A cap on the simple form** — `startCap`/`endCap` apply only to `compoundVariableOffset`.
 - **A tangent handle on the compound form** — `startTangent`/`endTangent` apply only to the simple `variableOffset`; a compound ribbon's ends are shaped by `startCap`/`endCap`.

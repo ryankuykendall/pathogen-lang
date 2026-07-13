@@ -1,0 +1,112 @@
+define ViewBox(0, 0, 520, 280);
+// The mental model: the spine is a RAIL. Each stop steps out along the rail's
+// normal to place a knot; the offset curve threads through the knots.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let blue = Color(CSSVar('--stroke-color', #457b9d));
+let red = Color('#e63946');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('rail') ${
+  stroke: fg_muted;
+  stroke-width: 1.5;
+  fill: none;
+}
+define PathLayer('normals') ${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: "3 4";
+}
+define PathLayer('curve') ${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('knots') ${
+  fill: red;
+  stroke: none;
+}
+define PathLayer('leaders') ${
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+}
+define TextLayer('anno') ${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 280);
+}
+
+let L = 400;
+let railY = 208;
+let spine = @{
+  h 400
+};
+
+let edge = spine.variableOffset() {|go, pb|
+  go.stop(8% , 22, CurveContinuity.G2);
+  go.stop(30%, 52, CurveContinuity.G2);
+  go.stop(52%, 84, CurveContinuity.G2);
+  go.stop(74%, 46, CurveContinuity.G2);
+  go.stop(94%, 96, CurveContinuity.G2);
+};
+
+layer('rail').apply {
+  spine.drawTo(60, railY);
+}
+
+// Dashed "rail ties" along the normals, and a red knot at each stop.
+layer('normals').apply {
+  M calc(60 + L * 0.08) railY
+  v -22
+  M calc(60 + L * 0.3) railY
+  v -52
+  M calc(60 + L * 0.52) railY
+  v -84
+  M calc(60 + L * 0.74) railY
+  v -46
+  M calc(60 + L * 0.94) railY
+  v -96
+}
+layer('knots').apply {
+  circle(calc(60 + L * 0.08), calc(railY - 22), 3);
+  circle(calc(60 + L * 0.3), calc(railY - 52), 3);
+  circle(calc(60 + L * 0.52), calc(railY - 84), 3);
+  circle(calc(60 + L * 0.74), calc(railY - 46), 3);
+  circle(calc(60 + L * 0.94), calc(railY - 96), 3);
+}
+layer('curve').apply {
+  edge.drawTo(calc(60 + L * 0.08), calc(railY - 22));
+}
+
+// ─── In-figure vocabulary ─────────────────────────────────────
+layer('anno').apply {
+  text(60, 236)`THE SPINE — A RAIL`;
+  text(calc(60 + L * 0.52 + 12), calc(railY - 44))`NORMAL`;
+  text(calc(60 + L * 0.94 - 12), calc(railY - 110))`KNOT`;
+  text(80, 76)`THE OFFSET CURVE`;
+}
+layer('leaders').apply {
+  M calc(60 + L * 0.52 + 9) calc(railY - 47)
+  l -7 0
+  M calc(60 + L * 0.94 + 4) calc(railY - 106)
+  l 0 6
+  M 136 80
+  l 20 14
+}

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+    @property --stroke-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #457b9d;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 300 l -520 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="spine" id="spine" d="M 60 118 h 400 M 60 258 h 400" fill="none" stroke="rgba(13, 22, 56, 0.28)" stroke-width="1"/>
+  <path data-layer-name="uniform" id="uniform" d="M 60 100 l 400 0" fill="none" stroke="rgba(13, 22, 56, 0.6)" stroke-width="3" stroke-linecap="round"/>
+  <path data-layer-name="variable" id="variable" d="M 76 252 c 35.901098714230024 0 70.22237926656854 -27.28860189050954 104 -28 c 32.93413874337611 -0.6936333445340992 65.35143078681745 23.879158362040123 100.00000000000003 22 c 34.806126451917606 -1.8877034480102601 71.86386875925146 -30.468473534656958 99.99999999999997 -26 c 23.271150090931542 3.695835700103558 40.439203937236925 30 64 30" fill="none" stroke="var(--stroke-color, #457b9d)" stroke-width="3" stroke-linecap="round"/>
+  <text data-layer-name="eyebrow" id="eyebrow" x="60" y="52" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)">OFFSET(18) — ONE DISTANCE</text>
+  <text data-layer-name="eyebrow" x="60" y="182" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)">VARIABLEOFFSET() — THE DISTANCE BREATHES</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"spine","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.28)","stroke-width":"1","fill":"none"},"isDefault":false},{"name":"uniform","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.6)","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"variable","type":"path","styles":{"stroke":"var(--stroke-color, #457b9d)","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"eyebrow","type":"text","styles":{"font-family":"Helvetica, Arial, sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"},{"name":"--stroke-color","syntax":"<color>","inherits":true,"initialValue":"#457b9d"}],"viewBox":{"originX":0,"originY":0,"width":520,"height":300}}]]></script>
+</svg>

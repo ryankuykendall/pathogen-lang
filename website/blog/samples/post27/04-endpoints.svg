@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" width="520" height="320">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 320 l -520 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="spine" id="spine" d="M 60 128 h 400 M 60 272 h 400" fill="none" stroke="rgba(13, 22, 56, 0.28)" stroke-width="1"/>
+  <path data-layer-name="a" id="a" d="M 84 114 c 59.40445175985457 0 117.70222587992725 -28 176 -28 c 58.297774120072745 0 116.59554824014543 28 176 28" fill="none" stroke="#457b9d" stroke-width="3" stroke-linecap="round"/>
+  <path data-layer-name="b" id="b" d="M 84 258 c 3.552713678800501e-15 -46 99.49999999999997 -39.5 176 -28 c 76.5 11.5 130 28 176 28" fill="none" stroke="#e63946" stroke-width="3" stroke-linecap="round"/>
+  <text data-layer-name="eyebrow" id="eyebrow" x="60" y="48" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)">DEFAULT — ENDS FOLLOW THE SPINE</text>
+  <text data-layer-name="eyebrow" x="60" y="192" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)">POLARVECTOR — UP AT START, SPINE AT END</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"spine","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.28)","stroke-width":"1","fill":"none"},"isDefault":false},{"name":"a","type":"path","styles":{"stroke":"#457b9d","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"b","type":"path","styles":{"stroke":"#e63946","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"eyebrow","type":"text","styles":{"font-family":"Helvetica, Arial, sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"}],"viewBox":{"originX":0,"originY":0,"width":520,"height":320}}]]></script>
+</svg>

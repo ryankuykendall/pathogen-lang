@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 220" width="520" height="220">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+    @property --ribbon-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #457b9d;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 220 l -520 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="ribbon" id="ribbon" d="M 76 116 c 38.32608627147949 0 75.44574815091474 -21.800848241964683 112 -26 c 36.260394797010036 -4.165395073260939 71.96443360709344 8.989046243431751 112 16 c 45.20217353834664 7.915720368823628 95.92598299381348 8 144 8 c 18 6 18 14 0 20 c -48.004629406385845 0 -98.84548562253906 -3.3092427978177286 -144 2 c -39.97526440320385 4.700269453667499 -75.49382981983584 16.155320295695248 -112 14 c -36.59752196137697 -2.160713694869255 -74.1875975667007 -18 -112 -18 a 8 8 0 0 1 0 -16 z" fill="var(--ribbon-color, #457b9d)" stroke="var(--ribbon-color, #457b9d)" stroke-width="1.5" fill-opacity="0.45"/>
+  <path data-layer-name="rail" id="rail" d="M 60 124 h 400" fill="none" stroke="rgba(13, 22, 56, 0.6)" stroke-width="1" stroke-dasharray="3 4"/>
+  <text data-layer-name="eyebrow" id="eyebrow" x="60" y="48" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)">TWO PROFILES + CAPS = A CLOSED RIBBON</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"ribbon","type":"path","styles":{"fill":"var(--ribbon-color, #457b9d)","fill-opacity":"0.45","stroke":"var(--ribbon-color, #457b9d)","stroke-width":"1.5"},"isDefault":false},{"name":"rail","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.6)","stroke-width":"1","fill":"none","stroke-dasharray":"3 4"},"isDefault":false},{"name":"eyebrow","type":"text","styles":{"font-family":"Helvetica, Arial, sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"},{"name":"--ribbon-color","syntax":"<color>","inherits":true,"initialValue":"#457b9d"}],"viewBox":{"originX":0,"originY":0,"width":520,"height":220}}]]></script>
+</svg>

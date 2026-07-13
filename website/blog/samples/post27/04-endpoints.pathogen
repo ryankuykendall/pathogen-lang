@@ -1,0 +1,84 @@
+define ViewBox(0, 0, 520, 320);
+// Endpoint tangents. Default: the curve leaves along the spine's direction.
+// Override: PolarVector handles — absolute at the start, spine-relative (via
+// .turn) at the end, exactly the pattern from the docs.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let blue = Color('#457b9d');
+let red = Color('#e63946');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('spine') ${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+}
+define PathLayer('a') ${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('b') ${
+  stroke: red;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define TextLayer('eyebrow') ${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 320);
+}
+
+let L = 400;
+let spine = @{
+  h 400
+};
+
+// ─── Row 1: spine-derived endpoints (zero configuration) ──────
+layer('eyebrow').apply {
+  text(60, 48)`DEFAULT — ENDS FOLLOW THE SPINE`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 128);
+}
+layer('a').apply {
+  spine.variableOffset() {|go, pb|
+    go.stop(6% , 14, CurveContinuity.G2);
+    go.stop(50%, 42, CurveContinuity.G2);
+    go.stop(94%, 14, CurveContinuity.G2);
+  }.drawTo(calc(60 + L * 0.06), calc(128 - 14));
+}
+
+// ─── Row 2: PolarVector handles ───────────────────────────────
+// Start: absolute -90° (straight up, y-down space). End: spine-relative —
+// PolarVector(0deg, …).turn(pb.tangent(94%).angle) aims along the rail.
+layer('eyebrow').apply {
+  text(60, 192)`POLARVECTOR — UP AT START, SPINE AT END`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 272);
+}
+layer('b').apply {
+  spine.variableOffset() {|go, pb|
+    go.startTangent(PolarVector(-90deg, 46));
+    go.stop(6%, 14, CurveContinuity.G2);
+    go.stop(50%, 42, CurveContinuity.G2);
+    go.stop(94%, 14, CurveContinuity.G2);
+    go.endTangent(PolarVector(0deg, 46).turn(pb.tangent(94%).angle));
+  }.drawTo(calc(60 + L * 0.06), calc(272 - 14));
+}

@@ -1,0 +1,68 @@
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 520, 400);
+// Any PathBlock can be a rail — including a letter. fromGlyph returns one
+// PathBlock per character (hence the [0]); contours[0] isolates one clean
+// closed loop from it. Densely-placed stops let the offset trace the glyph.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let blue = Color(CSSVar('--stroke-color', #457b9d));
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('flourish') ${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('glyph') ${
+  fill: fg;
+}
+define TextLayer('eyebrow') ${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 400);
+}
+
+let styles = ${
+  font-family: Baumans-Regular;
+  font-size: 300;
+};
+let S = PathBlock.fromGlyph('S', styles)[0];
+let spine = S.contours[0];
+
+// 30 dense stops: enough for the curve to follow the S's reversing bends,
+// while the width breathes between 6 and 18.
+let flourish = spine.variableOffset() {|go, pb|
+  for (i in 0..29) {
+    go.stop(calc((i + 0.5) / 30), calc(12 + 6 * sin(calc(i * 0.6))), CurveContinuity.G2);
+  }
+};
+
+// The offset is origin-normalized to its first knot — recover that knot's
+// position from the spine (point at t0, out along the normal by the first width).
+let n0 = spine.normal(calc(0.5 / 30));
+let gx = 200;
+let gy = 330;
+
+layer('eyebrow').apply {
+  text(60, 48)`A GLYPH CONTOUR IS A SPINE`;
+}
+layer('glyph').apply {
+  S.drawTo(gx, gy);
+}
+layer('flourish').apply {
+  flourish.drawTo(calc(gx + n0.point.x + cos(n0.angle) * 12), calc(gy + n0.point.y + sin(n0.angle) * 12));
+}

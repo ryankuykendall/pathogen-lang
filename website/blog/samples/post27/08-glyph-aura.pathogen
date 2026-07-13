@@ -1,0 +1,90 @@
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 520, 440);
+// The finale technique on one letter: three concentric compound-offset bands
+// (red inner, amber middle, blue outer) tightly wrapping the glyph contour,
+// with the crisp letter on top.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let red = Color(CSSVar('--band-inner', #e63946));
+let amber = Color(CSSVar('--band-middle', #e0a725));
+let blue = Color(CSSVar('--band-outer', #457b9d));
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('bandOuter') ${
+  fill: blue;
+  fill-opacity: 0.30;
+  stroke: blue;
+  stroke-width: 0.5;
+}
+define PathLayer('bandMiddle') ${
+  fill: amber;
+  fill-opacity: 0.38;
+  stroke: amber;
+  stroke-width: 0.5;
+}
+define PathLayer('bandInner') ${
+  fill: red;
+  fill-opacity: 0.32;
+  stroke: red;
+  stroke-width: 0.5;
+}
+define PathLayer('glyph') ${
+  fill: fg;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 440);
+}
+
+let styles = ${
+  font-family: Baumans-Regular;
+  font-size: 300;
+};
+let S = PathBlock.fromGlyph('S', styles)[0];
+let spine = S.contours[0];
+
+// A band is the region between two same-side offsets (near → far), traced with
+// 28 dense stops so it hugs the letter. The width breathes gently.
+fn makeBand(sp, near, far) {
+  return sp.compoundVariableOffset() {|go, pb|
+    go.startCap(Cap.round());
+    for (i in 0..27) {
+      go.stop(calc((i + 0.5) / 28),
+          calc(far + 2.5 * sin(calc(i * 0.8))),
+          CurveContinuity.G2,
+          near,
+          CurveContinuity.G2);
+    }
+    go.endCap(Cap.round());
+  };
+}
+// Origin recovery: the band is normalized to its first knot (profile 1 = far side).
+fn aX(sp, far) {
+  let n = sp.normal(calc(0.5 / 28));
+  return calc(n.point.x + cos(n.angle) * far);
+}
+fn aY(sp, far) {
+  let n = sp.normal(calc(0.5 / 28));
+  return calc(n.point.y + sin(n.angle) * far);
+}
+
+let gx = 190;
+let gy = 350;
+
+layer('bandOuter').apply {
+  makeBand(spine, 26, 34).drawTo(calc(gx + aX(spine, 34)), calc(gy + aY(spine, 34)));
+}
+layer('bandMiddle').apply {
+  makeBand(spine, 15, 23).drawTo(calc(gx + aX(spine, 23)), calc(gy + aY(spine, 23)));
+}
+layer('bandInner').apply {
+  makeBand(spine, 4, 12).drawTo(calc(gx + aX(spine, 12)), calc(gy + aY(spine, 12)));
+}
+layer('glyph').apply {
+  S.drawTo(gx, gy);
+}

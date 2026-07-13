@@ -2578,9 +2578,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
                 continuity: c.continuity ? continuityFromValue(c.continuity) : undefined,
               }
             : undefined;
+        // No tangent overrides here: go.startTangent/endTangent throw in compound
+        // mode (ribbon ends are shaped by caps), so the builder fields are never set.
         const cvResult = buildCompoundVariableOffset(obj.commands, compStops, {
-          startOverride: builder.startTangent,
-          endOverride: builder.endTangent,
           startCap: capToSpec(builder.startCap),
           endCap: capToSpec(builder.endCap),
         });
@@ -3960,6 +3960,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const time = evaluateExpression(expr.args[0], scope);
         if (typeof time !== 'number') throw mError('go.stop() time must be a number');
         if (time < 0 || time > 1) throw mError(`go.stop() time must be between 0 and 1, got ${time}`);
+        // Decreasing times silently flip the outward direction used by end caps —
+        // reject them (equal times are tolerated; they add a zero-length segment).
+        const prevStop = b.stops[b.stops.length - 1];
+        if (prevStop && time < prevStop.time)
+          throw mError(
+            `go.stop() times must not decrease along the spine (got ${time} after ${prevStop.time})`,
+          );
         if (!b.compound) {
           if (expr.args.length !== 3)
             throw mError('go.stop() expects 3 arguments (time, offset, continuity)');
@@ -4843,6 +4850,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 1) throw mError('Cap.elliptical() expects 1 argument (projection)');
         const projection = evaluateExpression(expr.args[0], scope);
         if (typeof projection !== 'number') throw mError('Cap.elliptical() projection must be a number');
+        if (projection <= 0)
+          throw mError('Cap.elliptical() projection must be positive (use Cap.butt() for a flat end)');
         return { type: 'CapValue' as const, cap: 'elliptical', projection };
       }
       case 'tapered': {

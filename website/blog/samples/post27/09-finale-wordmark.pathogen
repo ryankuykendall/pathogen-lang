@@ -1,0 +1,105 @@
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 620, 280);
+// The finale: every letter of "Pathogen" wrapped in three concentric
+// compound-offset bands (red inner, amber middle, blue outer), laid out with
+// advance widths, crisp glyphs on top.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let red = Color(CSSVar('--band-inner', #e63946));
+let amber = Color(CSSVar('--band-middle', #e0a725));
+let blue = Color(CSSVar('--band-outer', #457b9d));
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('bandOuter') ${
+  fill: blue;
+  fill-opacity: 0.30;
+  stroke: blue;
+  stroke-width: 0.4;
+}
+define PathLayer('bandMiddle') ${
+  fill: amber;
+  fill-opacity: 0.38;
+  stroke: amber;
+  stroke-width: 0.4;
+}
+define PathLayer('bandInner') ${
+  fill: red;
+  fill-opacity: 0.32;
+  stroke: red;
+  stroke-width: 0.4;
+}
+define PathLayer('glyphs') ${
+  fill: fg;
+}
+
+layer('bg').apply {
+  rect(0, 0, 620, 280);
+}
+
+let styles = ${
+  font-family: Baumans-Regular;
+  font-size: 120;
+};
+let glyphs = PathBlock.fromGlyph('Pathogen', styles);
+let startX = 62;
+let baselineY = 170;
+
+// Dense same-side band (near → far), breathing gently, hugging the contour.
+fn makeBand(sp, near, far) {
+  return sp.compoundVariableOffset() {|go, pb|
+    go.startCap(Cap.round());
+    for (i in 0..23) {
+      go.stop(calc((i + 0.5) / 24),
+          calc(far + 1.5 * sin(calc(i * 0.9))),
+          CurveContinuity.G2,
+          near,
+          CurveContinuity.G2);
+    }
+    go.endCap(Cap.round());
+  };
+}
+fn aX(sp, far) {
+  let n = sp.normal(calc(0.5 / 24));
+  return calc(n.point.x + cos(n.angle) * far);
+}
+fn aY(sp, far) {
+  let n = sp.normal(calc(0.5 / 24));
+  return calc(n.point.y + sin(n.angle) * far);
+}
+
+layer('bandOuter').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    let sp = g.contours[0];
+    makeBand(sp, 15, 20).drawTo(calc(cx + aX(sp, 20)), calc(baselineY + aY(sp, 20)));
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+layer('bandMiddle').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    let sp = g.contours[0];
+    makeBand(sp, 9, 13).drawTo(calc(cx + aX(sp, 13)), calc(baselineY + aY(sp, 13)));
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+layer('bandInner').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    let sp = g.contours[0];
+    makeBand(sp, 3, 7).drawTo(calc(cx + aX(sp, 7)), calc(baselineY + aY(sp, 7)));
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+layer('glyphs').apply {
+  let cx = startX;
+  for (g in glyphs) {
+    g.drawTo(cx, baselineY);
+    cx = calc(cx + g.advanceWidth);
+  }
+}

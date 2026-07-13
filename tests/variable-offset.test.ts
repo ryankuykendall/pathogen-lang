@@ -254,6 +254,19 @@ describe('variableOffset — language surface (Phase 3)', () => {
     ).toThrow(/CurveContinuity/);
   });
 
+  it('rejects decreasing stop times (they silently flip cap direction)', () => {
+    expect(() =>
+      compilePath(
+        'let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| go.stop(80%, 5, CurveContinuity.G1); go.stop(20%, 5, CurveContinuity.G1); }; e.drawTo(0,0);',
+      ),
+    ).toThrow(/must not decrease/);
+  });
+
+  it('rejects a non-positive Cap.elliptical projection', () => {
+    expect(() => compilePath('let c = Cap.elliptical(0); M 0 0')).toThrow(/positive/);
+    expect(() => compilePath('let c = Cap.elliptical(-6); M 0 0')).toThrow(/positive/);
+  });
+
   it('rejects a cap on the simple form', () => {
     expect(() =>
       compilePath('let s = @{ h 100 }; let e = s.variableOffset() {|go, pb| go.startCap(Cap.round()); go.stop(50%, 5, CurveContinuity.G1); }; e.drawTo(0,0);'),

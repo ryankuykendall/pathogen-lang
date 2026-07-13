@@ -1,0 +1,92 @@
+define ViewBox(0, 0, 520, 430);
+// The cap vocabulary. Same ribbon, four endings — labeled in-figure.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let blue = Color(CSSVar('--ribbon-color', #457b9d));
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('ribbon') ${
+  fill: blue;
+  fill-opacity: 0.45;
+  stroke: blue;
+  stroke-width: 1.5;
+}
+define TextLayer('eyebrow') ${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 430);
+}
+
+let L = 300;
+let spine = @{
+  h 300
+};
+
+fn ribbonWith(cap) {
+  return spine.compoundVariableOffset() {|go, pb|
+    go.startCap(Cap.round());
+    go.stop(6%,
+        10,
+        CurveContinuity.G2,
+        -10,
+        CurveContinuity.G2);
+
+    go.stop(50%,
+        26,
+        CurveContinuity.G2,
+        -26,
+        CurveContinuity.G2);
+    go.stop(94%,
+        14,
+        CurveContinuity.G2,
+        -14,
+        CurveContinuity.G2);
+
+    go.endCap(cap);
+  };
+}
+
+
+fn place(r, base) {
+  r.drawTo(calc(160 + L * 0.06), calc(base - 10));
+}
+
+layer('eyebrow').apply {
+  text(60, 84)`CAP.BUTT()`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.butt()), 80);
+}
+
+layer('eyebrow').apply {
+  text(60, 184)`CAP.ROUND()`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.round()), 180);
+}
+
+layer('eyebrow').apply {
+  text(60, 284)`CAP.ELLIPTICAL(34)`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.elliptical(34)), 280);
+}
+
+layer('eyebrow').apply {
+  text(60, 384)`CAP.TAPERED(40, G2)`;
+}
+layer('ribbon').apply {
+  place(ribbonWith(Cap.tapered(40, CurveContinuity.G2)), 380);
+}

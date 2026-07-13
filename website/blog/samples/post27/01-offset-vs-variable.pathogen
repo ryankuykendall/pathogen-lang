@@ -1,0 +1,77 @@
+define ViewBox(0, 0, 520, 300);
+// Fixed vs variable: offset(18) holds one distance; variableOffset breathes.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let blue = Color(CSSVar('--stroke-color', #457b9d));
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('spine') ${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+}
+define PathLayer('uniform') ${
+  stroke: fg_muted;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('variable') ${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define TextLayer('eyebrow') ${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 300);
+}
+
+let spine = @{
+  h 400
+};
+
+// ─── Row 1: the existing offset() — one fixed distance ────────
+layer('eyebrow').apply {
+  text(60, 52)`OFFSET(18) — ONE DISTANCE`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 118);
+}
+layer('uniform').apply {
+  spine.offset(18).drawTo(60, 100);
+}
+
+// ─── Row 2: variableOffset() — the distance breathes ──────────
+layer('eyebrow').apply {
+  text(60, 182)`VARIABLEOFFSET() — THE DISTANCE BREATHES`;
+}
+
+let edge = spine.variableOffset() {|go, pb|
+  go.stop(4% , 6, CurveContinuity.G2);
+  go.stop(30%, 34, CurveContinuity.G2);
+  go.stop(55%, 12, CurveContinuity.G2);
+  go.stop(80%, 38, CurveContinuity.G2);
+  go.stop(96%, 8, CurveContinuity.G2);
+};
+layer('spine').apply {
+  spine.drawTo(60, 258);
+}
+layer('variable').apply {
+  edge.drawTo(calc(60 + 400 * 0.04), calc(258 - 6));
+}

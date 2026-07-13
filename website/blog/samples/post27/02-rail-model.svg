@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280" width="520" height="280">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+    @property --stroke-color {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #457b9d;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 280 l -520 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="rail" id="rail" d="M 60 208 h 400" fill="none" stroke="rgba(13, 22, 56, 0.6)" stroke-width="1.5"/>
+  <path data-layer-name="normals" id="normals" d="M 92 208 v -22 M 180 208 v -52 M 268 208 v -84 M 356 208 v -46 M 436 208 v -96" fill="none" stroke="rgba(13, 22, 56, 0.28)" stroke-width="1" stroke-dasharray="3 4"/>
+  <path data-layer-name="curve" id="curve" d="M 92 186 c 30.991038131118557 0 59.28805372810062 -12.831899158281317 88 -30 c 28.814366669636883 -17.22934237860214 58.04662955069779 -38.82587755595331 88 -32 c 30.30580392205553 6.906191313488719 61.34978444796661 42.90757040321882 88 38 c 26.43887557909204 -4.868652676861252 48.55339622647796 -50 80 -50" fill="none" stroke="var(--stroke-color, #457b9d)" stroke-width="3" stroke-linecap="round"/>
+  <path data-layer-name="knots" id="knots" d="M 89 186 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 177 156 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 265 124 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 353 162 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 433 112 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#e63946" stroke="none" stroke-width="2"/>
+  <path data-layer-name="leaders" id="leaders" d="M 277 161 l -7 0 M 440 102 l 0 6 M 136 80 l 20 14" fill="none" stroke="rgba(13, 22, 56, 0.28)" stroke-width="0.5"/>
+  <text data-layer-name="anno" id="anno" x="60" y="236" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="rgba(13, 22, 56, 0.6)">THE SPINE — A RAIL</text>
+  <text data-layer-name="anno" x="280" y="164" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="rgba(13, 22, 56, 0.6)">NORMAL</text>
+  <text data-layer-name="anno" x="424" y="98" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="rgba(13, 22, 56, 0.6)">KNOT</text>
+  <text data-layer-name="anno" x="80" y="76" font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="700" letter-spacing="2" fill="rgba(13, 22, 56, 0.6)">THE OFFSET CURVE</text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"rail","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.6)","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"normals","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.28)","stroke-width":"1","fill":"none","stroke-dasharray":"3 4"},"isDefault":false},{"name":"curve","type":"path","styles":{"stroke":"var(--stroke-color, #457b9d)","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"knots","type":"path","styles":{"fill":"#e63946","stroke":"none"},"isDefault":false},{"name":"leaders","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.28)","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"anno","type":"text","styles":{"font-family":"Helvetica, Arial, sans-serif","font-size":"8","font-weight":"700","letter-spacing":"2","fill":"rgba(13, 22, 56, 0.6)"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"},{"name":"--stroke-color","syntax":"<color>","inherits":true,"initialValue":"#457b9d"}],"viewBox":{"originX":0,"originY":0,"width":520,"height":280}}]]></script>
+</svg>

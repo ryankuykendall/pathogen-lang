@@ -1,0 +1,128 @@
+define ViewBox(0, 0, 520, 630);
+// The control knob: identical knots, three join behaviors.
+// Asymmetric spacing + offsets so G1's curvature-rate jump is visible vs G2.
+
+// ─── Core tokens ──────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.28);
+let red = Color('#e63946');
+let amber = Color('#e0a725');
+let blue = Color('#457b9d');
+let font = 'Helvetica, Arial, sans-serif';
+
+define PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+}
+define PathLayer('spine') ${
+  stroke: fg_hair;
+  stroke-width: 1;
+  fill: none;
+}
+define PathLayer('g0') ${
+  stroke: red;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g1') ${
+  stroke: amber;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g2') ${
+  stroke: blue;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g1thin') ${
+  stroke: amber;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+define PathLayer('g2dash') ${
+  stroke: blue;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: "3 4";
+}
+define TextLayer('eyebrow') ${
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+}
+
+layer('bg').apply {
+  rect(0, 0, 520, 630);
+}
+
+let L = 400;
+let spine = @{
+  h 400
+};
+
+// Deliberately uneven: a tight sharp rise into a long gentle tail.
+fn zig(cont) {
+  return spine.variableOffset() {|go, pb|
+    go.stop(5% , 10, cont);
+    go.stop(20%, 74, cont);
+    go.stop(32%, 16, cont);
+    go.stop(70%, 64, cont);
+    go.stop(95%, 12, cont);
+  };
+}
+fn place(e, base) {
+  e.drawTo(calc(60 + L * 0.05), calc(base - 10));
+}
+
+layer('eyebrow').apply {
+  text(60, 44)`G0 — CORNERS`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 130);
+}
+layer('g0').apply {
+  place(zig(CurveContinuity.G0), 130);
+}
+
+layer('eyebrow').apply {
+  text(60, 196)`G1 — NO KINK, BUT THE BEND RATE JUMPS`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 282);
+}
+layer('g1').apply {
+  place(zig(CurveContinuity.G1), 282);
+}
+
+layer('eyebrow').apply {
+  text(60, 348)`G2 — CURVATURE FLOWS THROUGH EVERY KNOT`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 434);
+}
+layer('g2').apply {
+  place(zig(CurveContinuity.G2), 434);
+}
+
+// Same knots, overlaid: solid amber G1 vs dashed blue G2 — the two only
+// separate between knots, where G2 redistributes the bending.
+layer('eyebrow').apply {
+  text(60, 500)`G1 VS G2, OVERLAID — SAME KNOTS, DIFFERENT FLOW`;
+}
+layer('spine').apply {
+  spine.drawTo(60, 594);
+}
+layer('g1thin').apply {
+  place(zig(CurveContinuity.G1), 594);
+}
+layer('g2dash').apply {
+  place(zig(CurveContinuity.G2), 594);
+}
