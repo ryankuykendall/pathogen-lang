@@ -469,7 +469,16 @@ export function buildCompoundVariableOffset(
     cmds.push(...p2Rev); // reversed profile 2 from p2End
   } else {
     // No end cap → profile 2 is a separate subpath; move to its (reversed) start.
-    cmds.push({ command: 'M', args: [p2End.x, p2End.y], start: { ...p2End }, end: { ...p2End } });
+    // MUST be a lowercase relative `m` — PathBlock commands are lowercase-relative,
+    // and an uppercase 'M' falls through commandsToRelativeD's catch-all as a
+    // literal absolute `M 0 0` (see boolean-ops.ts "uppercase M" trap). The pen is
+    // at p1End (end of profile 1); the serializer derives the delta from `end`.
+    cmds.push({
+      command: 'm',
+      args: [p2End.x - p1End.x, p2End.y - p1End.y],
+      start: { ...p1End },
+      end: { ...p2End },
+    });
     cmds.push(...p2Rev);
   }
   if (opts.startCap) cmds.push(...buildCap(opts.startCap, p2Start, p1Start, startOutward));

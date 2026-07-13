@@ -388,15 +388,62 @@ describe('variable-offset orchestration builders (exact coordinates)', () => {
     expect(cmds[3].args).toEqual([0, -20]);
   });
 
-  it('buildCompoundVariableOffset with no caps emits two separate subpaths', () => {
+  it('buildCompoundVariableOffset with no caps emits two separate subpaths (relative m)', () => {
     const stops: CompoundStop[] = [
       { time: 0.1, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
       { time: 0.9, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
     ];
     const cmds = buildCompoundVariableOffset(spine, stops);
-    // profile1 cubic, then an explicit M for the profile-2 subpath, then its cubic.
-    expect(cmds.map((c) => c.command)).toEqual(['c', 'M', 'c']);
+    // profile1 cubic, then a lowercase RELATIVE m for the profile-2 subpath, then its
+    // cubic. An uppercase 'M' here serialized as a literal absolute "M 0 0"
+    // (commandsToRelativeD catch-all), teleporting profile 2 to the canvas origin.
+    expect(cmds.map((c) => c.command)).toEqual(['c', 'm', 'c']);
+    // m delta: from p1End (90,-10 normalized → (80,0)) to p2End (90,10 → (80,20)).
+    const m = cmds[1];
+    expect(m.args).toEqual([0, 20]);
+    expect(m.end.x - m.start.x).toBeCloseTo(0, 6);
+    expect(m.end.y - m.start.y).toBeCloseTo(20, 6);
     expect(cmds.some((c) => c.command === 'z')).toBe(false);
+  });
+
+  it('REGRESSION: uncapped compound drawn away from the origin keeps profile 2 attached', () => {
+    // The uppercase-M bug only bit at serialization: drawTo(200,300) emitted
+    // "... M 0 0 ..." — profile 2 jumped to the canvas origin. Assert the second
+    // subpath's move lands near the drawTo position, not at (0,0).
+    const result = compilePath(`
+      let s = @{ h 100 };
+      let two = s.compoundVariableOffset() {|go, pb|
+        go.stop(10%, 6, CurveContinuity.G1, -6, CurveContinuity.G1);
+        go.stop(90%, 12, CurveContinuity.G1, -4, CurveContinuity.G1);
+      };
+      two.drawTo(200, 300);
+    `);
+    const parsed = parseSVGPath(result);
+    const moves = parsed.filter((c) => c.command.toLowerCase() === 'm');
+    expect(moves.length).toBe(2);
+    // Track the absolute position of the second subpath start.
+    let x = 0;
+    let y = 0;
+    let secondSubpathStart: { x: number; y: number } | null = null;
+    for (const c of parsed) {
+      if (c.command === 'M') {
+        x = c.args[0];
+        y = c.args[1];
+      } else if (c.command === 'm') {
+        x += c.args[0];
+        y += c.args[1];
+        secondSubpathStart = { x, y };
+      } else if (c.command === 'c') {
+        x += c.args[4];
+        y += c.args[5];
+      }
+    }
+    expect(secondSubpathStart).not.toBeNull();
+    // p2 (reversed) starts at spine@90% offset -6/-4 side → near (280, 302-ish),
+    // absolutely NOT the canvas origin.
+    expect(Math.hypot(secondSubpathStart!.x, secondSubpathStart!.y)).toBeGreaterThan(100);
+    expect(secondSubpathStart!.x).toBeGreaterThan(200);
+    expect(secondSubpathStart!.y).toBeGreaterThan(290);
   });
 });
 
